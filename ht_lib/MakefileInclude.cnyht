@@ -61,7 +61,7 @@ help2: help1
 ##############################################################################
 
 HT_LIB = $(HT_DIR)/ht_lib
-SC_DIR = $(HT_DIR)/systemc-2.3.1
+SC_DIR = $(HT_DIR)/local_systemc
 
 export CNY_PDK ?= /opt/convey/pdk2
 export CNY_PDK_REV ?= latest

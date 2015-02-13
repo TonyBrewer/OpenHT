@@ -19,7 +19,7 @@ HTLIB_SRC = $(wildcard ht_lib/*/*Lib.cpp)
 HTLIB_OBJ = $(HTLIB_SRC:.cpp=.o)
 HTLIB_POBJ = $(HTLIB_SRC:.cpp=.po)
 $(HTLIB_OBJ) $(HTLIB_POBJ): CXXFLAGS += -Iht_lib -I/opt/convey/include
-$(HTLIB_OBJ) $(HTLIB_POBJ): CXXFLAGS += -I./systemc\-2.3.1/include
+$(HTLIB_OBJ) $(HTLIB_POBJ): CXXFLAGS += -I./local_systemc/include
 
 ifeq ($(shell uname), Linux)
 CNY_OBJ = ht_lib/host/PersAsm.o
@@ -31,7 +31,7 @@ ifneq (,$(wildcard .svn))
 else ifneq (,$(wildcard .git))
  VCSREV = $(shell head -1 .git/refs/heads/master | cut -c 1-7)
 endif
-VERSION = 1.4
+VERSION = 2.0
 REL_DIR = $(VERSION)-$(VCSREV)
 
 export OPT_LVL = -g -O2
@@ -60,13 +60,17 @@ PREFIX ?= $(TOPDIR)/rpm/prefix
 
 .PHONY: all install rpm clean
 
-all: htl htv ht_lib/libht.a ht_lib/libht.pa
+all: htl htv ht_lib/libht.a ht_lib/libht.pa local_systemc
 
 debug:
 	$(MAKE) OPT_LVL=-ggdb
 
 install_debug:
 	$(MAKE) install OPT_LVL=-ggdb
+
+local_systemc:
+	cd import > /dev/null; $(MAKE)
+	mv import/$@ .
 
 htl: $(HTL_OBJ)
 	$(CXX) $(CXXFLAGS) -o $@ $(HTL_OBJ) $(LIC_LIB)
@@ -112,13 +116,7 @@ install: all
 		$$ex/Makefile > $(PREFIX)/examples/$$e/Makefile; \
 	done)
 	find $(PREFIX)/examples -name "*.htl" -exec rm {} \;
-	mkdir -p $(PREFIX)/systemc-2.3.1
-	cp -rp systemc-2.3.1/include $(PREFIX)/systemc-2.3.1
-ifeq ($(shell uname), Linux)
-	cp -rp systemc-2.3.1/lib-linux64 $(PREFIX)/systemc-2.3.1
-else
-	cp -rp systemc-2.3.1/lib-macosx64 $(PREFIX)/systemc-2.3.1
-endif
+	cp -rp local_systemc $(PREFIX)
 ifdef STRIP
 	strip $(PREFIX)/bin/*
 	strip -g -S -d -x -X --strip-unneeded $(PREFIX)/ht_lib/libht.*
@@ -126,7 +124,7 @@ endif
 	find $(PREFIX) -name ".svn" | xargs rm -rf
 	find $(PREFIX) -type d | xargs chmod 755
 	find $(PREFIX) -type f | xargs chmod 644
-	chmod 755 $(PREFIX)/bin/* $(PREFIX)/systemc-2.3.1/lib*/*.a
+	chmod 755 $(PREFIX)/bin/* $(PREFIX)/local_systemc/lib*/*.a
 
 REL_RPM  = convey-ht-tools-$(VERSION)-$(VCSREV).x86_64.rpm
 REL_PATH = /work/ht_releases/$(REL_DIR)
@@ -149,6 +147,7 @@ rpm:
 		 -bb $(SPEC)
 
 clean:
+	$(MAKE) -C import clean
 	rm -f ./*.o ./htl ./htv ./vex
 	rm -f $(HTL)/*.[od] src/Ht*/*.[od] $(VEX)/*.[od]
 	rm -f $(CNY_OBJ) $(HTLIB_OBJ) $(HTLIB_POBJ) ht_lib/libht.*
@@ -156,7 +155,7 @@ clean:
 	rm -rf $(PREFIX) RPMS/*
 
 cleaner: clean
-	$(MAKE) -s -C examples/ArithUnit clean
+	rm -rf local_systemc
 	$(MAKE) -s -C tests distclean
 
 #

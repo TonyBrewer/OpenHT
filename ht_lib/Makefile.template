@@ -8,7 +8,7 @@
 # See the LICENSE file for the complete license text.
 
 HT_LIB = $(HT_DIR)/ht_lib
-SC_DIR = $(HT_DIR)/systemc-2.3.1
+SC_DIR = $(HT_DIR)/local_systemc
 
 ifeq ($(shell uname), Darwin)
  SC_LIB = $(SC_DIR)/lib-macosx64/libsystemc.a
