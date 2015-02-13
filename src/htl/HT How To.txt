@@ -1,0 +1,86 @@
+From the mu10 dir.
+
+make vsim 
+app_vsim test/pastimes20.inp
+<hit ctrl C after 60000 ns >
+make -C ht/sim deb 
+
+
+make sysc
+app_sysc <inputs>
+
+
+make app? or make host ?
+app  <inputs>
+
+============================================================
+ To build and install the toolset into the default location (/hw/tools) follow
+these steps...
+
+$ svn co svn://bigdog/svn-tools/trunk/systemc
+$ cd systemc
+$ make -j4
+$ make hwinstall (rsyncs to /hw)
+
+  To run verilog sims...
+
+$ make vsim
+$ app_vsim <app options>
+
+   ... to see verilog waves...
+
+$ make -Cht/sim deb
+
+  To run sysc sims...
+
+$ make sysc
+$ app_sysc <app options>
+
+  To build
+
+$ cd <proj>
+$ make vsim
+$ cd ht/phys
+$ make syn
+
+
+============================================================
+To regress all dsn and bug tests
+
+svn co svn://bigdog/svn-tools/trunk/systemc
+cd systemc
+make clean
+make -j 4 install (without this, /hw/tools version regressed)
+cd tests
+make distclean
+make -j 4 regress
+
+============================================================
+
+To use unreleased htl/htv
+
+Copy source to systemc/src/...
+
+cd systemc
+make clean
+make -j4 install
+
+change tests/*/ht/.prefix to use /nethome/tbrewer/systemc/rpm/prefix
+
+==============================================
+
+export HTL_FLAGS += -vcd_all
+
+cd ht/sim
+vpd2vcd vcdplus.vpd vcdplus.vcd
+vcd2fst vcdplus.vcd vcdplus.fst
+
+=======================================
+
+Release
+
+cd systemc
+svn update
+make clean
+svn status (look for any extra changes)
+make -j4 release (on hwtest1)

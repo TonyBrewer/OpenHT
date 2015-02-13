@@ -1,0 +1,360 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="ht_lib">
+      <UniqueIdentifier>{3a0515ab-16f8-420f-8a40-2e7f56740d2a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ht">
+      <UniqueIdentifier>{27f18a9d-4a2f-4185-8482-86c1964db6d6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ht_lib\host">
+      <UniqueIdentifier>{316560b9-073a-4641-a23b-3ee1517d0e78}</UniqueIdentifier>
+      <Extensions>h;cpp;c</Extensions>
+    </Filter>
+    <Filter Include="ht_lib\sysc">
+      <UniqueIdentifier>{d576329f-5bd6-417e-a9d1-e08e401ae043}</UniqueIdentifier>
+      <Extensions>h;cpp;c</Extensions>
+    </Filter>
+    <Filter Include="ht\verilog">
+      <UniqueIdentifier>{9e980b32-c037-4b86-8deb-1c4f0ecf69ac}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ht\sysc">
+      <UniqueIdentifier>{b75c8fcb-624a-40eb-b5ed-bd747a560005}</UniqueIdentifier>
+      <Extensions>h;cpp;c</Extensions>
+    </Filter>
+    <Filter Include="src">
+      <UniqueIdentifier>{ca4c67a4-315c-4018-be94-5d11f6b8a4c7}</UniqueIdentifier>
+      <Extensions>h;cpp;c</Extensions>
+    </Filter>
+    <Filter Include="src_pers">
+      <UniqueIdentifier>{06b71194-d18c-40c8-85b6-df94968bd2b7}</UniqueIdentifier>
+      <Extensions>h;cpp;c</Extensions>
+    </Filter>
+    <Filter Include="src_model">
+      <UniqueIdentifier>{33b2bf25-5da4-4014-818e-3b47db3628f4}</UniqueIdentifier>
+      <Extensions>h;cpp;c</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\ht\sysc\HostIntf.h">
+      <Filter>ht\sysc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ht\sysc\UnitIntf.h">
+      <Filter>ht\sysc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ht\sysc\PersCommon.h">
+      <Filter>ht\sysc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ht\sysc\PersAeTop.h">
+      <Filter>ht\sysc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ht\sysc\PersAuTop.h">
+      <Filter>ht\sysc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ht\sysc\PersHif.h">
+      <Filter>ht\sysc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ht\sysc\PersAuHti.h">
+      <Filter>ht\sysc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ht\sysc\PersAuHta.h">
+      <Filter>ht\sysc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ht\sysc\PersAuMif0.h">
+      <Filter>ht\sysc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ht\sysc\PersCtl.h">
+      <Filter>ht\sysc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ht\sysc\PersModA.h">
+      <Filter>ht\sysc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ht\sysc\PersModB.h">
+      <Filter>ht\sysc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ht\sysc\PersModC.h">
+      <Filter>ht\sysc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ht\sysc\PersModD.h">
+      <Filter>ht\sysc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ht\sysc\SyscAeTop.h">
+      <Filter>ht\sysc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ht\sysc\SyscTop.h">
+      <Filter>ht\sysc</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\ht\ht_lib\host\HtCtrlMsg.h">
+      <Filter>ht_lib\host</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\ht\ht_lib\Ht.h">
+      <Filter>ht_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\ht\ht_lib\host\HtHif.h">
+      <Filter>ht_lib\host</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\ht\ht_lib\host\HtHifLib.h">
+      <Filter>ht_lib\host</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\ht\ht_lib\host\HtModel.h">
+      <Filter>ht_lib\host</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\ht\ht_lib\host\HtModelLib.h">
+      <Filter>ht_lib\host</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\ht\ht_lib\host\HtPlatform.h">
+      <Filter>ht_lib\host</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\ht\ht_lib\sysc\mtrand.h">
+      <Filter>ht_lib\sysc</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\ht\ht_lib\sysc\MemRdWrIntf.h">
+      <Filter>ht_lib\sysc</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\ht\ht_lib\sysc\Params.h">
+      <Filter>ht_lib\sysc</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\ht\ht_lib\sysc\PersUnitCnt.h">
+      <Filter>ht_lib\sysc</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\ht\ht_lib\sysc\PersXbarStub.h">
+      <Filter>ht_lib\sysc</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\ht\ht_lib\sysc\PersMiStub.h">
+      <Filter>ht_lib\sysc</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\ht\ht_lib\sysc\PersMoStub.h">
+      <Filter>ht_lib\sysc</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\ht\ht_lib\sysc\HtMemTypes.h">
+      <Filter>ht_lib\sysc</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\ht\ht_lib\sysc\SyscClock.h">
+      <Filter>ht_lib\sysc</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\ht\ht_lib\sysc\SyscDisp.h">
+      <Filter>ht_lib\sysc</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\ht\ht_lib\sysc\SyscMemLib.h">
+      <Filter>ht_lib\sysc</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\ht\ht_lib\sysc\SyscMem.h">
+      <Filter>ht_lib\sysc</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\ht\ht_lib\sysc\SyscMonLib.h">
+      <Filter>ht_lib\sysc</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\ht\ht_lib\sysc\SyscMon.h">
+      <Filter>ht_lib\sysc</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\ht\sysc\UnitIntf.cpp">
+      <Filter>ht\sysc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ht\sysc\PersHif.cpp">
+      <Filter>ht\sysc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ht\sysc\PersAuHti.cpp">
+      <Filter>ht\sysc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ht\sysc\PersAuHta.cpp">
+      <Filter>ht\sysc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ht\sysc\PersAuMif0.cpp">
+      <Filter>ht\sysc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ht\sysc\PersCtl.cpp">
+      <Filter>ht\sysc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src_pers\PersCtl_src.cpp">
+      <Filter>src_pers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ht\sysc\PersModA.cpp">
+      <Filter>ht\sysc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src_pers\PersModA_src.cpp">
+      <Filter>src_pers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ht\sysc\PersModB.cpp">
+      <Filter>ht\sysc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src_pers\PersModB_src.cpp">
+      <Filter>src_pers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ht\sysc\PersModC.cpp">
+      <Filter>ht\sysc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src_pers\PersModC_src.cpp">
+      <Filter>src_pers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ht\sysc\PersModD.cpp">
+      <Filter>ht\sysc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src_pers\PersModD_src.cpp">
+      <Filter>src_pers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ht\sysc\SyscMon.cpp">
+      <Filter>ht\sysc</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\ht\ht_lib\host\HtHif.cpp">
+      <Filter>ht_lib\host</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\ht\ht_lib\host\HtHifLib.cpp">
+      <Filter>ht_lib\host</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\ht\ht_lib\host\HtModelLib.cpp">
+      <Filter>ht_lib\host</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\ht\ht_lib\host\HtPlatform.cpp">
+      <Filter>ht_lib\host</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\ht\ht_lib\sysc\mtrand.cpp">
+      <Filter>ht_lib\sysc</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\ht\ht_lib\sysc\PersUnitCnt.cpp">
+      <Filter>ht_lib\sysc</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\ht\ht_lib\sysc\PersXbarStub.cpp">
+      <Filter>ht_lib\sysc</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\ht\ht_lib\sysc\PersMiStub.cpp">
+      <Filter>ht_lib\sysc</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\ht\ht_lib\sysc\PersMoStub.cpp">
+      <Filter>ht_lib\sysc</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\ht\ht_lib\sysc\SyscClockLib.cpp">
+      <Filter>ht_lib\sysc</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\ht\ht_lib\sysc\SyscDispLib.cpp">
+      <Filter>ht_lib\sysc</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\ht\ht_lib\sysc\SyscMemLib.cpp">
+      <Filter>ht_lib\sysc</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\ht\ht_lib\sysc\SyscMonLib.cpp">
+      <Filter>ht_lib\sysc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Main.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\src_pers\repl13621.htl">
+      <Filter>src_pers</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\ht\sysc\PersAuTop.sc">
+      <Filter>ht\sysc</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\ht\sysc\PersAeTop.sc">
+      <Filter>ht\sysc</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\ht\verilog\PersHif.v_">
+      <Filter>ht\verilog</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\ht\verilog\PersAuHti.v_">
+      <Filter>ht\verilog</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\ht\verilog\PersAuHta.v_">
+      <Filter>ht\verilog</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\ht\verilog\PersAuMif0.v_">
+      <Filter>ht\verilog</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\ht\verilog\PersCtl.v_">
+      <Filter>ht\verilog</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\ht\verilog\PersModA.v_">
+      <Filter>ht\verilog</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\ht\verilog\PersModB.v_">
+      <Filter>ht\verilog</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\ht\verilog\PersModC.v_">
+      <Filter>ht\verilog</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\ht\verilog\PersModD.v_">
+      <Filter>ht\verilog</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\ht\ht_lib\sysc\SyscAeTop.sc">
+      <Filter>ht_lib\sysc</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\ht\ht_lib\sysc\SyscTop.sc">
+      <Filter>ht_lib\sysc</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\ht\verilog\PersUnitCnt.v_">
+      <Filter>ht\verilog</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\ht\verilog\PersXbarStub.v_">
+      <Filter>ht\verilog</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\ht\verilog\PersMiStub.v_">
+      <Filter>ht\verilog</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\ht\verilog\PersMoStub.v_">
+      <Filter>ht\verilog</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\src_pers\repl13621.htd">
+      <Filter>src_pers</Filter>
+    </None>
+    <None Include="..\ht\verilog\PersAuTop.v">
+      <Filter>ht\verilog</Filter>
+    </None>
+    <None Include="..\ht\verilog\PersAeTop.v">
+      <Filter>ht\verilog</Filter>
+    </None>
+    <None Include="..\ht\verilog\SyscAeTop.v">
+      <Filter>ht\verilog</Filter>
+    </None>
+    <None Include="..\ht\verilog\SyscTop.v">
+      <Filter>ht\verilog</Filter>
+    </None>
+    <None Include="..\ht\verilog\PersHif.v">
+      <Filter>ht\verilog</Filter>
+    </None>
+    <None Include="..\ht\verilog\PersAuHti.v">
+      <Filter>ht\verilog</Filter>
+    </None>
+    <None Include="..\ht\verilog\PersAuHta.v">
+      <Filter>ht\verilog</Filter>
+    </None>
+    <None Include="..\ht\verilog\PersAuMif0.v">
+      <Filter>ht\verilog</Filter>
+    </None>
+    <None Include="..\ht\verilog\PersCtl.v">
+      <Filter>ht\verilog</Filter>
+    </None>
+    <None Include="..\ht\verilog\PersModA.v">
+      <Filter>ht\verilog</Filter>
+    </None>
+    <None Include="..\ht\verilog\PersModB.v">
+      <Filter>ht\verilog</Filter>
+    </None>
+    <None Include="..\ht\verilog\PersModC.v">
+      <Filter>ht\verilog</Filter>
+    </None>
+    <None Include="..\ht\verilog\PersModD.v">
+      <Filter>ht\verilog</Filter>
+    </None>
+    <None Include="..\ht\verilog\PersUnitCnt.v">
+      <Filter>ht\verilog</Filter>
+    </None>
+    <None Include="..\ht\verilog\PersXbarStub.v">
+      <Filter>ht\verilog</Filter>
+    </None>
+    <None Include="..\ht\verilog\PersMiStub.v">
+      <Filter>ht\verilog</Filter>
+    </None>
+    <None Include="..\ht\verilog\PersMoStub.v">
+      <Filter>ht\verilog</Filter>
+    </None>
+    <None Include="..\src_pers\repl13621.hti">
+      <Filter>src_pers</Filter>
+    </None>
+  </ItemGroup>
+</Project>

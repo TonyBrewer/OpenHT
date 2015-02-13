@@ -1,0 +1,39 @@
+struct CStruct_ghi {
+	ht_uint4 m_g;
+	ht_uint4 m_h;
+	ht_uint4 m_i;
+};
+
+struct CStruct_def {
+#pragma htl atomic_inc
+	ht_uint5 m_x;
+};
+
+struct CGVar {
+	ht_uint8 m_abc;
+	CStruct_def m_def;
+	CStruct_ghi m_ghi;
+};
+
+////////////////////////////////////////////////////
+// Gv Module
+
+dsnInfo.AddModule(name=gv, htIdW=3, clock=1x);
+gv.AddInst(name=GV_ENTRY);
+gv.AddInst(name=GV_I1);
+gv.AddInst(name=GV_I2);
+gv.AddInst(name=GV_RETURN);
+
+gv.AddEntry(func=htmain, inst=GV_ENTRY, host=true)
+	;
+
+gv.AddPrivate()
+	.AddVar(type=ht_uint3, name=gvAddr)
+	;
+
+gv.AddReturn(func=htmain)
+	;
+
+gv.AddGlobal()
+	.AddVar(type=CGVar, name=gvar, addr1W=3, addr1=gvAddr)
+	;

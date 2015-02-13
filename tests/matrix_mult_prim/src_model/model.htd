@@ -1,0 +1,45 @@
+dsnInfo.AddModule(name=model, htIdW=0);
+
+model.AddInst(name=MODEL);
+
+model.AddHostMsg(dir=in, name=MA_BASE)
+	.AddDst(var=op1Base, dataLsb=0)
+	;
+model.AddHostMsg(dir=in, name=MB_BASE)
+	.AddDst(var=op2Base, dataLsb=0)
+	;
+model.AddHostMsg(dir=in, name=MC_BASE)
+	.AddDst(var=resBase, dataLsb=0)
+	;
+model.AddHostMsg(dir=in, name=MC_ROW)
+	.AddDst(var=mcRow, dataLsb=0)
+	;
+model.AddHostMsg(dir=in, name=MC_COL)
+	.AddDst(var=mcCol, dataLsb=0)
+	;
+model.AddHostMsg(dir=in, name=COMMON)
+	.AddDst(var=comRowCol, dataLsb=0)
+	;
+
+
+model.AddShared()
+	.AddVar(type=uint64_t, name=mcRow)
+	.AddVar(type=uint64_t, name=mcCol)
+	.AddVar(type=uint64_t, name=comRowCol)
+	.AddVar(type=ht_uint48, name=op1Base)
+	.AddVar(type=ht_uint48, name=op2Base)
+	.AddVar(type=ht_uint48, name=resBase)
+	;
+
+model.AddPrivate()
+	.AddVar(type=uint32_t, name=rowIdx)
+	.AddVar(type=uint32_t, name=stride)
+	;
+
+model.AddEntry(func=htmain, inst=MODEL, host=true)
+	.AddParam(type=uint32_t, name=rowIdx)
+	.AddParam(type=uint32_t, name=stride)
+	;
+
+model.AddReturn(func=htmain)
+	;

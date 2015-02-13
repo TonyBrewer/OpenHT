@@ -1,0 +1,16 @@
+cd src_htc
+rm -f PersOUT*.cpp Pers__HTC_HO*.cpp
+$MY_HT_DIR/bin/htc  -I../src -rose:openmp:lowering -htc:split stream_int_omp.c -htc:sysc -rose:skipfinalCompileStep 
+$MY_HT_DIR/bin/htc  -I../src -rose:openmp:lowering -DCNY_HTC_COPROC rose_stream_int_omp.c -rose:skipfinalCompileStep  -htc:sysc
+
+/work/htc_releases/latest/bin/htc -I../src -rose:openmp:lowering -htc:split stream_int_omp.c -htc:sysc -rose:skipfinalCompileStep
+/work/htc_releases/latest/bin/htc -I../src -rose:openmp:lowering -DCNY_HTC_COPROC rose_stream_int_omp.c -rose:skipfinalCompileStep
+
+grep -v "___htc_dummy_decl" rose_rose_stream_int_omp.c > ../src_pers/rose_rose_stream_int_omp.c
+rm -f ../src_pers/PersOUT*.cpp ../src_pers/Pers__HTC_HO*.cpp
+cp Pers*.cpp ../src_pers
+cp design.htd ../src_pers
+cd ..
+
+# make cleaner
+# make sysc

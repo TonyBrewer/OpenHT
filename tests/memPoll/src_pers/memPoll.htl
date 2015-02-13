@@ -1,0 +1,9 @@
+// -cl "C:\Ht\tests\memPoll\src_pers\memPoll.htl"
+-cp hc-2
+-ac 1
+-uc 1
+-un Su
+-df 150
+-wd "C:\Ht\tests\memPoll\msvs12\"
+"C:\Ht\tests\memPoll\src_pers\memPoll.htd"
+../ht/sysc

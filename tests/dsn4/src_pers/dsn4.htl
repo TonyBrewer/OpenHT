@@ -1,0 +1,8 @@
+-cp hc-2
+-it
+-uc 2
+-un Su
+-df 150
+-wd "C:\Ht\tests\dsn4\msvs12\"
+"C:\Ht\tests\dsn4\src_pers\dsn4.htd"
+../ht/sysc

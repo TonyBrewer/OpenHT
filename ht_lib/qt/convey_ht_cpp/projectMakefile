@@ -1,0 +1,58 @@
+HTLIB ?= /hw/tools/systemc/ht_lib
+HTDSN = %UNIT_NAME%
+HTFLAGS += -ac %AE_COUNT%	# AE Count (default 1)
+HTFLAGS += -un %UNIT_NAME%	# Unit Name (default 'Au')
+HTFLAGS += -uc %UNIT_COUNT%	# Unit Count (default 1)
+HTFLAGS += -en %ENTRY_POINT%	# Entry point for coprocessor (default 'htmain')
+HTFLAGS += -tw %H_THRD_WDTH%	# Host thread width (default 0)
+HTFLAGS += -df %MODULE_FREQ%	# Default module instance frequency (default 150 mhz)
+HTFLAGS += -ub %BLK_RAMS_PER_UNIT%	# Maximum number of 16Kb block rams per Unit (default 64)
+HTFLAGS += -lb %LTU_TO_BRAM%	# Minimum lutToBram ratio for block rams usage (default 100)
+HTFLAGS += -ml %MEM_LATENCY%	# Memory model latency in nano-seconds (default 660 ns)
+@if "%GEN_REPORT%" != ""
+HTFLAGS += %GEN_REPORT%		# Generate Reports
+@else
+#HTFLAGS += -gr		# Generate Reports
+@endif
+@if "%PERF_MON%" != ""
+HTFLAGS += %PERF_MON%		# Enable Performance Monitoring
+@else
+#HTFLAGS += -pm		# Enable Performance Monitoring
+@endif
+@if "%RAND_INIT%" != ""
+HTFLAGS += %RAND_INIT%		# Enable Random Initialization
+@else
+#HTFLAGS += -ri		# Enable Random Initialization
+@endif
+@if "%RAND_RETRY%" != ""
+HTFLAGS += %RAND_RETRY%		# Enable Random Retry
+@else
+#HTFLAGS += -rr		# Enable Random Retry
+@endif
+@if "%MEM_TRACE%" != ""
+HTFLAGS += %MEM_TRACE%		# Enable Memory Tracing
+@else
+#HTFLAGS += -mt		# Enable Memory Tracing
+@endif
+@if "%INST_TRACE%" != "0"
+HTFLAGS += -it %INST_TRACE%	# Enable Instruction Tracing
+@else
+#HTFLAGS += -it <LVL>	# Enable Instruction Tracing
+@endif
+@if "%IN_HIF_MODULE%" != ""
+HTFLAGS += -iq %IN_HIF_MODULE%	# Module name for input HIF queue
+@else
+#HTFLAGS += -iq <MOD>	# Module name for input HIF queue
+@endif
+@if "%OUT_HIF_MODULE%" != ""
+HTFLAGS += -oq %OUT_HIF_MODULE%	# Module name for output HIF queue
+@else
+#HTFLAGS += -oq <MOD>	# Module name for output HIF queue
+@endif
+@if "%MODULE_INSTANCE_FILE%" != ""
+HTFLAGS += -if %MODULE_INSTANCE_FILE%	# Name of module instance file
+@else
+#HTFLAGS += -if <FILE>	# Name of module instance file
+@endif
+include $(HTLIB)/Makefile.dsn
+

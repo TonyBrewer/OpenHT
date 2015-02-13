@@ -1,0 +1,8 @@
+// -cl "C:\Ht\tests\dsn3\src_pers\dsn3.htl"
+-cp hc-2
+-un Qu
+-df 150
+-if "C:\Ht\tests\dsn3\src_pers\dsn3.hti"
+-wd "C:\Ht\tests\dsn3\msvs12\"
+"C:\Ht\tests\dsn3\src_pers/dsn3.htd"
+../ht/sysc

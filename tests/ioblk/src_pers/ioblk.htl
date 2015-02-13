@@ -1,0 +1,12 @@
+-cp hc-2
+//-mo
+//-rt
+-vcd
+-ac 1
+-uc 1
+-un Au
+-df 150
+//-if "C:\Ht\tests\ioblk\src_pers\HtInstance.txt"
+-wd "C:\Ht\tests\ioblk\msvs12\"
+"C:\Ht\tests\ioblk\src_pers\ioblk.htd"
+../ht/sysc

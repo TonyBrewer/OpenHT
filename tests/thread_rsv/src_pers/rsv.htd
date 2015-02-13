@@ -1,0 +1,41 @@
+dsnInfo.AddModule(name=inc, clock=1x, htIdW=5);
+
+inc.AddInst(name=ENTRY);
+inc.AddInst(name=LOCK);
+inc.AddInst(name=INC);
+inc.AddInst(name=BAR);
+inc.AddInst(name=RTN);
+
+inc.AddBarrier();
+
+inc.AddPrivate()
+	.AddVar(type=uint8_t, name=wait)
+	;
+
+inc.AddShared()
+	.AddVar(type=uint16_t, name=cnt)
+	;
+
+inc.AddEntry(func=htmain, inst=ENTRY, host=true);
+
+inc.AddReturn(func=htmain) 
+	.AddParam(type=int16_t, name=cnt)
+	;
+
+inc.AddCall(func=lock);
+inc.AddCall(func=unlock);
+
+dsnInfo.AddModule(name=lock, clock=2x, htIdW=3);
+
+lock.AddInstr(name=LOCK);
+lock.AddInstr(name=UNLOCK);
+
+lock.AddEntry(func=lock, inst=LOCK, reserve=6);
+lock.AddEntry(func=unlock, inst=UNLOCK, reserve=1);
+
+lock.AddReturn(func=lock);
+lock.AddReturn(func=unlock);
+
+lock.AddShared()
+	.AddVar(type=bool, name=lock)
+	;

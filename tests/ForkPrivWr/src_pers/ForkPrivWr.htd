@@ -1,0 +1,117 @@
+////////////////////////////////////////////////////
+// Inc Module
+
+#pragma message "__SEED__ " __SEED__
+
+#ifdef _WIN32
+#define TEST 0x0
+#else
+#define TEST __RANDOM__
+#endif
+#pragma message "TEST = " TEST
+
+#define INC_HTID_W (TEST & 3)		// htIdW is 0-3
+
+dsnInfo.AddModule(name=inc, htIdW=INC_HTID_W);
+
+inc.AddInst(name=INC_INIT)
+	.AddInst(name=INC_LOOP1)
+	.AddInst(name=INC_LOOP2)
+	.AddInst(name=INC_LOOP3)
+	.AddInst(name=INC_JOIN1)
+	.AddInst(name=INC_JOIN2)
+	.AddInst(name=INC_RETURN)
+	;
+
+#if INC_HTID_W == 0
+typedef sc_uint<1> HtId_t;
+#else
+typedef sc_uint<INC_HTID_W> HtId_t;
+#endif
+
+inc.AddPrivate()
+	.AddVar(type=uint16_t, name=instCnt)
+	.AddVar(type=uint16_t, name=joinCnt)
+	;
+
+inc.AddShared()
+	.AddVar(type=uint16_t, name=loopCnt, dimen1=(1<<INC_HTID_W))
+	.AddVar(type=uint16_t, name=instCnt, dimen1=(1<<INC_HTID_W))
+	.AddVar(type=uint16_t, name=joinCnt, dimen1=(1<<INC_HTID_W))
+	;
+
+inc.AddEntry(func=htmain, inst=INC_INIT, host=true)
+	;
+
+inc.AddReturn(func=htmain)
+	.AddParam(hostType=bool, type=bool, name=bError)
+	;
+
+inc.AddCall(func=fork1, fork=true, dest=user);
+inc.AddCall(func=fork2, fork=true);
+inc.AddCall(func=call);
+
+inc.AddGlobal(var=arrayMem, addr1W=16, addr1=instCnt)
+	.AddField(type=uint64_t, name=data, read=true, write=true)
+	;
+
+//////////////////////////////////////////
+
+dsnInfo.AddModule(name=fork1, htIdW=INC_HTID_W);
+
+fork1.AddInst(name=FORK_ENTRY)
+	.AddInst(name=FORK_LOOP)
+	.AddInst(name=FORK_RETURN)
+	;
+
+fork1.AddEntry(func=fork1, inst=FORK_ENTRY)
+	;
+
+fork1.AddReturn(func=fork1)
+	;
+
+fork1.AddPrivate()
+	.AddVar(type=ht_uint2, name=instCnt)
+	;
+
+fork1.AddShared()
+	.AddVar(type=ht_uint2, name=instCnt)
+	;
+
+//////////////////////////////////////////
+
+dsnInfo.AddModule(name=fork2, htIdW=INC_HTID_W);
+
+fork2.AddInst(name=FORK_ENTRY)
+	.AddInst(name=FORK_LOOP)
+	.AddInst(name=FORK_RETURN)
+	;
+
+fork2.AddEntry(func=fork2, inst=FORK_ENTRY)
+	;
+
+fork2.AddReturn(func=fork2)
+	;
+
+fork2.AddPrivate()
+	.AddVar(type=ht_uint2, name=instCnt)
+	;
+
+fork2.AddShared()
+	.AddVar(type=ht_uint2, name=instCnt)
+	;
+
+//////////////////////////////////////////
+
+dsnInfo.AddModule(name=call, htIdW=INC_HTID_W);
+
+call.AddInst(name=CALL_ENTRY)
+	;
+
+call.AddEntry(func=call, inst=CALL_ENTRY)
+	;
+
+call.AddReturn(func=call)
+	;
+
+

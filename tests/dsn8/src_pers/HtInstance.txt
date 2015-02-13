@@ -1,0 +1,5 @@
+#define FREQ 151
+#define INST0 0
+#define MIF1 1
+
+cxr1 -> cxr2[INST0 : 2, 1:MIF1:FREQ ]

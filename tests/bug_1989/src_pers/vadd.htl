@@ -1,0 +1,13 @@
+// -cl "C:\Ht\tests\bug_1989\src_pers\vadd.htl"
+-wd "C:\Ht\tests\bug_1989\msvs12"
+-cp hc-2ex
+-uc 1
+-un Au
+-df 150
+-pn bug_1989
+-it
+-mt
+-vcd_all
+-if ../src_pers/vadd.hti
+../src_pers/vadd.htd
+../ht/sysc

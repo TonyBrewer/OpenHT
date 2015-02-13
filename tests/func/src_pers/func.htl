@@ -1,0 +1,11 @@
+// -cl "C:\Ht\tests\func\src_pers\func.htl"
+-cp hc-2
+//-rt
+-mt				// enable memory tracing
+-uc 1			// unit count
+-un Au			// unit name
+-df 150			// default frequence
+
+-wd "C:\Ht\tests\func\msvs12\"		// working directory
+"C:\Ht\tests\func\src_pers\func.htd"	    // design file location
+../ht/sysc							// location for output files

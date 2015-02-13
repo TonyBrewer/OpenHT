@@ -1,0 +1,302 @@
+////////////////////////////////////////////////////
+// Test Module
+
+#define TEST_HTID_W 1
+
+typedef sc_uint<TEST_HTID_W> HtId_t;
+typedef ht_uint48 MemAddr_t;
+
+dsnInfo.AddModule(name=test, htIdW=TEST_HTID_W);
+test.AddInst(name=RD_CP0);
+test.AddInst(name=RD_CP0V);
+test.AddInst(name=RD_CP1);
+test.AddInst(name=RD_CP1V);
+test.AddInst(name=RD_CP2A);
+test.AddInst(name=RD_CP2B);
+test.AddInst(name=RD_CP2C);
+test.AddInst(name=RD_CP2AV);
+test.AddInst(name=RD_CP2BV);
+test.AddInst(name=RD_CP2CV);
+test.AddInst(name=RD_CP3W);
+test.AddInst(name=RD_CP3R);
+test.AddInst(name=RD_CP3V);
+test.AddInst(name=RD_CP4);
+test.AddInst(name=RD_CP4V1);
+test.AddInst(name=RD_CP4V2);
+test.AddInst(name=RD_CP5);
+test.AddInst(name=RD_CP5V1);
+test.AddInst(name=RD_CP5V2);
+test.AddInst(name=RD_CP6);
+test.AddInst(name=RD_CP6V1);
+test.AddInst(name=RD_CP6V2);
+test.AddInst(name=RD_CP7);
+test.AddInst(name=RD_CP7V1);
+test.AddInst(name=RD_CP7V2);
+test.AddInst(name=RD_CP8);
+test.AddInst(name=RD_CP8V1);
+test.AddInst(name=RD_CP8V2);
+test.AddInst(name=RD_CP9);
+test.AddInst(name=RD_CP9V1);
+test.AddInst(name=RD_CP9V2);
+test.AddInst(name=RD_CP10);
+test.AddInst(name=RD_CP10V);
+test.AddInst(name=RD_CP11);
+test.AddInst(name=RD_CP11V1);
+test.AddInst(name=RD_CP11V2);
+test.AddInst(name=RD_CP11V3);
+test.AddInst(name=RD_CP12);
+test.AddInst(name=RD_CP12V);
+test.AddInst(name=RD_CP13T1);
+test.AddInst(name=RD_CP13T2);
+test.AddInst(name=RD_CP13T3);
+test.AddInst(name=RD_CP13V);
+test.AddInst(name=RD_CP14T1);
+test.AddInst(name=RD_CP14T2);
+test.AddInst(name=RD_CP14T3);
+test.AddInst(name=RD_CP14V);
+test.AddInst(name=RD_CP15T1);
+test.AddInst(name=RD_CP15T2);
+test.AddInst(name=RD_CP15T3);
+test.AddInst(name=RD_CP15V);
+test.AddInst(name=RD_CP16T1);
+test.AddInst(name=RD_CP16T2);
+test.AddInst(name=RD_CP16T3);
+test.AddInst(name=RD_CP16V1);
+test.AddInst(name=RD_CP16V2);
+test.AddInst(name=RD_CP16V3);
+test.AddInst(name=RD_CP16V4);
+test.AddInst(name=RD_CP17T1);
+test.AddInst(name=RD_CP17T2);
+test.AddInst(name=RD_CP17T3);
+test.AddInst(name=RD_CP17V1);
+test.AddInst(name=RD_CP17V2);
+test.AddInst(name=RD_CP17V3);
+test.AddInst(name=RD_CP17V4);
+test.AddInst(name=RD_RETURN);
+
+test.AddHostMsg(dir=in, name=HOST_MEM_ADDR)
+	.AddDst(var=hostAddr, dataLsb=0)
+	;
+
+test.AddHostMsg(dir=in, name=COPROC_MEM_ADDR)
+	.AddDst(var=coprocAddr, dataLsb=0)
+	;
+
+test.AddPrivate()
+	.AddVar(type=bool, name=testPassed)
+	.AddVar(type=bool, name=verifyPassed)
+	.AddVar(type=ht_uint2, name=rdAdr1 )
+	.AddVar(type=ht_uint9, name=bigRdAdr1 )
+	.AddVar(type=ht_uint2, name=rdAdr2 )
+	.AddVar(type=ht_uint7, name=cntr0 )
+	.AddVar(type=ht_uint9, name=cntr1 )
+	.AddVar(type=ht_uint1, name=varAdr1 )
+	.AddVar(type=ht_uint1, name=varAdr2 )
+	.AddVar(type=ht_uint1, name=fldAdr1 )
+	.AddVar(type=ht_uint1, name=fldAdr2 )
+	.AddVar(type=ht_uint1, name=finalFlagAddr)
+	.AddVar(type=uint64_t, name=failMask)
+	;
+
+test.AddShared()
+	.AddVar(type=MemAddr_t, name=hostAddr)
+	.AddVar(type=MemAddr_t, name=coprocAddr)
+	.AddVar(type=uint64_t, name=sharedData)
+	.AddVar(type=uint64_t, name=sharedDataRam, addr1W=3)
+	;
+
+test.AddEntry(func=htmain, inst=RD_CP0, host=true)
+	;
+
+test.AddCall( func=verify );
+test.AddCall( func=copy );
+
+test.AddReturn(func=htmain)
+	.AddParam(hostType=bool, type=bool, name=passed)
+	.AddParam(hostType=uint64_t, type=uint64_t, name=failMask)
+	;
+
+test.AddReadMem( queueW=5, rspCntW=5, maxBw=true )
+	.AddDst( name=gblArray_coproc, var=gblArray, field=data, multiRd=true, dstIdx=varAddr1, memSrc=coproc )
+	.AddDst( name=gblArray_host, var=gblArray, field=data, multiRd=true, dstIdx=varAddr1, memSrc=host )
+	.AddDst( name=bigGblArray_host, var=bigGblArray, field=data, dstIdx=varAddr1, multiRd=true, memSrc=host )
+	.AddDst( name=sharedData_coproc, var=sharedData )
+	.AddDst( name=sharedData_host, var=sharedDataRam, multiRd=true, dstIdx=varAddr1, memSrc=host )
+	.AddDst( name=allDimen_varAddr1, var=allDimen, field=item, multiRd=true, dstIdx=varAddr1, memSrc=host )
+	.AddDst( name=allDimen_varAddr2, var=allDimen, field=item, multiRd=true, dstIdx=varAddr2, memSrc=host )
+	.AddDst( name=allDimen_varIdx1, var=allDimen, field=item, multiRd=true, dstIdx=varIdx1, memSrc=host )
+	.AddDst( name=allDimen_varIdx2, var=allDimen, field=item, multiRd=true, dstIdx=varIdx2, memSrc=host )
+	.AddDst( name=allDimen_fldIdx1, var=allDimen, field=item, multiRd=true, dstIdx=fldIdx1, memSrc=host )
+	.AddDst( name=allDimen_fldIdx2, var=allDimen, field=item, multiRd=true, dstIdx=fldIdx2, memSrc=host )
+	.AddDst( name=regDimen1_host, var=regDimen1, field=data, multiRd=true, dstIdx=varIdx2, memSrc=host )
+	.AddDst( name=regDimen1_coproc, var=regDimen1, field=data, multiRd=true, dstIdx=varIdx2, memSrc=coproc )
+	.AddDst( name=regFldDimen1_host, var=regFldDimen1, field=data, multiRd=true, dstIdx=fldIdx2, memSrc=host )
+	.AddDst( name=regFldDimen1_coproc, var=regFldDimen1, field=data, multiRd=true, dstIdx=fldIdx2, memSrc=coproc )
+	.AddDst( name=varFld1_host, var=varFld1, field=data, multiRd=true, dstIdx=fldIdx1, memSrc=host )
+	.AddDst( name=varFld1_coproc, var=varFld1, field=data, multiRd=true, dstIdx=fldIdx1, memSrc=coproc )
+	.AddDst( name=varAddr1_host, var=varAddr1, field=data, multiRd=true, dstIdx=varIdx1, memSrc=host )
+	.AddDst( name=varAddr1_coproc, var=varAddr1, field=data, multiRd=true, dstIdx=varIdx1, memSrc=coproc )
+	.AddDst( name=fldAddr1_host, var=fldAddr1, field=data, multiRd=true, dstIdx=fldIdx1, memSrc=host )
+	.AddDst( name=fldAddr1_coproc, var=fldAddr1, field=data, multiRd=true, dstIdx=fldIdx1, memSrc=coproc )
+	.AddFunction( name=sharedFunc_host, rspInfoW=3, rsmDly=0, multiRd=true, memSrc=host )
+	;
+
+test.AddWriteMem( queueW=5, rspCntW=2 );
+
+test.AddGlobal( var=gblArray, addr1W=6 )
+	.AddField( type=uint64_t, name=data, read=false, write=false )
+	;
+
+test.AddGlobal( var=bigGblArray, addr1W=9, addr1=bigRdAdr1 )
+	.AddField( type=uint64_t, name=data, read=true, write=false )
+	;
+
+test.AddGlobal( var=allDimen, dimen1=3, dimen2=4, addr1W=2, addr2W=2, addr1=rdAdr1, addr2=rdAdr2 )
+	.AddField( type=ht_uint48, name=item, read=true, write=false, dimen1=4, dimen2=3 );
+
+// test 13
+test.AddGlobal( var=regDimen1, dimen1=2, dimen2=8, extern=false )
+	.AddField( type=uint32_t, name=data, read=true, write=false )
+	;
+
+test.AddGlobal( var=regDimen2, dimen1=8, dimen2=2, extern=false )
+	.AddField( type=uint32_t, name=data, read=true, write=false )
+	;
+
+// test 14
+test.AddGlobal( var=regFldDimen1, extern=false )
+	.AddField( type=uint32_t, name=data, dimen1=2, dimen2=8, read=true, write=false )
+	;
+
+test.AddGlobal( var=regFldDimen2, extern=false )
+	.AddField( type=uint32_t, name=data, dimen1=8, dimen2=2, read=true, write=false )
+	;
+
+// test 15
+test.AddGlobal( var=varFld1, dimen1=2, extern=false )
+	.AddField( type=uint32_t, name=data, dimen1=8, read=true, write=false )
+	;
+
+test.AddGlobal( var=varFld2, dimen1=8, extern=false )
+	.AddField( type=uint32_t, name=data, dimen1=2, read=true, write=false )
+	;
+
+// test 16
+test.AddGlobal( var=varAddr1, dimen1=2, addr1W=1, addr1=varAdr1, extern=false )
+	.AddField( type=uint32_t, name=data, read=true, write=false )
+	;
+
+test.AddGlobal( var=varAddr2, dimen1=2, addr1W=1, addr1=varAdr2, extern=false )
+	.AddField( type=uint32_t, name=data, read=true, write=false )
+	;
+
+// test 17
+test.AddGlobal( var=fldAddr1, addr1W=1, addr1=fldAdr1, extern=false )
+	.AddField( type=uint32_t, name=data, dimen1=2, read=true, write=false )
+	;
+
+test.AddGlobal( var=fldAddr2, addr1W=1, addr1=fldAdr2, extern=false )
+	.AddField( type=uint32_t, name=data, dimen1=2, read=true, write=false )
+	;
+
+////////////////////////////////////////////////////
+// verify Module
+
+dsnInfo.AddModule(name=verify, clock=1x, htIdW=4);
+verify.AddInst( name=VERIFY0 );
+verify.AddInst( name=VERIFY1 );
+verify.AddInst( name=VERIFY2 );
+
+verify.AddPrivate()
+	.AddVar( type=bool, name=failed )
+	.AddVar( type=ht_uint4, name=cnt )
+	.AddVar( type=ht_uint6, name=baseIdx )
+	.AddVar( type=ht_uint4, name=qwCnt )
+	.AddVar( type=uint64_t, name=verifyData )
+	;
+
+verify.AddEntry( func=verify, inst=VERIFY0 )
+	.AddParam( type=ht_uint6, name=baseIdx )
+	.AddParam( type=ht_uint4, name=qwCnt )
+	.AddParam( type=uint64_t, name=verifyData )
+	;
+verify.AddReturn( func=verify )
+	.AddParam( type=bool, name=verifyPassed )
+	;
+
+verify.AddGlobal( var=gblArray, addr1W=6, addr1=baseIdx, extern=true )
+	.AddField( type=uint64_t, name=data, read=true, write=false )
+	;
+
+////////////////////////////////////////////////////
+// verify Module
+
+dsnInfo.AddModule(name=copy, clock=1x, htIdW=0);
+copy.AddInst( name=ENTRY );
+copy.AddInst( name=T16C1 );
+copy.AddInst( name=T16C2 );
+copy.AddInst( name=T16C3 );
+copy.AddInst( name=T16C4 );
+copy.AddInst( name=T17C1 );
+copy.AddInst( name=T17C2 );
+copy.AddInst( name=T17C3 );
+copy.AddInst( name=T17C4 );
+
+
+copy.AddEntry( func=copy, inst=ENTRY )
+	.AddParam(name=tst, type=uint8_t)
+	;
+
+copy.AddPrivate()
+	.AddVar(name=tst, type=uint8_t)
+	.AddVar(type=ht_uint1, name=varAddr1 )
+	.AddVar(type=ht_uint1, name=fldAddr1 )
+	;
+
+copy.AddReturn( func=copy )
+	;
+
+// test 13
+copy.AddGlobal( var=regDimen1, dimen1=2, dimen2=8, extern=true )
+	.AddField( type=uint32_t, name=data, read=true, write=false )
+	;
+
+copy.AddGlobal( var=regDimen2, dimen1=8, dimen2=2, extern=true )
+	.AddField( type=uint32_t, name=data, read=false, write=true )
+	;
+
+// test 14
+copy.AddGlobal( var=regFldDimen1, extern=true )
+	.AddField( type=uint32_t, name=data, dimen1=2, dimen2=8, read=true, write=false )
+	;
+
+copy.AddGlobal( var=regFldDimen2, extern=true )
+	.AddField( type=uint32_t, name=data, dimen1=8, dimen2=2, read=false, write=true )
+	;
+
+// test 15
+copy.AddGlobal( var=varFld1, dimen1=2, extern=true )
+	.AddField( type=uint32_t, name=data, dimen1=8, read=true, write=false )
+	;
+
+copy.AddGlobal( var=varFld2, dimen1=8, extern=true )
+	.AddField( type=uint32_t, name=data, dimen1=2,  read=false, write=true )
+	;
+
+// test 16
+copy.AddGlobal( var=varAddr1, dimen1=2, addr1W=1, addr1=varAddr1, extern=true )
+	.AddField( type=uint32_t, name=data, read=true, write=false )
+	;
+
+copy.AddGlobal( var=varAddr2, dimen1=2, addr1W=1, extern=true )
+	.AddField( type=uint32_t, name=data, read=false, write=true )
+	;
+
+// test 17
+copy.AddGlobal( var=fldAddr1, addr1W=1, addr1=fldAddr1, extern=true )
+	.AddField( type=uint32_t, name=data, dimen1=2, read=true, write=false )
+	;
+
+copy.AddGlobal( var=fldAddr2, addr1W=1, extern=true )
+	.AddField( type=uint32_t, name=data, dimen1=2, read=false, write=true )
+	;

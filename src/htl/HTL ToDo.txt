@@ -1,0 +1,52 @@
+HTL To Do List
+
+Document
+	- Intro / general description of features (section per IPL, MIF, CXR, memories, ...)
+	- Update config commands including macro descriptions
+
+CXR
+!	- move return parameters to entry
+
+MIF
+	- reads to shared variables
+	- rewrite prefetch interface and code
+	- Should writes to shared variables support subfield? Yes, but subfield must be entire width of variable to avoid sub variable writes.
+	- Add run time check that Pause is after request for an instruction.
+
+HIF
+	- Add HIF Queue interface for host
+	- Add HIF Queue macros for coproc inst usage
+
+IPL
+	- Where should specification of thread count be? Instance file? Config file?
+!	- Add HtSleep(clocks)
+	- Optimize generated code for assignment of dimensioned variables (PersMu10)
+	- Add check that two stage variables do not have same name on consecutive clocks (causes name conflicts)
+	- Add htCmd.m_htGrpId, HT_SEL_GRP_SM, runtime check of grpId and cxr group, use to terminate reset threads
+
+Global variables
+
+Shared variables
+
+Private variables
+	- add memories
+
+Instance file
+	- Should instance parameters be set like design parameters? (freq=150, instId=3, ramType=BRam)
+	- Add syntax to allow set block/dist rams in design
+	- Add non-symetrical module replication
+
+Design file
+
+Debug Trace
+	- Automate chip scope
+
+Performance Monitoring
+	- Verify info
+
+Error messages
+
+General
+	- check for valid names
+
+

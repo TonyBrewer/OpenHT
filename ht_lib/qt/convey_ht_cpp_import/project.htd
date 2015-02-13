@@ -1,0 +1,23 @@
+
+        // %MODULE_NAME% Module capabilities
+
+        dsnInfo.AddModule(name=%MODULE_NAME%);
+
+         %MODULE_NAME%.AddInst(name=PRT_WRITE);
+         %MODULE_NAME%.AddInst(name=PRT_RTN);
+
+         %MODULE_NAME%.AddThreadGroup(groupW=0);
+
+         %MODULE_NAME%.AddEntry(func=htmain, inst=PRT_WRITE)
+                .AddParam(hostType=uint64_t, type=uint48_t, name=pBuf)
+                ;
+
+         %MODULE_NAME%.AddReturn(func=htmain)
+                ;
+
+         %MODULE_NAME%.AddPrivate()
+                .AddVar(type=uint48_t, name=pBuf)
+                ;
+
+         %MODULE_NAME%.AddMemWrite();
+

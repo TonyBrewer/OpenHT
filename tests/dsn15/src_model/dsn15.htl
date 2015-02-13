@@ -1,0 +1,11 @@
+-cp hc-2
+//-en htmain
+//-iq inc
+//-oq inc
+-pm
+-un Su
+-df 150
+//-if "C:\Ht\tests\dsn15\src\HtInstance.txt"
+-wd "C:\Ht\tests\dsn15\msvs12\"
+"C:\Ht\tests\dsn15\src\dsn15.htd"
+../ht/sysc

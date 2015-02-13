@@ -1,0 +1,41 @@
+////////////////////////////////////////////////////
+// RdSub Module
+#define WS_HTID_W 5
+
+typedef sc_uint<WS_HTID_W> HtId_t;
+typedef sc_uint<48> MemAddr_t;
+
+dsnInfo.AddModule(name=RdSub, htIdW=WS_HTID_W);
+RdSub.AddInst(name=WS_READ);
+RdSub.AddInst(name=WS_RETURN);
+
+RdSub.AddPrivate()
+	.AddVar(type=MemAddr_t, name=rdAddr)
+	.AddVar(type=uint64_t, name=expected)
+	.AddVar(type=ht_uint3, name=rdType)
+	;
+
+RdSub.AddEntry(func=RdSub, inst=WS_READ, host=true)
+	.AddParam(hostType=uint64_t, type=MemAddr_t, name=rdAddr)
+	.AddParam(type=uint64_t, name=expected)
+	.AddParam(hostType=uint8_t, type=ht_uint3, name=rdType)
+	;
+
+RdSub.AddShared()
+	.AddVar(name=actual, type=uint64_t, dimen1=1<<WS_HTID_W);
+
+RdSub.AddReturn(func=RdSub)
+	.AddParam(type=uint64_t, name=actual)
+	.AddParam(type=uint64_t, name=expected)
+	;
+
+RdSub.AddReadMem(maxBw=true)
+	.AddDst(name=uint8, var=actual, memSrc=host, rdType=uint8)
+	.AddDst(name=uint16, var=actual, memSrc=host, rdType=uint16)
+	.AddDst(name=uint32, var=actual, memSrc=host, rdType=uint32)
+	.AddDst(name=uint64, var=actual, memSrc=host, rdType=uint64)
+	.AddDst(name=int8, var=actual, memSrc=host, rdType=int8)
+	.AddDst(name=int16, var=actual, memSrc=host, rdType=int16)
+	.AddDst(name=int32, var=actual, memSrc=host, rdType=int32)
+	.AddDst(name=int64, var=actual, memSrc=host, rdType=int64)
+	;

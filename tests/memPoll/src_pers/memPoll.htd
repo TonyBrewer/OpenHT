@@ -1,0 +1,212 @@
+// common defines / types
+#ifdef HT_VSIM
+#define LOOP_CNT 5
+#else
+#define LOOP_CNT 500
+#endif
+
+typedef sc_uint<48> MemAddr_t;
+
+////////////////////////////////////////////////////
+// Poll Module
+#define POLL_HTID_W 3
+
+dsnInfo.AddModule(name=poll, htIdW=POLL_HTID_W);
+poll.AddInst(name=POLL_POLL0);
+poll.AddInst(name=POLL_POLL1);
+poll.AddInst(name=POLL_POLL2);
+poll.AddInst(name=POLL_POLL3);
+poll.AddInst(name=POLL_POLL4);
+poll.AddInst(name=POLL_RTN);
+
+poll.AddPrivate()
+	.AddVar(type=uint16_t, name=errRtn)
+	.AddVar(type=uint16_t, name=err)
+	.AddVar(type=MemAddr_t, name=arrayAddr)
+	;
+
+poll.AddEntry(func=htmain, inst=POLL_POLL4, host=true)
+	.AddParam(hostType=uint64_t, type=MemAddr_t, name=arrayAddr)
+	;
+
+poll.AddReturn(func=htmain)
+	.AddParam(hostType=uint32_t, type=uint16_t, name=err)
+	;
+
+poll.AddCall(func=poll0);
+poll.AddCall(func=poll1);
+poll.AddCall(func=poll2);
+poll.AddCall(func=poll3);
+poll.AddCall(func=poll4);
+
+////////////////////////////////////////////////////
+// Poll1 Module
+#define POLL0_HTID_W 0
+#define POLL0_ADDR1_W (POLL0_HTID_W+1)
+
+typedef sc_uint<POLL0_ADDR1_W> Poll0Addr1_t;
+
+dsnInfo.AddModule(name=poll0, htIdW=POLL0_HTID_W);
+poll0.AddInst(name=POLL0_INIT);
+poll0.AddInst(name=POLL0_READ);
+poll0.AddInst(name=POLL0_TEST);
+
+poll0.AddPrivate()
+	.AddVar(type=uint16_t, name=err)
+	.AddVar(type=uint16_t, name=loopCnt)
+	.AddVar(type=Poll0Addr1_t, name=arrayMemRdPtr)
+	.AddVar(type=MemAddr_t, name=arrayAddr)
+	;
+
+poll0.AddEntry(func=poll0, inst=POLL0_INIT)
+	.AddParam(hostType=uint64_t, type=MemAddr_t, name=arrayAddr)
+	;
+
+poll0.AddReturn(func=poll0)
+	.AddParam(hostType=uint32_t, type=uint16_t, name=err)
+	;
+
+poll0.AddReadMem(queueW=5, rspCntW=3, maxBw=true, pause=false, poll=true)
+	.AddDst(var=arrayMem0, field=data);
+
+poll0.AddGlobal(var=arrayMem0, addr1W=POLL0_ADDR1_W, addr1=arrayMemRdPtr)
+	.AddField(type=uint64_t, name=data, read=true, write=false)
+	;
+
+////////////////////////////////////////////////////
+// Poll1 Module
+#define POLL1_HTID_W 1
+#define POLL1_ADDR1_W (POLL1_HTID_W+1)
+
+typedef sc_uint<POLL1_ADDR1_W> Poll1Addr1_t;
+
+dsnInfo.AddModule(name=poll1, htIdW=POLL1_HTID_W);
+poll1.AddInst(name=POLL1_INIT);
+poll1.AddInst(name=POLL1_READ);
+poll1.AddInst(name=POLL1_TEST);
+
+poll1.AddPrivate()
+	.AddVar(type=uint16_t, name=err)
+	.AddVar(type=uint16_t, name=loopCnt)
+	.AddVar(type=Poll1Addr1_t, name=arrayMemRdPtr)
+	.AddVar(type=MemAddr_t, name=arrayAddr)
+	;
+
+poll1.AddEntry(func=poll1, inst=POLL1_INIT)
+	.AddParam(hostType=uint64_t, type=MemAddr_t, name=arrayAddr)
+	;
+
+poll1.AddReturn(func=poll1)
+	.AddParam(hostType=uint32_t, type=uint16_t, name=err)
+	;
+
+poll1.AddReadMem(queueW=5, rspCntW=3, maxBw=true, pause=false, poll=true)
+	.AddDst(var=arrayMem1, field=data);
+
+poll1.AddGlobal(var=arrayMem1, addr1W=POLL1_ADDR1_W, addr1=arrayMemRdPtr)
+	.AddField(type=uint64_t, name=data, read=true, write=false)
+	;
+
+////////////////////////////////////////////////////
+// Poll1 Module
+#define POLL2_HTID_W 2
+#define POLL2_ADDR1_W (POLL2_HTID_W+1)
+
+typedef sc_uint<POLL2_ADDR1_W> Poll2Addr1_t;
+
+dsnInfo.AddModule(name=poll2, htIdW=POLL2_HTID_W);
+poll2.AddInst(name=POLL2_INIT);
+poll2.AddInst(name=POLL2_READ);
+poll2.AddInst(name=POLL2_TEST);
+
+poll2.AddPrivate()
+	.AddVar(type=uint16_t, name=err)
+	.AddVar(type=uint16_t, name=loopCnt)
+	.AddVar(type=Poll2Addr1_t, name=arrayMemRdPtr)
+	.AddVar(type=MemAddr_t, name=arrayAddr)
+	;
+
+poll2.AddEntry(func=poll2, inst=POLL2_INIT)
+	.AddParam(hostType=uint64_t, type=MemAddr_t, name=arrayAddr)
+	;
+
+poll2.AddReturn(func=poll2)
+	.AddParam(hostType=uint32_t, type=uint16_t, name=err)
+	;
+
+poll2.AddReadMem(queueW=5, rspCntW=3, maxBw=true, pause=false, poll=true)
+	.AddDst(var=arrayMem2, field=data);
+
+poll2.AddGlobal(var=arrayMem2, addr1W=POLL2_ADDR1_W, addr1=arrayMemRdPtr)
+	.AddField(type=uint64_t, name=data, read=true, write=false)
+	;
+
+////////////////////////////////////////////////////
+// Poll1 Module
+#define POLL3_HTID_W 3
+#define POLL3_ADDR1_W (POLL3_HTID_W+1)
+
+typedef sc_uint<POLL3_ADDR1_W> Poll3Addr1_t;
+
+dsnInfo.AddModule(name=poll3, htIdW=POLL3_HTID_W);
+poll3.AddInst(name=POLL3_INIT);
+poll3.AddInst(name=POLL3_READ);
+poll3.AddInst(name=POLL3_TEST);
+
+poll3.AddPrivate()
+	.AddVar(type=uint16_t, name=err)
+	.AddVar(type=uint16_t, name=loopCnt)
+	.AddVar(type=Poll3Addr1_t, name=arrayMemRdPtr)
+	.AddVar(type=MemAddr_t, name=arrayAddr)
+	;
+
+poll3.AddEntry(func=poll3, inst=POLL3_INIT)
+	.AddParam(hostType=uint64_t, type=MemAddr_t, name=arrayAddr)
+	;
+
+poll3.AddReturn(func=poll3)
+	.AddParam(hostType=uint32_t, type=uint16_t, name=err)
+	;
+
+poll3.AddReadMem(queueW=5, rspCntW=3, maxBw=true, pause=false, poll=true)
+	.AddDst(var=arrayMem3, field=data);
+
+poll3.AddGlobal(var=arrayMem3, addr1W=POLL3_ADDR1_W, addr1=arrayMemRdPtr)
+	.AddField(type=uint64_t, name=data, read=true, write=false)
+	;
+
+////////////////////////////////////////////////////
+// Poll4 Module
+#define POLL4_HTID_W 5
+#define POLL4_ADDR1_W (POLL4_HTID_W+1)
+
+typedef sc_uint<POLL4_ADDR1_W> Poll4Addr1_t;
+typedef sc_uint<5> RdRspGrp_t;
+
+dsnInfo.AddModule(name=poll4, htIdW=POLL4_HTID_W);
+poll4.AddInst(name=POLL4_INIT);
+poll4.AddInst(name=POLL4_READ);
+poll4.AddInst(name=POLL4_TEST);
+
+poll4.AddPrivate()
+	.AddVar(type=uint16_t, name=err)
+	.AddVar(type=uint16_t, name=loopCnt)
+	.AddVar(type=Poll4Addr1_t, name=arrayMemRdPtr)
+	.AddVar(type=MemAddr_t, name=arrayAddr)
+	.AddVar(type=RdRspGrp_t, name=memReadGrpId)
+	;
+
+poll4.AddEntry(func=poll4, inst=POLL4_INIT)
+	.AddParam(hostType=uint64_t, type=MemAddr_t, name=arrayAddr)
+	;
+
+poll4.AddReturn(func=poll4)
+	.AddParam(hostType=uint32_t, type=uint16_t, name=err)
+	;
+
+poll4.AddReadMem(queueW=5, rspCntW=3, rspGrpId=memReadGrpId, pause=false, poll=true)
+	.AddDst(var=arrayMem4, field=data);
+
+poll4.AddGlobal(var=arrayMem4, addr1W=POLL4_ADDR1_W, addr1=arrayMemRdPtr)
+	.AddField(type=uint64_t, name=data, read=true, write=false)
+	;

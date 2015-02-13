@@ -1,0 +1,293 @@
+/* Copyright (c) 2015 Convey Computer Corporation
+ *
+ * This file is part of the OpenHT toolset located at:
+ *
+ * https://github.com/TonyBrewer/OpenHT
+ *
+ * Use and distribution licensed under the BSD 3-clause license.
+ * See the LICENSE file for the complete license text.
+ */
+`timescale 1ns / 1ps
+
+ADD_INCLUDE "pdk_fpga_defines.vh"
+
+(* keep_hierarchy = "true" *)
+module cae_pers #(
+   parameter NUM_MC_PORTS = 16,
+   parameter RTNCTL_WIDTH = 32,
+   parameter AE_AE_WIDTH  = 32
+)(
+   //
+   // Clocks and Resets
+   //
+   input		clk,		// personality clock
+   input		clkhx,		// half-rate personality clock
+   input		clk2x,		// 2x rate personality clock
+   input		i_reset,	// global reset synchronized to clk
+
+   //
+   // Dispatch Interface
+   //
+   input		disp_inst_vld,
+   input  [4:0]		disp_inst,
+   input  [17:0]	disp_aeg_idx,
+   input		disp_aeg_rd,
+   input		disp_aeg_wr,
+   input  [63:0]	disp_aeg_wr_data,
+
+   output [17:0]	disp_aeg_cnt,
+   output [15:0]	disp_exception,
+   output [63:0]	disp_rtn_data,
+   output		disp_rtn_data_vld,
+   output		disp_idle,
+   output		disp_stall,
+
+   //
+   // MC Interface(s)
+   //
+   output [NUM_MC_PORTS*1-1 :0]	mc_rq_vld,
+   output [NUM_MC_PORTS*RTNCTL_WIDTH-1:0] mc_rq_rtnctl,
+   output [NUM_MC_PORTS*64-1:0]	mc_rq_data,
+   output [NUM_MC_PORTS*48-1:0]	mc_rq_vadr,
+   output [NUM_MC_PORTS*2-1 :0]	mc_rq_size,
+   output [NUM_MC_PORTS*3-1 :0]	mc_rq_cmd,
+   output [NUM_MC_PORTS*4-1 :0]	mc_rq_scmd,
+   input  [NUM_MC_PORTS*1-1 :0]	mc_rq_stall,
+
+   input  [NUM_MC_PORTS*1-1 :0]	mc_rs_vld,
+   input  [NUM_MC_PORTS*3-1 :0]	mc_rs_cmd,
+   input  [NUM_MC_PORTS*4-1 :0]	mc_rs_scmd,
+   input  [NUM_MC_PORTS*64-1:0]	mc_rs_data,
+   input  [NUM_MC_PORTS*RTNCTL_WIDTH-1:0] mc_rs_rtnctl,
+   output [NUM_MC_PORTS*1-1 :0]	mc_rs_stall,
+
+   // Write flush
+   output [NUM_MC_PORTS*1-1 :0]	mc_rq_flush,
+   input  [NUM_MC_PORTS*1-1 :0]	mc_rs_flush_cmplt,
+
+   //
+   // Ae-Ae Interface
+   //
+ADD_IFDEF AE_AE_IF
+   output		nxtae_rx_stall,
+   input		nxtae_rx_clk,
+   input  [AE_AE_WIDTH-1:0] nxtae_rx_data,
+   input		nxtae_rx_vld,
+   input		nxtae_tx_stall,
+   output		nxtae_tx_clk,
+   output [AE_AE_WIDTH-1:0] nxtae_tx_data,
+   output		nxtae_tx_vld,
+   output		prvae_rx_stall,
+   input		prvae_rx_clk,
+   input  [AE_AE_WIDTH-1:0] prvae_rx_data,
+   input		prvae_rx_vld,
+   input		prvae_tx_stall,
+   output		prvae_tx_clk,
+   output [AE_AE_WIDTH-1:0] prvae_tx_data,
+   output		prvae_tx_vld,
+ADD_ENDIF
+
+   //
+   // Control/Status Interface
+   //
+   input		csr_wr_vld,
+   input		csr_rd_vld,
+   input  [15:0]	csr_address,
+   input  [63:0]	csr_wr_data,
+   output		csr_rd_ack,
+   output [63:0]	csr_rd_data,
+
+   //
+   // Miscellaneous
+   //
+   input  [3:0]		i_aeid
+);
+
+ADD_INCLUDE "pdk_fpga_param.vh"
+ADD_INCLUDE "aemc_messages.vh"
+
+    // unused
+    assign mc_rq_flush = 'b0;
+    assign csr_rd_ack = csr_rd_vld;
+    assign csr_rd_data = 'b0;
+
+
+    localparam IS_WX = CNY_PDK_PLATFORM == "wx-690" ||
+		       CNY_PDK_PLATFORM == "wx-2000";
+
+    localparam [3:0] NUM_AE = NUM_CAES;
+
+    /*
+     * Dispatch
+     */
+    wire [47:0]	dis_ctlQueBase;
+    wire [7:0]	unitCnt;
+    dispatch # (
+	.FREQ(CLK_PERS_FREQ == "SYNC_CLK" ? (IS_WX ? 167 : 150) :
+	      CLK_PERS_FREQ == "SYNC_HALF_CLK" ? (IS_WX ? 83 : 75) :
+	      CLK_PERS_FREQ),
+	.PART(PART_NUMBER)
+    ) dis (
+	.clk(clk),
+	.reset(i_reset),
+
+	.disp_inst_vld(disp_inst_vld),
+	.disp_inst(disp_inst),
+	.disp_aeg_idx(disp_aeg_idx),
+	.disp_aeg_rd(disp_aeg_rd),
+	.disp_aeg_wr(disp_aeg_wr),
+	.disp_aeg_wr_data(disp_aeg_wr_data),
+
+	.disp_aeg_cnt(disp_aeg_cnt),
+	.disp_exception(disp_exception),
+	.disp_rtn_data(disp_rtn_data),
+	.disp_rtn_data_vld(disp_rtn_data_vld),
+	.disp_idle(disp_idle),
+	.disp_stall(disp_stall),
+
+	.num_ae(NUM_AE),
+	.num_units(unitCnt),
+	.ctlQueBase(dis_ctlQueBase),
+	.start(dis_start),
+	.busy(hifToDisp_dispBusy),
+	.reset_top(reset_top)
+    );
+ADD_IFDEF CNY_ALTERA
+    global rsttop_bufg (.out(g_reset_top), .in(reset_top));
+ADD_ELSE
+    BUFG rsttop_bufg (.O(g_reset_top), .I(reset_top));
+ADD_ENDIF
+
+    /*
+     * Hybrid-Threading Top
+     */
+    wire [31:0]  i_xbarToMif_wrRspTid[15:0];
+    wire [15:0]  i_xbarToMif_rdRspRdy, i_xbarToMif_wrRspRdy,
+		 i_xbarToMif_reqFull, o_mifToXbar_reqRdy,
+		 o_mifToXbar_rdRspFull, o_mifToXbar_wrRspFull;
+    wire [95:0]	 i_xbarToMif_rdRsp[15:0];
+    wire [148:0] o_mifToXbar_req[15:0];
+
+ADD_IFNDEF AE_AE_IF
+    wire	nxtae_rx_stall, nxtae_rx_vld, nxtae_tx_stall, nxtae_tx_vld,
+		prvae_rx_stall, prvae_rx_vld, prvae_tx_stall, prvae_tx_vld;
+    wire [AE_AE_WIDTH-1:0] nxtae_rx_data, nxtae_tx_data,
+			   prvae_rx_data, prvae_tx_data;
+
+    assign nxtae_rx_data = prvae_tx_data;
+    assign nxtae_rx_vld = prvae_tx_vld;
+    assign nxtae_tx_stall = prvae_rx_stall;
+    assign prvae_rx_data = nxtae_tx_data;
+    assign prvae_rx_vld = nxtae_tx_vld;
+    assign prvae_tx_stall = nxtae_rx_stall;
+ADD_ELSE
+    // FIXME - used?
+    assign nxtae_tx_clk = clk;
+    assign prvae_tx_clk = clk;
+ADD_ENDIF
+
+    localparam TID_W = 32;
+
+    CPersAeTop top (
+	.i_aeId({4'b0, i_aeid}),
+	.i_clock1x(clk),
+	.i_clock2x(clk2x),
+	.i_dispToHif_ctlQueBase(dis_ctlQueBase),
+	.i_dispToHif_dispStart(dis_start),
+	.i_reset(g_reset_top),
+`for (n=0;n<16;n++)
+	// {TID_W'tid, 64'data}
+	.i_xbarToMif_rdRsp$`n(i_xbarToMif_rdRsp[`n]),
+	.i_xbarToMif_rdRspRdy$`n(i_xbarToMif_rdRspRdy[`n]),
+	.i_xbarToMif_reqFull$`n(i_xbarToMif_reqFull[`n]),
+	.i_xbarToMif_wrRspRdy$`n(i_xbarToMif_wrRspRdy[`n]),
+	.i_xbarToMif_wrRspTid$`n(i_xbarToMif_wrRspTid[`n]),
+
+	.o_mifToXbar_rdRspFull$`n(o_mifToXbar_rdRspFull[`n]),
+	// {2'size, 1'host, 2'cmd, TID_W'tid, 48'addr, 64'data}
+	.o_mifToXbar_req$`n(o_mifToXbar_req[`n]),
+	.o_mifToXbar_reqRdy$`n(o_mifToXbar_reqRdy[`n]),
+	.o_mifToXbar_wrRspFull$`n(o_mifToXbar_wrRspFull[`n]),
+`endfor
+	.o_min_stall(nxtae_rx_stall),
+	.i_min_data(nxtae_rx_data),
+	.i_min_valid(nxtae_rx_vld),
+	.i_mon_stall(nxtae_tx_stall),
+	.o_mon_data(nxtae_tx_data),
+	.o_mon_valid(nxtae_tx_vld),
+	.o_mip_stall(prvae_rx_stall),
+	.i_mip_data(prvae_rx_data),
+	.i_mip_valid(prvae_rx_vld),
+	.i_mop_stall(prvae_tx_stall),
+	.o_mop_data(prvae_tx_data),
+	.o_mop_valid(prvae_tx_vld),
+	.o_hifToDisp_dispBusy(hifToDisp_dispBusy),
+	.o_unitCnt(unitCnt)
+    );
+
+    genvar n;
+    generate for (n=0; n<NUM_MC_PORTS; n=n+1) begin : g0
+	assign i_xbarToMif_rdRsp[n] =
+				{mc_rs_rtnctl[n*RTNCTL_WIDTH+3 +: RTNCTL_WIDTH-3],
+				 mc_rs_cmd[n*3 +: 3] == MCAE_CMD_RD64_DATA ?
+				     mc_rs_scmd[n*4 +: 3] : 3'b0,
+				 mc_rs_data[n*64 +: 64]};
+
+	assign i_xbarToMif_rdRspRdy[n] = mc_rs_vld[n] &&
+				(mc_rs_cmd[n*3 +: 3] == MCAE_CMD_RD8_DATA ||
+				 mc_rs_cmd[n*3 +: 3] == MCAE_CMD_RD64_DATA ||
+				 mc_rs_cmd[n*3 +: 3] == MCAE_CMD_ATOMIC_DATA);
+
+	assign i_xbarToMif_reqFull[n] = mc_rq_stall[n];
+
+	assign i_xbarToMif_wrRspRdy[n] = mc_rs_vld[n] &&
+				 (mc_rs_cmd[n*3 +: 3] == MCAE_CMD_WR_CMP ||
+				  mc_rs_cmd[n*3 +: 3] == MCAE_CMD_WR64_CMP);
+
+	assign i_xbarToMif_wrRspTid[n] = mc_rs_rtnctl[n*RTNCTL_WIDTH +: RTNCTL_WIDTH];
+
+	assign mc_rs_stall[n]	= o_mifToXbar_rdRspFull[n] ||
+				  o_mifToXbar_wrRspFull[n];
+
+	assign mc_rq_vld[n]	= o_mifToXbar_reqRdy[n];
+
+	assign mc_rq_rtnctl[n*RTNCTL_WIDTH +: RTNCTL_WIDTH] =
+				o_mifToXbar_req[n][48+64 +: TID_W];
+
+	assign mc_rq_data[n*64 +: 64] =
+				o_mifToXbar_req[n][TID_W+48+64 +: 2] == 2'd3 ?
+				64'h8000000000000000 :
+				o_mifToXbar_req[n][0 +: 64];
+
+	assign mc_rq_vadr[n*48 +: 48] =
+				o_mifToXbar_req[n][64 +: 48];
+
+	assign mc_rq_size[n*2 +: 2] = o_mifToXbar_req[n][1+2+TID_W+48+64 +: 2];
+
+	assign mc_rq_cmd[n*3 +: 3] =
+				o_mifToXbar_req[n][TID_W+48+64 +: 2] == 2'd0 ?
+				    (~|o_mifToXbar_req[n][48+64 +: 3]     ? AEMC_CMD_RD8 :
+									    AEMC_CMD_RD64) :
+				o_mifToXbar_req[n][TID_W+48+64 +: 2] == 2'd1 ?
+				    (~|o_mifToXbar_req[n][48+64 +: 3]     ? AEMC_CMD_WR8 :
+									    AEMC_CMD_WR64) :
+				AEMC_CMD_ATOMIC;
+
+	assign mc_rq_scmd[n*4 +: 4] =
+				mc_rq_cmd[n*3 +: 3] == AEMC_CMD_WR64 ?
+				    (4'h7 & (o_mifToXbar_req[n][48+64 +: 3] + 1'b1)) :
+				mc_rq_cmd[n*3 +: 3] == AEMC_CMD_ATOMIC ? AEMC_SCMD_ATOM_EXCH :
+				4'b0;
+    end
+
+    // unused
+    for (n=NUM_MC_PORTS; n<16; n=n+1) begin : g1
+	assign i_xbarToMif_rdRsp[n] = 0;
+	assign i_xbarToMif_rdRspRdy[n] = 0;
+	assign i_xbarToMif_reqFull[n] = 0;
+	assign i_xbarToMif_wrRspRdy[n] = 0;
+	assign i_xbarToMif_wrRspTid[n] = 0;
+    end
+    endgenerate
+
+endmodule // cae_pers

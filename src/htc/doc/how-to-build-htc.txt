@@ -1,0 +1,44 @@
+
+1. Configure, build, and install ROSE.  Follow the directions in 
+   how-to-build-rose.pdf-- except rather than using 'git' to obtain the
+   standard ROSE distribution, use Convey's modified sources in the included 
+   rose directory. (i.e., ignore step #1 in the ROSE build instuctions).
+
+   Pay CLOSE attention to the required versions of g++ and Boost libraries!
+   You will most likely not be able to build ROSE if you don't use the
+   supported versions.  As a point of reference, the simplest setup we've
+   used is Boost 1.46 and g++ 4.4.7, on Ubuntu Linux 12.04.  Note that
+   these are relatively old version of Boost and g++, and will most 
+   likely have to be installed on your system manually.  I was able to
+   use apt-get on Ubuntu to easily install pre-built Boost and g++.
+
+   The exact configure line I happen to use (in order to enable debug
+   symbols, etc) is this:
+   CC=/usr/bin/gcc-4.4 CXX=/usr/bin/g++-4.4 ../rose/configure --prefix=/home/jle/convey-stuff/tot-ht/inst-rose --disable-java --disable-fortran --with-boost=/usr --with-CXX_DEBUG=-g --with-C_DEBUG=-g --with-CXX_OPTIMIZE=-O0 --with-C_OPTIMIZE=-O0
+
+2. cd htc and edit the Makefile to indicate the location of your ROSE
+   install, your boost library install, and your proper g++ compiler location.
+
+   The three variables to edit (and their defaults) are:  
+     ROSE_INSTALL = /home/jle/convey-stuff/chrec/inst-rose
+     BOOST_INSTALL = /usr
+     CXXCOMPILE = g++-4.4
+
+3. Type make.  Eventually, the binary 'htc1' will be built, which is
+   the htc translator.
+
+
+======================================================================
+To run htc on a standard C program, just type 
+% ./htc1 foo.c -c
+
+To also enable OpenMP translation:
+% ./htc1 -rose:openmp:lowering -c foo.c
+
+The result of the translation will be a number of files: 
+- design.htd is the automatically generated Ht design description.
+- rose_foo.c is the automatically generated Ht code (finite state machines)
+  for all functions in the original program.
+- A Pers*_src.cpp for each module (i.e., function) which simply includes
+  rose_foo.c to select one particular module.
+

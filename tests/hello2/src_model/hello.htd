@@ -1,0 +1,18 @@
+// Module capabilities
+
+dsnInfo.AddModule(name=hello, htIdW=0);
+
+hello.AddInst(name=MODEL);
+
+
+hello.AddEntry(func=htmain, inst=MODEL, host=true)
+	.AddParam(hostType=uint64_t, type=ht_uint48, name=pBuf)
+	;
+
+hello.AddReturn(func=htmain)
+	;
+
+hello.AddPrivate()
+	.AddVar(type=ht_uint48, name=pBuf)
+	;
+

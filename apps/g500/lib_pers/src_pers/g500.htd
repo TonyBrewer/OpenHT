@@ -1,0 +1,263 @@
+// common defines / types
+#define SCATTER_HTID_W 9
+#define BMAP_HTID_W 7
+#define BUFP_HTID_W 9
+#define CMD_INIT 0
+#define CMD_SCATTER 1
+#define CMD_BFS 2
+#define CMD_POSTPROC 3
+#define V_W 32
+
+typedef sc_uint<BMAP_HTID_W> BmHtId_t;
+typedef sc_uint<BUFP_HTID_W> BuHtId_t;
+typedef ht_uint48 MemAddr_t;
+typedef sc_uint<V_W> VW_t;
+typedef sc_uint<10> BV_t;
+typedef sc_uint<34> IW_t;
+typedef sc_uint<4> LW_t;
+typedef sc_uint<6> BVW_t;
+typedef sc_uint<7> BCW_t;
+
+////////////////////////////////////////////////////
+// Top-level
+dsnInfo.AddModule(name=ctl, htIdW=0);
+
+ctl.AddInst(name=CTL_ENTRY);
+ctl.AddInst(name=CTL_SCATTER);
+ctl.AddInst(name=CTL_INIT);
+ctl.AddInst(name=CTL_BMAP);
+ctl.AddInst(name=CTL_INIT_JOIN);
+ctl.AddInst(name=CTL_SCATTER_JOIN);
+ctl.AddInst(name=CTL_BMAP_JOIN);
+ctl.AddInst(name=CTL_RTN);
+
+ctl.AddHostMsg(dir=in, name=BFS_SIZE)
+	.AddDst(var=bfsSize, dataLsb=0)
+	;
+
+ctl.AddPrivate()
+	.AddVar(type=uint64_t, name=bmapIdx)
+	.AddVar(type=uint64_t, name=bmapStride)
+	.AddVar(type=uint64_t, name=bmapUpdCnt)
+	.AddVar(type=uint64_t, name=updCnt)
+	.AddVar(type=int32_t, name=command)
+	;
+
+ctl.AddShared(reset=false)
+	.AddVar(type=uint64_t, name=bfsSize)
+	;
+
+ctl.AddEntry(func=htmain, inst=CTL_ENTRY, host=true)
+	.AddParam(type=int32_t, name=command)
+	.AddParam(type=uint64_t, name=bmapIdx)
+	.AddParam(type=uint64_t, name=bmapStride)
+	;
+
+ctl.AddReturn(func=htmain)
+	.AddParam(type=uint64_t, name=updCnt)
+	;
+
+ctl.AddCall(func=scatter, fork=true);
+ctl.AddCall(func=init, fork=true);
+ctl.AddCall(func=bmap, fork=true);
+
+////////////////////////////////////////////////////
+// store -1 to all locations in bfs tree
+
+dsnInfo.AddModule(name=init, htIdW=0);
+
+init.AddInst(name=INIT_RUN);
+init.AddInst(name=INIT_RTN);
+
+init.AddHostMsg(dir=in, name=BFS_ADDR)
+	.AddDst(var=bfsAddr, dataLsb=0)
+	;
+init.AddHostMsg(dir=in, name=BFS_SIZE)
+	.AddDst(var=bfsSize, dataLsb=0)
+	;
+
+init.AddPrivate()
+	.AddVar(type=uint64_t, name=bfsIdx)
+	.AddVar(type=uint64_t, name=endIdx)
+	;
+
+init.AddShared(reset=false)
+	.AddVar(type=MemAddr_t, name=bfsAddr)
+	.AddVar(type=uint64_t, name=bfsSize)
+	.AddVar(type=uint64_t, name=init, dimen1=8)
+	;
+
+init.AddEntry(func=init, inst=INIT_RUN)
+	.AddParam(type=uint64_t, name=bfsIdx)
+	.AddParam(type=uint64_t, name=endIdx)
+	;
+
+init.AddReturn(func=init);
+
+init.AddWriteMem(rspCntW=9)
+	.AddSrc(var=init, multiWr=true, srcIdx=varIdx1)
+	;
+
+////////////////////////////////////////////////////
+// scatter the packed array to bfs tree
+
+dsnInfo.AddModule(name=scatter, htIdW=SCATTER_HTID_W);
+
+scatter.AddInst(name=SCATTER_LD1);
+scatter.AddInst(name=SCATTER_LD2);
+scatter.AddInst(name=SCATTER_ST);
+scatter.AddInst(name=SCATTER_RTN);
+
+scatter.AddHostMsg(dir=in, name=BFS_ADDR)
+	.AddDst(var=bfsAddr, dataLsb=0)
+	;
+scatter.AddHostMsg(dir=in, name=BFS_PACKED_ADDR)
+	.AddDst(var=bfsPackedAddr, dataLsb=0)
+	;
+
+scatter.AddPrivate()
+	.AddVar(type=uint64_t, name=k)
+	;
+
+scatter.AddShared(reset=false)
+	.AddVar(type=MemAddr_t, name=bfsAddr)
+	.AddVar(type=MemAddr_t, name=bfsPackedAddr)
+	.AddVar(type=uint64_t, name=addrMem, addr1W=SCATTER_HTID_W)
+	.AddVar(type=uint64_t, name=valMem, addr1W=SCATTER_HTID_W)
+	;
+
+scatter.AddEntry(func=scatter, inst=SCATTER_LD1)
+	.AddParam(type=uint64_t, name=k)
+	;
+
+scatter.AddReturn(func=scatter)
+	;
+
+scatter.AddReadMem(rspCntW=2)
+	.AddDst(var=addrMem)
+	.AddDst(var=valMem)
+	;
+
+scatter.AddWriteMem();
+
+////////////////////////////////////////////////////
+// Loads bitmaps from memory, stores updated bitmaps
+
+dsnInfo.AddModule(name=bmap, htIdW=BMAP_HTID_W);
+
+bmap.AddInst(name=BMAP_LD);
+bmap.AddInst(name=BMAP_ZERO);
+bmap.AddInst(name=BMAP_PROCESS);
+bmap.AddInst(name=BMAP_UPD);
+bmap.AddInst(name=BMAP_ST);
+bmap.AddInst(name=BMAP_RTN);
+
+bmap.AddHostMsg(dir=in, name=BMAP_OLD_ADDR)
+	.AddDst(var=bmapOldAddr, dataLsb=0)
+	;
+bmap.AddHostMsg(dir=in, name=BMAP_NEW_ADDR)
+	.AddDst(var=bmapNewAddr, dataLsb=0)
+	;
+
+bmap.AddPrivate()
+	.AddVar(type=uint64_t, name=bmapIdx)
+	.AddVar(type=uint64_t, name=mask)
+	.AddVar(type=BCW_t, name=bitCnt)
+	.AddVar(type=BCW_t, name=updBitIdx)
+	.AddVar(type=bool, name=vtxUpdated)
+	.AddVar(type=uint64_t, name=bmapUpdCnt)
+	.AddVar(type=BmHtId_t, name=bmapMemRdPtr)
+	;
+
+bmap.AddShared(reset=false)
+	.AddVar(type=MemAddr_t, name=bmapOldAddr)
+	.AddVar(type=MemAddr_t, name=bmapNewAddr)
+	;
+
+bmap.AddGlobal(var=bmapMem, addr1W=BMAP_HTID_W, addr1=bmapMemRdPtr)
+	.AddField(type=uint64_t, name=data, read=true, write=true)
+	;
+
+bmap.AddEntry(func=bmap, inst=BMAP_LD)
+	.AddParam(type=uint64_t, name=bmapIdx)
+	;
+
+bmap.AddReturn(func=bmap)
+	.AddParam(type=uint64_t, name=bmapUpdCnt)
+	;
+
+bmap.AddCall(func=bufp, fork=true);
+
+bmap.AddReadMem(maxBw=true, rspCntW=1)
+	.AddDst(name=bmapMem, var=bmapMem, field=data)
+	;
+
+bmap.AddWriteMem();
+
+////////////////////////////////////////////////////
+// Bottom up function pipe
+
+dsnInfo.AddModule(name=bufp, htIdW=BUFP_HTID_W);
+bufp.AddInst(name=BUFP_XOFF0_LD);
+bufp.AddInst(name=BUFP_XOFF1_LD);
+bufp.AddInst(name=BUFP_XOFF_CHK);
+bufp.AddInst(name=BUFP_XADJ_LD);
+bufp.AddInst(name=BUFP_BFS_LD);
+bufp.AddInst(name=BUFP_BFS_RSP);
+bufp.AddInst(name=BUFP_RTN);
+
+bufp.AddHostMsg(dir=in, name=BFS_CTL)
+	.AddDst(var=bfsCtl, dataLsb=0)
+	;
+bufp.AddHostMsg(dir=in, name=XOFF_ADDR)
+	.AddDst(var=xoffAddr, dataLsb=0)
+	;
+bufp.AddHostMsg(dir=in, name=XADJ_ADDR)
+	.AddDst(var=xadjAddr, dataLsb=0)
+	;
+bufp.AddHostMsg(dir=in, name=BFS_ADDR)
+	.AddDst(var=bfsAddr, dataLsb=0)
+	;
+bufp.AddHostMsg(dir=in, name=BMAP_OLD_ADDR)
+	.AddDst(var=bmapOldAddr, dataLsb=0)
+	;
+
+bufp.AddShared()
+	.AddVar(type=ht_uint7, name=bfsCtl)
+	.AddVar(type=MemAddr_t, name=xoffAddr)
+	.AddVar(type=MemAddr_t, name=xadjAddr)
+	.AddVar(type=MemAddr_t, name=bfsAddr)
+	.AddVar(type=MemAddr_t, name=bmapOldAddr)
+	;
+
+bufp.AddPrivate()
+	.AddVar(type=VW_t, name=vertex)
+	.AddVar(type=bool, name=vtxUpdated)
+	.AddVar(type=BVW_t, name=bitIdx)
+	.AddVar(type=IW_t, name=vso)
+	;
+
+bufp.AddGlobal(var=arrayMem, addr1=htId, addr1W=BUFP_HTID_W)
+	.AddField(type=IW_t, name=xoff0, read=true)
+	.AddField(type=IW_t, name=xoff1, read=true)
+	.AddField(type=uint32_t, name=xadj, read=true)
+	.AddField(type=uint64_t, name=bmap, read=true)
+	;
+
+bufp.AddEntry(func=bufp, inst=BUFP_XOFF0_LD)
+	.AddParam(type=VW_t, name=vertex)
+	;
+
+bufp.AddReturn(func=bufp)
+	.AddParam(type=bool, name=vtxUpdated)
+	.AddParam(type=BCW_t, name=updBitIdx)
+	;
+
+bufp.AddReadMem(maxBw=true, rspCntW=2)
+	.AddDst(name=xoff0, var=arrayMem, field=xoff0)
+	.AddDst(name=xoff1, var=arrayMem, field=xoff1)
+	.AddDst(name=xadj, var=arrayMem, field=xadj, rdType=uint32)
+	.AddDst(name=bmap, var=arrayMem, field=bmap)
+	;
+
+bufp.AddWriteMem();

@@ -1,0 +1,20 @@
+cd src_htc
+rm -f PersOUT*.cpp Pers__HTC_HO*.cpp
+
+#~/htcsvnTOT/rpm/prefix/bin/htc -I../src -rose:openmp:lowering -htc:split Sieve.c -htc:sysc -rose:skipfinalCompileStep
+#~/htcsvnTOT/rpm/prefix/bin/htc -I../src -rose:openmp:lowering -DCNY_HTC_COPROC rose_Sieve.c -rose:skipfinalCompileStep
+
+/work/htc_releases/latest/bin/htc -I../src -rose:openmp:lowering -htc:split Sieve.c -htc:sysc -rose:skipfinalCompileStep -htc:sysc
+/work/htc_releases/latest/bin/htc -I../src -rose:openmp:lowering -DCNY_HTC_COPROC rose_Sieve.c -rose:skipfinalCompileStep -htc:sysc
+
+grep -v "___htc_dummy_decl" rose_rose_Sieve.c > ../src_pers/rose_rose_Sieve.c
+rm -f ../src_pers/PersOUT*.cpp ../src_pers/Pers__HTC_HO*.cpp
+cp Pers*.cpp ../src_pers
+
+sed 's/\(\#define __HTC_HOST_ENTRY_OUT_.*\)5/\11/' design.htd | 
+sed 's/\(\#define OUT_.*HTID_W \)5/\19/' >design.htd1
+
+cp design.htd1 ../src_pers/design.htd
+cd ..
+
+# make sysc

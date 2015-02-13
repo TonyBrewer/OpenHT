@@ -1,0 +1,317 @@
+//----------------------------------------------------
+// Module 'bufp'
+//----------------------------------------------------
+dsnInfo.AddModule(name=bufp, htIdW=BUFP_HTID_W);
+
+bufp.AddInst(name=BUFP__START);
+bufp.AddInst(name=BUFP__READMEM__32);
+bufp.AddInst(name=BUFP__READMEM__33);
+bufp.AddInst(name=BUFP__LOOP_TOP__10);
+bufp.AddInst(name=BUFP__READMEM__34);
+bufp.AddInst(name=BUFP__READMEM__35);
+bufp.AddInst(name=BUFP__LOOP_EXIT__10);
+
+#define BUFP_HTID_W 9
+
+
+typedef ht_uint48 MemAddr_t;
+typedef ht_uint10 htc_tid_t;
+typedef sc_uint<BUFP_HTID_W> bufp_uplevel_index_t;
+typedef sc_uint<BUFP_HTID_W> mif_rdVal_index_x_hwt_0_t;
+
+
+bufp.AddPrivate()
+    .AddVar(type=uint8_t, name=updated)
+    .AddVar(type=uint64_t, name=xoff0)
+    .AddVar(type=uint64_t, name=xoff1)
+    .AddVar(type=uint32_t, name=neighbor)
+    .AddVar(type=htc_tid_t, name=__htc_parent_htid)
+    .AddVar(type=htc_tid_t, name=__htc_my_omp_thread_num)
+    .AddVar(type=htc_tid_t, name=__htc_my_omp_team_size)
+    .AddVar(type=uint32_t, name=vertex)
+    .AddVar(type=MemAddr_t, name=xoff)
+    .AddVar(type=MemAddr_t, name=xadj)
+    .AddVar(type=MemAddr_t, name=bfs_tree)
+    .AddVar(type=MemAddr_t, name=bmapOldAddr)
+    .AddVar(type=uint8_t, name=xadj_index_shift)
+    .AddVar(type=mif_rdVal_index_x_hwt_0_t, name=mif_rdVal_index)
+    ;
+
+bufp.AddEntry(func=bufp, inst=BUFP__START)
+    .AddParam(type=htc_tid_t, name=__htc_parent_htid)
+    .AddParam(type=htc_tid_t, name=__htc_my_omp_thread_num)
+    .AddParam(type=htc_tid_t, name=__htc_my_omp_team_size)
+    .AddParam(type=uint32_t, name=vertex)
+    .AddParam(type=MemAddr_t, name=xoff)
+    .AddParam(type=MemAddr_t, name=xadj)
+    .AddParam(type=MemAddr_t, name=bfs_tree)
+    .AddParam(type=MemAddr_t, name=bmapOldAddr)
+    .AddParam(type=uint8_t, name=xadj_index_shift)
+    ;
+
+bufp.AddReturn(func=bufp)
+    .AddParam(type=uint8_t, name=retval_bufp)
+    ;
+
+bufp.AddReadMem(queueW=5, rspCntW=2)
+// ReadMem interface to global off-chip memory
+    .AddDst(name=f0, var=mifRdVal_bufp, field=fld0, rdType=int64)
+    .AddDst(name=f1, var=mifRdVal_bufp, field=fld1, rdType=uint32)
+    ;
+
+bufp.AddGlobal(var=mifRdVal_bufp, addr1=mif_rdVal_index, addr1W=BUFP_HTID_W)
+// Ram for reading global off-chip memory
+    .AddField(type=uint64_t, name=fld0, read=true, write=false)
+    .AddField(type=uint32_t, name=fld1, read=true, write=false)
+    ;
+
+
+bufp.AddWriteMem(queueW=5);
+
+
+
+
+
+//----------------------------------------------------
+// Module '__HTC_HOST_ENTRY_OUT__1__6291__'
+//----------------------------------------------------
+dsnInfo.AddModule(name=__HTC_HOST_ENTRY_OUT__1__6291__, htIdW=__HTC_HOST_ENTRY_OUT__1__6291___HTID_W);
+
+__HTC_HOST_ENTRY_OUT__1__6291__.AddInst(name=__HTC_HOST_ENTRY_OUT__1__6291____START);
+__HTC_HOST_ENTRY_OUT__1__6291__.AddInst(name=__HTC_HOST_ENTRY_OUT__1__6291____GW__36);
+__HTC_HOST_ENTRY_OUT__1__6291__.AddInst(name=__HTC_HOST_ENTRY_OUT__1__6291____FORK_LOOP_TOP__6);
+__HTC_HOST_ENTRY_OUT__1__6291__.AddInst(name=__HTC_HOST_ENTRY_OUT__1__6291____FORK_LOOP_JOIN_CYCLE__6);
+__HTC_HOST_ENTRY_OUT__1__6291__.AddInst(name=__HTC_HOST_ENTRY_OUT__1__6291____FORK_LOOP_EXIT__6);
+__HTC_HOST_ENTRY_OUT__1__6291__.AddInst(name=__HTC_HOST_ENTRY_OUT__1__6291____WRITEMEM__37__IF_JOIN__44);
+
+#define __HTC_HOST_ENTRY_OUT__1__6291___HTID_W 1
+
+
+typedef sc_uint<__HTC_HOST_ENTRY_OUT__1__6291___HTID_W> __HTC_HOST_ENTRY_OUT__1__6291___uplevel_index_t;
+
+
+__HTC_HOST_ENTRY_OUT__1__6291__.AddPrivate()
+    .AddVar(type=__HTC_HOST_ENTRY_OUT__1__6291___uplevel_index_t, name=__htc_uplevel_index_0)
+    .AddVar(type=uint32_t, name=nt)
+    .AddVar(type=int16_t, name=__htc_t_nt5)
+    .AddVar(type=int16_t, name=__htc_t_piv4)
+    .AddVar(type=htc_tid_t, name=__htc_parent_htid)
+    .AddVar(type=htc_tid_t, name=__htc_my_omp_thread_num)
+    .AddVar(type=htc_tid_t, name=__htc_my_omp_team_size)
+    .AddVar(type=uint8_t, name=function)
+    .AddVar(type=MemAddr_t, name=bfsAddr)
+    .AddVar(type=MemAddr_t, name=bfsPackedAddr)
+    .AddVar(type=MemAddr_t, name=bmapOldAddr)
+    .AddVar(type=MemAddr_t, name=bmapNewAddr)
+    .AddVar(type=MemAddr_t, name=xoff)
+    .AddVar(type=MemAddr_t, name=xadj)
+    .AddVar(type=uint32_t, name=lb)
+    .AddVar(type=uint32_t, name=ub)
+    .AddVar(type=MemAddr_t, name=update_count)
+    ;
+
+__HTC_HOST_ENTRY_OUT__1__6291__.AddEntry(func=__HTC_HOST_ENTRY_OUT__1__6291__, inst=__HTC_HOST_ENTRY_OUT__1__6291____START, host=true)
+    .AddParam(type=htc_tid_t, name=__htc_parent_htid, hostType=uint16_t)
+    .AddParam(type=htc_tid_t, name=__htc_my_omp_thread_num, hostType=uint16_t)
+    .AddParam(type=htc_tid_t, name=__htc_my_omp_team_size, hostType=uint16_t)
+    .AddParam(type=uint8_t, name=function, hostType=uint8_t)
+    .AddParam(type=MemAddr_t, name=bfsAddr, hostType=uint64_t *)
+    .AddParam(type=MemAddr_t, name=bfsPackedAddr, hostType=uint64_t *)
+    .AddParam(type=MemAddr_t, name=bmapOldAddr, hostType=uint64_t *)
+    .AddParam(type=MemAddr_t, name=bmapNewAddr, hostType=uint64_t *)
+    .AddParam(type=MemAddr_t, name=xoff, hostType=uint64_t *)
+    .AddParam(type=MemAddr_t, name=xadj, hostType=uint32_t *)
+    .AddParam(type=uint32_t, name=lb, hostType=uint32_t)
+    .AddParam(type=uint32_t, name=ub, hostType=uint32_t)
+    .AddParam(type=MemAddr_t, name=update_count, hostType=uint64_t *)
+    ;
+
+__HTC_HOST_ENTRY_OUT__1__6291__.AddReturn(func=__HTC_HOST_ENTRY_OUT__1__6291__)
+    ;
+
+__HTC_HOST_ENTRY_OUT__1__6291__.AddCall(func=OUT__1__6827__, fork=true);
+
+
+__HTC_HOST_ENTRY_OUT__1__6291__.AddGlobal(var=__htc_UplevelGV___HTC_HOST_ENTRY_OUT__1__6291___function, addr1=__htc_uplevel_index_0, addr1W=__HTC_HOST_ENTRY_OUT__1__6291___HTID_W)
+// Global Variable OMP shared variable 
+   .AddField(type=uint8_t, name=function, read=false, write=true);
+
+__HTC_HOST_ENTRY_OUT__1__6291__.AddGlobal(var=__htc_UplevelGV___HTC_HOST_ENTRY_OUT__1__6291___bfsAddr, addr1=__htc_uplevel_index_0, addr1W=__HTC_HOST_ENTRY_OUT__1__6291___HTID_W)
+// Global Variable OMP shared variable 
+   .AddField(type=MemAddr_t, name=bfsAddr, read=false, write=true);
+
+__HTC_HOST_ENTRY_OUT__1__6291__.AddGlobal(var=__htc_UplevelGV___HTC_HOST_ENTRY_OUT__1__6291___bfsPackedAddr, addr1=__htc_uplevel_index_0, addr1W=__HTC_HOST_ENTRY_OUT__1__6291___HTID_W)
+// Global Variable OMP shared variable 
+   .AddField(type=MemAddr_t, name=bfsPackedAddr, read=false, write=true);
+
+__HTC_HOST_ENTRY_OUT__1__6291__.AddGlobal(var=__htc_UplevelGV___HTC_HOST_ENTRY_OUT__1__6291___bmapOldAddr, addr1=__htc_uplevel_index_0, addr1W=__HTC_HOST_ENTRY_OUT__1__6291___HTID_W)
+// Global Variable OMP shared variable 
+   .AddField(type=MemAddr_t, name=bmapOldAddr, read=false, write=true);
+
+__HTC_HOST_ENTRY_OUT__1__6291__.AddGlobal(var=__htc_UplevelGV___HTC_HOST_ENTRY_OUT__1__6291___bmapNewAddr, addr1=__htc_uplevel_index_0, addr1W=__HTC_HOST_ENTRY_OUT__1__6291___HTID_W)
+// Global Variable OMP shared variable 
+   .AddField(type=MemAddr_t, name=bmapNewAddr, read=false, write=true);
+
+__HTC_HOST_ENTRY_OUT__1__6291__.AddGlobal(var=__htc_UplevelGV___HTC_HOST_ENTRY_OUT__1__6291___xoff, addr1=__htc_uplevel_index_0, addr1W=__HTC_HOST_ENTRY_OUT__1__6291___HTID_W)
+// Global Variable OMP shared variable 
+   .AddField(type=MemAddr_t, name=xoff, read=false, write=true);
+
+__HTC_HOST_ENTRY_OUT__1__6291__.AddGlobal(var=__htc_UplevelGV___HTC_HOST_ENTRY_OUT__1__6291___xadj, addr1=__htc_uplevel_index_0, addr1W=__HTC_HOST_ENTRY_OUT__1__6291___HTID_W)
+// Global Variable OMP shared variable 
+   .AddField(type=MemAddr_t, name=xadj, read=false, write=true);
+
+__HTC_HOST_ENTRY_OUT__1__6291__.AddGlobal(var=__htc_UplevelGV___HTC_HOST_ENTRY_OUT__1__6291___lb, addr1=__htc_uplevel_index_0, addr1W=__HTC_HOST_ENTRY_OUT__1__6291___HTID_W)
+// Global Variable OMP shared variable 
+   .AddField(type=uint32_t, name=lb, read=false, write=true);
+
+__HTC_HOST_ENTRY_OUT__1__6291__.AddGlobal(var=__htc_UplevelGV___HTC_HOST_ENTRY_OUT__1__6291___ub, addr1=__htc_uplevel_index_0, addr1W=__HTC_HOST_ENTRY_OUT__1__6291___HTID_W)
+// Global Variable OMP shared variable 
+   .AddField(type=uint32_t, name=ub, read=false, write=true);
+
+__HTC_HOST_ENTRY_OUT__1__6291__.AddGlobal(var=__htc_UplevelGV___HTC_HOST_ENTRY_OUT__1__6291___update_count, addr1=__htc_uplevel_index_0, addr1W=__HTC_HOST_ENTRY_OUT__1__6291___HTID_W)
+// Global Variable OMP shared variable 
+   .AddField(type=MemAddr_t, name=update_count, read=false, write=true);
+
+__HTC_HOST_ENTRY_OUT__1__6291__.AddGlobal(var=__htc_UplevelGV___HTC_HOST_ENTRY_OUT__1__6291___my_update_count, addr1=__htc_uplevel_index_0, addr1W=__HTC_HOST_ENTRY_OUT__1__6291___HTID_W)
+// Global Variable OMP shared variable 
+   .AddField(type=uint32_t, name=my_update_count, read=true, write=true);
+
+__HTC_HOST_ENTRY_OUT__1__6291__.AddWriteMem(queueW=5);
+
+
+
+
+
+//----------------------------------------------------
+// Module 'OUT__1__6827__'
+//----------------------------------------------------
+dsnInfo.AddModule(name=OUT__1__6827__, htIdW=OUT__1__6827___HTID_W);
+
+OUT__1__6827__.AddInst(name=OUT__1__6827____START);
+OUT__1__6827__.AddInst(name=OUT__1__6827____GR__38);
+OUT__1__6827__.AddInst(name=OUT__1__6827____SWITCH_CASE__49);
+OUT__1__6827__.AddInst(name=OUT__1__6827____LOOP_TOP__11);
+OUT__1__6827__.AddInst(name=OUT__1__6827____LOOP_EXIT__11);
+OUT__1__6827__.AddInst(name=OUT__1__6827____SWITCH_CASE__50);
+OUT__1__6827__.AddInst(name=OUT__1__6827____LOOP_TOP__12);
+OUT__1__6827__.AddInst(name=OUT__1__6827____READMEM__41);
+OUT__1__6827__.AddInst(name=OUT__1__6827____READMEM__39);
+OUT__1__6827__.AddInst(name=OUT__1__6827____LOOP_EXIT__12);
+OUT__1__6827__.AddInst(name=OUT__1__6827____SWITCH_CASE__51);
+OUT__1__6827__.AddInst(name=OUT__1__6827____LOOP_TOP__14);
+OUT__1__6827__.AddInst(name=OUT__1__6827____READMEM__40);
+OUT__1__6827__.AddInst(name=OUT__1__6827____LOOP_TOP__13);
+OUT__1__6827__.AddInst(name=OUT__1__6827____CALL_RTN__22);
+OUT__1__6827__.AddInst(name=OUT__1__6827____IF_ELSE__45);
+OUT__1__6827__.AddInst(name=OUT__1__6827____IF_JOIN__45);
+OUT__1__6827__.AddInst(name=OUT__1__6827____LOOP_EXIT__13);
+OUT__1__6827__.AddInst(name=OUT__1__6827____IF_JOIN__46);
+OUT__1__6827__.AddInst(name=OUT__1__6827____GW__42__IF_JOIN__47);
+OUT__1__6827__.AddInst(name=OUT__1__6827____LOOP_EXIT__14);
+OUT__1__6827__.AddInst(name=OUT__1__6827____WRITEMEM__43);
+OUT__1__6827__.AddInst(name=OUT__1__6827____SWITCH_JOIN__48);
+
+#define OUT__1__6827___HTID_W 9
+
+
+typedef sc_uint<OUT__1__6827___HTID_W> OUT__1__6827___uplevel_index_t;
+typedef sc_uint<OUT__1__6827___HTID_W> mif_rdVal_index_x_hwt_1_t;
+
+
+OUT__1__6827__.AddPrivate()
+    .AddVar(type=OUT__1__6827___uplevel_index_t, name=__htc_uplevel_index_0)
+    .AddVar(type=__HTC_HOST_ENTRY_OUT__1__6291___uplevel_index_t, name=__htc_uplevel_index_1)
+    .AddVar(type=uint32_t, name=p_upper_)
+    .AddVar(type=uint32_t, name=__htc_next_chunk7)
+    .AddVar(type=uint32_t, name=p_index_)
+    .AddVar(type=uint32_t, name=p_upper___17)
+    .AddVar(type=uint32_t, name=__htc_next_chunk8)
+    .AddVar(type=uint32_t, name=p_index___15)
+    .AddVar(type=uint64_t, name=__htc_t_arrptr26)
+    .AddVar(type=MemAddr_t, name=__htc_t_arrptr27)
+    .AddVar(type=uint32_t, name=p_upper___20)
+    .AddVar(type=uint32_t, name=__htc_next_chunk9)
+    .AddVar(type=uint32_t, name=p_index___18)
+    .AddVar(type=uint8_t, name=bitCnt)
+    .AddVar(type=uint8_t, name=bmapUpdCnt)
+    .AddVar(type=uint64_t, name=mask)
+    .AddVar(type=uint8_t, name=retval_bufp)
+    .AddVar(type=htc_tid_t, name=__htc_parent_htid)
+    .AddVar(type=htc_tid_t, name=__htc_my_omp_thread_num)
+    .AddVar(type=htc_tid_t, name=__htc_my_omp_team_size)
+    .AddVar(type=mif_rdVal_index_x_hwt_1_t, name=mif_rdVal_index)
+    ;
+
+OUT__1__6827__.AddEntry(func=OUT__1__6827__, inst=OUT__1__6827____START)
+    .AddParam(type=htc_tid_t, name=__htc_parent_htid)
+    .AddParam(type=htc_tid_t, name=__htc_my_omp_thread_num)
+    .AddParam(type=htc_tid_t, name=__htc_my_omp_team_size)
+    ;
+
+OUT__1__6827__.AddReturn(func=OUT__1__6827__)
+    ;
+
+OUT__1__6827__.AddCall(func=bufp);
+
+
+OUT__1__6827__.AddGlobal(var=__htc_UplevelGV___HTC_HOST_ENTRY_OUT__1__6291___my_update_count, addr1=__htc_uplevel_index_1, addr1W=__HTC_HOST_ENTRY_OUT__1__6291___HTID_W, extern=true)
+// Global Variable OMP shared variable 
+   .AddField(type=uint32_t, name=my_update_count, read=true, write=true);
+
+OUT__1__6827__.AddGlobal(var=__htc_UplevelGV___HTC_HOST_ENTRY_OUT__1__6291___update_count, addr1=__htc_uplevel_index_1, addr1W=__HTC_HOST_ENTRY_OUT__1__6291___HTID_W, extern=true)
+// Global Variable OMP shared variable 
+   .AddField(type=MemAddr_t, name=update_count, read=true, write=false);
+
+OUT__1__6827__.AddGlobal(var=__htc_UplevelGV___HTC_HOST_ENTRY_OUT__1__6291___ub, addr1=__htc_uplevel_index_1, addr1W=__HTC_HOST_ENTRY_OUT__1__6291___HTID_W, extern=true)
+// Global Variable OMP shared variable 
+   .AddField(type=uint32_t, name=ub, read=true, write=false);
+
+OUT__1__6827__.AddGlobal(var=__htc_UplevelGV___HTC_HOST_ENTRY_OUT__1__6291___lb, addr1=__htc_uplevel_index_1, addr1W=__HTC_HOST_ENTRY_OUT__1__6291___HTID_W, extern=true)
+// Global Variable OMP shared variable 
+   .AddField(type=uint32_t, name=lb, read=true, write=false);
+
+OUT__1__6827__.AddGlobal(var=__htc_UplevelGV___HTC_HOST_ENTRY_OUT__1__6291___xadj, addr1=__htc_uplevel_index_1, addr1W=__HTC_HOST_ENTRY_OUT__1__6291___HTID_W, extern=true)
+// Global Variable OMP shared variable 
+   .AddField(type=MemAddr_t, name=xadj, read=true, write=false);
+
+OUT__1__6827__.AddGlobal(var=__htc_UplevelGV___HTC_HOST_ENTRY_OUT__1__6291___xoff, addr1=__htc_uplevel_index_1, addr1W=__HTC_HOST_ENTRY_OUT__1__6291___HTID_W, extern=true)
+// Global Variable OMP shared variable 
+   .AddField(type=MemAddr_t, name=xoff, read=true, write=false);
+
+OUT__1__6827__.AddGlobal(var=__htc_UplevelGV___HTC_HOST_ENTRY_OUT__1__6291___bmapNewAddr, addr1=__htc_uplevel_index_1, addr1W=__HTC_HOST_ENTRY_OUT__1__6291___HTID_W, extern=true)
+// Global Variable OMP shared variable 
+   .AddField(type=MemAddr_t, name=bmapNewAddr, read=true, write=false);
+
+OUT__1__6827__.AddGlobal(var=__htc_UplevelGV___HTC_HOST_ENTRY_OUT__1__6291___bmapOldAddr, addr1=__htc_uplevel_index_1, addr1W=__HTC_HOST_ENTRY_OUT__1__6291___HTID_W, extern=true)
+// Global Variable OMP shared variable 
+   .AddField(type=MemAddr_t, name=bmapOldAddr, read=true, write=false);
+
+OUT__1__6827__.AddGlobal(var=__htc_UplevelGV___HTC_HOST_ENTRY_OUT__1__6291___bfsPackedAddr, addr1=__htc_uplevel_index_1, addr1W=__HTC_HOST_ENTRY_OUT__1__6291___HTID_W, extern=true)
+// Global Variable OMP shared variable 
+   .AddField(type=MemAddr_t, name=bfsPackedAddr, read=true, write=false);
+
+OUT__1__6827__.AddGlobal(var=__htc_UplevelGV___HTC_HOST_ENTRY_OUT__1__6291___bfsAddr, addr1=__htc_uplevel_index_1, addr1W=__HTC_HOST_ENTRY_OUT__1__6291___HTID_W, extern=true)
+// Global Variable OMP shared variable 
+   .AddField(type=MemAddr_t, name=bfsAddr, read=true, write=false);
+
+OUT__1__6827__.AddGlobal(var=__htc_UplevelGV___HTC_HOST_ENTRY_OUT__1__6291___function, addr1=__htc_uplevel_index_1, addr1W=__HTC_HOST_ENTRY_OUT__1__6291___HTID_W, extern=true)
+// Global Variable OMP shared variable 
+   .AddField(type=uint8_t, name=function, read=true, write=false);
+
+OUT__1__6827__.AddReadMem(queueW=5, rspCntW=1)
+// ReadMem interface to global off-chip memory
+    .AddDst(name=f0, var=mifRdVal_OUT__1__6827__, field=fld0, rdType=int64)
+    ;
+
+OUT__1__6827__.AddGlobal(var=mifRdVal_OUT__1__6827__, addr1=mif_rdVal_index, addr1W=OUT__1__6827___HTID_W)
+// Ram for reading global off-chip memory
+    .AddField(type=uint64_t, name=fld0, read=true, write=false)
+    ;
+
+
+OUT__1__6827__.AddWriteMem(queueW=5);
+
+
+
+
+

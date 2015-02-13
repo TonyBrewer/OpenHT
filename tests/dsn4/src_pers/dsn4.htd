@@ -1,0 +1,58 @@
+////////////////////////////////////////////////////
+// Inc Module
+
+#define INC_HTID_W 5
+
+typedef sc_uint<INC_HTID_W> htid_t;
+typedef sc_uint<48> ht_uint48;
+
+dsnInfo.AddModule(name=inc, htIdW=INC_HTID_W, reset=INC_RESET);
+inc.AddInst(name=INC_INIT);
+inc.AddInst(name=INC_READ);
+inc.AddInst(name=INC_WRITE);
+inc.AddInst(name=INC_READ2);
+inc.AddInst(name=INC_WRITE2);
+inc.AddInst(name=INC_READ3);
+inc.AddInst(name=INC_WRITE3);
+inc.AddInst(name=INC_READ4);
+inc.AddInst(name=INC_WRITE4);
+inc.AddInst(name=INC_READ5);
+inc.AddInst(name=INC_WRITE5);
+inc.AddInst(name=INC_RESET);
+inc.AddInst(name=INC_RESET1);
+
+inc.AddHostMsg(dir=in, name=SU_ARRAY_ADDR)
+	.AddDst(var=arrayAddr, dataLsb=0)
+	;
+
+inc.AddPrivate()
+	.AddVar(type=uint8_t, name=elemCnt)
+	.AddVar(type=uint8_t, name=loopCnt)
+	;
+
+inc.AddShared()
+	.AddVar(type=ht_uint48, name=arrayAddr)
+	.AddVar(type=uint64_t, name=sharedData)
+	.AddVar(type=uint64_t, name=sharedArray1, dimen1=3)
+	.AddVar(type=uint64_t, name=sharedArray2, dimen1=5, dimen2=4)
+	.AddVar(type=uint64_t, name=sharedArray3, dimen1=5, dimen2=4, addr1W=4)
+	.AddVar(type=uint64_t, name=sharedQueue1, dimen1=4, queueW=5)
+	.AddVar(type=ht_uint4, name=sharedInc)
+	;
+
+inc.AddEntry(func=htmain, inst=INC_INIT, host=true)
+	.AddParam(hostType=uint32_t, type=uint8_t, name=elemCnt)
+	;
+
+inc.AddReturn(func=htmain)
+	.AddParam(hostType=uint32_t, type=uint8_t, name=elemCnt)
+	;
+
+inc.AddReadMem(queueW=5, rspCntW=1)
+	.AddDst(var=sharedData)
+	.AddDst(var=sharedArray1)
+	.AddDst(var=sharedArray2)
+	.AddDst(var=sharedArray3)
+	.AddDst(var=sharedQueue1)
+	;
+inc.AddWriteMem();

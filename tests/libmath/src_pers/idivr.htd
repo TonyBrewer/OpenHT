@@ -1,0 +1,47 @@
+#define	IDIVR_N_W	32
+#define	IDIVR_D_W	16
+#define	IDIVR_RADIX_W	2
+#define	IDIVR_RADIX	(1 << IDIVR_RADIX_W)
+
+typedef sc_uint<IDIVR_N_W>	idivr_n_t;
+typedef sc_uint<IDIVR_D_W>	idivr_d_t;
+
+// internal
+#define IDIVR_NUM_W ((IDIVR_N_W+IDIVR_RADIX_W-1)/IDIVR_RADIX_W*IDIVR_RADIX_W)
+#define IDIVR_MUL_W (IDIVR_D_W + IDIVR_RADIX_W)
+#define IDIVR_CMP_W (IDIVR_NUM_W + IDIVR_D_W)
+typedef sc_int<IDIVR_N_W>	idivr_sn_t;
+typedef sc_int<IDIVR_D_W>	idivr_sd_t;
+typedef sc_biguint<IDIVR_MUL_W>	idivr_mul_t;
+typedef sc_biguint<IDIVR_CMP_W>	idivr_cmp_t;
+
+dsnInfo.AddModule(name=idivr, htIdW=0, pause=true);
+
+idivr.AddInst(name=DIV_ENTRY);
+idivr.AddInst(name=DIV_LOOP);
+idivr.AddInst(name=DIV_RTN);
+
+idivr.AddEntry(func=idivr, inst=DIV_ENTRY)
+	.AddParam(type=bool, name=sign)
+	.AddParam(type=idivr_n_t, name=n)
+	.AddParam(type=idivr_d_t, name=d)
+	;
+
+idivr.AddReturn(func=idivr)
+	.AddParam(type=idivr_n_t, name=qr)
+	.AddParam(type=idivr_n_t, name=rr)
+	;
+
+idivr.AddPrivate()
+	.AddVar(type=bool, name=sign)
+	.AddVar(type=idivr_n_t, name=n)
+	.AddVar(type=idivr_d_t, name=d)
+	;
+
+idivr.AddShared(reset=false)
+	.AddVar(type=idivr_n_t, name=n)
+	.AddVar(type=idivr_d_t, name=d)
+	.AddVar(type=idivr_n_t, name=q)
+	.AddVar(type=ht_uint7, name=c, reset=true)
+	.AddVar(type=idivr_cmp_t, name=cmp, dimen1=IDIVR_RADIX)
+	;

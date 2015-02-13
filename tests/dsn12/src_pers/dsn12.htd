@@ -1,0 +1,100 @@
+////////////////////////////////////////////////////
+// Inc Module
+
+#pragma message "__SEED__ " __SEED__
+#ifdef _WIN32
+#define TEST 0xeb79e860
+#else
+#define TEST __RANDOM__
+#endif
+#pragma message "TEST = " TEST
+
+#define INC_HTID_W ((TEST & 1) << 2)		// htId is either 0 or 4
+#define INC_RSM_CNT ((TEST & 2) >> 1)		// rsmCnt is either 0 or 1
+#define INC_RSM_DEL (TEST & 4)				// rsmDly is either 0 or 4
+#define INC_RSP_GRP_W (((TEST >> 3) & 3) * 2)	// RSP_GRP_W is 0, 2 or 4
+#define INC_RD_POLL ((TEST >> 5) & 1)		// 0 or 1
+#define INC_WR_POLL ((TEST >> 6) & 1)		// 0 or 1
+
+#if INC_RSM_CNT == 0
+dsnInfo.AddModule(name=inc, htIdW=INC_HTID_W);
+#else
+dsnInfo.AddModule(name=inc, htIdW=INC_HTID_W, pause=true);
+#endif
+
+inc.AddInst(name=INC_INIT);
+inc.AddInst(name=INC_READ);
+inc.AddInst(name=INC_WRITE);
+#if INC_RD_POLL==1
+inc.AddInst(name=INC_READ_POLL);
+#endif
+#if INC_WR_POLL==1
+inc.AddInst(name=INC_WRITE_POLL);
+#endif
+
+#if INC_HTID_W == 0
+typedef sc_uint<1> HtId_t;
+#else
+typedef sc_uint<INC_HTID_W> HtId_t;
+#endif
+typedef sc_uint<48> MemAddr_t;
+
+inc.AddHostMsg(dir=in, name=SU_ARRAY_ADDR)
+	.AddDst(var=arrayAddr, dataLsb=0)
+	;
+
+inc.AddPrivate()
+	.AddVar(type=uint8_t, name=elemCnt)
+	.AddVar(type=uint8_t, name=loopCnt)
+	.AddVar(type=HtId_t, name=arrayMemRdPtr)
+#if INC_RSP_GRP_W == 2
+	.AddVar(type=ht_uint2, name=rspGrpVar)
+#elif INC_RSP_GRP_W == 4
+	.AddVar(type=ht_uint4, name=rspGrpVar)
+#elif INC_RSP_GRP_W == 6
+	.AddVar(type=ht_uint6, name=rspGrpVar)
+#endif
+	;
+
+inc.AddShared()
+	.AddVar(type=MemAddr_t, name=arrayAddr)
+	.AddVar(type=bool, name=pb)
+	.AddVar(type=ht_uint4, name=pu4)
+#if INC_RSM_CNT == 1
+	.AddVar(type=bool, name=rsmRdy)
+	.AddVar(type=HtId_t, name=rsmHtId)
+#endif
+	;
+
+inc.AddEntry(func=htmain, inst=INC_INIT, host=true)
+	.AddParam(hostType=uint32_t, type=uint8_t, name=elemCnt)
+	;
+
+inc.AddReturn(func=htmain)
+	.AddParam(hostType=uint32_t, type=uint8_t, name=elemCnt)
+	;
+
+#if INC_RD_POLL == 1
+  #if INC_RSP_GRP_W == 0
+inc.AddReadMem(queueW=5, rspCntW=1, maxBw=true, pause=false, poll=true)
+  #else
+inc.AddReadMem(queueW=5, rspCntW=1, rspGrpId=rspGrpVar, maxBw=true, pause=false, poll=true)
+  #endif
+#else
+  #if INC_RSP_GRP_W == 0
+inc.AddReadMem(queueW=5, rspCntW=1, maxBw=true)
+  #else
+inc.AddReadMem(queueW=5, rspCntW=1, rspGrpId=rspGrpVar, maxBw=true)
+  #endif
+#endif
+	.AddFunction(name=arrayMem, rspInfoW=INC_HTID_W, rsmDly=INC_RSM_DEL);
+
+#if INC_WR_POLL == 1
+inc.AddWriteMem(maxBw=true, pause=false, poll=true);
+#else
+inc.AddWriteMem(maxBw=true);
+#endif
+
+inc.AddGlobal(var=arrayMem, addr1W=INC_HTID_W, addr1=arrayMemRdPtr)
+	.AddField(type=uint64_t, name=data, read=true, write=true)
+	;

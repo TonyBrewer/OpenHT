@@ -1,0 +1,85 @@
+#include "Stencil.h"
+
+////////////////////////////////////////////////////
+// Streaming implementation of 2d stencil
+
+typedef ht_uint48 MemAddr_t;
+
+struct CStencilBufferIn_5x5r2 {
+	bool m_bValid;
+	uint32_t m_data;
+};
+
+struct CStencilBufferOut_5x5r2 {
+	bool m_bValid;
+	uint32_t m_data[5][5];
+};
+
+dsnInfo.AddModule(name=stencil, htIdW=0, clock=1x);
+
+stencil.AddInst(name=STENCIL_ENTER);
+stencil.AddInst(name=STENCIL_WAIT);
+stencil.AddInst(name=STENCIL_RETURN);
+
+stencil.AddPrivate()
+	.AddVar(type=MemAddr_t, name=rdAddr)
+	.AddVar(type=MemAddr_t, name=wrAddr)
+	.AddVar(type=uint32_t, name=rows)
+	.AddVar(type=uint32_t, name=cols)
+	;
+
+stencil.AddShared()
+	.AddVar(type=bool, name=bStart)
+	.AddVar(type=MemAddr_t, name=rdAddr)
+	.AddVar(type=MemAddr_t, name=wrAddr)
+	.AddVar(type=uint32_t, name=rdRowIdx)
+	.AddVar(type=uint32_t, name=wrRowIdx)
+	.AddVar(type=uint32_t, name=xIdx)
+	.AddVar(type=uint32_t, name=yIdx)
+	.AddVar(type=uint32_t, name=xSize)
+	.AddVar(type=uint32_t, name=ySize)
+	.AddVar(type=uint32_t, name=sb_cols)
+	.AddVar(type=uint32_t, name=sb_rows)
+	.AddVar(type=uint32_t, name=wrColIdx)
+	.AddVar(type=uint32_t, name=rows)
+	.AddVar(type=uint32_t, name=cols)
+	.AddVar(type=uint32_t, name=coef0)
+	.AddVar(type=uint32_t, name=coef1)
+	.AddVar(type=uint32_t, name=coef2)
+	.AddVar(type=CStencilBufferOut_5x5r2, name=stOut)
+	.AddVar(type=uint32_t, name=r0_que, queueW=10, blockRam=true)
+	.AddVar(type=uint32_t, name=r1_que, queueW=10, blockRam=true)
+	.AddVar(type=uint32_t, name=r2_que, queueW=10, blockRam=true)
+	.AddVar(type=uint32_t, name=r3_que, queueW=10, blockRam=true)
+	;
+
+stencil.AddStage()
+	.AddVar(type=CStencilBufferOut_5x5r2, name=stOut, range=1-2)
+	;
+
+stencil.AddEntry(func=htmain, inst=STENCIL_ENTER, host=true)
+	.AddParam(type=MemAddr_t, name=rdAddr, hostType=uint64_t)
+	.AddParam(type=MemAddr_t, name=wrAddr, hostType=uint64_t)
+	.AddParam(type=uint32_t, name=rows)
+	.AddParam(type=uint32_t, name=cols)
+	;
+
+stencil.AddReturn(func=htmain)
+	;
+
+#define STENCIL_READ_MEM_PORT 0
+#define STENCIL_WRITE_MEM_PORT 1
+
+stencil.AddReadStream(type=uint32_t, memPort=STENCIL_READ_MEM_PORT);
+stencil.AddWriteStream(type=uint32_t, memPort=STENCIL_WRITE_MEM_PORT, reserve=3);
+
+stencil.AddFunction(type=void, name=StencilBufferInit_5x5r2)
+	.AddParam(dir=input, type=uint32_t, name=ySize)
+	.AddParam(dir=input, type=uint32_t, name=xSize)
+	;
+
+stencil.AddFunction(type=void, name=StencilBuffer_5x5r2)
+	.AddParam(dir=input, type=CStencilBufferIn_5x5r2, name=stIn)
+	.AddParam(dir=output, type=CStencilBufferOut_5x5r2, name=stOut)
+	;
+

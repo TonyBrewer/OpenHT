@@ -1,0 +1,12 @@
+// -cl "C:\Ht\tests\memWrSub\src_pers\memWrSub.htl"
+-cp wx-690
+-ac 1
+-uc 1
+-df 150
+//-ri
+-rr
+-it
+-ml 0.2
+-wd "C:\Ht\tests\memWrSub\msvs12\"
+"C:\Ht\tests\memWrSub\src_pers\memWrSub.htd"
+../ht/sysc

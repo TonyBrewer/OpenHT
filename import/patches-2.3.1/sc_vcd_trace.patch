@@ -1,0 +1,354 @@
+--- src/sysc/tracing/sc_vcd_trace.cpp	2014-04-17 11:32:26.000000000 -0500
++++ src/sysc/tracing/sc_vcd_trace.cpp	2014-10-08 11:59:53.928335000 -0500
+@@ -52,6 +52,10 @@
+ #include <cstdlib>
+ #include <string.h>
+ #include <vector>
++#include <algorithm>
++#include <iomanip>
++#include <list>
++#include <map>
+ 
+ #define SC_DISABLE_API_VERSION_CHECK // for in-library sc_ver.h inclusion
+ 
+@@ -102,9 +106,6 @@
+     // Comparison function needs to be pure virtual too
+     virtual bool changed() = 0;
+ 
+-    // Make this virtual as some derived classes may overwrite
+-    virtual void print_variable_declaration_line(FILE* f);
+-
+     void compose_data_line(char* rawdata, char* compdata);
+     std::string compose_line(const std::string& data);
+ 
+@@ -116,6 +117,260 @@
+     int bit_width; 
+ };
+ 
++namespace{
++
++//! split signal name '.' is a delimiter
++//
++//! @param str signal name to be splitted
++//! @return list of splitted path. '.' is not included. top module locates at list[0]
++std::vector<std::string> split_by_dot(const std::string &str){
++    std::vector<std::string> list;
++    for(std::string::size_type start = 0; start != std::string::npos; ){
++        const std::string::size_type found = str.find('.', start);
++        if(found == std::string::npos){
++            list.push_back(str.substr(start));
++            break;
++        }
++        else if(found == start){//'..'
++            list.push_back("<unnamed1>");
++        }
++        else {//normal case
++            list.push_back(str.substr(start, found - start));
++        }
++        if(found == str.length() - 1){//end with '.'
++            list.push_back("<unnamed0>");
++            break;
++        }
++        start = found + 1;
++    }
++    return list;
++}
++
++//! declare signal in VCD header
++//
++//! @param fp File to be written
++//! @param sig signal to be declared
++//! @param signal_name name of the signal
++void declare_signal_in_vcd(std::FILE *fp, const vcd_trace &sig, const std::string &signal_name){
++    if ( sig.bit_width <= 0 ){
++        std::stringstream ss;
++        ss << "Traced object \"" << sig.name << "\" has 0 Bits, cannot be traced.";
++	SC_REPORT_WARNING( SC_ID_TRACING_OBJECT_IGNORED_
++                             , ss.str().c_str() );
++        return;
++    }
++    else{
++        std::stringstream ss;
++        ss << "$var " << sig.vcd_var_typ_name
++            << std::setw(2 + 3) << std::setfill(' ') << sig.bit_width
++            << "  " << sig.vcd_name
++            << "  " << signal_name;
++
++        if (sig.bit_width == 1){
++            ss << "       $end\n";
++        }
++        else{
++            ss << " [" << std::dec << (sig.bit_width - 1) << ":0]  $end\n";
++        }
++        std::fputs(ss.str().c_str(), fp);
++    }
++}
++
++
++class vcd_hier_signal;
++class vcd_hier_module;
++
++// ********** vcd_hier_visitor_if ********** //
++
++//! Interface class of visitors to vcd_hier_module
++class vcd_hier_visitor_if{
++    public:
++    virtual ~vcd_hier_visitor_if(){}
++    //! this function is called when visitor enters a new module.
++    virtual void start_of_module(const vcd_hier_module &) = 0;
++    //! this function is called when visitor leaves the current module.
++    virtual void end_of_module(const vcd_hier_module &) = 0;
++    //! this function is called for each signal
++    virtual void signal(const vcd_hier_module &, const vcd_hier_signal &) = 0;
++};
++
++// ********** vcd_hier_signal ********** //
++
++//! signal in VCD
++class vcd_hier_signal{
++    //! reference to signal
++    const vcd_trace &vcd_sig;
++    //! name of this signal
++    const std::string name;
++    public:
++    //! constructor
++    //
++    //! @param s signal
++    //! @param name name of this signal
++    vcd_hier_signal(const vcd_trace &s, const std::string &name) : vcd_sig(s), name(name){}
++    //! returns a name of this signal
++    //
++    //! @return name of this signal
++    const std::string &get_name()const{return name;}
++    //! returns a vcd signal
++    const vcd_trace &get_vcd_sig()const{return vcd_sig;}
++};
++
++// ********** vcd_hier_module ********** //
++
++//! Scope in VCD
++class vcd_hier_module{
++    //! Functor to delete all registerd values in std::map
++    template<typename T> struct delete_functor{void operator ()(std::pair<std::string, T *> ptr){delete ptr.second;}};
++    //! functor to sort signals by VCD symbol
++    struct sort_by_symbol{
++        bool operator ()(const vcd_hier_signal *a, const vcd_hier_signal *b)const{
++            return a->get_vcd_sig().vcd_name < b->get_vcd_sig().vcd_name;
++        }
++    };
++    //! functor to sort modules by VCD symbol of their first member signal
++    struct sort_by_symbol_of_first_signal{
++        bool operator ()(const vcd_hier_module *a, const vcd_hier_module *b)const{
++            if(a->signals.empty() && b->signals.empty()) return false;
++            if(a->signals.empty()) return true;
++            if(b->signals.empty()) return false;
++            return a->signals.begin()->second->get_vcd_sig().vcd_name < b->signals.begin()->second->get_vcd_sig().vcd_name;
++        }
++    };
++    //! pointer to a parent module
++    //
++    //! NULL if this module is a top module
++    vcd_hier_module *const parent;
++    //! name of this scope
++    const std::string name;
++    //! sub modules of this module
++    std::map<std::string, vcd_hier_module *>  children;
++    //! member signals
++    std::map<std::string, vcd_hier_signal *> signals;
++    //! add signal to this module or child or grand child or...
++    //
++    //! @param sig signal to be registered
++    //! @param hier_list full path name of the signal
++    //! @param depth hierarchy depth counted from the top module
++    void add_signal(const vcd_trace &sig, const std::vector<std::string> &hier_list, unsigned int depth);
++    public:
++    //! constructor for non-top-modules
++    //
++    //! @param parent parent of this module
++    //! @param name name of this module
++    vcd_hier_module(vcd_hier_module *parent, const std::string &name);
++    //! constructor for top-modules
++    //
++    //! @param name name of this module
++    explicit vcd_hier_module(const std::string &name);
++    ~vcd_hier_module();
++    //! add signal
++    //
++    //! @param sig signal to be registered
++    void add_signal(vcd_trace const* vcd, const vcd_trace &sig);
++    //! visit modules by visitor
++    //
++    //! @param ifs visitor
++    void visit(vcd_hier_visitor_if &ifs);
++    //! get the name of this module
++    const std::string &get_name()const;
++    //! check whether this module is a top-module or not
++    //
++    //! @return true if this module is a top-module
++    bool is_top_module()const;
++};
++
++void vcd_hier_module::add_signal(const vcd_trace &sig, const std::vector<std::string> &hier_list, unsigned int depth){
++    const std::string &nm = hier_list[depth];
++    if(depth == hier_list.size() - 1){
++        assert(signals.find(nm) == signals.end());
++        signals.insert(std::make_pair(nm, new vcd_hier_signal(sig, nm)));
++    }
++    else{
++        if(children.find(nm) == children.end()){
++            children.insert(std::make_pair(nm, new vcd_hier_module(this, nm)));
++        }
++        children[nm]->add_signal(sig, hier_list, depth + 1);
++    }
++}
++vcd_hier_module::vcd_hier_module(vcd_hier_module *parent, const std::string &name) : parent(parent), name(name){}
++
++vcd_hier_module::vcd_hier_module(const std::string &name) : parent(NULL), name(name){}
++
++vcd_hier_module::~vcd_hier_module(){
++    std::for_each(children.begin(), children.end(), delete_functor<vcd_hier_module>());
++    std::for_each(signals.begin(), signals.end(), delete_functor<vcd_hier_signal>());
++}
++
++void vcd_hier_module::add_signal(vcd_trace const* vcd, const vcd_trace &sig){
++    assert(is_top_module());
++    std::string sig_name = sig.name;
++    remove_vcd_name_problems(vcd, sig_name);
++    std::vector<std::string> hier_tree = split_by_dot(sig_name);
++    add_signal(sig, hier_tree, 0);
++}
++
++void vcd_hier_module::visit(vcd_hier_visitor_if &ifs){
++    ifs.start_of_module(*this);
++
++    std::list<vcd_hier_signal *> sorted_signals;
++    for(std::map<std::string, vcd_hier_signal *>::const_iterator i = signals.begin(), end = signals.end(); i != end; ++i){
++        sorted_signals.push_back(i->second);
++    }
++    sorted_signals.sort(sort_by_symbol());
++    for(std::list<vcd_hier_signal *>::const_iterator i = sorted_signals.begin(), end = sorted_signals.end(); i != end; ++i){
++        ifs.signal(*this, **i);
++    }
++
++    std::list<vcd_hier_module *> sorted_modules;
++    for(std::map<std::string, vcd_hier_module *>::const_iterator i = children.begin(), end = children.end(); i != end; ++i){
++        sorted_modules.push_back(i->second);
++    }
++    sorted_modules.sort(sort_by_symbol_of_first_signal());
++    for(std::list<vcd_hier_module *>::const_iterator i = sorted_modules.begin(), end = sorted_modules.end(); i != end; ++i){
++        (*i)->visit(ifs);
++    }
++    ifs.end_of_module(*this);
++}
++
++const std::string & vcd_hier_module::get_name()const{
++    return name;
++}
++
++bool vcd_hier_module::is_top_module()const{
++    return !parent;
++}
++
++
++// ********** declare_signal_visitor ********** //
++
++//! visitor for vcd_hier_module to declare signals in VCD
++class declare_signal_visitor: public vcd_hier_visitor_if{
++    //! File to be written (fiee pointer to the VCD)
++    std::FILE *const fp;
++    //! true if the signals are declared in the top module(old fashion)
++    const bool flatten;
++    public:
++    //! constructor
++    //
++    //! @param fp file to be written
++    //! @param flatten true if flatten vcd is desired
++    declare_signal_visitor(std::FILE *fp, bool flatten) : fp(fp), flatten(flatten){}
++    virtual void start_of_module(const vcd_hier_module &m){
++        if(!flatten || m.is_top_module())
++            std::fprintf(fp, "$scope module %s $end\n", m.get_name().c_str());
++    }
++    virtual void end_of_module(const vcd_hier_module &m){
++        if(!flatten || m.is_top_module())
++            std::fputs("$upscope $end\n", fp);
++    }
++    virtual void signal(const vcd_hier_module &m, const vcd_hier_signal &s){
++        declare_signal_in_vcd(fp, s.get_vcd_sig(), flatten ? s.get_vcd_sig().name  : s.get_name());
++    }
++};
++
++} //end of unnamed namespace
++
+ 
+ vcd_trace::vcd_trace(const std::string& name_, const std::string& vcd_name_)
+ : name(name_), vcd_name(vcd_name_), vcd_var_typ_name(0), bit_width(0)
+@@ -159,42 +414,6 @@
+ }
+ 
+ void
+-vcd_trace::print_variable_declaration_line(FILE* f)
+-{
+-    char buf[2000];
+-
+-    if ( bit_width <= 0 )
+-    {
+-        std::stringstream ss;
+-        ss << "'" << name << "' has 0 bits";
+-        SC_REPORT_ERROR( SC_ID_TRACING_OBJECT_IGNORED_
+-                       , ss.str().c_str() );
+-        return;
+-    }
+-
+-    std::string namecopy = name; 
+-    remove_vcd_name_problems(this, namecopy);
+-    if ( bit_width == 1 )
+-    {
+-        std::sprintf(buf, "$var %s  % 3d  %s  %s       $end\n",
+-                     vcd_var_typ_name,
+-                     bit_width,
+-                     vcd_name.c_str(),
+-                     namecopy.c_str());
+-    }
+-    else
+-    {
+-        std::sprintf(buf, "$var %s  % 3d  %s  %s [%d:0]  $end\n",
+-                     vcd_var_typ_name,
+-                     bit_width,
+-                     vcd_name.c_str(),
+-                     namecopy.c_str(),
+-                     bit_width-1);
+-    }
+-    std::fputs(buf, f);
+-}
+-
+-void
+ vcd_trace::set_width()
+ {
+   /* Intentionally Blank, should be defined for each type separately */
+@@ -1739,18 +1958,16 @@
+         }
+     }
+ 
+-    // Create a dummy scope
+-    std::fputs("$scope module SystemC $end\n", fp);
+-
+-    //variable definitions:
+-    for (int i = 0; i < (int)traces.size(); i++) {
+-        vcd_trace* t = traces[i];
+-        t->set_width(); // needed for all vectors
+-        t->print_variable_declaration_line(fp);
++    {
++	vcd_hier_module top("SystemC");
++	for(std::vector<vcd_trace *>::const_iterator i = traces.begin(), end = traces.end(); i != end; ++i){
++	    (*i)->set_width();
++	    top.add_signal(*i, **i);
++	}
++	declare_signal_visitor v(fp, std::getenv("SC_VCD_NO_HIERARCHY"));
++	top.visit(v);
+     }
+ 
+-    std::fputs("$upscope $end\n", fp);
+-
+     std::fputs("$enddefinitions  $end\n\n", fp);
+ 
+     // double inittime = sc_simulation_time();

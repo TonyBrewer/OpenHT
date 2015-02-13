@@ -1,0 +1,179 @@
+#define THREAD_W 6
+
+typedef sc_uint<THREAD_W> idx_t;
+typedef sc_uint<THREAD_W+1> idx_cnt_t;
+typedef ht_uint48 MemAddr_t;
+
+struct CWriteQueue {
+	uint64_t m_rsltT;
+	MemAddr_t m_addr;
+	bool m_hit;
+};
+
+/////////////////////////////////////
+// Control module
+// fires off reac/centrifuge threads to computer the result and write threads to consume the result
+dsnInfo.AddModule(name=ctl);
+
+ctl.AddInst(name=CTL_ENTRY);
+ctl.AddInst(name=CTL_READ);
+ctl.AddInst(name=CTL_DRAIN);
+ctl.AddInst(name=CTL_JOIN);
+ctl.AddInst(name=CTL_RTN);
+
+
+ctl.AddEntry(func=htmain, inst=CTL_ENTRY, host=true)
+	.AddParam(hostType=int, type=ht_uint12, name=operation)
+	.AddParam(hostType=int, type=uint32_t, name=auStride)
+	.AddParam(hostType=int, type=uint32_t, name=vecLen)
+	.AddParam(hostType=uint64_t, type=uint64_t, name=scalar)
+	.AddParam(hostType=uint64_t, type=MemAddr_t, name=vaBase)
+	.AddParam(hostType=uint64_t, type=MemAddr_t, name=vbBase)
+	.AddParam(hostType=uint64_t, type=MemAddr_t, name=vtBase)
+	;
+
+ctl.AddPrivate()
+	.AddVar(type=idx_t, name=idx)
+	.AddVar(type=ht_uint12, name=operation)
+	.AddVar(type=uint32_t, name=auStride)
+	.AddVar(type=uint32_t, name=vecLen)
+	.AddVar(type=uint64_t, name=scalar)
+	.AddVar(type=MemAddr_t, name=vaBase)
+	.AddVar(type=MemAddr_t, name=vbBase)
+	.AddVar(type=MemAddr_t, name=vtBase)
+	.AddVar(type=uint32_t, name=opTotal)
+	.AddVar(type=ht_uint48, name=vecIdx)
+	;
+
+ctl.AddShared()
+	.AddVar(type=idx_t, name=idxPool, queueW=THREAD_W)
+	.AddVar(type=idx_cnt_t, name=idxPoolInitCnt)
+	.AddVar(type=ht_uint6, name=threadActiveCnt)
+	.AddVar(type=uint32_t, name=writeCnt)
+	;
+
+ctl.AddReturn(func=htmain)
+	.AddParam(hostType=uint32_t, type=uint32_t, name=wrCnt)
+	;
+
+ctl.AddCall(func=read, fork=true);
+
+/////////////////////////////////////
+// read
+// reads two operands and passes control to the the centrifuge pipe in another module
+dsnInfo.AddModule(name=read, htIdW=THREAD_W);
+
+read.AddInst(name=READ_ENTRY);
+read.AddInst(name=READ_LDB);
+read.AddInst(name=READ_TFR);
+
+
+read.AddEntry(func=read, inst=READ_ENTRY)
+	.AddParam(type=idx_t, name=idx)
+	.AddParam(type=MemAddr_t, name=vaAddr)
+	.AddParam(type=MemAddr_t, name=vbAddr)
+	.AddParam(type=MemAddr_t, name=vtAddr)
+	.AddParam(type=uint64_t, name=scalar)
+	.AddParam(type=ht_uint12, name=operation)
+	.AddParam(type=bool, name=flush)
+	;
+
+read.AddTransfer(func=pipe);
+
+read.AddPrivate()
+	.AddVar(type=idx_t, name=idx)
+	.AddVar(type=MemAddr_t, name=vaAddr)
+	.AddVar(type=MemAddr_t, name=vbAddr)
+	.AddVar(type=MemAddr_t, name=vtAddr)
+	.AddVar(type=uint64_t, name=scalar)
+	.AddVar(type=ht_uint12, name=operation)
+	.AddVar(type=bool, name=flush)
+	;
+
+read.AddShared()
+	.AddVar(type=ht_uint6, name=threadActiveCnt)
+// Fixme: These are unused but cause an error in make vsim
+// .AddVar(type=uint64_t, name=opAMem, addr1W=READ_HTID_W)
+// .AddVar(type=uint64_t, name=opBMem, addr1W=READ_HTID_W)
+	;
+
+read.AddGlobal(var=opMem, addr1W=THREAD_W)
+	.AddField(type=uint64_t, name=opA, read=false, write=false)
+	.AddField(type=uint64_t, name=opB, read=false, write=false)
+	;
+
+read.AddReadMem(maxBw=true, pause=true, poll=true)
+	.AddDst(name=opAMem, var=opMem, field=opA)
+	.AddDst(name=opBMem, var=opMem, field=opB)
+	;
+
+/////////////////////////////////////
+// pipe is the centrifuge pipe followed by a write
+// inputs operands to the pipe and returns control
+// memory write is handled outside of the state machine
+
+dsnInfo.AddModule(name=pipe, clock=1x, htIdW=THREAD_W);
+
+pipe.AddInst(name=PIPE_ENTRY);
+pipe.AddInst(name=PIPE_DRAIN);
+pipe.AddInst(name=PIPE_RTN);
+
+
+pipe.AddEntry(func=pipe, inst=PIPE_ENTRY)
+	.AddParam(type=idx_t, name=idx)
+	.AddParam(type=MemAddr_t, name=vtAddr)
+	.AddParam(type=uint64_t, name=scalar)
+	.AddParam(type=ht_uint12, name=operation)
+	.AddParam(type=bool, name=flush)
+	;
+
+pipe.AddReturn(func=read)
+	.AddParam(type=idx_t, name=idx)
+	;
+
+pipe.AddPrivate()
+	.AddVar(type=idx_t, name=idx)
+	.AddVar(type=MemAddr_t, name=vtAddr)
+	.AddVar(type=uint64_t, name=scalar)
+	.AddVar(type=ht_uint12, name=operation)
+	.AddVar(type=bool, name=flush)
+	;
+
+pipe.AddShared()
+	.AddVar(type=ht_uint6, name=threadActiveCnt)
+	.AddVar(type=ht_uint5, name=cmpValidCnt)
+	.AddVar(type=bool, name=cmpValid)
+	.AddVar(type=ht_uint1, name=wrGrp)
+	.AddVar(type=CWriteQueue, name=writeQueue, queueW=5)
+	.AddVar(type=MemAddr_t, name=addr, )
+	.AddVar(type=uint64_t, name=opA)
+	.AddVar(type=uint64_t, name=opB)
+	.AddVar(type=uint64_t, name=scalar)
+	.AddVar(type=ht_uint12, name=operation)
+	.AddVar(type=uint64_t, name=rsltT)
+	.AddVar(type=bool, name=rsltVm)
+	;
+
+pipe.AddGlobal(var=opMem, addr1W=THREAD_W, addr1=idx, extern=true)
+	.AddField(type=uint64_t, name=opA, read=true, write=false)
+	.AddField(type=uint64_t, name=opB, read=true, write=false)
+	;
+
+// Fixme: Need a group id so that MemWritePoll will not return false until all
+// writes done, not just those in the current thread, but this generates a compile error
+pipe.AddWriteMem(rspGrpId=wrGrp);
+// pipe.AddWriteMem();
+
+pipe.AddStage(privWrStg=1, execStg=1)
+	.AddVar(type=bool, name=cmpValid, range=1-26, reset=true)
+	.AddVar(type=MemAddr_t, name=addr, range=1-26)
+	.AddVar(type=uint64_t, name=opA, range=1)
+	.AddVar(type=uint64_t, name=opB, range=1)
+	.AddVar(type=uint64_t, name=scalar, range=1)
+	.AddVar(type=ht_uint12, name=operation, range=1)
+	.AddVar(type=uint64_t, name=rsltT, range=25-26, primOut=true)
+	.AddVar(type=bool, name=rsltVm, range=25-26, primOut=true)
+	;
+
+pipe.AddPrimState(type=bbox_prim_state, name=bbox_prim_state1, include="PersPipe_prim.h");
+

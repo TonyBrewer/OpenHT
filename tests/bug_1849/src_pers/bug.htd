@@ -1,0 +1,70 @@
+#pragma message "__SEED__ " __SEED__
+
+#ifdef _WIN32
+#define TEST 0x9c2
+#else
+#define TEST __RANDOM__
+#endif
+#pragma message "TEST = " TEST
+
+#define BUG1_HTID_W (TEST & 0x3)		// htIdW is 0-3
+#define BUG2_HTID_W ((TEST & 0xc)>>3)	// htIdW is 0-3
+#define BUG1_PRIV (TEST & 0x10)
+#define BUG2_PRIV (TEST & 0x20)
+#define BUG2_RTN (TEST & 0x40)
+#define BUG1_1_INST (TEST & 0x80)
+#define BUG2_1_INST (TEST & 0x100)
+
+////////////////////////////////////////////////////
+// Bug1 Module
+
+dsnInfo.AddModule(name=bug1, htIdW=BUG1_HTID_W);
+
+bug1.AddInstr(name=BUG1_ENTRY);
+#if BUG1_1_INST != 0
+bug1.AddInst(name=BUG1_INST);
+#endif
+
+#if BUG1_PRIV != 0
+bug1.AddPrivate()
+	.AddVar(type=uint64_t, name=data)
+	;
+#endif
+
+bug1.AddShared()
+	.AddVar(type=bool, name=bFlag)
+	;
+
+bug1.AddEntry(func=htmain, inst=BUG1_ENTRY, host=true)
+	;
+
+bug1.AddCall(func=bug2);
+
+bug1.AddReturn(func=htmain)
+	;
+
+////////////////////////////////////////////////////
+// Bug2 Module
+
+dsnInfo.AddModule(name=bug2, htIdW=BUG2_HTID_W);
+
+bug2.AddInstr(name=BUG2_ENTRY);
+#if BUG2_1_INST != 0
+bug2.AddInst(name=BUG2_INST);
+#endif
+
+#if BUG2_PRIV != 0
+bug2.AddPrivate()
+	.AddVar(type=uint64_t, name=data)
+	;
+#endif
+
+bug2.AddEntry(func=bug2, inst=BUG2_ENTRY);
+bug2.AddReturn(func=bug2)
+#if (BUG1_PRIV != 0 && BUG2_RTN != 0)
+	.AddParam(type=uint64_t, name=data)
+#endif
+	;
+
+bug2.AddEntry(func=bug2b, inst=BUG2_ENTRY);
+bug2.AddReturn(func=bug2b);

@@ -1,0 +1,195 @@
+// Common Defines
+#define TID_W 8
+#define MAX_TID (1 << TID_W)
+#define HIF_HWT_ID_W 1
+
+#define FIXED_PNT_W 64
+#define FRACTION_W 23
+#define MEM_ADR_W 48
+
+#define M 128
+#define N 128
+#define LOG2M_W 8
+#define LOG2N_W 8
+
+#define j_dim 3
+#define i_dim 3
+
+#define IBLK 16
+#define JBLK 16
+#define IBLK_W 5
+#define JBLK_W 5
+
+// Common Typedefs
+typedef sc_uint<MEM_ADR_W> memAddrT;
+typedef sc_uint<MEM_ADR_W> sc_Address;
+typedef sc_int<FIXED_PNT_W> sc_FixedPnt;
+typedef sc_uint<LOG2M_W> log2m_t;
+typedef sc_uint<LOG2N_W> log2n_t;
+typedef sc_uint<IBLK_W> iblk_t;
+typedef sc_uint<JBLK_W> jblk_t;
+typedef sc_uint<IBLK_W+STENCIL_HTID_W> ram_adr_t;
+typedef sc_uint<STENCIL_HTID_W> ram_val_t;
+
+#define ONE ((sc_FixedPnt)(1 << FRACTION_W))
+#define W0 ((sc_FixedPnt)(ONE *0.7))
+#define W1 ((sc_FixedPnt)(ONE*(0.1*.25)))
+#define W2 ((sc_FixedPnt)(ONE*(0.2*.25)))
+
+
+//------------------------------------------------------
+// Module 'stencil'. The primary computational kernel.
+//------------------------------------------------------
+#define STENCIL_HTID_W 5
+
+dsnInfo.AddModule(name=stencil, htIdW=STENCIL_HTID_W);
+
+// Instructions (states)
+stencil.AddInst(name=START);
+stencil.AddInst(name=DONE);
+stencil.AddInst(name=FIRST_TWO_ROWS_LOOP_TOP);
+stencil.AddInst(name=FIRST_TWO_ROWS_READ2);
+stencil.AddInst(name=FIRST_TWO_ROWS_ASSIGN);
+stencil.AddInst(name=FIRST_TWO_ROWS_LOOP_EXIT);
+stencil.AddInst(name=J_LOOP_TOP);
+stencil.AddInst(name=J_LOOP_READ2);
+stencil.AddInst(name=J_LOOP_ASSIGN);
+stencil.AddInst(name=J_LOOP_EXIT);
+stencil.AddInst(name=I_LOOP_TOP);
+stencil.AddInst(name=I_LOOP_ASSIGN);
+stencil.AddInst(name=I_LOOP_CHANGE);
+stencil.AddInst(name=I_LOOP_EXIT);
+stencil.AddInst(name=J_LOOP_ASSIGN2);
+
+// Default group
+
+// Local state (registers) for default group
+stencil.AddPrivate()
+	.AddVar(type=memAddrT, name=p_a)
+	.AddVar(type=memAddrT, name=p_newa)
+	.AddVar(type=log2m_t, name=p_is)
+	.AddVar(type=log2n_t, name=p_js)
+	.AddVar(type=iblk_t, name=p_m)
+	.AddVar(type=jblk_t, name=p_n)
+	.AddVar(type=sc_FixedPnt, name=p_w0)
+	.AddVar(type=sc_FixedPnt, name=p_w1)
+	.AddVar(type=sc_FixedPnt, name=p_w2)
+	.AddVar(type=ram_adr_t, name=ram_i)
+	.AddVar(type=ram_val_t, name=ram_rdVal)
+	.AddVar(type=log2m_t, name=i)
+	.AddVar(type=log2n_t, name=j)
+	.AddVar(type=sc_FixedPnt, name=change)
+	.AddVar(type=sc_FixedPnt, name=diff)
+	.AddVar(type=sc_FixedPnt, name=res)
+	.AddVar(type=sc_FixedPnt, name=t00)
+	.AddVar(type=sc_FixedPnt, name=t10)
+	.AddVar(type=sc_FixedPnt, name=t20)
+	.AddVar(type=sc_FixedPnt, name=t01)
+	.AddVar(type=sc_FixedPnt, name=t11)
+	.AddVar(type=sc_FixedPnt, name=t21)
+	.AddVar(type=sc_FixedPnt, name=t02)
+	.AddVar(type=sc_FixedPnt, name=t12)
+	.AddVar(type=sc_FixedPnt, name=t22)
+	;
+
+// Ram for temp array
+stencil.AddGlobal(var=tempa, addr1=ram_i, addr1W=IBLK_W+STENCIL_HTID_W)
+	.AddField(type=sc_FixedPnt, name=j0, read=true, write=true)
+	.AddField(type=sc_FixedPnt, name=j1, read=true, write=true)
+	;
+
+// Set up memory write interface
+stencil.AddWriteMem(queueW=5);
+
+// Set up memory read interface 
+stencil.AddReadMem(queueW=5, rspCntW=3)
+	.AddDst(name=j0, var=mifRdVal, field=j0)
+	.AddDst(name=j1, var=mifRdVal, field=j1)
+	;
+
+// Ram for reading memory 
+stencil.AddGlobal(var=mifRdVal, addr1=ram_rdVal, addr1W=STENCIL_HTID_W)
+	.AddField(type=sc_FixedPnt, name=j0, read=true, write=false)
+	.AddField(type=sc_FixedPnt, name=j1, read=true, write=false)
+	;
+
+// Callee interface
+stencil.AddEntry(func=stencil, inst=START)
+	.AddParam(type=memAddrT, name=p_a)
+	.AddParam(type=memAddrT, name=p_newa)
+	.AddParam(type=log2m_t, name=p_is)
+	.AddParam(type=log2n_t, name=p_js)
+	.AddParam(type=iblk_t, name=p_m)
+	.AddParam(type=jblk_t, name=p_n)
+	.AddParam(type=sc_FixedPnt, name=p_w0)
+	.AddParam(type=sc_FixedPnt, name=p_w1)
+	.AddParam(type=sc_FixedPnt, name=p_w2)
+	;
+
+// Callee return interface
+stencil.AddReturn(func=stencil)
+	.AddParam(type=sc_FixedPnt, name=tchg)
+	;
+
+//------------------------------------------------------
+// Module 'jacob' (i.e., the controller).
+//------------------------------------------------------
+
+#define JACOB_HTID_W 1
+
+dsnInfo.AddModule(name=jacob, htIdW=JACOB_HTID_W);
+
+// Instructions (states)
+jacob.AddInst(name=JSTART);
+jacob.AddInst(name=STENCIL_JOIN);
+jacob.AddInst(name=JDONE);
+jacob.AddInst(name=DOLOOP_TOP);
+jacob.AddInst(name=DOLOOP_LATCH);
+jacob.AddInst(name=II_LOOP_TOP);
+jacob.AddInst(name=II_LOOP_LATCH);
+jacob.AddInst(name=JJ_LOOP_TOP);
+jacob.AddInst(name=JJ_LOOP_BODY);
+jacob.AddInst(name=JJ_LOOP_LATCH);
+
+// Default group
+
+// Common Variables (can access on every cycle)
+jacob.AddShared()
+	.AddVar(type=uint32_t, name=stencil_count)
+	.AddVar(type=sc_FixedPnt, name=change)
+	;
+
+// Local state (registers) for default group
+jacob.AddPrivate()
+	.AddVar(type=memAddrT, name=p_a)
+	.AddVar(type=memAddrT, name=p_newa)
+	.AddVar(type=log2m_t, name=p_m)
+	.AddVar(type=log2n_t, name=p_n)
+	.AddVar(type=sc_FixedPnt, name=p_w0)
+	.AddVar(type=sc_FixedPnt, name=p_w1)
+	.AddVar(type=sc_FixedPnt, name=p_w2)
+	.AddVar(type=sc_FixedPnt, name=p_tolerance)
+	.AddVar(type=log2m_t, name=ii)
+	.AddVar(type=log2n_t, name=jj)
+	.AddVar(type=iblk_t, name=iiblk)
+	.AddVar(type=jblk_t, name=jjblk)
+	.AddVar(type=int32_t, name=iteration)
+	.AddVar(type=sc_FixedPnt, name=tchg)
+	; 
+
+// caller side return interface
+jacob.AddEntry(func=jacob, inst=JSTART, host=true)
+	.AddParam(hostType=uint64_t, type=memAddrT, name=p_a)
+	.AddParam(hostType=uint64_t, type=memAddrT, name=p_newa)
+	.AddParam(hostType=int, type=log2m_t, name=p_m)
+	.AddParam(hostType=int, type=log2n_t, name=p_n)
+	.AddParam(hostType=int64_t, type=sc_FixedPnt, name=p_w0)
+	.AddParam(hostType=int64_t, type=sc_FixedPnt, name=p_w1)
+	.AddParam(hostType=int64_t, type=sc_FixedPnt, name=p_w2)
+	.AddParam(hostType=int64_t, type=sc_FixedPnt, name=p_tolerance)
+	;
+jacob.AddReturn(func=jacob)
+	.AddParam(type=int32_t, name=iteration)
+	;
+
+jacob.AddCall(func=stencil, fork=true);

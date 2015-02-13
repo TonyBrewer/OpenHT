@@ -1,0 +1,43 @@
+// prm Module capabilities
+
+dsnInfo.AddModule(name=prm, htIdW=0);
+
+prm.AddInst(name=PRM_ENTRY);
+prm.AddInst(name=PRM_RTN);
+
+
+prm.AddEntry(func=htmain, inst=PRM_ENTRY, host=true)
+	.AddParam(hostType=uint16_t, type=ht_uint16, name=a)
+	.AddParam(hostType=uint16_t, type=ht_uint16, name=b)
+	;
+
+prm.AddReturn(func=htmain)
+	.AddParam(hostType=uint16_t, type=ht_uint16, name=r1)
+	.AddParam(hostType=uint16_t, type=ht_uint16, name=r2)
+	;
+
+prm.AddPrivate()
+	.AddVar(type=ht_uint16, name=a)
+	.AddVar(type=ht_uint16, name=b)
+	.AddVar(type=ht_uint16, name=r1)
+	.AddVar(type=ht_uint16, name=r2)
+	;
+
+prm.AddStage(privWrStg=2, execStg=2)
+	.AddVar(type=ht_uint1, name=cy, range=1, primOut=true)
+	.AddVar(type=ht_uint8, name=al, range=1)
+	.AddVar(type=ht_uint8, name=bl, range=1)
+	.AddVar(type=ht_uint8, name=au, range=1)
+	.AddVar(type=ht_uint8, name=bu, range=1)
+	.AddVar(type=ht_uint8, name=r1l, range=1, primOut=true)
+	.AddVar(type=ht_uint16, name=r2, range=2, primOut=true)
+	;
+
+prm.AddFunction(name=add8, type=ht_uint1)
+	.AddParam(type=ht_uint8, dir=input, name=a)
+	.AddParam(type=ht_uint8, dir=input, name=b)
+	.AddParam(type=ht_uint1, dir=input, name=cyin)
+	.AddParam(type=ht_uint8, dir=output, name=c)
+	;
+
+prm.AddPrimState(type=add16_prm_state, name=add16_prm_state1, include="PersPrm_prim.h");

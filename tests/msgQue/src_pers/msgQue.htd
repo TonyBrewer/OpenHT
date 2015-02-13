@@ -1,0 +1,150 @@
+#pragma message "__SEED__ " __SEED__
+#ifdef _WIN32
+#define TEST 0xed84f11b
+#else
+#define TEST __RANDOM__
+#endif
+#pragma message "TEST = " TEST
+
+#if (TEST & 1) == 0
+#define SRC1_CLK 1x
+#else
+#define SRC1_CLK 2x
+#endif
+#pragma message "SRC1_CLK = " SRC1_CLK
+
+#if (TEST & 2) == 0
+#define DST1_CLK 1x
+#else
+#define DST1_CLK 2x
+#endif
+#pragma message "DST1_CLK = " DST1_CLK
+
+////////////////////////////////////////////////////
+// Src1 Module
+
+dsnInfo.AddModule(name=ctl, htIdW=0);
+ctl.AddInst(name=CTL_ENTRY);
+ctl.AddInst(name=CTL_FORK);
+ctl.AddInst(name=CTL_JOIN);
+ctl.AddInst(name=CTL_RETURN);
+
+ctl.AddPrivate()
+	.AddVar(type=uint8_t, name=errCnt)
+	.AddVar(type=uint8_t, name=loopCnt)
+	.AddVar(type=uint8_t, name=modId)
+	.AddVar(type=bool, name=error)
+	;
+
+ctl.AddEntry(func=htmain, inst=CTL_ENTRY, host=true)
+	;
+
+ctl.AddReturn(func=htmain)
+	.AddParam(type=bool, name=error)
+	;
+
+ctl.AddCall(func=src1, fork=true);
+//ctl.AddCall(func=src2, fork=true);
+ctl.AddCall(func=dst1, fork=true);
+//ctl.AddCall(func=dst2, fork=true);
+
+ctl.AddFunction(name=RecvReturnPause, type=void)
+	.AddParam(dir=input, type=ht_uint2, name=rtnInst)
+	;
+
+////////////////////////////////////////////////////
+// Src1 Module
+
+dsnInfo.AddModule(name=src1, htIdW=0, clock=SRC1_CLK);
+src1.AddInst(name=SRC1_ENTRY);
+src1.AddInst(name=SRC1_SEND);
+src1.AddInst(name=SRC1_RETURN);
+
+src1.AddEntry(func=src1, inst=SRC1_ENTRY)
+	.AddParam(type=uint8_t, name=modId)
+	;
+
+src1.AddPrivate()
+	.AddVar(type=uint8_t, name=msgCnt)
+	.AddVar(type=uint8_t, name=modId)
+	;
+
+src1.AddReturn(func=src1)
+	.AddParam(type=uint8_t, name=modId)
+	;
+
+src1.AddMsgIntf(dir=out, type=uint16_t, name=Tst);
+
+/*
+////////////////////////////////////////////////////
+// Src2 Module
+
+dsnInfo.AddModule(name=src2, htIdW=0);
+src2.AddInst(name=SRC2_ENTRY);
+src2.AddInst(name=SRC2_SEND);
+src2.AddInst(name=SRC2_RETURN);
+
+src2.AddEntry(func=src2, inst=SRC2_ENTRY)
+	.AddParam(type=uint8_t, name=modId)
+	;
+
+src2.AddPrivate()
+	.AddVar(type=uint8_t, name=loopCnt)
+	.AddVar(type=uint8_t, name=loopStop)
+	;
+
+src2.AddReturn(func=src2)
+	.AddParam(type=uint8_t, name=modId)
+	;
+
+src2.AddMsgIntf(dir=out, type=uint16_t, name=Tst);
+*/
+
+////////////////////////////////////////////////////
+// Dst1 Module
+
+dsnInfo.AddModule(name=dst1, htIdW=0, clock=DST1_CLK);
+dst1.AddInst(name=DST1_ENTRY);
+dst1.AddInst(name=DST1_RECV);
+dst1.AddInst(name=DST1_RETURN);
+
+dst1.AddEntry(func=dst1, inst=DST1_ENTRY)
+	.AddParam(type=uint8_t, name=modId)
+	;
+
+dst1.AddPrivate()
+	.AddVar(type=uint8_t, name=modId)
+	.AddVar(type=uint8_t, name=msgCnt)
+	.AddVar(type=bool, name=error)
+	;
+
+dst1.AddReturn(func=dst1)
+	.AddParam(type=uint8_t, name=modId)
+	.AddParam(type=bool, name=error)
+	;
+
+dst1.AddMsgIntf(dir=in, type=uint16_t, name=Tst, queueW=3);
+
+/*
+////////////////////////////////////////////////////
+// Dst2 Module
+
+dsnInfo.AddModule(name=dst2, htIdW=0);
+dst2.AddInst(name=DST2_ENTRY);
+dst2.AddInst(name=DST2_SEND);
+dst2.AddInst(name=DST2_RETURN);
+
+dst2.AddEntry(func=dst2, inst=DST2_ENTRY)
+	.AddParam(type=uint8_t, name=msgCnt)
+	;
+
+dst2.AddPrivate()
+	.AddVar(type=uint8_t, name=msgIdx)
+	.AddVar(type=uint8_t, name=msgCnt)
+	;
+
+dst2.AddReturn(func=dst2)
+	;
+
+dst2.AddMsgIntf(dir=in, type=uint16_t, name=Tst, queueW=3);
+*/

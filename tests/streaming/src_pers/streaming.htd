@@ -1,0 +1,26 @@
+dsnInfo.AddModule(name=stream, htIdW=0);
+
+stream.AddInst(name=STRM_IDLE);
+stream.AddInst(name=STRM_RECV);
+stream.AddInst(name=STRM_SEND);
+
+
+stream.AddPrivate()
+	.AddVar(type=uint16_t, name=rcvAu)
+	.AddVar(type=uint32_t, name=rcvCnt)
+	.AddVar(type=uint32_t, name=wordCnt)
+	.AddVar(type=uint32_t, name=errs)
+	.AddVar(type=uint64_t, name=recvData)
+	;
+
+stream.AddEntry(func=htmain, inst=STRM_IDLE, host=true)
+	.AddParam(hostType=uint16_t, type=uint16_t, name=rcvAu)
+	.AddParam(hostType=uint32_t, type=uint32_t, name=rcvCnt)
+	;
+
+stream.AddReturn(func=htmain)
+	.AddParam(hostType=uint32_t, type=uint32_t, name=errs)
+	;
+
+stream.AddHostData(dir=in);
+stream.AddHostData(dir=out);

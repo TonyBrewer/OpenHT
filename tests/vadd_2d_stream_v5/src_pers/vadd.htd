@@ -1,0 +1,149 @@
+
+#pragma message "  __SEED__ " __SEED__
+#ifdef _WIN32
+#define TEST 0x1e228718
+//#define TEST __RANDOM__
+#else
+//#define TEST 0x3
+#define TEST __RANDOM__
+#endif
+#pragma message "  TEST = " TEST
+
+#if (TEST&3) == 0
+#define VADD_TYPE 0
+typedef ht_uint8 PersType_t;
+#elif (TEST&3) == 1
+#define VADD_TYPE 1
+typedef ht_uint16 PersType_t;
+#elif (TEST&3) == 2
+#define VADD_TYPE 2
+typedef ht_uint32 PersType_t;
+#else
+#define VADD_TYPE 3
+typedef ht_uint64 PersType_t;
+#endif
+#pragma message "  VADD_TYPE = " VADD_TYPE
+
+#if (TEST&4) == 0
+#define CLK_RATE 1x
+#else
+#define CLK_RATE 2x
+#endif
+#pragma message "  CLK_RATE = " CLK_RATE
+
+#define VADD_HTID_W ((TEST>>3)&3)
+#pragma message "  VADD_HTID_W = " VADD_HTID_W
+
+#define STRM_BW_A ((((TEST>>5)&0xf)%10)+1)
+#pragma message "  STRM_BW_A = " STRM_BW_A
+
+#define STRM_BW_B ((((TEST>>9)&0xf)%10)+1)
+#pragma message "  STRM_BW_B = " STRM_BW_B
+
+#ifdef HT_SYSC
+#define PLATFORM (((TEST>>13)&0xf)%6)
+#if PLATFORM == 0
+#define __PLATFORM__ "wx-690"
+#elif PLATFORM == 1
+#define __PLATFORM__ "wx-2000"
+#elif PLATFORM == 2
+#define __PLATFORM__ "hc-2"
+#elif PLATFORM == 3
+#define __PLATFORM__ "hc-2ex"
+#elif PLATFORM == 4
+#define __PLATFORM__ "hc-1"
+#elif PLATFORM == 5
+#define __PLATFORM__ "hc-1ex"
+#endif
+#pragma message "  PLATFORM = " __PLATFORM__
+#endif
+
+#define SUB_HTID_W ((TEST>>16)&3)
+#pragma message "  SUB_HTID_W = " SUB_HTID_W
+
+#define TYPE_SIZE 1<<VADD_TYPE
+
+////////////////////////////////////////////////////
+// Streaming implementation of vadd
+
+typedef ht_uint48 MemAddr_t;
+
+dsnInfo.AddModule(name=vadd, htIdW=VADD_HTID_W, reset=VADD_RESET, pause=true, clock=CLK_RATE);
+
+vadd.AddInstr(name=VADD_RESET);
+vadd.AddInstr(name=VADD_ENTER);
+vadd.AddInstr(name=VADD_WRITE);
+vadd.AddInstr(name=VADD_READ);
+vadd.AddInstr(name=VADD_READ_CHECK);
+vadd.AddInstr(name=VADD_JOIN);
+vadd.AddInstr(name=VADD_OPEN);
+vadd.AddInstr(name=VADD_RETURN);
+
+vadd.AddHostMsg(dir=in, name=OP1_ADDR)
+	.AddDst(var=addrA, readOnly=false)
+	;
+vadd.AddHostMsg(dir=in, name=OP2_ADDR)
+	.AddDst(var=addrB, readOnly=false)
+	;
+vadd.AddHostMsg(dir=in, name=RES_ADDR)
+	.AddDst(var=addrC, readOnly=false)
+	;
+
+vadd.AddHostMsg(dir=out, name=VADD_TYPE_SIZE);
+
+vadd.AddPrivate()
+	.AddVar(type=ht_uint32, name=yDimOff)
+	.AddVar(type=ht_uint32, name=yDimLen)
+	.AddVar(type=ht_uint32, name=xDimLen)
+	.AddVar(type=ht_uint32, name=yOpenAIdx)
+	.AddVar(type=ht_uint32, name=yOpenBIdx)
+	.AddVar(type=ht_uint32, name=yOpenCIdx)
+	;
+
+vadd.AddShared()
+	.AddVar(type=uint32_t, name=msgDelay)
+	.AddVar(type=MemAddr_t, name=addrA)
+	.AddVar(type=MemAddr_t, name=addrB)
+	.AddVar(type=MemAddr_t, name=addrC)
+	.AddVar(type=ht_uint32, name=yIdx)
+	.AddVar(type=ht_uint32, name=yDimLen)
+	.AddVar(type=ht_uint32, name=xIdx)
+	.AddVar(type=ht_uint32, name=xDimLen)
+	.AddVar(type=ht_uint32, name=sum)
+	.AddVar(type=ht_uint32, name=readVar)
+	;
+
+vadd.AddEntry(func=htmain, inst=VADD_ENTER, host=true)
+	.AddParam(hostType=uint32_t, type=ht_uint32, name=yDimOff)
+	.AddParam(hostType=uint32_t, type=ht_uint32, name=yDimLen)
+	.AddParam(hostType=uint32_t, type=ht_uint32, name=xDimLen)
+	;
+
+vadd.AddReturn(func=htmain)
+	.AddParam(hostType=uint32_t, type=ht_uint32, name=sum)
+	;
+
+vadd.AddBarrier();
+
+vadd.AddReadMem()
+	.AddDst(var=readVar, memSrc=coproc, rdType=uint32)
+	;
+
+vadd.AddCall(func=sub, fork=true);
+
+vadd.AddWriteMem();
+
+vadd.AddReadStream(name=A, type=PersType_t, strmBw=STRM_BW_A, memPort=1, elemCntW=32);
+vadd.AddReadStream(name=B, type=PersType_t, strmBw=STRM_BW_B, memPort=1, elemCntW=32);
+vadd.AddWriteStream(name=C, type=PersType_t, memPort=1, elemCntW=10);
+
+///////////////////////
+
+dsnInfo.AddModule(name=sub, htIdW=SUB_HTID_W);
+
+sub.AddInstr(name=SUB_ENTRY);
+sub.AddInstr(name=SUB_RETURN);
+
+sub.AddEntry(func=sub, inst=SUB_ENTRY);
+
+sub.AddReturn(func=sub);

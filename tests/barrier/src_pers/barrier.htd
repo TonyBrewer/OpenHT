@@ -1,0 +1,152 @@
+#pragma message "__SEED__ " __SEED__
+
+// Test{1:0] - htIdW
+// Test[3:2] - barIdW
+// Test[5:4] - replCnt
+// Test[6] - 1=named
+// Test[7] - 1=clk2x
+// Test[8] - 1=multiple barriers
+
+#ifdef _WIN32
+#define TEST 0xfef
+#else
+#define TEST __RANDOM__
+#endif
+#pragma message "TEST = " TEST
+
+#if ((TEST>>0) & 3) == 0
+#define BARRIER_HTID_W 0
+#elif ((TEST>>0) & 3) == 1
+#define BARRIER_HTID_W 1
+#elif ((TEST>>0) & 3) == 2
+#define BARRIER_HTID_W 2
+#else
+#define BARRIER_HTID_W 3
+#endif
+#pragma message "BARRIER_HTID_W = " BARRIER_HTID_W
+
+#if ((TEST>>2) & 3) == 0
+#define BARRIER_BARID_W 0
+#elif ((TEST>>2) & 3) == 1
+#define BARRIER_BARID_W 1
+#elif ((TEST>>2) & 3) == 2
+#define BARRIER_BARID_W 2
+#else
+#define BARRIER_BARID_W 3
+#endif
+#pragma message "BARRIER_BARID_W = " BARRIER_BARID_W
+
+#if ((TEST>>4) & 3) == 0
+#define BARRIER_REPL_CNT 1
+#define BARRIER_THREAD_W BARRIER_HTID_W
+#elif ((TEST>>4) & 3) == 1
+#define BARRIER_REPL_CNT 2
+#define BARRIER_THREAD_W (BARRIER_HTID_W+1)
+#elif ((TEST>>4) & 3) == 2
+#define BARRIER_REPL_CNT 3
+#define BARRIER_THREAD_W (BARRIER_HTID_W+1)
+#else
+#define BARRIER_REPL_CNT 4
+#define BARRIER_THREAD_W (BARRIER_HTID_W+2)
+#endif
+#pragma message "BARRIER_REPL_CNT = " BARRIER_REPL_CNT
+
+#if (TEST & 0x40) == 0
+#define BARRIER_NAMED 0
+#else
+#define BARRIER_NAMED 1
+#endif
+#pragma message "BARRIER_NAMED = " BARRIER_NAMED
+
+#if (TEST & 0x80) == 0
+#define BARRIER_CLK 1x
+#else
+#define BARRIER_CLK 2x
+#endif
+#pragma message "BARRIER_CLK = " BARRIER_CLK
+
+#if (TEST & 0x100) == 0
+#define BARRIER_MULTIPLE 0
+#else
+#define BARRIER_MULTIPLE 1
+#endif
+#pragma message "BARRIER_MULTIPLE = " BARRIER_MULTIPLE
+
+typedef sc_uint<48> MemAddr_t;
+
+////////////////////////////////////////////////////
+// Ctl Module
+
+#define CTL_HTID_W 0
+
+dsnInfo.AddModule(name=ctl, htIdW=CTL_HTID_W);
+ctl.AddInst(name=CTL_ENTRY);
+ctl.AddInst(name=CTL_FORK);
+ctl.AddInst(name=CTL_JOIN);
+ctl.AddInst(name=CTL_LOOP);
+
+ctl.AddPrivate()
+	.AddVar(type=uint16_t, name=testCnt)
+	.AddVar(type=uint16_t, name=threadCnt)
+	.AddVar(type=bool, name=error)
+	.AddVar(type=uint16_t, name=errCnt)
+	;
+
+ctl.AddEntry(func=htmain, inst=CTL_ENTRY, host=true)
+	;
+
+ctl.AddReturn(func=htmain)
+	.AddParam(hostType=uint32_t, type=uint16_t, name=errCnt)
+	;
+
+ctl.AddCall(func=barrier, fork=true)
+	;
+
+ctl.AddMsgIntf(dir=out, type=bool, name=clr);
+
+////////////////////////////////////////////////////
+// Barrier Module
+
+dsnInfo.AddModule(name=barrier, htIdW=BARRIER_HTID_W, clock=BARRIER_CLK, pause=false);
+barrier.AddInst(name=BARRIER_ENTRY);
+barrier.AddInst(name=BARRIER_INC);
+barrier.AddInst(name=BARRIER_WAIT1);
+barrier.AddInst(name=BARRIER_WAIT2);
+barrier.AddInst(name=BARRIER_WAIT3);
+barrier.AddInst(name=BARRIER_RETURN);
+
+barrier.AddPrivate()
+	.AddVar(type=uint16_t, name=threadCnt)
+	.AddVar(type=uint16_t, name=threadId)
+	.AddVar(type=uint16_t, name=loopCnt)
+	;
+
+barrier.AddShared()
+	.AddVar(type=uint16_t, name=inc)
+	;
+
+barrier.AddEntry(func=barrier, inst=BARRIER_ENTRY)
+	.AddParam(type=uint16_t, name=threadCnt)
+	.AddParam(type=uint16_t, name=threadId)
+	;
+
+barrier.AddReturn(func=barrier)
+	.AddParam(type=bool, name=error)
+	;
+
+#ifdef BARRIER_NAMED
+barrier.AddBarrier(name=sync, barIdW=BARRIER_BARID_W);
+#else
+barrier.AddBarrier(barIdW=BARRIER_BARID_W);
+#endif
+
+#ifdef BARRIER_MULTIPLE
+barrier.AddBarrier(name=sync2, barIdW=2);
+#endif
+
+//barrier.AddWriteMem();
+
+barrier.AddMsgIntf(dir=out, type=bool, name=inc);
+barrier.AddMsgIntf(dir=in, type=bool, name=inc, fanin=BARRIER_REPL_CNT);
+
+barrier.AddMsgIntf(dir=in, type=bool, name=clr);

@@ -1,0 +1,96 @@
+// tst Module capabilities
+
+dsnInfo.AddModule(name=tst, htIdW=0);
+
+tst.AddInst(name=TST_READ);
+tst.AddInst(name=TST_CHK);
+tst.AddInst(name=TST_CALL);
+tst.AddInst(name=TST_RTN);
+
+
+tst.AddEntry(func=htmain, inst=TST_READ, host=true)
+	.AddParam(hostType=uint64_t, type=ht_uint48, name=memAddr)
+	;
+
+tst.AddReturn(func=htmain)
+//.AddParam(hostType=uint16_t, type=ht_uint9, name=err)
+	.AddParam(hostType=unsigned short, type=ht_uint9, name=err)
+	;
+
+tst.AddPrivate()
+	.AddVar(type=ht_uint48, name=memAddr)
+	.AddVar(type=ht_uint2, name=gvarAddr)
+	.AddVar(type=ht_uint9, name=err)
+	;
+
+tst.AddReadMem()
+	.AddDst(var=gvar, field=data);
+
+tst.AddGlobal(var=gvar, addr1W=2, addr1=gvarAddr, addr2W=2, addr2=gvarAddr, dimen1=1)
+	.AddField(type=uint64_t, name=data, read=true);
+
+tst.AddCall(func=tst2)
+	;
+
+tst.AddCall(func=tst3)
+	;
+
+// tst2
+
+dsnInfo.AddModule(name=tst2, htIdW=0);
+
+tst2.AddInst(name=TST2_READ);
+tst2.AddInst(name=TST2_RTN);
+
+
+tst2.AddEntry(func=tst2, inst=TST2_READ)
+	.AddParam(type=ht_uint48, name=memAddr)
+	.AddParam(type=ht_uint9, name=err)
+	;
+
+tst2.AddReturn(func=tst2)
+	.AddParam(type=ht_uint9, name=err)
+	;
+
+tst2.AddPrivate()
+	.AddVar(type=ht_uint48, name=memAddr)
+	.AddVar(type=ht_uint2, name=gvarAddr)
+	.AddVar(type=ht_uint9, name=err)
+	;
+
+tst2.AddGlobal(var=gvar, addr1W=2, addr1=gvarAddr, addr2W=2, addr2=gvarAddr, dimen1=1, extern=true)
+	.AddField(type=uint64_t, name=data, read=true);
+
+tst2.AddReadMem()
+	.AddDst(var=gvar, field=data);
+
+
+// tst3
+
+#define TST3_HTID_W 0
+
+dsnInfo.AddModule(name=tst3, clock=2x, htIdW=TST3_HTID_W);
+
+tst3.AddInst(name=TST3_ENTRY);
+tst3.AddInst(name=TST3_RTN);
+
+
+tst3.AddEntry(func=tst3, inst=TST3_ENTRY)
+	.AddParam(type=ht_uint48, name=memAddr)
+	;
+
+tst3.AddReturn(func=tst3)
+	;
+
+tst3.AddPrivate()
+	.AddVar(type=ht_uint48, name=memAddr)
+	;
+
+tst3.AddGlobal(var=gvar3, addr1W=TST3_HTID_W, addr1=htId)
+	.AddField(type=uint8_t, name=data, read=true, write=true);
+
+tst3.AddGlobal(var=gvar31, addr1W=TST3_HTID_W, addr1=htId)
+	.AddField(type=uint8_t, name=data, read=true, write=false);
+
+tst3.AddReadMem(queueW=5, rspCntW=3, maxBw=false)
+	.AddDst(var=gvar31, field=data);

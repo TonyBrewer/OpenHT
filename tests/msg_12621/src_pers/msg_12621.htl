@@ -1,0 +1,12 @@
+// -cl "C:\Ht\tests\msg_12621\src_pers\msg_12621.htl"
+-cp wx-690
+-ac 1
+-uc 1
+-vcd
+-I ../src
+-I ../src_pers
+-D_HTL
+-if "C:\Ht\tests\msg_12621\src_pers\msg_12621.hti"
+-wd "C:\Ht\tests\msg_12621\msvs12\"
+"../src_pers/msg_12621.htd"
+../ht/sysc

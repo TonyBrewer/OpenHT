@@ -1,0 +1,20 @@
+cd src_htc
+/work/htc_releases/latest/bin/htc -rose:openmp:lowering -htc:split ht_bottom_up.c -htc:sysc -rose:skipfinalCompileStep
+/work/htc_releases/latest/bin/htc -rose:openmp:lowering -DCNY_HTC_COPROC rose_ht_bottom_up.c -rose:skipfinalCompileStep
+cp rose_ht_bottom_up.c rose_ht_bottom_up.c1
+sed 's:/\* extern "C" \*/:extern "C":' < rose_ht_bottom_up.c1 > rose_ht_bottom_up.c
+grep -v "___htc_dummy_decl" rose_rose_ht_bottom_up.c > ../src_pers/rose_rose_ht_bottom_up.c
+rm ../src_pers/PersOUT*.cpp
+rm ../src_pers/Pers__HTC_HO*.cpp
+cp Pers*.cpp ../src_pers
+cp design.htd ../src_pers
+cd ..
+make clean
+make sysc >& make.out
+
+
+
+env CNY_HT_CFLAGS_SYSC="-O3 -g -fopenmp -D__CONVEY -I/opt/convey/include/convey -L/opt/convey/lib -lcny" make -k sysc > & foo
+cat 
+
+ env CNY_HT_CFLAGS_APP="-O3 -g -fopenmp -D__CONVEY -I/opt/convey/include/convey -L/opt/convey/lib -lcny" make -k app

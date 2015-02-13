@@ -1,0 +1,253 @@
+// SynXilinxPrims.cpp
+//
+//////////////////////////////////////////////////////////////////////
+
+#include "Htv.h"
+#include "HtvDesign.h"
+
+void CHtvDesign::SynXilinxPrims()
+{
+	if (GetErrorCnt() != 0) {
+		ParseMsg(PARSE_ERROR, "unable to generate verilog due to previous errors");
+		exit(1);
+	}
+
+	CHtvIdentTblIter identIter(GetTopHier()->GetIdentTbl());
+	for (identIter.Begin(); !identIter.End(); identIter++) {
+		if (!identIter->IsModule() || !identIter->IsMethodDefined())
+			continue;
+
+		CHtvIdent *pModule = identIter->GetThis();
+
+		CHtvIdentTblIter moduleIter(pModule->GetIdentTbl());
+
+		// Generate logic blocks
+		//if (g_htvArgs.GetXilinxFdPrims()) {
+		//	for (moduleIter.Begin(); !moduleIter.End(); moduleIter++) {
+		//		if (!moduleIter->IsMethod())
+		//			continue;
+
+		//		FindXilinxFdPrims(moduleIter->GetThis());
+		//	}
+		//}
+
+		for (moduleIter.Begin(); !moduleIter.End(); moduleIter++) {
+			if (!moduleIter->IsMethod())
+				continue;
+
+			FindWriteRefSets(moduleIter->GetThis());
+		}
+
+		GenModuleHeader(identIter());
+
+		// Generate functions
+		//for (moduleIter.Begin(); !moduleIter.End(); moduleIter++) {
+		//	if (!moduleIter->IsFunction() || moduleIter->IsMethod() || moduleIter->GetName() == pModule->GetName())
+		//		continue;
+
+		//	GenFunction(moduleIter->GetThis());
+		//}
+
+
+		// Generate logic blocks
+		for (moduleIter.Begin(); !moduleIter.End(); moduleIter++) {
+			if (!moduleIter->IsMethod())
+				continue;
+
+            vector<CScOperand *> objStk;
+			SynXilinxPrims_IndividualStatements(moduleIter->GetThis(), 0, 0);
+		}
+
+		GenModuleTrailer();
+	}
+}
+
+void CHtvDesign::SynXilinxPrims_IndividualStatements(CHtvIdent *pHier, CHtvObject * pObj, CHtvObject * pRsltObj)
+{
+	// synthesize statements
+	for (CHtvStatement *pStatement = (CHtvStatement *)pHier->GetStatementList() ; pStatement; pStatement = pStatement->GetNext()) {
+
+		int synSetSize = pStatement->GetSynSetSize();
+		if (synSetSize == 0)
+			continue;	// not first statement in writeRefSet
+
+		// find set of variables that must be handled together
+		if (pStatement->IsScPrim()) {
+			Assert(synSetSize == 1);
+
+			CHtvOperand *pExpr = pStatement->GetExpr();
+			CHtvIdent *pFunc = pExpr->GetMember();
+
+			unsigned firstOutput;
+			for (firstOutput = 0; firstOutput < pExpr->GetParamCnt(); firstOutput += 1)
+				if (!pFunc->GetParamIsConst(firstOutput))
+					break;
+
+			Assert(firstOutput < pExpr->GetParamCnt());
+
+			string str = pExpr->GetParam(firstOutput)->GetMember()->GetName();
+			str.append("_");
+
+			m_vFile.Print("\n%s %s (\n", pFunc->GetName().c_str(), str.c_str());
+			m_vFile.IncIndentLevel();
+
+			if (pFunc->GetScPrimClock().size() > 0)
+				m_vFile.Print(".%s(%s),\n", pFunc->GetScPrimClock().c_str(), pHier->GetClockIdent()->GetName().c_str());
+
+			char *pFirst = "";
+			for (unsigned i = 0; i < pExpr->GetParamCnt(); i += 1) {
+				CHtvIdent *pArg = pExpr->GetParam(i)->GetMember();
+
+				if (!pFunc->GetParamIsScState(i)) {
+					m_vFile.Print("%s.%s(%s", pFirst, pFunc->GetParamName(i).c_str(), pArg->GetName().c_str());
+
+					if (pExpr->GetParam(i)->GetParamList().size() > 0) {
+						m_vFile.Print("[");
+						if (pExpr->GetParam(i)->GetParamList().size() == 1 ||
+							pExpr->GetParam(i)->GetParamList()[0]->IsConstValue() && pExpr->GetParam(i)->GetParamList()[1]->IsConstValue() &&
+							pExpr->GetParam(i)->GetParamList()[0]->GetConstValue().GetSint64() == pExpr->GetParam(i)->GetParamList()[1]->GetConstValue().GetSint64()) {
+
+							bool bFoundSubExpr;
+							bool bWriteIndex;
+							FindSubExpr(pObj, pRsltObj, pExpr->GetParam(i), bFoundSubExpr, bWriteIndex);
+
+							if (bFoundSubExpr)
+								ParseMsg(PARSE_FATAL, pExpr->GetParam(i)->GetLineInfo(), "function calls in parameter of primitive is not supported");
+
+							PrintSubExpr(pObj, pRsltObj, (CHtvOperand *)pExpr->GetParam(i)->GetParamList()[0]);
+						} else {
+							Assert(pExpr->GetParam(i)->GetParamList().size() == 2);
+
+							bool bFoundSubExpr;
+							bool bWriteIndex;
+							FindSubExpr(pObj, pRsltObj, (CHtvOperand *)pExpr->GetParam(i)->GetParamList()[0], bFoundSubExpr, bWriteIndex);
+
+							if (bFoundSubExpr)
+								ParseMsg(PARSE_FATAL, pExpr->GetParam(i)->GetLineInfo(), "function calls in parameter of primitive is not supported");
+
+							FindSubExpr(pObj, pRsltObj, (CHtvOperand *)pExpr->GetParam(i)->GetParamList()[1], bFoundSubExpr, bWriteIndex);
+
+							if (bFoundSubExpr)
+								ParseMsg(PARSE_FATAL, pExpr->GetParam(i)->GetLineInfo(), "function calls in parameter of primitive is not supported");
+
+							GenSubExpr(pObj, pRsltObj, (CHtvOperand *)pExpr->GetParam(i)->GetParamList()[0]);
+							m_vFile.Print(":");
+							GenSubExpr(pObj, pRsltObj, (CHtvOperand *)pExpr->GetParam(i)->GetParamList()[1]);
+						}
+						m_vFile.Print("]");
+					}
+					m_vFile.Print(")");
+					pFirst = ",\n";
+				}
+			}
+
+			m_vFile.DecIndentLevel();
+			m_vFile.Print("\n);\n");
+
+			continue;
+		}
+
+		m_bClockedAlwaysAt = pStatement->IsClockedAlwaysAt();
+
+		bool bAlwaysAtNeeded = true;
+		if (m_bClockedAlwaysAt && g_htvArgs.GetXilinxFdPrims()) {
+			// first translate assignments to Xilinx register
+			bAlwaysAtNeeded = false;
+			for (CHtvStatement *pStatement2 = pStatement; pStatement2; pStatement2 = pStatement2->GetNext()) {
+				if (pStatement->GetSynSetId() != pStatement2->GetSynSetId())
+					continue;
+
+				switch (pStatement2->GetStType()) {
+					case st_assign:
+						if (!pStatement2->IsXilinxFdPrim() || !GenXilinxClockedPrim(pHier, pObj, pStatement2))
+							bAlwaysAtNeeded = true;
+						break;
+					case st_if:
+						if (!GenXilinxClockedPrim(pHier, pObj, pStatement2))
+							bAlwaysAtNeeded = true;
+						break;
+					case st_switch:
+						bAlwaysAtNeeded = true;
+						break;
+					default:
+						Assert(0);
+				}
+			}
+		}
+
+		if (!bAlwaysAtNeeded) {
+			// all register assignments were translated to primitives
+			m_bClockedAlwaysAt = false;
+			continue;
+		}
+
+		if (m_bClockedAlwaysAt)
+			GenAlwaysAtHeader(pHier->GetClockIdent());
+		else if (synSetSize > 1)
+			GenAlwaysAtHeader(true);
+
+		for (CHtvStatement *pStatement2 = pStatement; pStatement2; pStatement2 = pStatement2->GetNext()) {
+			if (pStatement->GetSynSetId() != pStatement2->GetSynSetId())
+				continue;
+
+			switch (pStatement2->GetStType()) {
+				case st_assign:
+					{
+						if (pStatement2->IsXilinxFdPrim())
+							break;
+
+						CHtvOperand *pExpr = pStatement->GetExpr();
+
+						if (pExpr->IsLeaf() && pExpr->GetMember() != 0 && pExpr->GetMember()->IsMethod())
+							// Remove UpdateOutputs()
+							break;
+
+						bool bIsTask = IsTask(pStatement);
+
+						if (bIsTask && synSetSize == 1)
+							GenAlwaysAtHeader(false);
+
+						SynAssignmentStatement(pHier, pObj, pRsltObj, pStatement2, bIsTask || synSetSize > 1 || m_bClockedAlwaysAt);
+
+						if (bIsTask && synSetSize == 1)
+							GenAlwaysAtTrailer(false);
+					}
+					break;
+				case st_switch:
+					if (synSetSize == 1)
+						GenAlwaysAtHeader(false);
+
+					SynSwitchStatement(pHier, pObj, pRsltObj, pStatement2);
+
+					if (synSetSize == 1)
+						GenAlwaysAtTrailer(false);
+					break;
+				case st_if:
+					if (pStatement2->IsXilinxFdPrim())
+						break;
+
+					if (synSetSize == 1)
+						GenAlwaysAtHeader(pStatement2->GetCompound2() != 0);
+
+					SynIfStatement(pHier, pObj, pRsltObj, pStatement2);
+
+					if (synSetSize == 1)
+						GenAlwaysAtTrailer(pStatement2->GetCompound2() != 0);
+					break;
+				//case st_break:
+				//	break;
+				//case st_return:
+				//	GenExpression(pStatement->GetExpr(), 0, pHier);
+				//	m_vFile.Print(";\n");
+				//	break;
+				default:
+					Assert(0);
+			}
+		}
+
+		if (m_bClockedAlwaysAt || synSetSize > 1)
+			GenAlwaysAtTrailer(true);
+
+		m_bClockedAlwaysAt = false;
+	}
+}

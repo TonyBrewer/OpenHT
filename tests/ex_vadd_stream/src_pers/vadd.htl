@@ -1,0 +1,13 @@
+// -cl "C:\Ht\tests\ex_vadd_stream\src_pers\vadd.htl"
+-wd "C:\Ht\tests\ex_vadd_stream\msvs12"
+-cp wx-690
+-uc 1
+-un Au
+-df 150
+-pn vadd_stream
+-it
+-mt
+-vcd_all
+-if ../src_pers/vadd.hti
+../src_pers/vadd.htd
+../ht/sysc

@@ -1,0 +1,27 @@
+dsnInfo.AddModule(name=over, htIdW=0, pause=true);
+
+over.AddInstr(name=OVER_RD);
+over.AddInstr(name=OVER_WR);
+over.AddInstr(name=OVER_RSM);
+over.AddInstr(name=OVER_RTN);
+
+over.AddPrivate()
+	.AddVar(type=ht_uint48, name=addr)
+	.AddVar(type=uint64_t, name=data)
+	;
+
+over.AddShared()
+	.AddVar(type=bool, name=bResume)
+	;
+
+over.AddEntry(func=htmain, inst=OVER_RD, host=true)
+	.AddParam(hostType=uint64_t *, type=ht_uint48, name=addr)
+	;
+
+over.AddReturn(func=htmain);
+
+over.AddReadMem()
+	.AddDst(var=data)
+	;
+
+over.AddWriteMem();

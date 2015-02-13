@@ -1,0 +1,52 @@
+// common defines / types
+#define MEMT_HTID_W 0
+#define CMD_LD 0
+#define CMD_ST 1
+
+typedef uint48_t MemAddr_t;
+
+////////////////////////////////////////////////////
+// Top-level
+dsnInfo.AddModule(name=ctl, htIdW=0);
+
+ctl.AddInst(name=CTL_ENTRY);
+ctl.AddInst(name=CTL_RUN);
+ctl.AddInst(name=CTL_RTN);
+
+ctl.AddHostMsg(dir=Inbound, name=RQ_ADDR)
+	.AddDst(var=rqAddr, dataLsb=0)
+	;
+ctl.AddHostMsg(dir=Inbound, name=ARRAY_LEN)
+	.AddDst(var=arrayLen, dataLsb=0)
+	;
+
+
+ctl.AddShared()
+	.AddVar(type=MemAddr_t, name=rqAddr)
+	.AddVar(type=uint64_t, name=arrayLen)
+	.AddVar(type=uint64_t, name=memRsp)
+	.AddVar(type=uint64_t, name=memRsp2)
+	;
+
+ctl.AddPrivate()
+	.AddVar(type=uint32_t, name=cmd)
+	.AddVar(type=uint64_t, name=numReqs)
+	.AddVar(type=uint64_t, name=rqCnt)
+	.AddVar(type=uint32_t, name=rqIdx)
+	;
+
+ctl.AddEntry(func=htmain, inst=CTL_ENTRY, host=true)
+	.AddParam(type=uint32_t, name=cmd)
+	.AddParam(type=uint64_t, name=numReqs)
+	;
+
+ctl.AddReturn(func=htmain)
+	.AddParam(type=uint64_t, name=rqCnt)
+	;
+
+ctl.AddMemRead(queueW=6, rspCntW=6)
+	.AddDst(name=memRsp, var=memRsp)
+	.AddDst(name=memRsp2, var=memRsp2)
+	;
+
+ctl.AddMemWrite(queueW=6) ;

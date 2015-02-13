@@ -1,0 +1,20 @@
+
+////////////////////////////////////////////////////
+// Top-level
+dsnInfo.AddModule(name=ctl, htIdW=0);
+typedef ht_uint48 MemAddr_t;
+
+ctl.AddInst(name=CTL_ENTRY);
+
+
+ctl.AddPrivate()
+	.AddVar(type=MemAddr_t, name=maAddr)
+	;
+
+ctl.AddEntry(func=htmain, inst=CTL_ENTRY, host=true)
+	.AddParam(hostType=uint64_t, type=MemAddr_t, name=maAddr)
+	;
+
+ctl.AddReturn(func=htmain)
+	;
+

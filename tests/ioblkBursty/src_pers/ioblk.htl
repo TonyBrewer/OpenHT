@@ -1,0 +1,8 @@
+-wd "C:\Ht\tests\ioblkBursty\msvs12\"
+-cp hc-2
+-uc 1
+-un Au
+-df 150
+-pn ioblkBursty
+../src_pers/ioblk.htd
+../ht/sysc

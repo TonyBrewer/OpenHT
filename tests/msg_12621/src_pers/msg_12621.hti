@@ -1,0 +1,5 @@
+#include "Pers_src.h"
+
+AddModInstParams(unit=Au, modPath="ctl/modB", replCnt=B_REPL);
+AddModInstParams(unit=Au, modPath="ctl/modC", replCnt=C_REPL);
+AddModInstParams(unit=Au, modPath="ctl/modD", replCnt=D_REPL);

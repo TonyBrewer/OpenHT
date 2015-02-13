@@ -1,0 +1,34 @@
+typedef ht_uint48 MemAddr_t;
+
+dsnInfo.AddModule(name=ctl, htIdW=0);
+
+ctl.AddInst(name=CTL_ENTRY);
+ctl.AddInst(name=CTL_ST);
+ctl.AddInst(name=CTL_RTN);
+
+ctl.AddHostMsg(dir=in, name=ADDR)
+	.AddDst(var=addr, readOnly=false)
+	;
+
+ctl.AddPrivate()
+	.AddVar(type=uint32_t, name=cnt)
+	.AddVar(type=uint32_t, name=length)
+	.AddVar(type=ht_uint1, name=wrGrpId)
+	;
+
+ctl.AddShared()
+	.AddVar(type=uint64_t, name=wrBuf, dimen1=8)
+	.AddVar(type=MemAddr_t, name=addr)
+	;
+
+ctl.AddEntry(func=htmain, inst=CTL_ENTRY, host=true)
+	.AddParam(type=uint32_t, name=length)
+	;
+
+ctl.AddReturn(func=htmain)
+	;
+
+ctl.AddWriteMem(maxBw=true, rspGrpId=wrGrpId)
+//ctl.AddWriteMem(maxBw=true)
+	.AddSrc(name=data, var=wrBuf, multiWr=true, srcIdx=varIdx1, memDst=host)
+	;

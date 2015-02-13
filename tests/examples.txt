@@ -1,0 +1,28 @@
+The following are HT examples in this directory:
+
+hello:  
+Simple "Hello World" design.  A call to the coprocessor writes to a
+buffer in memory.
+
+vadd:  
+Vector add design.  The host calls the coprocessor to add two arrays and
+store the result in a third array.  Each call returns a sum reduction of
+the result array, and the host does the final sum reduction across units.
+
+vadd_prim:  
+Vector add design.  This example illustrates how to utilize the HtPause()
+and HtResume() functions to deal with latent operations, such as pipelined
+math in a primative.
+
+vadd_stream:  
+Vector add design.  This example utilizes the streaming R/W interfaces
+for memory accesses.
+
+matrix_mult_bbox:
+Staged matrix multiply design using a Coregen multiplier.  Similar
+structure to vadd_5stage.
+
+matrix_mult_bbox_r2:
+Staged matrix multiply design using a Coregen multiplier.  Similar
+structure to vadd_5stage_r2.
+

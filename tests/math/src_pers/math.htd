@@ -1,0 +1,22 @@
+// math Module capabilities
+
+typedef sc_int<16 > idivr_sd_t;
+typedef sc_biguint<(16  + 3 )> idivr_mul_t;
+typedef sc_biguint<((32  + (((32  % 3 )) ? (3  - (32  % 3 )) : 0)) + 16 )> idivr_cmp_t;
+
+dsnInfo.AddModule(name=math, htIdW=0);
+
+math.AddInst(name=TEST);
+math.AddInst(name=RTN);
+
+
+math.AddPrivate()
+	.AddVar(type=int32_t, name=err)
+	.AddVar(type=uint8_t, name=cnt)
+	;
+
+math.AddEntry(func=htmain, inst=TEST, host=true);
+
+math.AddReturn(func=htmain) 
+	.AddParam(type=int32_t, name=err)
+	;

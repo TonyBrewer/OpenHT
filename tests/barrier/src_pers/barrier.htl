@@ -1,0 +1,21 @@
+// -cl "C:\Ht\tests\barrier\src_pers\barrier.htl"
+-wd "C:\Ht\tests\barrier\msvs12\"
+-cp wx-690
+-mt
+-ac 1
+-uc 1
+-df 150
+-ri
+-rr
+-it
+-vr
+-vcd_all
+-I ../src
+-I ../src_pers
+-D_HTL
+-D_WIN32
+-DHT_ASSERT
+-ml 0.6
+-if ../src_pers/barrier.hti
+../src_pers/barrier.htd
+../ht/sysc

@@ -1,0 +1,9 @@
+// -cl "C:\Ht\tests\firFilter\src_pers\firFilter.htl"
+-wd "C:\Ht\tests\firFilter\msvs12\"
+-cp hc-2
+-uc 1
+-un Au
+-df 150
+-pn firFilter
+../src_pers/firFilter.htd
+../ht/sysc

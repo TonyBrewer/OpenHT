@@ -1,0 +1,40 @@
+////////////////////////////////////////////////////
+// Inc Module
+
+#define XYZ_HTID_W 5
+dsnInfo.AddModule(name=xyz, htIdW=XYZ_HTID_W);
+typedef sc_uint<XYZ_HTID_W> htid_t;
+
+xyz.AddInst(name=XYZ_INIT);
+xyz.AddInst(name=XYZ_READ);
+xyz.AddInst(name=XYZ_WRITE);
+
+xyz.AddHostMsg(dir=in, name=SU_ARRAY_ADDR)
+	.AddDst(var=arrayAddr, dataLsb=0)
+	;
+
+xyz.AddPrivate()
+	.AddVar(type=uint8_t, name=elemCnt)
+	.AddVar(type=uint8_t, name=loopCnt)
+	.AddVar(type=htid_t, name=arrayMemRdPtr)
+	;
+
+xyz.AddShared()
+	.AddVar(type=ht_uint48, name=arrayAddr)
+	;
+
+xyz.AddEntry(func=htmain, inst=XYZ_INIT, host=true)
+	.AddParam(hostType=uint32_t, type=uint8_t, name=elemCnt)
+	;
+
+xyz.AddReturn(func=htmain)
+	.AddParam(hostType=uint32_t, type=uint8_t, name=elemCnt)
+	;
+
+xyz.AddReadMem(queueW=5, rspCntW=3)
+	.AddDst(name=arrayMem, var=arrayMem, field=data);
+xyz.AddWriteMem();
+
+xyz.AddGlobal(var=arrayMem, addr1=arrayMemRdPtr)
+	.AddField(type=uint64_t, name=data, read=true, write=true)
+	;

@@ -1,0 +1,26 @@
+#!/bin/sh
+
+PATH=/bin:/usr/bin
+
+SCRIPT=`readlink --canonicalize $0`
+HTC_DIR=`dirname $SCRIPT | sed 's#/bin$##'`
+
+PATH=$HTC_DIR:$PATH
+
+LD_LIBRARY_PATH=$HTC_DIR/lib
+if [ -d $HTC_DIR/lib/gcc-4.4.7/lib64 ]; then
+  LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HTC_DIR/lib/gcc-4.4.7/lib64
+fi
+
+# Look for java
+if [ -d /usr/lib/jvm ]; then
+  _JVM=`find /usr/lib/jvm -name libjvm.so |\
+	sed 's#/libjvm.so$##' | sort | tail -1`
+  if [ -n "$_JVM" ]; then
+    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$_JVM
+  fi
+fi
+
+export LD_LIBRARY_PATH
+
+$HTC_DIR/bin/htc1 -D__USE_XOPEN2K8 $*

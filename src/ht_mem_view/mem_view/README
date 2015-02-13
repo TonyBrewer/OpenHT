@@ -1,0 +1,9 @@
+To build, the machine you build on must have Qt4 installed
+	Most of our 6.x machines have this.
+
+The machine must have qtcreator installed
+	~jbolding/bin/qt/bin/qtcreator	has it if the machine does not
+
+the command line is
+
+~jbolding/bin/qt/bin/qtcreator mem_view.pro

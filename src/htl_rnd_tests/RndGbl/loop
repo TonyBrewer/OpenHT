@@ -1,0 +1,87 @@
+#!/bin/sh
+
+TGT=sysc
+
+# how annoying are we going to be
+PAR=4
+if [ -f /proc/cpuinfo ]; then
+    cpu=`grep -c processor /proc/cpuinfo`
+    if [ $cpu -gt 16 ]; then
+	PAR=`expr $cpu / 2`
+    else
+	PAR=`expr $cpu / 3`
+    fi
+fi
+
+# local HT_DIR?
+HT_DIR=$PWD/../../../rpm/prefix
+if [ -d $HT_DIR ]; then
+    HT_DIR=`cd $HT_DIR > /dev/null; pwd -P`
+else
+    HT_DIR=/hw/tools/ht
+fi
+echo Using HT_DIR=$HT_DIR
+
+
+# make sure generator is built and dir is set up
+make -s
+cd TestDir > /dev/null
+
+
+# loop away
+count=1
+issues=0
+
+while :
+do
+
+    make -s reap
+
+    issue=0
+
+    SEED=$( { ../rndtest | grep seed | sed 's/^.*: //' ; } )
+
+    make -j$PAR $TGT HT_DIR=$HT_DIR > make.log 2>&1
+
+    w=`grep warning: make.log`
+    if [ ! -z "$w" ]; then
+	issue=1
+    fi
+
+    if [ -x app_$TGT ]; then
+	./app_$TGT > run.log 2>&1
+    else
+	issue=1
+    fi
+
+    if [ -f run.log ]; then
+	p=`grep -e PASSED run.log`
+	f=`grep -e FAILED run.log`
+	w=`grep -e WARNING run.log`
+	if [ -n "$f" -o -n "$w" ]; then
+	    issue=1
+	elif [ -z "$p" ]; then
+	    issue=1
+	fi
+    fi
+
+    if [ $issue -ne 0 ]; then
+	issues=`expr $issues + 1`
+	(cd .. > /dev/null; mkdir -p Issues; cp -rp TestDir Issues/$SEED)
+	echo -n "X"
+    else
+	echo -n "."
+    fi
+
+    r=$(($count%20))
+    if [ $r -eq 0 ]; then
+	echo " $count"
+    fi
+    count=`expr $count + 1`
+
+    if [ $issues -eq 5 -o $count -eq 100 ]; then
+	echo " done"
+	break
+    fi
+
+done

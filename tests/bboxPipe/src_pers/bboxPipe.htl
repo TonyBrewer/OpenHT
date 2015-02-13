@@ -1,0 +1,12 @@
+// -cl "C:\Ht\tests\bboxPipe\src_pers\bboxPipe.htl"
+
+-cp hc-2
+-mt				// enable memory tracing
+-uc 1			// unit count
+-un Au			// unit name
+-df 150			// default frequence
+-I ../src_pers
+
+-wd "C:\Ht\tests\bboxPipe\msvs12\"		// working directory
+"C:\Ht\tests\bboxPipe\src_pers\bboxPipe.htd"	// design file location
+../ht/sysc							// location for output files

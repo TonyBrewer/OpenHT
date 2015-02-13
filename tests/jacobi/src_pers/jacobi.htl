@@ -1,0 +1,6 @@
+-cp hc-2
+-un Iu
+-df 150
+-wd "C:\Ht\tests\jacobi\msvs12\"
+"C:\Ht\tests\jacobi\src_pers\jacobi.htd"
+../ht/sysc

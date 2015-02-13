@@ -1,0 +1,35 @@
+#pragma message "__SEED__ " __SEED__
+#ifdef _WIN32
+#define TEST 0xed84f11b
+#else
+#define TEST __RANDOM__
+#endif
+#pragma message "TEST = " TEST
+
+struct CCtlMsg {
+	uint8_t m_unit;
+	uint8_t m_pad;
+	uint32_t m_hops;
+};
+
+////////////////////////////////////////////////////
+// Ctl Module
+
+dsnInfo.AddModule(name=ctl, htIdW=0);
+ctl.AddInst(name=CTL_ENTRY);
+ctl.AddInst(name=CTL_WAIT);
+ctl.AddInst(name=CTL_RETURN);
+
+ctl.AddEntry(func=htmain, inst=CTL_ENTRY, host=true)
+	;
+
+ctl.AddReturn(func=htmain)
+	;
+
+ctl.AddMsgIntf(dir=out, name=mi, type=CCtlMsg, autoConn=false);
+ctl.AddMsgIntf(dir=in, name=mi, type=CCtlMsg, queueW=5, autoConn=false);
+
+ctl.AddShared()
+	.AddVar(type=bool, name=bSendCtlMsg)
+	.AddVar(type=bool, name=bRcvdCtlMsg)
+	;

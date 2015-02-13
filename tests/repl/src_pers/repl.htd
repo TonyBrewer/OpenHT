@@ -1,0 +1,106 @@
+////////////////////////////////////////////////////
+// Ctl Module
+#define CTL_HTID_W 1
+
+dsnInfo.AddModule(name=Ctl, htIdW=CTL_HTID_W);
+Ctl.AddInst(name=ENTRY);
+Ctl.AddInst(name=CALL_A);
+Ctl.AddInst(name=CALL_B);
+Ctl.AddInst(name=CALL_C);
+Ctl.AddInst(name=CALL_D);
+Ctl.AddInst(name=CALL_E);
+Ctl.AddInst(name=LOOP_CHK);
+
+Ctl.AddPrivate()
+	.AddVar(type=uint32_t, name=rsltMask)
+	.AddVar(type=uint16_t, name=loopCnt)
+	.AddVar(type=uint16_t, name=loopCntLimit)
+	.AddVar(type=uint16_t, name=errorCnt)
+	.AddVar(type=uint32_t, name=result)
+	;
+
+Ctl.AddEntry(func=htmain, inst=ENTRY, host=true)
+	.AddParam(hostType=uint32_t, type=uint16_t, name=loopCntLimit)
+	;
+
+Ctl.AddReturn(func=htmain)
+	.AddParam(hostType=uint16_t, type=uint16_t, name=errorCnt)
+	;
+
+Ctl.AddCall(func=ModA, queueW=2);
+//Ctl.AddCall(func=ModB, queueW=1);
+
+////////////////////////////////////////////////////
+// ModA Module
+#define MODA_HTID_W 2
+
+dsnInfo.AddModule(name=ModA, htIdW=MODA_HTID_W);
+ModA.AddInst(name=ENTRY);
+ModA.AddInst(name=RETURN);
+
+ModA.AddPrivate()
+	.AddVar(type=uint8_t, name=shft)
+	.AddVar(type=uint8_t, name=value)
+	.AddVar(type=uint32_t, name=result)
+	;
+
+ModA.AddEntry(func=ModA, inst=ENTRY)
+	.AddParam(type=uint8_t, name=shft)
+	.AddParam(type=uint8_t, name=value)
+	.AddParam(type=uint32_t, name=result)
+	;
+
+ModA.AddReturn(func=ModA)
+	.AddParam(type=uint32_t, name=result)
+	;
+
+ModA.AddCall(func=ModX, queueW=1);
+
+////////////////////////////////////////////////////
+// ModB Module
+#define MODB_HTID_W 2
+
+dsnInfo.AddModule(name=ModB, htIdW=MODB_HTID_W);
+ModB.AddInst(name=ENTRY);
+ModB.AddInst(name=RETURN);
+
+ModB.AddPrivate()
+	.AddVar(type=uint8_t, name=shft)
+	.AddVar(type=uint8_t, name=value)
+	.AddVar(type=uint32_t, name=result)
+	;
+
+ModB.AddEntry(func=ModB, inst=ENTRY)
+	.AddParam(type=uint8_t, name=shft)
+	.AddParam(type=uint8_t, name=value)
+	.AddParam(type=uint32_t, name=result)
+	;
+
+ModB.AddReturn(func=ModB)
+	.AddParam(type=uint32_t, name=result)
+	;
+
+ModB.AddCall(func=ModX, queueW=2);
+
+////////////////////////////////////////////////////
+// ModX Module
+#define MODX_HTID_W 2
+
+dsnInfo.AddModule(name=ModX, htIdW=MODX_HTID_W);
+ModX.AddInst(name=ENTRY);
+
+ModX.AddPrivate()
+	.AddVar(type=uint8_t, name=shft)
+	.AddVar(type=uint8_t, name=value)
+	.AddVar(type=uint32_t, name=result)
+	;
+
+ModX.AddEntry(func=ModX, inst=ENTRY)
+	.AddParam(type=uint8_t, name=shft)
+	.AddParam(type=uint8_t, name=value)
+	.AddParam(type=uint32_t, name=result)
+	;
+
+ModX.AddReturn(func=ModX)
+	.AddParam(type=uint32_t, name=result)
+	;

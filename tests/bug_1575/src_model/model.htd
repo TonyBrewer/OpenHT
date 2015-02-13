@@ -1,0 +1,17 @@
+dsnInfo.AddModule(name=model, htIdW=0);
+
+model.AddInst(name=MODEL);
+
+
+model.AddPrivate()
+	.AddVar(type=uint32_t, name=len)
+	.AddVar(type=uint32_t, name=sum)
+	;
+
+model.AddEntry(func=htmain, inst=MODEL, host=true)
+	.AddParam(type=uint32_t, name=len)
+	;
+
+model.AddReturn(func=htmain)
+	.AddParam(type=uint32_t, name=sum)
+	;

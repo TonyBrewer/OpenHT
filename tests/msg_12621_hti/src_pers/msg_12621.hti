@@ -1,0 +1,14 @@
+#include "Pers_src.h"
+
+AddModInstParams(unit=Au, modPath="ctl/modB", replCnt=B_REPL);
+AddModInstParams(unit=Au, modPath="ctl/modC", replCnt=C_REPL);
+AddModInstParams(unit=Au, modPath="ctl/modD", replCnt=D_REPL);
+
+AddMsgIntfConn(outUnit=Au[0], outPath=ctl/modA/AtoB[0], inUnit=Au[0], inPath=ctl/modB[0]/AtoB);
+AddMsgIntfConn(outUnit=Au[0], outPath=ctl/modA/AtoB[1], inUnit=Au[0], inPath=ctl/modB[1]/AtoB);
+
+AddMsgIntfConn(outUnit=Au[1], outPath=ctl/modA/AtoB[0], inUnit=Au[1], inPath=ctl/modB[0]/AtoB);
+AddMsgIntfConn(outUnit=Au[1], outPath=ctl/modA/AtoB[1], inUnit=Au[1], inPath=ctl/modB[1]/AtoB);
+
+AddMsgIntfConn(outUnit=Au, outPath=ctl/modD[0]/DtoE, inUnit=Au, inPath=ctl/modE/DtoE[0]);
+AddMsgIntfConn(outUnit=Au, outPath=ctl/modD[1]/DtoE, inUnit=Au, inPath=ctl/modE/DtoE[1]);

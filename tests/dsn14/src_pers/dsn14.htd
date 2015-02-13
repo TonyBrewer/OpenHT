@@ -1,0 +1,220 @@
+////////////////////////////////////////////////////
+// Ctl Module
+
+#define CTL_HTID_W 1
+#define CTL_LOOP_CNT 16
+
+typedef sc_uint<CTL_HTID_W> HtId_t;
+
+dsnInfo.AddModule(name=ctl, htIdW=CTL_HTID_W);
+ctl.AddInst(name=CTL_INIT);
+ctl.AddInst(name=CTL_T1_ASYNC);
+ctl.AddInst(name=CTL_T1_JOIN);
+ctl.AddInst(name=CTL_T1_CALL);
+ctl.AddInst(name=CTL_T2_ASYNC);
+ctl.AddInst(name=CTL_T2_JOIN);
+ctl.AddInst(name=CTL_T2_CALL);
+ctl.AddInst(name=CTL_T3_CALL);
+ctl.AddInst(name=CTL_T4_CALL);
+ctl.AddInst(name=CTL_RTN);
+
+
+ctl.AddPrivate()
+	.AddVar(name=loopCnt, type=uint8_t)
+	.AddVar(name=sumCnt, type=uint32_t)
+	;
+
+ctl.AddShared()
+	.AddVar(name=totalCnt, type=uint32_t)
+	;
+
+ctl.AddEntry(func=htmain, inst=CTL_INIT, host=true)
+	;
+
+ctl.AddReturn(func=htmain)
+	;
+
+ctl.AddCall(func=t1, call=true, fork=true)
+	;
+
+ctl.AddCall(func=t2, call=true, fork=true)
+	;
+
+ctl.AddCall(func=t3)
+	;
+
+ctl.AddCall(func=t4)
+	;
+
+////////////////////////////////////////////////////
+// T1 Module
+
+#define T1_HTID_W 0
+#define T1_LOOP_CNT 4
+
+//typedef sc_uint<T1_HTID_W> T1HtId_t;
+
+dsnInfo.AddModule(name=t1, htIdW=T1_HTID_W);
+t1.AddInst(name=T1_INIT);
+t1.AddInst(name=T1_CALL);
+t1.AddInst(name=T1_JOIN);
+t1.AddInst(name=T1_RTN);
+
+
+t1.AddPrivate()
+	.AddVar(name=loopCnt, type=uint8_t)
+	.AddVar(name=sumCnt, type=uint32_t)
+	;
+
+t1.AddShared()
+	.AddVar(name=totalCnt, type=uint32_t)
+	;
+
+t1.AddEntry(func=t1, inst=T1_INIT)
+	;
+
+t1.AddReturn(func=t1)
+	.AddParam(name=sumCnt, type=uint32_t)
+	;
+
+t1.AddCall(func=sum, queueW=0, fork=true)
+	;
+
+////////////////////////////////////////////////////
+// T2 Module
+
+#define T2_HTID_W 3
+#define T2_LOOP_CNT 32
+
+typedef sc_uint<T2_HTID_W> T2HtId_t;
+
+dsnInfo.AddModule(name=t2, htIdW=T2_HTID_W);
+t2.AddInst(name=T2_INIT);
+t2.AddInst(name=T2_CALL);
+t2.AddInst(name=T2_JOIN);
+t2.AddInst(name=T2_RTN);
+
+
+t2.AddPrivate()
+	.AddVar(name=loopCnt, type=uint8_t)
+	.AddVar(name=sumCnt, type=uint32_t)
+	;
+
+t2.AddShared()
+	.AddVar(name=totalCnt, type=uint32_t, dimen1=(1<<T2_HTID_W))
+	;
+
+t2.AddStage()
+	.AddVar(name=cmdQueSize, type=ht_uint8, range=1)
+	;
+
+t2.AddEntry(func=t2, inst=T2_INIT)
+	;
+
+t2.AddReturn(func=t2)
+	.AddParam(name=sumCnt, type=uint32_t)
+	;
+
+t2.AddCall(func=sum, queueW=3, fork=true)
+	;
+
+////////////////////////////////////////////////////
+// T3 Module
+
+#define T3_HTID_W 4
+#define T3_LOOP_CNT 32
+
+typedef sc_uint<T3_HTID_W> T3HtId_t;
+
+dsnInfo.AddModule(name=t3, htIdW=T3_HTID_W);
+t3.AddInst(name=T3_INIT);
+t3.AddInst(name=T3_CALL);
+t3.AddInst(name=T3_JOIN);
+t3.AddInst(name=T3_RTN);
+
+
+t3.AddPrivate()
+	.AddVar(name=loopCnt, type=uint8_t)
+	.AddVar(name=sumCnt, type=uint32_t)
+	;
+
+t3.AddShared()
+	.AddVar(name=totalCnt, type=uint32_t)
+	;
+
+t3.AddGlobal(var=strSetL, addr1W=5)
+	.AddField(type=uint64_t, name=data0, read=false, write=true)
+	;
+
+t3.AddEntry(func=t3, inst=T3_INIT)
+	;
+
+t3.AddReturn(func=t3)
+	.AddParam(name=sumCnt, type=uint32_t)
+	;
+
+t3.AddCall(func=sum, fork=true, queueW=0)
+	;
+
+////////////////////////////////////////////////////
+// T4 Module
+
+#define T4_HTID_W 4
+#define T4_LOOP_CNT 32
+
+typedef sc_uint<T4_HTID_W> T4HtId_t;
+
+dsnInfo.AddModule(name=t4, htIdW=T4_HTID_W);
+t4.AddInst(name=T4_INIT);
+t4.AddInst(name=T4_CALL);
+t4.AddInst(name=T4_JOIN);
+t4.AddInst(name=T4_RTN);
+
+
+t4.AddPrivate()
+	.AddVar(name=loopCnt, type=uint8_t)
+	.AddVar(name=addr, type=ht_uint5)
+	.AddVar(name=sumCnt, type=uint32_t)
+	;
+
+t4.AddShared()
+	.AddVar(name=totalCnt, type=uint32_t)
+	;
+
+t4.AddGlobal(var=strSetL, addr1W=5, extern=true, addr1=addr)
+	.AddField(type=uint64_t, name=data0, read=true, write=false)
+	;
+
+t4.AddEntry(func=t4, inst=T4_INIT)
+	;
+
+t4.AddReturn(func=t4)
+	.AddParam(name=sumCnt, type=uint32_t)
+	;
+
+t4.AddCall(func=sum, fork=true)
+	;
+
+////////////////////////////////////////////////////
+// SUM Module
+
+#define SUM_HTID_W 3
+#define SUM_LOOP_CNT 64
+
+typedef sc_uint<SUM_HTID_W> SumHtId_t;
+
+dsnInfo.AddModule(name=sum, htIdW=SUM_HTID_W);
+sum.AddInst(name=SUM_INIT);
+sum.AddInst(name=SUM_LOOP);
+
+
+sum.AddPrivate()
+	.AddVar(name=loopCnt, type=uint8_t)
+	;
+
+sum.AddEntry(func=sum, inst=SUM_INIT)
+	;
+
+sum.AddReturn(func=sum)
+	.AddParam(name=sumCnt, type=uint32_t)
+	;

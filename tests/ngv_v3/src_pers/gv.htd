@@ -1,0 +1,83 @@
+#define USE_ATOMIC_INC 0
+
+struct CGVar {
+#if USE_ATOMIC_INC == 1
+#pragma htl atomic_inc
+#endif
+	ht_uint9 m_x;
+};
+
+////////////////////////////////////////////////////
+// Ctl Module
+
+dsnInfo.AddModule(name=ctl, htIdW=0, clock=1x);
+ctl.AddInst(name=ENTRY);
+ctl.AddInst(name=JOIN_GV1);
+ctl.AddInst(name=JOIN_GV2);
+ctl.AddInst(name=PAUSE_GV1);
+ctl.AddInst(name=PAUSE_GV2);
+ctl.AddInst(name=RETURN);
+
+ctl.AddEntry(func=htmain, inst=ENTRY, host=true)
+	;
+
+ctl.AddReturn(func=htmain)
+	;
+
+ctl.AddCall(func=gv1, fork=true)
+	;
+
+ctl.AddCall(func=gv2, fork=true)
+	;
+
+ctl.AddPrivate()
+	.AddVar(type=ht_uint8, name=forkCnt)
+	;
+
+////////////////////////////////////////////////////
+// Gv1 Module
+
+dsnInfo.AddModule(name=gv1, htIdW=0, clock=1x);
+gv1.AddInst(name=GV1_ENTRY);
+gv1.AddInst(name=GV1_LOOP);
+gv1.AddInst(name=GV1_RETURN);
+
+gv1.AddEntry(func=gv1, inst=GV1_ENTRY)
+	;
+
+gv1.AddPrivate()
+	.AddVar(type=ht_uint9, name=loopCnt)
+	.AddVar(type=ht_uint9, name=x)
+	.AddVar(type=ht_uint1, name=gvAddr)
+	;
+
+gv1.AddReturn(func=gv1)
+	;
+
+gv1.AddGlobal()
+	.AddVar(type=CGVar, name=Gvar, dimen1=2, dimen2=4, addr1W=1, addr1=gvAddr, maxIw=true)
+	;
+
+////////////////////////////////////////////////////
+// Gv2 Module
+
+dsnInfo.AddModule(name=Gv2, htIdW=3, clock=1x);
+Gv2.AddInst(name=GV2_ENTRY);
+Gv2.AddInst(name=GV2_LOOP);
+Gv2.AddInst(name=GV2_RETURN);
+
+Gv2.AddEntry(func=gv2, inst=GV2_ENTRY)
+	;
+
+Gv2.AddPrivate()
+	.AddVar(type=ht_uint9, name=loopCnt)
+	.AddVar(type=ht_uint9, name=x)
+	.AddVar(type=ht_uint1, name=gvAddr)
+	;
+
+Gv2.AddReturn(func=gv2)
+	;
+
+Gv2.AddGlobal()
+	.AddVar(type=CGVar, name=Gvar, dimen1=2, dimen2=4, addr1W=1, addr1=gvAddr)
+	;

@@ -1,0 +1,23 @@
+--------------------------------------------------------------------------------
+vadd_lib example
+--------------------------------------------------------------------------------
+The vadd_lib project is an example of how the library build flow can be used to 
+build the application separately from the HT-specific portion of the code.  The 
+HT code is compiled first, then linked into the main application.
+
+Step 1:  Build the HT library:
+
+  make libapp - build the library for the application
+  make libsysc - build the library for the systemC simulation
+  make libmodel - build the library for the functional model simulation
+
+Step 2:  Build the application
+
+    cd hostapp
+    make
+
+  This build 3 applications:
+
+    vadd - application to run on the Convey system
+    vadd_sysc - application to run systemC simulation
+    vadd_model - application to run functional model simulation

@@ -1,0 +1,43 @@
+////////////////////////////////////////////////////
+// Echo Module
+
+#define INC_HTID_W 3
+
+typedef sc_uint<INC_HTID_W> htid_t;
+typedef sc_uint<48> ht_uint48;
+
+dsnInfo.AddModule(name=echo, clock=1x, htIdW=INC_HTID_W);
+echo.AddInst(name=ECHO_INIT);
+echo.AddInst(name=ECHO_DATA);
+
+echo.AddHostMsg(dir=in, name=SU_ARRAY_ADDR)
+	.AddDst(var=arrayAddr, dataLsb=0)
+	;
+
+echo.AddHostData(dir=in);
+echo.AddHostData(dir=out);
+
+echo.AddPrivate()
+	.AddVar(type=uint16_t, name=callCnt)
+	.AddVar(type=uint16_t, name=dataCnt)
+	.AddVar(type=ht_uint2, name=arrayMemRdPtr)
+	;
+
+echo.AddShared()
+	.AddVar(type=ht_uint48, name=arrayAddr)
+	;
+
+echo.AddEntry(func=echo, inst=ECHO_INIT, host=true)
+	.AddParam(type=uint16_t, name=callCnt)
+	;
+echo.AddReturn(func=echo)
+	.AddParam(type=uint16_t, name=rtnCnt)
+	;
+
+echo.AddReadMem(queueW=5, rspCntW=2)
+	.AddDst(name=arrayMem, var=arrayMem, field=data)
+	;
+
+echo.AddGlobal(var=arrayMem, addr1=arrayMemRdPtr, addr1W=2)
+	.AddField(type=uint64_t, name=data, read=true, write=false)
+	;

@@ -1,0 +1,223 @@
+# Copyright (c) 2015 Convey Computer Corporation
+#
+# This file is part of the OpenHT toolset located at:
+#
+# https://github.com/TonyBrewer/OpenHT
+#
+# Use and distribution licensed under the BSD 3-clause license.
+# See the LICENSE file for the complete license text.
+
+HT_LIB = $(HT_DIR)/ht_lib
+SC_DIR = $(HT_DIR)/systemc-2.3.1
+
+ifeq ($(shell uname), Darwin)
+ SC_LIB = $(SC_DIR)/lib-macosx64/libsystemc.a
+else
+ SC_LIB = $(SC_DIR)/lib-linux64/libsystemc.a
+endif
+
+#####
+
+CXX	?= g++
+CC	?= gcc
+DOT	?= /usr/bin/dot
+
+DEFAULT_CFLAGS = -O2 -g -Wall
+ifneq ($(shell uname), Darwin)
+DEFAULT_CFLAGS += -fno-strict-aliasing -Wno-parentheses
+endif
+
+CNY_HT_CFLAGS_MODEL ?= $(DEFAULT_CFLAGS)
+CNY_HT_CFLAGS_SYSC  ?= $(DEFAULT_CFLAGS)
+CNY_HT_CFLAGS_VSIM  ?= $(DEFAULT_CFLAGS)
+CNY_HT_CFLAGS_APP   ?= $(DEFAULT_CFLAGS)
+
+PLAT_wx-690_HT_AE_CNT = 1
+PLAT_${CNY_PDK_PLATFORM}_HT_AE_CNT ?= 4
+HT_AE_CNT = $(PLAT_${CNY_PDK_PLATFORM}_HT_AE_CNT)
+
+ifneq ($(origin CNY_HT_AEUCNT), undefined)
+CFLAGS += -DHT_UNIT_CNT=$(CNY_HT_AEUCNT)
+endif
+
+model libmodel:	CFLAGS += $(CNY_HT_DEFINES)
+model libmodel:	CFLAGS += $(CNY_HT_CFLAGS_MODEL)
+model libmodel:	CFLAGS += -DHT_MODEL
+model libmodel:	CFLAGS += -I$(PWD)/ht/model
+
+sysc libsysc:	CFLAGS += $(CNY_HT_DEFINES)
+sysc libsysc:	CFLAGS += $(CNY_HT_CFLAGS_SYSC)
+sysc libsysc:	CFLAGS += -DHT_SYSC
+sysc libsysc:	CFLAGS += -I$(SC_DIR)/include
+sysc libsysc:	CFLAGS += -I$(PWD)/ht/sysc
+sysc libsysc:	CFLAGS += -I$(PWD)/src_pers
+sysc libsysc:	LDLIBS += $(SC_LIB)
+
+vsim libvsim vfiles:	CFLAGS += $(CNY_HT_DEFINES)
+vsim libvsim vfiles:	CFLAGS += $(CNY_HT_CFLAGS_VSIM)
+vsim libvsim vfiles:	CFLAGS += -DHT_VSIM
+vsim libvsim vfiles:	CFLAGS += -I$(CNY_PATH)/include
+vsim libvsim vfiles:	CFLAGS += -I$(PWD)/ht/vsim
+ifneq ($(findstring wx,$(CNY_PDK_PLATFORM)),)
+vsim libvsim vfiles:	CFLAGS += -DHT_AE_CNT=$(HT_AE_CNT)
+endif
+
+app libapp:	CFLAGS += $(CNY_HT_DEFINES)
+app libapp:	CFLAGS += $(CNY_HT_CFLAGS_APP)
+app libapp:	CFLAGS += -DHT_APP
+app libapp:	CFLAGS += -I$(CNY_PATH)/include
+app libapp:	CFLAGS += -I$(PWD)/ht/app
+app libapp:	CFLAGS += -DHT_AE_CNT=$(HT_AE_CNT)
+
+HtHif.o HtHif.po: CFLAGS += -DHT_NICK=$(CNY_HT_NICK)
+
+ifneq ($(findstring ConveyOS,$(HT_HOST_API)),)
+CFLAGS += -DCNYOS_API
+endif
+ifneq ($(origin CNY_HT_ASSERT), undefined)
+CFLAGS += -DHT_ASSERT
+endif
+CFLAGS += -m64
+CFLAGS += -I$(HT_LIB)
+CFLAGS += -I$(SDIR)
+
+CXXFLAGS = $(CFLAGS)
+
+vsim libvsim app libapp:LDLIBS += -L $(CNY_PATH)/lib
+ifneq ($(findstring Driver,$(HT_HOST_API)),)
+app libapp  :LDLIBS += -lwx_runtime
+vsim libvsim:LDLIBS += -lwx_sim_runtime -lcpSimLib2_wx
+else
+vsim libvsim app libapp:LDLIBS += $(CNY_PATH)/lib/cny_initruntime.o
+vsim libvsim app libapp:LDLIBS += -lcny_utils -lPersSupport
+endif
+vsim libvsim app libapp:LDLIBS += -ldl
+
+LDLIBS += $(HT_LIB)/libht.a -lm -lpthread
+
+#####
+
+U2D	= $(shell which unix2dos 2>/dev/null)
+ifeq ($(U2D),)
+ U2D	= touch
+endif
+
+HTV = $(HT_DIR)/bin/htv
+HTL = $(HT_DIR)/bin/htl
+
+HTV_FLAGS += $(CNY_HT_DEFINES)
+HTV_FLAGS += -I $(HT_LIB) -I $(HT_LIB)/sysc -I $(SDIR) -I $(STDIR)
+ifneq ($(findstring wx,$(CNY_PDK_PLATFORM)),)
+HTV_FLAGS += -vivado
+endif
+ifneq ($(origin TGT), undefined)
+HTV_FLAGS += -DHT_$(TGT)
+endif
+ifneq ($(origin CNY_HT_ASSERT), undefined)
+HTV_FLAGS += -DHT_ASSERT
+endif
+ifneq ($(origin CNY_HT_AEUCNT), undefined)
+HTV_FLAGS += -DHT_UNIT_CNT=$(CNY_HT_AEUCNT)
+endif
+
+HTL_FLAGS += -I $(SDIR) -I $(STDIR)
+HTL_FLAGS += $(CNY_HT_DEFINES)
+ifneq ($(origin TGT), undefined)
+HTL_FLAGS += -DHT_$(TGT)
+endif
+ifneq ($(origin CNY_HT_AEUCNT), undefined)
+HTL_FLAGS += -uc $(CNY_HT_AEUCNT)
+endif
+ifneq ($(origin CNY_HT_ASSERT), undefined)
+HTL_FLAGS += -DHT_ASSERT
+endif
+ifneq ($(origin CNY_HT_SIM_VCD), undefined)
+HTL_FLAGS += -vcd
+endif
+ifneq ($(origin CNY_HT_SIM_ML), undefined)
+HTL_FLAGS += -ml $(CNY_HT_SIM_ML)
+endif
+ifneq ($(origin CNY_HT_SIM_NRI), undefined)
+HTL_FLAGS += -nri
+endif
+ifneq ($(origin CNY_HT_SIM_RR), undefined)
+HTL_FLAGS += -rr
+endif
+
+PLAT_DEF = $(shell echo $(CNY_PDK_PLATFORM) | tr a-z A-Z | sed 's/-//g')
+
+HTL_FLAGS += -cp $(CNY_PDK_PLATFORM) -D$(PLAT_DEF)
+ifneq ($(findstring MODEL,$(TGT)),)
+HTL_FLAGS += -mo
+endif
+HTL_FLAGS += -vr
+
+#####
+
+.PHONY: hfiles
+hfiles: | SyscTop.h
+SyscTop.h: | SyscAeTop.h
+SyscAeTop.h: | PersAeTop.h
+PersAeTop.h: | $(HFILES)
+
+ifneq (,$(HT_HTIS))
+HTL_FLAGS += $(addprefix -if , $(HT_HTIS))
+endif
+
+HostIntf.h: $(HT_HTDS)
+	@echo $(HTL) $(HTL_FLAGS) $(HT_HTDS) .
+	@$(HTL) $(HTL_FLAGS) $(HT_HTDS) .
+	@if [ -f HtPrivRpt.txt ]; then \
+	    mv HtPrivRpt.txt ..; \
+	fi
+	@for f in `ls Ht*Rpt.*`; do \
+	    mv $$f ../..; \
+	done
+	@-if [ -x $(DOT) -a -f HtCallGraph.dot ]; then \
+	    $(DOT) -Tpng -o ../HtCallGraph.png HtCallGraph.dot; \
+	fi
+
+#####
+
+vpath %.cpp $(SDIR) $(STDIR) $(HT_LIB)/host $(HT_LIB)/sysc
+vpath %.cc $(SDIR) $(STDIR)
+vpath %.c $(SDIR) $(STDIR)
+vpath %.sc $(HT_LIB)/sysc 
+
+../verilog:
+	mkdir -p $@
+
+../verilog/%.v: %.cpp | ../verilog
+	$(HTV) $(HTV_FLAGS) $< $@
+	@if [ -f $(PWD)/src_pers/$(notdir $(<:.cpp=_src.cpp)) ]; then \
+	    echo ../verilog/$(<:.cpp=.v): $(PWD)/src_pers/$(notdir $(<:.cpp=_src.cpp)) >> $*.P; \
+	fi
+
+../verilog/%.v: %.sc | ../verilog
+	$(HTV) $(HTV_FLAGS) $? .sc_foo.h $@
+	@rm -f .sc_foo.h
+
+%.h: %.sc
+	$(HTV) $(HTV_FLAGS) -I ../../src $? $@ .sc_foo.v
+	@$(U2D) $@ 2> /dev/null
+	@rm -f .sc_foo.v
+
+%.o : %.cpp
+	$(COMPILE.cpp) -MD -o $@ $<
+
+%.o : %.cc
+	$(COMPILE.cpp) -MD -o $@ $<
+
+%.o : %.c
+	$(COMPILE.c) -MD -o $@ $<
+
+%.po : %.cpp
+	$(COMPILE.cpp) -fPIC -o $@ $<
+
+%.po : %.cc
+	$(COMPILE.cpp) -fPIC -o $@ $<
+
+%.po : %.c
+	$(COMPILE.c) -fPIC -o $@ $<
+
+-include $(OBJS:.o=.d)

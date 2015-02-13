@@ -1,0 +1,184 @@
+////////////////////////////////////////////////////
+// Top-level - Dispaches a row of data to calculate to PersAuRow
+
+dsnInfo.AddModule(name=ctl, htIdW=0);
+
+ctl.AddInst(name=CTL_ROW);
+ctl.AddInst(name=CTL_JOIN);
+ctl.AddInst(name=CTL_RTN);
+
+ctl.AddHostMsg(dir=in, name=MC_ROW)
+	.AddDst(var=mcRow)
+	;
+
+
+ctl.AddShared()
+	.AddVar(type=uint32_t, name=mcRow)
+	;
+
+ctl.AddPrivate()
+	.AddVar(type=uint32_t, name=rowIdx)
+	.AddVar(type=uint32_t, name=rowStride)
+	;
+
+ctl.AddEntry(func=htmain, inst=CTL_ROW, host=true)
+	.AddParam(type=uint32_t, name=rowIdx)
+	.AddParam(type=uint32_t, name=rowStride)
+	;
+
+ctl.AddReturn(func=htmain)
+	;
+
+ctl.AddCall(func=row, fork=true);
+
+
+////////////////////////////////////////////////////
+// Loops over all entries in a row, dispatching each to PersAuSub
+dsnInfo.AddModule(name=row, htIdW=1);
+
+row.AddInst(name=ROW_ENTRY);
+row.AddInst(name=ROW_JOIN);
+row.AddInst(name=ROW_RTN);
+
+row.AddHostMsg(dir=in, name=MC_COL)
+	.AddDst(var=mcCol)
+	;
+
+
+row.AddShared()
+	.AddVar(type=uint32_t, name=mcCol)
+	;
+
+row.AddPrivate()
+	.AddVar(type=uint32_t, name=rowIdx)
+	.AddVar(type=uint32_t, name=eleIdx)
+	;
+
+row.AddEntry(func=row, inst=ROW_ENTRY)
+	.AddParam(type=uint32_t, name=rowIdx)
+	.AddParam(type=uint32_t, name=eleIdx)
+	;
+
+row.AddReturn(func=row)
+	;
+
+row.AddCall(func=sub, fork=true);
+
+
+////////////////////////////////////////////////////
+// Loops over a single entry in a row, dispatching each calc to PersAuMult
+#define SUB_W 4
+typedef ht_uint48 MemAddr_t;
+
+dsnInfo.AddModule(name=sub, htIdW=SUB_W);
+
+sub.AddInst(name=SUB_ENTRY);
+sub.AddInst(name=SUB_JOIN);
+sub.AddInst(name=SUB_STORE);
+sub.AddInst(name=SUB_RTN);
+
+sub.AddHostMsg(dir=in, name=MC_BASE)
+	.AddDst(var=mcBase)
+	;
+sub.AddHostMsg(dir=in, name=MC_COL)
+	.AddDst(var=mcCol)
+	;
+sub.AddHostMsg(dir=in, name=COMMON)
+	.AddDst(var=comRC)
+	;
+
+
+
+sub.AddShared()
+	.AddVar(type=MemAddr_t, name=mcBase)
+	.AddVar(type=uint32_t, name=mcCol)
+	.AddVar(type=uint32_t, name=comRC)
+	;
+
+sub.AddPrivate()
+	.AddVar(type=uint32_t, name=rowIdx)
+	.AddVar(type=uint32_t, name=eleIdx)
+	.AddVar(type=uint32_t, name=calcIdx)
+	.AddVar(type=uint64_t, name=result)
+	.AddVar(type=uint64_t, name=eleSum)
+	;
+
+sub.AddEntry(func=sub, inst=SUB_ENTRY)
+	.AddParam(type=uint32_t, name=rowIdx)
+	.AddParam(type=uint32_t, name=eleIdx)
+	.AddParam(type=uint32_t, name=calcIdx)
+	;
+
+sub.AddReturn(func=sub)
+	;
+
+sub.AddCall(func=mult, fork=true);
+
+
+sub.AddWriteMem();
+
+
+////////////////////////////////////////////////////
+// Loops over a single entry in a row, dispatching each calc to PersAuMult
+#define MULT_W 4
+typedef ht_uint48 MemAddr_t;
+
+dsnInfo.AddModule(name=mult, htIdW=MULT_W);
+
+mult.AddInst(name=MULT_LD1);
+mult.AddInst(name=MULT_LD2);
+mult.AddInst(name=MULT_CALC);
+mult.AddInst(name=MULT_RTN);
+
+mult.AddHostMsg(dir=in, name=MA_BASE)
+	.AddDst(var=maBase)
+	;
+mult.AddHostMsg(dir=in, name=MB_BASE)
+	.AddDst(var=mbBase)
+	;
+mult.AddHostMsg(dir=in, name=MC_ROW)
+	.AddDst(var=mcRow)
+	;
+mult.AddHostMsg(dir=in, name=MC_COL)
+	.AddDst(var=mcCol)
+	;
+
+
+mult.AddShared()
+	.AddVar(type=MemAddr_t, name=maBase)
+	.AddVar(type=MemAddr_t, name=mbBase)
+	.AddVar(type=uint32_t, name=mcRow)
+	.AddVar(type=uint32_t, name=mcCol)
+	.AddVar(type=uint64_t, name=op1Mem, addr1W=MULT_W)
+	.AddVar(type=uint64_t, name=op2Mem, addr1W=MULT_W)
+	;
+
+mult.AddPrivate()
+	.AddVar(type=uint32_t, name=rowIdx)
+	.AddVar(type=uint32_t, name=eleIdx)
+	.AddVar(type=uint32_t, name=calcIdx)
+	.AddVar(type=uint32_t, name=op1)
+	.AddVar(type=uint32_t, name=op2)
+	.AddVar(type=uint64_t, name=result)
+	;
+
+mult.AddStage(privWrStg=6, execStg=1)
+	.AddVar(type=uint64_t, name=res, range=6, primOut=true)
+	;
+
+mult.AddEntry(func=mult, inst=MULT_LD1)
+	.AddParam(type=uint32_t, name=rowIdx)
+	.AddParam(type=uint32_t, name=eleIdx)
+	.AddParam(type=uint32_t, name=calcIdx)
+	;
+
+mult.AddReturn(func=mult)
+	.AddParam(type=uint64_t, name=result)
+	;
+
+mult.AddReadMem(queueW=1, rspCntW=1)
+	.AddDst(var=op1Mem)
+	.AddDst(var=op2Mem)
+	;
+
+mult.AddPrimState(type=mult_prm_state, name=mult_prm_state1, include="PersMult_prim.h");

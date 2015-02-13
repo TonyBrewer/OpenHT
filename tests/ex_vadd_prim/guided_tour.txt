@@ -1,0 +1,185 @@
+--------------------------------------------------------------------------------
+Guided tour of the Vector Add (using verilog primative) example design
+--------------------------------------------------------------------------------
+The Vector Add design is a simple example that illustrates the incorporation of a verilog module using the HT toolset.  The design implements the following function 
+using HT instructions along with a verilog module running on the Convey coprocessor:
+
+    uint64_t vadd(uint64_t *a1, uint64_t *a2, uint64_t *a3, uint64_t vecLen)
+    {
+	uint64_t sum = 0;
+	for (i=0; i<vecLen; i++) {
+	    a3[i] = a1[i] + a2[i];
+	    sum += a3[i];
+	}
+	return sum;
+    }
+
+This guided tour provides an overview of this design and is divided into the 
+following sections:
+
+Section 1 - Source files
+Section 2 - Build steps
+Section 3 - Generated files
+Section 4 - Reports
+
+--------------------------------------------------------------------------------
+Section 1 - Source files
+--------------------------------------------------------------------------------
+
+The following are source files for the vadd project:
+
+ex_vadd_prim
+|-- Makefile
+|-- src 		- Host source code
+|   `-- Main.cpp
+`-- src_pers 		- Personality source code
+    |-- PersAdd_src.cpp
+    |-- PersCtl_src.cpp
+    |-- vadd.htd
+    |-- PersAdd_prim.cpp
+    |-- PersAdd_prim.h
+    `-- prims.v
+    
+
+The host source src/Main.cpp does the following:
+  - allocates memory and fills operand arrays
+  - constructions the HtHif (HT Host Interface) class and allocates units
+  - copies arrays to coprocessor memory
+  - sends message to coprocessor with pointer to arrays
+  - sends calls to the units to compute vector add
+  - waits for return from each unit
+  - checks results
+
+The coprocessor source is in src_pers and is made up of the following files:
+  - vadd.htd - this is the HT description file in which the personality modules/
+    functions are defined, including variables (private/shared/global), 
+    interfaces needed (host message, call/return, memory, etc.)
+  - PersCtl_src.cpp - this is the top-level entry point into the personality.  
+    For each array element to be processed, it sends an asynchronous call 
+    (spawns a thread) to the add function (implemented in PersAdd_src.cpp).  
+    As each spawned thread returns, it accumulates the returned sum from the 
+    thread.  Once all elements have been processed, it waits for all calls 
+    to return (join), then returns the sum.
+  - PersAdd_src.cpp - this function is called for each element of the array.
+    It has the following steps/instructions:
+    - load element from operand array 1
+    - load element from operand array 2
+    - wait for read data to return (thread goes to sleep)
+    - stores the operands and sets a valid bit for the verilog primitive
+    - pauses the thread and wait for the verilog primitive to calculate the result
+    - store results, returned from the verilog primitive to a3
+    - wait for write to complete (thread goes to sleep)
+    - return result
+    The function also contains non-instruction functionality that is performed
+    every clock cycle.  The non-instruction functionality does the following:
+    - declares temporary variables to use as output of the primitive
+    - calls the verilog primitive with the inputs and outputs as arguments
+    - checks for valid output from the primitive
+    - if valid output stores the result and resumes the thread
+  - PersAdd_prim.h - defines the internal state of the primitive and the 
+    primitive function which is located in the .cpp file.  Inputs and outputs of
+    the primitive function are arguments of the function.
+  - PersAdd_prim.cpp - contains a description of the functionality of the verilog
+    module.  This description is used in the systemC simulation.
+
+--------------------------------------------------------------------------------
+Section 2 - Build Steps
+--------------------------------------------------------------------------------
+
+The build flow uses the Makefile at the top level of the project:
+the HT makefile:
+
+Makefile - type "make" to see a list of targets:
+  model	Builds functional model application (app_model)
+  sysc	Builds SystemC simulation application (app_sysc)
+  vsim	Builds Verilog simulation application (app_vsim)
+  app	Builds coprocessor application (app)
+  pers	Implements coprocessor FPGA bitfile
+
+Design and Build steps:
+
+1.  Compile the application to use the functional model.  The functional model 
+is a purely behavioral model of the personality implemented in C++.  It allows 
+the programmer to develop the host application, including the runtime interfaces 
+to the coprocessor, before developing the HT code for the coprocessor.  To build 
+the app to use the model, run
+
+	make model
+
+This compiles the host source (in src/) and the model source (in src_model/) 
+into an executable called "app_model."  
+
+2.  Compile the application using the SystemC model.  
+
+	make sysc
+
+This compiles the host source (in src/) and the personality source (in src_pers/) 
+into an executable called "app_sysc."  Running this application runs a 
+cycle-accurate SystemC simulation of the design.  Most of the development and 
+debug time is spent running SystemC simulation, which is significantly faster 
+than Verilog simulation, as well as easier to debug.
+
+3.  Compile the application for Verilog simulation:
+
+	make vsim
+
+This step generates Verilog files from the personality source (in src_pers/), 
+then build an application called "app_vsim" to run a Verilog simulation of the 
+generated code.  Running this application runs a Verilog simulation of the design 
+using either Mentor ModelSim or Synopsys VCS (based on the CNY_PDK_HDLSIM 
+environment variable (options are "Mentor" and "Synopsys").
+
+4.  Compile the application for the Convey system:
+
+	make app
+
+This application should be run on the Convey system after the personality is 
+generated.
+
+5.  Build the personality:
+
+	make pers
+
+This step builds the personality (FPGA) from the generated Verilog files using 
+the Xilinx development tools.  The FPGA build can take several hours and is 
+typically done infrequently after the design has been fully debugged in SystemC 
+simulation.
+
+--------------------------------------------------------------------------------
+Section 3 - Generated files
+--------------------------------------------------------------------------------
+
+The following files are generated during the build of the HT project:
+
+vadd
+|-- HtDsnRpt.html 	- Design report generated during build
+|-- app 		- application to run on the Convey system
+|-- app_model 		- application that uses the functional model
+|-- app_sysc 		- application for SystemC simulation
+|-- app_vsim 		- script to run Verilog simulation
+|-- app_vsim.exe 	- application for Verilog simulation
+|-- ht			- generated HT project directory
+|   |-- HtPrivRpt.txt
+|   |-- phys		- physical (Xilinx) build directory
+|   |-- sim		- Verilog simulation directory
+|   |-- sysc		- Generated files for SystemC simulation
+|   |-- verilog		- Generated Verilog files
+|   `-- vsim		- Generated files for Verilog simulation
+`-- personalities	- Generated personality directory (FPGA image)
+
+--------------------------------------------------------------------------------
+Section 4 - Reports
+--------------------------------------------------------------------------------
+HtDsnRpt.html - The design report is generated when the design is compiled and 
+contains information about the design including 
+ - generated APIs
+ - call graph (requires graphviz)
+ - generated RAMs
+
+To view the report, run
+
+	firefox HtDsnRpt.html
+
+HtMonRpt.txt - The performance monitor report is generated when the systemC
+simulation is run (./app_sysc).  This report contains information including 
+total cycle count, memory request counts and thread activity.

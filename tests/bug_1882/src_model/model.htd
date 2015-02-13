@@ -1,0 +1,14 @@
+	dsnInfo.AddModule(name=model, htIdW=0);
+	model.AddInst(name=MODEL);
+
+	model.AddPrivate()
+		;
+
+	model.AddEntry(func=htmain, inst=MODEL, host=true)
+		;
+
+	model.AddReturn(func=htmain)
+		;
+
+	model.AddHostData(dir=in);
+	model.AddHostData(dir=out);

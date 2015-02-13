@@ -1,0 +1,1312 @@
+/* Copyright (c) 2015 Convey Computer Corporation
+ *
+ * This file is part of the OpenHT toolset located at:
+ *
+ * https://github.com/TonyBrewer/OpenHT
+ *
+ * Use and distribution licensed under the BSD 3-clause license.
+ * See the LICENSE file for the complete license text.
+ */
+#include "CnyHt.h"
+#include "DsnInfo.h"
+
+vector<CHtString> const g_nullHtStringVec; // used as default argument for GenModDecl
+
+bool CDsnInfo::FindVariableWidth(CLineInfo const &lineInfo, CModule &mod, string varName, bool bHtId, bool bPrivate, bool bShared, bool bStage, int &varW)
+{
+	CField const * pBaseField, * pLastField;
+
+	if (bHtId && varName == "htId") {
+		varW = mod.m_threads.m_htIdW.AsInt();
+		return true;
+	}
+
+	if (bPrivate && mod.m_bHasThreads && 
+		IsInFieldList(lineInfo, varName, mod.m_threads.m_htPriv.m_fieldList, false, true, pBaseField, pLastField, 0)) 
+	{
+		varW = FindTypeWidth(varName, pBaseField->m_type, pBaseField->m_bitWidth, lineInfo);
+		return true;
+	}
+
+	if (bShared && IsInFieldList(lineInfo, varName, mod.m_shared.m_fieldList, false, true, pBaseField, pLastField, 0)) 
+	{
+		varW = FindTypeWidth(varName, pBaseField->m_type, pBaseField->m_bitWidth, lineInfo);
+		return true;
+	}
+
+	if (bStage && IsInFieldList(lineInfo, varName, mod.m_stage.m_fieldList, false, true, pBaseField, pLastField, 0)) 
+	{
+		varW = FindTypeWidth(varName, pBaseField->m_type, pBaseField->m_bitWidth, lineInfo);
+		return true;
+	}
+
+	return false;
+}
+
+void CDsnInfo::ListIgnoredModules()
+{
+	static bool bAlreadyCalled = false;
+	if (bAlreadyCalled) return;
+	bAlreadyCalled = true;
+
+	// an error occured that may be due to a module being ignored, list the ignored modules
+	bool bFoundOne = false;
+	for (size_t modIdx = 0; modIdx < m_modList.size(); modIdx += 1) {
+		CModule &mod = *m_modList[modIdx];
+
+		if (mod.m_bIsUsed) continue;
+
+		if (!bFoundOne) {
+			ParseMsg(Info, "The following modules were ignored because they were not found in the call chain");
+			bFoundOne = true;
+		}
+
+		ParseMsg(Info, "  %s", mod.m_modName.c_str());
+	}
+}
+
+// Transfer #defines in HTD/HTI files to defineTable
+void CDsnInfo::LoadDefineList()
+{
+	vector<string> nullParamList;
+	for (int i = 0; i < g_appArgs.GetPreDefinedNameCnt(); i += 1) {
+		m_defineTable.Insert(g_appArgs.GetPreDefinedName(i), nullParamList, g_appArgs.GetPreDefinedValue(i), true, false, string("auto"));
+	}
+
+	for (MacroMap_Iter iter = GetMacroTbl().begin(); iter != GetMacroTbl().end(); iter++ ) {
+		CMacro const & macro = iter->second;
+
+		bool bPreDefined = macro.GetName() == "__LINE__" || macro.GetName() == "_HTV";
+
+		if (macro.IsFromIncludeFile())
+			m_defineTable.Insert(macro.GetName(), macro.GetParamList(), macro.GetExpansion(), bPreDefined, macro.IsParenReqd(), string("auto"));
+		else
+			m_defineTable.Insert(macro.GetName(), macro.GetParamList(), macro.GetExpansion(), bPreDefined, macro.IsParenReqd(), string("unit"));
+
+		if (macro.GetName() == "__PLATFORM__") {
+			string str = macro.GetExpansion();
+			if (str.size() > 2 && str[0] == '"' && str[str.size()-1] == '"') {
+				str.erase(0, 1);
+				str.erase(str.size()-1, 1);
+			}
+			g_appArgs.SetHtCoproc( str.c_str() );
+		}
+	}
+}
+
+void
+CDsnInfo::GenIntfStruct(FILE *incFp, string intfName, vector<CField> &fieldList, 
+	bool bCStyle, bool bInclude, bool bData64, bool bUnion)
+{
+	string m_ = bCStyle ? "" : "m_";
+
+	if (!bCStyle) {
+		fprintf(incFp, "#ifdef _HTV\n");
+		fprintf(incFp, "%s %sIntf {\n", bUnion ? "union" : "struct", intfName.c_str());
+		fprintf(incFp, "#else\n");
+		fprintf(incFp, "%s %s {\n", bUnion ? "union" : "struct", intfName.c_str());
+		fprintf(incFp, "#endif\n");
+
+		char *pTabs = "\t";
+		if (bData64) {
+			fprintf(incFp, "\tunion {\n");
+			fprintf(incFp, "\t\tstruct {\n");
+			pTabs = "\t\t\t";
+		}
+
+		for (size_t fieldIdx = 0; fieldIdx < fieldList.size(); fieldIdx += 1) {
+			CField &field = fieldList[fieldIdx];
+
+			if (field.m_bIfDefHtv)
+				fprintf(incFp, "#ifndef _HTV\n");
+
+			if (IsBaseType(field.m_type)) {
+				CTypeDef *pTypeDef = FindTypeDef(field.m_type);
+
+				if (pTypeDef && pTypeDef->m_width.size() > 0)
+					fprintf(incFp, "%s%s %s%s:%s;\n", pTabs, pTypeDef->m_type.c_str(), m_.c_str(), field.m_name.c_str(), pTypeDef->m_width.c_str());
+				else if (pTypeDef)
+					fprintf(incFp, "%s%s %s%s;\n", pTabs, pTypeDef->m_type.c_str(), m_.c_str(), field.m_name.c_str());
+				else
+					fprintf(incFp, "%s%s %s%s;\n", pTabs, field.m_type.c_str(), m_.c_str(), field.m_name.c_str());
+			} else
+				fprintf(incFp, "%s%s %s%s;\n", pTabs, field.m_type.c_str(), m_.c_str(), field.m_name.c_str());
+
+			if (field.m_bIfDefHtv)
+				fprintf(incFp, "#endif\n");
+		}
+
+		if (bData64) {
+			fprintf(incFp, "\t\t};\n");
+			fprintf(incFp, "\t\tuint64_t\t\tm_data64;\n");
+			fprintf(incFp, "\t};\n");
+		}
+
+		fprintf(incFp, "};\n");
+		fprintf(incFp, "\n");
+	}
+
+	if (bCStyle) {
+		if (bInclude) {
+			fprintf(incFp, "#ifdef _HTV\n");
+			fprintf(incFp, "#define %s__HTL_ %s\n", intfName.c_str(), intfName.c_str());
+			fprintf(incFp, "#else\n");
+		}
+	} else {
+		fprintf(incFp, "#ifdef _HTV\n");
+		fprintf(incFp, "#define %s %sIntf\n", intfName.c_str(), intfName.c_str());
+		fprintf(incFp, "#else\n");
+	}
+
+	if (bCStyle) {
+		if (bInclude) {
+			fprintf(incFp, "#define %s %s__HTL_\n", intfName.c_str(), intfName.c_str());
+			fprintf(incFp, "%s %s {\n", bUnion ? "union" : "struct", intfName.c_str());
+			//fprintf(incFp, "\t%s() {}\n", intfName.c_str());
+		} else {
+			fprintf(incFp, "%s %s {\n", bUnion ? "union" : "struct", intfName.c_str());
+			fprintf(incFp, "#ifndef _HTV\n");
+		}
+	} else {
+		fprintf(incFp, "%s %sIntf : %s {\n", bUnion ? "union" : "struct", intfName.c_str(), intfName.c_str());
+		fprintf(incFp, "\t%sIntf() {}\n", intfName.c_str());
+	}
+
+	// compare for equal
+	CHtCode htFile(incFp);
+	const char *pTabs = "";
+	const char *pStr = "";
+	string prefixName;
+	GenStructIsEqual(htFile, pTabs, prefixName, intfName, fieldList, bCStyle, pStr, eStructAll, true);
+
+	// assignment to zero
+	pStr = "";
+	GenStructAssignToZero(htFile, pTabs, prefixName, intfName, fieldList, bCStyle, pStr, eStructAll, true);
+
+	// signal tracing
+	fprintf(incFp, "# ifdef HT_SYSC\n");
+
+	pStr = "";
+	GenStructScTrace(htFile, pTabs, prefixName, prefixName, intfName, fieldList, bCStyle, pStr, eStructAll, true);
+
+	// signal printing
+	pStr = "";
+	GenStructStream(htFile, pTabs, prefixName, intfName, fieldList, bCStyle, pStr, eStructAll, true);
+
+	fprintf(incFp, "#endif\n");
+
+	if (bCStyle && !bInclude)
+		fprintf(incFp, "#endif\n");
+
+	if (bCStyle)
+		GenUserStructFieldList(incFp, false, fieldList, bCStyle, FieldList, "");
+
+	fprintf(incFp, "};\n");
+	if (!bCStyle || bInclude)
+		fprintf(incFp, "#endif\n");
+	fprintf(incFp, "\n");
+}
+
+void CDsnInfo::GenRamIntfStruct(FILE *incFp, string intfName, CRam &ram, EStructType type)
+{
+	CHtCode htFile(incFp);
+
+	GenRamIntfStruct(htFile, "", intfName, ram, type);
+}
+
+string CDsnInfo::GenIndexStr(bool bGen, char const * pFormat, int index)
+{
+	if (!bGen) return string();
+	char buf[64];
+	sprintf(buf, pFormat, index);
+	return string(buf);
+}
+
+void 
+CDsnInfo::GenRamIntfStruct(CHtCode &code, char const * pTabs, string intfName, CRam &ram, EStructType type)
+{
+	// mode: 0-all, 1-read, 2-write
+	code.Append("%sstruct %s {\n", pTabs, intfName.c_str());
+	code.Append("%s\t#ifndef _HTV\n", pTabs);
+
+	// compare for equal
+	const char *pStr = "";
+	string prefixName;
+	GenStructIsEqual(code, pTabs, prefixName, intfName, ram.m_fieldList, ram.m_bCStyle, pStr, type);
+
+	// assignment
+	//pStr = "\t\t";
+	//prefixName = "";
+	//GenStructAssign(code, pTabs, prefixName, intfName, ram.m_fieldList, ram.m_bCStyle, pStr, type);
+
+	// assignment to zero
+	pStr = "";
+	prefixName = "";
+	GenStructAssignToZero(code, pTabs, prefixName, intfName, ram.m_fieldList, ram.m_bCStyle, pStr, type);
+
+	// signal tracing
+	pStr = "\t\t";
+	prefixName = "";
+	code.Append("%s\t#ifdef HT_SYSC\n", pTabs);
+
+	GenStructScTrace(code, pTabs, prefixName, prefixName, intfName, ram.m_fieldList, ram.m_bCStyle, pStr, type);
+
+	// signal printing
+	GenStructStream(code, pTabs, prefixName, intfName, ram.m_fieldList, ram.m_bCStyle, pStr, type);
+
+	code.Append("%s\t#endif // HT_SYSC\n", pTabs);
+	code.Append("%s\t#endif // _HTV\n", pTabs);
+
+	if (type == eGenRamWrEn)
+		GenRamWrEn(code, pTabs, "", ram);
+
+	else {
+		for (size_t fieldIdx = 0; fieldIdx < ram.m_fieldList.size(); fieldIdx += 1) {
+			CField &field = ram.m_fieldList[fieldIdx];
+
+			if (type == eStructRamRdData && (field.m_bSrcRead || field.m_bMifRead) || type != eStructRamRdData && (field.m_bSrcWrite || field.m_bMifWrite)) {
+				CTypeDef *pTypeDef = FindTypeDef(field.m_type);
+
+				if (false && field.m_dimenList.size() == 0) {
+					if (pTypeDef && pTypeDef->m_width.size() > 0)
+						code.Append("%s\t%s\tm_%s:%s;\n", pTabs, pTypeDef->m_type.c_str(), field.m_name.c_str(), pTypeDef->m_width.c_str());
+					else if (pTypeDef)
+						code.Append("%s\t%s\tm_%s;\n", pTabs, pTypeDef->m_type.c_str(), field.m_name.c_str());
+					else
+						code.Append("%s\t%s\tm_%s;\n", pTabs, field.m_type.c_str(), field.m_name.c_str());
+				} else {
+					if (pTypeDef && pTypeDef->m_type.substr(0, 3) == "int")
+						code.Append("%s\tht_int%d\tm_%s%s;\n", pTabs, pTypeDef->m_width.AsInt(), field.m_name.c_str(), field.m_dimenDecl.c_str());
+					else if (pTypeDef && pTypeDef->m_type.substr(0, 4) == "uint")
+						code.Append("%s\tht_uint%d\tm_%s%s;\n", pTabs, pTypeDef->m_width.AsInt(), field.m_name.c_str(), field.m_dimenDecl.c_str());
+					else if (pTypeDef)
+						code.Append("%s\t%s\tm_%s%s;\n", pTabs, pTypeDef->m_type.c_str(), field.m_name.c_str(), field.m_dimenDecl.c_str());
+					else
+						code.Append("%s\t%s\tm_%s%s;\n", pTabs, field.m_type.c_str(), field.m_name.c_str(), field.m_dimenDecl.c_str());
+				}
+			}
+		}
+	}
+
+	code.Append("%s};\n", pTabs);
+	code.Append("\n");
+}
+
+void
+CDsnInfo::GenStructIsEqual(CHtCode &htFile, char const * pTabs, string prefixName, string &typeName,
+	vector<CField> &fieldList, bool bCStyle, const char *&pStr, EStructType structType, bool bHeader)
+{
+	string m_ = bCStyle ? "" : "m_";
+	if (bHeader)
+		htFile.Append("%s\tbool operator == (const %s & rhs) const {\n", pTabs, typeName.c_str());
+
+	for (size_t fieldIdx = 0; fieldIdx < fieldList.size(); fieldIdx += 1) {
+		CField &field = fieldList[fieldIdx];
+
+		if (field.m_pPrivGbl != 0)
+			continue;
+
+		if (structType == eStructAll || structType == eStructRamRdData && (field.m_bSrcRead || field.m_bMifRead)
+			|| structType != eStructRamRdData && (field.m_bSrcWrite || field.m_bMifWrite)) {
+
+			size_t structIdx;
+			for (structIdx = 0; structIdx < m_structList.size(); structIdx += 1) {
+				if (m_structList[structIdx].m_structName == field.m_type)
+					break;
+			}
+			if (structType != eGenRamWrEn && !bCStyle && structIdx < m_structList.size()) {
+				size_t prefixLen = prefixName.size();
+
+				if (field.m_elemCnt <= 8) {
+					vector<int> refList(field.m_dimenList.size());
+
+					do {
+						string fldIdx = IndexStr(refList);
+
+						if (field.m_name.size() > 0)
+							prefixName += m_ + field.m_name + fldIdx + ".";
+
+						GenStructIsEqual(htFile, pTabs, prefixName, typeName, m_structList[structIdx].m_fieldList, m_structList[structIdx].m_bCStyle, pStr, structType, false);
+
+						prefixName.erase(prefixLen);
+
+					} while (DimenIter(field.m_dimenList, refList));
+
+				} else {
+					string tabs = pTabs;
+					int idxCnt = 0;
+					for (size_t i = 0; i < field.m_dimenList.size(); i += 1) {
+						idxCnt += 1;
+						bool bIsSigned = m_defineTable.FindStringIsSigned(field.m_dimenList[i].AsStr());
+						htFile.Append("%s\t\tfor (%s idx%d = 0; idx%d < %d; idx%d += 1) {\n", tabs.c_str(),
+							bIsSigned ? "int" : "unsigned", idxCnt, idxCnt, field.m_dimenList[i].AsInt(), idxCnt);
+						tabs += "\t";
+					}
+
+					if (field.m_name.size() > 0)
+						prefixName += m_ + field.m_name + field.m_dimenIndex + ".";
+
+					GenStructIsEqual(htFile, tabs.c_str(), prefixName, typeName, m_structList[structIdx].m_fieldList, m_structList[structIdx].m_bCStyle, pStr, structType, false);
+
+					prefixName.erase(prefixLen);
+
+					for (size_t i = 0; i < field.m_dimenList.size(); i += 1) {
+						tabs = tabs.substr(1);
+						htFile.Append("%s\t\t}\n", tabs.c_str());
+					}
+				}
+
+			} else if (field.m_type == "union" || field.m_type == "struct") {
+
+				GenStructIsEqual(htFile, pTabs, prefixName, typeName, field.m_pStruct->m_fieldList, field.m_pStruct->m_bCStyle, pStr, structType, false);
+
+			} else {
+				if (field.m_elemCnt <= 8) {
+
+					vector<int> refList(field.m_dimenList.size());
+
+					do {
+						string fldIdx = IndexStr(refList);
+
+						htFile.Append("%s\t\tif (!(%s%s%s%s == rhs.%s%s%s%s)) return false;\n", pTabs,
+							prefixName.c_str(), m_.c_str(), field.m_name.c_str(), fldIdx.c_str(),
+							prefixName.c_str(), m_.c_str(), field.m_name.c_str(), fldIdx.c_str());
+
+					} while (DimenIter(field.m_dimenList, refList));
+
+				} else {
+					GenRamIndexLoops(htFile, "\t\t", field);
+
+					htFile.Append("%s\t\tif (!(%s%s%s%s == rhs.%s%s%s%s)) return false;\n", pTabs,
+						prefixName.c_str(), m_.c_str(), field.m_name.c_str(), field.m_dimenIndex.c_str(),
+						prefixName.c_str(), m_.c_str(), field.m_name.c_str(), field.m_dimenIndex.c_str());
+				}
+			}
+		}
+	}
+
+
+	if (bHeader) {
+		htFile.Append("%s\t\treturn true;\n", pTabs);
+		htFile.Append("%s\t}\n", pTabs);
+	}
+}
+
+void
+CDsnInfo::GenStructAssign(CHtCode &htFile, char const * pTabs, string prefixName, string &typeName,
+	vector<CField> &fieldList, bool bCStyle, const char *&pStr, EStructType structType, bool bHeader)
+{
+	string m_ = bCStyle ? "" : "m_";
+
+	if (bHeader)
+		htFile.Append("%s\t%s & operator = (const %s & rhs) {\n", pTabs, typeName.c_str(), typeName.c_str());
+
+	for (size_t fieldIdx = 0; fieldIdx < fieldList.size(); fieldIdx += 1) {
+		CField &field = fieldList[fieldIdx];
+
+		if (structType == eStructAll || structType == eStructRamRdData && (field.m_bSrcRead || field.m_bMifRead)
+			|| structType != eStructRamRdData && (field.m_bSrcWrite || field.m_bMifWrite)) {
+
+			size_t structIdx;
+			for (structIdx = 0; structIdx < m_structList.size(); structIdx += 1) {
+				if (m_structList[structIdx].m_structName == field.m_type)
+					break;
+			}
+			if (structType != eGenRamWrEn && structIdx < m_structList.size()) {
+				size_t prefixLen = prefixName.size();
+
+				if (field.m_elemCnt <= 8) {
+					vector<int> refList(field.m_dimenList.size());
+
+					do {
+						string fldIdx = IndexStr(refList);
+
+						if (field.m_name.size() > 0)
+							prefixName += m_ + field.m_name + fldIdx + ".";
+
+						GenStructAssign(htFile, pTabs, prefixName, typeName, m_structList[structIdx].m_fieldList, 
+							m_structList[structIdx].m_bCStyle, pStr, structType, false);
+
+						prefixName.erase(prefixLen);
+
+					} while (DimenIter(field.m_dimenList, refList));
+
+				} else {
+					string tabs = pTabs;
+					int idxCnt = 0;
+					for (size_t i = 0; i < field.m_dimenList.size(); i += 1) {
+						idxCnt += 1;
+						bool bIsSigned = m_defineTable.FindStringIsSigned(field.m_dimenList[i].AsStr());
+						htFile.Append("%s\t\tfor (%s idx%d = 0; idx%d < %d; idx%d += 1) {\n", tabs.c_str(),
+							bIsSigned ? "int" : "unsigned", idxCnt, idxCnt, field.m_dimenList[i].AsInt(), idxCnt);
+						tabs += "\t";
+					}
+
+					if (field.m_name.size() > 0)
+						prefixName += m_ + field.m_name + field.m_dimenIndex + ".";
+
+					GenStructAssign(htFile, tabs.c_str(), prefixName, typeName, m_structList[structIdx].m_fieldList, 
+						m_structList[structIdx].m_bCStyle, pStr, structType, false);
+
+					prefixName.erase(prefixLen);
+
+					for (size_t i = 0; i < field.m_dimenList.size(); i += 1) {
+						tabs = tabs.substr(1);
+						htFile.Append("%s\t\t}\n", tabs.c_str());
+					}
+				}
+
+			} else if (field.m_type == "union" || field.m_type == "struct") {
+
+				GenStructAssign(htFile, pTabs, prefixName, typeName, field.m_pStruct->m_fieldList, bCStyle, pStr, structType, false);
+
+			} else {
+				vector<int> refList(field.m_dimenList.size(), 0);
+
+				do {
+					string fldIdx = IndexStr(refList);
+
+					htFile.Append("%s%s%s%s%s%s = rhs.%s%s%s%s;\n", pTabs, pStr,
+						prefixName.c_str(), m_.c_str(), field.m_name.c_str(), fldIdx.c_str(),
+						prefixName.c_str(), m_.c_str(), field.m_name.c_str(), fldIdx.c_str());
+
+				} while (DimenIter(field.m_dimenList, refList));
+			}
+		}
+	}
+
+	if (bHeader) {
+		htFile.Append("%s\t\treturn *this;\n", pTabs);
+		htFile.Append("%s\t}\n", pTabs);
+	}
+}
+
+void
+CDsnInfo::GenStructAssignToZero(CHtCode &htFile, char const * pTabs, string prefixName, string &typeName,
+	vector<CField> &fieldList, bool bCStyle, const char *&pStr, EStructType structType, bool bHeader)
+{
+	string m_ = bCStyle ? "" : "m_";
+
+	if (bHeader) {
+		htFile.Append("%s\t%s & operator = (int zero) {\n", pTabs, typeName.c_str());
+		htFile.Append("%s\t\tassert(zero == 0);\n", pTabs);
+	}
+
+	for (size_t fieldIdx = 0; fieldIdx < fieldList.size(); fieldIdx += 1) {
+		CField &field = fieldList[fieldIdx];
+
+		if (structType == eStructAll || structType == eStructRamRdData && (field.m_bSrcRead || field.m_bMifRead)
+			|| structType != eStructRamRdData && (field.m_bSrcWrite || field.m_bMifWrite)) {
+
+			size_t structIdx;
+			for (structIdx = 0; structIdx < m_structList.size(); structIdx += 1) {
+				if (m_structList[structIdx].m_structName == field.m_type)
+					break;
+			}
+			if (structType != eGenRamWrEn && !bCStyle && structIdx < m_structList.size()) {
+				size_t prefixLen = prefixName.size();
+
+				if (field.m_elemCnt <= 8) {
+					vector<int> refList(field.m_dimenList.size());
+
+					do {
+						string fldIdx = IndexStr(refList);
+
+						if (field.m_name.size() > 0)
+							prefixName += m_ + field.m_name + fldIdx + ".";
+
+						GenStructAssignToZero(htFile, pTabs, prefixName, typeName, m_structList[structIdx].m_fieldList,
+							m_structList[structIdx].m_bCStyle, pStr, structType, false);
+
+						prefixName.erase(prefixLen);
+
+					} while (DimenIter(field.m_dimenList, refList));
+
+				} else {
+					string tabs = pTabs;
+					int idxCnt = 0;
+					for (size_t i = 0; i < field.m_dimenList.size(); i += 1) {
+						idxCnt += 1;
+						bool bIsSigned = m_defineTable.FindStringIsSigned(field.m_dimenList[i].AsStr());
+						htFile.Append("%s\t\tfor (%s idx%d = 0; idx%d < %d; idx%d += 1) {\n", tabs.c_str(),
+							bIsSigned ? "int" : "unsigned", idxCnt, idxCnt, field.m_dimenList[i].AsInt(), idxCnt);
+						tabs += "\t";
+					}
+
+					if (field.m_name.size() > 0)
+						prefixName += m_ + field.m_name + field.m_dimenIndex + ".";
+
+					GenStructAssignToZero(htFile, tabs.c_str(), prefixName, typeName, m_structList[structIdx].m_fieldList,
+						m_structList[structIdx].m_bCStyle, pStr, structType, false);
+
+					prefixName.erase(prefixLen);
+
+					for (size_t i = 0; i < field.m_dimenList.size(); i += 1) {
+						tabs = tabs.substr(1);
+						htFile.Append("%s\t\t}\n", tabs.c_str());
+					}
+				}
+
+				prefixName.erase(prefixLen);
+			} else if (field.m_type == "union" || field.m_type == "struct") {
+
+				GenStructAssignToZero(htFile, pTabs, prefixName, typeName, field.m_pStruct->m_fieldList, bCStyle, pStr, structType, false);
+
+			} else {
+
+				if (field.m_elemCnt <= 8) {
+
+					vector<int> refList(field.m_dimenList.size());
+
+					do {
+						string fldIdx = IndexStr(refList);
+
+						htFile.Append("\t\t%s%s%s%s%s%s = 0;\n", pTabs, pStr,
+							prefixName.c_str(), m_.c_str(), field.m_name.c_str(), fldIdx.c_str());
+
+					} while (DimenIter(field.m_dimenList, refList));
+
+				} else {
+
+					GenRamIndexLoops(htFile, "\t\t", field);
+					htFile.Append("\t\t%s%s%s%s%s%s = 0;\n", pTabs, pStr,
+						prefixName.c_str(), m_.c_str(), field.m_name.c_str(), field.m_dimenIndex.c_str());
+				}
+			}
+		}
+	}
+
+	if (bHeader) {
+		htFile.Append("%s\t\treturn *this;\n", pTabs);
+		htFile.Append("%s\t}\n", pTabs);
+	}
+}
+
+void
+CDsnInfo::GenStructScTrace(CHtCode &htFile, char const * pTabs, string prefixName1, string prefixName2, string &typeName,
+	vector<CField> &fieldList, bool bCStyle, const char *&pStr, EStructType structType, bool bHeader)
+{
+	string m_ = bCStyle ? "" : "m_";
+
+	if (bHeader)
+		htFile.Append("%s\tfriend void sc_trace(sc_trace_file *tf, const %s & v, const std::string & NAME ) {\n", pTabs, typeName.c_str());
+
+	for (size_t fieldIdx = 0; fieldIdx < fieldList.size(); fieldIdx += 1) {
+		CField &field = fieldList[fieldIdx];
+
+		if (structType == eStructAll || structType == eStructRamRdData && (field.m_bSrcRead || field.m_bMifRead)
+			|| structType != eStructRamRdData && (field.m_bSrcWrite || field.m_bMifWrite)) {
+
+			size_t structIdx;
+			for (structIdx = 0; structIdx < m_structList.size(); structIdx += 1) {
+				if (m_structList[structIdx].m_structName == field.m_type)
+					break;
+			}
+			if (structType != eGenRamWrEn && !bCStyle && structIdx < m_structList.size()) {
+				size_t prefixLen1 = prefixName1.size();
+				size_t prefixLen2 = prefixName2.size();
+
+				if (field.m_elemCnt <= 8) {
+					vector<int> refList(field.m_dimenList.size());
+
+					do {
+						string fldIdx = IndexStr(refList);
+
+						if (field.m_name.size() > 0) {
+							prefixName1 += m_ + field.m_name + fldIdx + ".";
+							prefixName2 += m_ + field.m_name + fldIdx + ".";
+						}
+
+						GenStructScTrace(htFile, pTabs, prefixName1, prefixName2, typeName, m_structList[structIdx].m_fieldList, 
+							m_structList[structIdx].m_bCStyle, pStr, structType, false);
+
+						prefixName1.erase(prefixLen1);
+						prefixName2.erase(prefixLen2);
+
+					} while (DimenIter(field.m_dimenList, refList));
+
+				} else {
+					string loopIdx;
+					string tabs = pTabs;
+					int idxCnt = 0;
+					for (size_t i = 0; i < field.m_dimenList.size(); i += 1) {
+						idxCnt += 1;
+						bool bIsSigned = m_defineTable.FindStringIsSigned(field.m_dimenList[i].AsStr());
+						htFile.Append("%s\t\tfor (%s idx%d = 0; idx%d < %d; idx%d += 1) {\n", tabs.c_str(),
+							bIsSigned ? "int" : "unsigned", idxCnt, idxCnt, field.m_dimenList[i].AsInt(), idxCnt);
+						tabs += "\t";
+						loopIdx += VA("[\" + (std::string)HtStrFmt(\"%%d\", idx%d) + \"]", (int)i+1);
+					}
+
+					if (field.m_name.size() > 0) {
+						prefixName1 += m_ + field.m_name + field.m_dimenIndex + ".";
+						prefixName2 += m_ + field.m_name + loopIdx + ".";
+					}
+
+					GenStructScTrace(htFile, tabs.c_str(), prefixName1, prefixName2, typeName, m_structList[structIdx].m_fieldList, 
+						m_structList[structIdx].m_bCStyle, pStr, structType, false);
+
+					prefixName1.erase(prefixLen1);
+					prefixName2.erase(prefixLen2);
+
+					for (size_t i = 0; i < field.m_dimenList.size(); i += 1) {
+						tabs = tabs.substr(1);
+						htFile.Append("%s\t\t}\n", tabs.c_str());
+					}
+				}
+
+			} else if (field.m_type == "union" || field.m_type == "struct") {
+
+				GenStructScTrace(htFile, pTabs, prefixName1, prefixName2, typeName, field.m_pStruct->m_fieldList, bCStyle, pStr, structType, false);
+
+			} else {
+				if (field.m_elemCnt <= 8) {
+
+					vector<int> refList(field.m_dimenList.size());
+
+					do {
+						string fldIdx = IndexStr(refList);
+
+						htFile.Append("%s\t\tsc_trace(tf, v.%s%s%s%s, NAME + \".%s%s%s%s\");\n", pTabs,
+							prefixName1.c_str(), m_.c_str(), field.m_name.c_str(), fldIdx.c_str(), 
+							prefixName2.c_str(), m_.c_str(), field.m_name.c_str(), fldIdx.c_str());
+
+					} while (DimenIter(field.m_dimenList, refList));
+
+				} else {
+
+					string loopIdx = GenRamIndexLoops(htFile, "\t\t", field);
+
+					htFile.Append("%s\t\tsc_trace(tf, v.%s%s%s%s, NAME + \".%s%s%s%s\");\n", pTabs,
+						prefixName1.c_str(), m_.c_str(), field.m_name.c_str(), field.m_dimenIndex.c_str(), 
+						prefixName2.c_str(), m_.c_str(), field.m_name.c_str(), loopIdx.c_str());
+				}
+			}
+		}
+	}
+
+	if (bHeader)
+		htFile.Append("%s\t}\n", pTabs);
+}
+
+void
+CDsnInfo::GenStructStream(CHtCode &htFile, char const * pTabs, string prefixName, string &typeName, 
+	vector<CField> &fieldList, bool bCStyle, const char *&pStr, EStructType structType, bool bHeader)
+{
+	htFile.Append("%s\tfriend ostream& operator << ( ostream& os,  %s const & v ) {\n", pTabs, typeName.c_str());
+	htFile.Append("%s\t\tos << \"(\" << \"???\" << \")\";\n", pTabs);
+	htFile.Append("%s\t\treturn os;\n", pTabs);
+	htFile.Append("%s\t}\n", pTabs);
+}
+
+void
+CDsnInfo::GenStructInit(FILE *fp, string &tabs, string prefixName, CField &field, int idxCnt, bool bZero)
+{
+	size_t structIdx;
+	for (structIdx = 0; structIdx < m_structList.size(); structIdx += 1) {
+		if (m_structList[structIdx].m_structName == field.m_type)
+			break;
+	}
+	bool bIsInStructList = structIdx < m_structList.size();
+	if (bIsInStructList || field.m_type == "union" || field.m_type == "struct") {
+		size_t prefixLen = prefixName.size();
+
+		vector<CField> & fieldList = bIsInStructList
+			? m_structList[structIdx].m_fieldList : field.m_pStruct->m_fieldList;
+
+		for (size_t i = 0; i < fieldList.size(); i += 1) {
+			CField &subField = fieldList[i];
+
+			if (subField.m_name.size() > 0)
+				prefixName += "." + subField.m_name;
+
+			if (subField.m_elemCnt <= 8) {
+
+				vector<int> refList(subField.m_dimenList.size());
+
+				do {
+					string fldIdx = IndexStr(refList);
+
+					GenStructInit(fp, tabs, prefixName + fldIdx, subField, idxCnt, bZero);
+
+				} while (DimenIter(subField.m_dimenList, refList));
+
+			} else {
+				string idxStr;
+				for (size_t i = 0; i < subField.m_dimenList.size(); i += 1) {
+					idxCnt += 1;
+					bool bIsSigned = m_defineTable.FindStringIsSigned(subField.m_dimenList[i].AsStr());
+					fprintf(fp, "%sfor (%s idx%d = 0; idx%d < %d; idx%d += 1) {\n", tabs.c_str(),
+						bIsSigned ? "int" : "unsigned", idxCnt, idxCnt, subField.m_dimenList[i].AsInt(), idxCnt);
+					idxStr += VA("[idx%d]", idxCnt);
+					tabs += "\t";
+				}
+
+				GenStructInit(fp, tabs, prefixName + idxStr, subField, idxCnt, bZero);
+
+				for (size_t i = 0; i < subField.m_dimenList.size(); i += 1) {
+					tabs = tabs.substr(1);
+					fprintf(fp, "%s}\n", tabs.c_str());
+				}
+			}
+
+			prefixName.erase(prefixLen);
+		}
+
+	} else if (bZero) {
+		fprintf(fp, "%s%s = 0;\n",
+			tabs.c_str(), prefixName.c_str());
+	} else {
+		int width = FindTypeWidth(field);
+
+		string mask = width == 64 ? "" : VA(" & 0x%llxULL", ((1ull << width)-1));
+
+		fprintf(fp, "%s%s = g_rndInit()%s;\n",
+			tabs.c_str(), prefixName.c_str(), mask.c_str());
+	}
+}
+
+void CDsnInfo::GenModDecl(EVcdType vcdType, CHtCode &htFile, string &modName, VA type, VA var, vector<CHtString> const & dimenList)
+{
+	string dimenStr;
+	for (size_t i = 0; i < dimenList.size(); i += 1) {
+		char dimenBuf[16];
+		sprintf(dimenBuf, "[%d]", dimenList[i].AsInt());
+		dimenStr += dimenBuf;
+	}
+
+	htFile.Append("\t%s %s%s;\n", type.c_str(), var.c_str(), dimenStr.c_str());
+
+	vector<int> refList(dimenList.size(), 0);
+	do {
+		string idxStr = IndexStr(refList);
+		GenModTrace(vcdType, modName,
+			VA("%s%s", var.c_str(), idxStr.c_str()),
+			VA("%s%s", var.c_str(), idxStr.c_str()));
+
+	} while (DimenIter(dimenList, refList));
+}
+
+void CDsnInfo::GenVcdDecl(CHtCode &sosCode, EVcdType vcdType, CHtCode &declCode, string &modName, VA type, VA var, vector<CHtString> const & dimenList)
+{
+	string dimenStr;
+	for (size_t i = 0; i < dimenList.size(); i += 1) {
+		char dimenBuf[16];
+		sprintf(dimenBuf, "[%d]", dimenList[i].AsInt());
+		dimenStr += dimenBuf;
+	}
+
+	declCode.Append("\t%s %s%s;\n", type.c_str(), var.c_str(), dimenStr.c_str());
+
+	vector<int> refList(dimenList.size(), 0);
+	do {
+		string idxStr = IndexStr(refList);
+		GenVcdTrace(sosCode, vcdType, modName,
+			VA("%s%s", var.c_str(), idxStr.c_str()),
+			VA("%s%s", var.c_str(), idxStr.c_str()));
+
+	} while (DimenIter(dimenList, refList));
+}
+
+void CDsnInfo::GenModVar(EVcdType vcdType, string &vcdModName, bool &bFirstModVar, string decl, string dimen, string name, string val, vector<CHtString> const & dimenList)
+{
+	m_iplDefines.Append("#define %s %s\n", name.c_str(), val.c_str());
+
+	// variable tracing
+	if (val[0] == 'r') {
+		vector<int> refList(dimenList.size(), 0);
+		do {
+			string idxStr = IndexStr(refList);
+			GenModTrace(vcdType, vcdModName,
+				VA("%s%s", name.c_str(), idxStr.c_str()),
+				VA("%s%s", val.c_str(), idxStr.c_str()));
+
+		} while (DimenIter(dimenList, refList));
+	}
+
+	// variable reference
+	if (dimen.size() > 0)
+		m_iplRefDecl.Append("\t%s (& %s)%s;\n", decl.c_str(), name.c_str(), dimen.c_str());
+	else
+		m_iplRefDecl.Append("\t%s & %s;\n", decl.c_str(), name.c_str());
+
+	if (bFirstModVar)
+		m_iplRefInit.Append("\t\t: %s(%s)", name.c_str(), val.c_str());
+	else
+		m_iplRefInit.Append(",\n\t\t%s(%s)", name.c_str(), val.c_str());
+
+	bFirstModVar = false;
+}
+
+string CDsnInfo::GenFieldType(CField &field, bool bConst)
+{
+	string type;
+
+	if (field.m_rdSelW.AsInt() > 0) {
+
+		type = VA("ht_mrd_block_ram<%s, %d, %d",
+			field.m_type.c_str(), field.m_rdSelW.AsInt(), field.m_addr1W.AsInt());
+		if (field.m_addr2W.size() > 0)
+			type += VA(", %d", field.m_addr2W.AsInt());
+		type += ">";
+
+	} else if (field.m_wrSelW.AsInt() > 0) {
+
+		type = VA("ht_mwr_block_ram<%s, %d, %d",
+			field.m_type.c_str(), field.m_wrSelW.AsInt(), field.m_addr1W.AsInt());
+		if (field.m_addr2W.size() > 0)
+			type += VA(", %d", field.m_addr2W.AsInt());
+		type += ">";
+
+	} else if (field.m_addr1W.size() > 0) {
+
+		const char *pScMem = field.m_ramType == eDistRam ? "ht_dist_ram" : "ht_block_ram";
+		if (field.m_addr2W.size() > 0) {
+			type = VA("%s<%s, %s, %s>", pScMem, field.m_type.c_str(),
+				field.m_addr1W.c_str(), field.m_addr2W.c_str());
+		} else {
+			type = VA("%s<%s, %s>", pScMem, field.m_type.c_str(),
+				field.m_addr1W.c_str());
+		}
+
+	} else if (field.m_queueW.size() > 0) {
+
+		const char *pScMem = field.m_ramType == eDistRam ? "ht_dist_que" : "ht_block_que";
+
+		type = VA("%s<%s, %s>", pScMem, field.m_type.c_str(),
+			field.m_queueW.c_str());
+
+	} else {
+
+		type = field.m_type;
+	}
+
+	if (bConst)
+		type += " const";
+
+	return type;
+}
+
+void CDsnInfo::GenModTrace(EVcdType vcdType, string &modName, VA name, VA val)
+{
+	if (vcdType == eVcdNone) return;
+
+	if (g_appArgs.IsVcdUserEnabled() && vcdType == eVcdUser || g_appArgs.IsVcdAllEnabled()) {
+		string vcdName = VA("%s.%s", modName.c_str(), name.c_str());
+		if (g_appArgs.IsVcdFilterMatch(vcdName))
+			m_vcdSos.Append("\t\tsc_trace(Ht::g_vcdp, %s, (std::string)name() + \".%s\");\n",
+				val.c_str(), name.c_str());
+	}
+}
+
+void CDsnInfo::GenVcdTrace(CHtCode &sosCode, EVcdType vcdType, string &modName, VA name, VA val)
+{
+	if (vcdType == eVcdNone) return;
+
+	if (g_appArgs.IsVcdUserEnabled() && vcdType == eVcdUser || g_appArgs.IsVcdAllEnabled()) {
+		string vcdName = VA("%s.%s", modName.c_str(), name.c_str());
+		if (g_appArgs.IsVcdFilterMatch(vcdName))
+			sosCode.Append("\t\tsc_trace(Ht::g_vcdp, %s, (std::string)name() + \".%s\");\n",
+				val.c_str(), name.c_str());
+	}
+}
+
+CTypeDef * CDsnInfo::FindTypeDef(string typeName)
+{
+	for (size_t typeIdx = 0; typeIdx < m_typedefList.size(); typeIdx += 1) {
+		CTypeDef & typeDef = m_typedefList[typeIdx];
+		if (typeDef.m_name == typeName) {
+			if (typeDef.m_width.size() != 0)
+				return &typeDef;
+			else {
+				// check for nested typedef's
+				CTypeDef * pTypeDef2 = FindTypeDef(typeDef.m_type);
+				return pTypeDef2 ? pTypeDef2 : &typeDef;
+			}
+		}
+	}
+	return 0;
+}
+
+CStruct * CDsnInfo::FindStruct(string structName)
+{
+	CTypeDef * pTypeDef = FindTypeDef(structName);
+	if (pTypeDef) structName = pTypeDef->m_type;
+
+	size_t structIdx;
+	for (structIdx = 0; structIdx < m_structList.size(); structIdx += 1) {
+		if (m_structList[structIdx].m_structName == structName)
+			return &m_structList[structIdx];
+	}
+
+	return 0;
+}
+
+string CDsnInfo::FindFieldType(CField &field)
+{
+	return field.m_type;
+}
+
+CCxrCall &
+CCxrCallList::GetCxrCall(size_t listIdx) {
+	return m_modIdxList[listIdx].m_pMod->m_cxrCallList[m_modIdxList[listIdx].m_idx];
+}
+
+void
+CDsnInfo::GenUserStructFieldList(FILE *incFp, bool bIsHtPriv, vector<CField> &fieldList, bool bCStyle, EFieldListMode mode, string tabs, bool bUnion)
+{
+	CHtCode	htFile(incFp);
+	GenUserStructFieldList(htFile, bIsHtPriv, fieldList, bCStyle, mode, tabs, bUnion);
+}
+
+void
+CDsnInfo::GenUserStructFieldList(CHtCode &htFile, bool bIsHtPriv, vector<CField> &fieldList, bool bCStyle, EFieldListMode mode, string tabs, bool bUnion)
+{
+	string m_ = bCStyle ? "" : "m_";
+
+	bUnion |= mode == Union;
+
+	switch (mode) {
+	case Struct: htFile.Append("%sstruct {\n", tabs.c_str()); break;
+	case Union: htFile.Append("%sunion {\n", tabs.c_str()); break;
+	default: break;
+	}
+	for (size_t fieldIdx = 0; fieldIdx < fieldList.size(); fieldIdx += 1) {
+		CField &field = fieldList[fieldIdx];
+
+		size_t structIdx;
+		for (structIdx = 0; structIdx < m_structList.size(); structIdx += 1) {
+			if (m_structList[structIdx].m_structName == field.m_type)
+				break;
+		}
+
+		if (structIdx < m_structList.size() && field.m_name.size() == 0)
+			GenUserStructFieldList(htFile, false, m_structList[structIdx].m_fieldList, bCStyle, m_structList[structIdx].m_bUnion ? Union : Struct, tabs+"\t", bUnion);
+		else if (field.m_name.size() == 0 && (field.m_type == "union" || field.m_type == "struct"))
+			GenUserStructFieldList(htFile, false, field.m_pStruct->m_fieldList, field.m_pStruct->m_bCStyle, field.m_pStruct->m_bUnion ? Union : Struct, tabs+"\t", bUnion);
+		else {
+			CTypeDef *pTypeDef = FindTypeDef(field.m_type);
+
+			if (bUnion && pTypeDef && pTypeDef->m_width.size() > 0 && field.m_dimenList.size() > 0)
+				ParseMsg(Error, field.m_lineInfo, "unsupported capability, arrays of members within unions, where member has a specified field width");
+
+			bool bStdInt = !pTypeDef || pTypeDef->m_width.AsInt() == 8 || pTypeDef->m_width.AsInt() == 16
+				|| pTypeDef->m_width.AsInt() == 32 || pTypeDef->m_width.AsInt() == 64;
+
+//			m_iplRegDecl.Append("\t\t%s %s%s%s;\n", field.m_type.c_str(), m_.c_str(), field.m_name.c_str(), field.m_dimenDecl.c_str());
+
+			if (bCStyle || bIsHtPriv) {
+				if (!bIsHtPriv && field.m_bitWidth.size() > 0)
+					htFile.Append("%s\t%s %s%s:%d;\n", tabs.c_str(), field.m_type.c_str(), m_.c_str(), field.m_name.c_str(), field.m_bitWidth.AsInt());
+				else
+					htFile.Append("%s\t%s %s%s%s;\n", tabs.c_str(), field.m_type.c_str(), m_.c_str(), field.m_name.c_str(), field.m_dimenDecl.c_str());
+			} else {
+				if (pTypeDef && pTypeDef->m_width.size() > 0 && field.m_dimenList.size() > 0) {
+					if (pTypeDef->m_type.substr(0, 3) == "int") {
+						if (bStdInt)
+							htFile.Append("%s\tint%d_t %s%s%s;\n", tabs.c_str(), pTypeDef->m_width.AsInt(), m_.c_str(), field.m_name.c_str(), field.m_dimenDecl.c_str());
+						else
+							htFile.Append("%s\tsc_int<%s> %s%s%s;\n", tabs.c_str(), pTypeDef->m_width.c_str(), m_.c_str(), field.m_name.c_str(), field.m_dimenDecl.c_str());
+					} else if (pTypeDef->m_type.substr(0, 4) == "uint") {
+						if (bStdInt)
+							htFile.Append("%s\tuint%d_t %s%s%s;\n", tabs.c_str(), pTypeDef->m_width.AsInt(), m_.c_str(), field.m_name.c_str(), field.m_dimenDecl.c_str());
+						else
+							htFile.Append("%s\tsc_uint<%s> %s%s%s;\n", tabs.c_str(), pTypeDef->m_width.c_str(), m_.c_str(), field.m_name.c_str(), field.m_dimenDecl.c_str());
+					} else
+						ParseMsg(Error, field.m_lineInfo, "expected type to begin with 'int' or 'uint' for field with a specified width");
+				} else if (pTypeDef && pTypeDef->m_width.size() > 0 && field.m_base.size() > 0)
+					htFile.Append("%s\t%s %s%s:%s;\n", tabs.c_str(), field.m_base.c_str(), m_.c_str(), field.m_name.c_str(), pTypeDef->m_width.c_str());
+				else if (pTypeDef && pTypeDef->m_width.size() > 0)
+					htFile.Append("%s\t%s %s%s:%s;\n", tabs.c_str(), pTypeDef->m_type.c_str(), m_.c_str(), field.m_name.c_str(), pTypeDef->m_width.c_str());
+				else if (pTypeDef)
+					htFile.Append("%s\t%s %s%s%s;\n", tabs.c_str(), pTypeDef->m_type.c_str(), m_.c_str(), field.m_name.c_str(), field.m_dimenDecl.c_str());
+				else
+					htFile.Append("%s\t%s %s%s%s;\n", tabs.c_str(), field.m_type.c_str(), m_.c_str(), field.m_name.c_str(), field.m_dimenDecl.c_str());
+			}
+		}
+	}
+	if (mode == Union || mode == Struct)
+		htFile.Append("%s};\n", tabs.c_str());
+}
+
+void CDsnInfo::GenUserStructBadData(CHtCode &htFile, bool bHeader, string structName, vector<CField> &fieldList, bool bCStyle, string tabs)
+{
+	string m_ = bCStyle ? "" : "m_";
+
+	if (bHeader) {
+		htFile.Append("\n");
+		htFile.Append("#%sifndef _HTV\n", tabs.c_str());
+		htFile.Append("%sinline %s ht_bad_data(%s const &)\n", tabs.c_str(), structName.c_str(), structName.c_str());
+		htFile.Append("%s{\n", tabs.c_str());
+		htFile.Append("%s\t%s x;\n", tabs.c_str(), structName.c_str());
+	}
+
+	for (size_t fieldIdx = 0; fieldIdx < fieldList.size(); fieldIdx += 1) {
+		CField &field = fieldList[fieldIdx];
+
+		size_t structIdx;
+		for (structIdx = 0; structIdx < m_structList.size(); structIdx += 1) {
+			if (m_structList[structIdx].m_structName == field.m_type)
+				break;
+		}
+
+		if (structIdx < m_structList.size() && field.m_name.size() == 0)
+			GenUserStructBadData(htFile, false, structName, m_structList[structIdx].m_fieldList, bCStyle, tabs);
+
+		else if (field.m_name.size() == 0 && (field.m_type == "union" || field.m_type == "struct"))
+			GenUserStructBadData(htFile, false, structName, field.m_pStruct->m_fieldList, bCStyle, tabs);
+
+		else if (field.m_dimenList.size() == 0) {
+			htFile.Append("%s\tx.%s%s = ht_bad_data(x.%s%s);\n", tabs.c_str(), m_.c_str(), field.m_name.c_str(), m_.c_str(), field.m_name.c_str());
+
+		} else {
+			int idxCnt = 0;
+			string index;
+			string indexZero;
+			for (size_t i = 0; i < field.m_dimenList.size(); i += 1) {
+				idxCnt += 1;
+				bool bIsSigned = m_defineTable.FindStringIsSigned(field.m_dimenList[i].AsStr());
+				htFile.Append("%s\tfor (%s idx%d = 0; idx%d < %d; idx%d += 1)\n", tabs.c_str(),
+					bIsSigned ? "int" : "unsigned", idxCnt, idxCnt, field.m_dimenList[i].AsInt(), idxCnt);
+				tabs += "\t";
+
+				index += VA("[idx%d]", idxCnt);
+				indexZero += "[0]";
+			}
+
+			htFile.Append("%s\tx.%s%s%s = ht_bad_data(x.%s%s%s);\n",
+				tabs.c_str(), m_.c_str(), field.m_name.c_str(), index.c_str(), m_.c_str(), field.m_name.c_str(), indexZero.c_str());
+
+			tabs.erase(0, field.m_dimenList.size());
+		}
+	}
+
+	if (bHeader) {
+		htFile.Append("%s\treturn x;\n", tabs.c_str());
+		htFile.Append("%s}\n", tabs.c_str());
+		htFile.Append("#%sendif\n", tabs.c_str());
+		htFile.Append("\n");
+	}
+}
+
+void
+CDsnInfo::GenUserStructs(FILE *incFp, CStruct &userStruct, char const * pTabs)
+{
+	CHtCode htFile(incFp);
+
+	GenUserStructs(htFile, userStruct, pTabs);
+	htFile.Write(incFp);
+}
+
+void
+CDsnInfo::GenUserStructs(CHtCode &htFile, CStruct &userStruct, char const * pTabs)
+{
+	string structName = userStruct.m_structName + (userStruct.m_bInclude ? "Intf" : "");
+
+	// mode: 0-all, 1-read, 2-write
+	if (userStruct.m_bUnion)
+		htFile.Append("%sunion %s {\n", pTabs, structName.c_str());
+	else
+		htFile.Append("%sstruct %s {\n", pTabs, structName.c_str());
+
+	htFile.Append("%s\t#ifndef _HTV\n", pTabs);
+
+	// compare for equal
+	const char *pStr = "";
+	string prefixName;
+	GenStructIsEqual(htFile, pTabs, prefixName, structName, userStruct.m_fieldList, userStruct.m_bCStyle, pStr);
+
+	// assignment to zero
+	pStr = "\t\t";
+	prefixName = "";
+	GenStructAssignToZero(htFile, pTabs, prefixName, structName, userStruct.m_fieldList, userStruct.m_bCStyle, pStr);
+
+	// signal tracing
+	pStr = "\t\t";
+	prefixName = "";
+	htFile.Append("%s\t#ifdef HT_SYSC\n", pTabs);
+
+	GenStructScTrace(htFile, pTabs, prefixName, prefixName, structName, userStruct.m_fieldList, userStruct.m_bCStyle, pStr);
+
+	// signal printing
+	htFile.Append("%s\tfriend ostream& operator << ( ostream& os,  %s const & v ) {\n", pTabs, structName.c_str());
+	htFile.Append("%s\t\tos << \"(\" << \"???\" << \")\";\n", pTabs);
+	htFile.Append("%s\t\treturn os;\n", pTabs);
+	htFile.Append("%s\t}\n", pTabs);
+
+	htFile.Append("%s\t#endif\n", pTabs);
+	htFile.Append("%s\t#endif\n", pTabs);
+
+	bool bIsHtPriv = structName == "CHtPriv";
+	GenUserStructFieldList(htFile, bIsHtPriv, userStruct.m_fieldList, userStruct.m_bCStyle, FieldList, pTabs);
+
+	htFile.Append("%s};\n", pTabs);
+	htFile.Append("\n");
+}
+
+void 
+CDsnInfo::GenStruct(FILE *incFp, string intfName, CStruct &ram, EGenStructMode mode, bool bEmptyContructor)
+{
+	// mode: 0-all, 1-read, 2-write
+	if (ram.m_bUnion)
+		fprintf(incFp, "\tunion %s {\n", intfName.c_str());
+	else
+		fprintf(incFp, "\tstruct %s {\n", intfName.c_str());
+
+	if (bEmptyContructor) {
+		fprintf(incFp, "\t\t#ifndef _HTV\n");
+		fprintf(incFp, "\t\t%s() {} // avoid uninitialized error\n", intfName.c_str());
+		fprintf(incFp, "\t\t#endif\n");
+		fprintf(incFp, "\n");
+	}
+
+	for (size_t fieldIdx = 0; fieldIdx < ram.m_fieldList.size(); fieldIdx += 1) {
+		CField &field = ram.m_fieldList[fieldIdx];
+
+		if (mode == eGenStruct || mode == eGenStructRdData && field.m_bSrcRead || mode == eGenStructWrData && field.m_bSrcWrite) {
+			// find typedef
+			CTypeDef *pTypeDef = FindTypeDef(field.m_type);
+
+			if (pTypeDef && pTypeDef->m_width.size() > 0)
+				fprintf(incFp, "\t\t%s m_%s:%s;\n", pTypeDef->m_type.c_str(), field.m_name.c_str(), pTypeDef->m_width.c_str());
+			else if (pTypeDef)
+				fprintf(incFp, "\t\t%s m_%s;\n", pTypeDef->m_type.c_str(), field.m_name.c_str());
+			else
+				fprintf(incFp, "\t\t%s m_%s;\n", field.m_type.c_str(), field.m_name.c_str());
+
+		} else if (mode == eGenStructWrEn && field.m_bSrcWrite)
+			fprintf(incFp, "\t\tbool m_%s;\n", field.m_name.c_str());
+	}
+	fprintf(incFp, "\t};\n");
+	fprintf(incFp, "\n");
+}
+
+void 
+CDsnInfo::GenRamWrEn(FILE *incFp, string intfName, CStruct &ram)
+{
+	// mode: 0-all, 1-read, 2-write
+	fprintf(incFp, "\tstruct %s {\n", intfName.c_str());
+
+	for (size_t fieldIdx = 0; fieldIdx < ram.m_fieldList.size(); fieldIdx += 1) {
+		CField &field = ram.m_fieldList[fieldIdx];
+
+		if (field.m_bSrcWrite || field.m_bMifWrite) {
+			fprintf(incFp, "\t\tbool m_%s%s;\n", field.m_name.c_str(), field.m_dimenDecl.c_str());
+		}
+	}
+	fprintf(incFp, "\t};\n");
+	fprintf(incFp, "\n");
+}
+
+void 
+CDsnInfo::GenSmInfo(FILE *incFp, CStruct &smInfo)
+{
+	for (size_t fieldIdx = 0; fieldIdx < smInfo.m_fieldList.size(); fieldIdx += 1) {
+		CField &field = smInfo.m_fieldList[fieldIdx];
+
+		fprintf(incFp, "\t%s %s;\n", field.m_type.c_str(), field.m_name.c_str());
+	}
+	fprintf(incFp, "\n");
+}
+
+void 
+CDsnInfo::GenSmCmd(FILE *incFp, CModule &mod)
+{
+	if (!mod.m_bHasThreads)
+		return;
+
+	fprintf(incFp, "\tstruct CSmCmd {\n");
+	fprintf(incFp, "\t\tuint32_t m_state:%d;\n", mod.m_instrW);
+	fprintf(incFp, "\t\tuint32_t m_htId:%s;\n", mod.m_threads.m_htIdW.c_str());
+	fprintf(incFp, "\t};\n");
+}
+
+void 
+CDsnInfo::GenCmdInfo(FILE *incFp, CModule &mod)
+{
+	string smInfoName = "CCmdInfo";
+	GenStruct(incFp, smInfoName, mod.m_threads.m_htPriv, eGenStruct, true);
+}
+
+//////////////////////////////////
+// class CStructElemIter methods
+
+CStructElemIter::CStructElemIter(CDsnInfo * pDsnInfo, string typeName)
+{
+	m_pDsnInfo = pDsnInfo;
+	CStruct * pStruct = m_pDsnInfo->FindStruct(typeName);
+
+	if (pStruct) {
+		m_stack.push_back(CStack(pStruct, 0));
+
+		CStack &stack = m_stack.back();
+		CField &field = stack.m_pStruct->m_fieldList[stack.m_fieldIdx];
+		stack.m_refList = vector<int>(field.m_dimenList.size());
+	}
+}
+
+bool CStructElemIter::end()
+{
+	return m_stack.size() == 0;
+}
+
+CField & CStructElemIter::operator()()
+{
+	CStack &stack = m_stack.back();
+	CField &field = stack.m_pStruct->m_fieldList[stack.m_fieldIdx];
+	return field;
+}
+
+CField * CStructElemIter::operator -> ()
+{
+	CStack &stack = m_stack.back();
+	CField &field = stack.m_pStruct->m_fieldList[stack.m_fieldIdx];
+	return &field;
+}
+
+void CStructElemIter::operator ++ (int)
+{
+	CStack &stack = m_stack.back();
+	CField &field = stack.m_pStruct->m_fieldList[stack.m_fieldIdx];
+
+	if (m_pDsnInfo->DimenIter(field.m_dimenList, m_stack.back().m_refList))
+		return;
+
+	CStruct * pStruct = m_pDsnInfo->FindStruct(field.m_type);
+	if (pStruct) {
+		string heirName = m_stack.back().m_heirName;
+		m_stack.push_back(CStack(pStruct, 0));
+		m_stack.back().m_heirName = heirName;
+		if (field.m_name.size() > 0)
+			m_stack.back().m_heirName += "." + field.m_name + m_pDsnInfo->IndexStr(stack.m_refList);
+		m_stack.back().m_refList = vector<int>(field.m_dimenList.size());
+	} else do {
+		m_stack.back().m_fieldIdx += 1;
+		if (m_stack.back().m_fieldIdx < m_stack.back().m_pStruct->m_fieldList.size())
+			break;
+
+		m_stack.pop_back();
+	} while (!m_stack.empty());
+}
+
+bool CStructElemIter::IsStructOrUnion()
+{
+	CStack &stack = m_stack.back();
+	CField &field = stack.m_pStruct->m_fieldList[stack.m_fieldIdx];
+
+	CStruct * pStruct = m_pDsnInfo->FindStruct(field.m_type);
+	return pStruct != 0;
+}
+
+string CStructElemIter::GetHeirFieldName(bool bAddPreDot)
+{
+	CStack &stack = m_stack.back();
+	CField &field = stack.m_pStruct->m_fieldList[stack.m_fieldIdx];
+
+	string heirFieldName;
+	if (stack.m_heirName.size() > 0 || bAddPreDot)
+		heirFieldName = stack.m_heirName + ".";
+	heirFieldName += field.m_name + m_pDsnInfo->IndexStr(stack.m_refList);
+
+	return heirFieldName;
+}

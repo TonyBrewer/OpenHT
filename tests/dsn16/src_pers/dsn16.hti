@@ -1,0 +1,7 @@
+//cxr1 -> cxr2[INST0:MIF1:FREQ]
+#if (TST == hc1 || TST == hc2)
+AddModInstParams( unit=Su, modPath="/cxr1/cxr2" );
+#else
+xxxxxx	// will generate parse error
+#endif
+

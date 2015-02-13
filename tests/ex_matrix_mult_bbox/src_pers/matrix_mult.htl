@@ -1,0 +1,9 @@
+-cp hc-2
+-uc 1
+-un Au
+-df 150
+-pn matrix_mult_bbox
+//-wd "C:\Ht\tests\vadd_5stage\msvs12\"
+//"C:\Ht\tests\vadd_5stage\src_pers\vadd.htd"
+../src_pers/matrix_mult.htd
+../ht/sysc

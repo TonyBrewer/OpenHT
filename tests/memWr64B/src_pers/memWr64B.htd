@@ -1,0 +1,178 @@
+
+struct CStruct {
+	uint64_t m_d[512];
+};
+
+////////////////////////////////////////////////////
+// Tst Module
+#define TST_HTID_W 3
+
+dsnInfo.AddModule(name=tst, clock=1x, htIdW=TST_HTID_W);
+tst.AddInst(name=TST_ENTRY);
+tst.AddInst(name=TST_S1);
+tst.AddInst(name=TST_RTN);
+
+typedef sc_uint<TST_HTID_W> HtId_t;
+typedef sc_uint<48> MemAddr_t;
+
+tst.AddHostMsg(dir=in, name=HOST_RD_ADDR)
+	.AddDst(var=hostRdAddr);
+
+tst.AddHostMsg(dir=in, name=COPROC_RD_ADDR)
+	.AddDst(var=coprocRdAddr);
+
+tst.AddHostMsg(dir=in, name=HOST_WR_ADDR)
+	.AddDst(var=hostWrAddr);
+
+tst.AddHostMsg(dir=in, name=COPROC_WR_ADDR)
+	.AddDst(var=coprocWrAddr);
+
+tst.AddPrivate()
+	.AddVar(type=uint8_t, name=testMode)
+	.AddVar(type=uint32_t, name=offset)
+	.AddVar(type=uint32_t, name=qwCnt)
+	;
+
+tst.AddEntry(func=htmain, inst=TST_ENTRY, host=true)
+	.AddParam(hostType=uint32_t, type=uint8_t, name=testMode)
+	.AddParam(type=uint32_t, name=offset)
+	.AddParam(type=uint32_t, name=qwCnt)
+	;
+
+tst.AddCall(func=rdo);
+
+tst.AddReturn(func=htmain)
+	;
+
+tst.AddShared()
+	.AddVar(type=ht_uint48, name=hostRdAddr)
+	.AddVar(type=ht_uint48, name=hostWrAddr)
+	.AddVar(type=ht_uint48, name=coprocRdAddr)
+	.AddVar(type=ht_uint48, name=coprocWrAddr)
+	.AddVar(type=CStruct, name=sharedStruct)
+	.AddVar(type=uint64_t, name=sharedVarIdx1, dimen1=512)
+	.AddVar(type=uint64_t, name=sharedVarAddr1, addr1W=9)
+	.AddVar(type=uint64_t, name=sharedDramAddr2, addr1W=3, addr2W=6)
+	.AddVar(type=uint64_t, name=sharedBramAddr1, addr1W=6, addr2W=3, blockRam=true)
+	.AddVar(type=uint64_t, name=sharedQueue, queueW=3)
+	;
+
+tst.AddReadMem(maxBw=true, rspCntW=4)
+	.AddDst(name=sharedStruct_coproc, var=sharedStruct, field=m_d, multiRd=true, dstIdx=fldIdx1, memSrc=coproc)
+	.AddDst(name=sharedVarIdx1_host, var=sharedVarIdx1, multiRd=true, dstIdx=varIdx1, memSrc=host)
+	.AddDst(name=sharedVarAddr1_host, var=sharedVarAddr1, multiRd=true, dstIdx=varAddr1, memSrc=host)
+	.AddDst(name=sharedDramAddr2_host, var=sharedDramAddr2, multiRd=true, dstIdx=varAddr2, memSrc=host)
+	.AddDst(name=sharedBramAddr1_host, var=sharedBramAddr1, multiRd=true, dstIdx=varAddr1, memSrc=host)
+	.AddDst(name=sharedQueue_host, var=sharedQueue, multiRd=true, memSrc=host)
+	.AddDst(name=sharedStruct_host, var=sharedStruct, field=m_d, multiRd=true, dstIdx=fldIdx1, memSrc=host)
+	;
+
+tst.AddWriteMem(maxBw=true)
+	.AddSrc(name=sharedStruct_coproc, var=sharedStruct, field=m_d, multiWr=true, srcIdx=fldIdx1, memDst=coproc)
+	.AddSrc(name=sharedVarIdx1_host, var=sharedVarIdx1, multiWr=true, srcIdx=varIdx1, memDst=host)
+	.AddSrc(name=sharedVarAddr1_host, var=sharedVarAddr1, multiWr=true, srcIdx=varAddr1, memDst=host)
+	.AddSrc(name=sharedDramAddr2_host, var=sharedDramAddr2, multiWr=true, srcIdx=varAddr2, memDst=host)
+	.AddSrc(name=sharedBramAddr1_host, var=sharedBramAddr1, multiWr=true, srcIdx=varAddr1, memDst=host)
+	.AddSrc(name=sharedQueue_host, var=sharedQueue, multiWr=true, memDst=host)
+	.AddSrc(name=sharedStruct_host, var=sharedStruct, field=m_d, multiWr=true, srcIdx=fldIdx1, memDst=host)
+	;
+
+////////////////////////////////////////////////////
+// rdo Module
+
+#define RDO_HTID_W 0
+typedef sc_uint<RDO_HTID_W+1> Rdo_RsmHtId_t;
+
+dsnInfo.AddModule(name=rdo, clock=2x, htIdW=RDO_HTID_W, pause=true);
+rdo.AddInst(name=RDO0);
+rdo.AddInst(name=RDO1);
+rdo.AddInst(name=RDO2);
+
+rdo.AddPrivate()
+	.AddVar(type=uint8_t, name=testMode)
+	.AddVar(type=ht_uint48, name=rdAddr)
+	.AddVar(type=ht_uint48, name=wrAddr)
+	.AddVar(type=ht_uint9, name=idx)
+	.AddVar(type=ht_uint4, name=qwCnt)
+	;
+
+rdo.AddEntry(func=rdo, inst=RDO0)
+	.AddParam(type=uint8_t, name=testMode)
+	.AddParam(type=ht_uint48, name=rdAddr)
+	.AddParam(type=ht_uint48, name=wrAddr)
+	.AddParam(type=ht_uint9, name=idx)
+	.AddParam(type=ht_uint4, name=qwCnt)
+	;
+
+rdo.AddTransfer(func=wro);
+
+rdo.AddShared()
+	.AddVar(type=uint64_t, name=shReg, dimen1=512)
+	;
+
+rdo.AddStage()
+	.AddVar(type=bool, name=bHtResume, range=1)
+	.AddVar(type=Rdo_RsmHtId_t, name=rsmHtId, range=1)
+	;
+
+rdo.AddReadMem(queueW=5, rspCntW=5, maxBw=true)
+	.AddDst(name=shReg_coproc, var=shReg, multiRd=true, dstIdx=varIdx1, memSrc=coproc)
+	.AddDst(name=shReg_host, var=shReg, multiRd=true, dstIdx=varIdx1, memSrc=host)
+	;
+
+////////////////////////////////////////////////////
+// wro Module
+#define WRO_HTID_W 3
+typedef sc_uint<WRO_HTID_W+1> Wro_RsmHtId_t;
+
+dsnInfo.AddModule(name=wro, clock=1x, htIdW=3, pause=true);
+wro.AddInst(name=WRO0);
+wro.AddInst(name=WRO1);
+wro.AddInst(name=WRO2);
+
+wro.AddEntry(func=wro, inst=WRO0)
+	.AddParam(type=uint8_t, name=testMode)
+	.AddParam(type=ht_uint48, name=wrAddr)
+	.AddParam(type=ht_uint9, name=idx)
+	.AddParam(type=ht_uint4, name=qwCnt)
+	.AddParam(type=uint64_t, name=p0)
+	.AddParam(type=uint64_t, name=p1)
+	.AddParam(type=uint64_t, name=p2)
+	.AddParam(type=uint64_t, name=p3)
+	.AddParam(type=uint64_t, name=p4)
+	.AddParam(type=uint64_t, name=p5)
+	.AddParam(type=uint64_t, name=p6)
+	.AddParam(type=uint64_t, name=p7)
+	;
+
+wro.AddReturn(func=rdo);
+
+wro.AddPrivate()
+	.AddVar(type=uint8_t, name=testMode)
+	.AddVar(type=ht_uint48, name=wrAddr)
+	.AddVar(type=ht_uint9, name=idx)
+	.AddVar(type=ht_uint4, name=qwCnt)
+	.AddVar(type=uint64_t, name=p0)
+	.AddVar(type=uint64_t, name=p1)
+	.AddVar(type=uint64_t, name=p2)
+	.AddVar(type=uint64_t, name=p3)
+	.AddVar(type=uint64_t, name=p4)
+	.AddVar(type=uint64_t, name=p5)
+	.AddVar(type=uint64_t, name=p6)
+	.AddVar(type=uint64_t, name=p7)
+	;
+
+wro.AddShared()
+	.AddVar(type=uint64_t, name=shReg, dimen1=512)
+	;
+
+wro.AddStage()
+	.AddVar(type=bool, name=bHtResume, range=1)
+	.AddVar(type=Wro_RsmHtId_t, name=rsmHtId, range=1)
+	;
+
+wro.AddWriteMem(queueW=5, rspCntW=4, maxBw=true)
+	.AddSrc(name=shReg_coproc, var=shReg, multiWr=true, srcIdx=varIdx1, memDst=coproc)
+	.AddSrc(name=shReg_host, var=shReg, multiWr=true, srcIdx=varIdx1, memDst=host)
+	;
+

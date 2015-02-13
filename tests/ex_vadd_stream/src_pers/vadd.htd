@@ -1,0 +1,44 @@
+////////////////////////////////////////////////////
+// Streaming implementation of vadd
+
+typedef ht_uint48 MemAddr_t;
+
+dsnInfo.AddModule(name=vadd, htIdW=0, pause=true);
+
+vadd.AddInst(name=VADD_ENTER);
+vadd.AddInst(name=VADD_RETURN);
+
+vadd.AddHostMsg(dir=in, name=OP1_ADDR)
+	.AddDst(var=op1Addr)
+	;
+vadd.AddHostMsg(dir=in, name=OP2_ADDR)
+	.AddDst(var=op2Addr)
+	;
+vadd.AddHostMsg(dir=in, name=RES_ADDR)
+	.AddDst(var=resAddr)
+	;
+
+vadd.AddPrivate()
+	.AddVar(type=uint32_t, name=offset)
+	.AddVar(type=uint32_t, name=vecLen)
+	;
+
+vadd.AddShared()
+	.AddVar(type=MemAddr_t, name=op1Addr)
+	.AddVar(type=MemAddr_t, name=op2Addr)
+	.AddVar(type=MemAddr_t, name=resAddr)
+	.AddVar(type=uint64_t, name=sum)
+	;
+
+vadd.AddEntry(func=htmain, inst=VADD_ENTER, host=true)
+	.AddParam(type=uint32_t, name=offset)
+	.AddParam(type=uint32_t, name=vecLen)
+	;
+
+vadd.AddReturn(func=htmain)
+	.AddParam(type=uint64_t, name=sum)
+	;
+
+vadd.AddReadStream(name=A, type=uint64_t, memPort=0);
+vadd.AddReadStream(name=B, type=uint64_t, memPort=1);
+vadd.AddWriteStream(name=C, type=uint64_t, memPort=1);

@@ -1,0 +1,40 @@
+////////////////////////////////////////////////////
+// Inc Module
+
+#define INC_HTID_W 5
+
+typedef sc_uint<INC_HTID_W> htid_t;
+typedef sc_uint<48> ht_uint48;
+
+dsnInfo.AddModule(name=inc, clock=2x, htIdW=INC_HTID_W);
+inc.AddInst(name=INC_INIT);
+inc.AddInst(name=INC_DATA);
+
+inc.AddHostMsg(dir=in, name=SU_ARRAY_ADDR)
+	.AddDst(var=arrayAddr, dataLsb=0)
+	;
+
+inc.AddHostData(dir=in);
+inc.AddHostData(dir=out);
+
+inc.AddPrivate()
+	.AddVar(type=uint16_t, name=loopCnt)
+	.AddVar(type=ht_uint2, name=arrayMemRdPtr)
+	;
+
+inc.AddShared()
+	.AddVar(type=ht_uint48, name=arrayAddr)
+	;
+
+inc.AddEntry(func=htmain, inst=INC_INIT, host=true);
+inc.AddReturn(func=htmain)
+	.AddParam(type=uint16_t, name=loopCnt)
+	;
+
+inc.AddReadMem(queueW=5, rspCntW=2, maxBw=false)
+	.AddDst(name=arrayMem, var=arrayMem, field=data)
+	;
+
+inc.AddGlobal(var=arrayMem, addr1=htId, addr2=arrayMemRdPtr, addr1W=INC_HTID_W, addr2W=2)
+	.AddField(type=uint64_t, name=data, read=true, write=false)
+	;

@@ -1,0 +1,18 @@
+dsnInfo.AddModule(name=obk, htIdW=1);
+obk.AddInst(name=OBK_PUSH);
+obk.AddInst(name=OBK_RTN);
+
+
+obk.AddPrivate()
+	.AddVar(type=uint8_t, name=pau)
+	.AddVar(type=uint32_t, name=loopCnt)
+	;
+
+obk.AddEntry(func=htmain, inst=OBK_PUSH, host=true)
+	.AddParam(hostType=uint8_t, type=uint8_t, name=pau)
+	.AddParam(hostType=uint32_t, type=uint32_t, name=loopCnt)
+	;
+obk.AddReturn(func=htmain)
+	;
+
+obk.AddHostData(dir=out);

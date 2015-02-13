@@ -1,0 +1,14 @@
+cd src_htc
+rm -f PersOUT*.cpp Pers__HTC_HO*.cpp
+$MY_HT_DIR/bin/htc  -I../src -rose:openmp:lowering -htc:split app_main.c -htc:sysc -rose:skipfinalCompileStep 
+$MY_HT_DIR/bin/htc  -I../src -rose:openmp:lowering -DCNY_HTC_COPROC rose_app_main.c -rose:skipfinalCompileStep ../locks/lock.c -htc:sysc
+
+
+grep -v "___htc_dummy_decl" rose_rose_app_main.c > ../src_pers/rose_rose_app_main.c
+rm -f ../src_pers/PersOUT*.cpp ../src_pers/Pers__HTC_HO*.cpp
+cp Pers*.cpp ../src_pers
+cp design.htd ../src_pers
+cd ..
+
+# make cleaner
+# make sysc

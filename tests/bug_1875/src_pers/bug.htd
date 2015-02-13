@@ -1,0 +1,22 @@
+/////////////////////////////////////////////////////////
+dsnInfo.AddModule(name=bug, clock=1x, htIdW=2);
+bug.AddInst(name=BUG_ENTER);
+bug.AddInst(name=BUG_RTN);
+
+bug.AddEntry(func=bug, inst=BUG_ENTER, host=true)
+	;
+
+bug.AddShared()
+	//.AddVar(name=distQue, type=bool, queueW=6, blockRam=true)
+	.AddVar(name=ramWc4, type=uint8_t, wrSelW=2, addr1W=6, blockRam=true)
+	.AddVar(name=ramRc4, type=uint8_t, rdSelW=2, addr1W=6, blockRam=true)
+	;
+
+bug.AddPrivate()
+	.AddVar(name=idx1, type=ht_uint3)
+	.AddVar(name=idx2, type=ht_uint5)
+	.AddVar(name=v1, type=ht_uint9, addr1=idx1, addr2=idx2)
+	;
+
+bug.AddReturn(func=bug)
+	;

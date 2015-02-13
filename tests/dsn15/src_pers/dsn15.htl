@@ -1,0 +1,6 @@
+-cp hc-2
+-un Su
+-df 150
+-wd "C:\Ht\tests\dsn15\msvs12\"
+"C:\Ht\tests\dsn15\src_pers\dsn15.htd"
+../ht/sysc

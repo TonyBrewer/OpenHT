@@ -1,0 +1,40 @@
+// Module capabilities
+
+#define	IDIV_N_W	64
+#define	IDIV_D_W	(IDIV_N_W/2)
+
+typedef sc_uint<IDIV_N_W>	idiv_n_t;
+typedef sc_uint<IDIV_D_W>	idiv_d_t;
+typedef sc_int<IDIV_N_W>	idiv_sn_t;
+typedef sc_int<IDIV_D_W>	idiv_sd_t;
+typedef sc_biguint<IDIV_N_W+1>	idiv_p_t;
+
+dsnInfo.AddModule(name=idiv, htIdW=0, pause=true);
+
+idiv.AddInst(name=DIV_ENTRY);
+idiv.AddInst(name=DIV_LOOP);
+idiv.AddInst(name=DIV_RTN);
+
+idiv.AddEntry(func=idiv, inst=DIV_ENTRY)
+	.AddParam(type=bool, name=sign)
+	.AddParam(type=idiv_n_t, name=n)
+	.AddParam(type=idiv_d_t, name=d)
+	;
+
+idiv.AddReturn(func=idiv)
+	.AddParam(type=idiv_n_t, name=q)
+	.AddParam(type=idiv_n_t, name=r)
+	;
+
+idiv.AddPrivate()
+	.AddVar(type=bool, name=sign)
+	.AddVar(type=idiv_n_t, name=n)
+	.AddVar(type=idiv_d_t, name=d)
+	;
+
+idiv.AddShared(reset=false)
+	.AddVar(type=idiv_n_t, name=n)
+	.AddVar(type=idiv_d_t, name=d)
+	.AddVar(type=ht_uint7, name=c, reset=true)
+	.AddVar(type=idiv_p_t, name=p)
+	;

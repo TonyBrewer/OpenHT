@@ -1,0 +1,54 @@
+#include "Pers_structs.h"
+
+/////////////////////////////////////////////////////////
+// ADD
+/////////////////////////////////////////////////////////
+
+dsnInfo.AddModule(name=add, clock=1x, htIdW=0);
+add.AddInst(name=ADD_ENTRY);
+add.AddInst(name=ADD_SETUP);
+add.AddInst(name=ADD_RTN);
+
+add.AddEntry(func=add, inst=ADD_ENTRY, host=true)
+	.AddParam(hostType=uint32_t, type=uint32_t, name=ia)
+	.AddParam(hostType=uint32_t, type=uint32_t, name=ib)
+	.AddParam(hostType=uint32_t, type=uint32_t, name=ic)
+	;
+
+add.AddPrivate()
+	.AddVar(name=ia, type=uint32_t)
+	.AddVar(name=ib, type=uint32_t)
+	.AddVar(name=ic, type=uint32_t)
+	;
+
+add.AddShared()
+	.AddVar(name=done, type=bool)
+	.AddVar(name=vld, type=bool)
+	.AddVar(name=rsltC, type=uint32_t)
+	.AddVar(name=rsltP, type=uint32_t)
+	.AddVar(name=rsltS, type=uint32_t)
+	;
+
+add.AddReturn(func=add)
+	.AddParam(hostType=uint32_t, type=uint32_t, name=rsltC)
+	.AddParam(hostType=uint32_t, type=uint32_t, name=rsltP)
+	.AddParam(hostType=uint32_t, type=uint32_t, name=rsltS)
+	;
+
+add.AddStage(privWrStg=1, execStg=1)
+	.AddVar(type=bool, name=bVld, range=1-3)
+	.AddVar(type=uint32_t, name=a, range=1)
+	.AddVar(type=uint32_t, name=b, range=1)
+	.AddVar(type=uint32_t, name=c, range=1-2)
+	.AddVar(type=uint32_t, name=outC1, range=2, primOut=true)
+	.AddVar(type=uint32_t, name=outC2, range=3, primOut=true)
+	.AddVar(type=uint32_t, name=outP1, range=1, primOut=true)
+	.AddVar(type=uint32_t, name=outP2, range=2, primOut=true)
+	.AddVar(type=struct AddIn, name=inS1, range=1)
+	.AddVar(type=AddOut, name=outS1, range=1, primOut=true)
+	.AddVar(type=AddIn, name=inS2, range=2)
+	.AddVar(type=AddOut, name=outS2, range=2, primOut=true)
+	;
+
+add.AddPrimState(type=addCState, name=addCState1, include="PersAdd_prim.h");
+add.AddPrimState(type=addCState, name=addCState2, include="PersAdd_prim.h");

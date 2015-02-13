@@ -1,0 +1,8 @@
+-cp hc-2
+-DTST=hc3
+-un Su
+-df 150
+-if "C:\Ht\tests\dsn9\src_pers\dsn9.hti"
+-wd "C:\Ht\tests\dsn9\msvs12\"
+"C:\Ht\tests\dsn9\src_pers\dsn9.htd"
+../ht/sysc

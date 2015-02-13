@@ -1,0 +1,7 @@
+#!/bin/sh
+
+for i in {1..100}
+do
+	echo "Run number $i"
+	./app_sysc
+done

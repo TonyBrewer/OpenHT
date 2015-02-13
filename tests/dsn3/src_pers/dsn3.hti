@@ -1,0 +1,3 @@
+// Instance file for dsn3, set mif for xyz to 1
+//xyz[INST0:MIF1:FREQ]
+AddModInstParams( unit=Qu, modPath="xyz", memPort=1 );

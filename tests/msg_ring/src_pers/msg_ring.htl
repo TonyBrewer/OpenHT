@@ -1,0 +1,14 @@
+// -cl "C:\Ht\tests\msg_ring\src_pers\msg_ring.htl"
+-wd "C:\Ht\tests\msg_ring\msvs12\"
+-cp wx-690
+-ac 1
+-uc 2
+-vcd_all
+-I ../src
+-I ../src_pers
+-D_HTL
+-D_WIN32
+//-DHT_UNIT_CNT=1
+-if ../src_pers/msg_ring.hti
+../src_pers/msg_ring.htd
+../ht/sysc

@@ -1,0 +1,10 @@
+// -cl "C:\Ht\tests\vadd_5stage_r2\src_pers\vadd.htl"
+-cp hc-2
+-uc 1
+-un Au
+-df 150
+-vr
+-pn vadd_5stage_r2
+-wd "C:\Ht\tests\vadd_5stage_r2\msvs12\"
+"C:\Ht\tests\vadd_5stage_r2\src_pers\vadd.htd"
+../ht/sysc

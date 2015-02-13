@@ -1,0 +1,1192 @@
+--- msvc120/SystemC/SystemC.vcxproj	(revision 0)
++++ msvc120/SystemC/SystemC.vcxproj	(revision 6994)
+@@ -0,0 +1,405 @@
++﻿<?xml version="1.0" encoding="utf-8"?>
++<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++  <ItemGroup Label="ProjectConfigurations">
++    <ProjectConfiguration Include="Debug|Win32">
++      <Configuration>Debug</Configuration>
++      <Platform>Win32</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Debug|x64">
++      <Configuration>Debug</Configuration>
++      <Platform>x64</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Release|Win32">
++      <Configuration>Release</Configuration>
++      <Platform>Win32</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Release|x64">
++      <Configuration>Release</Configuration>
++      <Platform>x64</Platform>
++    </ProjectConfiguration>
++  </ItemGroup>
++  <PropertyGroup Label="Globals">
++    <ProjectGuid>{86DF4B8C-CF94-4EA8-B529-78997F0F30A7}</ProjectGuid>
++    <RootNamespace>SystemC</RootNamespace>
++    <Keyword>Win32Proj</Keyword>
++  </PropertyGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
++    <ConfigurationType>StaticLibrary</ConfigurationType>
++    <PlatformToolset>v120</PlatformToolset>
++    <CharacterSet>MultiByte</CharacterSet>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
++    <ConfigurationType>StaticLibrary</ConfigurationType>
++    <PlatformToolset>v120</PlatformToolset>
++    <CharacterSet>MultiByte</CharacterSet>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
++    <ConfigurationType>StaticLibrary</ConfigurationType>
++    <PlatformToolset>v120</PlatformToolset>
++    <CharacterSet>MultiByte</CharacterSet>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
++    <ConfigurationType>StaticLibrary</ConfigurationType>
++    <PlatformToolset>v120</PlatformToolset>
++    <CharacterSet>MultiByte</CharacterSet>
++  </PropertyGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
++  <ImportGroup Label="ExtensionSettings">
++  </ImportGroup>
++  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
++    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
++  </ImportGroup>
++  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
++    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
++  </ImportGroup>
++  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
++    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
++  </ImportGroup>
++  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
++    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
++  </ImportGroup>
++  <PropertyGroup Label="UserMacros" />
++  <PropertyGroup>
++    <_ProjectFileVersion>12.0.30501.0</_ProjectFileVersion>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <OutDir>Debug\</OutDir>
++    <IntDir>Debug\</IntDir>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <OutDir>$(SolutionDir)..\..\win_x86_64\$(Configuration)\</OutDir>
++    <IntDir>$(Platform)\$(Configuration)\</IntDir>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <OutDir>Release\</OutDir>
++    <IntDir>Release\</IntDir>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <OutDir>$(SolutionDir)..\..\win_x86_64\$(Configuration)\</OutDir>
++    <IntDir>$(Platform)\$(Configuration)\</IntDir>
++  </PropertyGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <ClCompile>
++      <AdditionalOptions>/vmg %(AdditionalOptions)</AdditionalOptions>
++      <Optimization>Disabled</Optimization>
++      <AdditionalIncludeDirectories>../../src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
++      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;SC_INCLUDE_FX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <IgnoreStandardIncludePath>false</IgnoreStandardIncludePath>
++      <MinimalRebuild>true</MinimalRebuild>
++      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
++      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
++      <DisableLanguageExtensions>false</DisableLanguageExtensions>
++      <RuntimeTypeInfo>true</RuntimeTypeInfo>
++      <PrecompiledHeader />
++      <WarningLevel>Level3</WarningLevel>
++      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
++      <DisableSpecificWarnings>4244;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
++      <UndefinePreprocessorDefinitions>interface;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
++    </ClCompile>
++    <Lib>
++      <OutputFile>$(OutDir)SystemC.lib</OutputFile>
++    </Lib>
++  </ItemDefinitionGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <Midl>
++      <TargetEnvironment>X64</TargetEnvironment>
++    </Midl>
++    <ClCompile>
++      <AdditionalOptions>/vmg %(AdditionalOptions)</AdditionalOptions>
++      <Optimization>Disabled</Optimization>
++      <AdditionalIncludeDirectories>../../src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
++      <PreprocessorDefinitions>WIN64;_DEBUG;_LIB;SC_INCLUDE_FX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <IgnoreStandardIncludePath>false</IgnoreStandardIncludePath>
++      <MinimalRebuild>true</MinimalRebuild>
++      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
++      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
++      <DisableLanguageExtensions>false</DisableLanguageExtensions>
++      <RuntimeTypeInfo>true</RuntimeTypeInfo>
++      <PrecompiledHeader />
++      <WarningLevel>Level3</WarningLevel>
++      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
++      <DisableSpecificWarnings>4244;4267;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
++      <UndefinePreprocessorDefinitions>interface;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
++    </ClCompile>
++    <Lib>
++      <OutputFile>$(OutDir)SystemC.lib</OutputFile>
++    </Lib>
++  </ItemDefinitionGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <ClCompile>
++      <AdditionalOptions>/vmg %(AdditionalOptions)</AdditionalOptions>
++      <AdditionalIncludeDirectories>../../src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
++      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;SC_INCLUDE_FX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
++      <RuntimeTypeInfo>true</RuntimeTypeInfo>
++      <PrecompiledHeader />
++      <WarningLevel>Level3</WarningLevel>
++      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
++      <DisableSpecificWarnings>4244;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
++      <MultiProcessorCompilation>true</MultiProcessorCompilation>
++    </ClCompile>
++    <Lib>
++      <OutputFile>$(OutDir)SystemC.lib</OutputFile>
++    </Lib>
++  </ItemDefinitionGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <Midl>
++      <TargetEnvironment>X64</TargetEnvironment>
++    </Midl>
++    <ClCompile>
++      <AdditionalOptions>/vmg %(AdditionalOptions)</AdditionalOptions>
++      <AdditionalIncludeDirectories>../../src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
++      <PreprocessorDefinitions>WIN64;NDEBUG;_LIB;SC_INCLUDE_FX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
++      <RuntimeTypeInfo>true</RuntimeTypeInfo>
++      <PrecompiledHeader />
++      <WarningLevel>Level3</WarningLevel>
++      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
++      <DisableSpecificWarnings>4244;4267;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
++      <MultiProcessorCompilation>true</MultiProcessorCompilation>
++    </ClCompile>
++    <Lib>
++      <OutputFile>$(OutDir)SystemC.lib</OutputFile>
++    </Lib>
++  </ItemDefinitionGroup>
++  <ItemGroup>
++    <ClCompile Include="..\..\src\sysc\communication\sc_clock.cpp" />
++    <ClCompile Include="..\..\src\sysc\communication\sc_event_finder.cpp" />
++    <ClCompile Include="..\..\src\sysc\communication\sc_event_queue.cpp" />
++    <ClCompile Include="..\..\src\sysc\communication\sc_export.cpp" />
++    <ClCompile Include="..\..\src\sysc\communication\sc_interface.cpp" />
++    <ClCompile Include="..\..\src\sysc\communication\sc_mutex.cpp" />
++    <ClCompile Include="..\..\src\sysc\communication\sc_port.cpp" />
++    <ClCompile Include="..\..\src\sysc\communication\sc_prim_channel.cpp" />
++    <ClCompile Include="..\..\src\sysc\communication\sc_semaphore.cpp" />
++    <ClCompile Include="..\..\src\sysc\communication\sc_signal.cpp" />
++    <ClCompile Include="..\..\src\sysc\communication\sc_signal_ports.cpp" />
++    <ClCompile Include="..\..\src\sysc\communication\sc_signal_resolved.cpp" />
++    <ClCompile Include="..\..\src\sysc\communication\sc_signal_resolved_ports.cpp" />
++    <ClCompile Include="..\..\src\sysc\datatypes\bit\sc_bit.cpp" />
++    <ClCompile Include="..\..\src\sysc\datatypes\bit\sc_bv_base.cpp" />
++    <ClCompile Include="..\..\src\sysc\datatypes\bit\sc_logic.cpp" />
++    <ClCompile Include="..\..\src\sysc\datatypes\bit\sc_lv_base.cpp" />
++    <ClCompile Include="..\..\src\sysc\datatypes\fx\scfx_mant.cpp" />
++    <ClCompile Include="..\..\src\sysc\datatypes\fx\scfx_pow10.cpp" />
++    <ClCompile Include="..\..\src\sysc\datatypes\fx\scfx_rep.cpp" />
++    <ClCompile Include="..\..\src\sysc\datatypes\fx\scfx_utils.cpp" />
++    <ClCompile Include="..\..\src\sysc\datatypes\fx\sc_fxcast_switch.cpp" />
++    <ClCompile Include="..\..\src\sysc\datatypes\fx\sc_fxdefs.cpp" />
++    <ClCompile Include="..\..\src\sysc\datatypes\fx\sc_fxnum.cpp" />
++    <ClCompile Include="..\..\src\sysc\datatypes\fx\sc_fxnum_observer.cpp" />
++    <ClCompile Include="..\..\src\sysc\datatypes\fx\sc_fxtype_params.cpp" />
++    <ClCompile Include="..\..\src\sysc\datatypes\fx\sc_fxval.cpp" />
++    <ClCompile Include="..\..\src\sysc\datatypes\fx\sc_fxval_observer.cpp" />
++    <ClCompile Include="..\..\src\sysc\datatypes\int\sc_int32_mask.cpp" />
++    <ClCompile Include="..\..\src\sysc\datatypes\int\sc_int64_io.cpp" />
++    <ClCompile Include="..\..\src\sysc\datatypes\int\sc_int64_mask.cpp" />
++    <ClCompile Include="..\..\src\sysc\datatypes\int\sc_int_base.cpp" />
++    <ClCompile Include="..\..\src\sysc\datatypes\int\sc_length_param.cpp" />
++    <ClCompile Include="..\..\src\sysc\datatypes\int\sc_nbdefs.cpp" />
++    <ClCompile Include="..\..\src\sysc\datatypes\int\sc_nbexterns.cpp" />
++    <ClCompile Include="..\..\src\sysc\datatypes\int\sc_nbutils.cpp" />
++    <ClCompile Include="..\..\src\sysc\datatypes\int\sc_signed.cpp" />
++    <ClCompile Include="..\..\src\sysc\datatypes\int\sc_uint_base.cpp" />
++    <ClCompile Include="..\..\src\sysc\datatypes\int\sc_unsigned.cpp" />
++    <ClCompile Include="..\..\src\sysc\datatypes\misc\sc_concatref.cpp" />
++    <ClCompile Include="..\..\src\sysc\datatypes\misc\sc_value_base.cpp" />
++    <ClCompile Include="..\..\src\sysc\kernel\sc_attribute.cpp" />
++    <ClCompile Include="..\..\src\sysc\kernel\sc_cor_fiber.cpp" />
++    <ClCompile Include="..\..\src\sysc\kernel\sc_cthread_process.cpp" />
++    <ClCompile Include="..\..\src\sysc\kernel\sc_event.cpp" />
++    <ClCompile Include="..\..\src\sysc\kernel\sc_except.cpp" />
++    <ClCompile Include="..\..\src\sysc\kernel\sc_join.cpp" />
++    <ClCompile Include="..\..\src\sysc\kernel\sc_main.cpp" />
++    <ClCompile Include="..\..\src\sysc\kernel\sc_main_main.cpp" />
++    <ClCompile Include="..\..\src\sysc\kernel\sc_method_process.cpp" />
++    <ClCompile Include="..\..\src\sysc\kernel\sc_module.cpp" />
++    <ClCompile Include="..\..\src\sysc\kernel\sc_module_name.cpp" />
++    <ClCompile Include="..\..\src\sysc\kernel\sc_module_registry.cpp" />
++    <ClCompile Include="..\..\src\sysc\kernel\sc_name_gen.cpp" />
++    <ClCompile Include="..\..\src\sysc\kernel\sc_object.cpp" />
++    <ClCompile Include="..\..\src\sysc\kernel\sc_object_manager.cpp" />
++    <ClCompile Include="..\..\src\sysc\kernel\sc_phase_callback_registry.cpp" />
++    <ClCompile Include="..\..\src\sysc\kernel\sc_process.cpp" />
++    <ClCompile Include="..\..\src\sysc\kernel\sc_reset.cpp" />
++    <ClCompile Include="..\..\src\sysc\kernel\sc_sensitive.cpp" />
++    <ClCompile Include="..\..\src\sysc\kernel\sc_simcontext.cpp" />
++    <ClCompile Include="..\..\src\sysc\kernel\sc_spawn_options.cpp" />
++    <ClCompile Include="..\..\src\sysc\kernel\sc_thread_process.cpp" />
++    <ClCompile Include="..\..\src\sysc\kernel\sc_time.cpp" />
++    <ClCompile Include="..\..\src\sysc\kernel\sc_ver.cpp" />
++    <ClCompile Include="..\..\src\sysc\kernel\sc_wait.cpp" />
++    <ClCompile Include="..\..\src\sysc\kernel\sc_wait_cthread.cpp" />
++    <ClCompile Include="..\..\src\sysc\tracing\sc_trace.cpp" />
++    <ClCompile Include="..\..\src\sysc\tracing\sc_trace_file_base.cpp" />
++    <ClCompile Include="..\..\src\sysc\tracing\sc_vcd_trace.cpp" />
++    <ClCompile Include="..\..\src\sysc\tracing\sc_wif_trace.cpp" />
++    <ClCompile Include="..\..\src\sysc\utils\sc_hash.cpp" />
++    <ClCompile Include="..\..\src\sysc\utils\sc_list.cpp" />
++    <ClCompile Include="..\..\src\sysc\utils\sc_mempool.cpp" />
++    <ClCompile Include="..\..\src\sysc\utils\sc_pq.cpp" />
++    <ClCompile Include="..\..\src\sysc\utils\sc_report.cpp" />
++    <ClCompile Include="..\..\src\sysc\utils\sc_report_handler.cpp" />
++    <ClCompile Include="..\..\src\sysc\utils\sc_stop_here.cpp" />
++    <ClCompile Include="..\..\src\sysc\utils\sc_string.cpp" />
++    <ClCompile Include="..\..\src\sysc\utils\sc_utils_ids.cpp" />
++    <ClCompile Include="..\..\src\sysc\utils\sc_vector.cpp" />
++  </ItemGroup>
++  <ItemGroup>
++    <ClInclude Include="..\..\src\sysc\communication\sc_buffer.h" />
++    <ClInclude Include="..\..\src\sysc\communication\sc_clock.h" />
++    <ClInclude Include="..\..\src\sysc\communication\sc_clock_ports.h" />
++    <ClInclude Include="..\..\src\sysc\communication\sc_communication_ids.h" />
++    <ClInclude Include="..\..\src\sysc\communication\sc_event_finder.h" />
++    <ClInclude Include="..\..\src\sysc\communication\sc_event_queue.h" />
++    <ClInclude Include="..\..\src\sysc\communication\sc_export.h" />
++    <ClInclude Include="..\..\src\sysc\communication\sc_fifo.h" />
++    <ClInclude Include="..\..\src\sysc\communication\sc_fifo_ifs.h" />
++    <ClInclude Include="..\..\src\sysc\communication\sc_fifo_ports.h" />
++    <ClInclude Include="..\..\src\sysc\communication\sc_host_mutex.h" />
++    <ClInclude Include="..\..\src\sysc\communication\sc_interface.h" />
++    <ClInclude Include="..\..\src\sysc\communication\sc_mutex.h" />
++    <ClInclude Include="..\..\src\sysc\communication\sc_mutex_if.h" />
++    <ClInclude Include="..\..\src\sysc\communication\sc_port.h" />
++    <ClInclude Include="..\..\src\sysc\communication\sc_prim_channel.h" />
++    <ClInclude Include="..\..\src\sysc\communication\sc_semaphore.h" />
++    <ClInclude Include="..\..\src\sysc\communication\sc_semaphore_if.h" />
++    <ClInclude Include="..\..\src\sysc\communication\sc_signal.h" />
++    <ClInclude Include="..\..\src\sysc\communication\sc_signal_ifs.h" />
++    <ClInclude Include="..\..\src\sysc\communication\sc_signal_ports.h" />
++    <ClInclude Include="..\..\src\sysc\communication\sc_signal_resolved.h" />
++    <ClInclude Include="..\..\src\sysc\communication\sc_signal_resolved_ports.h" />
++    <ClInclude Include="..\..\src\sysc\communication\sc_signal_rv.h" />
++    <ClInclude Include="..\..\src\sysc\communication\sc_signal_rv_ports.h" />
++    <ClInclude Include="..\..\src\sysc\communication\sc_writer_policy.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\bit\sc_bit.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\bit\sc_bit_ids.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\bit\sc_bit_proxies.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\bit\sc_bv.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\bit\sc_bv_base.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\bit\sc_logic.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\bit\sc_lv.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\bit\sc_lv_base.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\bit\sc_proxy.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\fx.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\scfx_ieee.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\scfx_mant.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\scfx_other_defs.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\scfx_params.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\scfx_pow10.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\scfx_rep.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\scfx_string.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\scfx_utils.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\sc_context.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\sc_fix.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\sc_fixed.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\sc_fxcast_switch.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\sc_fxdefs.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\sc_fxnum.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\sc_fxnum_observer.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\sc_fxtype_params.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\sc_fxval.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\sc_fxval_observer.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\sc_fx_ids.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\sc_ufix.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\sc_ufixed.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\int\sc_bigint.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\int\sc_biguint.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\int\sc_int.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\int\sc_int_base.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\int\sc_int_ids.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\int\sc_length_param.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\int\sc_nbdefs.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\int\sc_nbexterns.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\int\sc_nbutils.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\int\sc_signed.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\int\sc_uint.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\int\sc_uint_base.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\int\sc_unsigned.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\misc\sc_concatref.h" />
++    <ClInclude Include="..\..\src\sysc\datatypes\misc\sc_value_base.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_attribute.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_boost.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_cmnhdr.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_constants.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_cor.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_cor_fiber.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_cthread_process.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_dynamic_processes.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_event.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_except.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_externs.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_join.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_kernel_ids.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_lambda.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_lambda_defs.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_lambda_exps.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_lambda_friends.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_macros.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_method_process.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_module.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_module_name.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_module_registry.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_name_gen.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_object.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_object_int.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_object_manager.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_phase_callback_registry.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_process.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_process_handle.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_reset.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_runnable.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_runnable_int.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_sensitive.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_simcontext.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_simcontext_int.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_spawn.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_spawn_options.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_status.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_thread_process.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_time.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_ver.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_wait.h" />
++    <ClInclude Include="..\..\src\sysc\kernel\sc_wait_cthread.h" />
++    <ClInclude Include="..\..\src\sysc\packages\boost\bind.hpp" />
++    <ClInclude Include="..\..\src\sysc\packages\boost\config.hpp" />
++    <ClInclude Include="..\..\src\sysc\packages\boost\mem_fn.hpp" />
++    <ClInclude Include="..\..\src\sysc\packages\boost\ref.hpp" />
++    <ClInclude Include="..\..\src\sysc\tracing\sc_trace.h" />
++    <ClInclude Include="..\..\src\sysc\tracing\sc_trace_file_base.h" />
++    <ClInclude Include="..\..\src\sysc\tracing\sc_tracing_ids.h" />
++    <ClInclude Include="..\..\src\sysc\tracing\sc_vcd_trace.h" />
++    <ClInclude Include="..\..\src\sysc\tracing\sc_wif_trace.h" />
++    <ClInclude Include="..\..\src\sysc\utils\sc_hash.h" />
++    <ClInclude Include="..\..\src\sysc\utils\sc_iostream.h" />
++    <ClInclude Include="..\..\src\sysc\utils\sc_list.h" />
++    <ClInclude Include="..\..\src\sysc\utils\sc_machine.h" />
++    <ClInclude Include="..\..\src\sysc\utils\sc_mempool.h" />
++    <ClInclude Include="..\..\src\sysc\utils\sc_pq.h" />
++    <ClInclude Include="..\..\src\sysc\utils\sc_pvector.h" />
++    <ClInclude Include="..\..\src\sysc\utils\sc_report.h" />
++    <ClInclude Include="..\..\src\sysc\utils\sc_report_handler.h" />
++    <ClInclude Include="..\..\src\sysc\utils\sc_stop_here.h" />
++    <ClInclude Include="..\..\src\sysc\utils\sc_string.h" />
++    <ClInclude Include="..\..\src\sysc\utils\sc_temporary.h" />
++    <ClInclude Include="..\..\src\sysc\utils\sc_utils_ids.h" />
++    <ClInclude Include="..\..\src\sysc\utils\sc_vector.h" />
++    <ClInclude Include="..\..\src\systemc.h" />
++  </ItemGroup>
++  <ItemGroup>
++    <None Include="..\..\src\sysc\datatypes\int\sc_nbcommon.inc" />
++    <None Include="..\..\src\sysc\datatypes\int\sc_nbfriends.inc" />
++    <None Include="..\..\src\sysc\datatypes\int\sc_signed_bitref.inc" />
++    <None Include="..\..\src\sysc\datatypes\int\sc_signed_subref.inc" />
++    <None Include="..\..\src\sysc\datatypes\int\sc_unsigned_bitref.inc" />
++    <None Include="..\..\src\sysc\datatypes\int\sc_unsigned_subref.inc" />
++  </ItemGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
++  <ImportGroup Label="ExtensionTargets">
++  </ImportGroup>
++</Project>
+\ No newline at end of file
+--- msvc120/SystemC/SystemC.sln	(revision 0)
++++ msvc120/SystemC/SystemC.sln	(revision 6994)
+@@ -0,0 +1,27 @@
++Microsoft Visual Studio Solution File, Format Version 12.00
++# Visual Studio 2013
++VisualStudioVersion = 12.0.30723.0
++MinimumVisualStudioVersion = 10.0.40219.1
++Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SystemC", "SystemC.vcxproj", "{86DF4B8C-CF94-4EA8-B529-78997F0F30A7}"
++EndProject
++Global
++	GlobalSection(SolutionConfigurationPlatforms) = preSolution
++		Debug|Win32 = Debug|Win32
++		Debug|x64 = Debug|x64
++		Release|Win32 = Release|Win32
++		Release|x64 = Release|x64
++	EndGlobalSection
++	GlobalSection(ProjectConfigurationPlatforms) = postSolution
++		{86DF4B8C-CF94-4EA8-B529-78997F0F30A7}.Debug|Win32.ActiveCfg = Debug|Win32
++		{86DF4B8C-CF94-4EA8-B529-78997F0F30A7}.Debug|Win32.Build.0 = Debug|Win32
++		{86DF4B8C-CF94-4EA8-B529-78997F0F30A7}.Debug|x64.ActiveCfg = Debug|x64
++		{86DF4B8C-CF94-4EA8-B529-78997F0F30A7}.Debug|x64.Build.0 = Debug|x64
++		{86DF4B8C-CF94-4EA8-B529-78997F0F30A7}.Release|Win32.ActiveCfg = Release|Win32
++		{86DF4B8C-CF94-4EA8-B529-78997F0F30A7}.Release|Win32.Build.0 = Release|Win32
++		{86DF4B8C-CF94-4EA8-B529-78997F0F30A7}.Release|x64.ActiveCfg = Release|x64
++		{86DF4B8C-CF94-4EA8-B529-78997F0F30A7}.Release|x64.Build.0 = Release|x64
++	EndGlobalSection
++	GlobalSection(SolutionProperties) = preSolution
++		HideSolutionNode = FALSE
++	EndGlobalSection
++EndGlobal
+--- msvc120/SystemC/SystemC.vcxproj.filters	(revision 0)
++++ msvc120/SystemC/SystemC.vcxproj.filters	(revision 6994)
+@@ -0,0 +1,701 @@
++﻿<?xml version="1.0" encoding="utf-8"?>
++<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++  <ItemGroup>
++    <Filter Include="Source Files">
++      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
++      <Extensions>cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
++    </Filter>
++    <Filter Include="Header Files">
++      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
++      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
++    </Filter>
++    <Filter Include="Resource Files">
++      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
++      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx</Extensions>
++    </Filter>
++  </ItemGroup>
++  <ItemGroup>
++    <ClCompile Include="..\..\src\sysc\kernel\sc_attribute.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\datatypes\bit\sc_bit.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\datatypes\bit\sc_bv_base.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\communication\sc_clock.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\datatypes\misc\sc_concatref.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\kernel\sc_cor_fiber.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\kernel\sc_cthread_process.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\kernel\sc_event.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\communication\sc_event_finder.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\communication\sc_event_queue.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\kernel\sc_except.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\communication\sc_export.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\datatypes\fx\sc_fxcast_switch.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\datatypes\fx\sc_fxdefs.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\datatypes\fx\sc_fxnum.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\datatypes\fx\sc_fxnum_observer.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\datatypes\fx\sc_fxtype_params.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\datatypes\fx\sc_fxval.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\datatypes\fx\sc_fxval_observer.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\utils\sc_hash.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\datatypes\int\sc_int32_mask.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\datatypes\int\sc_int64_io.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\datatypes\int\sc_int64_mask.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\datatypes\int\sc_int_base.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\communication\sc_interface.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\kernel\sc_join.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\datatypes\int\sc_length_param.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\utils\sc_list.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\datatypes\bit\sc_logic.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\datatypes\bit\sc_lv_base.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\kernel\sc_main.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\kernel\sc_main_main.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\utils\sc_mempool.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\kernel\sc_method_process.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\kernel\sc_module.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\kernel\sc_module_name.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\kernel\sc_module_registry.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\communication\sc_mutex.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\kernel\sc_name_gen.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\datatypes\int\sc_nbdefs.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\datatypes\int\sc_nbexterns.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\datatypes\int\sc_nbutils.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\kernel\sc_object.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\kernel\sc_object_manager.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\kernel\sc_phase_callback_registry.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\communication\sc_port.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\utils\sc_pq.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\communication\sc_prim_channel.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\kernel\sc_process.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\utils\sc_report.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\utils\sc_report_handler.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\kernel\sc_reset.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\communication\sc_semaphore.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\kernel\sc_sensitive.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\communication\sc_signal.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\communication\sc_signal_ports.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\communication\sc_signal_resolved.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\communication\sc_signal_resolved_ports.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\datatypes\int\sc_signed.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\kernel\sc_simcontext.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\kernel\sc_spawn_options.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\utils\sc_stop_here.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\utils\sc_string.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\kernel\sc_thread_process.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\kernel\sc_time.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\tracing\sc_trace.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\tracing\sc_trace_file_base.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\datatypes\int\sc_uint_base.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\datatypes\int\sc_unsigned.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\utils\sc_utils_ids.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\datatypes\misc\sc_value_base.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\tracing\sc_vcd_trace.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\utils\sc_vector.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\kernel\sc_ver.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\kernel\sc_wait.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\kernel\sc_wait_cthread.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\tracing\sc_wif_trace.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\datatypes\fx\scfx_mant.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\datatypes\fx\scfx_pow10.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\datatypes\fx\scfx_rep.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="..\..\src\sysc\datatypes\fx\scfx_utils.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++  </ItemGroup>
++  <ItemGroup>
++    <ClInclude Include="..\..\src\sysc\packages\boost\bind.hpp">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\packages\boost\config.hpp">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\fx.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\packages\boost\mem_fn.hpp">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\packages\boost\ref.hpp">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_attribute.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\int\sc_bigint.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\int\sc_biguint.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\bit\sc_bit.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\bit\sc_bit_ids.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\bit\sc_bit_proxies.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_boost.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\communication\sc_buffer.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\bit\sc_bv.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\bit\sc_bv_base.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\communication\sc_clock.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\communication\sc_clock_ports.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_cmnhdr.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\communication\sc_communication_ids.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\misc\sc_concatref.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_constants.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\sc_context.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_cor.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_cor_fiber.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_cthread_process.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_dynamic_processes.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_event.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\communication\sc_event_finder.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\communication\sc_event_queue.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_except.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\communication\sc_export.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_externs.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\communication\sc_fifo.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\communication\sc_fifo_ifs.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\communication\sc_fifo_ports.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\sc_fix.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\sc_fixed.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\sc_fx_ids.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\sc_fxcast_switch.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\sc_fxdefs.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\sc_fxnum.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\sc_fxnum_observer.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\sc_fxtype_params.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\sc_fxval.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\sc_fxval_observer.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\utils\sc_hash.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\communication\sc_host_mutex.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\int\sc_int.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\int\sc_int_base.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\int\sc_int_ids.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\communication\sc_interface.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\utils\sc_iostream.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_join.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_kernel_ids.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_lambda.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_lambda_defs.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_lambda_exps.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_lambda_friends.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\int\sc_length_param.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\utils\sc_list.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\bit\sc_logic.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\bit\sc_lv.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\bit\sc_lv_base.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\utils\sc_machine.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_macros.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\utils\sc_mempool.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_method_process.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_module.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_module_name.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_module_registry.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\communication\sc_mutex.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\communication\sc_mutex_if.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_name_gen.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\int\sc_nbdefs.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\int\sc_nbexterns.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\int\sc_nbutils.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_object.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_object_int.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_object_manager.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_phase_callback_registry.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\communication\sc_port.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\utils\sc_pq.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\communication\sc_prim_channel.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_process.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_process_handle.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\bit\sc_proxy.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\utils\sc_pvector.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\utils\sc_report.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\utils\sc_report_handler.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_reset.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_runnable.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_runnable_int.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\communication\sc_semaphore.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\communication\sc_semaphore_if.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_sensitive.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\communication\sc_signal.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\communication\sc_signal_ifs.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\communication\sc_signal_ports.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\communication\sc_signal_resolved.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\communication\sc_signal_resolved_ports.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\communication\sc_signal_rv.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\communication\sc_signal_rv_ports.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\int\sc_signed.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_simcontext.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_simcontext_int.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_spawn.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_spawn_options.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_status.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\utils\sc_stop_here.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\utils\sc_string.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\utils\sc_temporary.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_thread_process.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_time.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\tracing\sc_trace.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\tracing\sc_trace_file_base.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\tracing\sc_tracing_ids.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\sc_ufix.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\sc_ufixed.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\int\sc_uint.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\int\sc_uint_base.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\int\sc_unsigned.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\utils\sc_utils_ids.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\misc\sc_value_base.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\tracing\sc_vcd_trace.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\utils\sc_vector.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_ver.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_wait.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\kernel\sc_wait_cthread.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\tracing\sc_wif_trace.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\communication\sc_writer_policy.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\scfx_ieee.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\scfx_mant.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\scfx_other_defs.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\scfx_params.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\scfx_pow10.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\scfx_rep.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\scfx_string.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\sysc\datatypes\fx\scfx_utils.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="..\..\src\systemc.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++  </ItemGroup>
++  <ItemGroup>
++    <None Include="..\..\src\sysc\datatypes\int\sc_nbcommon.inc">
++      <Filter>Header Files</Filter>
++    </None>
++    <None Include="..\..\src\sysc\datatypes\int\sc_nbfriends.inc">
++      <Filter>Header Files</Filter>
++    </None>
++    <None Include="..\..\src\sysc\datatypes\int\sc_signed_bitref.inc">
++      <Filter>Header Files</Filter>
++    </None>
++    <None Include="..\..\src\sysc\datatypes\int\sc_signed_subref.inc">
++      <Filter>Header Files</Filter>
++    </None>
++    <None Include="..\..\src\sysc\datatypes\int\sc_unsigned_bitref.inc">
++      <Filter>Header Files</Filter>
++    </None>
++    <None Include="..\..\src\sysc\datatypes\int\sc_unsigned_subref.inc">
++      <Filter>Header Files</Filter>
++    </None>
++  </ItemGroup>
++</Project>
+\ No newline at end of file
+--- src/sysc/kernel/sc_process.h	(revision 6990)
++++ src/sysc/kernel/sc_process.h	(working copy)
+@@ -128,7 +128,7 @@
+ 
+ #if defined(_MSC_VER)
+ #if ( _MSC_VER > 1200 )
+-#   define SC_USE_MEMBER_FUNC_PTR
++//#   define SC_USE_MEMBER_FUNC_PTR
+ #endif
+ #else
+ #   define SC_USE_MEMBER_FUNC_PTR
+--- src/sysc/kernel/sc_cor_fiber.cpp	(revision 6990)
++++ src/sysc/kernel/sc_cor_fiber.cpp	(working copy)
+@@ -67,9 +67,11 @@
+ sc_cor_fiber::~sc_cor_fiber()
+ {
+     if( m_fiber != 0 ) {
++#ifndef WIN32
+       PVOID cur_fiber = GetCurrentFiber();
+       if (m_fiber != cur_fiber)
+          DeleteFiber( m_fiber );
++#endif
+     }
+ }
+ 
+--- src/systemc.h	(revision 6990)
++++ src/systemc.h	(working copy)
+@@ -36,6 +36,11 @@
+ #ifndef SYSTEMC_H
+ #define SYSTEMC_H
+ 
++#ifdef WIN32
++#pragma warning( push )
++#pragma warning (disable:4267)
++#endif
++
+ // INCLUDE SYSTEM (std) DEFINITIONS:
+ 
+ #include <cassert>
+@@ -343,4 +348,8 @@
+ 	typedef ::std::string sc_string;
+ #endif
+ 
++#ifdef WIN32
++#pragma warning( pop )
+ #endif
++
++#endif

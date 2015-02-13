@@ -1,0 +1,54 @@
+// Module capabilities
+
+dsnInfo.AddModule(name=ctl, htIdW=0);
+
+ctl.AddInst(name=CTL_ENTRY);
+ctl.AddInst(name=CTL_RTN);
+
+
+ctl.AddEntry(func=htmain, inst=CTL_ENTRY, host=true)
+	;
+
+ctl.AddCall(func=clk2x)
+	;
+
+ctl.AddReturn(func=htmain)
+	;
+
+//ctl.AddPrivate()
+//	;
+
+dsnInfo.AddModule(name=clk2x, clock=2x, htIdW=0);
+
+clk2x.AddHostMsg(dir=in, name=IHM_MSG2X)
+	.AddDst(var=msg);
+
+clk2x.AddHostMsg(dir=out, name=OHM_MSG2X);
+
+clk2x.AddShared()
+	.AddVar(type=ht_uint9, name=msg);
+
+clk2x.AddInst(name=CLK2X_ENTRY);
+clk2x.AddInst(name=CLK2X_RTN);
+
+
+clk2x.AddEntry(func=clk2x, inst=CLK2X_ENTRY)
+	;
+
+clk2x.AddCall(func=clk1x)
+	;
+
+clk2x.AddReturn(func=clk2x)
+	;
+
+dsnInfo.AddModule(name=clk1x, clock=1x, htIdW=4);
+
+clk1x.AddInst(name=CLK1X_ENTRY);
+clk1x.AddInst(name=CLK1X_RTN);
+
+
+clk1x.AddEntry(func=clk1x, inst=CLK1X_ENTRY)
+	;
+
+clk1x.AddReturn(func=clk1x)
+	;

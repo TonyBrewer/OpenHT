@@ -1,0 +1,32 @@
+struct X {
+	uint32_t a;
+	uint64_t b;
+	ht_uint12 c;
+};
+
+////////////////////////////////////////////////////
+// Bug Module
+
+dsnInfo.AddModule(name=bug, htIdW=0);
+
+bug.AddInstr(name=BUG_ENTRY);
+bug.AddInstr(name=BUG_RTN);
+
+bug.AddShared()
+	.AddVar(type=X, name=bram1, addr1W=8, blockRam=true)
+	.AddVar(type=X, name=bram2, addr1W=8, blockRam=true)
+	.AddVar(type=uint16_t, name=bram3, wrSelW=2, addr1W=8, blockRam=true)
+	.AddVar(type=X, name=data1)
+	.AddVar(type=X, name=data2)
+	.AddVar(type=uint16_t, name=data3)
+	.AddVar(type=bool, name=bStart1)
+	.AddVar(type=bool, name=bStart2)
+	.AddVar(type=bool, name=bStart3)
+	.AddVar(type=bool, name=bStart4)
+	;
+
+bug.AddEntry(func=htmain, inst=BUG_ENTRY, host=true)
+	;
+
+bug.AddReturn(func=htmain)
+	;

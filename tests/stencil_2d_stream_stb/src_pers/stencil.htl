@@ -1,0 +1,13 @@
+// -cl "C:\Ht\tests\stencil_2d_stream_stb\src_pers\stencil.htl"
+-wd "C:\Ht\tests\stencil_2d_stream_stb\msvs12\"
+-cp wx-690
+-uc 1
+-un Au
+-df 150
+-vcd_all
+-pn stencil_2d_stream_stb
+-it
+-I ../src
+-if ../src_pers/stencil.hti
+../src_pers/stencil.htd
+../ht/sysc

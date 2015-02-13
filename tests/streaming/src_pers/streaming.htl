@@ -1,0 +1,8 @@
+-wd "C:\Ht\tests\streaming\msvs12\"
+-cp hc-2
+-uc 1
+-un Au
+-df 150
+-pn streaming
+../src_pers/streaming.htd
+../ht/sysc

@@ -1,0 +1,11 @@
+// -cl "C:\Ht\tests\ex_vadd\src_pers\vadd.htl"
+-wd "C:\Ht\tests\ex_vadd\msvs12\"
+-cp hc-2
+-uc 1
+-un Au
+-df 150
+-it
+-pn vadd
+-mo
+../src_model/model.htd
+../ht/sysc

@@ -1,0 +1,8 @@
+-wd "C:\Ht\tests\overhead\msvs12\"
+-cp hc-2
+-uc 1
+-un Au
+-df 150
+-pn overhead
+../src_pers/over.htd
+../ht/sysc

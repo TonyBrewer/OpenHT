@@ -1,0 +1,80 @@
+# personality datafile version: 0.0.3
+#  Copyright (C) 2007 - 2010. Convey Computer Corporation. All Rights Reserved.
+#
+# Personality Development Kit (PDK)
+#
+# the following list is left intentionally commented out since there are
+# initially no PDK instructions mapped to compiler opcodes by default
+#
+# PDK instruction format is:
+# insn	t/f/true/false	(t = enable / f = disable)
+#
+# an instruction that is missing or commented out is disabled by default
+#
+# uncomment the instructions you want enable
+
+
+##### PARAMETERS
+
+# relative ld/st rates for 32/64-bit memory access, unit/non-unit stride:
+#		ld32u, st32u, ld64u, st64u, ld32n, st32n, ld64n, st64n
+# 	gs - gather/scatter dimms
+#	st - standard dimms
+has_gs_dimms	t	# does the machine have the gather/scatter dimms?
+dimm_gs_rate	1.0, 0.5, 1.0, 1.0, 0.5, 0.25, 1.0, 1.0
+dimm_st_rate	1.0, 0.5, 1.0, 1.0, 0.0625, 0.03125, 0.125, 0.0625
+
+# functional unit numbers
+# ufunc_unit (unique functional units) must be defined before func_ucount
+# func_ucount specifies the number of each unique type of unit present
+ufunc_unit	2
+func_ucount	4,1	# fp,misc
+
+##### INSTRUCTIONS
+
+##### INTRINSICS
+
+# The intrinsics that this personality supports:
+#opr    rtype   desc    mask    unit    cost   mask
+#  mask by convention, the bits
+#    use -TARG:cny_instr_mask=x   , where x is
+#  1 => allow for double if set
+#  2 => allow for single if set
+#  4 => allow for PDK if set
+#  8 => allow for FAP if set
+# 16 => allow for FDP if set
+
+#caep00		t
+#caep01		t
+#caep02		t
+#caep03		t
+#caep04		t
+#caep05		t
+#caep06		t
+#caep07		t
+#caep08		t
+#caep09		t
+#caep0a		t
+#caep0b		t
+#caep0c		t
+#caep0d		t
+#caep0e		t
+#caep0f		t
+#caep10		t
+#caep11		t
+#caep12		t
+#caep13		t
+#caep14		t
+#caep15		t
+#caep16		t
+#caep17		t
+#caep18		t
+#caep19		t
+#caep1a		t
+#caep1b		t
+#caep1c		t
+#caep1d		t
+#caep1e		t
+#caep1f		t
+
+##### SPECIALS

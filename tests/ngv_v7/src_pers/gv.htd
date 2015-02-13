@@ -1,0 +1,463 @@
+#include "ArgStruct.h"
+
+struct CGV_1F {
+	ht_uint9 m_x;
+};
+
+struct CGV_2F {
+	ht_uint9 m_x[2];
+	ht_uint9 m_y[2];
+};
+
+struct CGV_1F_AI {
+#pragma htl atomic_inc
+	ht_uint9 m_x;
+};
+
+struct CGV_2F_AI {
+#pragma htl atomic_inc
+	ht_uint9 m_x[2];
+#pragma htl atomic_inc
+	ht_uint9 m_y[2];
+};
+
+struct CGV_1F_AA {
+#pragma htl atomic_add
+	ht_uint9 m_x;
+};
+
+struct CGV_4F_AA {
+#pragma htl atomic_add
+	ht_uint9 m_x[4];
+};
+
+////////////////////////////////////////////////////
+// Ctl Module
+
+dsnInfo.AddModule(name=ctl, htIdW=0, clock=1x);
+ctl.AddInst(name=ENTRY);
+ctl.AddInst(name=JOIN_GV1);
+ctl.AddInst(name=JOIN_GV2);
+ctl.AddInst(name=JOIN_GV3);
+ctl.AddInst(name=JOIN_GV4);
+ctl.AddInst(name=JOIN_GV5);
+ctl.AddInst(name=JOIN_GV6);
+ctl.AddInst(name=PAUSE_GV1);
+ctl.AddInst(name=PAUSE_GV2);
+ctl.AddInst(name=PAUSE_GV3);
+ctl.AddInst(name=PAUSE_GV4);
+ctl.AddInst(name=PAUSE_GV5);
+ctl.AddInst(name=PAUSE_GV6);
+ctl.AddInst(name=RETURN);
+
+ctl.AddEntry(func=htmain, inst=ENTRY, host=true)
+   .AddParam(type=ArgStruct, name=rxEnable)
+   .AddParam(type=bool, name=txEnable)
+	;
+
+ctl.AddReturn(func=htmain)
+	;
+
+ctl.AddCall(func=gv1, fork=true)
+	;
+
+ctl.AddCall(func=gv2, fork=true)
+	;
+
+ctl.AddCall(func=gv3, fork=true)
+	;
+
+ctl.AddCall(func=gv4, fork=true)
+	;
+
+ctl.AddCall(func=gv5, fork=true)
+	;
+
+ctl.AddCall(func=gv6, fork=true)
+	;
+
+ctl.AddPrivate()
+	.AddVar(type=ht_uint8, name=forkCnt)
+	.AddVar(type=ArgStruct, name=rxEnable)
+	.AddVar(type=bool, name=txEnable)
+	;
+
+////////////////////////////////////////////////////
+// Gv1 Module
+
+dsnInfo.AddModule(name=gv1, htIdW=3, clock=1x);
+gv1.AddInst(name=GV1_ENTRY);
+gv1.AddInst(name=GV1_LOOP);
+gv1.AddInst(name=GV1_RETURN);
+
+gv1.AddEntry(func=gv1, inst=GV1_ENTRY)
+	;
+
+gv1.AddPrivate()
+	.AddVar(type=ht_uint9, name=loopCnt)
+	.AddVar(type=ht_uint9, name=x)
+	.AddVar(type=ht_uint3, name=gvAddr)
+	.AddVar(type=ht_uint2, name=gvAddr2)
+	.AddVar(type=ht_uint1, name=gvAddr3)
+	;
+
+gv1.AddReturn(func=gv1)
+	;
+
+gv1.AddGlobal()
+	.AddVar(type=CGV_1F, name=gv_D_1x_1F_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_1F, name=gv_D_1x_1F_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_1x_2F_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_1x_2F_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_1x_1F_AI_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_1x_1F_AI_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_1x_2F_AI_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_1x_2F_AI_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_1x_1F_AA_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_1x_1F_AA_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_1x_4F_AA_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_1x_4F_AA_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+
+	.AddVar(type=CGV_1F, name=gv_D_1x1x_1F_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F, name=gv_D_1x1x_1F_m1, addr1=gvAddr, addr2=gvAddr2, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_1x1x_2F_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_1x1x_2F_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_1x1x_1F_AI_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_1x1x_1F_AI_m1, addr1=gvAddr, addr2=gvAddr2, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_1x1x_2F_AI_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_1x1x_2F_AI_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_1x1x_1F_AA_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_1x1x_1F_AA_m1, addr1=gvAddr, maxIw=true, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_1x1x_4F_AA_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_1x1x_4F_AA_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+
+	.AddVar(type=CGV_1F, name=gv_D_1x1x1x_1F_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F, name=gv_D_1x1x1x_1F_m1, addr1=gvAddr, addr2=gvAddr2, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_1x1x1x_2F_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_1x1x1x_2F_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_1x1x1x_1F_AI_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_1x1x1x_1F_AI_m1, addr1=gvAddr, addr2=gvAddr2, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_1x1x1x_2F_AI_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_1x1x1x_2F_AI_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_1x1x1x_1F_AA_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_1x1x1x_1F_AA_m1, addr1=gvAddr, maxIw=true, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_1x1x1x_4F_AA_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_1x1x1x_4F_AA_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+
+	.AddVar(type=CGV_1F, name=gv_D_1x1x2x2x_1F_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F, name=gv_D_1x1x2x2x_1F_m1, addr1=gvAddr, addr2=gvAddr2, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_1x1x2x2x_2F_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_1x1x2x2x_2F_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_1x1x2x2x_1F_AI_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_1x1x2x2x_1F_AI_m1, addr1=gvAddr, addr2=gvAddr2, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_1x1x2x2x_2F_AI_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_1x1x2x2x_2F_AI_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_1x1x2x2x_1F_AA_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_1x1x2x2x_1F_AA_m1, addr1=gvAddr, maxIw=true, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_1x1x2x2x_4F_AA_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_1x1x2x2x_4F_AA_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+	;
+
+////////////////////////////////////////////////////
+// Gv2 Module
+
+dsnInfo.AddModule(name=gv2, htIdW=3, clock=1x);
+gv2.AddInst(name=GV2_ENTRY);
+gv2.AddInst(name=GV2_LOOP);
+gv2.AddInst(name=GV2_RETURN);
+
+gv2.AddEntry(func=gv2, inst=GV2_ENTRY)
+	;
+
+gv2.AddPrivate()
+	.AddVar(type=ht_uint9, name=loopCnt)
+	.AddVar(type=ht_uint9, name=x)
+	.AddVar(type=ht_uint3, name=gvAddr)
+	.AddVar(type=ht_uint2, name=gvAddr2)
+	.AddVar(type=ht_uint1, name=gvAddr3)
+	;
+
+gv2.AddReturn(func=gv2)
+	;
+
+gv2.AddGlobal()
+	.AddVar(type=CGV_1F, name=gv_D_1x2x_1F_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F, name=gv_D_1x2x_1F_m1, addr1=gvAddr, addr2=gvAddr2, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_1x2x_2F_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_1x2x_2F_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_1x2x_1F_AI_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_1x2x_1F_AI_m1, addr1=gvAddr, addr2=gvAddr2, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_1x2x_2F_AI_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_1x2x_2F_AI_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_1x2x_1F_AA_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_1x2x_1F_AA_m1, addr1=gvAddr, addr2=gvAddr2, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_1x2x_4F_AA_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_1x2x_4F_AA_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+
+	.AddVar(type=CGV_1F, name=gv_D_1x1x_1F_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F, name=gv_D_1x1x_1F_m1, addr1=gvAddr, addr2=gvAddr2, maxIw=false, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_1x1x_2F_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_1x1x_2F_m1, addr1=gvAddr, maxIw=false, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_1x1x_1F_AI_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_1x1x_1F_AI_m1, addr1=gvAddr, addr2=gvAddr2, maxIw=false, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_1x1x_2F_AI_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_1x1x_2F_AI_m1, addr1=gvAddr, maxIw=false, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_1x1x_1F_AA_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_1x1x_1F_AA_m1, addr1=gvAddr, maxIw=false, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_1x1x_4F_AA_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_1x1x_4F_AA_m1, addr1=gvAddr, maxIw=false, blockRam=false)
+	
+	.AddVar(type=CGV_1F, name=gv_D_1x1x1x_1F_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F, name=gv_D_1x1x1x_1F_m1, addr1=gvAddr, addr2=gvAddr2, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_1x1x1x_2F_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_1x1x1x_2F_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_1x1x1x_1F_AI_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_1x1x1x_1F_AI_m1, addr1=gvAddr, addr2=gvAddr2, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_1x1x1x_2F_AI_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_1x1x1x_2F_AI_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_1x1x1x_1F_AA_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_1x1x1x_1F_AA_m1, addr1=gvAddr, maxIw=true, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_1x1x1x_4F_AA_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_1x1x1x_4F_AA_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+	
+	.AddVar(type=CGV_1F, name=gv_D_1x1x2x2x_1F_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F, name=gv_D_1x1x2x2x_1F_m1, addr1=gvAddr, addr2=gvAddr2, maxIw=false, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_1x1x2x2x_2F_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_1x1x2x2x_2F_m1, addr1=gvAddr, maxIw=false, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_1x1x2x2x_1F_AI_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_1x1x2x2x_1F_AI_m1, addr1=gvAddr, addr2=gvAddr2, maxIw=false, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_1x1x2x2x_2F_AI_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_1x1x2x2x_2F_AI_m1, addr1=gvAddr, maxIw=false, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_1x1x2x2x_1F_AA_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_1x1x2x2x_1F_AA_m1, addr1=gvAddr, maxIw=false, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_1x1x2x2x_4F_AA_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_1x1x2x2x_4F_AA_m1, addr1=gvAddr, maxIw=false, blockRam=false)
+	;
+
+
+////////////////////////////////////////////////////
+// Gv3 Module 2x clk
+
+dsnInfo.AddModule(name=gv3, htIdW=3, clock=2x);
+gv3.AddInst(name=GV3_ENTRY);
+gv3.AddInst(name=GV3_LOOP);
+gv3.AddInst(name=GV3_RETURN);
+
+gv3.AddEntry(func=gv3, inst=GV3_ENTRY)
+	;
+
+gv3.AddPrivate()
+	.AddVar(type=ht_uint9, name=loopCnt)
+	.AddVar(type=ht_uint9, name=x)
+	.AddVar(type=ht_uint3, name=gvAddr)
+	.AddVar(type=ht_uint2, name=gvAddr2)
+	.AddVar(type=ht_uint1, name=gvAddr3)
+	;
+
+gv3.AddReturn(func=gv3)
+	;
+
+gv3.AddGlobal()
+	.AddVar(type=CGV_1F, name=gv_D_2x_1F_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_1F, name=gv_D_2x_1F_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_2x_2F_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_2x_2F_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_2x_1F_AI_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_2x_1F_AI_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_2x_2F_AI_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_2x_2F_AI_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_2x_1F_AA_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_2x_1F_AA_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_2x_4F_AA_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_2x_4F_AA_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+
+	.AddVar(type=CGV_1F, name=gv_D_2x2x_1F_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F, name=gv_D_2x2x_1F_m1, addr1=gvAddr, addr2=gvAddr2, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_2x2x_2F_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_2x2x_2F_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_2x2x_1F_AI_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_2x2x_1F_AI_m1, addr1=gvAddr, addr2=gvAddr2, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_2x2x_2F_AI_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_2x2x_2F_AI_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_2x2x_1F_AA_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_2x2x_1F_AA_m1, addr1=gvAddr, maxIw=true, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_2x2x_4F_AA_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_2x2x_4F_AA_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+
+	.AddVar(type=CGV_1F, name=gv_D_2x2x2x_1F_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F, name=gv_D_2x2x2x_1F_m1, addr1=gvAddr, addr2=gvAddr2, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_2x2x2x_2F_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_2x2x2x_2F_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_2x2x2x_1F_AI_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_2x2x2x_1F_AI_m1, addr1=gvAddr, addr2=gvAddr2, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_2x2x2x_2F_AI_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_2x2x2x_2F_AI_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_2x2x2x_1F_AA_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_2x2x2x_1F_AA_m1, addr1=gvAddr, maxIw=true, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_2x2x2x_4F_AA_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_2x2x2x_4F_AA_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+	
+	.AddVar(type=CGV_1F, name=gv_D_1x1x2x2x_1F_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F, name=gv_D_1x1x2x2x_1F_m1, addr1=gvAddr, addr2=gvAddr2, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_1x1x2x2x_2F_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_1x1x2x2x_2F_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_1x1x2x2x_1F_AI_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_1x1x2x2x_1F_AI_m1, addr1=gvAddr, addr2=gvAddr2, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_1x1x2x2x_2F_AI_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_1x1x2x2x_2F_AI_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_1x1x2x2x_1F_AA_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_1x1x2x2x_1F_AA_m1, addr1=gvAddr, maxIw=true, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_1x1x2x2x_4F_AA_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_1x1x2x2x_4F_AA_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+	;
+
+	
+////////////////////////////////////////////////////
+// Gv4 Module 2x clk
+
+dsnInfo.AddModule(name=gv4, htIdW=3, clock=2x);
+gv4.AddInst(name=GV4_ENTRY);
+gv4.AddInst(name=GV4_LOOP);
+gv4.AddInst(name=GV4_RETURN);
+
+gv4.AddEntry(func=gv4, inst=GV4_ENTRY)
+	;
+
+gv4.AddPrivate()
+	.AddVar(type=ht_uint9, name=loopCnt)
+	.AddVar(type=ht_uint9, name=x)
+	.AddVar(type=ht_uint3, name=gvAddr)
+	.AddVar(type=ht_uint2, name=gvAddr2)
+	.AddVar(type=ht_uint1, name=gvAddr3)
+	;
+
+gv4.AddReturn(func=gv4)
+	;
+
+gv4.AddGlobal()
+	.AddVar(type=CGV_1F, name=gv_D_1x2x_1F_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F, name=gv_D_1x2x_1F_m1, addr1=gvAddr, addr2=gvAddr2, maxIw=false, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_1x2x_2F_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_1x2x_2F_m1, addr1=gvAddr, maxIw=false, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_1x2x_1F_AI_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_1x2x_1F_AI_m1, addr1=gvAddr, addr2=gvAddr2, maxIw=false, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_1x2x_2F_AI_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_1x2x_2F_AI_m1, addr1=gvAddr, maxIw=false, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_1x2x_1F_AA_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_1x2x_1F_AA_m1, addr1=gvAddr, addr2=gvAddr2, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_1x2x_4F_AA_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_1x2x_4F_AA_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+
+	.AddVar(type=CGV_1F, name=gv_D_2x2x_1F_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F, name=gv_D_2x2x_1F_m1, addr1=gvAddr, addr2=gvAddr2, maxIw=false, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_2x2x_2F_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_2x2x_2F_m1, addr1=gvAddr, maxIw=false, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_2x2x_1F_AI_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_2x2x_1F_AI_m1, addr1=gvAddr, addr2=gvAddr2, maxIw=false, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_2x2x_2F_AI_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_2x2x_2F_AI_m1, addr1=gvAddr, maxIw=false, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_2x2x_1F_AA_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_2x2x_1F_AA_m1, addr1=gvAddr, maxIw=false, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_2x2x_4F_AA_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_2x2x_4F_AA_m1, addr1=gvAddr, maxIw=false, blockRam=false)
+
+	.AddVar(type=CGV_1F, name=gv_D_2x2x2x_1F_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F, name=gv_D_2x2x2x_1F_m1, addr1=gvAddr, addr2=gvAddr2, maxIw=false, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_2x2x2x_2F_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_2x2x2x_2F_m1, addr1=gvAddr, maxIw=false, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_2x2x2x_1F_AI_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_2x2x2x_1F_AI_m1, addr1=gvAddr, addr2=gvAddr2, maxIw=false, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_2x2x2x_2F_AI_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_2x2x2x_2F_AI_m1, addr1=gvAddr, maxIw=false, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_2x2x2x_1F_AA_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_2x2x2x_1F_AA_m1, addr1=gvAddr, maxIw=false, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_2x2x2x_4F_AA_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_2x2x2x_4F_AA_m1, addr1=gvAddr, maxIw=false, blockRam=false)
+	
+	.AddVar(type=CGV_1F, name=gv_D_1x1x2x2x_1F_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F, name=gv_D_1x1x2x2x_1F_m1, addr1=gvAddr, addr2=gvAddr2, maxIw=false, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_1x1x2x2x_2F_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_1x1x2x2x_2F_m1, addr1=gvAddr, maxIw=false, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_1x1x2x2x_1F_AI_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_1x1x2x2x_1F_AI_m1, addr1=gvAddr, addr2=gvAddr2, maxIw=false, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_1x1x2x2x_2F_AI_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_1x1x2x2x_2F_AI_m1, addr1=gvAddr, maxIw=false, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_1x1x2x2x_1F_AA_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_1x1x2x2x_1F_AA_m1, addr1=gvAddr, maxIw=false, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_1x1x2x2x_4F_AA_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_1x1x2x2x_4F_AA_m1, addr1=gvAddr, maxIw=false, blockRam=false)
+	;
+
+////////////////////////////////////////////////////
+// Gv5 Module
+
+dsnInfo.AddModule(name=gv5, htIdW=3, clock=1x);
+gv5.AddInst(name=GV5_ENTRY);
+gv5.AddInst(name=GV5_LOOP);
+gv5.AddInst(name=GV5_RETURN);
+
+gv5.AddEntry(func=gv5, inst=GV5_ENTRY)
+	;
+
+gv5.AddPrivate()
+	.AddVar(type=ht_uint9, name=loopCnt)
+	.AddVar(type=ht_uint9, name=x)
+	.AddVar(type=ht_uint3, name=gvAddr)
+	.AddVar(type=ht_uint2, name=gvAddr2)
+	.AddVar(type=ht_uint1, name=gvAddr3)
+	;
+
+gv5.AddReturn(func=gv5)
+	;
+
+gv5.AddGlobal()
+	.AddVar(type=CGV_1F, name=gv_D_1x1x1x_1F_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F, name=gv_D_1x1x1x_1F_m1, addr1=gvAddr, addr2=gvAddr2, maxIw=false, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_1x1x1x_2F_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_1x1x1x_2F_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_1x1x1x_1F_AI_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_1x1x1x_1F_AI_m1, addr1=gvAddr, addr2=gvAddr2, maxIw=false, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_1x1x1x_2F_AI_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_1x1x1x_2F_AI_m1, addr1=gvAddr, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_1x1x1x_1F_AA_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_1x1x1x_1F_AA_m1, addr1=gvAddr, maxIw=true, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_1x1x1x_4F_AA_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_1x1x1x_4F_AA_m1, addr1=gvAddr, maxIw=false, blockRam=false)
+	;
+
+////////////////////////////////////////////////////
+// Gv6 Module
+
+dsnInfo.AddModule(name=gv6, htIdW=3, clock=2x);
+gv6.AddInst(name=GV6_ENTRY);
+gv6.AddInst(name=GV6_LOOP);
+gv6.AddInst(name=GV6_RETURN);
+
+gv6.AddEntry(func=gv6, inst=GV6_ENTRY)
+	;
+
+gv6.AddPrivate()
+	.AddVar(type=ht_uint9, name=loopCnt)
+	.AddVar(type=ht_uint9, name=x)
+	.AddVar(type=ht_uint3, name=gvAddr)
+	.AddVar(type=ht_uint2, name=gvAddr2)
+	.AddVar(type=ht_uint1, name=gvAddr3)
+	;
+
+gv6.AddReturn(func=gv6)
+	;
+
+gv6.AddGlobal()
+	.AddVar(type=CGV_1F, name=gv_D_2x2x2x_1F_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F, name=gv_D_2x2x2x_1F_m1, addr1=gvAddr, addr2=gvAddr2, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_2x2x2x_2F_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F, name=gv_D_2x2x2x_2F_m1, addr1=gvAddr, maxIw=false, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_2x2x2x_1F_AI_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F_AI, name=gv_D_2x2x2x_1F_AI_m1, addr1=gvAddr, addr2=gvAddr2, maxIw=true, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_2x2x2x_2F_AI_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_2F_AI, name=gv_D_2x2x2x_2F_AI_m1, addr1=gvAddr, maxIw=false, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_2x2x2x_1F_AA_m0, addr1=gvAddr, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_1F_AA, name=gv_D_2x2x2x_1F_AA_m1, addr1=gvAddr, maxIw=false, addr2=gvAddr2, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_2x2x2x_4F_AA_m0, addr1=gvAddr, blockRam=false)
+	.AddVar(type=CGV_4F_AA, name=gv_D_2x2x2x_4F_AA_m1, addr1=gvAddr, maxIw=false, blockRam=false)
+	;

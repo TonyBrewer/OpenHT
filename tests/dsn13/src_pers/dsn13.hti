@@ -1,0 +1,4 @@
+//incRd[:0:]	// use mif0
+//incWr[:1:]	// use mif1
+AddModInstParams(unit=Su, modPath="/incRd", memPort=0);
+AddModInstParams(unit=Su, modPath="/incRd/incWr", memPort=1);

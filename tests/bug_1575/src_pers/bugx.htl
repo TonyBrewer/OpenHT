@@ -1,0 +1,11 @@
+// -cl "C:\Ht\tests\bug_1575\src_pers\bugx.htl"
+-wd "C:\Ht\tests\bug_1575\msvs12\"
+-cp hc-2
+-mt
+-ac 1
+-uc 1
+-un Au
+-pn bug_1575
+-df 150
+../src_pers/bugx.htd
+../ht/sysc

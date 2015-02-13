@@ -1,0 +1,33 @@
+// model Module capabilities
+
+dsnInfo.AddModule(name=model, htIdW=0);
+
+model.AddInst(name=TEST);
+
+model.AddHostMsg(dir=in, name=MODEL_MSG);
+model.AddHostMsg(dir=out, name=OUT_MSG);
+
+model.AddHostData(dir=in);
+model.AddHostData(dir=out);
+
+
+model.AddPrivate()
+	.AddVar(type=uint64_t, name=in1)
+	.AddVar(type=uint64_t, name=in2)
+	.AddVar(type=uint64_t, name=in3)
+	.AddVar(type=uint64_t, name=in4)
+	;
+
+model.AddEntry(func=htmain, inst=TEST, host=true)
+	.AddParam(type=uint64_t, name=in1)
+	.AddParam(type=uint64_t, name=in2)
+	.AddParam(type=uint64_t, name=in3)
+	.AddParam(type=uint64_t, name=in4)
+	;
+
+model.AddReturn(func=htmain) 
+	.AddParam(type=uint64_t, name=out1)
+	.AddParam(type=uint64_t, name=out2)
+	.AddParam(type=uint64_t, name=out3)
+	.AddParam(type=uint64_t, name=out4)
+	;

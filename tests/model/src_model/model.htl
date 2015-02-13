@@ -1,0 +1,9 @@
+// -cl "C:\Ht\tests\method\src_model\model.htl"
+-cp hc-2
+-mo				// model only
+-uc 2			// unit count
+-un Au			// unit name
+
+-wd "C:\Ht\tests\model\msvs12\"		// working directory
+"C:\Ht\tests\model\src_model\model.htd"	// design file location
+../ht/sysc							// location for output files

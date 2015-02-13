@@ -1,0 +1,1 @@
+AddModInstParams(unit=Au, modPath="inc/fork1", replCnt=2);

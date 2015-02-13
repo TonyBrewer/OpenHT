@@ -1,0 +1,21 @@
+dsnInfo.AddModule(name=model, htIdW=0);
+model.AddInst(name=MODEL);
+
+
+model.AddPrivate()
+	.AddVar(type=uint16_t, name=rcvAu)
+	.AddVar(type=uint32_t, name=rcvCnt)
+	.AddVar(type=uint32_t, name=errs)
+	;
+
+model.AddEntry(func=htmain, inst=MODEL, host=true)
+	.AddParam(hostType=uint16_t, type=uint16_t, name=rcvAu)
+	.AddParam(hostType=uint32_t, type=uint32_t, name=rcvCnt)
+	;
+
+model.AddReturn(func=htmain)
+	.AddParam(hostType=uint32_t, type=uint32_t, name=errs)
+	;
+
+model.AddHostData(dir=in);
+model.AddHostData(dir=out);

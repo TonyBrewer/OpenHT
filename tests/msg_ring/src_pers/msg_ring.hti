@@ -1,0 +1,11 @@
+#if HT_UNIT_CNT == 1
+	AddMsgIntfConn(outUnit=Au[0], outPath=ctl/mi, inUnit=Au[0], inPath=ctl/mi, aeNext=true);
+#elif HT_UNIT_CNT == 2
+	AddMsgIntfConn(outUnit=Au[0], outPath=ctl/mi, inUnit=Au[1], inPath=ctl/mi);
+	AddMsgIntfConn(outUnit=Au[1], outPath=ctl/mi, inUnit=Au[0], inPath=ctl/mi, aeNext=true);
+#elif HT_UNIT_CNT == 4
+	AddMsgIntfConn(outUnit=Au[0], outPath=ctl/mi, inUnit=Au[1], inPath=ctl/mi);
+	AddMsgIntfConn(outUnit=Au[1], outPath=ctl/mi, inUnit=Au[2], inPath=ctl/mi);
+	AddMsgIntfConn(outUnit=Au[2], outPath=ctl/mi, inUnit=Au[3], inPath=ctl/mi);
+	AddMsgIntfConn(outUnit=Au[3], outPath=ctl/mi, inUnit=Au[0], inPath=ctl/mi, aeNext=true);
+#endif

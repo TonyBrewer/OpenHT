@@ -1,0 +1,47 @@
+////////////////////////////////////////////////////
+// Test Module
+#define TEST_HTID_W 1
+
+typedef sc_uint<TEST_HTID_W> HtId_t;
+typedef sc_uint<48> MemAddr_t;
+
+dsnInfo.AddModule(name=test, htIdW=TEST_HTID_W);
+test.AddInst(name=RD_CP0);
+test.AddInst(name=RD_CP0V);
+test.AddInst(name=RD_CP1);
+test.AddInst(name=RD_CP1V);
+test.AddInst(name=RD_CP2);
+test.AddInst(name=RD_CP3);
+test.AddInst(name=RD_CP3V);
+test.AddInst(name=RD_CP4);
+
+test.AddHostMsg(dir=in, name=HOST_MEM_ADDR)
+	.AddDst(var=hostAddr, dataLsb=0)
+	;
+
+test.AddHostMsg(dir=in, name=COPROC_MEM_ADDR)
+	.AddDst(var=coprocAddr, dataLsb=0)
+	;
+
+test.AddPrivate()
+	.AddVar(type=bool, name=testPassed)
+	;
+
+test.AddShared()
+	.AddVar(type=MemAddr_t, name=hostAddr)
+	.AddVar(type=MemAddr_t, name=coprocAddr)
+	.AddVar(type=uint64_t, name=sharedData)
+	;
+
+test.AddEntry(func=htmain, inst=RD_CP0, host=true)
+	;
+
+test.AddReturn(func=htmain)
+	.AddParam(hostType=bool, type=bool, name=passed)
+	;
+
+test.AddReadMem(queueW=4, rspCntW=4)
+	.AddDst(name=sharedData_coproc, var=sharedData, atomic=setBit63)
+	;
+
+test.AddWriteMem(queueW=4, rspCntW=2);

@@ -1,0 +1,77 @@
+// common defines / types
+	#define c2 2
+	#define c3() 3
+	#define s1(a) a
+	#define s2(a,b) (a+b)
+
+#define INC_HTID_W 5
+#define W3 (1+2)
+
+typedef sc_uint<INC_HTID_W> HtId_t;
+typedef sc_uint<48> MemAddr_t;
+
+struct CStruct {
+	ht_uint6 m_u6;
+	uint64_t m_u3:W3;
+};
+
+////////////////////////////////////////////////////
+// Inc Module
+
+dsnInfo.AddModule(name=inc, htIdW=INC_HTID_W);
+inc.AddInst(name=INC_INIT);
+inc.AddInst(name=INC_READ);
+inc.AddInst(name=INC_WRITE);
+
+inc.AddHostMsg(dir=in, name=SU_ARRAY_ADDR)
+	.AddDst(var=arrayAddr, dataLsb=0)
+	;
+
+inc.AddPrivate()
+	.AddVar(type=uint8_t, name=elemCnt)
+	.AddVar(type=uint8_t, name=loopCnt)
+	.AddVar(type=HtId_t, name=arrayMemRdPtr)
+	;
+
+inc.AddShared()
+	.AddVar(type=MemAddr_t, name=arrayAddr)
+	.AddVar(type=bool, name=pb)
+	.AddVar(type=ht_uint4, name=pu4)
+	;
+
+inc.AddEntry(func=htmain, inst=INC_INIT, host=true)
+	.AddParam(hostType=uint32_t, type=uint8_t, name=elemCnt)
+	;
+
+inc.AddReturn(func=htmain)
+	.AddParam(hostType=uint32_t, type=uint8_t, name=elemCnt)
+	;
+
+inc.AddReadMem(queueW=5, rspCntW=1, maxBw=true)
+	.AddDst(var=arrayMem, field=data);
+inc.AddWriteMem(maxBw=true);
+
+inc.AddGlobal(var=arrayMem, addr1W=INC_HTID_W, addr1=arrayMemRdPtr)
+	.AddField(type=uint64_t, name=data, read=true, write=false)
+	;
+
+inc.AddFunction(type=bool, name=fb);
+inc.AddFunction(type=void, name=fv)
+	.AddParam(dir=output, type=ht_uint4, name=c)
+	;
+inc.AddFunction(type=ht_uint4, name=fu4);
+inc.AddFunction(type=ht_uint4, name=fp1)
+	.AddParam(dir=input, type=ht_uint4, name=a)
+	.AddParam(dir=input, type=ht_uint4, name=b)
+	;
+inc.AddFunction(type=CStruct, name=fs);
+inc.AddFunction(type=ht_uint4, name=fg)
+	.AddParam(dir=input, type=ht_uint4, name=a)
+	.AddParam(dir=inout, type=ht_uint4, name=b)
+	.AddParam(dir=output, type=ht_uint4, name=c)
+	;
+inc.AddFunction(type=ht_uint4, name=fl)
+	.AddParam(dir=input, type=ht_uint4, name=a)
+	.AddParam(dir=inout, type=ht_uint4, name=b)
+	.AddParam(dir=output, type=ht_uint4, name=c)
+	;

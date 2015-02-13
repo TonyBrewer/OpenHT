@@ -1,0 +1,77 @@
+////////////////////////////////////////////////////
+// Inc Module
+
+#define INCRD_HTID_W 5
+dsnInfo.AddModule(name=incRd, htIdW=INCRD_HTID_W);
+incRd.AddInst(name=INCRD_INIT);
+incRd.AddInst(name=INCRD_READ);
+incRd.AddInst(name=INCRD_WRITE);
+
+typedef sc_uint<INCRD_HTID_W> HtId_t;
+typedef sc_uint<48> MemAddr_t;
+
+incRd.AddHostMsg(dir=in, name=SU_ARRAY_ADDR)
+	.AddDst(var=arrayAddr, dataLsb=0)
+	;
+
+incRd.AddPrivate()
+	.AddVar(type=uint8_t, name=elemCnt)
+	.AddVar(type=uint8_t, name=loopCnt)
+	;
+
+incRd.AddShared()
+	.AddVar(type=MemAddr_t, name=arrayAddr)
+	;
+
+incRd.AddEntry(func=htmain, inst=INCRD_INIT, host=true)
+	.AddParam(hostType=uint32_t, type=uint8_t, name=elemCnt)
+	;
+
+incRd.AddReturn(func=htmain)
+	.AddParam(hostType=uint32_t, type=uint8_t, name=elemCnt)
+	;
+
+incRd.AddCall(func=incWr)
+	;
+
+incRd.AddReadMem(queueW=5, rspCntW=1, maxBw=true)
+	.AddFunction(name=arrayMem, rspInfoW=INCRD_HTID_W, rsmDly=4);
+
+incRd.AddGlobal(var=arrayMem, addr1W=INCRD_HTID_W)
+	.AddField(type=uint64_t, name=data, read=false, write=true)
+	;
+
+#define INCWR_HTID_W 5
+dsnInfo.AddModule(name=incWr, htIdW=INCWR_HTID_W);
+incWr.AddInst(name=INCWR_WRITE);
+incWr.AddInst(name=INCWR_RTN);
+
+
+typedef sc_uint<INCWR_HTID_W> IncWrHtId_t;
+
+incWr.AddHostMsg(dir=in, name=SU_ARRAY_ADDR)
+	.AddDst(var=arrayAddr, dataLsb=0)
+	;
+
+incWr.AddPrivate()
+	.AddVar(type=uint8_t, name=loopCnt)
+	.AddVar(type=IncWrHtId_t, name=arrayMemRdPtr)
+	;
+
+incWr.AddShared()
+	.AddVar(type=MemAddr_t, name=arrayAddr)
+	;
+
+incWr.AddEntry(func=incWr, inst=INCWR_WRITE)
+	.AddParam(type=uint8_t, name=loopCnt)
+	.AddParam(type=IncWrHtId_t, name=arrayMemRdPtr)
+	;
+
+incWr.AddReturn(func=incWr)
+	;
+
+incWr.AddWriteMem(maxBw=true);
+
+incWr.AddGlobal(var=arrayMem, addr1W=INCWR_HTID_W, addr1=arrayMemRdPtr, extern=true)
+	.AddField(type=uint64_t, name=data, read=true, write=false)
+	;

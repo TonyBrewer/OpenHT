@@ -1,0 +1,10 @@
+// -cl "C:\Ht\tests\repl\src_pers\repl.htl"
+-cp wx-690
+-ac 1
+-uc 1
+-it
+-ml 0.15
+-wd "C:\Ht\tests\repl\msvs12\"
+-if "C:\Ht\tests\repl\src_pers\repl.hti"
+"C:\Ht\tests\repl\src_pers\repl.htd"
+../ht/sysc

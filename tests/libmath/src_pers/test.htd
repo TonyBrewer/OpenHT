@@ -1,0 +1,34 @@
+dsnInfo.AddModule(name=test, htIdW=0);
+
+#define OP_UDIV  0
+#define OP_SDIV  1
+#define OP_UDIVR 2
+#define OP_SDIVR 3
+
+test.AddInst(name=TEST);
+test.AddInst(name=TEST_RTN);
+
+
+test.AddEntry(func=htmain, inst=TEST, host=true)
+	.AddParam(type=uint8_t, name=op)
+	.AddParam(type=uint64_t, name=op1)
+	.AddParam(type=uint64_t, name=op2)
+	;
+
+test.AddReturn(func=htmain)
+	.AddParam(type=uint64_t, name=rtn1)
+	.AddParam(type=uint64_t, name=rtn2)
+	;
+
+test.AddPrivate()
+	.AddVar(type=uint8_t, name=op)
+	.AddVar(type=uint64_t, name=op1)
+	.AddVar(type=uint64_t, name=op2)
+	.AddVar(type=idiv_n_t, name=q)
+	.AddVar(type=idiv_n_t, name=r)
+	.AddVar(type=idivr_n_t, name=qr)
+	.AddVar(type=idivr_n_t, name=rr)
+	;
+
+test.AddCall(func=idiv);
+test.AddCall(func=idivr);

@@ -1,0 +1,22 @@
+dsnInfo.AddModule(name=stream, htIdW=0);
+
+stream.AddInst(name=STREAM_ENTRY);
+stream.AddInst(name=STREAM_WORK);
+stream.AddInst(name=STREAM_RTN);
+
+stream.AddShared()
+	.AddVar(type=ht_uint2, name=inst)
+	.AddVar(type=bool, name=done)
+	.AddVar(type=uint64_t, name=temp)
+	.AddVar(type=uint32_t, name=rcvByteCnt)
+	;
+
+stream.AddEntry(func=htmain, inst=STREAM_ENTRY, host=true)
+	;
+
+stream.AddReturn(func=htmain)
+	.AddParam(hostType=uint32_t, type=uint32_t, name=rcvByteCnt)
+	;
+
+stream.AddHostData(dir=in, maxBw=true);
+stream.AddHostData(dir=out, maxBw=true);

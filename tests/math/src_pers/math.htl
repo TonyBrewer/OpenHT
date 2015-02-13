@@ -1,0 +1,11 @@
+// -cl "C:\Ht\tests\math\src_pers\math.htl"
+-cp hc-2
+-mt				// enable memory tracing
+-uc 1			// unit count
+-un Au			// unit name
+-df 150			// default frequence
+-rr				// random retry
+
+-wd "C:\Ht\tests\math\msvs12\"		// working directory
+"C:\Ht\tests\math\src_pers\math.htd"	// design file location
+../ht/sysc							// location for output files

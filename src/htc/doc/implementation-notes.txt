@@ -1,0 +1,193 @@
+
+HTC implementation limitations/restrictions/defects/features notes
+
+
+=============================================================================
+Base C-language limitations
+=============================================================================
+- No recursive functions or mutually-recursive functions allowed.
+- No floating-point datatypes/computations allowed.
+  (HTC actually will accept FP, but the Ht/Xilinx combination doesn't).
+- No standard library support available on coproc (i.e., when creating the
+  final FPGA bitfile).
+  Note however, that with the -htc:sysc command line option, stdlib and system
+  calls can be used for System C simulation of the design.
+- Bitfields are not supported.
+- No calls through function pointers allowed.
+- No GNU "statement expressions" allowed (strictly a GNU extension).
+
+
+=============================================================================
+Base C-language defects
+=============================================================================
+- Array and struct initializers lost:
+  uint8_t a[3] = { 0, 1, 2 };
+  We emit the declaration bits, but lose the initializers (ProcessMemRefs),
+  resulting in wrong answers.
+- May mishandle the relocation of struct declarations from inner
+  scopes to the outermost function scope (declaration lifting). 
+  Work around by declaring structs at function scope.
+
+
+=============================================================================
+C++ language support status (non-target regions).
+=============================================================================
+- C++ features not present in C are not supported.
+
+
+=============================================================================
+OpenMP limitations
+=============================================================================
+- OpenMP 3.0 "tasks" (directives and runtime) unsupported.
+  - Unsupported directives 'omp task', 'omp taskyield', 'omp taskwait'.
+- Unsupported directive 'omp flush'.
+- Unsupported directive 'omp ordered'.
+- Unsupported 'collapse' clause.
+- Only support static loop schedules for the 'schedule()' clause.
+- Nested locking functions unsupported.
+- Unsupported directive 'threadprivate'.
+  (OpenMP 4.0 specification states:
+      [80:17]: The effect of an access to a threadprivate variable in a 
+               target region is unspecified.
+      [84:19] threadprivate variable cannot appear in a declare target 
+              directive. not 
+- FIXME: Mention 4.x unsupported stuff (above is only 3.x).
+    Kathy has an annoted version of the 4.x cheat sheet that indicates what
+      is supported.
+- Fallback execution on the host processor when the coprocessor is not
+    available or is not supported.
+- Missing omp runtime library functionis [X = not supported for RHOMP].
+    omp_get_cancellation          (4.x)
+    omp_set_default_device        (4.x) 
+    omp_get_default_device        (4.x) 
+    omp_get_proc_bind             (4.x)
+    omp_set_num_threads
+    omp_get_max_threads
+    omp_get_num_procs
+    omp_in_parallel
+    omp_set_dynamic
+    omp_get_dynamic
+    omp_get_cancellation
+    omp_set_nested
+    omp_get_nested
+    omp_set_schedule
+    omp_get_schedule
+    omp_get_thread_limit
+    omp_set_max_active_levels
+    omp_get_max_active_levels
+    omp_get_level
+    omp_get_ancestor_thread_num
+    omp_get_team_size 
+    omp_get_active_level
+ X  omp_in_final
+    omp_init_nest_lock
+    omp_destroy_nest_lock
+    omp_set_nest_lock
+    omp_unset_nest_lock
+    omp_test_nest_lock
+ X  omp_get_wtime
+ X  omp_get_wtick
+
+=============================================================================
+OpenMP defaults
+=============================================================================
+- Default loop schedule is 'schedule(static)'. That is, if no schedule clause
+  is mentioned, a static schedule with unspecified chunk size is assumed.
+- Similarly, the default distribute schedule is 'dist_schedule(static)'.
+- Nested parallelism is enabled by default.
+
+
+=============================================================================
+OpenMP defects
+=============================================================================
+
+
+=============================================================================
+Features and extensions
+=============================================================================
+- Fast stencil support.
+  
+  HTC provides special "stencil" intrinsics which directs it to generate an
+  optimized, streaming hardware implementation of a stencil function according
+  to the given parameters.
+  
+     void rhomp_stencil_conv2d (void *grid_dst, void *grid_src,
+                                int grid_dimx, int grid_dimy,
+                                int stencil_dimx, int stencil_dimy, 
+                                int stencil_orgx, int stencil_orgy,
+                                void *kernel, int pipelen);
+     void rhomp_stencil_conv2ds (void *grid_dst, void *grid_src,
+                                int grid_dimx, int grid_dimy,
+                                int stencil_dim, void *kernel, 
+                                int pipelen);
+ 
+  where: 
+   grid_dst:     base address of the destination grid,
+   grid_src:     base address of the source grid,
+   grid_dimx:    number of grid columns (includes border elements if any),
+   grid_dimy:    number of grid rows    (includes border elements if any),
+   stencil_dimx: number of stencil columns,
+   stencil_dimy: number of stencil rows,
+   stencil_orgx: stencil x origin (0-based),
+   stencil_orgy: stencil y origin (0-based),
+   kernel:       base address of coefficient matrix.
+   pipelen < 4096: Generate optimized coproc streaming stencil code.
+   pipelen = 4096: Generate generic coproc stencil loop nest code.
+   pipelen = 8192: Generate generic host stencil loop nest code.
+  
+  The first intrinsic is the more general version which can specify a
+  non-square, non-centered stencil.  The orgx and orgy parameters 
+  specify the stencil origin or "center."
+  
+  The second intrinsic is the common case-- a square, centered, 
+  2D convolution stencil (stencil dim is always odd, so there is a
+  true center).
+  
+  There is a debugging feature (mainly for checking answers) which will
+  generate a generic C-language stencil loop nest which can be compiled on
+  the host.  Using the special pipeline=8192 with the -htc:split option will
+  enable this feature. 
+
+  (FIXME: maybe describe stencils more generally? Although those who use
+   stencils already know what they are).
+  
+
+- HTC-specific pragmas
+  * #pragma rhomp max_phys_threads(N)
+    (where N is a compile-time integer constant)
+
+    This pragma specifies the "physical" module thread width.  If the pragma
+    appears anywhere in the global scope, then the default width of EVERY 
+    module in the translation unit is set to N threads.  Otherwise, if the 
+    pragma occurs within a routine, then the module width is ONLY set for that
+    routine.
+
+    The routine-level pragma overrides the default for that routine, so that
+    the user can specify one default for many routines, and only override
+    when necessary.
+
+    If the user does not use the pragma at all, the default thread width
+    is assumed to be 32 threads.  Stencil modules and host-entry modules
+    are always single-threaded, regardless of what the user specifies.
+
+
+=============================================================================
+Coding and optimization strategies
+=============================================================================
+- HTC automatically synchronizes at the end of a parallel region, so a 
+  barrier is not needed after the last loop in a parallel region.   Specify
+  'nowait' o the 'omp for' pragma to avoid the barrier.
+
+- The default static schedules (for both 'for' and 'distribute') require
+  a division operation on the coprocessor.    This is a very expensive
+  operation that will use a lot of FPGA real estate, and may prevent the
+  personality from making timing.
+
+  Instead, use a static schedule with explicit chunk size.    This is
+  implemented much more efficiently.
+
+- HTC predefines the macro _CNY_HTC_SOURCE.    Use it to indicate
+  code sections specific to your HTC implementation.
+
+
+

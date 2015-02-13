@@ -1,0 +1,43 @@
+dsnInfo.AddModule(name=iobk, clock=1x, htIdW=0);
+
+iobk.AddHostMsg(dir=in, name=FLUSH_PERIOD)
+	.AddDst(var=flushArg, readOnly=false)
+	;
+
+iobk.AddInst(name=IOBK_IDLE);
+iobk.AddInst(name=IOBK_POP);
+iobk.AddInst(name=IOBK_PUSH);
+iobk.AddInst(name=IOBK_RETURN);
+
+#define IDLE_CNT 0xffff
+
+
+iobk.AddPrivate()
+	.AddVar(type=uint8_t, name=au)
+	.AddVar(type=uint16_t, name=call)
+	.AddVar(type=int32_t, name=cnt)
+	.AddVar(type=int32_t, name=errs)
+	.AddVar(type=int32_t, name=word)
+	.AddVar(type=uint64_t, name=recv)
+	;
+
+iobk.AddShared()
+	.AddVar(type=uint16_t, name=flushArg)
+	.AddVar(type=uint16_t, name=flushCnt)
+	.AddVar(type=ht_uint3, name=outState)
+	.AddVar(type=uint16_t, name=idleTimer)
+	.AddVar(type=uint64_t, name=outQ, queueW=6)
+	.AddVar(type=bool, name=callDone)
+	;
+
+iobk.AddEntry(func=htmain, inst=IOBK_IDLE, host=true)
+	.AddParam(hostType=uint8_t, type=uint8_t, name=au)
+	.AddParam(hostType=uint16_t, type=uint16_t, name=call)
+	.AddParam(hostType=int32_t, type=int32_t, name=cnt)
+	;
+iobk.AddReturn(func=htmain)
+	.AddParam(hostType=int32_t, type=int32_t, name=errs)
+	;
+
+iobk.AddHostData(dir=in);
+iobk.AddHostData(dir=out);

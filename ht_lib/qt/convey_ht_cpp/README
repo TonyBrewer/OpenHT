@@ -1,0 +1,4 @@
+
+This directory contains the files necessary to add a new Convey project
+to the Qt Creator. The directory should be installed in:
+	<QtCreatorPath>/qt/share/qtcreator/templates/wizards/convey_ht_cpp

@@ -1,0 +1,29 @@
+// method Module capabilities
+
+struct Sx {
+	ht_uint3 m_a;
+	ht_uint5 m_b;
+	ht_uint6 m_c[3];
+};
+
+dsnInfo.AddModule(name=method, htIdW=0);
+
+method.AddInst(name=TEST);
+method.AddInst(name=RTN);
+
+
+method.AddPrivate()
+	.AddVar(type=int32_t, name=err)
+	.AddVar(type=uint8_t, name=cnt)
+	;
+
+method.AddShared()
+	.AddVar(type=Sx, name=sx);
+
+method.AddEntry(func=htmain, inst=TEST, host=true);
+
+method.AddReturn(func=htmain) 
+	.AddParam(type=int32_t, name=err)
+	;
+
+method.AddFunction(type=Sx, name=funcSx);

@@ -1,0 +1,54 @@
+dsnInfo.AddModule(name=test, htIdW=0);
+
+test.AddInst(name=CALL);
+test.AddInst(name=RTN);
+
+
+test.AddHostMsg(dir=in, name=MSGVAR)
+	.AddDst(var=msgVar, dataLsb=0)
+	;
+
+test.AddShared()
+	.AddVar(type=int32_t, name=msgVar)
+	;
+
+test.AddPrivate()
+	.AddVar(type=bool, name=err)
+	.AddVar(type=int32_t, name=arg0)
+	.AddVar(type=int32_t, name=arg1)
+	.AddVar(type=int32_t, name=arg2)
+	.AddVar(type=int32_t, name=arg3)
+	.AddVar(type=int32_t, name=arg4)
+	.AddVar(type=int32_t, name=arg5)
+	.AddVar(type=int32_t, name=arg6)
+	.AddVar(type=int32_t, name=arg7)
+	.AddVar(type=int32_t, name=arg8)
+	.AddVar(type=int32_t, name=arg9)
+	;
+
+test.AddEntry(func=htmain, inst=CALL, host=true)
+	.AddParam(type=int32_t, name=arg0)
+	.AddParam(type=int32_t, name=arg1)
+	.AddParam(type=int32_t, name=arg2)
+	.AddParam(type=int32_t, name=arg3)
+	.AddParam(type=int32_t, name=arg4)
+	.AddParam(type=int32_t, name=arg5)
+	.AddParam(type=int32_t, name=arg6)
+	.AddParam(type=int32_t, name=arg7)
+	.AddParam(type=int32_t, name=arg8)
+	.AddParam(type=int32_t, name=arg9)
+	;
+
+test.AddReturn(func=htmain) 
+	.AddParam(type=bool, name=err)
+	.AddParam(type=int32_t, name=arg0)
+	.AddParam(type=int32_t, name=arg1)
+	.AddParam(type=int32_t, name=arg2)
+	.AddParam(type=int32_t, name=arg3)
+	.AddParam(type=int32_t, name=arg4)
+	.AddParam(type=int32_t, name=arg5)
+	.AddParam(type=int32_t, name=arg6)
+	.AddParam(type=int32_t, name=arg7)
+	.AddParam(type=int32_t, name=arg8)
+	.AddParam(type=int32_t, name=arg9)
+	;

@@ -1,0 +1,9 @@
+// -cl "C:\Ht\tests\dsn6\src_pers\dsn6.htl"
+-cp hc-2
+-it
+-uc 1
+-un Su
+-df 150
+-wd "C:\Ht\tests\dsn6\msvs12\"
+"C:\Ht\tests\dsn6\src_pers\dsn6.htd"
+../ht/sysc

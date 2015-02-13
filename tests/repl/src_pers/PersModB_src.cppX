@@ -1,0 +1,32 @@
+#include "Ht.h"
+#include "PersModB.h"
+
+void CPersModB::PersModB()
+{
+	if (PR_htValid) {
+		switch (PR_htInst) {
+		case ENTRY:
+			{
+				if (SendCallBusy_ModX()) {
+					HtRetry();
+					break;
+				}
+
+				SendCall_ModX(RETURN, P_shft, P_value, P_result);
+			}
+			break;
+		case RETURN:
+			{
+				if (SendReturnBusy_ModB()) {
+					HtRetry();
+					break;
+				}
+
+				SendReturn_ModB(P_result);
+			}
+			break;
+		default:
+			assert(0);
+		}
+	}
+}

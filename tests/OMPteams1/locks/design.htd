@@ -1,0 +1,249 @@
+//----------------------------------------------------
+// Module 'lock'
+//----------------------------------------------------
+dsnInfo.AddModule(name=lock, htIdW=LOCK_HTID_W);
+
+lock.AddInst(name=LOCK__START);
+
+#define LOCK_HTID_W 5
+
+
+typedef ht_uint48 MemAddr_t;
+typedef ht_uint10 htc_tid_t;
+typedef sc_uint<LOCK_HTID_W> lock_uplevel_index_t;
+
+
+lock.AddPrivate()
+    .AddVar(type=htc_tid_t, name=__htc_parent_htid)
+    .AddVar(type=htc_tid_t, name=__htc_my_omp_thread_num)
+    .AddVar(type=htc_tid_t, name=__htc_my_omp_team_size)
+    .AddVar(type=int, name=op)
+    .AddVar(type=rhomp_lock_t, name=L)
+    ;
+
+lock.AddShared()
+    .AddVar(type=int, name=lk)
+    ;
+
+lock.AddEntry(func=lock, inst=LOCK__START)
+    .AddParam(type=htc_tid_t, name=__htc_parent_htid)
+    .AddParam(type=htc_tid_t, name=__htc_my_omp_thread_num)
+    .AddParam(type=htc_tid_t, name=__htc_my_omp_team_size)
+    .AddParam(type=int, name=op)
+    .AddParam(type=rhomp_lock_t, name=L)
+    ;
+
+lock.AddReturn(func=lock)
+    .AddParam(type=int, name=retval_lock)
+    ;
+
+
+
+
+
+//----------------------------------------------------
+// Module 'rhomp_test_lock'
+//----------------------------------------------------
+dsnInfo.AddModule(name=rhomp_test_lock, htIdW=RHOMP_TEST_LOCK_HTID_W);
+
+rhomp_test_lock.AddInst(name=RHOMP_TEST_LOCK__START);
+rhomp_test_lock.AddInst(name=RHOMP_TEST_LOCK__CALL_RTN__5);
+
+#define RHOMP_TEST_LOCK_HTID_W 5
+
+
+typedef sc_uint<RHOMP_TEST_LOCK_HTID_W> rhomp_test_lock_uplevel_index_t;
+
+
+rhomp_test_lock.AddPrivate()
+    .AddVar(type=int, name=retval_lock)
+    .AddVar(type=htc_tid_t, name=__htc_parent_htid)
+    .AddVar(type=htc_tid_t, name=__htc_my_omp_thread_num)
+    .AddVar(type=htc_tid_t, name=__htc_my_omp_team_size)
+    .AddVar(type=rhomp_lock_t, name=L)
+    ;
+
+rhomp_test_lock.AddEntry(func=rhomp_test_lock, inst=RHOMP_TEST_LOCK__START)
+    .AddParam(type=htc_tid_t, name=__htc_parent_htid)
+    .AddParam(type=htc_tid_t, name=__htc_my_omp_thread_num)
+    .AddParam(type=htc_tid_t, name=__htc_my_omp_team_size)
+    .AddParam(type=rhomp_lock_t, name=L)
+    ;
+
+rhomp_test_lock.AddReturn(func=rhomp_test_lock)
+    .AddParam(type=int, name=retval_rhomp_test_lock)
+    ;
+
+rhomp_test_lock.AddCall(func=lock);
+
+
+
+
+
+
+//----------------------------------------------------
+// Module 'rhomp_set_lock'
+//----------------------------------------------------
+dsnInfo.AddModule(name=rhomp_set_lock, htIdW=RHOMP_SET_LOCK_HTID_W);
+
+rhomp_set_lock.AddInst(name=RHOMP_SET_LOCK__START);
+rhomp_set_lock.AddInst(name=RHOMP_SET_LOCK__LOOP_TOP__1);
+rhomp_set_lock.AddInst(name=RHOMP_SET_LOCK__CALL_RTN__6);
+rhomp_set_lock.AddInst(name=RHOMP_SET_LOCK__LOOP_EXIT__1);
+
+#define RHOMP_SET_LOCK_HTID_W 5
+
+
+typedef sc_uint<RHOMP_SET_LOCK_HTID_W> rhomp_set_lock_uplevel_index_t;
+
+
+rhomp_set_lock.AddPrivate()
+    .AddVar(type=int, name=retval_lock)
+    .AddVar(type=htc_tid_t, name=__htc_parent_htid)
+    .AddVar(type=htc_tid_t, name=__htc_my_omp_thread_num)
+    .AddVar(type=htc_tid_t, name=__htc_my_omp_team_size)
+    .AddVar(type=rhomp_lock_t, name=L)
+    ;
+
+rhomp_set_lock.AddEntry(func=rhomp_set_lock, inst=RHOMP_SET_LOCK__START)
+    .AddParam(type=htc_tid_t, name=__htc_parent_htid)
+    .AddParam(type=htc_tid_t, name=__htc_my_omp_thread_num)
+    .AddParam(type=htc_tid_t, name=__htc_my_omp_team_size)
+    .AddParam(type=rhomp_lock_t, name=L)
+    ;
+
+rhomp_set_lock.AddReturn(func=rhomp_set_lock)
+    ;
+
+rhomp_set_lock.AddCall(func=lock);
+
+
+
+
+
+
+//----------------------------------------------------
+// Module 'rhomp_unset_lock'
+//----------------------------------------------------
+dsnInfo.AddModule(name=rhomp_unset_lock, htIdW=RHOMP_UNSET_LOCK_HTID_W);
+
+rhomp_unset_lock.AddInst(name=RHOMP_UNSET_LOCK__START);
+rhomp_unset_lock.AddInst(name=RHOMP_UNSET_LOCK__CALL_RTN__7);
+
+#define RHOMP_UNSET_LOCK_HTID_W 5
+
+
+typedef sc_uint<RHOMP_UNSET_LOCK_HTID_W> rhomp_unset_lock_uplevel_index_t;
+
+
+rhomp_unset_lock.AddPrivate()
+    .AddVar(type=int, name=retval_lock)
+    .AddVar(type=htc_tid_t, name=__htc_parent_htid)
+    .AddVar(type=htc_tid_t, name=__htc_my_omp_thread_num)
+    .AddVar(type=htc_tid_t, name=__htc_my_omp_team_size)
+    .AddVar(type=rhomp_lock_t, name=L)
+    ;
+
+rhomp_unset_lock.AddEntry(func=rhomp_unset_lock, inst=RHOMP_UNSET_LOCK__START)
+    .AddParam(type=htc_tid_t, name=__htc_parent_htid)
+    .AddParam(type=htc_tid_t, name=__htc_my_omp_thread_num)
+    .AddParam(type=htc_tid_t, name=__htc_my_omp_team_size)
+    .AddParam(type=rhomp_lock_t, name=L)
+    ;
+
+rhomp_unset_lock.AddReturn(func=rhomp_unset_lock)
+    ;
+
+rhomp_unset_lock.AddCall(func=lock);
+
+
+
+
+
+
+//----------------------------------------------------
+// Module 'rhomp_init_lock'
+//----------------------------------------------------
+dsnInfo.AddModule(name=rhomp_init_lock, htIdW=RHOMP_INIT_LOCK_HTID_W);
+
+rhomp_init_lock.AddInst(name=RHOMP_INIT_LOCK__START);
+
+#define RHOMP_INIT_LOCK_HTID_W 5
+
+
+typedef sc_uint<RHOMP_INIT_LOCK_HTID_W> rhomp_init_lock_uplevel_index_t;
+
+
+rhomp_init_lock.AddPrivate()
+    .AddVar(type=htc_tid_t, name=__htc_parent_htid)
+    .AddVar(type=htc_tid_t, name=__htc_my_omp_thread_num)
+    .AddVar(type=htc_tid_t, name=__htc_my_omp_team_size)
+    ;
+
+rhomp_init_lock.AddShared()
+    .AddVar(type=int, name=lock_counter)
+    ;
+
+rhomp_init_lock.AddEntry(func=rhomp_init_lock, inst=RHOMP_INIT_LOCK__START)
+    .AddParam(type=htc_tid_t, name=__htc_parent_htid)
+    .AddParam(type=htc_tid_t, name=__htc_my_omp_thread_num)
+    .AddParam(type=htc_tid_t, name=__htc_my_omp_team_size)
+    ;
+
+rhomp_init_lock.AddReturn(func=rhomp_init_lock)
+    .AddParam(type=rhomp_lock_t, name=retval_rhomp_init_lock)
+    ;
+
+
+
+
+
+//----------------------------------------------------
+// Module 'rhomp_begin_named_critical'
+//----------------------------------------------------
+dsnInfo.AddModule(name=rhomp_begin_named_critical, htIdW=RHOMP_BEGIN_NAMED_CRITICAL_HTID_W);
+
+rhomp_begin_named_critical.AddInst(name=RHOMP_BEGIN_NAMED_CRITICAL__START);
+rhomp_begin_named_critical.AddInst(name=RHOMP_BEGIN_NAMED_CRITICAL__CALL_RTN__8);
+rhomp_begin_named_critical.AddInst(name=RHOMP_BEGIN_NAMED_CRITICAL__IF_ELSE__14);
+rhomp_begin_named_critical.AddInst(name=RHOMP_BEGIN_NAMED_CRITICAL__CALL_RTN__9);
+rhomp_begin_named_critical.AddInst(name=RHOMP_BEGIN_NAMED_CRITICAL__CALL_RTN__10);
+rhomp_begin_named_critical.AddInst(name=RHOMP_BEGIN_NAMED_CRITICAL__IF_JOIN__13);
+rhomp_begin_named_critical.AddInst(name=RHOMP_BEGIN_NAMED_CRITICAL__CALL_RTN__11);
+rhomp_begin_named_critical.AddInst(name=RHOMP_BEGIN_NAMED_CRITICAL__CALL_RTN__12);
+rhomp_begin_named_critical.AddInst(name=RHOMP_BEGIN_NAMED_CRITICAL__IF_JOIN__14);
+
+#define RHOMP_BEGIN_NAMED_CRITICAL_HTID_W 5
+
+
+typedef sc_uint<RHOMP_BEGIN_NAMED_CRITICAL_HTID_W> rhomp_begin_named_critical_uplevel_index_t;
+
+
+rhomp_begin_named_critical.AddPrivate()
+    .AddVar(type=rhomp_lock_t, name=retval_rhomp_init_lock)
+    .AddVar(type=rhomp_lock_t, name=GW)
+    .AddVar(type=htc_tid_t, name=__htc_parent_htid)
+    .AddVar(type=htc_tid_t, name=__htc_my_omp_thread_num)
+    .AddVar(type=htc_tid_t, name=__htc_my_omp_team_size)
+    .AddVar(type=rhomp_lock_t, name=L)
+    ;
+
+rhomp_begin_named_critical.AddEntry(func=rhomp_begin_named_critical, inst=RHOMP_BEGIN_NAMED_CRITICAL__START)
+    .AddParam(type=htc_tid_t, name=__htc_parent_htid)
+    .AddParam(type=htc_tid_t, name=__htc_my_omp_thread_num)
+    .AddParam(type=htc_tid_t, name=__htc_my_omp_team_size)
+    .AddParam(type=rhomp_lock_t, name=L)
+    ;
+
+rhomp_begin_named_critical.AddReturn(func=rhomp_begin_named_critical)
+    ;
+
+rhomp_begin_named_critical.AddCall(func=rhomp_init_lock);
+rhomp_begin_named_critical.AddCall(func=rhomp_set_lock);
+rhomp_begin_named_critical.AddCall(func=rhomp_unset_lock);
+
+
+
+
+
+

@@ -1,0 +1,62 @@
+#include "Stencil.h"
+
+////////////////////////////////////////////////////
+// Streaming implementation of 2d stencil
+
+typedef ht_uint48 MemAddr_t;
+
+dsnInfo.AddModule(name=stencil, htIdW=0, clock=1x);
+
+stencil.AddInst(name=STENCIL_ENTER);
+stencil.AddInst(name=STENCIL_START);
+stencil.AddInst(name=STENCIL_WAIT);
+stencil.AddInst(name=STENCIL_RETURN);
+
+stencil.AddPrivate()
+	.AddVar(type=MemAddr_t, name=rdAddr)
+	.AddVar(type=MemAddr_t, name=wrAddr)
+	.AddVar(type=uint32_t, name=rows)
+	.AddVar(type=uint32_t, name=cols)
+	.AddVar(type=CCoef, name=coef)
+	;
+
+stencil.AddShared()
+	.AddVar(type=bool, name=bStart)
+	.AddVar(type=MemAddr_t, name=rdAddr)
+	.AddVar(type=MemAddr_t, name=wrAddr)
+	.AddVar(type=uint32_t, name=rdRowIdx)
+	.AddVar(type=uint32_t, name=wrRowIdx)
+	.AddVar(type=uint32_t, name=sb_cols)
+	.AddVar(type=uint32_t, name=sb_rows)
+	.AddVar(type=uint32_t, name=wrColIdx)
+	.AddVar(type=uint32_t, name=rows)
+	.AddVar(type=uint32_t, name=cols)
+	.AddVar(type=CCoef, name=coef)
+	.AddVar(type=CStencilBufferOut_5x5r2, name=stOut)
+	;
+
+stencil.AddStage()
+        .AddVar(type=bool, name=bValid, range=1-3, reset=true)
+	.AddVar(type=StType_t, name=mult, dimen1=Y_SIZE, dimen2=X_SIZE, range=1)
+	.AddVar(type=StType_t, name=ysum, dimen1=X_SIZE, range=2)
+	.AddVar(type=StType_t, name=rslt, range=3)
+	;
+
+stencil.AddEntry(func=htmain, inst=STENCIL_ENTER, host=true)
+	.AddParam(type=MemAddr_t, name=rdAddr, hostType=uint64_t)
+	.AddParam(type=MemAddr_t, name=wrAddr, hostType=uint64_t)
+	.AddParam(type=uint32_t, name=rows)
+	.AddParam(type=uint32_t, name=cols)
+	.AddParam(type=CCoef, name=coef)
+	;
+
+stencil.AddReturn(func=htmain)
+	;
+
+#define STENCIL_READ_MEM_PORT 0
+#define STENCIL_WRITE_MEM_PORT 1
+
+stencil.AddReadStream(type=StType_t, memPort=STENCIL_READ_MEM_PORT);
+stencil.AddWriteStream(type=StType_t, memPort=STENCIL_WRITE_MEM_PORT, reserve=3);
+
+stencil.AddStencilBuffer(name=5x5r2, type=StType_t, gridSize={1024, 1024}, stencilSize={X_SIZE, Y_SIZE}, pipeLen=2);

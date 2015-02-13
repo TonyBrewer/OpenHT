@@ -1,0 +1,12 @@
+// -cl "C:\Ht\tests\hello\src_pers\hello.htl"
+-cp hc-2
+-mt				// enable memory tracing
+-uc 1			// unit count
+-un Au			// unit name
+-df 150			// default frequence
+//-mo
+-I ../src
+
+-wd "C:\Ht\tests\hello\msvs10\"		// working directory
+"C:\Ht\tests\hello\src_pers\hello.htd"	// design file location
+../ht/sysc							// location for output files

@@ -1,0 +1,45 @@
+dsnInfo.AddModule(name=model, htIdW=0);
+
+model.AddInst(name=MODEL);
+
+model.AddHostMsg(dir=in, name=INPUT_BASE)
+	.AddDst(var=inAddrBase, dataLsb=0)
+	;
+model.AddHostMsg(dir=in, name=OUTPUT_BASE)
+	.AddDst(var=outAddrBase, dataLsb=0)
+	;
+model.AddHostMsg(dir=in, name=COEFF_BASE)
+	.AddDst(var=cofAddrBase, dataLsb=0)
+	;
+model.AddHostMsg(dir=in, name=NUM_TAPS)
+	.AddDst(var=numTaps, dataLsb=0)
+	;
+
+
+
+model.AddShared()
+	.AddVar(type=uint64_t, name=inAddrBase)
+	.AddVar(type=uint64_t, name=outAddrBase)
+	.AddVar(type=uint64_t, name=cofAddrBase)
+	.AddVar(type=uint32_t, name=numTaps)
+	;
+
+model.AddPrivate()
+	.AddVar(type=uint32_t, name=rcvAu)
+	.AddVar(type=int32_t, name=lastIdx)
+	.AddVar(type=uint64_t, name=rcvIdx)
+	.AddVar(type=uint64_t, name=sndIdx)
+	.AddVar(type=uint32_t, name=errs)
+	;
+
+model.AddEntry(func=htmain, inst=MODEL, host=true)
+	.AddParam(type=uint32_t, name=rcvAu)
+	.AddParam(type=int32_t, name=lastIdx)
+	;
+
+model.AddReturn(func=htmain)
+	.AddParam(type=uint32_t, name=errs)
+	;
+
+model.AddHostData(dir=in);
+model.AddHostData(dir=out);

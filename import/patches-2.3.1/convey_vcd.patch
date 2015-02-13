@@ -1,0 +1,72 @@
+--- src/sysc/tracing/sc_vcd_trace.cpp	2014-10-08 12:02:05.988673000 -0500
++++ src/sysc/tracing/sc_vcd_trace.cpp	2014-10-08 12:02:12.981691000 -0500
+@@ -71,6 +71,10 @@
+ #include "sysc/datatypes/fx/fx.h"
+ #include "sysc/tracing/sc_vcd_trace.h"
+ 
++namespace Ht {
++extern long long g_vcdStartCycle;
++}
++
+ namespace sc_core {
+ 
+ // Forward declarations for functions that come later in the file
+@@ -2220,6 +2224,9 @@
+         return; 
+     }
+ 
++    if (((long long)sc_time_stamp().value() / 10000) < Ht::g_vcdStartCycle)
++	return;
++
+     // Now do the actual printing 
+     bool time_printed = false;
+     vcd_trace* const* const l_traces = &traces[0];
+@@ -2270,30 +2277,18 @@
+ {
+     const char first_type_used = 'a';
+     const int used_types_count = 'z' - 'a' + 1;
+-    int result;
+-
+-    result = vcd_name_index;
+-    char char6 = (char)(vcd_name_index % used_types_count);
+-
+-    result = result / used_types_count;
+-    char char5 = (char)(result % used_types_count);
+-
+-    result = result / used_types_count;
+-    char char4 = (char)(result % used_types_count);
+-
+-    result = result / used_types_count;
+-    char char3 = (char)(result % used_types_count);
+-
+-    result = result / used_types_count;
+-    char char2 = (char)(result % used_types_count);
++    int result = vcd_name_index;
++    int i = 0;
+ 
+     char buf[20];
+-    std::sprintf(buf, "%c%c%c%c%c",
+-            char2 + first_type_used,
+-            char3 + first_type_used,
+-            char4 + first_type_used,
+-            char5 + first_type_used,
+-            char6 + first_type_used);
++    while (1) { 
++        assert(i<20-1);
++	char ch = (char)(result % used_types_count);
++	buf[i++] = ch + first_type_used;
++	result /= used_types_count;
++	if (!result) break;
++    }
++    buf[i] = '\0';
+     vcd_name_index++;
+     return std::string(buf);
+ }
+@@ -2360,6 +2355,7 @@
+     }
+ 
+     if(braces_removed && !warned){
++    	warned = true;
+         std::stringstream ss;
+         ss << vcd->name << ":\n"
+             "\tTraced objects found with name containing [], which may be\n"

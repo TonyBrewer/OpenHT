@@ -1,0 +1,10 @@
+// -cl "C:\Ht\tests\prim\src_pers\prim.htl"
+-cp hc-2
+-mt				// enable memory tracing
+-uc 1			// unit count
+-un Au			// unit name
+-df 150			// default frequence
+
+-wd "C:\Ht\tests\prim\msvs12\"		// working directory
+"C:\Ht\tests\prim\src_pers\prim.htd"		// design file location
+../ht/sysc							// location for output files
