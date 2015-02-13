@@ -134,9 +134,9 @@ release: install
 	rsync -av --delete rpm/prefix/ $(REL_PATH)
 	cd $(dir $(REL_PATH)); rm -f latest; ln -s $(REL_DIR) latest
 ifeq ($(shell uname), Linux)
-	$(MAKE) rpm
-	mv -f RPMS/x86_64/$(REL_RPM) $(dir $(REL_PATH))
-	cd $(dir $(REL_PATH)); rm -f rpm_latest; ln -s $(REL_RPM) rpm_latest
+#	$(MAKE) rpm
+#	mv -f RPMS/x86_64/$(REL_RPM) $(dir $(REL_PATH))
+#	cd $(dir $(REL_PATH)); rm -f rpm_latest; ln -s $(REL_RPM) rpm_latest
 endif
 
 rpm:
