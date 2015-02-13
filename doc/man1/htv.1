@@ -1,0 +1,57 @@
+.\" 
+.\" Man page written for htv
+.\"
+.TH htv 1 "April 2013"
+.O 1
+.SH NAME
+htv - Convey SystemC to Verilog translation tool
+
+.SH SYNOPSIS
+htv [-Dname[=value]] [-vdir directory] [-lvx] [-sbx] [-sdrp]
+       INPUT.cpp VERILOG.v
+
+htv [-Dname[=value]] INPUT.sc SYSTEMC.h VERILOG.v
+
+.SH DESCRIPTION
+htv is the primary tool in the Convey SystemC development flow.  It performs several functions, including: translation of SystemC to Verilog, it generates connectivity and port definitions for sub-modules based on port names [in the form of top-level Verilog and SystemC modules] and it performs design consistency (lint) checking of SystemC logic. 
+.SH OPTIONS
+.TP 
+.B \-Dname[=value]
+Defines the macro name to the specified value or 1 if the value is ommited.  The macro "_HTV" is defined by default
+
+.TP 
+.B \-vdir directory
+Specify directory that generated file should be written.  File name is same as the base name of the input file.
+
+.TP 
+.B \-lvx
+Initialize local variables to undefined to allow more aggressive logic reduction. (default is initialize to 0, matching SystemC behavior)
+
+.TP 
+.B \-sbx
+Generates a sandbox in addition to the normal output files.
+
+.TP 
+.B \-sdrp
+Instantiate Xilinx distributed ram primitives in the generated verilog. (default is to infer the rams)
+
+.TP 
+.B \INPUT.sc
+SystemC template input file defining a level of module hierarchy
+
+.TP
+.B \ SYSTEMC.h
+SystemC module definition output file
+
+.TP
+.B \ VERILOG.v
+Verilog output file
+
+.SH EXAMPLES
+.B $ htv DpMisc.cpp DpMisc.v
+
+.B $ htv ModuleTop.sc ModuleTop.h ModuleTop.v
+
+.SH SEE ALSO
+.B htl
+.B vex

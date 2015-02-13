@@ -1,0 +1,29 @@
+.\" 
+.\" Man page written for vex (Convey SystemC Vex Tool) .\"
+.\"
+.TH vex 1 "April 2013"
+.O 1
+.SH NAME
+vex - Convey SystemC Vex Tool
+
+.SH SYNOPSIS
+.B vex VexInput.vex VerilogOutput.v 
+
+.SH DESCRIPTION
+.B vex:
+Vex is used to explicitly define Verilog primitives.  Vex does not support arbitrary Verilog language constructs.  The modules must be defined using supported Xilinx primitives or modules previsouly defined by the Vex input. 
+
+.SH OPTIONS
+.TP 
+.B \ VexInput.vex
+Vex input file 
+
+.TP 
+.B \ VerilogOutput.v
+Verilog output file
+
+.SH EXAMPLES
+.B $> vex DpMiscPrims.vex DpMiscPrims.v
+
+.SH SEE ALSO
+.B sclint

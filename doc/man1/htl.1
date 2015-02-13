@@ -1,0 +1,72 @@
+.\" 
+.\" Man page written for htl
+.\"
+.TH htl 1 "April 2013"
+.O 1
+.SH NAME
+htl - Convey Hybrid Threading Linker
+
+.SH SYNOPSIS
+htl [options] <InputFile1> {,<InputFile2>, ...} <OutputFolder>
+
+.SH DESCRIPTION
+Htl is used to link together a collection of state machines defined in the configuration input files. The output of htl is a set of SystemC files which contain the infrastructure defined in the input files.
+.SH OPTIONS
+.TP 
+.B \-help, -h
+Prints usage message
+
+.TP 
+.B \-cp <NAME>
+Specify the coproceessor target (default 'generic')
+
+.TP 
+.B \-ac <NUM>
+Specify the number of Application Engines (default 1)
+
+.TP 
+.B \-gr
+Generate reports
+
+.TP 
+.B \-it
+Enable state machine instruction tracing (SystemC simulation only)
+
+.TP 
+.B \-pm
+Enable performance monitoring (SystemC simulation only)
+
+.TP 
+.B \-ri
+Random initialization (SystemC simulations only)
+
+.TP
+.B \-rr
+Enable random retry insertion (SystemC simulations only)
+
+.TP
+.B \-uc <NUM>
+Specify the unit count per AE (default 1)
+
+.TP
+.B \-cl <FILE>
+Specify file containing command line options
+
+.TP
+.B \-ml <NS>
+Specify memory model latency in nano-seconds (SystemC simulation only, default 660 ns) 
+
+.TP
+.B \-mt <NS>
+Enable memory tracing (SystemC simulation only)
+
+.TP
+.B \-I <DIR>
+Add DIR to include search path
+
+.TP
+.B \-Dname[=value]
+Defines the macro name to the specified value or 1 if the value is ommited.
+
+.SH SEE ALSO
+.B htv
