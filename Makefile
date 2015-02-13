@@ -60,7 +60,8 @@ PREFIX ?= $(TOPDIR)/rpm/prefix
 
 .PHONY: all install rpm clean
 
-all: htl htv ht_lib/libht.a ht_lib/libht.pa local_systemc
+all: local_systemc
+	$(MAKE) htl htv ht_lib/libht.a ht_lib/libht.pa
 
 debug:
 	$(MAKE) OPT_LVL=-ggdb
@@ -155,8 +156,10 @@ clean:
 	rm -rf $(PREFIX) RPMS/*
 
 cleaner: clean
-	rm -rf local_systemc
 	$(MAKE) -s -C tests distclean
+
+distclean: cleaner
+	rm -rf local_systemc
 
 #
 # Automatic Prerequisites

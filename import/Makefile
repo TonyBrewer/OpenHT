@@ -1,4 +1,4 @@
-SYSTEMC_BUILD = /dev/shm/systemc
+SYSTEMC_BUILD = /tmp/systemc
 SYSTEMC_VER   = 2.3.1
 SYSTEMC_TAR   = systemc-$(SYSTEMC_VER).tgz
 
