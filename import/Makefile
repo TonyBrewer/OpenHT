@@ -23,5 +23,12 @@ $(SYSTEMC_TAR):
 	@echo "Please download $@ into the import directory"
 	@exit
 
+patch_systemc: $(SYSTEMC_TAR)
+	tar -xvf $(SYSTEMC_TAR)
+	cd systemc-$(SYSTEMC_VER) && \
+	    for p in `cat ../patches-$(SYSTEMC_VER)/order.txt`; do \
+		patch -p0 -i ../patches-$(SYSTEMC_VER)/$$p; \
+	    done
+
 clean:
-	rm -rf $(SYSTEMC_BUILD) local_systemc
+	rm -rf $(SYSTEMC_BUILD) local_systemc systemc-$(SYSTEMC_VER)
