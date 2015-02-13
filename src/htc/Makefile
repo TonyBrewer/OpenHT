@@ -36,8 +36,12 @@ TESTCODE = sanity-test.c
 # Makefile Targets
 #-------------------------------------------------------------
 
-all:
+all: local_boost local_rose
 	@. ./import/build_vars.sh && $(MAKE) $(TRANSLATOR)
+
+local_boost local_rose:
+	cd import > /dev/null && $(MAKE) $@
+	ln -s import/$@ .
 
 # Compile
 .cpp.o:
@@ -57,12 +61,14 @@ check: $(TRANSLATOR)
 
 clean:
 	rm -rf $(TRANSLATOR) *.o rose_* *.dot *.d
+	rm -rf local_boost local_rose rpm
+
+distclean: clean
+	rm -rf rpm
+	$(MAKE) -C import clean
 
 # Include auto deps (and don't error on missing .o).
 -include $(TRANSLATOR_OBJECTS:.o=.d)
-
-cleaner: clean
-	rm -rf rpm patchelf
 
 ##########
 
@@ -91,74 +97,13 @@ prefix: $(PREFIX) all
 	chmod 755 $(PREFIX)/bin/*
 
 VERSION = 0.0
-SVN_REV = $(shell svn info | grep Revis | awk -F: '{print $$2}' | sed 's/ //g')
-REL_DIR = $(VERSION)-$(SVN_REV)
+ifneq (,$(wildcard ../../.git))
+ VCSREV = $(shell head -1 ../../.git/refs/heads/master | cut -c 1-7)
+endif
+REL_DIR = $(VERSION)-$(VCSREV)
 REL_PATH = /work/htc_releases/$(REL_DIR)
 
 release: prefix
 	rsync -av --delete rpm/prefix/ $(REL_PATH)
 	cd $(dir $(REL_PATH)) > /dev/null && \
 	    rm -f latest; ln -s $(REL_DIR) latest
-
-##########
-
-BOOST_VER = 1_45_0
-BOOST_VER_DOT = $(subst _,.,$(BOOST_VER))
-BOOST_URL = http://sourceforge.net/projects/boost/files/boost
-BOOST_BUILD = /dev/shm/boost
-
-update_boost:
-	rm -rf $(BOOST_BUILD); mkdir -p $(BOOST_BUILD)
-	cd $(BOOST_BUILD) > /dev/null && \
-	    wget $(BOOST_URL)/$(BOOST_VER_DOT)/boost_$(BOOST_VER).tar.gz && \
-	    tar -xf *.gz
-	. ./import/build_vars.sh && \
-	    cd $(BOOST_BUILD)/boost_$(BOOST_VER) && \
-	    nice ./bootstrap.sh --prefix=$(BOOST_BUILD)/local && \
-	    ./bjam install \
-		--prefix=$(BOOST_BUILD)/local \
-		--without-mpi
-	rsync -a --delete --exclude=.svn $(BOOST_BUILD)/local/ local_boost
-
-##########
-
-ROSE_BUILD = /dev/shm/rose
-
-update_rose: patchelf
-	rm -rf $(ROSE_BUILD); mkdir -p $(ROSE_BUILD)
-	rsync -a --exclude=.svn $(BOOST_INSTALL) $(ROSE_BUILD)
-	cp -p import/edg4x-rose.patch $(ROSE_BUILD)
-	. ./import/build_vars.sh && \
-	    cd $(ROSE_BUILD) > /dev/null && \
-	    git clone https://github.com/rose-compiler/edg4x-rose rose && \
-	    cd rose > /dev/null && \
-	    git reset --hard 18f3b98052c0c57f684b65693c58c4a48b314389 && \
-	    patch -p1 -i ../edg4x-rose.patch && \
-	    ./build && cd .. > /dev/null && \
-	    mkdir local && mkdir build && cd build && \
-	    ../rose/configure \
-		--prefix=$(ROSE_BUILD)/local \
-		--with-boost=$(ROSE_BUILD)/local_boost \
-		--disable-java --disable-fortran \
-		--with-C_DEBUG=-g \
-		--with-CXX_OPTIMIZE=-O0 \
-		--with-C_OPTIMIZE=-O0 && \
-	    nice $(MAKE) -j16 install-core
-	rsync -a --delete --exclude=.svn $(ROSE_BUILD)/local/ local_rose
-	import/localize_rose.sh
-
-##########
-
-SHM_BUILD = /dev/shm/build
-
-patchelf:
-	rm -rf $(SHM_BUILD); mkdir -p $(SHM_BUILD)
-	cd $(SHM_BUILD) > /dev/null && \
-	    wget http://nixos.org/releases/patchelf/patchelf-0.8/patchelf-0.8.tar.gz && \
-	    tar -xf *.gz
-	. ./import/build_vars.sh && \
-	    cd $(SHM_BUILD)/patchelf* && \
-	    ./configure --prefix=$(SHM_BUILD)/local && \
-	    nice $(MAKE)
-	cp -p $(SHM_BUILD)/patchelf-0.8/src/patchelf .
-	rm -rf $(SHM_BUILD)
