@@ -10,6 +10,8 @@
 
 extern int __htc_get_unit_count();
 
+#pragma rhomp max_phys_threads(9)
+
 #pragma omp declare target
 // These functions will be compiled for the coprocessor
 
@@ -79,19 +81,24 @@ void bottom_up_ctl(uint8_t function,
                    uint64_t *xoff,
                    COPROC_XADJ_SIZE *xadj,
                    /* CTL parameters */
-                   uint32_t bmapIdx,
-                   uint32_t lb,
-                   uint32_t ub,
+                   uint32_t ub1,
                    uint64_t *update_count
 ) {
 
-    // We need to set the unit to index the __htc_units array
-    // Use 'target device' to do this?
-    
     // coprocessor entry point
-    // The device attribute selects the ht unit number
-#pragma omp target device(bmapIdx) 
+
+    uint8_t unitCnt = __htc_get_unit_count();
+    uint32_t chunk = (uint32_t)((ub1 / unitCnt) + 1);
+
+#pragma omp target teams num_teams(unitCnt)
     {
+        uint8_t unit = omp_get_team_num();
+        uint64_t lb = (uint64_t)(unit*chunk);
+        uint64_t ub = lb + chunk;
+        if (ub > ub1) {
+            ub = ub1;
+        }
+
         uint32_t nt = ub-lb+1;
         uint32_t my_update_count = 0;
         if (nt > 512) nt = 512;
@@ -185,7 +192,7 @@ void bottom_up_ctl(uint8_t function,
  } /* end of parallel */
 
  if (function==BFS) {
-     *update_count = (uint64_t)my_update_count;
+     update_count[unit] = (uint64_t)my_update_count;
  }
 
     } /* pragma omp target */
@@ -195,40 +202,26 @@ void bottom_up_ctl(uint8_t function,
 /* extern "C" */
 void pers_init_bfs_tree (int64_t nv, uint64_t *bfs_tree)
 {
-    int unitCnt = __htc_get_unit_count();
 
 #if DEBUG
-        fprintf(stderr, "pers_init_bfs_tree:  #AUs = %d\n", unitCnt);
+    int unitCnt = __htc_get_unit_count();
+    fprintf(stderr, "pers_init_bfs_tree:  #AUs = %d\n", unitCnt);
 #endif
 
-        uint64_t S_bfsSize = (uint64_t) nv;
-        uint64_t chunk = (int)((S_bfsSize / unitCnt) + 1);
+    uint64_t ub1 = (uint64_t) nv;
 
-        int unit;
-        //#pragma omp parallel num_threads(unitCnt)
-        //#pragma omp for nowait schedule(static, 1)
-        for (unit = 0; unit < unitCnt; unit++) {
-            uint64_t lb = (uint64_t)(unit*chunk);
-            uint64_t ub = lb + chunk;
-            if (ub > S_bfsSize) {
-                ub = S_bfsSize;
-            }
 #if DEBUG
     printf("in pers_init_bfs_tree num_threads is %d\n", omp_get_num_threads());
-    printf("calling init with lb %ld and ub %ld\n", lb, ub);
 #endif
-            bottom_up_ctl(INIT,
-                          bfs_tree,  /* bfsAddr */
-                          0,   /* bfs_packed */
-                          0,   /* bfs_tree_bit */
-                          0,   /* bfs_tree_bit_new */
-                          0,   /* xoff */
-                          0,   /* xadj */
-                          unit,/* bmapIdx */
-                          lb,
-                          ub,
-                          0);
-	}
+    bottom_up_ctl(INIT,
+                  bfs_tree,  /* bfsAddr */
+                  0,   /* bfs_packed */
+                  0,   /* bfs_tree_bit */
+                  0,   /* bfs_tree_bit_new */
+                  0,   /* xoff */
+                  0,   /* xadj */
+                  ub1,
+                  0);
 
 #if DEBUG
         fprintf(stderr, "pers_init_bfs_tree:  all units returned\n");
@@ -238,45 +231,32 @@ void pers_init_bfs_tree (int64_t nv, uint64_t *bfs_tree)
 /* extern "C" */
 void pers_scatter_bfs (uint64_t *k2, uint64_t *bfs_tree, uint64_t *bfs_packed)
 {
-    int unitCnt = __htc_get_unit_count();
         
 #if DEBUG
-        fprintf(stderr, "pers_scatter_bfs:  #AUs = %d\n", unitCnt);
+    int unitCnt = __htc_get_unit_count();
+    fprintf(stderr, "pers_scatter_bfs:  #AUs = %d\n", unitCnt);
 #endif
 
 	// BFS_SIZE used for K2 on scatter instruction
-        uint64_t S_bfsSize = *k2;
+    uint64_t S_bfsSize = *k2;
 #if DEBUG
-        fprintf(stderr,"bfsSize is %ld\n", S_bfsSize);
+    fprintf(stderr,"bfsSize is %ld\n", S_bfsSize);
 #endif
-        uint64_t chunk = (int)((S_bfsSize / unitCnt) + 1);
+    uint64_t ub1 = S_bfsSize;
 
-        int unit;
-        //#pragma omp parallel num_threads(unitCnt)
-        //#pragma omp for nowait schedule(static , 1) private(unit)
-        for (unit = 0; unit < unitCnt; unit++) {
-            uint64_t lb = (uint64_t)(unit*chunk);
-            uint64_t ub = lb + chunk;
-            if (ub > S_bfsSize) {
-                ub = S_bfsSize;
-            }
 #if DEBUG
     printf("in scatter num_threads is %d\n", omp_get_num_threads());
-    printf("calling scatter with lb %ld and ub %ld\n", lb, ub);
 #endif
-            bottom_up_ctl(SCATTER,
-                          bfs_tree,  /* bfsAddr */
-                          bfs_packed,   /* bfs_packed */
-                          0,   /* bfs_tree_bit */
-                          0,   /* bfs_tree_bit_new */
-                          0,   /* xoff */
-                          0,   /* xadj */
-                          unit,/* bmapIdx */
-                          lb,
-                          ub,
-                          0);
-        }   /* omp parallel */
-
+    bottom_up_ctl(SCATTER,
+                  bfs_tree,  /* bfsAddr */
+                  bfs_packed,   /* bfs_packed */
+                  0,   /* bfs_tree_bit */
+                  0,   /* bfs_tree_bit_new */
+                  0,   /* xoff */
+                  0,   /* xadj */
+                  ub1,
+                  0);
+    
 #if DEBUG
         fprintf(stderr, "pers_scatter_bfs:  all units returned\n");
 #endif
@@ -297,7 +277,6 @@ void pers_bottom_up ( int64_t g500_ctl, int64_t nv,
         int unitCnt = __htc_get_unit_count();
         uint64_t bfsSize = (uint64_t) nv;
         uint64_t ub1 = (bfsSize + 63) >> 6;    /* bfsSize / 64 */
-        uint64_t chunk = (int)((ub1 / unitCnt) + 1);
 
         while (*k1 != *k2) {
             *oldk2 = *k2;
@@ -313,29 +292,21 @@ void pers_bottom_up ( int64_t g500_ctl, int64_t nv,
         //#pragma omp parallel num_threads(unitCnt) reduction(+:updCnt)
         //#pragma omp for nowait schedule(static , 1) private(unit)
         for (unit = 0; unit < unitCnt; unit++) {
-
-            uint64_t lb = (uint64_t)(unit*chunk);
-            uint64_t ub = lb + chunk;
-            if (ub > ub1) {
-                ub = ub1;
-            }
-
             update_count[unit] = 0;
-            bottom_up_ctl(BFS,
-                          bfs_tree,  /* bfsAddr */
-                          (uint64_t *) ((g500_ctl & 0xFFFFFF) == 64),
-                             /* xadj_index_shift passed in bfs_packed slot */
-                          *bfs_tree_bit,   /* bfs_tree_bit */
-                          *bfs_tree_bit_new, /* bfs_tree_bit_new */
-                          xoff,   /* xoff */
-                          xadj,   /* xadj */
-                          unit,    /* bmapIdx */
-                          lb,       /* lb */
-                          ub,       /* ub */
-                          &update_count[unit]);
         }
 
-        for (unit = 0; unit < unitCnt; unit++) {
+        bottom_up_ctl(BFS,
+                      bfs_tree,  /* bfsAddr */
+                      (uint64_t *) ((g500_ctl & 0xFFFFFF) == 64),
+                      /* xadj_index_shift passed in bfs_packed slot */
+                      *bfs_tree_bit,   /* bfs_tree_bit */
+                      *bfs_tree_bit_new, /* bfs_tree_bit_new */
+                      xoff,   /* xoff */
+                      xadj,   /* xadj */
+                      ub1,       /* ub */
+                      &update_count[0]);
+
+        for (uint8_t unit = 0; unit < unitCnt; unit++) {
             updCnt += update_count[unit];
         }
 
