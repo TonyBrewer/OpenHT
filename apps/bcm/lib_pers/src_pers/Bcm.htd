@@ -1,0 +1,88 @@
+/////////////////////////////////////////////////////////
+// BCM
+/////////////////////////////////////////////////////////
+dsnInfo.AddModule(name=bcm, clock=1x, htIdW=0);
+bcm.AddInst(name=BCM_ENTRY);
+bcm.AddInst(name=BCM_TASK_VALID);
+bcm.AddInst(name=BCM_CHK_RTN);
+bcm.AddInst(name=BCM_WR_RSLT1);
+bcm.AddInst(name=BCM_WR_RSLT2);
+bcm.AddInst(name=BCM_WR_RSLT3);
+
+
+bcm.AddHostMsg(dir=in, name=BCM_RSLT_BUF_AVL)
+	.AddDst(var=bcmRsltQue)
+	;
+
+bcm.AddHostMsg(dir=in, name=BCM_FORCE_RETURN)
+	.AddDst(var=forceReturn, readOnly=false)
+	;
+
+bcm.AddHostMsg(dir=in, name=BCM_ZERO_INPUT)
+	.AddDst(var=zeroInput, readOnly=false)
+	;
+
+bcm.AddHostMsg(dir=out, name=BCM_HASHES_COMPLETED);
+bcm.AddHostMsg(dir=out, name=BCM_RSLT_BUF_RDY);
+
+
+bcm.AddEntry(func=bcm, inst=BCM_ENTRY, host=true)
+	.AddParam(hostType=void *, type=ht_uint48, name=pBcmTask)
+	;
+
+bcm.AddPrivate()
+	.AddVar(name=pBcmTask, type=ht_uint48)
+	;
+
+
+// Union/Struct declarations
+union CShaState {
+	uint32_t m_state[8];
+	uint8_t m_byte[32];
+};
+
+union CShaData {
+	uint32_t m_dw[16];
+	uint8_t m_uc[64];
+};
+
+union CBcmTaskUnion {
+	struct {
+		CShaState m_midState;
+		uint32_t m_data[3];
+		uint32_t m_initNonce;
+		uint32_t m_lastNonce;
+		uint32_t m_target[3];
+	};
+	uint64_t m_qw[8];
+};
+
+
+bcm.AddShared()
+	.AddVar(name=bTaskValid, type=bool)
+	.AddVar(name=task, type=CBcmTaskUnion)
+	.AddVar(name=nonce, type=uint32_t)
+	.AddVar(name=hashCount, type=uint32_t)
+	.AddVar(name=nonceHitQue, type=uint32_t, queueW=4)
+	.AddVar(name=bcmRsltQue, type=ht_uint48, queueW=4)
+	.AddVar(name=rsltQwIdx, type=ht_uint3)
+	.AddVar(name=forceReturn, type=bool)
+	.AddVar(name=zeroInput, type=bool)
+	;
+
+bcm.AddReturn(func=bcm)
+	.AddParam(hostType=void *, type=ht_uint48, name=pBcmTask)
+	;
+
+bcm.AddReadMem(rspCntW=4)
+	.AddDst(var=task, field=m_qw, dstIdx=fldIdx1, multiRd=true, memSrc=host)
+	;
+
+bcm.AddWriteMem();
+
+bcm.AddStage(privWrStg=1, execStg=1)
+	.AddVar(type=bool, name=vld, range=1-133)
+	.AddVar(type=CShaState, name=state, range=1-133)
+	.AddVar(type=CShaData, name=data, range=1-133)
+	.AddVar(name=nonce, type=uint32_t, range=1-133)
+	;

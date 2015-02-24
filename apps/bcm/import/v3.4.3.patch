@@ -1,0 +1,459 @@
+diff -u cgminer-3.4.3.orig/cgminer.c cgminer-3.4.3/cgminer.c
+--- cgminer-3.4.3.orig/cgminer.c	2013-09-13 06:26:07.000000000 -0500
++++ cgminer-3.4.3/cgminer.c	2015-02-23 15:01:58.411656000 -0600
+@@ -62,14 +66,21 @@
+ #include "driver-bflsc.h"
+ #endif
+ 
++#ifdef USE_OPENHT
++#include "driver-openht.h"
++#endif
++
+ #if defined(unix) || defined(__APPLE__)
+ 	#include <errno.h>
+ 	#include <fcntl.h>
+ 	#include <sys/wait.h>
+ #endif
+ 
+-#if defined(USE_BITFORCE) || defined(USE_ICARUS) || defined(USE_AVALON) || defined(USE_MODMINER)
++#if defined(USE_BITFORCE) || defined(USE_ICARUS) || defined(USE_AVALON) || defined(USE_MODMINER) || defined(USE_OPENHT)
+ #	define USE_FPGA
++#if defined(USE_OPENHT)
++#	define USE_FPGA_SERIAL
++#endif
+ #elif defined(USE_ZTEX)
+ #	define USE_FPGA
+ #endif
+@@ -161,6 +172,9 @@
+ #ifdef USE_AVALON
+ char *opt_avalon_options = NULL;
+ #endif
++#ifdef USE_OPENHT
++char *opt_openht_options = NULL;
++#endif
+ #ifdef USE_USBUTILS
+ char *opt_usb_select = NULL;
+ int opt_usbdump = -1;
+@@ -1021,6 +1035,15 @@
+ }
+ #endif
+ 
++#ifdef USE_OPENHT
++static char *set_openht_options(const char *arg)
++{
++	opt_set_charp(arg, &opt_openht_options);
++
++	return NULL;
++}
++#endif
++
+ #ifdef USE_USBUTILS
+ static char *set_usb_select(const char *arg)
+ {
+@@ -1227,6 +1250,11 @@
+ 		     opt_set_intval, NULL, &opt_bitburner_core_voltage,
+ 		     "Set BitBurner core voltage, in millivolts"),
+ #endif
++#ifdef USE_OPENHT
++	OPT_WITH_ARG("--openht-options",
++		     set_openht_options, NULL, NULL,
++		     opt_hidden),
++#endif
+ 	OPT_WITHOUT_ARG("--load-balance",
+ 		     set_loadbalance, &pool_strategy,
+ 		     "Change multipool strategy from failover to quota based balance"),
+@@ -1558,6 +1586,9 @@
+ #ifdef USE_BITFORCE
+ 		"bitforce "
+ #endif
++#ifdef USE_OPENHT
++		"openht "
++#endif
+ #ifdef HAVE_OPENCL
+ 		"GPU "
+ #endif
+@@ -2989,6 +3020,7 @@
+ 	cgtime(&work->tv_getwork);
+ 	copy_time(&work->tv_getwork_reply, &work->tv_getwork);
+ 	work->getwork_mode = GETWORK_MODE_BENCHMARK;
++	calc_midstate(work);
+ 	calc_diff(work, 0);
+ }
+ 
+@@ -7307,6 +7339,10 @@
+ extern struct device_drv avalon_drv;
+ #endif
+ 
++#ifdef USE_OPENHT
++extern struct device_drv openht_drv;
++#endif
++
+ #ifdef USE_MODMINER
+ extern struct device_drv modminer_drv;
+ #endif
+@@ -7830,6 +7866,11 @@
+ 		bitforce_drv.drv_detect();
+ #endif
+ 
++#ifdef USE_OPENHT
++	if (!opt_scrypt)
++		openht_drv.drv_detect();
++#endif
++
+ #ifdef USE_MODMINER
+ 	if (!opt_scrypt)
+ 		modminer_drv.drv_detect();
+diff -u cgminer-3.4.3.orig/configure.ac cgminer-3.4.3/configure.ac
+--- cgminer-3.4.3.orig/configure.ac	2013-09-13 06:26:07.000000000 -0500
++++ cgminer-3.4.3/configure.ac	2015-02-23 15:01:58.400653000 -0600
+@@ -264,6 +264,17 @@
+ fi
+ AM_CONDITIONAL([HAS_AVALON], [test x$avalon = xyes])
+ 
++openht="no"
++
++AC_ARG_ENABLE([openht],
++	[AC_HELP_STRING([--enable-openht],[Compile support for OpenHT FPGA (default disabled)])],
++	[openht=$enableval]
++	)
++if test "x$openht" = xyes; then
++	AC_DEFINE([USE_OPENHT], [1], [Defined to 1 if OpenHT support is wanted])
++fi
++AM_CONDITIONAL([HAS_OPENHT], [test x$openht = xyes])
++
+ modminer="no"
+ 
+ AC_ARG_ENABLE([modminer],
+@@ -316,7 +327,7 @@
+ 	want_usbutils=false
+ fi
+ 
+-AM_CONDITIONAL([NEED_FPGAUTILS], [test x$modminer$ztex != xnono])
++AM_CONDITIONAL([NEED_FPGAUTILS], [test x$modminer$ztex$openht != xnonono])
+ AM_CONDITIONAL([WANT_USBUTILS], [test x$want_usbutils != xfalse])
+ AM_CONDITIONAL([HAVE_CURSES], [test x$curses = xyes])
+ AM_CONDITIONAL([HAVE_WINDOWS], [test x$have_win32 = xtrue])
+@@ -464,14 +475,14 @@
+ 
+ 	else
+ 		echo "  OpenCL...............: NOT FOUND. GPU mining support DISABLED"
+-		if test "x$bitforce$avalon$icarus$ztex$modminer$bflsc" = xnononononono; then
++		if test "x$bitforce$avalon$icarus$ztex$modminer$bflsc$openht" = xnonononononono; then
+ 			AC_MSG_ERROR([No mining configured in])
+ 		fi
+ 		echo "  scrypt...............: Disabled (needs OpenCL)"
+ 	fi
+ else
+ 	echo "  OpenCL...............: Detection overrided. GPU mining support DISABLED"
+-	if test "x$bitforce$icarus$avalon$ztex$modminer$bflsc" = xnononononono; then
++	if test "x$bitforce$icarus$avalon$ztex$modminer$bflsc$openht" = xnonononononono; then
+ 		AC_MSG_ERROR([No mining configured in])
+ 	fi
+ 	echo "  scrypt...............: Disabled (needs OpenCL)"
+@@ -500,6 +511,12 @@
+ 	echo "  BFL.ASICs............: Disabled"
+ fi
+ 
++if test "x$openht" = xyes; then
++	echo "  OpenHT.FPGAs.........: Enabled"
++else
++	echo "  OpenHT.FPGAs.........: Disabled"
++fi
++
+ if test "x$bitforce" = xyes; then
+ 	echo "  BitForce.FPGAs.......: Enabled"
+ else
+diff -u cgminer-3.4.3.orig/Makefile.am cgminer-3.4.3/Makefile.am
+--- cgminer-3.4.3.orig/Makefile.am	2013-09-13 06:26:07.000000000 -0500
++++ cgminer-3.4.3/Makefile.am	2015-02-23 15:01:58.741659000 -0600
+@@ -95,3 +95,12 @@
+ bitstreamsdir = $(bindir)/bitstreams
+ dist_bitstreams_DATA = $(top_srcdir)/bitstreams/*
+ endif
++
++if HAS_OPENHT
++cgminer_SOURCES += driver-openht.c driver-openht.h
++cgminer_LDADD += ../lib_pers/libhtapp.a
++cgminer_LDADD += /opt/convey/lib/cny_initruntime.o
++cgminer_LDADD += -L /opt/convey/lib -lcny_utils -lPersSupport -ldl
++#cgminer_LDADD += -L /opt/convey/lib -lwx_runtime -ldl
++cgminer_LINK = g++ $(AM_CFLAGS) $(CFLAGS) $(cgminer_LDFLAGS) $(LDFLAGS) -o $@
++endif
+diff -u cgminer-3.4.3.orig/miner.h cgminer-3.4.3/miner.h
+--- cgminer-3.4.3.orig/miner.h	2013-09-13 06:26:07.000000000 -0500
++++ cgminer-3.4.3/miner.h	2015-02-23 15:01:58.541655000 -0600
+@@ -228,6 +228,7 @@
+ 	DRIVER_ZTEX,
+ 	DRIVER_BFLSC,
+ 	DRIVER_AVALON,
++	DRIVER_OPENHT,
+ 	DRIVER_MAX
+ };
+ 
+@@ -448,6 +449,13 @@
+ 	int queued;
+ 	int results;
+ #endif
++#ifdef USE_OPENHT
++	int device_fd; //HMMM...
++	struct work **works;
++	int work_array;
++	int queued;
++	int results;
++#endif
+ #ifdef USE_USBUTILS
+ 	struct cg_usb_info usbinfo;
+ #endif
+@@ -898,6 +906,9 @@
+ #ifdef USE_AVALON
+ extern char *opt_avalon_options;
+ #endif
++#ifdef USE_OPENHT
++extern char *opt_openht_options;
++#endif
+ #ifdef USE_USBUTILS
+ extern char *opt_usb_select;
+ extern int opt_usbdump;
+diff -u /dev/null cgminer-3.4.3/driver-openht.h
+--- /dev/null	2014-06-18 08:49:11.518437413 -0500
++++ cgminer-3.4.3/driver-openht.h	2015-02-24 10:51:19.053210000 -0600
+@@ -0,0 +1,18 @@
++/*
++ * Copyright 2015 Convey Computer Corporation
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the Free
++ * Software Foundation; either version 3 of the License, or (at your option)
++ * any later version.  See COPYING for more details.
++ */
++
++#ifndef OPENHT_H
++#define OPENHT_H
++
++#define OPENHT_MINER_THREADS 1
++#define OPENHT_UNIT_CNT_MAX 64
++#define OPENHT_TASKS_PER_UNIT 2
++#define OPENHT_TASK_CNT_MAX (OPENHT_UNIT_CNT_MAX * OPENHT_TASKS_PER_UNIT)
++
++#endif  /* OPENHT_H */
+diff -u /dev/null cgminer-3.4.3/driver-openht.c
+--- /dev/null	2015-02-24 09:29:53.946000001 -0600
++++ cgminer-3.4.3/driver-openht.c	2015-02-24 11:34:40.141773000 -0600
+@@ -0,0 +1,217 @@
++/*
++ * Copyright 2015 Convey Computer Corporation
++ * Copyright 2013 Con Kolivas <kernel@kolivas.org>
++ * Copyright 2012-2013 Xiangfu <xiangfu@openmobilefree.com>
++ * Copyright 2012 Luke Dashjr
++ * Copyright 2012 Andrew Smith
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the Free
++ * Software Foundation; either version 3 of the License, or (at your option)
++ * any later version.  See COPYING for more details.
++ */
++
++#include "config.h"
++
++#include <limits.h>
++#include <pthread.h>
++#include <stdio.h>
++#include <sys/time.h>
++#include <sys/types.h>
++#include <dirent.h>
++#include <unistd.h>
++#include <assert.h>
++#ifndef WIN32
++#include <sys/select.h>
++#include <termios.h>
++#include <sys/stat.h>
++#include <fcntl.h>
++#ifndef O_CLOEXEC
++#define O_CLOEXEC 0
++#endif
++#else
++#include "compat.h"
++#include <windows.h>
++#include <io.h>
++#endif
++
++#include "elist.h"
++#include "miner.h"
++#include "fpgautils.h"
++#include "driver-openht.h"
++#include "hexdump.c"
++#include "util.h"
++
++#include "../lib_pers/src/HtBcmLib.h"
++
++struct device_drv openht_drv;
++
++struct CHtBcmTask openht_task_list[OPENHT_TASK_CNT_MAX];
++struct CHtBcmTask *openht_task_free_que[OPENHT_TASK_CNT_MAX];
++int openht_task_free_rdptr;
++int openht_task_free_wrptr;
++
++int openht_unit_cnt;
++
++static bool bCoolMode = false;
++
++static bool openht_detect_one(const char *devpath)
++{
++	struct cgpu_info *openht;
++
++	//applog(LOG_DEBUG, "Entered %s\n", __func__);
++
++	openht = calloc(1, sizeof(struct cgpu_info));
++	openht->drv = &openht_drv;
++	openht->device_path = strdup(devpath);
++	openht->device_fd = -1;
++	openht->threads = OPENHT_MINER_THREADS;
++	add_cgpu(openht);
++
++	return true;
++}
++
++static inline void openht_detect()
++{
++	//applog(LOG_DEBUG, "Entered %s\n", __func__);
++	serial_detect(&openht_drv, openht_detect_one);
++}
++
++static void openht_init(struct cgpu_info *cgpu)
++{
++	//applog(LOG_DEBUG, "Entered %s\n", __func__);
++}
++
++static void openht_report_nonce(void *pThr, struct CHtBcmRslt *pBcmRslt)
++{
++	struct thr_info *pThread = (struct thr_info *)pThr;
++	struct cgpu_info *cgpu = pThread->cgpu;
++	struct work *pWork = find_queued_work_bymidstate(cgpu, (char *)pBcmRslt->m_midState,
++							 32, (char *)pBcmRslt->m_data, 64, 12);
++
++	if (!pWork)
++		return;
++
++	submit_nonce(pThread, pWork, pBcmRslt->m_nonce);
++}
++
++static void openht_free_task(struct CHtBcmTask *pBcmTask)
++{
++	openht_task_free_que[openht_task_free_wrptr] = pBcmTask;
++	openht_task_free_wrptr = (openht_task_free_wrptr + 1) % OPENHT_TASK_CNT_MAX;
++}
++
++static bool openht_prepare(struct thr_info *thr)
++{
++	int i;
++	struct cgpu_info *openht = thr->cgpu;
++
++	//applog(LOG_DEBUG, "Entered %s\n", __func__);
++
++	openht_unit_cnt = HtBcmPrepare(&openht_report_nonce, &openht_free_task);
++
++	// Set cool mode condition
++	HtBcmPauseWork(bCoolMode);
++
++	// initialize free task queue
++	openht_task_free_rdptr = 0;
++	openht_task_free_wrptr = 0;
++
++	assert(openht_unit_cnt <= OPENHT_UNIT_CNT_MAX);
++
++	for (i = 0; i < openht_unit_cnt * OPENHT_TASKS_PER_UNIT; i += 1) {
++		openht_task_free_que[openht_task_free_wrptr] = &openht_task_list[i];
++		openht_task_free_wrptr = (openht_task_free_wrptr + 1) % OPENHT_TASK_CNT_MAX;
++	}
++
++	return true;
++}
++
++/* We use a replacement algorithm to only remove references to work done from
++ * the buffer when we need the extra space for new work. */
++static bool openht_fill(struct cgpu_info *cgpu)
++{
++	struct work *work;
++
++	//applog(LOG_DEBUG, "Entered %s\n", __func__);
++
++	/* we are full when number of queued_work that has
++	 *  not been given to coproc is two or more
++	 */
++	return HASH_COUNT(cgpu->queued_work) - cgpu->queued_count < 2;
++}
++
++static void openht_flush_work()
++{
++	// Clear task struct
++	memset(&openht_task_list, 0, sizeof(openht_task_list));
++	// Send Flush Command to Coprocessor
++	HtBcmFlushWork();
++	applog(LOG_INFO, "Flushing Coprocessor Work");
++}
++
++static inline void openht_create_task(struct CHtBcmTask *pBcmTask, struct work *pWork)
++{
++	memcpy(pBcmTask->m_midState, pWork->midstate, 32);
++	memcpy(pBcmTask->m_data, pWork->data + 64, 12);
++	memcpy(pBcmTask->m_target, pWork->target + 20, 12);
++}
++
++static int64_t openht_scanhash(struct thr_info *thr)
++{
++	//applog(LOG_DEBUG, "Entered %s\n", __func__);
++
++	struct cgpu_info *cgpu = thr->cgpu;
++
++	int avail_work = HASH_COUNT(cgpu->queued_work) - cgpu->queued_count;
++
++	// loop through all units twice, making sure each has at least one task before giving a second
++	while (avail_work > 0 && openht_task_free_rdptr != openht_task_free_wrptr) {
++		struct CHtBcmTask *pBcmTask = openht_task_free_que[openht_task_free_rdptr];
++		openht_task_free_rdptr = (openht_task_free_rdptr + 1) % OPENHT_TASK_CNT_MAX;
++
++		struct work *pWork = get_queued(cgpu);
++
++		pBcmTask->m_initNonce = 0x0;
++		pBcmTask->m_lastNonce = 0xffffffff;
++		//pBcmTask->m_initNonce = 0x42a14690;
++		//pBcmTask->m_lastNonce = 0x42a1469f;
++		openht_create_task(pBcmTask, pWork);
++
++		HtBcmAddNewTask(pBcmTask);
++
++		avail_work -= 1;
++	}
++
++	// process received info from personality
++	return HtBcmScanHash(thr);
++}
++
++static struct api_data *openht_api_stats(struct cgpu_info *cgpu)
++{
++	//applog(LOG_DEBUG, "Entered %s\n", __func__);
++
++	return 0;
++}
++
++static void openht_shutdown(struct thr_info *thr)
++{
++	//applog(LOG_DEBUG, "Entered %s\n", __func__);
++
++	HtBcmShutdown();
++}
++
++struct device_drv openht_drv = {
++	.drv_id			= DRIVER_OPENHT,
++	.dname			= "openht",
++	.name			= "OHT",
++	.drv_detect		= openht_detect,
++	.thread_prepare		= openht_prepare,
++	.hash_work		= hash_queued_work,
++	.queue_full		= openht_fill,
++	.scanwork		= openht_scanhash,
++	.get_api_stats		= openht_api_stats,
++	.reinit_device		= openht_init,
++	.thread_shutdown	= openht_shutdown,
++	.flush_work		= openht_flush_work,
++};

@@ -1,0 +1,5 @@
+# Disable CP memory (recoup logic)
+DISABLE_CP_MEM = true
+
+VIV_PHYS_OPT_OPTIONS = -directive AddRetime
+VIV_ROUTE_OPTIONS = -directive Explore

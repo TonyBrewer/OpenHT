@@ -1,0 +1,20 @@
+dsnInfo.AddModule(name=model);
+model.AddInst(name=MODEL);
+
+model.AddHostMsg(dir=in, name=BCM_RSLT_BUF_AVL);
+model.AddHostMsg(dir=in, name=BCM_FORCE_RETURN);
+model.AddHostMsg(dir=in, name=BCM_ZERO_INPUT);
+
+model.AddHostMsg(dir=out, name=BCM_HASHES_COMPLETED);
+model.AddHostMsg(dir=out, name=BCM_RSLT_BUF_RDY);
+
+model.AddEntry(func=bcm, inst=MODEL, host=true)
+	.AddParam(hostType=void *, type=ht_uint48, name=pBcmTask)
+	;
+model.AddReturn(func=bcm)
+	.AddParam(hostType=void *, type=ht_uint48, name=pBcmTask)
+	;
+
+model.AddPrivate()
+	.AddVar(name=pBcmTask, type=ht_uint48)
+	;
