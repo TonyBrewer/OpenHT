@@ -1,2 +1,0 @@
-INST ae_top/core/cae_pers/rsttop_bufg LOC = BUFGCTRL_X0Y1;
-INST ae_top/core/cae_pers/dis/r_st_idle LOC = SLICE_X172Y198;
