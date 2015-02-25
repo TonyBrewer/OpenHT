@@ -1,0 +1,85 @@
+#! /bin/sh
+#
+# chkconfig: - 55 45
+# description:  The cnymemcached daemon is a network memory cache service.
+# processname: cnymemcached
+# config: /etc/sysconfig/cnymemcached
+
+# Source function library.
+. /etc/init.d/functions
+
+PORT=11211
+USER=nobody
+MAXCONN=1024
+CACHESIZE=64
+OPTIONS=""
+ONLOAD=0
+
+if [ -f /etc/sysconfig/cnymemcached ];then
+    . /etc/sysconfig/cnymemcached
+fi
+
+# Check that networking is up.
+if [ "$NETWORKING" = "no" ]
+then
+    exit 0
+fi
+
+RETVAL=0
+WRAPPER=""
+if [ "$ONLOAD" != "0" ]
+then
+    WRAPPER="onload --profile=latency"
+fi
+
+prog="cnymemcached"
+
+start () {
+    echo -n $"Starting $prog: "
+    # insure that /var/run/cnymemcached has proper permissions
+    chown $USER /var/run/cnymemcached
+    daemon $WRAPPER /opt/convey/bin/cnymemcached -d -p $PORT -u $USER  -m $CACHESIZE -c $MAXCONN -P /var/run/cnymemcached/cnymemcached.pid $OPTIONS
+    RETVAL=$?
+    echo
+    [ $RETVAL -eq 0 ] && touch /var/lock/subsys/cnymemcached
+}
+stop () {
+    echo -n $"Stopping $prog: "
+    killproc -p /var/run/cnymemcached/cnymemcached.pid -d 8 cnymemcached
+    RETVAL=$?
+    echo
+    if [ $RETVAL -eq 0 ] ; then
+        rm -f /var/lock/subsys/cnymemcached
+        rm -f /var/run/cnymemcached/cnymemcached.pid
+    fi
+}
+
+restart () {
+    stop
+    start
+}
+
+
+# See how we were called.
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+    stop
+    ;;
+    status)
+    status cnymemcached
+    ;;
+    restart|reload)
+    restart
+    ;;
+    condrestart)
+    [ -f /var/lock/subsys/cnymemcached ] && restart || :
+    ;;
+    *)
+    echo $"Usage: $0 {start|stop|status|restart|reload|condrestart}"
+    exit 1
+esac
+
+exit $?

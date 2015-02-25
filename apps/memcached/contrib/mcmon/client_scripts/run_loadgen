@@ -1,0 +1,37 @@
+#!/bin/bash 
+ulimit -c unlimited
+HOST=$1
+PORT=$2
+NTH=$3
+CONN=$4
+MGET=$5
+DEL=$6
+KEY=$7
+KEYPRE=$8
+VSIZE=$9
+PROTO=${10}
+
+# modified for latest mc-hammr (2/17/2014)
+#HOSTIP=`nslookup $HOST | tail -2 | head -1 | perl -lane 'print $F[1]'`
+HOSTIP=$HOST
+echo $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10
+echo "HOSTIP is" $HOSTIP "PORT is" $PORT
+echo "send=MGET,recv=async,op_count=8192,threads=$NTH,conns_per_thread=$CONN,key_prefix=$KEYPRE,key_len=$KEY,value_size=$VSIZE,host=$HOSTIP,port=$PORT,delay=$DEL,fork=0,out=1,mget_size=$MGET,loop=0,time=10000,proto=$PROTO" > loadgen.conf
+echo "Configuration file:"
+cat loadgen.conf
+
+echo
+echo "running ./mc-hammr loadgen.conf"
+./client_scripts/mc-hammr loadgen.conf &
+mcpid=$!
+echo "mc-hammr pid is " $mcpid
+
+read -s in
+while [ $in != "stop" ];
+do 
+  read -s in
+done
+
+echo "killing mc-hammr"
+kill $mcpid
+

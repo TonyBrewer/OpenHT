@@ -1,0 +1,84 @@
+Convey Memcached Demo
+Copyright Convey Computer Corporation, 2013-2014
+This code is distributed as-is without warranty or support.
+
+This directory contains a python/Tk based gui (mcmon.py) which monitors memcached 
+performance, and a load generator client (mc-hammr) designed to generate a variable 
+load on a memcached server.  Together they can be used to measure the throughput 
+and responsiveness of a memcached server under varying loads.
+
+Running the GUI
+
+The GUI can be run on a non-Convey client system.  It requires:
+python-2.6.6     (this is what I tested with...others may work)
+tkinter
+python-imaging
+python-imaging-tk
+python-memcached (included in the mcmon directory)
+python-paramiko  (used for ssh connection to client systems)
+
+python mcmon.py server:port [--latency --misses --showavg --loadgen --record=<RECORD>
+                             --clients=<CLIENTS> --auto=AUTOPARAMS]
+
+mcmon.py has three main functions.  By default, it connects to the memcached server 
+on the specified server and port, queries the number of gets and sets processed by
+the server in each interval, and displays them as rates in a strip chart format.
+With the --latency option, mcmon will also send a single get every 100ms, and 
+display the average latency during each interval.  Lastly, it can read a file
+containing a list of client systems, and invoke the mc-hammr load generator on
+them via ssh.
+
+Options:
+--showavg	display the average rates over the life of the monitor
+--misses	display misses
+--latency	measure and display latency
+--stats		dump all stats returned by server
+--loadgen	add control panel for load generating clients
+--clients=<CLIENTS> read client login information from file
+--auto=<AUTOPARAMS> read parameters for auto test sequence from file
+--record=<RECORD>   write log of measurements to file
+
+To use the tool to display a strip chart of memcached throughput simply point it
+at a memcached server with no other options:
+
+$ python mcmon.py redwall:11211
+connecting to redwall:11211
+
+To run the load generator, enter system names and login information in the CLIENTS
+input file.  The home directory for each of the logins should contain a copy of the
+client_scripts directory, with the mc-hammr executable and the run_init and
+run_loadgen scripts.  The first client in the file is used to load the database, 
+while the rest will be displayed in the "load generation clients" panel.  You 
+can start clients either by clicking on the button for that client, or by clicking 
+"Start All".  It will take each client a few seconds to initialize before it starts 
+generating a load.
+
+The tool does not automatically load the memcached server with data.  To measure 
+performance for hits, run "Load DB" from the master control panel in the lower right
+to initialize the memcached server with data, wait for the sets per second to return
+to zero, then start the clients.  To measure misses, simply run the clients without
+loading the DB.  Note if you change the Key Size or Protocol parameters, you will 
+need to reload the DB.
+
+Note the latency measurements are collected via the same network interface as the stats,
+whereas the load generator clients use the interfaces specified in the CLIENTS file.  So
+unless the system running the mcmon.py gui is also one of the clients, the latency 
+measurements will be out-of-band from the load generators.  This is usually a good thing,
+as the load generators can easily saturate a single network interface, and may not 
+represent the latency of the server itself.
+
+The "Reset" button on the master controls does a "killall" of mc-hammr on all the clients,
+and resets the load generator parameters.  This can be useful if one of the mc-hammr
+clients misses a stop signal and gets hung.
+
+--auto=<AUTOPARAMS> runs a series of tests with different parameters.  auto mode also
+sets --showavg and --record.  The AUTOPARAMS file should contain a series of records 
+with comma separated parameters:
+
+nclients,threads,connections,gets_per_request,delay,keysize,"ascii"|"binary"
+
+All parameters are integers except the ascii/binary mode.  Auto does not automatically 
+load the DB.  To test hits, run the tool interactively first and load the DB with 
+the correct key size and mode, then run the tool in auto mode.
+
+The mcd-benchmark directory contains the source for the mc-hammr load generator.

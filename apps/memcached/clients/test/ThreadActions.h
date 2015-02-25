@@ -1,0 +1,115 @@
+/* Copyright (c) 2015 Convey Computer Corporation
+ *
+ * This file is part of the OpenHT memcached application.
+ *
+ * Use and distribution licensed under the BSD 3-clause license.
+ * See the LICENSE file for the complete license text.
+ */
+//
+//	Bits in the [16]
+//		0		1
+//	0	KeyInvalid	KeyValid
+//	1	CasInvalid	CasValid
+//	2	TestFail	TestPass
+//	3	NoReply		Reply
+
+enum	Actions {
+	SET0, SET1, SET2, SET3, SET4, SET5, SET6, SET7, SET8, SET9, SETA, SETB, SETC, SETD, SETE, SETF,
+	ADD0, ADD1, ADD2, ADD3, ADD4, ADD5, ADD6, ADD7, ADD8, ADD9, ADDA, ADDB, ADDC, ADDD, ADDE, ADDF,
+	REP0, REP1, REP2, REP3, REP4, REP5, REP6, REP7, REP8, REP9, REPA, REPB, REPC, REPD, REPE, REPF,
+	APP0, APP1, APP2, APP3, APP4, APP5, APP6, APP7, APP8, APP9, APPA, APPB, APPC, APPD, APPE, APPF,
+	PRE0, PRE1, PRE2, PRE3, PRE4, PRE5, PRE6, PRE7, PRE8, PRE9, PREA, PREB, PREC, PRED, PREE, PREF,
+	CAS0, CAS1, CAS2, CAS3, CAS4, CAS5, CAS6, CAS7, CAS8, CAS9, CASA, CASB, CASC, CASD, CASE, CASF,
+	GET0, GET1, GET2, GET3, GET4, GET5, GET6, GET7, GET8, GET9, GETA, GETB, GETC, GETD, GETE, GETF,
+	GTS0, GTS1, GTS2, GTS3, GTS4, GTS5, GTS6, GTS7, GTS8, GTS9, GTSA, GTSB, GTSC, GTSD, GTSE, GTSF,
+	GTK0, GTK1, GTK2, GTK3, GTK4, GTK5, GTK6, GTK7, GTK8, GTK9, GTKA, GTKB, GTKC, GTKD, GTKE, GTKF,
+	GTR0, GTR1, GTR2, GTR3, GTR4, GTR5, GTR6, GTR7, GTR8, GTR9, GTRA, GTRB, GTRC, GTRD, GTRE, GTRF,
+	GAT0, GAT1, GAT2, GAT3, GAT4, GAT5, GAT6, GAT7, GAT8, GAT9, GATA, GATB, GATC, GATD, GATE, GATF,
+	INC0, INC1, INC2, INC3, INC4, INC5, INC6, INC7, INC8, INC9, INCA, INCB, INCC, INCD, INCE, INCF,
+	DEC0, DEC1, DEC2, DEC3, DEC4, DEC5, DEC6, DEC7, DEC8, DEC9, DECA, DECB, DECC, DECD, DECE, DECF,
+	DEL0, DEL1, DEL2, DEL3, DEL4, DEL5, DEL6, DEL7, DEL8, DEL9, DELA, DELB, DELC, DELD, DELE, DELF,
+	TCH0, TCH1, TCH2, TCH3, TCH4, TCH5, TCH6, TCH7, TCH8, TCH9, TCHA, TCHB, TCHC, TCHD, TCHE, TCHF,
+	STS0, STS1, STS2, STS3, STS4, STS5, STS6, STS7, STS8, STS9, STSA, STSB, STSC, STSD, STSE, STSF,
+	VER0, VER1, VER2, VER3, VER4, VER5, VER6, VER7, VER8, VER9, VERA, VERB, VERC, VERD, VERE, VERF,
+	NOP0, NOP1, NOP2, NOP3, NOP4, NOP5, NOP6, NOP7, NOP8, NOP9, NOPA, NOPB, NOPC, NOPD, NOPE, NOPF,
+	//
+	//	and the ascii versions
+	//
+	ASET0, ASET1, ASET2, ASET3, ASET4, ASET5, ASET6, ASET7, ASET8, ASET9, ASETA, ASETB, ASETC, ASETD, ASETE, ASETF,
+	AADD0, AADD1, AADD2, AADD3, AADD4, AADD5, AADD6, AADD7, AADD8, AADD9, AADDA, AADDB, AADDC, AADDD, AADDE, AADDF,
+	AREP0, AREP1, AREP2, AREP3, AREP4, AREP5, AREP6, AREP7, AREP8, AREP9, AREPA, AREPB, AREPC, AREPD, AREPE, AREPF,
+	AAPP0, AAPP1, AAPP2, AAPP3, AAPP4, AAPP5, AAPP6, AAPP7, AAPP8, AAPP9, AAPPA, AAPPB, AAPPC, AAPPD, AAPPE, AAPPF,
+	APRE0, APRE1, APRE2, APRE3, APRE4, APRE5, APRE6, APRE7, APRE8, APRE9, APREA, APREB, APREC, APRED, APREE, APREF,
+	ACAS0, ACAS1, ACAS2, ACAS3, ACAS4, ACAS5, ACAS6, ACAS7, ACAS8, ACAS9, ACASA, ACASB, ACASC, ACASD, ACASE, ACASF,
+	AGET0, AGET1, AGET2, AGET3, AGET4, AGET5, AGET6, AGET7, AGET8, AGET9, AGETA, AGETB, AGETC, AGETD, AGETE, AGETF,
+	AGTS0, AGTS1, AGTS2, AGTS3, AGTS4, AGTS5, AGTS6, AGTS7, AGTS8, AGTS9, AGTSA, AGTSB, AGTSC, AGTSD, AGTSE, AGTSF,
+	AGTK0, AGTK1, AGTK2, AGTK3, AGTK4, AGTK5, AGTK6, AGTK7, AGTK8, AGTK9, AGTKA, AGTKB, AGTKC, AGTKD, AGTKE, AGTKF,
+	AGTR0, AGTR1, AGTR2, AGTR3, AGTR4, AGTR5, AGTR6, AGTR7, AGTR8, AGTR9, AGTRA, AGTRB, AGTRC, AGTRD, AGTRE, AGTRF,
+	AGAT0, AGAT1, AGAT2, AGAT3, AGAT4, AGAT5, AGAT6, AGAT7, AGAT8, AGAT9, AGATA, AGATB, AGATC, AGATD, AGATE, AGATF,
+	AINC0, AINC1, AINC2, AINC3, AINC4, AINC5, AINC6, AINC7, AINC8, AINC9, AINCA, AINCB, AINCC, AINCD, AINCE, AINCF,
+	ADEC0, ADEC1, ADEC2, ADEC3, ADEC4, ADEC5, ADEC6, ADEC7, ADEC8, ADEC9, ADECA, ADECB, ADECC, ADECD, ADECE, ADECF,
+	ADEL0, ADEL1, ADEL2, ADEL3, ADEL4, ADEL5, ADEL6, ADEL7, ADEL8, ADEL9, ADELA, ADELB, ADELC, ADELD, ADELE, ADELF,
+	ATCH0, ATCH1, ATCH2, ATCH3, ATCH4, ATCH5, ATCH6, ATCH7, ATCH8, ATCH9, ATCHA, ATCHB, ATCHC, ATCHD, ATCHE, ATCHF,
+	ASTS0, ASTS1, ASTS2, ASTS3, ASTS4, ASTS5, ASTS6, ASTS7, ASTS8, ASTS9, ASTSA, ASTSB, ASTSC, ASTSD, ASTSE, ASTSF,
+	AVER0, AVER1, AVER2, AVER3, AVER4, AVER5, AVER6, AVER7, AVER8, AVER9, AVERA, AVERB, AVERC, AVERD, AVERE, AVERF,
+	ANOP0, ANOP1, ANOP2, ANOP3, ANOP4, ANOP5, ANOP6, ANOP7, ANOP8, ANOP9, ANOPA, ANOPB, ANOPC, ANOPD, ANOPE, ANOPF,
+	SKIP };
+
+int	ActionsCount[2][eCmdCnt][16];	// ActionsCount[0] = binary [1]=ascii
+
+Actions	BinaryActions[eCmdCnt][16] = {
+//	  0000     0001     0010     0011     0100     0101     0110     0111     1000     1001     1010     1011     1100     1101     1110     1111
+//	  KeyInv   KeyVal   KeyInv   KeyVal   KeyInv   KeyVal   KeyInv   KeyVal   KeyInv   KeyVal   KeyInv   KeyVal   KeyInv   KeyVal   KeyInv   KeyVal
+//	  CasInv   CasInv   CasVal   CasVal   CasInv   CasInv   CasVal   CasVal   CasInv   CasInv   CasVal   CasVal   CasInv   CasInv   CasVal   CasVal  
+//	  TestFail TestFail TestFail TestFail TestPass TestPass TestPass TestPass TestFail TestFail TestFail TestFail TestPass TestPass TestPass TestPass
+//	  NoReply  NoReply  NoReply  NoReply  NoReply  NoReply  NoReply  NoReply  Reply    Reply    Reply    Reply    Reply    Reply    Reply    Reply    
+//
+	{ SET0,    SET1,    SET2,    SET3,    SET4,    SET5,    SET6,    SET7,    SET8,    SET9,    SETA,    SETB,    SETC,    SETD,    SETE,    SETF },
+	{ ADD0,    ADD1,    ADD2,    ADD3,    ADD4,    ADD5,    ADD6,    ADD7,    ADD8,    ADD9,    ADDA,    ADDB,    ADDC,    ADDD,    ADDE,    ADDF },
+	{ REP0,    REP1,    REP2,    REP3,    REP4,    REP5,    REP6,    REP7,    REP8,    REP9,    REPA,    REPB,    REPC,    REPD,    REPE,    REPF },
+	{ APP0,    APP1,    APP2,    APP3,    APP4,    APP5,    APP6,    APP7,    APP8,    APP9,    APPA,    APPB,    APPC,    APPD,    APPE,    APPF },
+	{ PRE0,    PRE1,    PRE2,    PRE3,    PRE4,    PRE5,    PRE6,    PRE7,    PRE8,    PRE9,    PREA,    PREB,    PREC,    PRED,    PREE,    PREF },
+	{ CAS0,    CAS1,    CAS2,    CAS3,    CAS4,    CAS5,    CAS6,    CAS7,    CAS8,    CAS9,    CASA,    CASB,    CASC,    CASD,    CASE,    CASF },
+	{ GET0,    GET1,    GET2,    GET3,    GET4,    GET5,    GET6,    GET7,    GET8,    GET9,    GETA,    GETB,    GETC,    GETD,    GETE,    GETF },
+	{ GTS0,    GTS1,    GTS2,    GTS3,    GTS4,    GTS5,    GTS6,    GTS7,    GTS8,    GTS9,    GTSA,    GTSB,    GTSC,    GTSD,    GTSE,    GTSF },
+	{ GTK0,    GTK1,    GTK2,    GTK3,    GTK4,    GTK5,    GTK6,    GTK7,    GTK8,    GTK9,    GTKA,    GTKB,    GTKC,    GTKD,    GTKE,    GTKF },
+	{ GTR0,    GTR1,    GTR2,    GTR3,    GTR4,    GTR5,    GTR6,    GTR7,    GTR8,    GTR9,    GTRA,    GTRB,    GTRC,    GTRD,    GTRE,    GTRF },
+	{ GAT0,    GAT1,    GAT2,    GAT3,    GAT4,    GAT5,    GAT6,    GAT7,    GAT8,    GAT9,    GATA,    GATB,    GATC,    GATD,    GATE,    GATF },
+	{ INC0,    INC1,    INC2,    INC3,    INC4,    INC5,    INC6,    INC7,    INC8,    INC9,    INCA,    INCB,    INCC,    INCD,    INCE,    INCF },
+	{ DEC0,    DEC1,    DEC2,    DEC3,    DEC4,    DEC5,    DEC6,    DEC7,    DEC8,    DEC9,    DECA,    DECB,    DECC,    DECD,    DECE,    DECF },
+	{ DEL0,    DEL1,    DEL2,    DEL3,    DEL4,    DEL5,    DEL6,    DEL7,    DEL8,    DEL9,    DELA,    DELB,    DELC,    DELD,    DELE,    DELF },
+	{ TCH0,    TCH1,    TCH2,    TCH3,    TCH4,    TCH5,    TCH6,    TCH7,    TCH8,    TCH9,    TCHA,    TCHB,    TCHC,    TCHD,    TCHE,    TCHF },
+	{ STS0,    STS1,    STS2,    STS3,    STS4,    STS5,    STS6,    STS7,    STS8,    STS9,    STSA,    STSB,    STSC,    STSD,    STSE,    STSF },
+	{ VER0,    VER1,    VER2,    VER3,    VER4,    VER5,    VER6,    VER7,    VER8,    VER9,    VERA,    VERB,    VERC,    VERD,    VERE,    VERF },
+	{ NOP0,    NOP1,    NOP2,    NOP3,    NOP4,    NOP5,    NOP6,    NOP7,    NOP8,    NOP9,    NOPA,    NOPB,    NOPC,    NOPD,    NOPE,    NOPF }
+	};
+	//
+	//	and the ascii versions
+	//
+Actions	AsciiActions[eCmdCnt][16] = {
+//	  0000     0001     0010     0011     0100     0101     0110     0111     1000     1001     1010     1011     1100     1101     1110     1111
+//	  KeyInv   KeyVal   KeyInv   KeyVal   KeyInv   KeyVal   KeyInv   KeyVal   KeyInv   KeyVal   KeyInv   KeyVal   KeyInv   KeyVal   KeyInv   KeyVal
+//	  CasInv   CasInv   CasVal   CasVal   CasInv   CasInv   CasVal   CasVal   CasInv   CasInv   CasVal   CasVal   CasInv   CasInv   CasVal   CasVal  
+//	  TestFail TestFail TestFail TestFail TestPass TestPass TestPass TestPass TestFail TestFail TestFail TestFail TestPass TestPass TestPass TestPass
+//	  NoReply  NoReply  NoReply  NoReply  NoReply  NoReply  NoReply  NoReply  Reply    Reply    Reply    Reply    Reply    Reply    Reply    Reply    
+//
+	{ ASET0,   ASET1,   ASET2,   ASET3,   ASET4,   ASET5,   ASET6,   ASET7,   ASET8,   ASET9,   ASETA,   ASETB,   ASETC,   ASETD,   ASETE,   ASETF },
+	{ AADD0,   AADD1,   AADD2,   AADD3,   AADD4,   AADD5,   AADD6,   AADD7,   AADD8,   AADD9,   AADDA,   AADDB,   AADDC,   AADDD,   AADDE,   AADDF },
+	{ AREP0,   AREP1,   AREP2,   AREP3,   AREP4,   AREP5,   AREP6,   AREP7,   AREP8,   AREP9,   AREPA,   AREPB,   AREPC,   AREPD,   AREPE,   AREPF },
+	{ AAPP0,   AAPP1,   AAPP2,   AAPP3,   AAPP4,   AAPP5,   AAPP6,   AAPP7,   AAPP8,   AAPP9,   AAPPA,   AAPPB,   AAPPC,   AAPPD,   AAPPE,   AAPPF },
+	{ APRE0,   APRE1,   APRE2,   APRE3,   APRE4,   APRE5,   APRE6,   APRE7,   APRE8,   APRE9,   APREA,   APREB,   APREC,   APRED,   APREE,   APREF },
+	{ ACAS0,   ACAS1,   ACAS2,   ACAS3,   ACAS4,   ACAS5,   ACAS6,   ACAS7,   ACAS8,   ACAS9,   ACASA,   ACASB,   ACASC,   ACASD,   ACASE,   ACASF },
+	{ AGET0,   AGET1,   AGET2,   AGET3,   AGET4,   AGET5,   AGET6,   AGET7,   AGET8,   AGET9,   AGETA,   AGETB,   AGETC,   AGETD,   AGETE,   AGETF },
+	{ AGTS0,   AGTS1,   AGTS2,   AGTS3,   AGTS4,   AGTS5,   AGTS6,   AGTS7,   AGTS8,   AGTS9,   AGTSA,   AGTSB,   AGTSC,   AGTSD,   AGTSE,   AGTSF },
+/*gts*/	{ AGTK0,   AGTK1,   AGTK2,   AGTK3,   AGTK4,   AGTK5,   AGTK6,   AGTK7,   AGTK8,   AGTK9,   AGTKA,   AGTKB,   AGTKC,   AGTKD,   AGTKE,   AGTKF },
+/*gts*/	{ AGTR0,   AGTR1,   AGTR2,   AGTR3,   AGTR4,   AGTR5,   AGTR6,   AGTR7,   AGTR8,   AGTR9,   AGTRA,   AGTRB,   AGTRC,   AGTRD,   AGTRE,   AGTRF },
+/*gts*/	{ AGAT0,   AGAT1,   AGAT2,   AGAT3,   AGAT4,   AGAT5,   AGAT6,   AGAT7,   AGAT8,   AGAT9,   AGATA,   AGATB,   AGATC,   AGATD,   AGATE,   AGATF },
+	{ AINC0,   AINC1,   AINC2,   AINC3,   AINC4,   AINC5,   AINC6,   AINC7,   AINC8,   AINC9,   AINCA,   AINCB,   AINCC,   AINCD,   AINCE,   AINCF },
+	{ ADEC0,   ADEC1,   ADEC2,   ADEC3,   ADEC4,   ADEC5,   ADEC6,   ADEC7,   ADEC8,   ADEC9,   ADECA,   ADECB,   ADECC,   ADECD,   ADECE,   ADECF },
+	{ ADEL0,   ADEL1,   ADEL2,   ADEL3,   ADEL4,   ADEL5,   ADEL6,   ADEL7,   ADEL8,   ADEL9,   ADELA,   ADELB,   ADELC,   ADELD,   ADELE,   ADELF },
+	{ ATCH0,   ATCH1,   ATCH2,   ATCH3,   ATCH4,   ATCH5,   ATCH6,   ATCH7,   ATCH8,   ATCH9,   ATCHA,   ATCHB,   ATCHC,   ATCHD,   ATCHE,   ATCHF },
+	{ ASTS0,   ASTS1,   ASTS2,   ASTS3,   ASTS4,   ASTS5,   ASTS6,   ASTS7,   ASTS8,   ASTS9,   ASTSA,   ASTSB,   ASTSC,   ASTSD,   ASTSE,   ASTSF },
+	{ AVER0,   AVER1,   AVER2,   AVER3,   AVER4,   AVER5,   AVER6,   AVER7,   AVER8,   AVER9,   AVERA,   AVERB,   AVERC,   AVERD,   AVERE,   AVERF },
+	{ ANOP0,   ANOP1,   ANOP2,   ANOP3,   ANOP4,   ANOP5,   ANOP6,   ANOP7,   ANOP8,   ANOP9,   ANOPA,   ANOPB,   ANOPC,   ANOPD,   ANOPE,   ANOPF }
+	};
+

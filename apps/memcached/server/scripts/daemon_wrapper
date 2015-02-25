@@ -1,0 +1,63 @@
+#!/usr/bin/perl
+#
+# Copyright 2013 Convey Computer Corporation.
+#
+use warnings;
+use strict;
+use POSIX qw(setsid);
+
+my $this;
+{
+  my @path = split(/\//, $0);
+  $this = pop(@path);
+}
+
+my $cnymemcached = '/opt/convey/cnymemcached/bin/cnymemcached';
+my @run_opts;
+my $daemonize = 0;
+
+$cnymemcached = $ENV{CNY_MCD} if defined $ENV{CNY_MCD};
+
+while (defined (my $opt = shift)) {
+  if ($opt =~ /^-d$/) {
+    $daemonize = 1;
+  } else {
+    push(@run_opts, $opt);
+  }
+}
+
+if ($daemonize) {
+  daemonize();
+
+  local($,) = ' ';
+  local($\) = "\n";
+  print '[-d]', @run_opts;
+}  
+
+exec $cnymemcached, @run_opts;
+die "Unable to exec ($!)\n";
+
+
+sub daemonize {
+  my $pid;
+
+  chdir('/') or die "$this: unable to chdir to /: $!";
+  umask 0;
+
+  open(STDIN, '/dev/null') or die "$this: unable to read /dev/null: $!";
+
+  open(STDOUT, "|-", "logger -t $this") 
+      or die "$this: unable to redirect stdout to syslog: $!";
+
+  open(STDERR, ">&STDOUT") or die "$this: unable to redirect stderr: $!";
+
+  defined ($pid = fork) or die "$this: unable to fork: $!"; exit if $pid;
+  setpgrp or die "$this: unable to reset process group: $!";
+  
+  defined ($pid = fork) or die "$this: unable to fork: $!"; exit if $pid;
+  setsid  or die "$this: unable to start new session: $!";
+
+  return;
+}  
+    
+

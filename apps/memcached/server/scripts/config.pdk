@@ -1,0 +1,7 @@
+# Disable CP memory (recoup logic)
+DISABLE_CP_MEM = true
+
+VIV_OPT_DSN_OPTIONS = -propconst -sweep -remap -resynth_seq_area
+VIV_PHYS_OPT_OPTIONS = -directive AddRetime
+VIV_POST_PLACE_TCL = ../../scripts/place.tcl
+VIV_ROUTE_OPTIONS = -directive Explore

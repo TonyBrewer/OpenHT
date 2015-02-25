@@ -1,0 +1,7 @@
+#!/bin/csh -f
+
+setenv PYTHONPATH `pwd`/python-memcached-1.53
+
+#python mcmon.py redwall:11211 --latency --loadgen --misses --showavg --clients=CLIENTS --stats
+python mcmon.py redwall:11211 --latency --loadgen --misses --showavg --clients=CLIENTS 
+

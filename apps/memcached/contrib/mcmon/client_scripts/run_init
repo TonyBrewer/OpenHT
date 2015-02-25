@@ -1,0 +1,19 @@
+#!/bin/bash 
+HOST=$1
+PORT=$2
+NTH=$3
+CONN=$4
+DEL=$5
+KEY=$6
+KEYPRE=$7
+VAL=$8
+
+HOSTIP=$HOST
+echo $0 $1 $2 $3 $4 $5 $6 $7 $8
+echo "send=SET,recv=async,threads=$NTH,conns_per_thread=$CONN,key_prefix=$KEYPRE,value_size=$VAL,key_len=$KEY,op_count=262144,host=$HOST,port=$PORT,loop=1,delay=$DEL,fork=0,out=2,mcast_wait=0" >init.conf
+echo "Configuration file:"
+cat init.conf
+
+echo
+echo "running ./mc-hammr init.conf"
+./client_scripts/mc-hammr init.conf 

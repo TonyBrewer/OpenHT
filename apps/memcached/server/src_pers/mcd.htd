@@ -1,0 +1,802 @@
+//
+// Global
+//
+#define CTL_PKT_CNT_W 8
+typedef sc_uint<CTL_BLK_CNT_W> blk_idx_t;
+
+#define CTL_PREFETCH_BUF_W 6
+typedef sc_uint<CTL_PREFETCH_BUF_W> prefetch_idx_t;
+
+struct CPktInfo {
+	uint64_t m_pPkt:48;
+	uint64_t m_pktLen:12;
+	uint64_t m_pktOffset:20;
+	uint64_t m_blkIndex:CTL_BLK_CNT_W;
+	uint64_t m_prefetchIdx:CTL_PREFETCH_BUF_W;
+};
+
+struct CPktInfo2 {
+	CPktInfo m_info;
+	uint16_t m_connId;
+};
+
+struct CCnyCpCmd {
+	uint8_t m_cmd;
+	uint32_t m_ascii:1;
+	uint32_t m_noreply:1;
+	uint32_t m_keyInit:1;
+	uint32_t m_cmdMs:1;
+	uint32_t pad1:4;
+	uint16_t m_connId;
+	union {
+		struct {
+			uint32_t m_keyPos:20;
+			uint32_t m_keyLen:12;
+		};
+		struct {
+			uint32_t m_dataPos:20;
+			uint32_t m_dataLen:12;
+		};
+		struct {
+			uint8_t m_errCode;
+			uint8_t m_reqCmd;
+			uint16_t pad2;
+		};
+	};
+	uint32_t m_keyHash;
+	uint32_t m_valueLen;
+	uint32_t m_opaque;
+};
+
+struct PktCmdWords {
+	uint32_t m_word[5];
+};
+
+union PktCmdUnion {
+	CCnyCpCmd m_cmd;
+	PktCmdWords m_raw;
+};
+
+struct PktOptWords {
+	uint32_t m_word[7];
+};
+
+struct CPktCmd {
+        union {
+		CCnyCpCmd m_cmd;
+		PktCmdWords m_raw;
+	};
+	PktOptWords m_rspOpt;
+	uint64_t m_numCmd:3;
+	uint64_t m_numOpt:3;
+	bool m_bPktDone;
+	uint64_t m_blkIndex:CTL_BLK_CNT_W;
+};
+
+//
+// Control
+//
+
+dsnInfo.AddModule(name=ctl, htIdW=0);
+
+#define CTL_BLK_SIZE_W 16
+#define CTL_BLK_CNT_W 4
+#define CTL_PKT_OFFSET_W 20
+#define CTL_PKT_HDR_CNT_W 4
+
+#define CTL_BLK_SIZE (1u<<CTL_BLK_SIZE_W)
+#define CTL_BLK_CNT (1u<<CTL_BLK_CNT_W)
+#define CTL_PKT_HDR_CNT (1u<<CTL_PKT_HDR_CNT_W)
+// CTL_BLK_SIZE/(8*(1+CTL_PKT_HDR_CNT/2)+CTL_PKT_HDR_CNT)
+#define CTL_PKT_CNT (1u<<CTL_PKT_CNT_W)
+#define CTL_PREFETCH_BUF 64
+#define CTL_PKT_OFFSET_MASK ((1u<<CTL_PKT_OFFSET_W)-1)
+#define CNY_RECV_BUF_ALIGN 64
+#define cid2que(a) ((a)&0x4000?(sch_thr_idx_t)(((a)>>10)&CNY_UNIT_UDP_CONN_MASK):(sch_thr_idx_t)(a))
+#define cid2addr(a) ((a)&0x4000?(conn_addr_t)(((a)>>10)&CNY_UNIT_UDP_CONN_MASK):(conn_addr_t)(a))
+
+
+typedef sc_uint<CTL_BLK_CNT_W+1> blk_cnt_t;
+typedef sc_uint<CTL_PKT_CNT_W> pkt_cnt_t;
+typedef sc_uint<CTL_PKT_HDR_CNT_W> pkt_hdr_idx_t;
+typedef sc_uint<CTL_PKT_HDR_CNT_W+1> pkt_hdr_cnt_t;
+typedef sc_uint<CTL_PKT_HDR_CNT_W-1> pkt_hdr_qw_t;
+typedef sc_uint<CTL_PKT_OFFSET_W> pkt_offset_t;
+typedef sc_uint<CTL_PREFETCH_BUF> prefetch_buf_t;
+typedef ht_uint48 MemAddr_t;
+
+struct HostBlkInfo {
+	uint32_t m_recvBufBlkIdx;
+	uint16_t m_recvBlkPktCnt;
+};
+
+union HostBlk2Qw {
+	uint64_t m_qw;
+	HostBlkInfo m_hb;
+};
+
+struct CBlkInfo {
+	uint64_t m_blkIdx:CTL_BLK_CNT_W;
+	uint8_t m_pktCnt[SCH_THREAD_CNT];
+};
+
+ctl.AddInst(name=CTL_ENTRY);
+ctl.AddInst(name=CTL_SPAWN);
+ctl.AddInst(name=CTL_BLK_START);
+ctl.AddInst(name=CTL_PKT_HDR_RD);
+ctl.AddInst(name=CTL_PKT_RD);
+ctl.AddInst(name=CTL_QUEUE_PKT);
+ctl.AddInst(name=CTL_JOIN);
+ctl.AddInst(name=CTL_RETURN);
+
+
+ctl.AddEntry(func=htmain, inst=CTL_ENTRY, host=true)
+	;
+ctl.AddReturn(func=htmain);
+
+ctl.AddCall(func=sch, fork=true);
+ctl.AddCall(func=acc, fork=true);
+
+ctl.AddHostMsg(dir=in, name=CTL_BLK_PUSH)
+	.AddDst(var=blkList, dataLsb=0)
+	;
+ctl.AddHostMsg(dir=in, name=MCD_RECV_BUF_BASE)
+	.AddDst(var=pRecvBufBase, dataLsb=0)
+	;
+
+ctl.AddHostMsg(dir=out, name=CTL_BLK_POP);
+
+ctl.AddMsgIntf(dir=out, name=schPush, type=CPktInfo2);
+ctl.AddMsgIntf(dir=in, name=schPop, type=sch_thr_idx_t);
+ctl.AddMsgIntf(dir=out, name=blkStart, type=CBlkInfo);
+ctl.AddMsgIntf(dir=in, name=blkFinish, type=bool);
+ctl.AddMsgIntf(dir=in, name=pktFinish, type=prefetch_idx_t);
+
+ctl.AddPrivate()
+	.AddVar(type=ht_uint5, name=cnt)
+	.AddVar(type=ht_uint3, name=hdrAddr)
+	.AddVar(type=bool, name=bStart)
+	.AddVar(type=pkt_offset_t, name=pBlkBase)
+	.AddVar(type=pkt_offset_t, name=pBlk)
+	.AddVar(type=CBlkInfo, name=blkInfo)
+	.AddVar(type=pkt_cnt_t, name=pktNum)
+	;
+
+ctl.AddShared(reset=false)
+	.AddVar(type=uint64_t, name=blkList, queueW=6)
+	.AddVar(type=uint64_t, name=pRecvBufBase)
+//.AddVar(type=uint64_t, name=rdPktHdr, addr1W=CTL_PKT_HDR_CNT_W-1)
+//.AddVar(type=uint64_t, name=rdPktDat0, addr1W=CTL_PKT_HDR_CNT_W)
+//.AddVar(type=uint64_t, name=rdPktDat1, addr1W=CTL_PKT_HDR_CNT_W)
+	.AddVar(type=MemAddr_t, name=pktAddr, addr1W=CTL_PKT_HDR_CNT_W)
+	.AddVar(type=prefetch_idx_t, name=prefetchIdx, addr1W=CTL_PKT_HDR_CNT_W)
+	.AddVar(type=blk_cnt_t, name=blkActCnt, reset=true)
+	.AddVar(type=sch_que_idx_t, name=schQueCnt, dimen1=SCH_THREAD_CNT)
+	.AddVar(type=prefetch_buf_t, name=prefetchBufMask)
+	;
+
+ctl.AddGlobal(var=rdPktHdr, addr1W=CTL_PKT_HDR_CNT_W-1, addr1=hdrAddr)
+	.AddField(type=uint64_t, name=qw, read=true)
+	;
+ctl.AddGlobal(var=prePktDat, addr1W=9, extern=true)
+	.AddField(type=uint64_t, name=qw, read=false, write=false)
+	;
+
+ctl.AddReadMem(rspCntW=CTL_BLK_CNT_W+4, maxBw=true)
+	.AddDst(var=rdPktHdr, field=qw, multiRd=true, dstIdx=varAddr1, memSrc=host)
+	.AddDst(var=prePktDat, field=qw, multiRd=true, dstIdx=varAddr1, memSrc=host)
+	;
+
+ctl.AddFunction(name=tzc64, type=void)
+	.AddParam(dir=input, type=uint64_t, name=m)
+	.AddParam(dir=output, type=ht_uint6, name=cnt)
+	;
+
+ctl.AddFunction(name=tzc16, type=void)
+	.AddParam(dir=input, type=uint16_t, name=m)
+	.AddParam(dir=output, type=ht_uint4, name=cnt)
+	;
+
+
+//
+// Schedule
+//
+
+dsnInfo.AddModule(name=sch, htIdW=SCH_THREAD_CNT_W);
+
+#define SCH_THREAD_CNT_W 4
+#define SCH_THREAD_CNT (1u<<SCH_THREAD_CNT_W)
+
+typedef sc_uint<SCH_THREAD_CNT_W> sch_thr_idx_t;
+typedef sc_uint<SCH_THREAD_CNT> sch_thr_vec_t;
+typedef sc_uint<SCH_THREAD_CNT_W+1> sch_thr_cnt_t;
+
+#define SCH_QUE_CNT_W 5
+#define SCH_QUE_CNT ((1u<<SCH_QUE_CNT_W)-1)
+
+typedef sc_uint<SCH_QUE_CNT_W> sch_que_idx_t;
+
+sch.AddInst(name=SCH_SPIN);
+sch.AddInst(name=SCH_RETURN);
+
+sch.AddMsgIntf(dir=in, name=schPush, type=CPktInfo2);
+sch.AddMsgIntf(dir=out, name=schPop, type=sch_thr_idx_t);
+
+
+sch.AddEntry(func=sch, inst=SCH_SPIN);
+sch.AddReturn(func=sch);
+
+sch.AddCall(func=ProcessPkt);
+
+sch.AddStage(privWrStg=2, execStg=2)
+	.AddVar(type=bool, name=bEmpty, range=1)
+	;
+
+sch.AddPrivate()
+	.AddVar(type=blk_idx_t, name=blkIdx)
+	;
+
+sch.AddShared(reset=false)
+	.AddVar(type=sch_que_idx_t, name=queWrIdx, dimen1=SCH_THREAD_CNT)
+	.AddVar(type=sch_que_idx_t, name=queRdIdx, dimen1=SCH_THREAD_CNT)
+	.AddVar(type=CPktInfo2, name=queDat, addr1W=SCH_THREAD_CNT_W, addr2W=SCH_QUE_CNT_W, blockRam=true)
+	;
+
+
+//
+// Accumulate
+//
+
+dsnInfo.AddModule(name=acc, htIdW=0);
+
+#define CNY_UNIT_UDP_CONN_CNT 16
+#define CNY_UNIT_UDP_CONN_MASK (CNY_UNIT_UDP_CONN_CNT-1)
+#define CNY_MAX_UNIT_CONN_CNT 512
+#define CNY_MAX_UNIT_CONN_MASK (CNY_MAX_UNIT_CONN_CNT-1)
+#define ACC_QUE_DEPTH_W 5
+#define ACC_QUE_COUNT_W (ACC_QUE_DEPTH_W+1)
+#define ACC_QUE_DEPTH 32
+#define ACC_QUE_RAM_W (ACC_QUE_DEPTH_W+SCH_THREAD_CNT_W)
+
+typedef sc_uint<ACC_QUE_DEPTH_W> acc_que_ptr_t;
+typedef sc_uint<ACC_QUE_COUNT_W> acc_que_cnt_t;
+typedef sc_uint<ACC_QUE_RAM_W> acc_ram_addr_t;
+
+acc.AddInst(name=ACC_SPIN);
+acc.AddInst(name=ACC_FINISH);
+
+#define GET_PKT_CNT 0
+#define GET_QUE_CNT 1
+#define GET_NXT_QUE 2
+#define STAGE_QUE_NUM 3
+#define STAGE_BRAM 4
+#define QUE_LOOP 5
+#define FINISH_PKT 6
+#define FINISH_BLK 7
+
+
+acc.AddEntry(func=acc, inst=ACC_SPIN);
+acc.AddReturn(func=acc);
+
+acc.AddMsgIntf(dir=in, name=accPush, type=CPktCmd);
+acc.AddMsgIntf(dir=out, name=accPop, type=blk_idx_t);
+acc.AddMsgIntf(dir=in, name=blkStart, type=CBlkInfo);
+acc.AddMsgIntf(dir=out, name=blkFinish, type=bool);
+
+acc.AddShared(reset=false)
+	.AddVar(type=ht_uint3, name=accState)
+	.AddVar(type=CPktCmd, name=ramDat, addr1W=ACC_QUE_RAM_W, blockRam=true)
+	.AddVar(type=CPktCmd, name=cmd)
+	.AddVar(type=CBlkInfo, name=queBlkInfo, queueW=5)
+	.AddVar(type=CBlkInfo, name=frontBlkInfo)
+	.AddVar(type=bool, name=frontBlkIsZero, dimen1=SCH_THREAD_CNT, reset=true)
+	.AddVar(type=bool, name=frontBlkCntMatch, dimen1=SCH_THREAD_CNT)
+	.AddVar(type=uint8_t, name=quePktCnt, dimen1=SCH_THREAD_CNT, reset=true)
+	.AddVar(type=uint8_t, name=blkPktCnt)
+	.AddVar(type=acc_que_ptr_t, name=queWrPtr, dimen1=SCH_THREAD_CNT, reset=true)
+	.AddVar(type=acc_que_ptr_t, name=queRdPtr, dimen1=SCH_THREAD_CNT, reset=true)
+	.AddVar(type=acc_que_cnt_t, name=queCnt, dimen1=SCH_THREAD_CNT, reset=true)
+	.AddVar(type=bool, name=lastQueCntZero)
+//.AddVar(type=bool, name=locked)
+	.AddVar(type=bool, name=incLastCycle)
+	.AddVar(type=ht_uint3, name=idxCmd)
+	.AddVar(type=ht_uint3, name=idxOpt)
+	.AddVar(type=ht_uint3, name=remCmd, reset=true)
+	.AddVar(type=ht_uint3, name=remOpt, reset=true)
+	.AddVar(type=ht_uint2, name=blkInfoState, reset=true)
+	.AddVar(type=bool, name=whichQueDcd, dimen1=SCH_THREAD_CNT)
+	.AddVar(type=sch_thr_idx_t, name=whichQue, reset=true)
+	.AddVar(type=sch_thr_idx_t, name=nextQue)
+	.AddVar(type=bool, name=qReady, reset=true)
+	.AddVar(type=bool, name=ramRdError)
+	.AddVar(type=bool, name=queTooFull, dimen1=SCH_THREAD_CNT)
+	.AddVar(type=sch_thr_vec_t, name=pktAvailVec)
+	;
+
+acc.AddFunction(name=tzc, type=void)
+	.AddParam(dir=input, type=uint16_t, name=m)
+	.AddParam(dir=output, type=ht_uint4, name=cnt)
+	;
+
+acc.AddHostData(dir=out);
+
+//////////////////////////////////////////////
+//
+// Pkt
+//
+// Packet Processing Module
+dsnInfo.AddModule(name=pkt, htIdW=PKT_HTID_W);
+pkt.AddInst(name=PKT_ENTRY);
+pkt.AddInst(name=PKT_NEGOTIATE);
+pkt.AddInst(name=PKT_RETURN);
+pkt.AddInst(name=PKT_MEMWAIT);
+pkt.AddInst(name=PKT_PREFETCH);
+pkt.AddInst(name=PKT_KEYCMD);
+pkt.AddInst(name=CNY_PS_ASCII_CMD);
+pkt.AddInst(name=CNY_PS_SET_CMD);
+pkt.AddInst(name=CNY_PS_KEY);
+pkt.AddInst(name=CNY_PS_MKEY);
+pkt.AddInst(name=CNY_PS_FKEY);
+pkt.AddInst(name=CNY_PS_FLAG);
+pkt.AddInst(name=CNY_PS_EXP);
+pkt.AddInst(name=CNY_PS_BYTES);
+pkt.AddInst(name=CNY_PS_DELTA);
+pkt.AddInst(name=CNY_PS_NOREPLY);
+pkt.AddInst(name=CNY_PS_EOC_SPACE);
+pkt.AddInst(name=CNY_PS_EOC);
+pkt.AddInst(name=CNY_PS_DATA);
+pkt.AddInst(name=CNY_PS_DATA2);
+pkt.AddInst(name=CNY_PS_EOD);
+pkt.AddInst(name=CNY_PS_SWALLOW);
+pkt.AddInst(name=CNY_PS_GET_CMD);
+pkt.AddInst(name=CNY_PS_REPLACE_CMD);
+pkt.AddInst(name=CNY_PS_PREPEND_CMD);
+pkt.AddInst(name=CNY_PS_ADD_CMD);
+pkt.AddInst(name=CNY_PS_CAS_CMD);
+pkt.AddInst(name=CNY_PS_APPEND_CMD);
+pkt.AddInst(name=CNY_PS_DELETE_CMD);
+pkt.AddInst(name=CNY_PS_TOUCH_CMD);
+pkt.AddInst(name=CNY_PS_OTHER_CMD);
+pkt.AddInst(name=CNY_PS_INCR_CMD);
+pkt.AddInst(name=CNY_PS_DECR_CMD);
+pkt.AddInst(name=CNY_PS_BINARY_CMD);
+pkt.AddInst(name=CNY_PS_BIN_OTHER);
+pkt.AddInst(name=CNY_PS_BIN_FLAGS);
+pkt.AddInst(name=CNY_PS_BIN_EXPTIME);
+pkt.AddInst(name=CNY_PS_BIN_KEY);
+pkt.AddInst(name=CNY_PS_BIN_MKEY);
+pkt.AddInst(name=CNY_PS_BIN_FKEY);
+pkt.AddInst(name=CNY_PS_BIN_DATA);
+pkt.AddInst(name=CNY_PS_BIN_INIT);
+pkt.AddInst(name=CNY_PS_BIN_DELTA);
+pkt.AddInst(name=CNY_PS_BIN_SWALLOW);
+
+#define PKT_HTID_W 4
+// 2 reads for each thread
+#define PKT_MREAD_W (PKT_HTID_W+1)
+#define CONN_ADDR_W 9
+#define BINARY_REQ_MAGIC 0x80
+#define KEY_MAX_LENGTH 250
+
+#define CNY_RSP_CMD_MAX 256
+
+#define CNY_CMD_GET 0
+#define CNY_CMD_SET 1
+#define CNY_CMD_ADD 2
+#define CNY_CMD_REPLACE 3
+#define CNY_CMD_DELETE 4
+#define CNY_CMD_INCR 5
+#define CNY_CMD_DECR 6
+
+#define CNY_CMD_APPEND 0xe
+#define CNY_CMD_PREPEND 0xf
+
+#define CNY_CMD_TOUCH 0x1c
+
+#define CNY_CMD_PROTOCOL_DW_CNT 1
+#define CNY_CMD_SET_DW_CNT 4
+#define CNY_CMD_DATA_DW_CNT 2
+#define CNY_CMD_GET_DW_CNT 3
+#define CNY_CMD_DELETE_DW_CNT 3
+#define CNY_CMD_OTHER_DW_CNT 2
+#define CNY_CMD_ARITH_DW_CNT 4
+#define CNY_CMD_TOUCH_DW_CNT 3
+#define CNY_CMD_KEY_DW_CNT 2
+#define CNY_CMD_GET_END_DW_CNT 1
+#define CNY_BIN_CMD_DW_CNT 5
+#define CNY_CMD_ERROR_DW_CNT 5
+
+#define CNY_CMD_NXT_RCV_BUF 0x20
+#define CNY_CMD_NXT_RSP_BUF 0x21
+#define CNY_CMD_DATA 0x22
+#define CNY_CMD_GETS 0x23
+#define CNY_CMD_KEY 0x24
+#define CNY_CMD_CAS 0x25
+#define CNY_CMD_GET_END 0x26
+#define CNY_CMD_OTHER 0x27
+#define CNY_CMD_PROTOCOL 0x28
+#define CNY_CMD_ERROR 0x29
+
+#define BIN_REQ_CMD_GET 0x00
+#define BIN_REQ_CMD_SET 0x01
+#define BIN_REQ_CMD_ADD 0x02
+#define BIN_REQ_CMD_REPLACE 0x03
+#define BIN_REQ_CMD_DELETE 0x04
+#define BIN_REQ_CMD_INCR 0x05
+#define BIN_REQ_CMD_DECR 0x06
+#define BIN_REQ_CMD_GETQ 0x09
+#define BIN_REQ_CMD_GETK 0x0c
+#define BIN_REQ_CMD_GETKQ 0x0d
+#define BIN_REQ_CMD_APPEND 0x0e
+#define BIN_REQ_CMD_PREPEND 0x0f
+#define BIN_REQ_CMD_SETQ 0x11
+#define BIN_REQ_CMD_ADDQ 0x12
+#define BIN_REQ_CMD_REPLACEQ 0x13
+#define BIN_REQ_CMD_DELETEQ 0x14
+#define BIN_REQ_CMD_INCRQ 0x15
+#define BIN_REQ_CMD_DECRQ 0x16
+#define BIN_REQ_CMD_QUITQ 0x17
+#define BIN_REQ_CMD_APPENDQ 0x19
+#define BIN_REQ_CMD_PREPENDQ 0x1a
+#define BIN_REQ_CMD_TOUCH 0x1c
+#define BIN_REQ_CMD_GAT 0x1d
+#define BIN_REQ_CMD_GATQ 0x1e
+#define BIN_REQ_CMD_GATK 0x23
+#define BIN_REQ_CMD_GATKQ 0x24
+
+#define CNY_CMD_BIN_GET (BINARY_REQ_MAGIC | BIN_REQ_CMD_GET)
+#define CNY_CMD_BIN_SET (BINARY_REQ_MAGIC | BIN_REQ_CMD_SET)
+#define CNY_CMD_BIN_ADD (BINARY_REQ_MAGIC | BIN_REQ_CMD_ADD)
+#define CNY_CMD_BIN_REPLACE (BINARY_REQ_MAGIC | BIN_REQ_CMD_REPLACE)
+#define CNY_CMD_BIN_DELETE (BINARY_REQ_MAGIC | BIN_REQ_CMD_DELETE)
+#define CNY_CMD_BIN_INCR (BINARY_REQ_MAGIC | BIN_REQ_CMD_INCR)
+#define CNY_CMD_BIN_DECR (BINARY_REQ_MAGIC | BIN_REQ_CMD_DECR)
+#define CNY_CMD_BIN_GETQ (BINARY_REQ_MAGIC | BIN_REQ_CMD_GETQ)
+#define CNY_CMD_BIN_GETK (BINARY_REQ_MAGIC | BIN_REQ_CMD_GETK)
+#define CNY_CMD_BIN_GETKQ (BINARY_REQ_MAGIC | BIN_REQ_CMD_GETKQ)
+#define CNY_CMD_BIN_APPEND (BINARY_REQ_MAGIC | BIN_REQ_CMD_APPEND)
+#define CNY_CMD_BIN_PREPEND (BINARY_REQ_MAGIC | BIN_REQ_CMD_PREPEND)
+#define CNY_CMD_BIN_SETQ (BINARY_REQ_MAGIC | BIN_REQ_CMD_SETQ)
+#define CNY_CMD_BIN_ADDQ (BINARY_REQ_MAGIC | BIN_REQ_CMD_ADDQ)
+#define CNY_CMD_BIN_REPLACEQ (BINARY_REQ_MAGIC | BIN_REQ_CMD_REPLACEQ)
+#define CNY_CMD_BIN_DELETEQ (BINARY_REQ_MAGIC | BIN_REQ_CMD_DELETEQ)
+#define CNY_CMD_BIN_INCRQ (BINARY_REQ_MAGIC | BIN_REQ_CMD_INCRQ)
+#define CNY_CMD_BIN_DECRQ (BINARY_REQ_MAGIC | BIN_REQ_CMD_DECRQ)
+#define CNY_CMD_BIN_APPENDQ (BINARY_REQ_MAGIC | BIN_REQ_CMD_APPENDQ)
+#define CNY_CMD_BIN_PREPENDQ (BINARY_REQ_MAGIC | BIN_REQ_CMD_PREPENDQ)
+#define CNY_CMD_BIN_TOUCH (BINARY_REQ_MAGIC | BIN_REQ_CMD_TOUCH)
+#define CNY_CMD_BIN_GAT (BINARY_REQ_MAGIC | BIN_REQ_CMD_GAT)
+#define CNY_CMD_BIN_GATQ (BINARY_REQ_MAGIC | BIN_REQ_CMD_GATQ)
+#define CNY_CMD_BIN_GATK (BINARY_REQ_MAGIC | BIN_REQ_CMD_GATK)
+#define CNY_CMD_BIN_GATKQ (BINARY_REQ_MAGIC | BIN_REQ_CMD_GATKQ)
+#define CNY_CMD_BIN_DATA 0xC0
+
+#define SIZE_OF_CNY_CMD_PROTOCOL 4
+#define SIZE_OF_CNY_CMD_SET 16
+#define SIZE_OF_CNY_CMD_DATA 8
+#define SIZE_OF_CNY_CMD_GET 12
+#define SIZE_OF_CNY_CMD_DELETE 12
+#define SIZE_OF_CNY_CMD_OTHER 8
+#define SIZE_OF_CNY_CMD_ARITH 12
+#define SIZE_OF_CNY_CMD_TOUCH 12
+#define SIZE_OF_CNY_CMD_KEY 8
+#define SIZE_OF_CNY_CMD_PTLKEY 4
+#define SIZE_OF_CNY_CMD_GET_END 4
+#define SIZE_OF_CNY_BIN_CMD 20
+#define SIZE_OF_CNY_CMD_ERROR 8
+
+#define CNY_ERR_BAD_FORMAT 0
+#define CNY_ERR_INV_DELTA 1
+#define CNY_ERR_INV_FLAG 2
+#define CNY_ERR_INV_EXPTIME 3
+#define CNY_ERR_INV_VLEN 4
+#define CNY_ERR_BAD_CMD_EOL 5
+#define CNY_ERR_BAD_DATA_EOL 6
+#define CNY_ERR_BINARY_MAGIC 7
+#define CNY_ERR_CONN_CLOSED 8
+#define CNY_ERR_INV_ARG 9
+
+// Warning - these are enums in original source and could change
+#define CNY_ASCII_PROT 3
+#define CNY_BINARY_PROT 4
+#define CNY_NEGOTIATING_PROT 5
+// Warning - these are enums in original source and could change
+#define CNY_LOCAL_TRANSPORT 0
+#define CNY_TCP_TRANSPORT 1
+#define CNY_UDP_TRANSPORT 2
+
+#define PROTOCOL_BINARY_REQ 0x80
+#define PROTOCOL_BINARY_RES 0x81
+
+typedef uint8_t CnyRspCmd_t;
+typedef uint16_t ConnId_t;
+typedef uint16_t PktLen_t;
+typedef ht_uint6 PktIndex_t;
+typedef ht_uint3 Protocol_t;
+typedef ht_uint3 Transport_t;
+typedef sc_uint<CONN_ADDR_W> conn_addr_t;
+
+struct ReqhdrFields {
+	uint8_t m_magic;
+	uint8_t m_opcode;
+	uint16_t m_keyLen;
+	uint8_t m_extraLen;
+	uint8_t m_dataType;
+	uint16_t m_vBucket;
+	uint32_t m_bodyLen;
+	uint32_t m_opaque;
+	uint64_t m_cas;
+};
+
+union CBinReqhdr {
+	ReqhdrFields m_hdr;
+	uint8_t m_bytes[24];
+};
+
+struct keyField {
+	uint8_t m_byte[12];
+};
+
+struct CAccelConn {
+	uint64_t m_parseState:6;
+	uint64_t m_hashPos:4;
+	uint8_t m_cmd;
+	uint8_t m_errCode;
+	uint64_t m_protocol:3;
+	uint64_t m_transport:3;
+	uint64_t m_skipSpace:1;
+	uint64_t m_noreply:1;
+	uint64_t m_bConnClosed:1;
+	uint32_t m_parsePos;
+	uint32_t m_hash_a;
+	uint32_t m_hash_b;
+	uint32_t m_hash_c;
+	uint64_t m_initial;
+	uint64_t m_delta;
+	uint32_t m_flags;
+	uint32_t m_exptime;
+	uint32_t m_bytes;
+	keyField m_key12;
+	CBinReqhdr m_binReqHdr;
+};
+
+// make sure this matches the size of the above struct
+#define ACCEL_CONN_SIZE 11
+
+union CAccelWord {
+	CAccelConn m_pConn;
+	uint64_t m_word[ACCEL_CONN_SIZE];
+};
+
+union CByteData {
+	uint64_t m_qword;
+	uint8_t m_byte[8];
+};
+
+struct CByteDataArray {
+	uint64_t m_entry[4];
+};
+
+struct CMemPrefetch {
+	bool m_valid[2];
+	bool m_prefetch[2];
+	MemAddr_t m_lastRead;
+	bool m_pauseComplete;
+	bool m_checkReady;
+};
+
+pkt.AddPrivate()
+	.AddVar(type=CPktInfo, name=pktInfo)
+	.AddVar(type=uint16_t, name=connId)
+	.AddVar(type=conn_addr_t, name=connAddr)
+	.AddVar(type=ht_uint20, name=pCh)
+	.AddVar(type=ht_uint20, name=pChMax)
+	.AddVar(type=uint16_t, name=chCnt)
+	.AddVar(type=ht_uint4, name=pktHtId)
+	.AddVar(type=CMemPrefetch, name=prefetch)
+	.AddVar(type=ht_uint20, name=keyPos)
+	.AddVar(type=ht_uint12, name=keyLen)
+	.AddVar(type=ht_uint20, name=dataPos)
+	.AddVar(type=ht_uint12, name=dataLen)
+	.AddVar(type=bool, name=restartPrefetch)
+	.AddVar(type=bool, name=sentPktDone)
+	.AddVar(type=bool, name=bAscii)
+	.AddVar(type=bool, name=keyInit)
+	.AddVar(type=ht_uint9, name=prefetchAddr)
+	.AddVar(type=ht_uint9, name=fetchAddr)
+	;
+
+pkt.AddEntry(func=ProcessPkt, inst=PKT_ENTRY)
+	.AddParam(type=CPktInfo, name=pktInfo)
+	.AddParam(type=uint16_t, name=connId)
+	.AddParam(type=conn_addr_t, name=connAddr)
+	;
+
+pkt.AddReturn(func=ProcessPkt);
+
+pkt.AddMsgIntf(dir=out, name=accPush, type=CPktCmd);
+pkt.AddMsgIntf(dir=in, name=accPop, type=blk_idx_t);
+pkt.AddMsgIntf(dir=out, name=pktFinish, type=prefetch_idx_t);
+
+pkt.AddShared(reset=false)
+	.AddVar(type=uint32_t, name=hashResA, addr1W=CONN_ADDR_W, blockRam=true)
+	.AddVar(type=uint32_t, name=hashResB, addr1W=CONN_ADDR_W, blockRam=true)
+	.AddVar(type=uint32_t, name=hashResC, addr1W=CONN_ADDR_W, blockRam=true)
+	.AddVar(type=acc_que_cnt_t, name=accQueCnt, dimen1=16)
+	;
+
+pkt.AddGlobal(var=connList, addr1W=CONN_ADDR_W, addr1=connAddr, extern=false)
+	.AddField(type=uint64_t, name=pConn, dimen1=ACCEL_CONN_SIZE, read=true, write=true)
+	;
+
+pkt.AddGlobal(var=prePktDat, addr1W=9, addr1=prefetchAddr, rdStg=1)
+	.AddField(type=uint64_t, name=qw, read=true, write=false)
+	;
+
+pkt.AddGlobal(var=rdPktDat, addr1W=9, addr1=fetchAddr, extern=false, rdStg=1)
+	.AddField(type=uint64_t, name=qw, read=true, write=false)
+	;
+
+pkt.AddReadMem(queueW=PKT_MREAD_W, rspCntW=PKT_MREAD_W, maxBw=true)
+	.AddDst(var=rdPktDat, field=qw, multiRd=true, dstIdx=varAddr1, memSrc=host)
+	;
+
+pkt.AddStage(privWrStg=2, execStg=2)
+	.AddVar(type=uint32_t, name=hA, range=2-5)
+	.AddVar(type=uint32_t, name=hB, range=2-5)
+	.AddVar(type=uint32_t, name=hC, range=2-6)
+	.AddVar(type=bool, name=hValid, range=2-6)
+	.AddVar(type=uint32_t, name=fA, range=2-5)
+	.AddVar(type=uint32_t, name=fB, range=2-5)
+	.AddVar(type=uint32_t, name=fC, range=2-6)
+	.AddVar(type=bool, name=fValid, range=2-6)
+	.AddVar(type=conn_addr_t, name=pConnAddr, range=2-6)
+	.AddVar(type=ht_uint20, name=pChInc, range=1)
+	.AddVar(type=ht_uint20, name=pChInc8, range=1)
+	.AddVar(type=uint32_t, name=parsePos, range=1)
+	.AddVar(type=uint32_t, name=parsePosInc, range=1)
+	.AddVar(type=uint32_t, name=parsePosDec, range=1)
+	.AddVar(type=uint32_t, name=parsePosDataInc, range=1)
+	.AddVar(type=uint32_t, name=parsePosInc8, range=1)
+	.AddVar(type=ht_uint14, name=dataLenInc, range=1)
+	.AddVar(type=uint16_t, name=chCntInc, range=1)
+	.AddVar(type=uint16_t, name=chCntInc8, range=1)
+	.AddVar(type=uint16_t, name=skipLen, range=1)
+	.AddVar(type=uint16_t, name=skipLenA, range=1)
+	.AddVar(type=uint16_t, name=skipLenB, range=1)
+	.AddVar(type=ht_uint20, name=pChDataInc, range=1)
+	.AddVar(type=ht_uint20, name=pChDataIncA, range=1)
+	.AddVar(type=ht_uint20, name=pChDataIncB, range=1)
+	.AddVar(type=MemAddr_t, name=pChDataIncLast, range=1)
+	.AddVar(type=uint16_t, name=chCntDataInc, range=1)
+	.AddVar(type=uint16_t, name=chCntDataIncA, range=1)
+	.AddVar(type=uint16_t, name=chCntDataIncB, range=1)
+	.AddVar(type=ht_uint20, name=recvBufPktIdx, range=1)
+	.AddVar(type=uint8_t, name=ch, range=1)
+	.AddVar(type=uint8_t, name=chMisc, range=1)
+	.AddVar(type=bool, name=chIsLF, range=1)
+	.AddVar(type=bool, name=chIsCR, range=1)
+	.AddVar(type=bool, name=chIsSP, range=1)
+	.AddVar(type=bool, name=chIsCee, range=1)
+	.AddVar(type=bool, name=chIsPee, range=1)
+	.AddVar(type=bool, name=chIsDigit, range=1)
+	.AddVar(type=bool, name=chMatchTouch, dimen1=6, range=1)
+	.AddVar(type=bool, name=chMatchIncr, dimen1=5, range=1)
+	.AddVar(type=bool, name=chMatchDelete, dimen1=7, range=1)
+	.AddVar(type=bool, name=chMatchDecr, dimen1=5, range=1)
+	.AddVar(type=bool, name=chMatchSet, dimen1=4, range=1)
+	.AddVar(type=bool, name=chMatchAdd, dimen1=4, range=1)
+	.AddVar(type=bool, name=chMatchAppend, dimen1=7, range=1)
+	.AddVar(type=bool, name=chMatchReplace, dimen1=8, range=1)
+	.AddVar(type=bool, name=chMatchPrepend, dimen1=8, range=1)
+	.AddVar(type=bool, name=chMatchCas, dimen1=4, range=1)
+	.AddVar(type=bool, name=chMatchGet, dimen1=5, range=1)
+	.AddVar(type=bool, name=chMatchGets, dimen1=5, range=1)
+	.AddVar(type=bool, name=chMatchNoreply, dimen1=8, range=1)
+	.AddVar(type=uint32_t, name=pConnBytes, range=1)
+	.AddVar(type=uint32_t, name=flagsMul10, range=1)
+	.AddVar(type=uint32_t, name=expMul10, range=1)
+	.AddVar(type=uint32_t, name=bytesMul10, range=1)
+	.AddVar(type=uint64_t, name=deltaMul10, range=1)
+	.AddVar(type=uint64_t, name=prefetchData, range=1)
+	.AddVar(type=CAccelConn, name=pConn, range=1-2)
+	.AddVar(type=bool, name=first64, range=1)
+	.AddVar(type=bool, name=htValid, range=2)
+	.AddVar(type=bool, name=parsePosIncIs24, range=1)
+	.AddVar(type=bool, name=parsePosIncIs8, range=1)
+	.AddVar(type=bool, name=parsePosIncIs7, range=1)
+	.AddVar(type=bool, name=parsePosIncIs6, range=1)
+	.AddVar(type=bool, name=parsePosIncIs5, range=1)
+	.AddVar(type=bool, name=parsePosIncIs4, range=1)
+	.AddVar(type=bool, name=parsePosIncIs3, range=1)
+	.AddVar(type=bool, name=parsePosIs0, range=1)
+	.AddVar(type=bool, name=parsePosIs1, range=1)
+	.AddVar(type=bool, name=parsePosIs2, range=1)
+	.AddVar(type=bool, name=parsePosIsBytesData, range=1)
+	.AddVar(type=bool, name=parsePosIsBytes, range=1)
+	.AddVar(type=bool, name=parsePosIsBytesDec, range=1)
+	.AddVar(type=bool, name=parsePosIsKeyLen, range=1)
+	.AddVar(type=bool, name=chCntIncEqlPktLen, range=1)
+	.AddVar(type=bool, name=chCntEqlPktLenData, range=1)
+	.AddVar(type=bool, name=chCntEqlPktLen64, range=1)
+	.AddVar(type=bool, name=eval, range=1)
+	.AddVar(type=bool, name=pktLenGr16, range=1)
+	.AddVar(type=bool, name=flagsWillOF, range=1)
+	.AddVar(type=bool, name=expWillOF, range=1)
+	.AddVar(type=bool, name=bytesWillOF, range=1)
+	.AddVar(type=bool, name=deltaWillOF, range=1)
+	.AddVar(type=bool, name=skipAsciiData, range=1)
+	.AddVar(type=bool, name=restartAsciiPrefetch, range=1)
+	.AddVar(type=bool, name=skipBinData, range=1)
+	.AddVar(type=bool, name=keyLenGtMax, range=1)
+	.AddVar(type=bool, name=bytesEqlZero, range=1)
+	.AddVar(type=bool, name=accQueFull, range=1)
+	.AddVar(type=CPktCmd, name=entryRspCmd, range=2)
+	.AddVar(type=bool, name=entryRspCmdValid, range=2)
+	.AddVar(type=CPktCmd, name=bCmdRspCmd, range=2)
+	.AddVar(type=bool, name=bCmdRspCmdValid, range=2)
+	.AddVar(type=CPktCmd, name=bKeyRspCmd, range=2)
+	.AddVar(type=bool, name=bKeyRspCmdValid, range=2)
+	.AddVar(type=CPktCmd, name=bDataRspCmd, range=2)
+	.AddVar(type=bool, name=bDataRspCmdValid, range=2)
+	.AddVar(type=CPktCmd, name=aKeyRspCmd, range=2)
+	.AddVar(type=bool, name=aKeyRspCmdValid, range=2)
+	.AddVar(type=CPktCmd, name=aEocRspCmd, range=2)
+	.AddVar(type=bool, name=aEocRspCmdValid, range=2)
+	.AddVar(type=CPktCmd, name=aDataRspCmd, range=2)
+	.AddVar(type=bool, name=aDataRspCmdValid, range=2)
+	.AddVar(type=CPktCmd, name=retRspCmd, range=2)
+	.AddVar(type=bool, name=retRspCmdValid, range=2)
+	.AddVar(type=bool, name=anyRspCmdValid, range=2)
+	.AddVar(type=uint16_t, name=connId, range=2)
+	;
+
+pkt.AddFunction(type=uint64_t, name=ntohll)
+	.AddParam(dir=input, type=uint64_t, name=in)
+	;
+
+pkt.AddFunction(type=uint32_t, name=ntohl)
+	.AddParam(dir=input, type=uint32_t, name=in)
+	;
+
+pkt.AddFunction(type=uint16_t, name=ntohs)
+	.AddParam(dir=input, type=uint16_t, name=in)
+	;
+pkt.AddFunction(type=bool, name=getNextChar)
+	.AddParam(dir=input, type=ht_uint20, name=lsAddr)
+	.AddParam(dir=input, type=MemAddr_t, name=baseAddr)
+	.AddParam(dir=input, type=bool, name=first64)
+	.AddParam(dir=input, type=ht_uint4, name=htId)
+	.AddParam(dir=input, type=uint64_t, name=prefetchQw)
+	.AddParam(dir=input, type=uint64_t, name=fetchQw)
+	.AddParam(dir=inout, type=CMemPrefetch, name=m)
+	.AddParam(dir=output, type=uint8_t, name=byte)
+	;
+pkt.AddFunction(type=void, name=prefetch)
+	.AddParam(dir=input, type=ht_uint20, name=lsAddr)
+	.AddParam(dir=input, type=ht_uint4, name=htId)
+	.AddParam(dir=input, type=bool, name=prefetchDone)
+	.AddParam(dir=inout, type=CMemPrefetch, name=m)
+	;
+pkt.AddFunction(name=rot, type=uint32_t)
+	.AddParam(dir=input, type=uint32_t, name=x)
+	.AddParam(dir=input, type=uint32_t, name=k)
+	;
+
+pkt.AddFunction(name=WriteRspValue, type=void)
+	.AddParam(dir=inout, type=PktOptWords, name=rspOpt)
+	.AddParam(dir=inout, type=ht_uint3, name=rspOptDwCnt)
+	.AddParam(dir=input, type=uint64_t, name=value)
+	.AddParam(dir=input, type=uint8_t, name=byteSize)
+	;
+
+pkt.AddFunction(name=key2word, type=void)
+	.AddParam(dir=input, type=keyField, name=key12)
+	.AddParam(dir=output, type=uint32_t, name=word_a)
+	.AddParam(dir=output, type=uint32_t, name=word_b)
+	.AddParam(dir=output, type=uint32_t, name=word_c)
+	;
+
+pkt.AddFunction(name=isdigit, type=bool)
+	.AddParam(dir=input, type=uint8_t, name=ch)
+	;
