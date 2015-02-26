@@ -8,7 +8,7 @@ cgminer: cgminer-$(CGMINER_VER) lib_pers/libhtapp.a
 	mv cgminer-$(CGMINER_VER)/$@ .
 
 cgminer-$(CGMINER_VER): v$(CGMINER_VER).tar.gz import/v$(CGMINER_VER).patch
-	tar -xf v$(CGMINER_VER).tar.gz
+	tar -zxf v$(CGMINER_VER).tar.gz
 	cd $@ > /dev/null && patch -i ../import/v$(CGMINER_VER).patch
 
 v$(CGMINER_VER).tar.gz:
