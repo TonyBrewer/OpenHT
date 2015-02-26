@@ -1,8 +1,11 @@
+// -cl $(HtToolsPath)/tests/matrix_mult_prim/src_pers/matrix_mult.htl
+-wd $(HtToolsPath)/tests/matrix_mult_prim/msvs12/
+
 -cp hc-2
 -uc 1
 -un Au
 -df 150
+-vcd_all
 -pn matrix_mult_prim
-//-wd "C:\Ht\tests\vadd_5stage\msvs12\"
 ../src_pers/matrix_mult.htd
 ../ht/sysc

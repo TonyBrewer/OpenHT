@@ -1,0 +1,10 @@
+// -cl $(HtToolsPath)/tests/bug_2026/src_pers/hello.htl
+-wd $(HtToolsPath)/tests/bug_2026/msvs12/
+
+-cp hc-2
+-uc 1
+-un Au
+-df 150
+-pn bug_2026
+../src_pers/hello.htd
+../ht/sysc

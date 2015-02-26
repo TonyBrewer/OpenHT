@@ -1,0 +1,62 @@
+#include "Struct.h"
+
+////////////////////////////////////////////////////
+// MemSub Module
+#define WS_HTID_W 2
+
+typedef sc_uint<48> MemAddr_t;
+
+dsnInfo.AddModule(name=MemSub, htIdW=WS_HTID_W);
+
+MemSub.AddInst(name=WS_READ1);
+MemSub.AddInst(name=WS_WRITE1);
+MemSub.AddInst(name=WS_READ2);
+MemSub.AddInst(name=WS_WRITE2);
+MemSub.AddInst(name=WS_READ3);
+MemSub.AddInst(name=WS_WRITE3);
+MemSub.AddInst(name=WS_RETURN);
+
+MemSub.AddPrivate()
+	.AddVar(type=MemAddr_t, name=rdAddr1)
+	.AddVar(type=MemAddr_t, name=wrAddr1)
+	.AddVar(type=MemAddr_t, name=rdAddr2)
+	.AddVar(type=MemAddr_t, name=wrAddr2)
+	.AddVar(type=MemAddr_t, name=rdAddr3)
+	.AddVar(type=MemAddr_t, name=wrAddr3)
+	.AddVar(type=ht_uint5, name=addr1)
+	.AddVar(type=uint64_t, name=privArray, addr1=addr1)
+	;
+
+MemSub.AddEntry(func=MemSub, inst=WS_READ1, host=true)
+	.AddParam(hostType=uint16_t *, type=MemAddr_t, name=rdAddr1)
+	.AddParam(hostType=uint16_t *, type=MemAddr_t, name=wrAddr1)
+	.AddParam(hostType=Align16 *, type=MemAddr_t, name=rdAddr2)
+	.AddParam(hostType=Align16 *, type=MemAddr_t, name=wrAddr2)
+	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=rdAddr3)
+	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=wrAddr3)
+	;
+
+MemSub.AddShared()
+	.AddVar(name=array, type=uint16_t, dimen1=11)
+	;
+
+MemSub.AddGlobal()
+	.AddVar(name=array2, type=Align16, addr1=addr1, read=false, write=false)
+	;
+
+MemSub.AddReturn(func=MemSub)
+	;
+
+MemSub.AddReadMem()
+	.AddDst(var=array[])
+	.AddDst(var=array2)
+	.AddDst(var=privArray)
+	;
+
+MemSub.AddWriteMem()
+	.AddSrc(var=array[])
+	.AddSrc(var=array2)
+	.AddSrc(var=privArray)
+	;
+
+MemSub.AddStage(execStg=2, privWrStg=4);

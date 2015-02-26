@@ -16,6 +16,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include<signal.h>
 
 #include <queue>
 #include <string>

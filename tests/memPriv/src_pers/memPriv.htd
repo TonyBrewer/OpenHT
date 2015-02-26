@@ -1,0 +1,94 @@
+////////////////////////////////////////////////////
+// MemCtl Module
+#define CTL_HTID_W 0
+
+typedef sc_uint<48> MemAddr_t;
+
+dsnInfo.AddModule(name=Ctl, htIdW=CTL_HTID_W);
+
+Ctl.AddInstr(name=CTL_PRIV1)
+	.AddInstr(name=CTL_PRIV2)
+	.AddInstr(name=CTL_RTN)
+	;
+
+Ctl.AddEntry(func=main, inst=CTL_PRIV1, host=true)
+	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=memAddr)
+	;
+
+Ctl.AddReturn(func=main)
+	.AddParam(type=bool, name=err)
+	;
+
+Ctl.AddCall(func=priv1);
+Ctl.AddCall(func=priv2);
+
+Ctl.AddPrivate()
+	.AddVar(type=MemAddr_t, name=memAddr)
+	.AddVar(type=bool, name=err)
+	.AddVar(type=bool, name=rtnErr)
+	;
+
+#define PRIV1_HTID_W 0
+
+dsnInfo.AddModule(name=Priv1, htIdW=PRIV1_HTID_W);
+
+Priv1.AddInstr(name=PRIV1_ENTRY)
+	.AddInstr(name=PRIV1_WRITE)
+	.AddInstr(name=PRIV1_READ)
+	.AddInstr(name=PRIV1_RETURN)
+	;
+
+Priv1.AddEntry(func=priv1, inst=PRIV1_ENTRY)
+	.AddParam(type=MemAddr_t, name=memAddr)
+	;
+
+Priv1.AddReturn(func=priv1)
+	.AddParam(type=bool, name=rtnErr)
+	;
+
+Priv1.AddPrivate()
+	.AddVar(type=bool, name=err)
+	.AddVar(type=MemAddr_t, name=memAddr)
+	.AddVar(type=uint64_t, name=data)
+	;
+
+Priv1.AddReadMem()
+	.AddDst(var=data)
+	;
+
+Priv1.AddWriteMem()
+	.AddSrc(var=data)
+	;
+	
+#define PRIV2_HTID_W 2
+
+dsnInfo.AddModule(name=Priv2, htIdW=PRIV2_HTID_W);
+
+Priv2.AddInstr(name=PRIV2_ENTRY)
+	.AddInstr(name=PRIV2_WRITE)
+	.AddInstr(name=PRIV2_READ)
+	.AddInstr(name=PRIV2_RETURN)
+	;
+
+Priv2.AddEntry(func=priv2, inst=PRIV2_ENTRY)
+	.AddParam(type=MemAddr_t, name=memAddr)
+	;
+
+Priv2.AddReturn(func=priv2)
+	.AddParam(type=bool, name=rtnErr)
+	;
+
+Priv2.AddPrivate()
+	.AddVar(type=bool, name=err)
+	.AddVar(type=MemAddr_t, name=memAddr)
+	.AddVar(type=ht_uint3, name=rdAddr)
+	.AddVar(type=uint64_t, name=data, addr1=rdAddr)
+	;
+
+Priv2.AddReadMem()
+	.AddDst(var=data)
+	;
+
+Priv2.AddWriteMem()
+	.AddSrc(var=data)
+	;

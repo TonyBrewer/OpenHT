@@ -1,4 +1,6 @@
-// -cl "C:\Ht\tests\func\src_pers\func.htl"
+// -cl $(HtToolsPath)/tests/func/src_pers/func.htl
+-wd $(HtToolsPath)/tests/func/msvs12/		// working directory
+
 -cp hc-2
 //-rt
 -mt				// enable memory tracing
@@ -6,6 +8,5 @@
 -un Au			// unit name
 -df 150			// default frequence
 
--wd "C:\Ht\tests\func\msvs12\"		// working directory
-"C:\Ht\tests\func\src_pers\func.htd"	    // design file location
+../src_pers/func.htd	    // design file location
 ../ht/sysc							// location for output files

@@ -11,7 +11,7 @@
 #include "AppArgs.h"
 #include "DsnInfo.h"
 
-void HtiFile::SkipTo(EToken skipTk) 
+void HtiFile::SkipTo(EToken skipTk)
 {
 	EToken tk;
 	do {
@@ -29,36 +29,36 @@ void HtiFile::loadHtiFile(string fileName)
 		printf("Could not open file '%s'\n", g_appArgs.GetInstanceFile().c_str());
 		exit(1);
 	}
- 
-    while (m_pLex->GetTk() != eTkEof) {
 
-        if (m_pLex->GetTk() != eTkIdent) {
-            CPreProcess::ParseMsg(Error, "Expected instance file command");
-            SkipTo(eTkSemi);
-            continue;
-        }
+	while (m_pLex->GetTk() != eTkEof) {
+
+		if (m_pLex->GetTk() != eTkIdent) {
+			CPreProcess::ParseMsg(Error, "Expected instance file command");
+			SkipTo(eTkSemi);
+			continue;
+		}
 
 		ParseHtiMethods();
-    }
+	}
 }
 
 void HtiFile::ParseHtiMethods()
 {
-    if (false && m_pLex->GetTkString() == "AddUnitInst") {
+	if (false && m_pLex->GetTkString() == "AddUnitInst") {
 
 		string AE;
 		string AU;
-        string unit;
+		string unit;
 
-        CParamList params[] = {
-            { "AE",		&AE,	true,	eTkIntSet, 0, 0},
-            { "AU",		&AU,	true,	eTkIntSet, 0, 0},
-            { "unit",	&unit,	true,	eTkIdent,  0, 0},
-            { 0, 0, 0, eTkUnknown, 0, 0}
-        };
+		CParamList params[] = {
+				{ "AE", &AE, true, ePrmIntSet, 0, 0 },
+				{ "AU", &AU, true, ePrmIntSet, 0, 0 },
+				{ "unit", &unit, true, ePrmIdent, 0, 0 },
+				{ 0, 0, 0, ePrmUnknown, 0, 0 }
+		};
 
-        if (!ParseParameters(params)) {
-            CPreProcess::ParseMsg(Error, "expected AddUnitInst( AE, AU, unit )");
+		if (!ParseParameters(params)) {
+			CPreProcess::ParseMsg(Error, "expected AddUnitInst( AE, AU, unit )");
 			return;
 		}
 
@@ -68,79 +68,79 @@ void HtiFile::ParseHtiMethods()
 		for (size_t aeSetIdx = 0; aeSetIdx < aeSet.size(); aeSetIdx += 1) {
 			for (size_t auSetIdx = 0; auSetIdx < auSet.size(); auSetIdx += 1) {
 
-				AddUnitInst( aeSet[aeSetIdx], auSet[auSetIdx], unit );
+				AddUnitInst(aeSet[aeSetIdx], auSet[auSetIdx], unit);
 			}
 		}
 
-    } else if (false && m_pLex->GetTkString() == "AddUnitParams") {
+	} else if (false && m_pLex->GetTkString() == "AddUnitParams") {
 
-        string unit;
+		string unit;
 		string entry;
 		string memPortCnt;
 
-        CParamList params[] = {
-            { "unit",		&unit,			true,	eTkIdent,   0, 0},
-            { "entry",		&entry,			true,	eTkIdent,   0, 0},
-            { "memPortCnt",	&memPortCnt,	false,	eTkInteger, 0, 0},
-            { 0, 0, 0, eTkUnknown, 0, 0}
-        };
+		CParamList params[] = {
+				{ "unit", &unit, true, ePrmIdent, 0, 0 },
+				{ "entry", &entry, true, ePrmIdent, 0, 0 },
+				{ "memPortCnt", &memPortCnt, false, ePrmInteger, 0, 0 },
+				{ 0, 0, 0, ePrmUnknown, 0, 0 }
+		};
 
-        if (!ParseParameters(params))
+		if (!ParseParameters(params))
 			CPreProcess::ParseMsg(Error, "expected AddUnitParams( unit, entry {, memPortCnt } )");
 
 		else
-			AddUnitParams( unit, entry, memPortCnt );
+			AddUnitParams(unit, entry, memPortCnt);
 
 	} else if (m_pLex->GetTkString() == "AddModInstParams") {
 
-        string unit;
+		string unit;
 		string modPath;
 		vector<int> memPort;
 		string instId;
 		string replCnt;
 
-        CParamList params[] = {
-            { "unit",		&unit,		true,	eTkIdent,   0, 0},
-            { "modPath",	&modPath,	true,	eTkIdent,   0, 0},
-            { "memPort",	&memPort,	false,	eTkIntList, 0, 0},
-			{ "replCnt",	&replCnt,	false,	eTkInteger,	0, 0},
-            { "instId",		&instId,	false,	eTkInteger, 0, 0},
-            { 0, 0, 0, eTkUnknown, 0, 0}
-        };
+		CParamList params[] = {
+				{ "unit", &unit, true, ePrmIdent, 0, 0 },
+				{ "modPath", &modPath, true, ePrmIdent, 0, 0 },
+				{ "memPort", &memPort, false, ePrmIntList, 0, 0 },
+				{ "replCnt", &replCnt, false, ePrmInteger, 0, 0 },
+				{ "instId", &instId, false, ePrmInteger, 0, 0 },
+				{ 0, 0, 0, ePrmUnknown, 0, 0 }
+		};
 
-        if (!ParseParameters(params))
+		if (!ParseParameters(params))
 			CPreProcess::ParseMsg(Error, "expected AddModInstParams( unit, modPath {, memPort } {, instId } )");
 
 		else {
 			if (modPath.size() > 0 && modPath[0] != '/')
 				modPath = "/" + modPath;
 
-			if (modPath.size() > 0 && modPath[modPath.size()-1] == ']' && instId.size() > 0)
+			if (modPath.size() > 0 && modPath[modPath.size() - 1] == ']' && instId.size() > 0)
 				CPreProcess::ParseMsg(Error, "a replicated module instance can not specify an instId");
 
-			AddModInstParams( unit, modPath, memPort, instId, replCnt );
+			AddModInstParams(unit, modPath, memPort, instId, replCnt);
 		}
 
 	} else if (m_pLex->GetTkString() == "AddMsgIntfConn") {
 
-        string inUnit;
-        string outUnit;
+		string inUnit;
+		string outUnit;
 		string inPath;
 		string outPath;
 		bool aeNext = false;
 		bool aePrev = false;
 
-        CParamList params[] = {
-            { "inUnit",		&inUnit,	false,	eTkParamStr, 0, 0},
-            { "outUnit",	&outUnit,	false,	eTkParamStr, 0, 0},
-            { "inPath",		&inPath,	true,	eTkParamStr, 0, 0},
-			{ "outPath",	&outPath,	true,	eTkParamStr, 0, 0},
-			{ "aeNext",		&aeNext,	false,  eTkBoolean, 0, 0 },
-			{ "aePrev",		&aePrev,	false,  eTkBoolean, 0, 0 },
-            { 0, 0, 0, eTkUnknown, 0, 0}
-        };
+		CParamList params[] = {
+				{ "inUnit", &inUnit, false, ePrmParamStr, 0, 0 },
+				{ "outUnit", &outUnit, false, ePrmParamStr, 0, 0 },
+				{ "inPath", &inPath, true, ePrmParamStr, 0, 0 },
+				{ "outPath", &outPath, true, ePrmParamStr, 0, 0 },
+				{ "aeNext", &aeNext, false, ePrmBoolean, 0, 0 },
+				{ "aePrev", &aePrev, false, ePrmBoolean, 0, 0 },
+				{ 0, 0, 0, ePrmUnknown, 0, 0 }
+		};
 
-        if (!ParseParameters(params))
+		if (!ParseParameters(params))
 			CPreProcess::ParseMsg(Error, "expected AddMsgIntfConn( { outUnit, } outPath, { inUnit, } inPath {, aeNext=<false>}{, aePrev=<false>} )");
 
 		else {
@@ -150,61 +150,61 @@ void HtiFile::ParseHtiMethods()
 			if (inPath.size() > 0 && inPath[0] != '/')
 				inPath = "/" + inPath;
 
-			AddMsgIntfConn( outUnit, outPath, inUnit, inPath, aeNext, aePrev );
+			AddMsgIntfConn(outUnit, outPath, inUnit, inPath, aeNext, aePrev);
 		}
 
 	} else
-        CPreProcess::ParseMsg(Error, "Expected instance file command");
+		CPreProcess::ParseMsg(Error, "Expected instance file command");
 
-    if (m_pLex->GetTk() != eTkSemi) {
-        CPreProcess::ParseMsg(Error, "expected a ';'");
-        SkipTo(eTkSemi);
-    }
+	if (m_pLex->GetTk() != eTkSemi) {
+		CPreProcess::ParseMsg(Error, "expected a ';'");
+		SkipTo(eTkSemi);
+	}
 	m_pLex->GetNextTk();
 }
 
 bool HtiFile::ParseParameters(CParamList *params)
 {
-    if (m_pLex->GetNextTk() != eTkLParen) {
-        SkipTo(eTkRParen);
-        return false;
-    }
+	if (m_pLex->GetNextTk() != eTkLParen) {
+		SkipTo(eTkRParen);
+		return false;
+	}
 
-    bool bError = false;
-    EToken tk;
-    while ((tk = m_pLex->GetNextTk()) == eTkIdent) {
-        int i;
-        for (i = 0; params[i].m_pName; i += 1)
-            if (m_pLex->GetTkString() == params[i].m_pName)
-                break;
+	bool bError = false;
+	EToken tk;
+	while ((tk = m_pLex->GetNextTk()) == eTkIdent) {
+		int i;
+		for (i = 0; params[i].m_pName; i += 1)
+			if (m_pLex->GetTkString() == params[i].m_pName)
+				break;
 
-        if (params[i].m_pName == 0) {
-            bError = true;
-            CPreProcess::ParseMsg(Error, "unexpected parameter name '%s'", m_pLex->GetTkString().c_str());
-            break;
-        }
+		if (params[i].m_pName == 0) {
+			bError = true;
+			CPreProcess::ParseMsg(Error, "unexpected parameter name '%s'", m_pLex->GetTkString().c_str());
+			break;
+		}
 
-        if (params[i].m_bPresent) {
-            bError = true;
-            CPreProcess::ParseMsg(Error, "duplicate parameters '%s'", m_pLex->GetTkString().c_str());
-            break;
-        }
+		if (params[i].m_bPresent) {
+			bError = true;
+			CPreProcess::ParseMsg(Error, "duplicate parameters '%s'", m_pLex->GetTkString().c_str());
+			break;
+		}
 
-        params[i].m_bPresent = true;
+		params[i].m_bPresent = true;
 
-        if (m_pLex->GetNextTk() != eTkEqual) {
-            bError = true;
-            CPreProcess::ParseMsg(Error, "expected '=' after parameter '%s'", params[i].m_pName);
-            break;
-        }
+		if (m_pLex->GetNextTk() != eTkEqual) {
+			bError = true;
+			CPreProcess::ParseMsg(Error, "expected '=' after parameter '%s'", params[i].m_pName);
+			break;
+		}
 
-        bool bValue = true;
+		bool bValue = true;
 
-		if (params[i].m_token == eTkIntList) {
+		if (params[i].m_paramType == ePrmIntList) {
 
 			vector<int> *pIntList = (vector<int> *)params[i].m_pValue;
 
-	        tk = m_pLex->GetNextTk();
+			tk = m_pLex->GetNextTk();
 
 			if (tk == eTkLBrace) {
 				tk = m_pLex->GetNextTk();
@@ -230,130 +230,130 @@ bool HtiFile::ParseParameters(CParamList *params)
 				if (!ParseIntRange(pIntList))
 					CPreProcess::ParseMsg(Error, "expected an integer or integer range for parameter '%s'", params[i].m_pName);
 			}
-	        tk = m_pLex->GetTk();
+			tk = m_pLex->GetTk();
 
-        } else if (params[i].m_token == eTkIntRange) {
+		} else if (params[i].m_paramType == ePrmIntRange) {
 			tk = m_pLex->GetNextTk();
-            if (tk != eTkInteger) {
-                bError = true;
-                CPreProcess::ParseMsg(Error, "expected an integer or integer range for parameter '%s'", params[i].m_pName);
-                break;
-            }
-            ((string *)params[i].m_pValue)[0] = m_pLex->GetTkString();
+			if (tk != eTkInteger) {
+				bError = true;
+				CPreProcess::ParseMsg(Error, "expected an integer or integer range for parameter '%s'", params[i].m_pName);
+				break;
+			}
+			((string *)params[i].m_pValue)[0] = m_pLex->GetTkString();
 
-            tk = m_pLex->GetNextTk();
-
-            if (tk != eTkMinus)
-                ((string *)params[i].m_pValue)[1] = ((string *)params[i].m_pValue)[0];
-
-            else {
-                if (m_pLex->GetNextTk() != eTkInteger) {
-                    bError = true;
-                    CPreProcess::ParseMsg(Error, "expected an integer or integer range for parameter '%s'", params[i].m_pName);
-                    break;
-                }
-                ((string *)params[i].m_pValue)[1] = m_pLex->GetTkString();
-
-                tk = m_pLex->GetNextTk();
-            }
-
-        } else if (params[i].m_token == eTkBoolean) {
 			tk = m_pLex->GetNextTk();
-            if (tk != eTkIdent) {
-                bError = true;
-                CPreProcess::ParseMsg(Error, "expected true or false for parameter '%s'", params[i].m_pName);
-                break;
-            } else {
-                if (m_pLex->GetTkString() == "true")
-                    bValue = true;
-                else if (m_pLex->GetTkString() == "false")
-                    bValue = false;
-                else
-                    CPreProcess::ParseMsg(Error, "expected true or false for parameter '%s'", params[i].m_pName);
 
-                *(bool *)params[i].m_pValue = bValue;
-            }
+			if (tk != eTkMinus)
+				((string *)params[i].m_pValue)[1] = ((string *)params[i].m_pValue)[0];
 
-            tk = m_pLex->GetNextTk();
+			else {
+				if (m_pLex->GetNextTk() != eTkInteger) {
+					bError = true;
+					CPreProcess::ParseMsg(Error, "expected an integer or integer range for parameter '%s'", params[i].m_pName);
+					break;
+				}
+				((string *)params[i].m_pValue)[1] = m_pLex->GetTkString();
 
-        } else if (params[i].m_token == eTkParamStr) {
+				tk = m_pLex->GetNextTk();
+			}
+
+		} else if (params[i].m_paramType == ePrmBoolean) {
+			tk = m_pLex->GetNextTk();
+			if (tk != eTkIdent) {
+				bError = true;
+				CPreProcess::ParseMsg(Error, "expected true or false for parameter '%s'", params[i].m_pName);
+				break;
+			} else {
+				if (m_pLex->GetTkString() == "true")
+					bValue = true;
+				else if (m_pLex->GetTkString() == "false")
+					bValue = false;
+				else
+					CPreProcess::ParseMsg(Error, "expected true or false for parameter '%s'", params[i].m_pName);
+
+				*(bool *)params[i].m_pValue = bValue;
+			}
+
+			tk = m_pLex->GetNextTk();
+
+		} else if (params[i].m_paramType == ePrmParamStr) {
 
 			*(string *)params[i].m_pValue = m_pLex->GetExprStr(',');
 			tk = m_pLex->GetNextTk();
 
-       } else {
+		} else {
 			tk = m_pLex->GetNextTk();
-			if (tk == eTkUnknown) {
+			if (tk == ePrmUnknown) {
 				bError = true;
 				CPreProcess::ParseMsg(Error, "unknown expression for '%s'", params[i].m_pName);
 				break;
-			} else if (params[i].m_token == eTkIdent && tk != eTkIdent && tk != eTkString) {
+			} else if (params[i].m_paramType == ePrmIdent && tk != eTkIdent && tk != eTkString) {
 				bError = true;
 				CPreProcess::ParseMsg(Error, "expected an identifier for parameter '%s'", params[i].m_pName);
 				break;
-			} else if (params[i].m_token == eTkInteger && tk != eTkIdent && tk != eTkInteger && tk != eTkString) {
+			} else if (params[i].m_paramType == ePrmInteger && tk != eTkIdent && tk != eTkInteger && tk != eTkString) {
 				bError = true;
 				CPreProcess::ParseMsg(Error, "expected an identifier or integer for parameter '%s'", params[i].m_pName);
 				break;
 			}
 
-            *(string *)params[i].m_pValue = m_pLex->GetTkString();
-            tk = m_pLex->GetNextTk();
-        }
+			*(string *)params[i].m_pValue = m_pLex->GetTkString();
+			tk = m_pLex->GetNextTk();
+		}
 
-        if (tk != eTkComma)
-            break;
-    }
+		if (tk != eTkComma)
+			break;
+	}
 
-    if (!bError) {
-        for (int i = 0; params[i].m_pName; i += 1) {
-            int j = -1;
-            if (params[i].m_deprecatedPair != 0) {
-                for (j = 0; params[j].m_pName; j += 1)
-                    if (params[j].m_deprecatedPair == -params[i].m_deprecatedPair)
-                        break;
-            }
-            if (params[i].m_deprecatedPair < 0 && params[i].m_bPresent) {
-                CPreProcess::ParseMsg(Warning, "use of deprecated parameter name '%s', use '%s'",
-                    params[i].m_pName, params[j].m_pName);
-            }
+	if (!bError) {
+		for (int i = 0; params[i].m_pName; i += 1) {
+			int j = -1;
+			if (params[i].m_deprecatedPair != 0) {
+				for (j = 0; params[j].m_pName; j += 1)
+					if (params[j].m_deprecatedPair == -params[i].m_deprecatedPair)
+						break;
+			}
+			if (params[i].m_deprecatedPair < 0 && params[i].m_bPresent) {
+				CPreProcess::ParseMsg(Warning, "use of deprecated parameter name '%s', use '%s'",
+					params[i].m_pName, params[j].m_pName);
+			}
 
-            if (params[i].m_bRequired && params[i].m_deprecatedPair >= 0 &&
-                !params[i].m_bPresent && (j < 0 || !params[j].m_bPresent)) {
-                    bError = true;
-                    CPreProcess::ParseMsg(Error, "expected required parameter '%s'", params[i].m_pName);
-            }
-        }
-    }
+			if (params[i].m_bRequired && params[i].m_deprecatedPair >= 0 &&
+				!params[i].m_bPresent && (j < 0 || !params[j].m_bPresent)) {
+				bError = true;
+				CPreProcess::ParseMsg(Error, "expected required parameter '%s'", params[i].m_pName);
+			}
+		}
+	}
 
-    if (tk != eTkRParen) {
-        if (!bError)
-            CPreProcess::ParseMsg(Error, "expected a ')'");
+	if (tk != eTkRParen) {
+		if (!bError)
+			CPreProcess::ParseMsg(Error, "expected a ')'");
 
-        SkipTo(eTkRParen);
+		SkipTo(eTkRParen);
 		m_pLex->GetNextTk();
-        return false;
-    }
+		return false;
+	}
 
 	m_pLex->GetNextTk();
-    return true;
+	return true;
 }
 
 bool HtiFile::ParseIntRange(vector<int> * pIntList)
 {
 	EToken tk = m_pLex->GetTk();
-    if (tk != eTkInteger)
-        return false;
+	if (tk != eTkInteger)
+		return false;
 
 	int i1 = m_pLex->GetTkInteger();
 
-    tk = m_pLex->GetNextTk();
+	tk = m_pLex->GetNextTk();
 
-    if (tk != eTkMinus)
-        pIntList->push_back(i1);
+	if (tk != eTkMinus)
+		pIntList->push_back(i1);
 
-    else {
-        if (m_pLex->GetNextTk() != eTkInteger) 
+	else {
+		if (m_pLex->GetNextTk() != eTkInteger)
 			return false;
 
 		int i2 = m_pLex->GetTkInteger();
@@ -361,8 +361,8 @@ bool HtiFile::ParseIntRange(vector<int> * pIntList)
 		for (int i = i1; i <= i2; i += 1)
 			pIntList->push_back(i);
 
-        tk = m_pLex->GetNextTk();
-    }
+		tk = m_pLex->GetNextTk();
+	}
 
 	return true;
 }
@@ -398,9 +398,9 @@ void HtiFile::AddModInstParams(string unit, string modPath, vector<int> &memPort
 	m_modInstParamsList.push_back(CModInstParams(unit, modPath, memPortList, modInstId, replCntInt));
 }
 
-void HtiFile::AddMsgIntfConn( string &outUnit, string &outPath, string &inUnit, string &inPath, bool aeNext, bool aePrev )
+void HtiFile::AddMsgIntfConn(string &outUnit, string &outPath, string &inUnit, string &inPath, bool aeNext, bool aePrev)
 {
-	m_msgIntfConn.push_back(new CMsgIntfConn(outUnit, outPath, inUnit, inPath, aeNext, aePrev ));
+	m_msgIntfConn.push_back(new CMsgIntfConn(outUnit, outPath, inUnit, inPath, aeNext, aePrev));
 }
 
 HtiFile::CMsgIntfInfo::CMsgIntfInfo(bool bInBound, string &msgUnit, string &msgPath)
@@ -419,7 +419,7 @@ HtiFile::CMsgIntfInfo::CMsgIntfInfo(bool bInBound, string &msgUnit, string &msgP
 		m_unitIdx = strtol(pStr, &pEnd, 10);
 		if (pStr == pEnd || *pEnd != ']')
 			CPreProcess::ParseMsg(Error, "illegal unit index syntax");
-		pStr = pEnd+1;
+		pStr = pEnd + 1;
 	} else
 		m_unitIdx = -1;
 
@@ -427,14 +427,14 @@ HtiFile::CMsgIntfInfo::CMsgIntfInfo(bool bInBound, string &msgUnit, string &msgP
 		CPreProcess::ParseMsg(Error, "illegal unit index syntax");
 
 	// parse msgPath for path, replIdx, msgIntfName and up to two msgIntfIndexes
-	int strIdx = msgPath.size()-1;
+	int strIdx = msgPath.size() - 1;
 	char const * pPath = msgPath.c_str();
 	int idx2 = -1;
 	if (pPath[strIdx] == ']') {
 		strIdx -= 1;
 		while (strIdx >= 0 && isdigit(pPath[strIdx])) strIdx -= 1;
 		char * pEnd;
-		idx2 = strtol(pPath+strIdx+1, &pEnd, 10);
+		idx2 = strtol(pPath + strIdx + 1, &pEnd, 10);
 		if (pPath[strIdx] != '[' || pEnd == pStr) {
 			CPreProcess::ParseMsg(Error, "illegal syntax for message interface index");
 			return;
@@ -447,7 +447,7 @@ HtiFile::CMsgIntfInfo::CMsgIntfInfo(bool bInBound, string &msgUnit, string &msgP
 		strIdx -= 1;
 		while (strIdx >= 0 && isdigit(pPath[strIdx])) strIdx -= 1;
 		char * pEnd;
-		idx1 = strtol(pPath+strIdx+1, &pEnd, 10);
+		idx1 = strtol(pPath + strIdx + 1, &pEnd, 10);
 		if (pPath[strIdx] != '[' || pEnd == pStr) {
 			CPreProcess::ParseMsg(Error, "illegal syntax for message interface index");
 			return;
@@ -459,9 +459,9 @@ HtiFile::CMsgIntfInfo::CMsgIntfInfo(bool bInBound, string &msgUnit, string &msgP
 	if (idx2 >= 0) m_msgIntfIdx.push_back(idx2);
 
 	// now get message interface name
-	pStr = pPath+strIdx+1;
+	pStr = pPath + strIdx + 1;
 	while (strIdx >= 0 && pPath[strIdx] != '/') strIdx -= 1;
-	m_msgIntfName = string(pPath+strIdx+1, pStr - (pPath+strIdx+1));
+	m_msgIntfName = string(pPath + strIdx + 1, pStr - (pPath + strIdx + 1));
 
 	if (pPath[strIdx] != '/') {
 		CPreProcess::ParseMsg(Error, "illegal syntax for message interface name");
@@ -474,7 +474,7 @@ HtiFile::CMsgIntfInfo::CMsgIntfInfo(bool bInBound, string &msgUnit, string &msgP
 		strIdx -= 1;
 		while (strIdx >= 0 && isdigit(pPath[strIdx])) strIdx -= 1;
 		char * pEnd;
-		m_replIdx = strtol(pPath+strIdx+1, &pEnd, 10);
+		m_replIdx = strtol(pPath + strIdx + 1, &pEnd, 10);
 		if (pPath[strIdx] != '[' || pEnd == pStr) {
 			CPreProcess::ParseMsg(Error, "illegal syntax for module replication index");
 			return;
@@ -489,7 +489,7 @@ HtiFile::CMsgIntfInfo::CMsgIntfInfo(bool bInBound, string &msgUnit, string &msgP
 		return;
 	}
 
-	m_modPath = string(pPath, strIdx+1);
+	m_modPath = string(pPath, strIdx + 1);
 }
 
 bool HtiFile::isMsgPathMatch(CLineInfo & lineInfo, CMsgIntfInfo & info, CModule &mod, CMsgIntf * pMsgIntf)
@@ -552,14 +552,14 @@ void HtiFile::getModInstParams(string modPath, CInstanceParams & modInstParams)
 		if (modInstParams.m_memPortList.size() == 0)
 			modInstParams.m_memPortList = instParams.m_memPortList;
 		else
-			CPreProcess::ParseMsg(Error, 
-				"Instance file specified memPort for module path '%s' multiple times",
-				modPath.c_str());
+			CPreProcess::ParseMsg(Error,
+			"Instance file specified memPort for module path '%s' multiple times",
+			modPath.c_str());
 
 		if (modInstParams.m_replCnt < 0)
 			modInstParams.m_replCnt = instParams.m_replCnt;
 		else if (instParams.m_replCnt >= 0)
-			CPreProcess::ParseMsg(Error, 
+			CPreProcess::ParseMsg(Error,
 			"Instance file specified replCnt for module path '%s' multiple times",
 			modPath.c_str());
 
@@ -570,7 +570,7 @@ void HtiFile::getModInstParams(string modPath, CInstanceParams & modInstParams)
 
 	if (modInstParams.m_replCnt < 0)
 		modInstParams.m_replCnt = 1;
-				
+
 	if (modInstParams.m_instId < 0)
 		modInstParams.m_instId = 0;
 }

@@ -30,7 +30,7 @@ CPersInc::PersInc()
 				SendReturn_htmain(P_loopCnt);
 			} else {
 				// Calculate memory read address
-				sc_uint<MEM_ADDR_W> memRdAddr = (sc_uint<MEM_ADDR_W>)(SR_arrayAddr + ((P_loopCnt + P_reqCnt) << 3));
+				sc_uint<MEM_ADDR_W> memRdAddr = (sc_uint<MEM_ADDR_W>)(SR_arrayAddr + (((P_loopCnt + P_reqCnt) * 2) << 3));
 
 				sc_uint<2> rdDstId = P_reqCnt;
 				bool bLast = P_reqCnt == 3;
@@ -64,14 +64,14 @@ CPersInc::PersInc()
 			uint64_t memWrData = 0;
 			sc_uint<2> rdDstId = P_reqCnt;
 			switch (rdDstId) {
-			case 0: memWrData = GR_arrayMem1_fld1() + 1; break;
-			case 1: memWrData = GR_arrayMem1_fld2() + 1; break;
-			case 2: memWrData = GR_arrayMem2_fld1() + 1; break;
-			case 3: memWrData = GR_arrayMem2_fld2() + 1; break;
+			case 0: memWrData = GR_arrayMem1.fld1 + 1; break;
+			case 1: memWrData = GR_arrayMem1.fld2 + 1; break;
+			case 2: memWrData = GR_arrayMem2.fld1 + 1; break;
+			case 3: memWrData = GR_arrayMem2.fld2 + 1; break;
 			}
 
 			// Calculate memory write address
-			sc_uint<MEM_ADDR_W> memWrAddr = (sc_uint<MEM_ADDR_W>)(SR_arrayAddr + ((P_loopCnt + P_reqCnt) << 3));
+			sc_uint<MEM_ADDR_W> memWrAddr = (sc_uint<MEM_ADDR_W>)(SR_arrayAddr + (((P_loopCnt + P_reqCnt) * 2 + 1) << 3));
 
 			bool bLast = P_reqCnt == 3;
 

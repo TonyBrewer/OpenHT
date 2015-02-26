@@ -1,10 +1,11 @@
-// -cl "C:\Ht\tests\clk2x\src_pers\clk2x.htl"
+// -cl $(HtToolsPath)/tests/clk2x/src_pers/clk2x.htl
+-wd $(HtToolsPath)/tests/clk2x/msvs12/		// working directory
+
 -cp hc-2
 -mt				// enable memory tracing
 -uc 1			// unit count
 -un Au			// unit name
 -df 150			// default frequence
 
--wd "C:\Ht\tests\clk2x\msvs12\"		// working directory
-"C:\Ht\tests\clk2x\src_pers\clk2x.htd"	// design file location
+../src_pers/clk2x.htd				// design file location
 ../ht/sysc							// location for output files

@@ -13,7 +13,8 @@
 ///////////////////////////
 // Error message routine
 
-void ErrorMsg(EMsgType msgType, CLineInfo const & lineInfo, const char *pFormat, va_list &args) {
+void ErrorMsg(EMsgType msgType, CLineInfo const & lineInfo, const char *pFormat, va_list &args)
+{
 	char buf[1024];
 	vsprintf(buf, pFormat, args);
 
@@ -26,6 +27,7 @@ void ErrorMsg(EMsgType msgType, CLineInfo const & lineInfo, const char *pFormat,
 	}
 
 	printf("%s(%d) : %s%s\n", lineInfo.m_fileName.c_str(), lineInfo.m_lineNum, pMsgType, buf);
+	fflush(stdout);
 
 	if (msgType == Fatal)
 		ErrorExit();
@@ -38,7 +40,7 @@ void AssertMsg(char *file, int line)
 	g_appArgs.GetArgs(argc, argv);
 
 	printf("Fatal : internal inconsistency detected\n   File: %s\n   Line: %d\n   Command Line:", file, line);
-	
+
 	for (int i = 0; i < argc; i += 1)
 		printf(" %s", argv[i]);
 
@@ -56,7 +58,7 @@ void CDsnInfo::AddIncludeList(vector<CIncludeFile> const & includeList)
 }
 
 void CDsnInfo::AddDefine(void * pHandle, string defineName, string defineValue,
-							string defineScope, string modName)
+	string defineScope, string modName)
 {
 	vector<string> paramList;
 	m_defineTable.Insert(defineName, paramList, defineValue, false, false, defineScope, modName);
@@ -65,7 +67,6 @@ void CDsnInfo::AddDefine(void * pHandle, string defineName, string defineValue,
 
 void CDsnInfo::AddTypeDef(string name, string type, string width, string scope, string modName)
 {
-	AutoDeclType(type, false, "auto");
 	AddTypeDef(name, type, width, false, scope, modName);
 }
 
@@ -76,14 +77,14 @@ void CDsnInfo::AddTypeDef(string name, string type, string width, bool bInitWidt
 		m_typedefList.back().m_width.InitValue(m_typedefList.back().m_lineInfo, false, 0);
 }
 
-void * CDsnInfo::AddStruct(string structName, bool bCStyle, bool bUnion, EScope scope, bool bInclude, string modName)
+CRecord * CDsnInfo::AddStruct(string structName, bool bCStyle, bool bUnion, EScope scope, bool bInclude, string modName)
 {
-	CStruct struct_(structName, bCStyle, bUnion, scope, bInclude, modName);
-	m_structList.push_back(struct_);
-	return &m_structList.back();
+	CRecord record(structName, bCStyle, bUnion, scope, bInclude, modName);
+	m_recordList.push_back(record);
+	return &m_recordList.back();
 }
 
-void * CDsnInfo::AddModule(string name, EClkRate clkRate)
+CModule * CDsnInfo::AddModule(string name, EClkRate clkRate)
 {
 	m_modList.push_back(new CModule(name, clkRate, false));
 
@@ -98,15 +99,15 @@ void * CDsnInfo::AddModule(string name, EClkRate clkRate)
 	return pModule;
 }
 
-void * CDsnInfo::AddReadMem(void * pHandle, string queueW, string rspGrpId, string rspCntW, bool maxBw, bool bPause, bool bPoll, bool bMultiRd)
+CMifRd * CDsnInfo::AddReadMem(CModule * pModule, string queueW, string rspGrpId, string rspGrpW,
+	string rspCntW, bool maxBw, bool bPause, bool bPoll, bool bMultiRd)
 {
-	CModule * pMod = (CModule *)pHandle;
-	CMif & mif = pMod->m_mif;
+	CMif & mif = pModule->m_mif;
 
 	// check if mif read interface was already added
 	if (mif.m_bMifRd) {
 		ParseMsg(Error, "AddReadMem already specified for module");
-		return & mif.m_mifRd;
+		return &mif.m_mifRd;
 	}
 
 	mif.m_bMif = true;
@@ -114,37 +115,37 @@ void * CDsnInfo::AddReadMem(void * pHandle, string queueW, string rspGrpId, stri
 
 	mif.m_mifRd.m_queueW = queueW;
 	mif.m_mifRd.m_rspGrpId = rspGrpId;
+	mif.m_mifRd.m_rspGrpW = rspGrpW;
 	mif.m_mifRd.m_rspCntW = rspCntW;
 	mif.m_mifRd.m_bMaxBw = maxBw;
-    mif.m_mifRd.m_bPause = bPause;
-    mif.m_mifRd.m_bPoll = bPoll;
-	mif.m_mifRd.m_bMultiRd = bMultiRd;
+	mif.m_mifRd.m_bPause = bPause;
+	mif.m_mifRd.m_bPoll = bPoll;
+	mif.m_mifRd.m_bMultiQwRdReq = bMultiRd;
 
 	mif.m_mifRd.m_lineInfo = CPreProcess::m_lineInfo;
 
-	if (pMod->m_memPortList.size() < 1) {
-		pMod->m_memPortList.resize(1);
-		pMod->m_memPortList[0] = new CModMemPort;
+	if (pModule->m_memPortList.size() < 1) {
+		pModule->m_memPortList.resize(1);
+		pModule->m_memPortList[0] = new CModMemPort;
 	}
 
-	CModMemPort & modMemPort = *pMod->m_memPortList[0];
+	CModMemPort & modMemPort = *pModule->m_memPortList[0];
 
 	modMemPort.m_bIsMem = true;
 	modMemPort.m_bRead = true;
 
-	return & mif.m_mifRd;
+	return &mif.m_mifRd;
 }
 
-void * CDsnInfo::AddWriteMem(void * pHandle, string queueW, string rspGrpId, string rspCntW,
+CMifWr * CDsnInfo::AddWriteMem(CModule * pModule, string queueW, string rspGrpId, string rspGrpW, string rspCntW,
 	bool maxBw, bool bPause, bool bPoll, bool bReqPause, bool bMultiWr)
 {
-	CModule * pMod = (CModule *)pHandle;
-	CMif & mif = pMod->m_mif;
+	CMif & mif = pModule->m_mif;
 
 	// check if mif write interface was already added for 'mifId'
 	if (mif.m_bMifWr) {
 		ParseMsg(Error, "AddWriteMem already specified for module");
-		return & mif.m_mifWr;
+		return &mif.m_mifWr;
 	}
 
 	mif.m_bMif = true;
@@ -152,29 +153,30 @@ void * CDsnInfo::AddWriteMem(void * pHandle, string queueW, string rspGrpId, str
 
 	mif.m_mifWr.m_queueW = queueW;
 	mif.m_mifWr.m_rspGrpId = rspGrpId;
+	mif.m_mifWr.m_rspGrpW = rspGrpW;
 	mif.m_mifWr.m_rspCntW = rspCntW;
 	mif.m_mifWr.m_bMaxBw = maxBw;
-    mif.m_mifWr.m_bPause = bPause;
-    mif.m_mifWr.m_bPoll = bPoll;
+	mif.m_mifWr.m_bPause = bPause;
+	mif.m_mifWr.m_bPoll = bPoll;
 	mif.m_mifWr.m_bReqPause = bReqPause;
-	mif.m_mifWr.m_bMultiWr = bMultiWr;
+	mif.m_mifWr.m_bMultiQwWrReq = bMultiWr;
 
 	mif.m_mifWr.m_lineInfo = CPreProcess::m_lineInfo;
 
-	if (pMod->m_memPortList.size() < 1) {
-		pMod->m_memPortList.resize(1);
-		pMod->m_memPortList[0] = new CModMemPort;
+	if (pModule->m_memPortList.size() < 1) {
+		pModule->m_memPortList.resize(1);
+		pModule->m_memPortList[0] = new CModMemPort;
 	}
 
-	CModMemPort & modMemPort = *pMod->m_memPortList[0];
+	CModMemPort & modMemPort = *pModule->m_memPortList[0];
 
 	modMemPort.m_bIsMem = true;
 	modMemPort.m_bWrite = true;
-		
-	return & mif.m_mifWr;
+
+	return &mif.m_mifWr;
 }
 
-void CDsnInfo::AddCall(void * pHandle, string funcName, bool bCall, bool bFork, string queueW, string dest) 
+void CDsnInfo::AddCall(void * pHandle, string funcName, bool bCall, bool bFork, string queueW, string dest)
 {
 	CModule * pModule = (CModule *)pHandle;
 	pModule->m_cxrCallList.push_back(CCxrCall(funcName, bCall, bFork, queueW, dest, false));
@@ -190,7 +192,7 @@ void CDsnInfo::AddXfer(void * pHandle, string funcName, string queueW)
 	pModule->m_cxrCallList.push_back(CCxrCall(funcName, bCall, bFork, queueW, dest, bXfer));
 }
 
-void * CDsnInfo::AddEntry(void * pHandle, string funcName, string entryInstr, string reserve, bool &bHost)
+CCxrEntry * CDsnInfo::AddEntry(CModule * pModule, string funcName, string entryInstr, string reserve, bool &bHost)
 {
 	if (bHost) {
 		bool bCall = true;
@@ -198,48 +200,32 @@ void * CDsnInfo::AddEntry(void * pHandle, string funcName, string entryInstr, st
 		AddCall(m_modList[0], funcName, bCall, bFork, string("0"), string("auto"));
 	}
 
-	CModule * pModule = (CModule *)pHandle;
-	return & pModule->AddEntry(funcName, entryInstr, reserve);
+	return &pModule->AddEntry(funcName, entryInstr, reserve);
 }
 
-void * CDsnInfo::AddReturn(void * pHandle, string func)
+CCxrReturn * CDsnInfo::AddReturn(void * pHandle, string func)
 {
 	CModule * pModule = (CModule *)pHandle;
 	pModule->m_cxrReturnList.push_back(CCxrReturn(func));
-	return & pModule->m_cxrReturnList.back();
+	return &pModule->m_cxrReturnList.back();
 }
 
-void * CDsnInfo::AddStage(void * pHandle, string privWrStg, string execStg )
+CStage * CDsnInfo::AddStage(CModule * pModule, string privWrStg, string execStg)
 {
-	CModule * pModule = (CModule *)pHandle;
 	CStage & stage = pModule->m_stage;
 
 	stage.m_privWrStg = privWrStg;
 	stage.m_execStg = execStg;
 	stage.m_lineInfo = CPreProcess::m_lineInfo;
 
-	return & stage;
+	return &stage;
 }
 
-void * CDsnInfo::AddShared(void * pHandle, bool bReset)
+CRecord * CDsnInfo::AddShared(void * pHandle, bool bReset)
 {
 	CModule * pModule = (CModule *)pHandle;
 	pModule->m_bResetShared = bReset;
-	return & pModule->m_shared;
-}
-
-void * CDsnInfo::AddPrivate(void * pHandle )
-{
-	CModule * pModule = (CModule *)pHandle;
-	return & pModule->AddPrivate();
-}
-
-void * CDsnInfo::AddFunction(void * pHandle, string type, string name)
-{
-	CModule * pModule = (CModule *)pHandle;
-	AutoDeclType(type);
-	pModule->m_funcList.push_back(CFunction(type, name));
-	return & pModule->m_funcList.back();
+	return &pModule->m_shared;
 }
 
 void CDsnInfo::AddThreads(void * pHandle, string htIdW, string resetInstr, bool bPause)
@@ -254,10 +240,10 @@ void CDsnInfo::AddInstr(void * pHandle, string name)
 	pModule->m_instrList.push_back(name);
 }
 
-void CDsnInfo::AddMsgIntf(void * pHandle, string name, string dir, string type, string dimen, string replCnt, string queueW, string reserve, bool autoConn)
+void CDsnInfo::AddMsgIntf(void * pHandle, string name, string dir, CType * pType, string dimen, string replCnt, string queueW, string reserve, bool autoConn)
 {
 	CModule * pModule = (CModule *)pHandle;
-	pModule->m_msgIntfList.push_back(new CMsgIntf(name, dir, type, dimen, replCnt, queueW, reserve, autoConn));
+	pModule->m_msgIntfList.push_back(new CMsgIntf(name, dir, pType, dimen, replCnt, queueW, reserve, autoConn));
 }
 
 void CDsnInfo::AddTrace(void * pHandle, string name)
@@ -284,16 +270,16 @@ void CDsnInfo::AddBarrier(void * pHandle, string name, string barIdW)
 	pModule->m_barrierList.push_back(new CBarrier(name, barIdW));
 }
 
-void CDsnInfo::AddStream(void * pHandle, bool bRead, string &name, string &type, string &strmBw, string &elemCntW,
-	string &strmCnt, string &memSrc, vector<int> &memPort, string &access, string &reserve, bool paired, bool bClose, string &tag, string &rspGrpW)
+void CDsnInfo::AddStream(void * pHandle, bool bRead, string &name, CType * pType, string &strmBw, string &elemCntW,
+	string &strmCnt, string &memSrc, vector<int> &memPort, string &access, string &reserve, bool paired, bool bClose, CType * pTag, string &rspGrpW)
 {
 	CModule * pMod = (CModule *)pHandle;
-	pMod->m_streamList.push_back(new CStream(bRead, name, type, strmBw, elemCntW, strmCnt, memSrc, memPort, access, reserve, paired, bClose, tag, rspGrpW));
+	pMod->m_streamList.push_back(new CStream(bRead, name, pType, strmBw, elemCntW, strmCnt, memSrc, memPort, access, reserve, paired, bClose, pTag, rspGrpW));
 
 	for (size_t i = 0; i < memPort.size(); i += 1) {
-		while (pMod->m_memPortList.size() < (size_t)memPort[i]+1) {
+		while (pMod->m_memPortList.size() < (size_t)memPort[i] + 1) {
 			pMod->m_memPortList.push_back(new CModMemPort);
-			pMod->m_memPortList.back()->m_portIdx = (int)pMod->m_memPortList.size()-1;
+			pMod->m_memPortList.back()->m_portIdx = (int)pMod->m_memPortList.size() - 1;
 		}
 
 		CModMemPort & modMemPort = *pMod->m_memPortList[memPort[i]];
@@ -301,17 +287,17 @@ void CDsnInfo::AddStream(void * pHandle, bool bRead, string &name, string &type,
 		modMemPort.m_bIsStrm = true;
 		modMemPort.m_bRead |= bRead;
 		modMemPort.m_bWrite |= !bRead;
-		modMemPort.m_bMultiRd |= bRead;
-		modMemPort.m_bMultiWr |= !bRead;
+		modMemPort.m_bMultiQwRdReq |= bRead;
+		modMemPort.m_bMultiQwWrReq |= !bRead;
 		modMemPort.m_queueW = 5;
 	}
 }
 
-void CDsnInfo::AddStencilBuffer(void * pHandle, string &name,string & type, vector<int> &gridSize, 
-		vector<int> &stencilSize, string &pipeLen)
+void CDsnInfo::AddStencilBuffer(void * pHandle, string &name, CType * pType, vector<int> &gridSize,
+	vector<int> &stencilSize, string &pipeLen)
 {
 	CModule * pMod = (CModule *)pHandle;
-	pMod->m_stencilBufferList.push_back(new CStencilBuffer( name, type, gridSize, stencilSize, pipeLen ));
+	pMod->m_stencilBufferList.push_back(new CStencilBuffer(name, pType, gridSize, stencilSize, pipeLen));
 
 }
 
@@ -352,93 +338,27 @@ void CDsnInfo::AddHostData(void * pHandle, HtdFile::EHostMsgDir msgDir, bool bMa
 	}
 }
 
-void * CDsnInfo::AddGlobal(void * pHandle)
+void CDsnInfo::AddGlobalVar(vector<CRam *> * pGlobalList, CType * pType, string name, string dimen1, string dimen2,
+	string addr1W, string addr2W, string addr1, string addr2, string rdStg, string wrStg,
+	bool bMaxIw, bool bMaxMw, ERamType ramType, bool bRead, bool bWrite)
 {
-	CModule * pModule = (CModule *)pHandle;
-	return & pModule->AddGlobal();
+	(*pGlobalList).push_back(new CRam(pType, name, dimen1, dimen2, addr1, addr2,
+		addr1W, addr2W, rdStg, wrStg, bMaxIw, bMaxMw, ramType, bRead, bWrite));
 }
 
-void CDsnInfo::AddGlobalVar(void * pHandle, string type, string name, string dimen1, string dimen2,
-	string addr1W, string addr2W, string addr1, string addr2, string rdStg, string wrStg, bool bMaxIw, bool bMaxMw, ERamType ramType)
-{
-	vector<CRam *> & ramList = *(vector<CRam *> *)pHandle;
-	ramList.push_back(new CRam(type, name, dimen1, dimen2, addr1, addr2, addr1W, addr2W, rdStg, wrStg, bMaxIw, bMaxMw, ramType));
-}
-	
-void * CDsnInfo::AddGlobalRam(void * pHandle, string name, string dimen1, string dimen2,
-	string addr1W, string addr2W, string addr1, string addr2, string rdStg, string wrStg, bool bExtern)
-{
-	CModule * pModule = (CModule *)pHandle;
-
-	if (bExtern)
-		return & pModule->AddExtRam(name, addr1, addr2, addr1W, addr2W, dimen1, dimen2, rdStg, wrStg);
-	else
-		return & pModule->AddIntRam(name, addr1, addr2, addr1W, addr2W, dimen1, dimen2, rdStg, wrStg);
-}
-
-void CDsnInfo::AddGlobalField(void * pHandle, string type, string name, string dimen1, string dimen2,
-	bool bRead, bool bWrite, HtdFile::ERamType ramType)
-{
-	AutoDeclType(type);
-	CStruct * pModule = (CStruct *)pHandle;
-	pModule->AddGlobalField(type, name, dimen1, dimen2, bRead, bWrite, ramType);
-}
-
-void * CDsnInfo::AddStructField(void * pHandle, string type, string name, string bitWidth, string base, 
-	vector<CHtString> const &dimenList, bool bRead, bool bWrite, bool bMifRead, bool bMifWrite, HtdFile::ERamType ramType, int atomicMask)
-{
-	AutoDeclType(type);
-	CStruct * pModule = (CStruct *)pHandle;
-
-	return & pModule->AddStructField(type, name, bitWidth, base, dimenList, bRead, bWrite, bMifRead, bMifWrite, ramType, atomicMask);
-}
-
-void * CDsnInfo::AddPrivateField(void * pHandle, string type, string name, string dimen1, string dimen2,
-	string addr1W, string addr2W, string addr1, string addr2)
-{
-	AutoDeclType(type);
-	CStruct * pModule = (CStruct *)pHandle;
-	return & pModule->AddPrivateField(type, name, dimen1, dimen2, addr1W, addr2W, addr1, addr2);
-}
-
-void * CDsnInfo::AddSharedField(void * pHandle, string type, string name, string dimen1, string dimen2, string rdSelW,
-	string wrSelW, string addr1W, string addr2W, string queueW, HtdFile::ERamType ramType, string reset)
-{
-	AutoDeclType(type);
-	CStruct * pModule = (CStruct *)pHandle;
-	return & pModule->AddSharedField(type, name, dimen1, dimen2, rdSelW, wrSelW, addr1W, addr2W, queueW, ramType, reset);
-}
-
-void * CDsnInfo::AddStageField(void * pHandle, string type, string name, string dimen1, string dimen2,
+void CDsnInfo::AddStageField(CStage * pStage, CType * pType, string name, string dimen1, string dimen2,
 	string *pRange, bool bInit, bool bConn, bool bReset, bool bZero)
 {
-	AutoDeclType(type);
-	CStage * pStage = (CStage *)pHandle;
-	bool bStageNums = pStage->AddStageField(type, name, dimen1, dimen2, pRange, bInit, bConn, bReset, bZero);
+	bool bStageNums = pStage->AddStageField(pType, name, dimen1, dimen2, pRange, bInit, bConn, bReset, bZero);
 	pStage->m_bStageNums |= bStageNums;
-	return pHandle;
 }
 
-void CDsnInfo::AddEntryParam(void * pHandle, string hostType, string type, string paramName, bool bIsUsed)
+void CDsnInfo::AddStructField(CRecord * pRecord, CType * pType, string const & name, string bitWidth, string base, vector<CHtString> const &dimenList,
+	bool bSrcRead, bool bSrcWrite, bool bMifRead, bool bMifWrite, HtdFile::ERamType ramType, int atomicMask)
 {
-	AutoDeclType(type);
-	CCxrEntry * pEntry = (CCxrEntry *)pHandle;
-	pEntry->AddParam(hostType, type, paramName, bIsUsed);
+
 }
 
-void CDsnInfo::AddReturnParam(void * pHandle, string hostType, string type, string paramName, bool bIsUsed)
-{
-	AutoDeclType(type);
-	CCxrReturn * pReturn = (CCxrReturn *)pHandle;
-	pReturn->AddParam(hostType, type, paramName, bIsUsed);
-}
-
-void CDsnInfo::AddFunctionParam(void * pHandle, string dir, string type, string name)
-{
-	AutoDeclType(type);
-	CFunction * pFunction = (CFunction *)pHandle;
-	pFunction->AddParam(dir, type, name);
-}
 
 void * CDsnInfo::AddMsgDst(void * pHandle, string var, string dataLsb, string addr1Lsb, string addr2Lsb,
 	string idx1Lsb, string idx2Lsb, string field, string fldIdx1Lsb, string fldIdx2Lsb, bool bReadOnly)
@@ -449,73 +369,22 @@ void * CDsnInfo::AddMsgDst(void * pHandle, string var, string dataLsb, string ad
 	return pHostMsg;
 }
 
-void * CDsnInfo::AddSrc(void * pHandle, string name, string var, string field, bool bMultiWr, string srcIdx, string memDst)
+CMifWr * CDsnInfo::AddSrc(CMifWr * pMifWr, string const & name, CType * pType,
+	string const & var, string const & memDst, string const & elemCntW)
 {
-	CMifWr * pMifWr = (CMifWr *)pHandle;
-	pMifWr->m_wrSrcList.push_back(CMifWrSrc(name, var, field, bMultiWr, srcIdx, memDst));
+	pMifWr->m_wrSrcList.push_back(CMifWrSrc(name, pType, var, memDst, elemCntW));
 	return pMifWr;
 }
 
-void * CDsnInfo::AddDst(void * pHandle, string name, string var, string field, string dataLsb, 
-	bool bMultiRd, string dstIdx, string memSrc, string atomic, string rdType)
+void CDsnInfo::AddDst(CMifRd * pMifRd, string const & name, string const & var,
+	string const & field, string const & dataLsb, bool bMultiRd, string const & dstIdx,
+	string const & memSrc, string const & atomic, CType * pRdType, string const & elemCntW)
 {
-	CMifRd * pMifRd = (CMifRd *)pHandle;
-	pMifRd->m_rdDstList.push_back(CMifRdDst(name, var, field, dataLsb, bMultiRd, dstIdx, memSrc, atomic, rdType));
-	return pMifRd;
+	pMifRd->m_rdDstList.push_back(CMifRdDst(name, var, field, dataLsb, bMultiRd, dstIdx, memSrc, atomic, pRdType, elemCntW));
 }
 
-void * CDsnInfo::AddDst(void * pHandle, string name, string infoW, string stgCnt,
-	bool bMultiRd, string memSrc, string rdType)
+void CDsnInfo::AddDst(CMifRd * pMifRd, string name, string infoW, string stgCnt,
+	bool bMultiRd, string memSrc, CType * pRdType)
 {
-	CMifRd * pMifRd = (CMifRd *)pHandle;
-	pMifRd->m_rdDstList.push_back(CMifRdDst(name, infoW, stgCnt, bMultiRd, memSrc, rdType));
-	return pMifRd;
+	pMifRd->m_rdDstList.push_back(CMifRdDst(name, infoW, stgCnt, bMultiRd, memSrc, pRdType));
 }
-
-///////////////////////////
-// Declare a uint3_t type variable from HTD file
-
-void CDsnInfo::AutoDeclType(string type, bool bInitWidth, string scope)
-{
-	char const *pType = type.c_str();
-
-	char eolStr[64];
-	int width;
-	bool bUnsigned;
-	if (sscanf(pType, "ht_uint%d%s", &width, eolStr) == 1) {
-		bUnsigned = true;
-	} else if (sscanf(pType, "ht_int%d%s", &width, eolStr) == 1) {
-		bUnsigned = false;
-	//} else if (sscanf(pType, "uint%d_t%s", &width, eolStr) == 1) {
-	//	bUnsigned = true;
-	//} else if (sscanf(pType, "int%d_t%s", &width, eolStr) == 1) {
-	//	bUnsigned = false;
-	} else
-		return;
-
-	if ((width == 8 || width == 16 || width == 32 || width == 64) && pType[0] != 'h')
-		return;
-
-	if (width > 64)
-		ParseMsg(Error, "variable widths of greater than 64 are not supported");
-
-	// found a auto declared type, check if it already is in the list
-	for (size_t typeIdx = 0; typeIdx < m_typedefList.size(); typeIdx += 1) {
-		CTypeDef & typeDef = m_typedefList[typeIdx];
-
-		if (typeDef.m_name == type)
-			return;
-	}
-
-	string basicType = bUnsigned ? "uint64_t" : "int64_t";
-
-	char widthStr[32];
-	sprintf(widthStr, "%d", width);
-
-	AddTypeDef(type, basicType, widthStr, bInitWidth, scope, "");
-}
-
-///////////////////////////
-// Routines to save HTD file info to dsnInfo structures
-
-

@@ -14,17 +14,11 @@
 #include "HtvArgs.h"
 #include "HtvDesign.h"
 
-#if defined(_WIN32) || defined (NO_LIC_CHK)
-# define convey_lic_ck_rl(x)
-#else
-extern "C" {
-    extern int convey_lic_ck_rl(const char *);
-}
-#endif
+void InstallSigHandler();
 
 int main(int argc, char* argv[])
 {
-    convey_lic_ck_rl("Convey_HT");
+	InstallSigHandler();
 
     g_htvArgs.Parse(argc, argv);
 	
@@ -58,4 +52,11 @@ int main(int argc, char* argv[])
 
     //printf("CPU time = %4.2f\n", (double)clock() / CLOCKS_PER_SEC);
     return GetErrorCnt();
+}
+
+void SigHandler(int signo) { Assert(0); }
+
+void InstallSigHandler()
+{
+	signal(SIGSEGV, SigHandler);
 }

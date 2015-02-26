@@ -10,7 +10,7 @@ void CPersT4::PersT4()
 			P_loopCnt = 0;
 			S_totalCnt = 0;
 
-			uint64_t ht_noload tmp = GR_strSetL_data0();
+			uint64_t ht_noload tmp = GR_strSetL;
 			tmp++;
 
 			HtContinue(T4_CALL);

@@ -57,7 +57,7 @@ CDsnInfo::GenModIhdStatements(CModule &mod)
 		// in bound interface
 		m_ihdIoDecl.Append("\tsc_in<bool> i_hifTo%s_%sRdy;\n",
 			mod.m_modName.Uc().c_str(), queIntf.m_queName.Lc().c_str());
-		string structName = queIntf.m_structName + (queIntf.m_bInclude ? "_inc" : "");
+		string structName = queIntf.m_typeName + (queIntf.m_bInclude ? "_inc" : "");
 		m_ihdIoDecl.Append("\tsc_in<%s> i_hifTo%s_%s;\n",
 			structName.c_str(),
 			mod.m_modName.Uc().c_str(), queIntf.m_queName.Lc().c_str());
@@ -77,7 +77,7 @@ CDsnInfo::GenModIhdStatements(CModule &mod)
 
 		if (queIntf.m_queType != Pop) continue;
 
-		string structName = queIntf.m_structName + (queIntf.m_bInclude ? "_inc" : "");
+		string structName = queIntf.m_typeName + (queIntf.m_bInclude ? "_inc" : "");
 		m_ihdRamDecl.Append("\tht_dist_que<%s, 5> m_%sQue;\n",
 			structName.c_str(), queIntf.m_queName.Lc().c_str());
 
@@ -85,7 +85,7 @@ CDsnInfo::GenModIhdStatements(CModule &mod)
 			structName.c_str(), queIntf.m_queName.Lc().c_str());
 		m_ihdRegDecl.Append("\tbool r_%sQue_empty;\n",
 			queIntf.m_queName.Lc().c_str());
-		m_ihdCtorInit.Append("\t\tr_%sQue_empty = true;",
+		m_ihdCtorInit.Append("\t\tr_%sQue_empty = true;\n",
 			queIntf.m_queName.Lc().c_str());
 	}
 
@@ -95,7 +95,7 @@ CDsnInfo::GenModIhdStatements(CModule &mod)
 
 		if (queIntf.m_queType != Pop) continue;
 
-		m_ihdRegDecl.Append("\tbool r_%sTo%s_%sAvl;\n", 
+		m_ihdRegDecl.Append("\tbool r_%sTo%s_%sAvl;\n",
 			mod.m_modName.Lc().c_str(), queIntf.m_modName.Uc().c_str(), queIntf.m_queName.Lc().c_str());
 	}
 	m_ihdRegDecl.NewLine();
@@ -165,7 +165,7 @@ CDsnInfo::GenModIhdStatements(CModule &mod)
 			" - expected data to be ready (and not a data marker)\");\n",
 			queIntf.m_queName.Lc().c_str(), mod.m_modName.Uc().c_str());
 
-		m_ihdMacros.Append("\tc_%sTo%s_%sAvl = true;\n", 
+		m_ihdMacros.Append("\tc_%sTo%s_%sAvl = true;\n",
 			mod.m_modName.Lc().c_str(), queIntf.m_modName.Uc().c_str(), queIntf.m_queName.Lc().c_str());
 
 		m_ihdMacros.Append("\treturn r_%sQue_front.m_data;\n", queIntf.m_queName.Lc().c_str());
@@ -184,7 +184,7 @@ CDsnInfo::GenModIhdStatements(CModule &mod)
 			queIntf.m_queName.Lc().c_str(), mod.m_modName.Uc().c_str());
 
 		m_ihdMacros.Append("\tif (r_%sQue_front.m_ctl == HIF_DQ_NULL) {\n", queIntf.m_queName.Lc().c_str());
-		m_ihdMacros.Append("\t\tc_%sTo%s_%sAvl = true;\n", 
+		m_ihdMacros.Append("\t\tc_%sTo%s_%sAvl = true;\n",
 			mod.m_modName.Lc().c_str(), queIntf.m_modName.Uc().c_str(), queIntf.m_queName.Lc().c_str());
 		m_ihdMacros.Append("\t\treturn true;\n");
 		m_ihdMacros.Append("\t} else\n");
@@ -198,9 +198,9 @@ CDsnInfo::GenModIhdStatements(CModule &mod)
 
 		if (queIntf.m_queType != Pop) continue;
 
-		m_ihdRegDecl.Append("\tbool c_%sTo%s_%sAvl;\n", 
+		m_ihdRegDecl.Append("\tbool c_%sTo%s_%sAvl;\n",
 			mod.m_modName.Lc().c_str(), queIntf.m_modName.Uc().c_str(), queIntf.m_queName.Lc().c_str());
-		ihdPreInstr.Append("\tc_%sTo%s_%sAvl = false;\n", 
+		ihdPreInstr.Append("\tc_%sTo%s_%sAvl = false;\n",
 			mod.m_modName.Lc().c_str(), queIntf.m_modName.Uc().c_str(), queIntf.m_queName.Lc().c_str());
 	}
 	ihdPreInstr.NewLine();
@@ -217,9 +217,9 @@ CDsnInfo::GenModIhdStatements(CModule &mod)
 			queIntf.m_modName.Lc().c_str(), mod.m_modName.Uc().c_str(), queIntf.m_queName.Lc().c_str());
 
 
-		string structName = queIntf.m_structName + (queIntf.m_bInclude ? "_inc" : "");
+		string structName = queIntf.m_typeName + (queIntf.m_bInclude ? "_inc" : "");
 		ihdPostInstr.Append("\t%s c_ihdQue_front = (c_%sTo%s_%sAvl || r_ihdQue_empty) ? m_ihdQue.front() : r_ihdQue_front;\n",
-			structName.c_str(), 
+			structName.c_str(),
 			mod.m_modName.Lc().c_str(), queIntf.m_modName.Uc().c_str(), queIntf.m_queName.Lc().c_str());
 
 		ihdPostInstr.Append("\tbool c_ihdQue_empty = m_ihdQue.empty() && (c_%sTo%s_%sAvl || r_ihdQue_empty);\n",
@@ -242,7 +242,7 @@ CDsnInfo::GenModIhdStatements(CModule &mod)
 
 		if (mod.m_clkRate == eClk1x)
 			m_ihdRamClock1x.Append("\tm_%sQue.clock(r_reset1x);\n",
-				queIntf.m_queName.Lc().c_str());
+			queIntf.m_queName.Lc().c_str());
 		else {
 			m_ihdRamClock1x.Append("\tm_%sQue.push_clock(r_reset1x);\n",
 				queIntf.m_queName.Lc().c_str());
@@ -306,7 +306,7 @@ CDsnInfo::GenModOhdStatements(CModule &mod)
 		// out bound interface
 		m_ohdIoDecl.Append("\tsc_out<bool> o_%sToHif_%sRdy;\n",
 			mod.m_modName.Lc().c_str(), queIntf.m_queName.Lc().c_str());
-		string structName = queIntf.m_structName + (queIntf.m_bInclude ? "_inc" : "");
+		string structName = queIntf.m_typeName + (queIntf.m_bInclude ? "_inc" : "");
 		m_ohdIoDecl.Append("\tsc_out<%s> o_%sToHif_%s;\n",
 			structName.c_str(),
 			mod.m_modName.Lc().c_str(), queIntf.m_queName.Lc().c_str());
@@ -326,10 +326,10 @@ CDsnInfo::GenModOhdStatements(CModule &mod)
 
 		if (queIntf.m_queType == Pop) continue;
 
-		m_ohdRegDecl.Append("\tbool r_%sTo%s_%sRdy;\n", 
+		m_ohdRegDecl.Append("\tbool r_%sTo%s_%sRdy;\n",
 			mod.m_modName.Lc().c_str(), queIntf.m_modName.Uc().c_str(), queIntf.m_queName.Lc().c_str());
-		string structName = queIntf.m_structName + (queIntf.m_bInclude ? "_inc" : "");
-		m_ohdRegDecl.Append("\t%s r_%sTo%s_%s;\n", 
+		string structName = queIntf.m_typeName + (queIntf.m_bInclude ? "_inc" : "");
+		m_ohdRegDecl.Append("\t%s r_%sTo%s_%s;\n",
 			structName.c_str(), mod.m_modName.Lc().c_str(), queIntf.m_modName.Uc().c_str(), queIntf.m_queName.Lc().c_str());
 		m_ohdRegDecl.Append("\tht_uint6 r_%sAvlCnt;\n", queIntf.m_queName.Lc().c_str());
 		m_ohdAvlCntChk.Append("\t\tassert(r_%sAvlCnt == 32);\n", queIntf.m_queName.Lc().c_str());
@@ -345,7 +345,7 @@ CDsnInfo::GenModOhdStatements(CModule &mod)
 		if (queIntf.m_queType == Pop) continue;
 
 		string unitNameUc = !g_appArgs.IsModuleUnitNamesEnabled() ? m_unitName.Uc() : "";
-	
+
 		string vcdModName = VA("Pers%s", mod.m_modName.Uc().c_str());
 		m_ohdRegDecl.Append("\tbool ht_noload c_%sAvlCntBusy;\n", queIntf.m_queName.Lc().c_str());
 		m_ohdRegDecl.Append("\tbool ht_noload c_%sAvlCntAvail;\n", queIntf.m_queName.Lc().c_str());
@@ -443,7 +443,7 @@ CDsnInfo::GenModOhdStatements(CModule &mod)
 		ohdPreInstr.Append("\tc_%sTo%s_%sRdy = false;\n",
 			mod.m_modName.Lc().c_str(), queIntf.m_modName.Uc().c_str(), queIntf.m_queName.Lc().c_str());
 
-		string structName = queIntf.m_structName + (queIntf.m_bInclude ? "_inc" : "");
+		string structName = queIntf.m_typeName + (queIntf.m_bInclude ? "_inc" : "");
 		m_ohdRegDecl.Append("\t%s c_%sTo%s_%s;\n",
 			structName.c_str(), mod.m_modName.Lc().c_str(), queIntf.m_modName.Uc().c_str(), queIntf.m_queName.Lc().c_str());
 		ohdPreInstr.Append("\tc_%sTo%s_%s = 0;\n", mod.m_modName.Lc().c_str(), queIntf.m_modName.Uc().c_str(), queIntf.m_queName.Lc().c_str());
@@ -462,14 +462,14 @@ CDsnInfo::GenModOhdStatements(CModule &mod)
 
 		if (mod.m_clkRate == eClk1x)
 			ohdPostInstr.Append("\tc_%sAvlCnt = r_%sAvlCnt + i_%sTo%s_%sAvl.read() - c_%sTo%s_%sRdy;\n",
-				queIntf.m_queName.Lc().c_str(), queIntf.m_queName.Lc().c_str(), queIntf.m_modName.Lc().c_str(),
-				mod.m_modName.Uc().c_str(), queIntf.m_queName.Lc().c_str(),
-				mod.m_modName.Lc().c_str(), queIntf.m_modName.Uc().c_str(), queIntf.m_queName.Lc().c_str());
+			queIntf.m_queName.Lc().c_str(), queIntf.m_queName.Lc().c_str(), queIntf.m_modName.Lc().c_str(),
+			mod.m_modName.Uc().c_str(), queIntf.m_queName.Lc().c_str(),
+			mod.m_modName.Lc().c_str(), queIntf.m_modName.Uc().c_str(), queIntf.m_queName.Lc().c_str());
 		else
 			ohdPostInstr.Append("\tc_%sAvlCnt = r_%sAvlCnt + (i_%sTo%s_%sAvl.read() && r_phase) - c_%sTo%s_%sRdy;\n",
-				queIntf.m_queName.Lc().c_str(), queIntf.m_queName.Lc().c_str(), queIntf.m_modName.Lc().c_str(),
-				mod.m_modName.Uc().c_str(), queIntf.m_queName.Lc().c_str(),
-				mod.m_modName.Lc().c_str(), queIntf.m_modName.Uc().c_str(), queIntf.m_queName.Lc().c_str());
+			queIntf.m_queName.Lc().c_str(), queIntf.m_queName.Lc().c_str(), queIntf.m_modName.Lc().c_str(),
+			mod.m_modName.Uc().c_str(), queIntf.m_queName.Lc().c_str(),
+			mod.m_modName.Lc().c_str(), queIntf.m_modName.Uc().c_str(), queIntf.m_queName.Lc().c_str());
 
 		ohdPostInstr.Append("\tc_%sAvlCntZero = c_%sAvlCnt == 0;\n",
 			queIntf.m_queName.Lc().c_str(), queIntf.m_queName.Lc().c_str());
@@ -485,13 +485,13 @@ CDsnInfo::GenModOhdStatements(CModule &mod)
 		ohdReg.Append("\tr_%sTo%s_%sRdy = c_%sTo%s_%sRdy;\n",
 			mod.m_modName.Lc().c_str(), queIntf.m_modName.Uc().c_str(), queIntf.m_queName.Lc().c_str(),
 			mod.m_modName.Lc().c_str(), queIntf.m_modName.Uc().c_str(), queIntf.m_queName.Lc().c_str());
-    	ohdReg.Append("\tr_%sTo%s_%s = c_%sTo%s_%s;\n",
+		ohdReg.Append("\tr_%sTo%s_%s = c_%sTo%s_%s;\n",
 			mod.m_modName.Lc().c_str(), queIntf.m_modName.Uc().c_str(), queIntf.m_queName.Lc().c_str(),
 			mod.m_modName.Lc().c_str(), queIntf.m_modName.Uc().c_str(), queIntf.m_queName.Lc().c_str());
-    	ohdReg.Append("\tr_%sAvlCnt = r_reset1x ? (ht_uint6)32 : c_%sAvlCnt;\n",
+		ohdReg.Append("\tr_%sAvlCnt = r_reset1x ? (ht_uint6)32 : c_%sAvlCnt;\n",
 			queIntf.m_queName.Lc().c_str(),
 			queIntf.m_queName.Lc().c_str());
-    	ohdReg.Append("\tr_%sAvlCntZero = !r_reset1x && c_%sAvlCntZero;\n",
+		ohdReg.Append("\tr_%sAvlCntZero = !r_reset1x && c_%sAvlCntZero;\n",
 			queIntf.m_queName.Lc().c_str(),
 			queIntf.m_queName.Lc().c_str());
 	}

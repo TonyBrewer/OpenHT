@@ -23,7 +23,7 @@ void CDsnInfo::InitAndValidateModStBuf()
 		for (size_t stBufIdx = 0; stBufIdx < pMod->m_stencilBufferList.size(); stBufIdx += 1) {
 			CStencilBuffer * pStBuf = pMod->m_stencilBufferList[stBufIdx];
 
-			pStBuf->m_pipeLen.InitValue( pStBuf->m_lineInfo, false, 0 );
+			pStBuf->m_pipeLen.InitValue(pStBuf->m_lineInfo, false, 0);
 
 			if (pStBuf->m_gridSize.size() != pStBuf->m_stencilSize.size())
 				ParseMsg(Error, pStBuf->m_lineInfo, "expected gridSize and stencilSize dimension to be the same");
@@ -34,15 +34,15 @@ void CDsnInfo::InitAndValidateModStBuf()
 			// verify that stencil size is less than or equal to grid size
 			if (pStBuf->m_gridSize.size() >= 1 && pStBuf->m_gridSize[0] < pStBuf->m_stencilSize[0])
 				ParseMsg(Error, pStBuf->m_lineInfo, "grid size (%d) must be larger than stencil size (%d)",
-					pStBuf->m_gridSize[0], pStBuf->m_stencilSize[0]);
+				pStBuf->m_gridSize[0], pStBuf->m_stencilSize[0]);
 
 			if (pStBuf->m_gridSize.size() >= 2 && pStBuf->m_gridSize[1] < pStBuf->m_stencilSize[1])
 				ParseMsg(Error, pStBuf->m_lineInfo, "grid size (%d) must be larger than stencil size (%d)",
-					pStBuf->m_gridSize[1], pStBuf->m_stencilSize[1]);
+				pStBuf->m_gridSize[1], pStBuf->m_stencilSize[1]);
 
 			if (pStBuf->m_gridSize.size() >= 3 && pStBuf->m_gridSize[2] < pStBuf->m_stencilSize[2])
 				ParseMsg(Error, pStBuf->m_lineInfo, "grid size (%d) must be larger than stencil size (%d)",
-					pStBuf->m_gridSize[2], pStBuf->m_stencilSize[2]);
+				pStBuf->m_gridSize[2], pStBuf->m_stencilSize[2]);
 
 			// Fill stencil buffer structure members
 			string inStructName = "CStencilBufferIn";
@@ -52,26 +52,25 @@ void CDsnInfo::InitAndValidateModStBuf()
 				outStructName += "_" + pStBuf->m_name;
 			}
 
-			CStruct * pInStruct = FindStruct(inStructName);
-			pInStruct->AddField("bool", "m_bValid", "", "");
-			pInStruct->AddField(pStBuf->m_type, "m_data", "", "");
+			CRecord * pInStruct = FindRecord(inStructName);
+			pInStruct->AddField(&g_bool, "m_bValid", "", "");
+			pInStruct->AddField(pStBuf->m_pType, "m_data", "", "");
 
-			CStruct * pOutStruct = FindStruct(outStructName);
-			pOutStruct->AddField("bool", "m_bValid", "", "");
+			CRecord * pOutStruct = FindRecord(outStructName);
+			pOutStruct->AddField(&g_bool, "m_bValid", "", "");
 
 			switch (pStBuf->m_stencilSize.size()) {
 			case 1:
-				pOutStruct->AddField(pStBuf->m_type, "m_data", VA("%d", pStBuf->m_stencilSize[0]), "" );
+				pOutStruct->AddField(pStBuf->m_pType, "m_data", VA("%d", pStBuf->m_stencilSize[0]), "");
 				break;
 			case 2:
-				pOutStruct->AddField(pStBuf->m_type, "m_data", VA("%d", pStBuf->m_stencilSize[1]), VA("%d", pStBuf->m_stencilSize[0]) );
+				pOutStruct->AddField(pStBuf->m_pType, "m_data", VA("%d", pStBuf->m_stencilSize[1]), VA("%d", pStBuf->m_stencilSize[0]));
 				break;
 			default:
 				break;
 			}
 
-			pOutStruct->m_fieldList[1].DimenListInit(pStBuf->m_lineInfo);
-			pOutStruct->m_fieldList[1].InitDimen();
+			pOutStruct->m_fieldList[1]->InitDimen(pStBuf->m_lineInfo);
 		}
 	}
 }
@@ -129,22 +128,22 @@ void CDsnInfo::GenModStBufStatements(CModule * pMod)
 				stBufName.c_str(), stBufName.c_str());
 		}
 
-		for (int i = 2; i < pStBuf->m_pipeLen.AsInt()+2; i += 1) {
-			m_stBufRegDecl.Append("\tCStencilBufferOut%s c_t%d_stBuf%s_stOut;\n", stBufName.c_str(), i-1, stBufName.c_str());
+		for (int i = 2; i < pStBuf->m_pipeLen.AsInt() + 2; i += 1) {
+			m_stBufRegDecl.Append("\tCStencilBufferOut%s c_t%d_stBuf%s_stOut;\n", stBufName.c_str(), i - 1, stBufName.c_str());
 			GenModDecl(eVcdAll, m_stBufRegDecl, vcdModName, VA("CStencilBufferOut%s", stBufName.c_str()),
 				VA("r_t%d_stBuf%s_stOut", i, stBufName.c_str()));
 			stBufPreInstr.Append("\tc_t%d_stBuf%s_stOut = r_t%d_stBuf%s_stOut;\n",
-				i-1, stBufName.c_str(), i==2?2:i-1, stBufName.c_str());
+				i - 1, stBufName.c_str(), i == 2 ? 2 : i - 1, stBufName.c_str());
 			stBufReg.Append("\tr_t%d_stBuf%s_stOut = c_t%d_stBuf%s_stOut;\n",
-				i, stBufName.c_str(), i-1, stBufName.c_str());
+				i, stBufName.c_str(), i - 1, stBufName.c_str());
 		}
 
 		if (pStBuf->m_stencilSize.size() >= 2 && pStBuf->m_stencilSize[1] >= 2)
-			m_stBufRegDecl.Append("\tht_block_que<%s, %d> m_stBuf%s_que[%d];\n", 
-				pStBuf->m_type.c_str(), FindLg2(pStBuf->m_gridSize[0]-1),
-				stBufName.c_str(), pStBuf->m_stencilSize[1]-1);
+			m_stBufRegDecl.Append("\tht_block_que<%s, %d> m_stBuf%s_que[%d];\n",
+			pStBuf->m_pType->m_typeName.c_str(), FindLg2(pStBuf->m_gridSize[0] - 1),
+			stBufName.c_str(), pStBuf->m_stencilSize[1] - 1);
 
-		for (int i = 0; i < pStBuf->m_stencilSize[1]-1; i += 1)
+		for (int i = 0; i < pStBuf->m_stencilSize[1] - 1; i += 1)
 			stBufReg.Append("\tm_stBuf%s_que[%d].clock(c_reset1x);\n", stBufName.c_str(), i);
 
 		m_stBufRegDecl.Append("\n");
@@ -210,54 +209,54 @@ void CDsnInfo::GenModStBufStatements(CModule * pMod)
 
 		if (pStBuf->m_stencilSize.size() >= 2 && pStBuf->m_stencilSize[1] >= 2) {
 			m_stBufFuncDef.Append("\t\tif (r_stBuf%s_yDimIdx == 0) {\n", stBufName.c_str());
-			m_stBufFuncDef.Append("\t\t\tm_stBuf%s_que[%d].push(stIn.m_data);\n", stBufName.c_str(), pStBuf->m_stencilSize[1]-2);
+			m_stBufFuncDef.Append("\t\t\tm_stBuf%s_que[%d].push(stIn.m_data);\n", stBufName.c_str(), pStBuf->m_stencilSize[1] - 2);
 
-			for (int i = pStBuf->m_stencilSize[1]-3; i >= 0; i -= 1)
+			for (int i = pStBuf->m_stencilSize[1] - 3; i >= 0; i -= 1)
 				m_stBufFuncDef.Append("\t\t\tm_stBuf%s_que[%d].push(0);\n", stBufName.c_str(), i);
 
 			m_stBufFuncDef.Append("\t\t} else if (r_stBuf%s_yDimIdx == r_stBuf%s_yDimSize + %d - 1) {\n",
-				stBufName.c_str(), stBufName.c_str(), pStBuf->m_stencilSize[1]-1);
+				stBufName.c_str(), stBufName.c_str(), pStBuf->m_stencilSize[1] - 1);
 
-			for (int i = pStBuf->m_stencilSize[1]-2; i >= 0; i -= 1)
+			for (int i = pStBuf->m_stencilSize[1] - 2; i >= 0; i -= 1)
 				m_stBufFuncDef.Append("\t\t\tm_stBuf%s_que[%d].pop();\n", stBufName.c_str(), i);
 
 			m_stBufFuncDef.Append("\t\t} else {\n");
 
-			m_stBufFuncDef.Append("\t\t\tm_stBuf%s_que[%d].push(stIn.m_data);\n", stBufName.c_str(), pStBuf->m_stencilSize[1]-2);
+			m_stBufFuncDef.Append("\t\t\tm_stBuf%s_que[%d].push(stIn.m_data);\n", stBufName.c_str(), pStBuf->m_stencilSize[1] - 2);
 
-			for (int i = pStBuf->m_stencilSize[1]-3; i >= 0; i -= 1)
-				m_stBufFuncDef.Append("\t\t\tm_stBuf%s_que[%d].push(m_stBuf%s_que[%d].front());\n", stBufName.c_str(), i, stBufName.c_str(), i+1);
+			for (int i = pStBuf->m_stencilSize[1] - 3; i >= 0; i -= 1)
+				m_stBufFuncDef.Append("\t\t\tm_stBuf%s_que[%d].push(m_stBuf%s_que[%d].front());\n", stBufName.c_str(), i, stBufName.c_str(), i + 1);
 
 			m_stBufFuncDef.Append("\n");
 
-			for (int i = pStBuf->m_stencilSize[1]-2; i >= 0; i -= 1)
+			for (int i = pStBuf->m_stencilSize[1] - 2; i >= 0; i -= 1)
 				m_stBufFuncDef.Append("\t\t\tm_stBuf%s_que[%d].pop();\n", stBufName.c_str(), i);
 
 			m_stBufFuncDef.Append("\t\t}\n");
 			m_stBufFuncDef.Append("\n");
 		}
 		m_stBufFuncDef.Append("\t\tc_stBuf%s_xDimIdx += 1;\n", stBufName.c_str());
-		m_stBufFuncDef.Append("\t\tif (c_stBuf%s_xDimIdx == r_stBuf%s_xDimSize + %d) {\n", 
-			stBufName.c_str(), stBufName.c_str(), pStBuf->m_stencilSize[0]-1);
+		m_stBufFuncDef.Append("\t\tif (c_stBuf%s_xDimIdx == r_stBuf%s_xDimSize + %d) {\n",
+			stBufName.c_str(), stBufName.c_str(), pStBuf->m_stencilSize[0] - 1);
 		m_stBufFuncDef.Append("\t\t\tc_stBuf%s_xDimIdx = 0;\n", stBufName.c_str());
 		m_stBufFuncDef.Append("\t\t\tc_stBuf%s_yDimIdx += 1;\n", stBufName.c_str());
 		m_stBufFuncDef.Append("\t\t}\n");
 		m_stBufFuncDef.Append("\n");
 
 		m_stBufFuncDef.Append("\t\tbool bStValid = r_stBuf%s_yDimIdx >= %d && r_stBuf%s_xDimIdx >= %d;\n",
-			stBufName.c_str(), pStBuf->m_stencilSize[1]-1, stBufName.c_str(), pStBuf->m_stencilSize[0]-1);
+			stBufName.c_str(), pStBuf->m_stencilSize[1] - 1, stBufName.c_str(), pStBuf->m_stencilSize[0] - 1);
 		m_stBufFuncDef.Append("\n");
 
-		m_stBufFuncDef.Append("\t\t%s stData[%d];\n", pStBuf->m_type.c_str(), pStBuf->m_stencilSize[1]);
-		for (int i = 0; i < pStBuf->m_stencilSize[1]-1; i += 1)
+		m_stBufFuncDef.Append("\t\t%s stData[%d];\n", pStBuf->m_pType->m_typeName.c_str(), pStBuf->m_stencilSize[1]);
+		for (int i = 0; i < pStBuf->m_stencilSize[1] - 1; i += 1)
 			m_stBufFuncDef.Append("\t\tstData[%d] = m_stBuf%s_que[%d].front();\n", i, stBufName.c_str(), i);
 
-		m_stBufFuncDef.Append("\t\tstData[%d] = stIn.m_data;\n", pStBuf->m_stencilSize[1]-1);
+		m_stBufFuncDef.Append("\t\tstData[%d] = stIn.m_data;\n", pStBuf->m_stencilSize[1] - 1);
 		m_stBufFuncDef.Append("\n");
 
 		m_stBufFuncDef.Append("\t\tfor (int x = 0; x < %d; x += 1) {\n", pStBuf->m_stencilSize[0]);
 		m_stBufFuncDef.Append("\t\t\tfor (int y = 0; y < %d; y += 1) {\n", pStBuf->m_stencilSize[1]);
-		m_stBufFuncDef.Append("\t\t\t\tif (x == %d)\n", pStBuf->m_stencilSize[0]-1);
+		m_stBufFuncDef.Append("\t\t\t\tif (x == %d)\n", pStBuf->m_stencilSize[0] - 1);
 		m_stBufFuncDef.Append("\t\t\t\t\tc_t1_stBuf%s_stOut.m_data[y][x] = stData[y];\n", stBufName.c_str());
 		m_stBufFuncDef.Append("\t\t\t\telse\n");
 		m_stBufFuncDef.Append("\t\t\t\t\tc_t1_stBuf%s_stOut.m_data[y][x] = r_t2_stBuf%s_stOut.m_data[y][x+1];\n",
@@ -271,7 +270,7 @@ void CDsnInfo::GenModStBufStatements(CModule * pMod)
 		m_stBufFuncDef.Append("\t\tc_t1_stBuf%s_stOut.m_bValid = false;\n", stBufName.c_str());
 		m_stBufFuncDef.Append("\n");
 
-		m_stBufFuncDef.Append("\n\tstOut = r_t%d_stBuf%s_stOut;\n", pStBuf->m_pipeLen.AsInt()+1, stBufName.c_str());
+		m_stBufFuncDef.Append("\n\tstOut = r_t%d_stBuf%s_stOut;\n", pStBuf->m_pipeLen.AsInt() + 1, stBufName.c_str());
 		m_stBufFuncDef.Append("}\n");
 		m_stBufFuncDef.Append("\n");
 	}

@@ -1,0 +1,13 @@
+// -cl $(HtToolsPath)/tests/libmath/src_pers/libmath.htl
+-wd $(HtToolsPath)/tests/libmath/msvs12/
+
+-cp hc-2
+-mt				// enable memory tracing
+-uc 1			// unit count
+-un Au			// unit name
+-df 150			// default frequence
+
+../src_pers/idiv.htd
+../src_pers/idivr.htd
+../src_pers/test.htd
+../ht/sysc

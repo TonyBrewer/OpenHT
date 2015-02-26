@@ -1,9 +1,10 @@
-// -cl "C:\Ht\tests\memPoll\src_pers\memPoll.htl"
+// -cl $(HtToolsPath)/tests/memPoll/src_pers/memPoll.htl
+-wd $(HtToolsPath)/tests/memPoll/msvs12/
+
 -cp hc-2
 -ac 1
 -uc 1
 -un Su
 -df 150
--wd "C:\Ht\tests\memPoll\msvs12\"
-"C:\Ht\tests\memPoll\src_pers\memPoll.htd"
+../src_pers/memPoll.htd
 ../ht/sysc

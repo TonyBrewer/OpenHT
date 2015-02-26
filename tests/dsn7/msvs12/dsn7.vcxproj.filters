@@ -2,36 +2,36 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="ht_lib">
-      <UniqueIdentifier>{dbf548ae-5357-4da2-8870-770de9983ba5}</UniqueIdentifier>
+      <UniqueIdentifier>{090d1471-4e71-48d7-a6d2-bb765fb329a9}</UniqueIdentifier>
     </Filter>
     <Filter Include="ht">
-      <UniqueIdentifier>{a82f78c1-c109-4d1b-bad7-601d47865849}</UniqueIdentifier>
+      <UniqueIdentifier>{5bfbcec9-5318-45f0-9357-3a408e8433e1}</UniqueIdentifier>
     </Filter>
     <Filter Include="ht_lib\host">
-      <UniqueIdentifier>{918c3d65-d496-4a5a-8105-41214504708e}</UniqueIdentifier>
+      <UniqueIdentifier>{c274ae63-6bca-4cf3-9894-b3ab0b5ce072}</UniqueIdentifier>
       <Extensions>h;cpp;c</Extensions>
     </Filter>
     <Filter Include="ht_lib\sysc">
-      <UniqueIdentifier>{c7b015cf-cc11-4e25-837f-54d6e0c9404a}</UniqueIdentifier>
+      <UniqueIdentifier>{4d8a7b0a-06c6-45ec-84a7-2c682025a2e4}</UniqueIdentifier>
       <Extensions>h;cpp;c</Extensions>
     </Filter>
     <Filter Include="ht\verilog">
-      <UniqueIdentifier>{ab4d1ffc-7e2b-4570-a942-78857ae11b34}</UniqueIdentifier>
+      <UniqueIdentifier>{321b6b86-8ebc-45d7-a8d4-2152c229555a}</UniqueIdentifier>
     </Filter>
     <Filter Include="ht\sysc">
-      <UniqueIdentifier>{941c398d-59ce-46b0-9acd-343c0c5ff621}</UniqueIdentifier>
+      <UniqueIdentifier>{b73eaf88-5e69-4b29-9879-34ef5014512c}</UniqueIdentifier>
       <Extensions>h;cpp;c</Extensions>
     </Filter>
     <Filter Include="src">
-      <UniqueIdentifier>{bfb1d7d4-ebb9-4425-b0dd-9ef0773f4535}</UniqueIdentifier>
+      <UniqueIdentifier>{a4517d94-c820-4b00-be23-db18bed3bbb5}</UniqueIdentifier>
       <Extensions>h;cpp;c</Extensions>
     </Filter>
     <Filter Include="src_pers">
-      <UniqueIdentifier>{db67e6e7-4264-4f1f-afd9-d06bb0c6ae87}</UniqueIdentifier>
+      <UniqueIdentifier>{ea638a48-e8a0-47c4-a818-6e5720ccbf2f}</UniqueIdentifier>
       <Extensions>h;cpp;c</Extensions>
     </Filter>
     <Filter Include="src_model">
-      <UniqueIdentifier>{e13f614e-9eed-4395-b215-76ebd644bc30}</UniqueIdentifier>
+      <UniqueIdentifier>{9a4c72e4-5f33-41af-8336-93593840b4de}</UniqueIdentifier>
       <Extensions>h;cpp;c</Extensions>
     </Filter>
   </ItemGroup>
@@ -81,67 +81,67 @@
     <ClInclude Include="..\ht\sysc\SyscTop.h">
       <Filter>ht\sysc</Filter>
     </ClInclude>
-    <ClInclude Include="C:\ht\ht_lib\host\HtCtrlMsg.h">
+    <ClInclude Include="$(HtToolsPath)\ht_lib\host\HtCtrlMsg.h">
       <Filter>ht_lib\host</Filter>
     </ClInclude>
-    <ClInclude Include="C:\ht\ht_lib\Ht.h">
+    <ClInclude Include="$(HtToolsPath)\ht_lib\Ht.h">
       <Filter>ht_lib</Filter>
     </ClInclude>
-    <ClInclude Include="C:\ht\ht_lib\host\HtHif.h">
+    <ClInclude Include="$(HtToolsPath)\ht_lib\host\HtHif.h">
       <Filter>ht_lib\host</Filter>
     </ClInclude>
-    <ClInclude Include="C:\ht\ht_lib\host\HtHifLib.h">
+    <ClInclude Include="$(HtToolsPath)\ht_lib\host\HtHifLib.h">
       <Filter>ht_lib\host</Filter>
     </ClInclude>
-    <ClInclude Include="C:\ht\ht_lib\host\HtModel.h">
+    <ClInclude Include="$(HtToolsPath)\ht_lib\host\HtModel.h">
       <Filter>ht_lib\host</Filter>
     </ClInclude>
-    <ClInclude Include="C:\ht\ht_lib\host\HtModelLib.h">
+    <ClInclude Include="$(HtToolsPath)\ht_lib\host\HtModelLib.h">
       <Filter>ht_lib\host</Filter>
     </ClInclude>
-    <ClInclude Include="C:\ht\ht_lib\host\HtPlatform.h">
+    <ClInclude Include="$(HtToolsPath)\ht_lib\host\HtPlatform.h">
       <Filter>ht_lib\host</Filter>
     </ClInclude>
-    <ClInclude Include="C:\ht\ht_lib\sysc\mtrand.h">
+    <ClInclude Include="$(HtToolsPath)\ht_lib\sysc\mtrand.h">
       <Filter>ht_lib\sysc</Filter>
     </ClInclude>
-    <ClInclude Include="C:\ht\ht_lib\sysc\MemRdWrIntf.h">
+    <ClInclude Include="$(HtToolsPath)\ht_lib\sysc\MemRdWrIntf.h">
       <Filter>ht_lib\sysc</Filter>
     </ClInclude>
-    <ClInclude Include="C:\ht\ht_lib\sysc\Params.h">
+    <ClInclude Include="$(HtToolsPath)\ht_lib\sysc\Params.h">
       <Filter>ht_lib\sysc</Filter>
     </ClInclude>
-    <ClInclude Include="C:\ht\ht_lib\sysc\PersUnitCnt.h">
+    <ClInclude Include="$(HtToolsPath)\ht_lib\sysc\PersUnitCnt.h">
       <Filter>ht_lib\sysc</Filter>
     </ClInclude>
-    <ClInclude Include="C:\ht\ht_lib\sysc\PersXbarStub.h">
+    <ClInclude Include="$(HtToolsPath)\ht_lib\sysc\PersXbarStub.h">
       <Filter>ht_lib\sysc</Filter>
     </ClInclude>
-    <ClInclude Include="C:\ht\ht_lib\sysc\PersMiStub.h">
+    <ClInclude Include="$(HtToolsPath)\ht_lib\sysc\PersMiStub.h">
       <Filter>ht_lib\sysc</Filter>
     </ClInclude>
-    <ClInclude Include="C:\ht\ht_lib\sysc\PersMoStub.h">
+    <ClInclude Include="$(HtToolsPath)\ht_lib\sysc\PersMoStub.h">
       <Filter>ht_lib\sysc</Filter>
     </ClInclude>
-    <ClInclude Include="C:\ht\ht_lib\sysc\HtMemTypes.h">
+    <ClInclude Include="$(HtToolsPath)\ht_lib\sysc\HtMemTypes.h">
       <Filter>ht_lib\sysc</Filter>
     </ClInclude>
-    <ClInclude Include="C:\ht\ht_lib\sysc\SyscClock.h">
+    <ClInclude Include="$(HtToolsPath)\ht_lib\sysc\SyscClock.h">
       <Filter>ht_lib\sysc</Filter>
     </ClInclude>
-    <ClInclude Include="C:\ht\ht_lib\sysc\SyscDisp.h">
+    <ClInclude Include="$(HtToolsPath)\ht_lib\sysc\SyscDisp.h">
       <Filter>ht_lib\sysc</Filter>
     </ClInclude>
-    <ClInclude Include="C:\ht\ht_lib\sysc\SyscMemLib.h">
+    <ClInclude Include="$(HtToolsPath)\ht_lib\sysc\SyscMemLib.h">
       <Filter>ht_lib\sysc</Filter>
     </ClInclude>
-    <ClInclude Include="C:\ht\ht_lib\sysc\SyscMem.h">
+    <ClInclude Include="$(HtToolsPath)\ht_lib\sysc\SyscMem.h">
       <Filter>ht_lib\sysc</Filter>
     </ClInclude>
-    <ClInclude Include="C:\ht\ht_lib\sysc\SyscMonLib.h">
+    <ClInclude Include="$(HtToolsPath)\ht_lib\sysc\SyscMonLib.h">
       <Filter>ht_lib\sysc</Filter>
     </ClInclude>
-    <ClInclude Include="C:\ht\ht_lib\sysc\SyscMon.h">
+    <ClInclude Include="$(HtToolsPath)\ht_lib\sysc\SyscMon.h">
       <Filter>ht_lib\sysc</Filter>
     </ClInclude>
   </ItemGroup>
@@ -188,43 +188,43 @@
     <ClCompile Include="..\ht\sysc\SyscMon.cpp">
       <Filter>ht\sysc</Filter>
     </ClCompile>
-    <ClCompile Include="C:\ht\ht_lib\host\HtHif.cpp">
+    <ClCompile Include="$(HtToolsPath)\ht_lib\host\HtHif.cpp">
       <Filter>ht_lib\host</Filter>
     </ClCompile>
-    <ClCompile Include="C:\ht\ht_lib\host\HtHifLib.cpp">
+    <ClCompile Include="$(HtToolsPath)\ht_lib\host\HtHifLib.cpp">
       <Filter>ht_lib\host</Filter>
     </ClCompile>
-    <ClCompile Include="C:\ht\ht_lib\host\HtModelLib.cpp">
+    <ClCompile Include="$(HtToolsPath)\ht_lib\host\HtModelLib.cpp">
       <Filter>ht_lib\host</Filter>
     </ClCompile>
-    <ClCompile Include="C:\ht\ht_lib\host\HtPlatform.cpp">
+    <ClCompile Include="$(HtToolsPath)\ht_lib\host\HtPlatform.cpp">
       <Filter>ht_lib\host</Filter>
     </ClCompile>
-    <ClCompile Include="C:\ht\ht_lib\sysc\mtrand.cpp">
+    <ClCompile Include="$(HtToolsPath)\ht_lib\sysc\mtrand.cpp">
       <Filter>ht_lib\sysc</Filter>
     </ClCompile>
-    <ClCompile Include="C:\ht\ht_lib\sysc\PersUnitCnt.cpp">
+    <ClCompile Include="$(HtToolsPath)\ht_lib\sysc\PersUnitCnt.cpp">
       <Filter>ht_lib\sysc</Filter>
     </ClCompile>
-    <ClCompile Include="C:\ht\ht_lib\sysc\PersXbarStub.cpp">
+    <ClCompile Include="$(HtToolsPath)\ht_lib\sysc\PersXbarStub.cpp">
       <Filter>ht_lib\sysc</Filter>
     </ClCompile>
-    <ClCompile Include="C:\ht\ht_lib\sysc\PersMiStub.cpp">
+    <ClCompile Include="$(HtToolsPath)\ht_lib\sysc\PersMiStub.cpp">
       <Filter>ht_lib\sysc</Filter>
     </ClCompile>
-    <ClCompile Include="C:\ht\ht_lib\sysc\PersMoStub.cpp">
+    <ClCompile Include="$(HtToolsPath)\ht_lib\sysc\PersMoStub.cpp">
       <Filter>ht_lib\sysc</Filter>
     </ClCompile>
-    <ClCompile Include="C:\ht\ht_lib\sysc\SyscClockLib.cpp">
+    <ClCompile Include="$(HtToolsPath)\ht_lib\sysc\SyscClockLib.cpp">
       <Filter>ht_lib\sysc</Filter>
     </ClCompile>
-    <ClCompile Include="C:\ht\ht_lib\sysc\SyscDispLib.cpp">
+    <ClCompile Include="$(HtToolsPath)\ht_lib\sysc\SyscDispLib.cpp">
       <Filter>ht_lib\sysc</Filter>
     </ClCompile>
-    <ClCompile Include="C:\ht\ht_lib\sysc\SyscMemLib.cpp">
+    <ClCompile Include="$(HtToolsPath)\ht_lib\sysc\SyscMemLib.cpp">
       <Filter>ht_lib\sysc</Filter>
     </ClCompile>
-    <ClCompile Include="C:\ht\ht_lib\sysc\SyscMonLib.cpp">
+    <ClCompile Include="$(HtToolsPath)\ht_lib\sysc\SyscMonLib.cpp">
       <Filter>ht_lib\sysc</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Main.cpp">
@@ -267,10 +267,10 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="C:\ht\ht_lib\sysc\SyscAeTop.sc">
+    <CustomBuild Include="$(HtToolsPath)\ht_lib\sysc\SyscAeTop.sc">
       <Filter>ht_lib\sysc</Filter>
     </CustomBuild>
-    <CustomBuild Include="C:\ht\ht_lib\sysc\SyscTop.sc">
+    <CustomBuild Include="$(HtToolsPath)\ht_lib\sysc\SyscTop.sc">
       <Filter>ht_lib\sysc</Filter>
     </CustomBuild>
     <CustomBuild Include="..\ht\verilog\PersUnitCnt.v_">

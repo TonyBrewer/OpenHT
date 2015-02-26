@@ -38,12 +38,12 @@ CPersInc7::PersInc7()
 			Inc7Ptr_t arrayMemWrPtr = (PR_htId << 7) | P_loopIdx;
 
 			// Issue read request to memory
-			ReadMem_arrayMem7(memRdAddr, arrayMemWrPtr);
+			ReadMem_arrayMem7(PR_rdGrpId, memRdAddr, arrayMemWrPtr);
 
 			bool bLast = P_loopIdx == P_elemCnt - 1;
 			if (bLast) {
 				P_loopIdx = 0;
-				ReadMemPause(INC7_WRITE);
+				ReadMemPause(PR_rdGrpId, INC7_WRITE);
 			} else {
 				P_loopIdx += 1;
 				HtContinue(INC7_READ);
@@ -63,7 +63,7 @@ CPersInc7::PersInc7()
 			}
 
 			// Increment memory data
-			uint64_t memWrData = GR_arrayMem7_data() + 1;
+			uint64_t memWrData = GR_arrayMem7.data + 1;
 
 			// Calculate memory write address
 			MemAddr_t memWrAddr = SR_arrayAddr + ((P_loopBase + P_loopIdx) << 3);

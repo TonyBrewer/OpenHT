@@ -10,6 +10,11 @@ struct CWriteQueue {
 	bool m_hit;
 };
 
+struct COpMem {
+	uint64_t opA;
+	uint64_t opB;
+};
+
 /////////////////////////////////////
 // Control module
 // fires off reac/centrifuge threads to computer the result and write threads to consume the result
@@ -97,14 +102,12 @@ read.AddShared()
 // .AddVar(type=uint64_t, name=opBMem, addr1W=READ_HTID_W)
 	;
 
-read.AddGlobal(var=opMem, addr1W=THREAD_W)
-	.AddField(type=uint64_t, name=opA, read=false, write=false)
-	.AddField(type=uint64_t, name=opB, read=false, write=false)
-	;
+read.AddGlobal()
+	.AddVar(type=COpMem, name=opMem, addr1W=THREAD_W, read=false, write=false);
 
-read.AddReadMem(maxBw=true, pause=true, poll=true)
-	.AddDst(name=opAMem, var=opMem, field=opA)
-	.AddDst(name=opBMem, var=opMem, field=opB)
+read.AddReadMem(pause=true, poll=true)
+	.AddDst(name=opAMem, var=opMem.opA)
+	.AddDst(name=opBMem, var=opMem.opB)
 	;
 
 /////////////////////////////////////
@@ -154,15 +157,12 @@ pipe.AddShared()
 	.AddVar(type=bool, name=rsltVm)
 	;
 
-pipe.AddGlobal(var=opMem, addr1W=THREAD_W, addr1=idx, extern=true)
-	.AddField(type=uint64_t, name=opA, read=true, write=false)
-	.AddField(type=uint64_t, name=opB, read=true, write=false)
-	;
+pipe.AddGlobal()
+	.AddVar(type=COpMem, name=opMem, addr1=idx, read=true, write=false);
 
 // Fixme: Need a group id so that MemWritePoll will not return false until all
 // writes done, not just those in the current thread, but this generates a compile error
-pipe.AddWriteMem(rspGrpId=wrGrp);
-// pipe.AddWriteMem();
+pipe.AddWriteMem(rspGrpW=1);
 
 pipe.AddStage(privWrStg=1, execStg=1)
 	.AddVar(type=bool, name=cmpValid, range=1-26, reset=true)

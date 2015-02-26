@@ -27,6 +27,6 @@ ctl.AddReturn(func=htmain)
 	.AddParam(type=uint64_t, name=result)
 	;
 
-ctl.AddReadMem(maxBw=true)
-	.AddDst(name=data, var=mem, multiRd=true, dstIdx=varAddr1, memSrc=host )
+ctl.AddReadMem()
+	.AddDst(name=data, var=mem, memSrc=host )
 	;

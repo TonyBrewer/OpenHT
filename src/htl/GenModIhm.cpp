@@ -31,9 +31,9 @@ void CDsnInfo::InitAndValidateModIhm()
 				// find shared variable
 				size_t shIdx;
 				for (shIdx = 0; shIdx < mod.m_shared.m_fieldList.size(); shIdx += 1) {
-					CField & shared = mod.m_shared.m_fieldList[shIdx];
+					CField * pShared = mod.m_shared.m_fieldList[shIdx];
 
-					if (shared.m_name == msgDst.m_var)
+					if (pShared->m_name == msgDst.m_var)
 						break;
 				}
 
@@ -41,17 +41,17 @@ void CDsnInfo::InitAndValidateModIhm()
 					ParseMsg(Error, msgDst.m_lineInfo, "message destination must be a shared variable");
 					continue;
 				}
-				CField & shared = mod.m_shared.m_fieldList[shIdx];
+				CField * pShared = mod.m_shared.m_fieldList[shIdx];
 
-				msgDst.m_pShared = &shared;
+				msgDst.m_pShared = pShared;
 
-				shared.m_bIhmReadOnly = msgDst.m_bReadOnly;
+				pShared->m_bIhmReadOnly = msgDst.m_bReadOnly;
 
 				if (msgDst.m_field.size() > 0) {
 					// type of variable should be a union or struct
 					bool bCStyle;
-					CField const * pBaseField, * pLastField;
-					FindFieldInStruct(msgDst.m_lineInfo, shared.m_type, msgDst.m_field, true, bCStyle, pBaseField, pLastField);
+					CField const * pBaseField, *pLastField;
+					FindFieldInStruct(msgDst.m_lineInfo, pShared->m_type, msgDst.m_field, true, bCStyle, pBaseField, pLastField);
 					msgDst.m_pField = pLastField;
 
 					if (msgDst.m_pField == 0) {
@@ -70,83 +70,83 @@ void CDsnInfo::InitAndValidateModIhm()
 				uint64_t mask = 0;
 
 				// verify appropriate addresses and indexes are specified
-				if ((shared.m_addr1W.size() != 0) != (msgDst.m_addr1Lsb.size() != 0)) {
-					if (shared.m_addr1W.size() != 0)
+				if ((pShared->m_addr1W.size() != 0) != (msgDst.m_addr1Lsb.size() != 0)) {
+					if (pShared->m_addr1W.size() != 0)
 						ParseMsg(Error, msgDst.m_lineInfo, "message variable requires addr1Lsb");
 					else
 						ParseMsg(Error, msgDst.m_lineInfo, "message variable does not require addr1Lsb");
 
 				} else if (msgDst.m_addr1Lsb.size() > 0) {
 
-					if (shared.m_addr1W.AsInt() + msgDst.m_addr1Lsb.AsInt() > 56)
+					if (pShared->m_addr1W.AsInt() + msgDst.m_addr1Lsb.AsInt() > 56)
 						ParseMsg(Error, msgDst.m_lineInfo, "shared variable width (%d) plus addr1Lsb (%d) is greater than 56",
-							shared.m_addr1W.AsInt(), msgDst.m_addr1Lsb.AsInt());
+						pShared->m_addr1W.AsInt(), msgDst.m_addr1Lsb.AsInt());
 					else {
-						uint64_t addr1Bits = ((1u << shared.m_addr1W.AsInt())-1) << msgDst.m_addr1Lsb.AsInt();
+						uint64_t addr1Bits = ((1u << pShared->m_addr1W.AsInt()) - 1) << msgDst.m_addr1Lsb.AsInt();
 						if ((mask & addr1Bits) != 0)
 							ParseMsg(Error, msgDst.m_lineInfo, "addr1Lsb overlaps with other message fields");
 						mask |= addr1Bits;
 					}
 				}
 
-				if ((shared.m_addr2W.size() != 0) != (msgDst.m_addr2Lsb.size() != 0)) {
-					if (shared.m_addr2W.size() != 0)
+				if ((pShared->m_addr2W.size() != 0) != (msgDst.m_addr2Lsb.size() != 0)) {
+					if (pShared->m_addr2W.size() != 0)
 						ParseMsg(Error, msgDst.m_lineInfo, "message variable requires addr2Lsb");
 					else
 						ParseMsg(Error, msgDst.m_lineInfo, "message variable does not require addr2Lsb");
 
 				} else if (msgDst.m_addr2Lsb.size() > 0) {
 
-					if (shared.m_addr2W.AsInt() + msgDst.m_addr2Lsb.AsInt() > 56)
+					if (pShared->m_addr2W.AsInt() + msgDst.m_addr2Lsb.AsInt() > 56)
 						ParseMsg(Error, msgDst.m_lineInfo, "shared variable width (%d) plus addr2Lsb (%d) is greater than 56",
-							shared.m_addr2W.AsInt(), msgDst.m_addr2Lsb.AsInt());
+						pShared->m_addr2W.AsInt(), msgDst.m_addr2Lsb.AsInt());
 					else {
-						uint64_t addr2Bits = ((1u << shared.m_addr2W.AsInt())-1) << msgDst.m_addr2Lsb.AsInt();
+						uint64_t addr2Bits = ((1u << pShared->m_addr2W.AsInt()) - 1) << msgDst.m_addr2Lsb.AsInt();
 						if ((mask & addr2Bits) != 0)
 							ParseMsg(Error, msgDst.m_lineInfo, "addr2Lsb overlaps with other message fields");
 						mask |= addr2Bits;
 					}
 				}
 
-				if ((shared.m_dimenList.size() >= 1) != (msgDst.m_idx1Lsb.size() != 0)) {
-					if (shared.m_dimenList.size() != 0)
+				if ((pShared->m_dimenList.size() >= 1) != (msgDst.m_idx1Lsb.size() != 0)) {
+					if (pShared->m_dimenList.size() != 0)
 						ParseMsg(Error, msgDst.m_lineInfo, "message variable requires idx1Lsb");
 					else
 						ParseMsg(Error, msgDst.m_lineInfo, "message variable does not require idx1Lsb");
 
 				} else if (msgDst.m_idx1Lsb.size() > 0) {
-					
-					if (FindLg2(shared.m_dimenList[0].AsInt()) + msgDst.m_idx1Lsb.AsInt() > 56)
+
+					if (FindLg2(pShared->m_dimenList[0].AsInt()) + msgDst.m_idx1Lsb.AsInt() > 56)
 						ParseMsg(Error, msgDst.m_lineInfo, "shared variable dimen1W (%d) plus idx1Lsb (%d) is greater than 56",
-							FindLg2(shared.m_dimenList[0].AsInt()), msgDst.m_idx1Lsb.AsInt());
+						FindLg2(pShared->m_dimenList[0].AsInt()), msgDst.m_idx1Lsb.AsInt());
 					else {
-						uint64_t idx1Bits = ((1u << FindLg2(shared.m_dimenList[0].AsInt()))-1) << msgDst.m_idx1Lsb.AsInt();
+						uint64_t idx1Bits = ((1u << FindLg2(pShared->m_dimenList[0].AsInt())) - 1) << msgDst.m_idx1Lsb.AsInt();
 						if ((mask & idx1Bits) != 0)
 							ParseMsg(Error, msgDst.m_lineInfo, "idx1Lsb overlaps with other message fields");
 						mask |= idx1Bits;
 					}
 				}
 
-				if ((shared.m_dimenList.size() >= 2) != (msgDst.m_idx2Lsb.size() != 0)) {
-					if (shared.m_dimenList.size() >= 2)
+				if ((pShared->m_dimenList.size() >= 2) != (msgDst.m_idx2Lsb.size() != 0)) {
+					if (pShared->m_dimenList.size() >= 2)
 						ParseMsg(Error, msgDst.m_lineInfo, "message variable requires idx2Lsb");
 					else
 						ParseMsg(Error, msgDst.m_lineInfo, "message variable does not require idx2Lsb");
 
 				} else if (msgDst.m_idx2Lsb.size() > 0) {
-					
-					if (FindLg2(shared.m_dimenList[1].AsInt()) + msgDst.m_idx2Lsb.AsInt() > 56)
+
+					if (FindLg2(pShared->m_dimenList[1].AsInt()) + msgDst.m_idx2Lsb.AsInt() > 56)
 						ParseMsg(Error, msgDst.m_lineInfo, "shared variable dimen2W (%d) plus idx2Lsb (%d) is greater than 56",
-							FindLg2(shared.m_dimenList[1].AsInt()), msgDst.m_idx2Lsb.AsInt());
+						FindLg2(pShared->m_dimenList[1].AsInt()), msgDst.m_idx2Lsb.AsInt());
 					else {
-						uint64_t idx2Bits = ((1u << FindLg2(shared.m_dimenList[1].AsInt()))-1) << msgDst.m_idx2Lsb.AsInt();
+						uint64_t idx2Bits = ((1u << FindLg2(pShared->m_dimenList[1].AsInt())) - 1) << msgDst.m_idx2Lsb.AsInt();
 						if ((mask & idx2Bits) != 0)
 							ParseMsg(Error, msgDst.m_lineInfo, "idx2Lsb overlaps with other message fields");
 						mask |= idx2Bits;
 					}
 				}
 
-				if (shared.m_dimenList.size() > 2)
+				if (pShared->m_dimenList.size() > 2)
 					ParseMsg(Error, msgDst.m_lineInfo, "expected message variable to have two or less dimensions");
 
 				if (msgDst.m_field.size() == 0 && msgDst.m_fldIdx1Lsb.size() > 0)
@@ -163,12 +163,12 @@ void CDsnInfo::InitAndValidateModIhm()
 							ParseMsg(Error, msgDst.m_lineInfo, "message field does not require fldIdx1Lsb");
 
 					} else if (msgDst.m_idx1Lsb.size() > 0) {
-						
+
 						if (FindLg2(msgDst.m_pField->m_dimenList[0].AsInt()) + msgDst.m_fldIdx1Lsb.AsInt() > 56)
 							ParseMsg(Error, msgDst.m_lineInfo, "message field dimen1W (%d) plus fldIdx1Lsb (%d) is greater than 56",
-								FindLg2(msgDst.m_pField->m_dimenList[0].AsInt()), msgDst.m_fldIdx1Lsb.AsInt());
+							FindLg2(msgDst.m_pField->m_dimenList[0].AsInt()), msgDst.m_fldIdx1Lsb.AsInt());
 						else {
-							uint64_t fldIdx1Bits = ((1u << FindLg2(msgDst.m_pField->m_dimenList[0].AsInt()))-1) << msgDst.m_fldIdx1Lsb.AsInt();
+							uint64_t fldIdx1Bits = ((1u << FindLg2(msgDst.m_pField->m_dimenList[0].AsInt())) - 1) << msgDst.m_fldIdx1Lsb.AsInt();
 							if ((mask & fldIdx1Bits) != 0)
 								ParseMsg(Error, msgDst.m_lineInfo, "fldIdx1Lsb overlaps with other message fields");
 							mask |= fldIdx1Bits;
@@ -182,12 +182,12 @@ void CDsnInfo::InitAndValidateModIhm()
 							ParseMsg(Error, msgDst.m_lineInfo, "message field does not require fldIdx2Lsb");
 
 					} else if (msgDst.m_idx2Lsb.size() > 0) {
-						
+
 						if (FindLg2(msgDst.m_pField->m_dimenList[1].AsInt()) + msgDst.m_fldIdx2Lsb.AsInt() > 56)
 							ParseMsg(Error, msgDst.m_lineInfo, "message field dimen2W (%d) plus fldIdx2Lsb (%d) is greater than 56",
-								FindLg2(msgDst.m_pField->m_dimenList[1].AsInt()), msgDst.m_fldIdx2Lsb.AsInt());
+							FindLg2(msgDst.m_pField->m_dimenList[1].AsInt()), msgDst.m_fldIdx2Lsb.AsInt());
 						else {
-							uint64_t fldIdx2Bits = ((1u << FindLg2(msgDst.m_pField->m_dimenList[1].AsInt()))-1) << msgDst.m_fldIdx2Lsb.AsInt();
+							uint64_t fldIdx2Bits = ((1u << FindLg2(msgDst.m_pField->m_dimenList[1].AsInt())) - 1) << msgDst.m_fldIdx2Lsb.AsInt();
 							if ((mask & fldIdx2Bits) != 0)
 								ParseMsg(Error, msgDst.m_lineInfo, "fldIdx2Lsb overlaps with other message fields");
 							mask |= fldIdx2Bits;
@@ -235,14 +235,14 @@ void CDsnInfo::GenModIhmStatements(CModule &mod)
 			string indexes;
 			if (msgDst.m_idx1Lsb.size() > 0) {
 				ihmPostInstr.Append("\t\tht_uint%d idx1 = (i_hifTo%s_ihm.read().m_msgData >> (%s)) & ((1ul << (%d))-1);\n",
-					FindLg2(msgDst.m_pShared->m_dimenList[0].AsInt()-1), m_unitName.Uc().c_str(),
-					msgDst.m_idx1Lsb.c_str(), FindLg2(msgDst.m_pShared->m_dimenList[0].AsInt()-1));
+					FindLg2(msgDst.m_pShared->m_dimenList[0].AsInt() - 1), m_unitName.Uc().c_str(),
+					msgDst.m_idx1Lsb.c_str(), FindLg2(msgDst.m_pShared->m_dimenList[0].AsInt() - 1));
 				indexes += "[idx1]";
 			}
 			if (msgDst.m_idx2Lsb.size() > 0) {
 				ihmPostInstr.Append("\t\tht_uint%d idx2 = (i_hifTo%s_ihm.read().m_msgData >> (%s)) & ((1ul << (%d))-1);\n",
-					FindLg2(msgDst.m_pShared->m_dimenList[1].AsInt()-1), m_unitName.Uc().c_str(),
-					msgDst.m_idx2Lsb.c_str(), FindLg2(msgDst.m_pShared->m_dimenList[1].AsInt()-1));
+					FindLg2(msgDst.m_pShared->m_dimenList[1].AsInt() - 1), m_unitName.Uc().c_str(),
+					msgDst.m_idx2Lsb.c_str(), FindLg2(msgDst.m_pShared->m_dimenList[1].AsInt() - 1));
 				indexes += "[idx2]";
 			}
 			string addrs;
@@ -294,27 +294,27 @@ void CDsnInfo::GenModIhmStatements(CModule &mod)
 
 				if (msgDst.m_idx1Lsb.size() > 0) {
 					ihmPostInstr.Append("\t\t\t\t\tht_uint%d idx1 = (%s.read().m_msgData >> (%s)) & ((1ul << (%d))-1);\n",
-						FindLg2(msgDst.m_pShared->m_dimenList[0].AsInt()-1), ihmSignal,
-						msgDst.m_idx1Lsb.c_str(), FindLg2(msgDst.m_pShared->m_dimenList[0].AsInt()-1));
+						FindLg2(msgDst.m_pShared->m_dimenList[0].AsInt() - 1), ihmSignal,
+						msgDst.m_idx1Lsb.c_str(), FindLg2(msgDst.m_pShared->m_dimenList[0].AsInt() - 1));
 					indexes += "[idx1]";
 				}
 				if (msgDst.m_idx2Lsb.size() > 0) {
 					ihmPostInstr.Append("\t\t\t\t\tht_uint%d idx2 = (%s.read().m_msgData >> (%s)) & ((1ul << (%d))-1);\n",
-						FindLg2(msgDst.m_pShared->m_dimenList[1].AsInt()-1), ihmSignal,
-						msgDst.m_idx2Lsb.c_str(), FindLg2(msgDst.m_pShared->m_dimenList[1].AsInt()-1));
+						FindLg2(msgDst.m_pShared->m_dimenList[1].AsInt() - 1), ihmSignal,
+						msgDst.m_idx2Lsb.c_str(), FindLg2(msgDst.m_pShared->m_dimenList[1].AsInt() - 1));
 					indexes += "[idx2]";
 				}
 
 				if (msgDst.m_fldIdx1Lsb.size() > 0) {
 					ihmPostInstr.Append("\t\t\t\t\tht_uint%d fldIdx1 = (%s.read().m_msgData >> (%s)) & ((1ul << (%d))-1);\n",
-						FindLg2(msgDst.m_pField->m_dimenList[0].AsInt()-1), ihmSignal,
-						msgDst.m_fldIdx1Lsb.c_str(), FindLg2(msgDst.m_pField->m_dimenList[0].AsInt()-1));
+						FindLg2(msgDst.m_pField->m_dimenList[0].AsInt() - 1), ihmSignal,
+						msgDst.m_fldIdx1Lsb.c_str(), FindLg2(msgDst.m_pField->m_dimenList[0].AsInt() - 1));
 					indexes += "[fldIdx1]";
 				}
 				if (msgDst.m_fldIdx2Lsb.size() > 0) {
 					ihmPostInstr.Append("\t\t\t\t\tht_uint%d fldIdx2 = (%s.read().m_msgData >> (%s)) & ((1ul << (%d))-1);\n",
-						FindLg2(msgDst.m_pField->m_dimenList[1].AsInt()-1), ihmSignal,
-						msgDst.m_fldIdx2Lsb.c_str(), FindLg2(msgDst.m_pField->m_dimenList[1].AsInt()-1));
+						FindLg2(msgDst.m_pField->m_dimenList[1].AsInt() - 1), ihmSignal,
+						msgDst.m_fldIdx2Lsb.c_str(), FindLg2(msgDst.m_pField->m_dimenList[1].AsInt() - 1));
 					indexes += "[fldIdx2]";
 				}
 				extraTab = "\t";
@@ -329,17 +329,17 @@ void CDsnInfo::GenModIhmStatements(CModule &mod)
 					msgDst.m_var.c_str(), indexes.c_str(), msgDst.m_pShared->m_type.c_str(), ihmSignal, msgDst.m_dataLsb.c_str());
 			} else if (msgDst.m_field.size() > 0) {
 				string castStr;
-				if (msgDst.m_pField->m_bitWidth.size() == 0)
+				if (msgDst.m_pField->m_fieldWidth.size() == 0)
 					castStr = msgDst.m_pField->m_type;
 				else
-					castStr = VA("ht_uint%d", msgDst.m_pField->m_bitWidth.AsInt());
+					castStr = VA("ht_uint%d", msgDst.m_pField->m_fieldWidth.AsInt());
 
 				ihmPostInstr.Append("%s\t\t\t\tc_%s%s.%s%s = (%s)(%s.read().m_msgData >> %s);\n", extraTab.c_str(),
 					msgDst.m_var.c_str(), indexes.c_str(), msgDst.m_field.c_str(), fldIndexes.c_str(),
-						castStr.c_str(), ihmSignal, msgDst.m_dataLsb.c_str());
+					castStr.c_str(), ihmSignal, msgDst.m_dataLsb.c_str());
 			} else
 				ihmPostInstr.Append("%s\t\t\t\tc_%s%s = (%s)(%s.read().m_msgData >> %s);\n", extraTab.c_str(),
-					msgDst.m_var.c_str(), indexes.c_str(), msgDst.m_pShared->m_type.c_str(), ihmSignal, msgDst.m_dataLsb.c_str());
+				msgDst.m_var.c_str(), indexes.c_str(), msgDst.m_pShared->m_type.c_str(), ihmSignal, msgDst.m_dataLsb.c_str());
 
 			if (msgDst.m_idx1Lsb.size() > 0)
 				ihmPostInstr.Append("\t\t\t\t}\n");

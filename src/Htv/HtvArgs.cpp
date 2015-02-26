@@ -84,128 +84,40 @@ void CHtvArgs::Parse(int argc, char *argv[])
 	m_argc = argc;
 	m_argv = argv;
 
-#ifndef __GNUG__
+#ifdef WIN32
 	if (argc <= 1) {
 		argc = 1;
 		char *argv2[20];
 
-		//if (!SetCurrentDirectory("C:/Users/TBrewer/Documents/Visual Studio 2010/Projects/CnyHt/tests/dsn1/msvs10"))
-		//if (!SetCurrentDirectory("C:/Users/TBrewer/Documents/My Projects/DpFma - Copy/DpFma"))
-		//	exit(1);
-
 		argv2[0] = argv[0];
-		//argv2[argc++] = "-DHWT_ASSERT";
 
-		//argv2[argc++] = "-FD_prims";
-		//argv2[argc++] = "-DesignPrefix=ae";
-		//argv2[argc++] = "DpFma.cpp";
-		//argv2[argc++] = "DpFma.v";
-
-		//SetCurrentDirectory("C:/Users/TBrewer/Documents/TaskOrder004_CnyDemo1a.filt/msvs10/");
-		//argv2[argc++] = "-vivado";
-		//argv2[argc++] = "-DHT_SYSC";
-		//      argv2[argc++] = "-I";
-		//      argv2[argc++] = "../src";
-		//      argv2[argc++] = "-I";
-		//      argv2[argc++] = "../src_pers";
-		//      argv2[argc++] = "-I";
-		//      argv2[argc++] = "../ht/sysc";
-		//      argv2[argc++] = "-I";
-		//      argv2[argc++] = "C:/ht/ht_lib";
-		//      //argv2[argc++] = "../ht/sysc/PersAuTop.sc";
-		//      //argv2[argc++] = "../ht/sysc/PersAuTop.h";
-		//      //argv2[argc++] = "../ht/verilog/PersAuTop.v";
-		//argv2[argc++] = "../ht/sysc/PersHif.cpp";
-		//argv2[argc++] = "../ht/verilog/PersHif.v";
-
-//#ifdef BRYAN_BUG
-		SetCurrentDirectory("C:/Ht/tests/dsn1/msvs12/");
+		SetCurrentDirectory("C:/OpenHT_ngv/tests/bigInt/msvs12/");
 		argv2[argc++] = "-I";
-		argv2[argc++] = "C:/ht/ht_lib";
+		argv2[argc++] = "C:/OpenHT_ngv/ht_lib";
 		argv2[argc++] = "-I";
-		argv2[argc++] = "C:/ht/ht_lib/sysc";
+		argv2[argc++] = "C:/OpenHT_ngv/ht_lib/sysc";
 		argv2[argc++] = "-I";
 		argv2[argc++] = "../src";
 		argv2[argc++] = "-I";
 		argv2[argc++] = "../src_pers";
 		argv2[argc++] = "-I";
 		argv2[argc++] = "../ht/sysc";
-		argv2[argc++] = "-vivado";
-		//argv2[argc++] = "../ht/sysc/PersAuTop.sc";
-		//argv2[argc++] = "../ht/sysc/PersAuTop.h";
-		//argv2[argc++] = "../ht/verilog/PersAuTop.v";
-		argv2[argc++] = "../ht/sysc/PersInc.cpp";
-		argv2[argc++] = "../ht/verilog/PersInc.v";
-//#endif
-
-		//SetCurrentDirectory("C:/Ht/tests/gv_v3/msvs12/");
-		////argv2[argc++] = "-vivado";
-		//argv2[argc++] = "-DHT_SYSC";
-		//argv2[argc++] = "-method";
-		//argv2[argc++] = "-I";
-		//argv2[argc++] = "../src";
-		//argv2[argc++] = "-I";
-		//argv2[argc++] = "../src_pers";
-		//argv2[argc++] = "-I";
-		//argv2[argc++] = "../ht/sysc";
-		//argv2[argc++] = "-I";
-		//argv2[argc++] = "C:/ht/ht_lib";
-		////argv2[argc++] = "-wpp";
-		////argv2[argc++] = "../ht/sysc/PersSuTop.sc";
-		////argv2[argc++] = "../ht/sysc/PersSuTop.h";
-		////argv2[argc++] = "../ht/verilog/PersSuTop.v";
-		//argv2[argc++] = "../ht/sysc/PersGv1.cpp";
-		//argv2[argc++] = "../ht/verilog/PersGv1.v";
-
-		//SetCurrentDirectory("C:/Users/TBrewer/Documents/Visual Studio 2010/Projects/CnyMemcached/Mcd2/msvs10");
-		////SetCurrentDirectory("C:/Users/TBrewer/Documents/IDAnalytics/IDA_proj/IdaCoproc_proj/msvs10");
-		//argv2[argc++] = "-DHT_SYSC";
-		//argv2[argc++] = "-method";
+		//argv2[argc++] = "-TkDump";
 		//argv2[argc++] = "-vivado";
-		////argv2[argc++] = "-DHT_ASSERT";
-		//argv2[argc++] = "-I";
-		//argv2[argc++] = "../src";
-		//argv2[argc++] = "-I";
-		//argv2[argc++] = "../src_pers";
-		//argv2[argc++] = "-I";
-		//argv2[argc++] = "../ht/sysc";
-		//argv2[argc++] = "-I";
-		//argv2[argc++] = "C:/ht/ht_lib";
-		////argv2[argc++] = "-wpp";
-		////argv2[argc++] = "../ht/sysc/PersAuTop.sc";
-		////argv2[argc++] = "../ht/sysc/PersAuTop.h";
-		////argv2[argc++] = "../ht/verilog/PersAuTop.v";
-		////argv2[argc++] = "C:/ht/ht_lib/sysc/PersUnitCnt.cpp";
-		//argv2[argc++] = "../ht/sysc/PersPkt.cpp";
-		//argv2[argc++] = "../ht/verilog/PersPkt.v";
-
-		//SetCurrentDirectory("C:/Ht/examples/ArithUnit");
-		//argv2[argc++] = "-DesignPrefix=ae";
-		////argv2[argc++] = "-FD_prims";
-		//argv2[argc++] = "Pass.cpp";
-		//argv2[argc++] = "verilog/Pass.v";
-
-		//SetCurrentDirectory("C:/Users/TBrewer/Documents/OmpDpMisc");
-		////argv2[argc++] = "-ilf";
-		//argv2[argc++] = "-D_SYSTEM_C";
-		////argv2[argc++] = "../ht/sysc/PersSuTop.sc";
-		////argv2[argc++] = "../ht/sysc/PersSuTop.h";
-		////argv2[argc++] = "../ht/verilog/PersSuTop.v";
-		//argv2[argc++] = "OmpDpMisc.cpp";
-		//argv2[argc++] = "OmpDpMisc.v";
-
-
+		//argv2[argc++] = "../ht/sysc/PersAeTop.sc";
+		//argv2[argc++] = "../ht/sysc/PersAeTop.h";
+		//argv2[argc++] = "../ht/verilog/PersAeTop.v";
+		argv2[argc++] = "../ht/sysc/PersBigInt.cpp";
+		//argv2[argc++] = "C:/OpenHT_ngv/ht_lib/sysc/PersUnitCnt.cpp";
+		argv2[argc++] = "../ht/verilog/PersBigInt.v";
 
 		argv2[argc] = 0;
 
 		argv = argv2;
-
-		//return main(argc, argv2);
 	}
 #endif
 
 	int argPos = 1;
-	//bool bScFile = false;
 	string verilogDir;
 
 	while (argPos < argc) {

@@ -17,11 +17,12 @@ MTRand_int32 g_rndInit;
 MTRand_int32 g_rndRetry;
 
 // initialization of static private members
-unsigned long MTRand_int32::state[n] = {0x0UL};
+unsigned long MTRand_int32::state[n] = { 0x0UL };
 int MTRand_int32::p = 0;
 bool MTRand_int32::init = false;
 
-void MTRand_int32::gen_state() { // generate new state vector
+void MTRand_int32::gen_state()
+{ // generate new state vector
 	for (int i = 0; i < (n - m); ++i)
 		state[i] = state[i + m] ^ twiddle(state[i], state[i + 1]);
 	for (int i = n - m; i < (n - 1); ++i)
@@ -30,7 +31,8 @@ void MTRand_int32::gen_state() { // generate new state vector
 	p = 0; // reset position
 }
 
-void MTRand_int32::seed(unsigned long s) { // init by 32 bit seed
+void MTRand_int32::seed(unsigned long s)
+{ // init by 32 bit seed
 	state[0] = s & 0xFFFFFFFFUL; // for > 32 bit machines
 	for (int i = 1; i < n; ++i) {
 		state[i] = 1812433253UL * (state[i - 1] ^ (state[i - 1] >> 30)) + i;
@@ -42,7 +44,8 @@ void MTRand_int32::seed(unsigned long s) { // init by 32 bit seed
 	p = n; // force gen_state() to be called for next random number
 }
 
-void MTRand_int32::seed(const unsigned long* array, int size) { // init by array
+void MTRand_int32::seed(const unsigned long* array, int size)
+{ // init by array
 	seed(19650218UL);
 	int i = 1, j = 0;
 	for (int k = ((n > size) ? n : size); k; --k) {

@@ -1,10 +1,11 @@
-// -cl "C:\Ht\tests\dsn14\src_pers\dsn14.htl"
+// -cl $(HtToolsPath)/tests/dsn14/src_pers/dsn14.htl
+-wd $(HtToolsPath)/tests/dsn14/msvs12/
+
 -cp hc-2
 -uc 1
 -un Su
 -df 150
 -vcd_all
 //-it 1
--wd "C:\Ht\tests\dsn14\msvs12\"
-"C:\Ht\tests\dsn14\src_pers\Dsn14.htd"
+../src_pers/Dsn14.htd
 ../ht/sysc

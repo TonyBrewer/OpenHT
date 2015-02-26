@@ -114,6 +114,22 @@ void CPersInc::PersInc()
 			//		HtAssert(0, 0);
 			//}
 
+			{ // test for bug 2049
+				int a[4];
+				//if (true)
+					for (int i = 0; i < 4; i += 1)
+						if ((i & 1) == 0)
+							a[i] = i + 1;
+						else
+							a[i] = i + 2;
+				//else
+				//	a[0] = 0;
+
+				for (int i = 0; i < 4; i += 1)
+					if (a[i] != i + 1 + (i & 1))
+						HtAssert(0, 0);
+			}
+
 			{		// test for bug 1891
 				bool b = true;
 				uint32_t c = ~b;
@@ -388,7 +404,7 @@ void CPersInc::PersInc()
 				SendReturn_htmain(P_loopCnt);
 			} else {
 				// Calculate memory read address
-				MemAddr_t memRdAddr = SR_arrayAddr + (P_loopCnt << 3);
+				MemAddr_t memRdAddr = SR_arrayAddr + ((P_loopCnt * 2) << 3);
 
 				// Issue read request to memory
 				ReadMem_arrayMem(memRdAddr, PR_htId);
@@ -408,10 +424,10 @@ void CPersInc::PersInc()
 			}
 
 			// Increment memory data
-			uint64_t memWrData = GR_arrayMem_data() + 1;
+			uint64_t memWrData = GR_arrayMem.data + 1;
 
 			// Calculate memory write address
-			MemAddr_t memWrAddr = SR_arrayAddr + (P_loopCnt << 3);
+			MemAddr_t memWrAddr = SR_arrayAddr + ((P_loopCnt * 2 + 1) << 3);
 
 			// Issue write memory request
 			WriteMem(memWrAddr, memWrData);

@@ -1,5 +1,6 @@
-// -cl "C:\Ht\tests\bug_1882\src_pers\strean.htl"
--wd "C:\Ht\tests\bug_1882\msvs12\"
+// -cl $(HtToolsPath)/tests/bug_1882/src_pers/strean.htl
+-wd $(HtToolsPath)/tests/bug_1882/msvs12/
+
 -cp wx-690
 -ac 1
 -uc 1
@@ -9,5 +10,5 @@
 -D_HTL
 -ml 0.6
 -pn bug_1882
-"../src_pers/stream.htd"
+../src_pers/stream.htd
 ../ht/sysc

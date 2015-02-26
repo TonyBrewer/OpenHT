@@ -15,8 +15,6 @@ inc.AddInst(name=INC_READ3);
 inc.AddInst(name=INC_WRITE3);
 inc.AddInst(name=INC_READ4);
 inc.AddInst(name=INC_WRITE4);
-inc.AddInst(name=INC_READ5);
-inc.AddInst(name=INC_WRITE5);
 inc.AddInst(name=INC_RESET);
 inc.AddInst(name=INC_RESET1);
 
@@ -35,7 +33,6 @@ inc.AddShared()
 	.AddVar(type=uint64_t, name=sharedArray1, dimen1=3)
 	.AddVar(type=uint64_t, name=sharedArray2, dimen1=5, dimen2=4)
 	.AddVar(type=uint64_t, name=sharedArray3, dimen1=5, dimen2=4, addr1W=4)
-	.AddVar(type=uint64_t, name=sharedQueue1, dimen1=4, queueW=5)
 	.AddVar(type=ht_uint4, name=sharedInc)
 	;
 
@@ -47,11 +44,10 @@ inc.AddReturn(func=htmain)
 	.AddParam(hostType=uint32_t, type=uint8_t, name=elemCnt)
 	;
 
-inc.AddReadMem(queueW=5, rspCntW=1)
+inc.AddReadMem()
 	.AddDst(var=sharedData)
-	.AddDst(var=sharedArray1)
-	.AddDst(var=sharedArray2)
-	.AddDst(var=sharedArray3)
-	.AddDst(var=sharedQueue1)
+	.AddDst(var=sharedArray1[])
+	.AddDst(var=sharedArray2[][])
+	.AddDst(var=sharedArray3[][])
 	;
 inc.AddWriteMem();

@@ -16,6 +16,7 @@
 #ifdef _HTV
 #define HT_CYCLE() 0
 #define assert(a)
+#define ht_assert(a)
 #define printf(...)
 #define fprintf(...)
 #else
@@ -33,6 +34,17 @@ ht_prim ht_clk("clk") inline void HtResetFlop (bool &r_reset, const bool &i_rese
 
 #ifndef _HTV
 
+namespace Ht {
+	extern sc_core::sc_trace_file * g_vcdp;
+}
+
+inline void ht_assert(bool bCond)
+{
+	if (bCond) return;
+	if (Ht::g_vcdp) sc_close_vcd_trace_file(Ht::g_vcdp);
+	assert(0);
+}
+
 template<typename T>
 inline T ht_bad_data(T const &)
 {
@@ -42,7 +54,7 @@ inline T ht_bad_data(T const &)
 template <typename T, int addrBits> class ht_dist_que {
 public:
 	ht_dist_que() {
-		assert(addrBits < 10);
+		ht_assert(addrBits < 10);
 		m_maxEntriesUsed = 0;
 		m_bPop = false;
 		m_bPush = false;
@@ -67,15 +79,15 @@ public:
 
 	void pop() {
 		if (m_bPopWasReset && m_bPushWasReset) {
-			assert(!empty());
-			assert(!m_bPop);
+			ht_assert(!empty());
+			ht_assert(!m_bPop);
 			m_bPop = true;
 		}
 	}
 	void push(T data) {
 		if (m_bPopWasReset && m_bPushWasReset) {
-			assert(!full());
-			assert(!m_bPush);
+			ht_assert(!full());
+			ht_assert(!m_bPush);
 			m_bPush = true;
 			m_pushData = data;
 		}
@@ -108,7 +120,7 @@ public:
 			rdIdx = 0;
 			m_bPopWasReset = true;
 		} else if (m_bPop) {
-			assert(!empty());
+			ht_assert(!empty());
 			rdIdx += 1;
 		}
 
@@ -142,7 +154,7 @@ private:
 template <typename T, int addrBits> class ht_block_que {
 public:
 	ht_block_que() {
-		assert(addrBits < 18);
+		ht_assert(addrBits < 18);
 		m_maxEntriesUsed = 0;
 		m_bPop = false;
 		m_bPush = false;
@@ -168,15 +180,15 @@ public:
 
 	void pop() {
 		if (m_bPopWasReset && m_bPushWasReset) {
-			assert(!empty());
-			assert(!m_bPop);
+			ht_assert(!empty());
+			ht_assert(!m_bPop);
 			m_bPop = true;
 		}
 	}
 	void push(T data) {
 		if (m_bPopWasReset && m_bPushWasReset) {
-			assert(!full());
-			assert(!m_bPush);
+			ht_assert(!full());
+			ht_assert(!m_bPush);
 			m_bPush = true;
 			m_pushData = data;
 		}
@@ -211,7 +223,7 @@ public:
 			rdIdx = 0;
 			m_bPopWasReset = true;
 		} else if (m_bPop) {
-			assert(!empty());
+			ht_assert(!empty());
 			rdIdx += 1;
 		}
 
@@ -260,20 +272,20 @@ public:
 	const T & read_mem_ignore() { return m_mem[m_rdAddr]; }
 	void read_addr(uint64_t rdIdx1, uint64_t rdIdx2 = 0) {
 		uint64_t rdAddr = (rdIdx1 + (rdIdx2 << AW1)) & ((1 << AW1) * (1 << AW2) - 1);
-		assert(!m_bRdAddr || m_rdAddr == rdAddr);
+		ht_assert(!m_bRdAddr || m_rdAddr == rdAddr);
 		m_bRdAddr = true;
 		m_rdAddr = rdAddr;
 	}
 	void read_addr(uint64_t rdIdx1, uint64_t rdIdx2 = 0) const {
 		uint64_t rdAddr = (rdIdx1 + (rdIdx2 << AW1)) & ((1 << AW1) * (1 << AW2) - 1);
-		assert(!m_bRdAddr || m_rdAddr == rdAddr);
+		ht_assert(!m_bRdAddr || m_rdAddr == rdAddr);
 		const_cast<ht_dist_ram*>(this)->m_bRdAddr = true;
 		const_cast<ht_dist_ram*>(this)->m_rdAddr = rdAddr;
 	}
 	bool read_in_use() { return m_bRdAddr; }
 	void write_addr(uint64_t wrIdx1, uint64_t wrIdx2=0) {
 		uint64_t wrAddr = (wrIdx1 + (wrIdx2 << AW1)) & ((1<<AW1) * (1<<AW2) - 1);
-		assert(!m_bWrAddr || m_wrAddr == wrAddr);
+		ht_assert(!m_bWrAddr || m_wrAddr == wrAddr);
 		m_wrAddr = wrAddr;
 		if (!m_bWrAddr)
 			m_wrData = m_mem[m_wrAddr];
@@ -286,7 +298,7 @@ public:
 		return m_mem[wrAddr];
 	}
 	const T & read_mem() const {
-		assert(m_bRdAddr);
+		ht_assert(m_bRdAddr);
 		return m_mem[m_rdAddr];
 	}
 	T & write_mem() {
@@ -300,7 +312,7 @@ public:
 	void read_clock() { m_bRdAddr = false; }
 	void write_clock() {
 		if (m_bWrData) {
-			assert(m_bWrAddr);
+			ht_assert(m_bWrAddr);
 			m_mem[m_wrAddr] = m_wrData;
 		}
 		m_bWrData = false;
@@ -341,19 +353,19 @@ public:
 		m_rdAddr = (rdIdx1 + (rdIdx2 << AW1)) & ((1<<AW1) * (1<<AW2) - 1);
 	}
 	void read_addr(uint64_t rdIdx1, uint64_t rdIdx2 = 0) {
-		assert(!m_bRdAddr);
+		ht_assert(!m_bRdAddr);
 		m_bRdAddr = true;
 		m_rdAddr = (rdIdx1 + (rdIdx2 << AW1)) & ((1 << AW1) * (1 << AW2) - 1);
 	}
 	void read_addr(uint64_t rdIdx1, uint64_t rdIdx2 = 0) const {
-		assert(!m_bRdAddr);
+		ht_assert(!m_bRdAddr);
 		const_cast<ht_block_ram*>(this)->m_bRdAddr = true;
 		const_cast<ht_block_ram*>(this)->m_rdAddr = (rdIdx1 + (rdIdx2 << AW1)) & ((1 << AW1) * (1 << AW2) - 1);
 	}
 	uint64_t read_addr() { return m_rdAddr; }
 	bool read_in_use() { return m_bRdAddr; }
 	void write_addr(uint64_t wrIdx1, uint64_t wrIdx2=0) {
-		assert(!m_bWrAddr);
+		ht_assert(!m_bWrAddr);
 		m_bWrAddr = true;
 		m_wrAddr = (wrIdx1 + (wrIdx2 << AW1)) & ((1<<AW1) * (1<<AW2) - 1);
 		m_wrData = m_mem[m_wrAddr];
@@ -363,12 +375,12 @@ public:
 		return m_mem[(rdIdx1 + (rdIdx2 << AW1)) & ((1<<AW1) * (1<<AW2) - 1)];
 	}
 	T read_mem() const {
-		assert(bDoReg ? r_bRdAddr2 : r_bRdAddr);
+		ht_assert(bDoReg ? r_bRdAddr2 : r_bRdAddr);
 		return bDoReg ? r_doReg : ((r_bRdAddr && r_bWrData && r_rdAddr == r_wrAddr) ? ht_bad_data(r_doReg) : m_mem[r_rdAddr]);
 	}
-	T & write_mem() { assert(m_bWrAddr); return m_wrData; }
+	T & write_mem() { ht_assert(m_bWrAddr); return m_wrData; }
 	void write_mem(const T &wrData) {
-		assert(m_bWrAddr);
+		ht_assert(m_bWrAddr);
 		m_bWrData = true;
 		m_wrData = wrData;
 	}
@@ -444,36 +456,36 @@ public:
 		m_rdAddr = (rdIdx1 + (rdIdx2 << AW1)) & ((1<<AW1) * (1<<AW2) - 1);
 	}
 	void read_addr(uint64_t rdIdx1, uint64_t rdIdx2=0) {
-		assert(!m_bRdAddr);
+		ht_assert(!m_bRdAddr);
 		m_bRdAddr = true;
 		m_rdAddr = (rdIdx1 + (rdIdx2 << AW1)) & ((1<<AW1) * (1<<AW2) - 1);
 	}
 	uint64_t read_addr() { return m_rdAddr; }
 	void write_addr(uint64_t wrSel, uint64_t wrIdx1, uint64_t wrIdx2=0) {
-		assert(wrSel < (1 << SW));
-		assert(!m_bWrAddr);
+		ht_assert(wrSel < (1 << SW));
+		ht_assert(!m_bWrAddr);
 		m_bWrAddr = true;
 		m_wrAddr = (wrIdx1 + (wrIdx2 << AW1)) & ((1<<AW1) * (1<<AW2) - 1);
 		m_wrSel = wrSel;
 		m_wrData = m_mem[m_wrAddr][m_wrSel];
 	}
 	const T & read_mem_debug(uint64_t rdSel, uint64_t rdIdx1, uint64_t rdIdx2=0) {
-		assert(rdSel < (1<<SW));
+		ht_assert(rdSel < (1<<SW));
 		return m_mem[(rdIdx1 + (rdIdx2 << AW1)) & ((1<<AW1) * (1<<AW2) - 1)][rdSel];
 	}
 	T read_mem(uint64_t rdSel) {
-		assert(rdSel < (1<<SW));
-		assert(bDoReg ? r_bRdAddr2 : r_bRdAddr);
+		ht_assert(rdSel < (1<<SW));
+		ht_assert(bDoReg ? r_bRdAddr2 : r_bRdAddr);
 		return bDoReg ? r_doReg[rdSel] : ((r_bRdAddr && r_bWrData && r_rdAddr == r_wrAddr) ? ht_bad_data(r_doReg[0]) : m_mem[r_rdAddr][rdSel]);
 	}
-	T & write_mem() { assert(m_bWrAddr); return m_wrData; }
+	T & write_mem() { ht_assert(m_bWrAddr); return m_wrData; }
 	void write_mem(const T &wrData) {
-		assert(m_bWrAddr);
+		ht_assert(m_bWrAddr);
 		m_bWrData = true;
 		m_wrData = wrData;
 	}
 	T & write_mem_debug(uint64_t wrSel, uint64_t wrIdx1, uint64_t wrIdx2=0) {
-		assert(wrSel < (1<<SW));
+		ht_assert(wrSel < (1<<SW));
 		uint64_t wrAddr = (wrIdx1 + (wrIdx2 << AW1)) & ((1<<AW1) * (1<<AW2) - 1);
 		return m_mem[wrAddr][wrSel];
 	}
@@ -537,43 +549,43 @@ public:
 		r_rdAddr = 0;
 	}
 	void RdAddrIgnore(uint64_t rdSel, uint64_t rdIdx1, uint64_t rdIdx2=0) {
-		assert(rdSel < (1<<SW));
+		ht_assert(rdSel < (1<<SW));
 		m_bRdAddr = true;
 		m_rdSel = rdSel;
 		m_rdAddr = (rdIdx1 + (rdIdx2 << AW1)) & ((1<<AW1) * (1<<AW2) - 1);
 	}
 	void read_addr(uint64_t rdSel, uint64_t rdIdx1, uint64_t rdIdx2=0) {
-		assert(rdSel < (1<<SW));
-		assert(!m_bRdAddr);
+		ht_assert(rdSel < (1<<SW));
+		ht_assert(!m_bRdAddr);
 		m_bRdAddr = true;
 		m_rdSel = rdSel;
 		m_rdAddr = (rdIdx1 + (rdIdx2 << AW1)) & ((1<<AW1) * (1<<AW2) - 1);
 	}
 	uint64_t read_addr() { return m_rdAddr; }
 	void write_addr(uint64_t wrIdx1, uint64_t wrIdx2=0) {
-		assert(!m_bWrAddr);
+		ht_assert(!m_bWrAddr);
 		m_bWrAddr = true;
 		m_wrAddr = (wrIdx1 + (wrIdx2 << AW1)) & ((1<<AW1) * (1<<AW2) - 1);
 		for (uint64_t wrSel = 0; wrSel < (1<<SW); wrSel += 1)
 			m_wrData[wrSel] = 0;
 	}
 	const T & read_mem_debug(uint64_t rdSel, uint64_t rdIdx1, uint64_t rdIdx2=0) {
-		assert(rdSel < (1<<SW));
+		ht_assert(rdSel < (1<<SW));
 		return m_mem[(rdIdx1 + (rdIdx2 << AW1)) & ((1<<AW1) * (1<<AW2) - 1)][rdSel];
 	}
 	T read_mem() {
-		assert(bDoReg ? r_bRdAddr2 : r_bRdAddr);
+		ht_assert(bDoReg ? r_bRdAddr2 : r_bRdAddr);
 		return bDoReg ? r_doReg : ((r_bRdAddr && r_bWrData && r_rdAddr == r_wrAddr) ? ht_bad_data(r_doReg) : m_mem[r_rdAddr][r_rdSel]);
 	}
-	T & write_mem() { assert(m_bWrAddr); return m_wrData; }
+	T & write_mem() { ht_assert(m_bWrAddr); return m_wrData; }
 	void write_mem(uint64_t wrSel, const T &wrData) {
-		assert(wrSel < (1<<SW));
-		assert(m_bWrAddr);
+		ht_assert(wrSel < (1<<SW));
+		ht_assert(m_bWrAddr);
 		m_bWrData = true;
 		m_wrData[wrSel] = wrData;
 	}
 	T & write_mem_debug(uint64_t wrSel, uint64_t wrIdx1, uint64_t wrIdx2=0) {
-		assert(wrSel < (1<<SW));
+		ht_assert(wrSel < (1<<SW));
 		uint64_t wrAddr = (wrIdx1 + (wrIdx2 << AW1)) & ((1<<AW1) * (1<<AW2) - 1);
 		return m_mem[wrAddr][wrSel];
 	}

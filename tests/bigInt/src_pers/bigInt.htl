@@ -1,0 +1,20 @@
+// -cl $(HtToolsPath)/tests/bigInt/src_pers/bigInt.htl
+-wd $(HtToolsPath)/tests/bigInt/msvs12/
+
+-cp wx-690
+-mt
+-ac 1
+-uc 1
+-un Su
+-df 150
+-ri
+-rr
+-it
+-vr
+-vcd_all
+-I ../src
+-I ../src_pers
+-D_HTL
+-ml 0.6
+../src_pers/bigInt.htd
+../ht/sysc

@@ -1,0 +1,13 @@
+// -cl $(HtToolsPath)/tests/memPause_v2/src_pers/memPause.htl
+-wd $(HtToolsPath)/tests/memPause_v2/msvs12/
+
+-cp wx-690
+-ml 0.3
+-ac 1
+-uc 1
+-un Su
+-df 150
+-pn memPause_v2
+-vcd_all
+../src_pers/memPause.htd
+../ht/sysc

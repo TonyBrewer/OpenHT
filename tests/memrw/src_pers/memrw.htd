@@ -15,6 +15,10 @@
 
 #include "pers.h"
 
+struct CData {
+	uint64_t data;
+};
+
 ////////////////////////////////////////////////////
 // Ctl Module
 #define CTL_HTID_W 6
@@ -96,13 +100,13 @@ inc0.AddReturn(func=inc0)
 	.AddParam(hostType=uint32_t, type=ElemCnt_t, name=elemCnt)
 	;
 
-inc0.AddReadMem(queueW=5, rspCntW=5, maxBw=true)
-	.AddDst(var=arrayMem0, field=data);
+inc0.AddReadMem()
+	.AddDst(var=arrayMem0.data);
 
-inc0.AddWriteMem(queueW=5, rspCntW=6);
+inc0.AddWriteMem();
 
-inc0.AddGlobal(var=arrayMem0, addr1W=INC0_HTID_W+7, addr1=arrayMemRdPtr)
-	.AddField(type=uint64_t, name=data, read=true, write=false)
+inc0.AddGlobal()
+	.AddVar(type=CData, name=arrayMem0, addr1=arrayMemRdPtr, read=true, write=false)
 	;
 
 ////////////////////////////////////////////////////
@@ -125,6 +129,7 @@ inc1.AddHostMsg(dir=in, name=SU_ARRAY_ADDR)
 inc1.AddPrivate()
 	.AddVar(type=ElemCnt_t, name=elemCnt)
 	.AddVar(type=ElemCnt_t, name=loopIdx)
+	.AddVar(type=uint16_t, name=waitCnt)
 	.AddVar(type=uint16_t, name=loopBase)
 	.AddVar(type=Inc1Ptr_t, name=arrayMemRdPtr)
 	;
@@ -142,13 +147,17 @@ inc1.AddReturn(func=inc1)
 	.AddParam(hostType=uint32_t, type=ElemCnt_t, name=elemCnt)
 	;
 
-inc1.AddReadMem(queueW=5, rspCntW=2)
-	.AddDst(var=arrayMem1, field=data);
+inc1.AddReadMem()
+	.AddDst(var=arrayMem1.data);
 
-inc1.AddWriteMem(queueW=5, rspCntW=1);
+inc1.AddWriteMem();
 
-inc1.AddGlobal(var=arrayMem1, addr1W=INC1_HTID_W+7, addr1=arrayMemRdPtr)
-	.AddField(type=uint64_t, name=data, read=true, write=false)
+//inc1.AddGlobal(var=arrayMem1, addr1W=INC1_HTID_W+7, addr1=arrayMemRdPtr)
+//	.AddField(type=uint64_t, name=data, read=true, write=false)
+//	;
+
+inc1.AddGlobal()
+	.AddVar(type=CData, name=arrayMem1, addr1=arrayMemRdPtr, read=true, write=false)
 	;
 
 ////////////////////////////////////////////////////
@@ -188,13 +197,13 @@ inc2.AddReturn(func=inc2)
 	.AddParam(hostType=uint32_t, type=ElemCnt_t, name=elemCnt)
 	;
 
-inc2.AddReadMem(queueW=5, rspCntW=1)
-	.AddDst(var=arrayMem2, field=data);
+inc2.AddReadMem()
+	.AddDst(var=arrayMem2.data);
 
-inc2.AddWriteMem(queueW=5, rspCntW=2);
+inc2.AddWriteMem();
 
-inc2.AddGlobal(var=arrayMem2, addr1W=INC2_HTID_W+7, addr1=arrayMemRdPtr)
-	.AddField(type=uint64_t, name=data, read=true, write=false)
+inc2.AddGlobal()
+	.AddVar(type=CData, name=arrayMem2, addr1=arrayMemRdPtr, read=true, write=false)
 	;
 
 ////////////////////////////////////////////////////
@@ -237,13 +246,13 @@ inc3.AddReturn(func=inc3)
 	.AddParam(hostType=uint32_t, type=ElemCnt_t, name=elemCnt)
 	;
 
-inc3.AddReadMem(queueW=5, rspCntW=5, maxBw=false)
-	.AddDst(var=arrayMem3, field=data);
+inc3.AddReadMem()
+	.AddDst(var=arrayMem3.data);
 
-inc3.AddWriteMem(queueW=5, rspCntW=5, maxBw=true);
+inc3.AddWriteMem();
 
-inc3.AddGlobal(var=arrayMem3, addr1W=INC3_HTID_W+7, addr1=arrayMemRdPtr, rdStg=1, wrStg=1)
-	.AddField(type=uint64_t, name=data, read=true, write=false)
+inc3.AddGlobal()
+	.AddVar(type=CData, name=arrayMem3, addr1=arrayMemRdPtr, read=true, write=false, rdStg=1, wrStg=1)
 	;
 
 ////////////////////////////////////////////////////
@@ -283,13 +292,13 @@ inc4.AddReturn(func=inc4)
 	.AddParam(hostType=uint32_t, type=ElemCnt_t, name=elemCnt)
 	;
 
-inc4.AddReadMem(queueW=5, rspCntW=5, maxBw=true)
-	.AddDst(var=arrayMem4, field=data);
+inc4.AddReadMem()
+	.AddDst(var=arrayMem4.data);
 
-inc4.AddWriteMem(queueW=5, rspCntW=6, maxBw=false);
+inc4.AddWriteMem();
 
-inc4.AddGlobal(var=arrayMem4, addr1W=INC4_HTID_W+7, addr1=arrayMemRdPtr)
-	.AddField(type=uint64_t, name=data, read=true, write=false)
+inc4.AddGlobal()
+	.AddVar(type=CData, name=arrayMem4, addr1=arrayMemRdPtr, read=true, write=false)
 	;
 
 ////////////////////////////////////////////////////
@@ -297,7 +306,8 @@ inc4.AddGlobal(var=arrayMem4, addr1W=INC4_HTID_W+7, addr1=arrayMemRdPtr)
 #define INC5_HTID_W 0
 //typedef sc_uint<INC5_HTID_W> Inc5HtId_t;
 typedef sc_uint<INC5_HTID_W+7> Inc5Ptr_t;
-typedef sc_uint<1> Inc5RdGrpId_t;
+#define INC5_RD_GRP_W 1
+typedef sc_uint<INC5_RD_GRP_W> Inc5RdGrpId_t;
 
 dsnInfo.AddModule(name=inc5, htIdW=INC5_HTID_W);
 
@@ -331,21 +341,22 @@ inc5.AddReturn(func=inc5)
 	.AddParam(hostType=uint32_t, type=ElemCnt_t, name=elemCnt)
 	;
 
-inc5.AddReadMem(queueW=5, rspCntW=5, rspGrpId=rdGrpId, maxBw=true)
-	.AddDst(var=arrayMem5, field=data);
+inc5.AddReadMem(rspGrpW=INC5_RD_GRP_W)
+	.AddDst(var=arrayMem5.data);
 
-inc5.AddWriteMem(queueW=5, rspCntW=6);
+inc5.AddWriteMem();
 
-inc5.AddGlobal(var=arrayMem5, addr1W=INC5_HTID_W+7, addr1=arrayMemRdPtr)
-	.AddField(type=uint64_t, name=data, read=true, write=false)
+inc5.AddGlobal()
+	.AddVar(type=CData, name=arrayMem5, addr1=arrayMemRdPtr, read=true, write=false)
 	;
 
 ////////////////////////////////////////////////////
-// Inc6 Module - htIdW=3, maxBw=false
+// Inc6 Module - htIdW=3
 #define INC6_HTID_W 1
 typedef sc_uint<INC6_HTID_W> Inc6HtId_t;
 typedef sc_uint<INC6_HTID_W+7> Inc6Ptr_t;
-typedef sc_uint<2> Inc6RdGrpId_t;
+#define INC6_RD_GRP_W 2
+typedef sc_uint<INC6_RD_GRP_W> Inc6RdGrpId_t;
 
 dsnInfo.AddModule(name=inc6, htIdW=INC6_HTID_W);
 
@@ -379,13 +390,13 @@ inc6.AddReturn(func=inc6)
 	.AddParam(hostType=uint32_t, type=ElemCnt_t, name=elemCnt)
 	;
 
-inc6.AddReadMem(queueW=5, rspCntW=5, rspGrpId=rdGrpId)
-	.AddDst(var=arrayMem6, field=data);
+inc6.AddReadMem(rspGrpW=INC6_RD_GRP_W)
+	.AddDst(var=arrayMem6.data);
 
-inc6.AddWriteMem(queueW=5, rspCntW=6);
+inc6.AddWriteMem();
 
-inc6.AddGlobal(var=arrayMem6, addr1W=INC6_HTID_W+7, addr1=arrayMemRdPtr)
-	.AddField(type=uint64_t, name=data, read=true, write=false)
+inc6.AddGlobal()
+	.AddVar(type=CData, name=arrayMem6, addr1=arrayMemRdPtr, read=true, write=false)
 	;
 
 ////////////////////////////////////////////////////
@@ -393,7 +404,8 @@ inc6.AddGlobal(var=arrayMem6, addr1W=INC6_HTID_W+7, addr1=arrayMemRdPtr)
 #define INC7_HTID_W 2
 typedef sc_uint<INC7_HTID_W> Inc7HtId_t;
 typedef sc_uint<INC7_HTID_W+7> Inc7Ptr_t;
-typedef sc_uint<3> Inc7RdGrpId_t;
+#define INC7_RD_GRP_W 3
+typedef sc_uint<INC7_RD_GRP_W> Inc7RdGrpId_t;
 
 dsnInfo.AddModule(name=inc7, htIdW=INC7_HTID_W);
 
@@ -427,21 +439,22 @@ inc7.AddReturn(func=inc7)
 	.AddParam(hostType=uint32_t, type=ElemCnt_t, name=elemCnt)
 	;
 
-inc7.AddReadMem(queueW=5, rspCntW=5, rspGrpId=rdGrpId, maxBw=false)
-	.AddDst(var=arrayMem7, field=data);
+inc7.AddReadMem(rspGrpW=INC7_RD_GRP_W)
+	.AddDst(var=arrayMem7.data);
 
-inc7.AddWriteMem(queueW=5, rspCntW=6);
+inc7.AddWriteMem();
 
-inc7.AddGlobal(var=arrayMem7, addr1W=INC7_HTID_W+7, addr1=arrayMemRdPtr)
-	.AddField(type=uint64_t, name=data, read=true, write=false)
+inc7.AddGlobal()
+	.AddVar(type=CData, name=arrayMem7, addr1=arrayMemRdPtr, read=true, write=false)
 	;
 
 ////////////////////////////////////////////////////
-// Inc8 Module - htIdW=3, maxBw=true
+// Inc8 Module - htIdW=3
 #define INC8_HTID_W 1
 typedef sc_uint<INC8_HTID_W> Inc8HtId_t;
 typedef sc_uint<INC8_HTID_W+7> Inc8Ptr_t;
-typedef sc_uint<4> Inc8RdGrpId_t;
+#define INC8_RD_GRP_W 4
+typedef sc_uint<INC8_RD_GRP_W> Inc8RdGrpId_t;
 
 dsnInfo.AddModule(name=inc8, htIdW=INC8_HTID_W);
 
@@ -475,13 +488,13 @@ inc8.AddReturn(func=inc8)
 	.AddParam(hostType=uint32_t, type=ElemCnt_t, name=elemCnt)
 	;
 
-inc8.AddReadMem(queueW=5, rspCntW=5, rspGrpId=rdGrpId, maxBw=true)
-	.AddDst(var=arrayMem8, field=data);
+inc8.AddReadMem(rspGrpW=INC8_RD_GRP_W)
+	.AddDst(var=arrayMem8.data);
 
-inc8.AddWriteMem(queueW=5, rspCntW=6);
+inc8.AddWriteMem();
 
-inc8.AddGlobal(var=arrayMem8, addr1W=INC8_HTID_W+7, addr1=arrayMemRdPtr)
-	.AddField(type=uint64_t, name=data, read=true, write=false)
+inc8.AddGlobal()
+	.AddVar(type=CData, name=arrayMem8, addr1=arrayMemRdPtr, read=true, write=false)
 	;
 
 ////////////////////////////////////////////////////
@@ -489,7 +502,8 @@ inc8.AddGlobal(var=arrayMem8, addr1W=INC8_HTID_W+7, addr1=arrayMemRdPtr)
 #define INC9_HTID_W 0
 //typedef sc_uint<INC9_HTID_W> Inc9HtId_t;
 typedef sc_uint<INC9_HTID_W+7> Inc9Ptr_t;
-typedef sc_uint<1> Inc9WrGrpId_t;
+#define INC9_WR_GRP_W 1
+typedef sc_uint<INC9_WR_GRP_W> Inc9WrGrpId_t;
 
 dsnInfo.AddModule(name=inc9, htIdW=INC9_HTID_W);
 
@@ -523,13 +537,13 @@ inc9.AddReturn(func=inc9)
 	.AddParam(hostType=uint32_t, type=ElemCnt_t, name=elemCnt)
 	;
 
-inc9.AddReadMem(queueW=5, rspCntW=5)
-	.AddDst(var=arrayMem9, field=data);
+inc9.AddReadMem()
+	.AddDst(var=arrayMem9.data);
 
-inc9.AddWriteMem(queueW=5, rspCntW=6, rspGrpId=wrGrpId);
+inc9.AddWriteMem(rspGrpW=INC9_WR_GRP_W);
 
-inc9.AddGlobal(var=arrayMem9, addr1W=INC9_HTID_W+7, addr1=arrayMemRdPtr)
-	.AddField(type=uint64_t, name=data, read=true, write=false)
+inc9.AddGlobal()
+	.AddVar(type=CData, name=arrayMem9, addr1=arrayMemRdPtr, read=true, write=false)
 	;
 
 ////////////////////////////////////////////////////
@@ -537,7 +551,8 @@ inc9.AddGlobal(var=arrayMem9, addr1W=INC9_HTID_W+7, addr1=arrayMemRdPtr)
 #define INC10_HTID_W 1
 typedef sc_uint<INC10_HTID_W> Inc10HtId_t;
 typedef sc_uint<INC10_HTID_W+7> Inc10Ptr_t;
-typedef sc_uint<2> Inc10WrGrpId_t;
+#define INC10_WR_GRP_W 2
+typedef sc_uint<INC10_WR_GRP_W> Inc10WrGrpId_t;
 
 dsnInfo.AddModule(name=inc10, htIdW=INC10_HTID_W);
 
@@ -571,13 +586,13 @@ inc10.AddReturn(func=inc10)
 	.AddParam(hostType=uint32_t, type=ElemCnt_t, name=elemCnt)
 	;
 
-inc10.AddReadMem(queueW=5, rspCntW=5)
-	.AddDst(var=arrayMem10, field=data);
+inc10.AddReadMem()
+	.AddDst(var=arrayMem10.data);
 
-inc10.AddWriteMem(queueW=5, rspCntW=6, rspGrpId=wrGrpId);
-
-inc10.AddGlobal(var=arrayMem10, addr1W=INC10_HTID_W+7, addr1=arrayMemRdPtr)
-	.AddField(type=uint64_t, name=data, read=true, write=false)
+inc10.AddWriteMem(rspGrpW=INC10_WR_GRP_W);
+	
+inc10.AddGlobal()
+	.AddVar(type=CData, name=arrayMem10, addr1=arrayMemRdPtr, read=true, write=false)
 	;
 
 ////////////////////////////////////////////////////
@@ -585,7 +600,8 @@ inc10.AddGlobal(var=arrayMem10, addr1W=INC10_HTID_W+7, addr1=arrayMemRdPtr)
 #define INC11_HTID_W 2
 typedef sc_uint<INC11_HTID_W> Inc11HtId_t;
 typedef sc_uint<INC11_HTID_W+7> Inc11Ptr_t;
-typedef sc_uint<3> Inc11WrGrpId_t;
+#define INC11_WR_GRP_W 3
+typedef sc_uint<INC11_WR_GRP_W> Inc11WrGrpId_t;
 
 dsnInfo.AddModule(name=inc11, htIdW=INC11_HTID_W);
 
@@ -621,13 +637,13 @@ inc11.AddReturn(func=inc11)
 	.AddParam(hostType=uint32_t, type=ElemCnt_t, name=elemCnt)
 	;
 
-inc11.AddReadMem(queueW=5, rspCntW=5)
-	.AddDst(var=arrayMem11, field=data);
+inc11.AddReadMem()
+	.AddDst(var=arrayMem11.data);
 
-inc11.AddWriteMem(queueW=5, rspCntW=5, rspGrpId=wrGrpId, maxBw=true);
-
-inc11.AddGlobal(var=arrayMem11, addr1W=INC11_HTID_W+7, addr1=arrayMemRdPtr, rdStg=1, wrStg=1)
-	.AddField(type=uint64_t, name=data, read=true, write=false)
+inc11.AddWriteMem(rspGrpW=INC11_WR_GRP_W);
+	
+inc11.AddGlobal()
+	.AddVar(type=CData, name=arrayMem11, addr1=arrayMemRdPtr, read=true, write=false, rdStg=1, wrStg=1)
 	;
 
 ////////////////////////////////////////////////////
@@ -635,7 +651,8 @@ inc11.AddGlobal(var=arrayMem11, addr1W=INC11_HTID_W+7, addr1=arrayMemRdPtr, rdSt
 #define INC12_HTID_W 3
 typedef sc_uint<INC12_HTID_W> Inc12HtId_t;
 typedef sc_uint<INC12_HTID_W+7> Inc12Ptr_t;
-typedef sc_uint<4> Inc12WrGrpId_t;
+#define INC12_WR_GRP_W 4
+typedef sc_uint<INC12_WR_GRP_W> Inc12WrGrpId_t;
 
 dsnInfo.AddModule(name=inc12, htIdW=INC12_HTID_W);
 
@@ -671,11 +688,11 @@ inc12.AddReturn(func=inc12)
 	.AddParam(hostType=uint32_t, type=ElemCnt_t, name=elemCnt)
 	;
 
-inc12.AddReadMem(queueW=5, rspCntW=5)
-	.AddDst(var=arrayMem12, field=data);
+inc12.AddReadMem()
+	.AddDst(var=arrayMem12.data);
 
-inc12.AddWriteMem(queueW=5, rspCntW=5, rspGrpId=wrGrpId, maxBw=false);
-
-inc12.AddGlobal(var=arrayMem12, addr1W=INC12_HTID_W+7, addr1=arrayMemRdPtr, rdStg=1, wrStg=1)
-	.AddField(type=uint64_t, name=data, read=true, write=false)
+inc12.AddWriteMem(rspGrpW=INC12_WR_GRP_W);
+	
+inc12.AddGlobal()
+	.AddVar(type=CData, name=arrayMem12, addr1=arrayMemRdPtr, read=true, write=false, rdStg=1, wrStg=1)
 	;

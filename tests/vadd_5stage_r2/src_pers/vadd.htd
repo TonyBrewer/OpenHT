@@ -87,7 +87,7 @@ add.AddReturn(func=add)
 	.AddParam(type=uint64_t, name=result)
 	;
 
-add.AddReadMem(queueW=5, rspCntW=6)
+add.AddReadMem()
 	.AddDst(var=op1Mem)
 	.AddDst(var=op2Mem)
 	;

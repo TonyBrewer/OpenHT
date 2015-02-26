@@ -14,8 +14,9 @@ void CPersInc::PersInc()
 			P_instCnt = 0;
 			P_joinCnt = 0;
 
-			uint64_t data = GR_arrayMem_data();
-			GW_arrayMem_data(S_joinCnt[PR_htId], data);
+			uint64_t data = GR_arrayMem.data.u64;
+			GW_arrayMem.write_addr(S_joinCnt[PR_htId]);
+			GW_arrayMem.data.u64 = data;
 
 			HtContinue(INC_LOOP1);
 		}

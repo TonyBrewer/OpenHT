@@ -1,5 +1,7 @@
+// -cl $(HtToolsPath)/tests/dsn7/src_pers/dsn7.htl
+-wd $(HtToolsPath)/tests/dsn7/msvs12/
+
 -cp hc-2
 -un Su
--wd "C:\Ht\tests\dsn7\msvs12\"
-"C:\Ht\tests\dsn7\src_pers/dsn7.htd"
+../src_pers/dsn7.htd
 ../ht/sysc

@@ -1,0 +1,52 @@
+////////////////////////////////////////////////////
+// Inc Module
+#define INC_HTID_W 0
+typedef sc_uint<INC_INSTR_W> IncInst_t;
+//typedef sc_uint<INC_HTID_W> IncHtId_t;
+typedef sc_uint<2> ReqCnt_t;
+typedef sc_uint<8> ElemCnt_t;
+
+struct CTwoFld {
+	uint64_t fld[2];
+};
+
+
+dsnInfo.AddModule(name=inc, htIdW=INC_HTID_W);
+inc.AddInst(name=INC_INIT);
+inc.AddInst(name=INC_READ);
+inc.AddInst(name=INC_WRITE);
+
+inc.AddHostMsg(dir=in, name=SU_ARRAY_ADDR)
+	.AddDst(var=arrayAddr, dataLsb=0)
+	;
+
+inc.AddPrivate()
+	.AddVar(type=ElemCnt_t, name=elemCnt)
+	.AddVar(type=ElemCnt_t, name=loopCnt)
+	.AddVar(type=ReqCnt_t, name=reqCnt)
+	//.AddVar(type=IncHtId_t, name=arrayMemRdPtr)
+	;
+
+inc.AddShared()
+	.AddVar(type=ht_uint48, name=arrayAddr)
+	;
+
+inc.AddEntry(func=htmain, inst=INC_INIT, host=true)
+	.AddParam(hostType=uint32_t, type=ElemCnt_t, name=elemCnt)
+	;
+inc.AddReturn(func=htmain)
+	.AddParam(hostType=uint32_t, type=ElemCnt_t, name=elemCnt)
+	;
+
+inc.AddReadMem()
+	.AddDst(name=arrayMem1Fld1, var=arrayMem[0].fld[0])
+	.AddDst(name=arrayMem1Fld2, var=arrayMem[].fld[1])
+	.AddDst(name=arrayMem2Fld1, var=arrayMem[1].fld[])
+	.AddDst(name=arrayMem2Fld2, var=arrayMem[].fld[], elemCntW=0)
+	;
+
+inc.AddWriteMem();
+
+inc.AddGlobal()
+	.AddVar(type=CTwoFld, name=arrayMem, addr1=htId, dimen1=2)
+	;

@@ -7,6 +7,12 @@
 #define CXR2b_HTID_W 6
 #define CXR2c_HTID_W 0
 
+typedef sc_uint<INC_HTID_W> IncHtId_t;
+
+struct CData {
+	uint64_t data;
+};
+
 typedef sc_uint<8> ElemCnt_t;
 
 dsnInfo.AddModule(name=inc, htIdW=INC_HTID_W);
@@ -44,12 +50,12 @@ inc.AddReturn(func=inc);
 
 inc.AddCall(func=cxr1);
 
-inc.AddReadMem(queueW=5, rspCntW=4)
-	.AddDst(name=arrayMem, var=arrayMem, field=data);
-inc.AddWriteMem(queueW=5, rspCntW=5);
+inc.AddReadMem()
+	.AddDst(name=arrayMem, var=arrayMem.data);
+inc.AddWriteMem();
 
-inc.AddGlobal(var=arrayMem, addr1W=INC_HTID_W, addr1=arrayMemRdPtr)
-	.AddField(type=uint64_t, name=data, read=true, write=true)
+inc.AddGlobal()
+	.AddVar(type=CData, name=arrayMem, addr1=arrayMemRdPtr)
 	;
 
 ////////////////////////////////////////////////////

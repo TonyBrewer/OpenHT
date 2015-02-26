@@ -16,6 +16,7 @@ class CDefineTable;
 struct CHtString {
 
 	CHtString() { m_bIsValid = false; }
+	CHtString(int value) { SetValue(value); }
 	CHtString(string s) : m_string(s) { m_bIsValid = false; }
 
 	operator string & () { return m_string; }
@@ -26,7 +27,7 @@ struct CHtString {
 	bool operator == (string a) { return m_string == a; }
 	bool operator == (CHtString a) { return m_string == a.m_string; }
 	bool operator != (CHtString a) { return m_string != a.m_string; }
-	void operator += (char a) { m_string += " "; m_string[m_string.size()-1] = a; }
+	void operator += (char a) { m_string += " "; m_string[m_string.size() - 1] = a; }
 	char operator [] (size_t idx) { return m_string[idx]; }
 
 	size_t size() const { return m_string.size(); }
@@ -36,21 +37,24 @@ struct CHtString {
 	int AsInt() const { HtlAssert(m_bIsValid); return m_value; }
 
 	bool IsValid() { return m_bIsValid; }
-	void InitValue( CLineInfo const &lineInfo, bool bRequired=true, int defValue=0, bool bIsSigned=true );
+	void InitValue(CLineInfo const &lineInfo, bool bRequired = true, int defValue = 0, bool bIsSigned = true);
 	void SetValue(int value) { m_bIsValid = true; m_value = value; }
 
-	string Upper() const {
+	string Upper() const
+	{
 		string tmp = m_string;
 		for (size_t i = 0; i < tmp.size(); i += 1)
 			tmp[i] = toupper(tmp[i]);
 		return tmp;
 	}
-	string Uc() const {
+	string Uc() const
+	{
 		string tmp = m_string;
 		if (tmp.size() > 0) tmp[0] = toupper(tmp[0]);
 		return tmp;
 	}
-	string Lc() const {
+	string Lc() const
+	{
 		string tmp = m_string;
 		if (tmp.size() > 0) tmp[0] = tolower(tmp[0]);
 		return tmp;
@@ -64,4 +68,22 @@ private:
 	bool		m_bIsValid;
 	int			m_value;
 	bool		m_bIsSigned;
+};
+
+struct CHtIntParam {
+	void SetValue(int value) { m_bIsSet = true; m_value = value; }
+	void SetValue(CLineInfo & lineInfo, string & strValue, bool bRequired = true, int defValue = 0);
+
+	bool IsSet() { return m_bIsSet; }
+	int AsInt() const { HtlAssert(m_bIsSet); return m_value; }
+
+	static void SetDefineTable(CDefineTable * pDefineTable) { m_pDefineTable = pDefineTable; }
+
+private:
+	static CDefineTable	*m_pDefineTable;
+
+private:
+	bool m_bIsSet;
+	bool m_bIsSigned;
+	int m_value;
 };

@@ -125,9 +125,6 @@
     <ClCompile Include="HtCode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GenModNgv.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="GenModStBuf.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

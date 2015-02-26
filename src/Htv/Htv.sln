@@ -1,11 +1,18 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.30723.0
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Htfe", "..\Htfe\Htfe.vcxproj", "{80D49096-B092-4BA2-912F-91698CC2CB6C}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Htv", "Htv.vcxproj", "{22044AD6-9F1E-4FF9-8AC6-1B13FBA8E758}"
 	ProjectSection(ProjectDependencies) = postProject
 		{80D49096-B092-4BA2-912F-91698CC2CB6C} = {80D49096-B092-4BA2-912F-91698CC2CB6C}
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{D549BC37-62EA-4D06-BE9A-889B30B45299}"
+	ProjectSection(SolutionItems) = preProject
+		..\..\tests\Levenshtein10\src_pers\PersMch_src.cpp = ..\..\tests\Levenshtein10\src_pers\PersMch_src.cpp
 	EndProjectSection
 EndProject
 Global

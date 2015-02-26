@@ -10,11 +10,11 @@ int main(int argc, char **argv)
 
 	pAuUnit->SendHostMsg(MSGVAR, 0);
 
-	pAuUnit->SendCall_htmain(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
-
 	pAuUnit->SendHostMsg(MSGVAR, 1);
 
-	bool err;
+	pAuUnit->SendCall_htmain(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+
+	bool err = false;
 	int32_t rtn[10];
 	while (!pAuUnit->RecvReturn_htmain(err,
 					   rtn[0], rtn[1], rtn[2], rtn[3], rtn[4],

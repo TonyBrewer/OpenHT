@@ -15,6 +15,10 @@ struct CStruct {
 	uint64_t m_u3:W3;
 };
 
+struct CData {
+	uint64_t data;
+};
+
 ////////////////////////////////////////////////////
 // Inc Module
 
@@ -47,12 +51,13 @@ inc.AddReturn(func=htmain)
 	.AddParam(hostType=uint32_t, type=uint8_t, name=elemCnt)
 	;
 
-inc.AddReadMem(queueW=5, rspCntW=1, maxBw=true)
-	.AddDst(var=arrayMem, field=data);
-inc.AddWriteMem(maxBw=true);
+inc.AddReadMem()
+	.AddDst(name=arrayMem, var=arrayMem.data)
+	;
+inc.AddWriteMem();
 
-inc.AddGlobal(var=arrayMem, addr1W=INC_HTID_W, addr1=arrayMemRdPtr)
-	.AddField(type=uint64_t, name=data, read=true, write=false)
+inc.AddGlobal()
+	.AddVar(type=CData, name=arrayMem, addr1=arrayMemRdPtr, read=true, write=false)
 	;
 
 inc.AddFunction(type=bool, name=fb);

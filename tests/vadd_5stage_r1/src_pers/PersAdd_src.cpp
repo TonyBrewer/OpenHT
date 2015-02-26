@@ -59,10 +59,6 @@ CPersAdd::PersAdd()
 		}
 	}
 
-	if (PR1_htValid && PR1_htInst == ADD_ST) {
-		bool stop = true;
-	}
-
 	S_op1Mem.read_addr(PR1_htId);
 	S_op2Mem.read_addr(PR1_htId);
 	T1_a = S_op1Mem.read_mem();

@@ -1,4 +1,6 @@
-// -cl "C:\Ht\tests\bug_1428\src_pers\bugx.htl"
+// -cl $(HtToolsPath)/tests/bug_1428/src_pers/bugx.htl
+-wd $(HtToolsPath)/tests/bug_1428/msvs12/
+
 -cp hc-2
 -mt
 -ac 1
@@ -6,6 +8,5 @@
 -un Au
 -pn bug_1428
 -df 150
--wd "C:\Ht\tests\bug_1428\msvs12\"
-"C:\Ht\tests\bug_1428\src_pers\bugx.htd"
+../src_pers/bugx.htd
 ../ht/sysc

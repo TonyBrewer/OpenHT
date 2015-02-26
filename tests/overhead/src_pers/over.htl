@@ -1,4 +1,6 @@
--wd "C:\Ht\tests\overhead\msvs12\"
+// -cl $(HtToolsPath)\tests\overhead\src_pers\over.htl
+-wd $(HtToolsPath)\tests\overhead\msvs12\
+
 -cp hc-2
 -uc 1
 -un Au

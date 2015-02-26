@@ -61,7 +61,7 @@ class CHtfeIdent
 public:
     friend class CHtfeSignal;
 
-    enum EIdentId { id_new, id_enum, id_struct, id_variable, id_function, id_const, id_class, id_nameSpace, id_enumType, id_instancePort };
+    enum EIdentId { id_new, id_enum, id_struct, id_variable, id_function, id_const, id_class, id_nameSpace, id_enumType, id_instancePort, id_intType };
     enum EFuncId { fid_unknown=0, fid_and_reduce, fid_nand_reduce, fid_or_reduce, fid_nor_reduce, fid_xor_reduce, fid_xnor_reduce, fid_range };
 
 protected:
@@ -109,6 +109,8 @@ public:
 		m_structPos = 0;	// starting position of member within structure
         m_declStatementLevel = 0;
         m_funcId = fid_unknown;
+		m_pUserConvType = 0;
+		m_pOverloadedNext = 0;
 
 		m_bIsReturnRef = false;
         m_bConstVarRead = false;
@@ -162,6 +164,10 @@ public:
 		m_bIsIgnoreSignalCheck = false;
 		m_bGlobalReadRef = false;
 		m_bIsFunctionCalled = false;
+		m_bIsOverloadedOperator = false;
+		m_bIsUserConversion = false;
+		m_bNullConvOperator = false;
+		m_bIsConstructor = false;
 
 		// id_types
 		m_bIsStruct = false;
@@ -288,7 +294,7 @@ public:
 	void SetLinearIdx(int linearIdx) { m_linearIdx = linearIdx; }
 	int GetLinearIdx() { return m_linearIdx; }
 
-    void AppendParam(CHtfeParam &param) { m_paramList.push_back(param); }
+    void AppendParam(CHtfeParam const &param) { m_paramList.push_back(param); }
     int GetParamCnt() { return m_paramList.size(); }
     CHtfeIdent *GetParamType(int paramId) { return m_paramList[paramId].GetType(); }
     string &GetParamName(int paramId) { return m_paramList[paramId].GetName(); }
@@ -329,7 +335,7 @@ public:
     void InsertArrayElements(int structBitPos=-1);
 
 	void NewFlatTable();
-    CHtfeIdent *InsertIdent(const string &name, bool bInsertFlatTbl=true);
+    CHtfeIdent *InsertIdent(const string &name, bool bInsertFlatTbl=true, bool bAllowOverloading=false);
 	CHtfeIdent *InsertIdent(const string &heirVarName, const string &flatVarName);
 	CHtfeIdent * InsertFlatIdent(CHtfeIdent * pHierIdent, const string &flatVarName);
 	void DeleteIdent(const string &name);
@@ -424,7 +430,7 @@ public:
 	void SetReadRef(int elemIdx) {
 		if (GetPrevHier() && GetPrevHier()->IsArrayIdent()) { GetPrevHier()->SetReadRef(elemIdx); return; }
 		if (!IsFlatIdent()) { m_pFlatIdent->SetReadRef(elemIdx); return; }
-		if (m_refInfo.size() == 0)
+		if ((int)m_refInfo.size() < GetDimenElemCnt())
 			m_refInfo.resize(GetDimenElemCnt());
 		Assert(elemIdx < (int)m_refInfo.size());
 		m_refInfo[elemIdx].m_bIsRead = true;
@@ -434,7 +440,7 @@ public:
 	void SetWriteRef(int elemIdx) {
 		if (GetPrevHier() && GetPrevHier()->IsArrayIdent()) { GetPrevHier()->SetWriteRef(elemIdx); return; }
 		if (!IsFlatIdent()) { m_pFlatIdent->SetWriteRef(elemIdx); return; }
-		if (m_refInfo.size() == 0)
+		if ((int)m_refInfo.size() < GetDimenElemCnt())
 			m_refInfo.resize(GetDimenElemCnt());
 		Assert(elemIdx < (int)m_refInfo.size());
 		m_refInfo[elemIdx].m_bIsWritten = true;
@@ -711,7 +717,7 @@ public:
 		name = GetName() + name;
 		return name;
 	}
-	string GetVerilogName(size_t elemIdx) {
+	string GetVerilogName(size_t elemIdx, bool bWithName=true) {
 		string name;
 		char dimStr[16];
 		for (int dimIdx = (int)m_dimenList.size()-1; dimIdx >= 0; dimIdx -= 1) {
@@ -719,7 +725,8 @@ public:
 			elemIdx /= m_dimenList[dimIdx];
 			name = dimStr + name;
 		}
-		name = GetName() + name;
+		if (bWithName)
+			name = GetName() + name;
 		return name;
 	}
 	int GetDimenElemIdx(CHtfeOperand * pOperand);
@@ -850,7 +857,42 @@ public:
     int GetScAttribCnt() { return m_pHtAttribList == 0 ? 0 : m_pHtAttribList->size(); }
     CHtAttrib &GetScAttrib(int i) { Assert(m_pHtAttribList); return (*m_pHtAttribList)[i]; }
 
-	void SetIsStruct(bool bIsStruct=true) { m_bIsStruct = bIsStruct; }
+	void AddNullConstructor(CHtfeIdent * pParamType);
+	void AddNullUserConversion(CHtfeIdent * pConvType);
+	void AddBuiltinMember(string const & name, CHtfeIdent::EFuncId funcId, CHtfeIdent * pRtnType);
+	void AddBuiltinMember(string const & name, CHtfeIdent::EFuncId funcId, CHtfeIdent * pRtnType, CHtfeIdent * pParam1Type, CHtfeIdent * pParam2Type);
+	void AddNullConvOverloadedOperator(CHtfeLex::EToken eToken, CHtfeIdent * pRtnType, CHtfeIdent * pParamType);
+	void AddNullConvOverloadedOperator(CHtfeLex::EToken eToken, CHtfeIdent * pRtnType, CHtfeIdent * pParam1Type, CHtfeIdent * pParam2Type);
+
+	void SetNullConvOperator(bool bNullConvOperator = true) { m_bNullConvOperator = bNullConvOperator; }
+	bool IsNullConvOperator() { return m_bNullConvOperator; }
+
+	void SetIsConstructor(bool bIsConstructor = true) { m_bIsConstructor = bIsConstructor; }
+	bool IsConstructor() { return m_bIsConstructor; }
+
+	void SetIsOverloadedOperator(bool bIsOverloadedOperator = true) { m_bIsOverloadedOperator = bIsOverloadedOperator; }
+	bool IsOverloadedOperator() { return m_bIsOverloadedOperator; }
+
+	void SetOverloadedOperator(CHtfeLex::EToken overloadedOperator) { m_overloadedOperator = overloadedOperator; }
+	CHtfeLex::EToken GetOverloadedOperator() { return m_overloadedOperator; }
+
+	CHtfeIdent * SetUserConvType(CHtfeIdent * pUserConvType) { m_pUserConvType = pUserConvType; return this; }
+	CHtfeIdent * GetUserConvType() { return m_pUserConvType; }
+	CHtfeIdent * GetConvType()
+	{
+		CHtfeIdent * pType = this;
+		while (pType->GetUserConvType())
+			pType = pType->GetUserConvType();
+		return pType;
+	}
+
+	void SetOverloadedNext(CHtfeIdent * pOverloadedNext) { m_pOverloadedNext = pOverloadedNext; }
+	CHtfeIdent * GetOverloadedNext() { return m_pOverloadedNext; }
+
+	void SetIsUserConversion(bool bIsUserConversion = true) { m_bIsUserConversion = bIsUserConversion; }
+	bool IsUserConversion() { return m_bIsUserConversion; }
+
+	void SetIsStruct(bool bIsStruct = true) { m_bIsStruct = bIsStruct; }
 	bool IsStruct() const { return m_bIsStruct; }
 
 	void SetIsUserDefinedType() { m_bIsUserDefinedType = true; }
@@ -1089,6 +1131,8 @@ public:
 		return GetGlobalRefSet().size() > 0 || IsMemberFunc();
 	}
 
+	CHtfeIdent * GetNextOverloadedFunc() { return 0; }
+
 private:
     string				m_name;
 	string				m_inlineName;		// name used for inlined function calls
@@ -1147,6 +1191,9 @@ private:
 	//int				m_fieldVarIdxCnt;
     int             m_declStatementLevel;
     EFuncId         m_funcId;
+	CHtfeLex::EToken m_overloadedOperator;
+	CHtfeIdent *	m_pUserConvType;
+	CHtfeIdent *	m_pOverloadedNext;
 
 	struct {
         bool m_bConstVarRead:1;
@@ -1189,8 +1236,6 @@ private:
         bool m_bIsScPrim:1;
         bool m_bIsScClockedPrim:1;
         bool m_bIsScPrimInput:1;
-        //bool m_bIsHtPrimOutput:1;
-        //bool m_bIsAssignOutput:1;
 		bool m_bIsUserDefinedType:1;
 		bool m_bIsUserDefinedFunc:1;
 		bool m_bIsAutoDecl:1;
@@ -1201,6 +1246,10 @@ private:
 		bool m_bIsIgnoreSignalCheck:1;
 		bool m_bGlobalReadRef:1;
 		bool m_bIsFunctionCalled:1;	// flag for recursive function call check
+		bool m_bIsOverloadedOperator:1;
+		bool m_bIsUserConversion:1;
+		bool m_bNullConvOperator:1;
+		bool m_bIsConstructor:1;
 
 		// id_types
 		bool m_bIsStruct:1;
@@ -1293,7 +1342,7 @@ class CHtfeIdentTbl
 	friend class CScArrayTblIter;
 	friend class CScElemTblIter;
 public:
-    CHtfeIdent * Insert(const string &str);
+	CHtfeIdent * Insert(const string &str, bool bAllowOverloading=false);
     CHtfeIdent * Find(const string &str) {
         IdentTblMap_Iter iter = m_identTblMap.find(str);
         if (iter == m_identTblMap.end())
@@ -1324,6 +1373,66 @@ public:
 private:
     CHtfeIdentTbl *m_pIdentTbl;
     IdentTblMap_Iter m_iter;
+};
+
+class CHtfeOperatorIter {
+public:
+	CHtfeOperatorIter(CHtfeIdent * pOpType, bool bHier = false) : m_pOpType(pOpType), m_bHier(bHier), m_bFirst(true) {}
+	void Begin() { m_bFirst = true; m_pMethod = 0; }
+	bool End() { return !m_bFirst && m_iter == m_pOpType->GetIdentTbl().GetIdentTblMap().end(); }
+	void operator ++ (int) {
+		do {
+			if (m_bFirst) {
+				m_bFirst = false;
+				m_iter = m_pOpType->GetIdentTbl().GetIdentTblMap().begin();
+				SetMethod();
+			} else {
+				if (m_pMethod->GetOverloadedNext())
+					m_pMethod = m_pMethod->GetOverloadedNext();
+				else {
+					m_iter++;
+					SetMethod();
+				}
+			}
+			if (m_bHier && m_pOpType->GetPrevHier() && End()) {
+				m_pOpType = m_pOpType->GetPrevHier();
+				m_iter = m_pOpType->GetIdentTbl().GetIdentTblMap().begin();
+				SetMethod();
+			}
+		} while (!End() && !IsOverloadedOperator() && !IsUserConversion() && !IsConstructor());
+	}
+
+	bool IsUserConversion() { return m_bFirst ? false : GetMethod()->IsUserConversion(); }
+	bool IsOverloadedOperator() { return m_bFirst ? false : GetMethod()->IsOverloadedOperator(); }
+	bool IsConstructor() { return m_bFirst ? false : GetMethod()->IsConstructor() && GetMethod()->GetParamCnt() == 1; }
+	CHtfeLex::EToken GetOverloadedOperator() { return GetMethod()->GetOverloadedOperator(); }
+	CHtfeIdent * GetMethod() { return m_pMethod; }
+	CHtfeIdent * GetType() {
+		CHtfeIdent * pType = 0;
+		if (m_bFirst)
+			pType = m_pOpType;
+		else if (GetMethod()->IsOverloadedOperator())
+			pType = GetMethod()->GetParamType(0);
+		else if (GetMethod()->IsUserConversion())
+			pType = GetMethod()->GetType();
+		else if (GetMethod()->IsConstructor())
+			pType = GetMethod()->GetParamType(0);
+		else {
+			Assert(0);
+			pType = 0;
+		}
+		// Conv ht_uint, ht_int, sc_in, sc_out to an int type
+		return pType->GetConvType();
+	}
+	int GetConvCnt() { return m_bFirst ? 0 : 1; }
+private:
+	void SetMethod() { m_pMethod = End() ? 0 : m_iter->second; }
+private:
+	CHtfeIdent * m_pOpType;
+	bool m_bHier;
+	bool m_bFirst;
+	IdentTblMap_Iter m_iter;
+	CHtfeIdent * m_pMethod;
 };
 
 class CScElemTblIter

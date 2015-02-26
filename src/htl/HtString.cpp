@@ -11,8 +11,9 @@
 #include "DsnInfo.h"
 
 CDefineTable * CHtString::m_pDefineTable;
+CDefineTable * CHtIntParam::m_pDefineTable;
 
-void CHtString::InitValue( CLineInfo const &lineInfo, bool bRequired, int defValue, bool bIsSigned )
+void CHtString::InitValue(CLineInfo const &lineInfo, bool bRequired, int defValue, bool bIsSigned)
 {
 	if (m_bIsValid)
 		return;
@@ -20,12 +21,12 @@ void CHtString::InitValue( CLineInfo const &lineInfo, bool bRequired, int defVal
 	if (m_string.size() == 0 && !bRequired) {
 
 		m_value = defValue;
-		m_bIsSigned = bIsSigned;	
+		m_bIsSigned = bIsSigned;
 
 	} else if (!m_pDefineTable->FindStringValue(lineInfo, m_string, m_value, m_bIsSigned)) {
 
 		m_value = defValue;
-		m_bIsSigned = bIsSigned;	
+		m_bIsSigned = bIsSigned;
 
 		CPreProcess::ParseMsg(Error, lineInfo, "unable to determine value for '%s'", m_string.c_str());
 	}
@@ -33,3 +34,19 @@ void CHtString::InitValue( CLineInfo const &lineInfo, bool bRequired, int defVal
 	m_bIsValid = true;
 }
 
+void CHtIntParam::SetValue(CLineInfo & lineInfo, string & strValue, bool bRequired, int defValue)
+{
+	if (strValue.size() == 0 && !bRequired) {
+
+		m_value = defValue;
+
+	} else if (!m_pDefineTable->FindStringValue(lineInfo, strValue, m_value, m_bIsSigned)) {
+
+		m_value = defValue;
+
+		CPreProcess::ParseMsg(Error, lineInfo, "unable to determine value for '%s'", strValue.c_str());
+	}
+
+	m_bIsSet = true;
+
+}

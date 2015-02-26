@@ -1,0 +1,6 @@
+AddModInstParams(unit=Au, modPath="ctl/add", replCnt=4);
+
+AddMsgIntfConn(outUnit=Au, outPath=ctl/add[0]/A, inUnit=Au, inPath=ctl/add[1]/A);
+AddMsgIntfConn(outUnit=Au, outPath=ctl/add[1]/A, inUnit=Au, inPath=ctl/add[2]/A);
+AddMsgIntfConn(outUnit=Au, outPath=ctl/add[2]/A, inUnit=Au, inPath=ctl/add[3]/A);
+AddMsgIntfConn(outUnit=Au, outPath=ctl/add[3]/A, inUnit=Au, inPath=ctl/add[0]/A);

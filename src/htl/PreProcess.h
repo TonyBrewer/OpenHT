@@ -36,20 +36,20 @@ struct CIncludeFile {
 	string m_name;
 };
 
-class CPreProcess  
-{
+class CPreProcess {
 public:
 	class CMacro;
 public:
 	CPreProcess();
 	virtual ~CPreProcess();
 
-	bool Open(const string &name, bool bProcessOnce=false);
+	bool Open(const string &name, bool bProcessOnce = false);
 	void InsertPreProcessorName(const string &name, const string &value) { m_macroTbl.Insert(name, value); }
 	bool Reopen();
 	void Close();
 	bool GetLine(string &line);
-	const CLineInfo &GetLineInfo() {
+	const CLineInfo &GetLineInfo()
+	{
 		if (m_pFs < m_fileStack)
 			return m_fileStack->m_lineInfo;
 		else
@@ -58,52 +58,58 @@ public:
 	vector<CIncludeFile> const & GetIncludeList() const { return m_includeList; }
 	size_t GetMacroTblSize() { return m_macroTbl.size(); }
 	//size_t GetMacroTbl() { return m_macroTbl.size(); }
-    void UpdateStaticLineInfo() { m_lineInfo = GetLineInfo(); }
-	bool IsScTopology() { return m_pFs->m_lineInfo.m_pathName.substr(m_pFs->m_lineInfo.m_pathName.size()-3) == ".sc"; }
+	void UpdateStaticLineInfo() { m_lineInfo = GetLineInfo(); }
+	bool IsScTopology() { return m_pFs->m_lineInfo.m_pathName.substr(m_pFs->m_lineInfo.m_pathName.size() - 3) == ".sc"; }
 	bool IsInputFile() { return m_pFs == m_fileStack; }
 	int GetFd() { return m_pFs->m_fd; }
-	int GetFileOffset(int linePos) {
+	int GetFileOffset(int linePos)
+	{
 		return m_linePos.GetFileOffset(linePos);
 	}
 	void VerifyFileOffset(int start, const string &lineBuf);
 	string FormatString(const char *msgStr, ...);
 
-	void WritePreProcessedInput() {
+	void WritePreProcessedInput()
+	{
 		m_pWriteFp = fopen("PreProcessed.txt", "w");
 	}
 
-    void SetInterceptFileName(string interceptFileName) { m_interceptFileName = interceptFileName; }
-    void SetReplaceFileName(string replaceFileName) { m_replaceFileName = replaceFileName; }
+	void SetInterceptFileName(string interceptFileName) { m_interceptFileName = interceptFileName; }
+	void SetReplaceFileName(string replaceFileName) { m_replaceFileName = replaceFileName; }
 
 public:
-    
-    static CLineInfo m_lineInfo;
-    static int m_warningCnt;
-    static int m_errorCnt;
+
+	static CLineInfo m_lineInfo;
+	static int m_warningCnt;
+	static int m_errorCnt;
 	static MTRand_int32	m_mtRand;
 
-    void static ParseMsg(EMsgType msgType, const char *pFormat, ... ) {
-	    va_list args;
-	    va_start( args, pFormat );
+	void static ParseMsg(EMsgType msgType, const char *pFormat, ...)
+	{
+		va_list args;
+		va_start(args, pFormat);
 
-	    ErrorMsg(msgType, CPreProcess::m_lineInfo, pFormat, args);
-    }
+		ErrorMsg(msgType, CPreProcess::m_lineInfo, pFormat, args);
+	}
 
-    void static ParseMsg(EMsgType msgType, CLineInfo const & lineInfo, const char *pFormat, ... ) {
-	    va_list args;
-	    va_start( args, pFormat );
+	void static ParseMsg(EMsgType msgType, CLineInfo const & lineInfo, const char *pFormat, ...)
+	{
+		va_list args;
+		va_start(args, pFormat);
 
-	    ErrorMsg(msgType, lineInfo, pFormat, args);
-    }
+		ErrorMsg(msgType, lineInfo, pFormat, args);
+	}
 
 private:
-	enum EToken2 { tk_exprBegin, tk_bang, tk_num_int, tk_num_hex,
+	enum EToken2 {
+		tk_exprBegin, tk_bang, tk_num_int, tk_num_hex,
 		tk_lparen, tk_rparen, tk_plus,
 		tk_minus, tk_slash, tk_asterisk, tk_percent, tk_equalEqual, tk_vbar,
 		tk_vbarVbar, tk_carot, tk_ampersand, tk_ampersandAmpersand, tk_bangEqual,
 		tk_less, tk_greater, tk_greaterEqual, tk_lessEqual, tk_lessLess,
 		tk_greaterGreater, tk_unaryPlus, tk_unaryMinus, tk_tilda,
-		tk_identifier, tk_exprEnd, tk_error };
+		tk_identifier, tk_exprEnd, tk_error
+	};
 	EToken2 m_tk;
 	string m_tkString;
 
@@ -116,16 +122,16 @@ private:
 	bool PreProcessIf(string &lineBuf, const char *&pPos);
 	bool PreProcessIfdef(string &lineBuf, const char *&pPos);
 	bool PreProcessIfndef(string &lineBuf, const char *&pPos);
-	bool GetLineWithCommentsStripped(string &line, bool bContinue=false);
-	bool GetLineFromFile(string &lineBuf, bool bAppendLine=false);
+	bool GetLineWithCommentsStripped(string &line, bool bContinue = false);
+	bool GetLineFromFile(string &lineBuf, bool bAppendLine = false);
 	void SkipSpace(const char *&pPos);
 	string ParseIdentifier(const char *&pPos);
 	string ParseString(const char *&pPos);
 
-	bool ParseExpression(const char *&pPos, int &rtnValue, bool bErrMsg=true);
+	bool ParseExpression(const char *&pPos, int &rtnValue, bool bErrMsg = true);
 	void EvaluateExpression(EToken2 tk, vector<int> &operandStack,
 		vector<int> &operatorStack);
-	EToken2 GetNextToken(const char *&pPos, bool bErrMsg=true);
+	EToken2 GetNextToken(const char *&pPos, bool bErrMsg = true);
 	EToken2 GetToken() { return m_tk; }
 	string &GetTokenString() { return m_tkString; }
 	int GetTokenValue();
@@ -167,17 +173,19 @@ private:
 		int m_delta;
 	};
 
-    string m_interceptFileName;
-    string m_replaceFileName;
+	string m_interceptFileName;
+	string m_replaceFileName;
 
 	class CLinePos {
 	public:
 		typedef vector<CLinePosDelta> CDeltaList;
 		CLinePos() { m_baseOffset = 0; m_deltaList.resize(0); }
-		void SetBaseOffset(int baseOffset) {
+		void SetBaseOffset(int baseOffset)
+		{
 			m_baseOffset = baseOffset; m_deltaList.resize(0);
 		}
-		bool IsInFile(int linePos) {
+		bool IsInFile(int linePos)
+		{
 			// check of char in line was in original file
 			CDeltaList::iterator deltaIter;
 			for (deltaIter = m_deltaList.begin(); deltaIter < m_deltaList.end(); deltaIter++) {
@@ -188,7 +196,8 @@ private:
 			return true;
 		}
 
-		void Insert(int linePos, int length) {
+		void Insert(int linePos, int length)
+		{
 			// insert in ordered list, update remaining entries
 			bool foundFirst = false;
 			CDeltaList::iterator deltaIter;
@@ -204,7 +213,8 @@ private:
 			}
 			newDeltaPos = m_deltaList.insert(newDeltaPos, CLinePosDelta(linePos, -length));
 		}
-		void Delete(int linePos, int length) {
+		void Delete(int linePos, int length)
+		{
 			// insert in ordered list, update remaining entries
 			bool foundFirst = false;
 			CDeltaList::iterator deltaIter;
@@ -220,7 +230,8 @@ private:
 			}
 			newDeltaPos = m_deltaList.insert(newDeltaPos, CLinePosDelta(linePos, length));
 		}
-		int GetFileOffset(int linePos) {
+		int GetFileOffset(int linePos)
+		{
 			int offset = m_baseOffset + linePos;
 			CDeltaList::iterator deltaIter;
 			for (deltaIter = m_deltaList.begin(); deltaIter < m_deltaList.end(); deltaIter++) {
@@ -242,9 +253,11 @@ private:
 	*********************************************************/
 
 	// Directives table
-	enum EDirective { dir_noMatch, dir_define, dir_include, dir_if,
+	enum EDirective {
+		dir_noMatch, dir_define, dir_include, dir_if,
 		dir_ifdef, dir_ifndef, dir_undef, dir_elif, dir_else, dir_endif,
-		dir_pragma };
+		dir_pragma
+	};
 
 	class CDirective {
 	public:
@@ -264,15 +277,16 @@ private:
 	typedef DirectiveTblMap::iterator			DirectiveTblMap_Iter;
 	typedef pair<DirectiveTblMap_Iter, bool>	DirectiveTblMap_InsertPair;
 
-	class CDirectiveTbl  
-	{
+	class CDirectiveTbl {
 	public:
-		CDirective * Insert(const string &name) {
+		CDirective * Insert(const string &name)
+		{
 			DirectiveTblMap_InsertPair insertPair;
 			insertPair = m_directiveTblMap.insert(DirectiveTblMap_ValuePair(name, CDirective(name)));
 			return &insertPair.first->second;
 		}
-		EDirective Find(const string &name) {
+		EDirective Find(const string &name)
+		{
 			DirectiveTblMap_Iter iter = m_directiveTblMap.find(name);
 			if (iter == m_directiveTblMap.end())
 				return dir_noMatch;
@@ -288,24 +302,27 @@ public:
 	/*********************************************************
 	** Macro table
 	*********************************************************/
-	class CMacro
-	{
+	class CMacro {
 	public:
 		CMacro(string &str) : m_name(str) { m_bIsNew = true; m_bParenReqd = false; m_bIsFromIncludeFile = true; }
 		CMacro(string const &name, string const &expansion) : m_name(name), m_expansion(expansion)
-		{ m_bIsNew = true; m_bParenReqd = false; m_bIsFromIncludeFile = true; }
+		{
+			m_bIsNew = true; m_bParenReqd = false; m_bIsFromIncludeFile = true;
+		}
 
 		string const &GetName() const { return m_name; }
 		vector<string> const & GetParamList() const { return m_paramList; }
 		string const &GetExpansion() const { return m_expansion; }
 		void SetExpansion(string &expansion) { m_expansion = expansion; }
-		bool InsertParam(string &name) {
+		bool InsertParam(string &name)
+		{
 			if (FindParamId(name) >= 0)
 				return false;
 			m_paramList.push_back(name);
 			return true;
 		}
-		int FindParamId(string const & name) {
+		int FindParamId(string const & name)
+		{
 			for (size_t i = 0; i < m_paramList.size(); i += 1)
 				if (m_paramList[i] == name)
 					return i;
@@ -338,8 +355,7 @@ public:
 	typedef MacroMap::iterator			MacroMap_Iter;
 	typedef pair<MacroMap_Iter, bool>	MacroMap_InsertPair;
 
-	class CDefineTbl  
-	{
+	class CDefineTbl {
 	public:
 		//CMacro * Insert(const char *pName)
 		//{
@@ -371,13 +387,15 @@ public:
 			insertPair = m_macroMap.insert(MacroMap_ValuePair(name, CMacro(name, value)));
 			return &insertPair.first->second;
 		}
-		void Remove(string &str) {
+		void Remove(string &str)
+		{
 			MacroMap_Iter iter = m_macroMap.find(str);
 			if (iter == m_macroMap.end())
 				return;
 			m_macroMap.erase(iter);
 		}
-		CMacro * Find(const string &str) {
+		CMacro * Find(const string &str)
+		{
 			MacroMap_Iter iter = m_macroMap.find(str);
 			if (iter == m_macroMap.end())
 				return 0;
@@ -391,7 +409,7 @@ public:
 		MacroMap		m_macroMap;
 
 	};
-	
+
 private:
 	CDefineTbl m_macroTbl;
 

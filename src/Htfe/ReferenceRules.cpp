@@ -245,8 +245,6 @@ void CHtfeDesign::SetRefInfo(CHtfeOperand * pObj, CHtfeIdent * pHier, bool bLoca
 
 			bool bIdentIsLocalScope = pIdent->GetPrevHier() && pIdent->GetPrevHier()->GetPrevHier() != GetTopHier();
 
-			//if (pIdent->GetName() == "c_t7_dataOut0")
-			//	bool stop = true;
 			int elemIdx = pIdent->GetDimenElemIdx(pExpr);
 			if (!pIdent->IsHtPrimOutput(elemIdx) || bIdentIsLocalScope == bLocal) {
 				if (pIdent->IsHtPrimOutput(elemIdx) && pIdent->IsWriteRef(elemIdx) && !pIdent->IsScState()) {

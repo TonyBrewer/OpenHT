@@ -29,12 +29,12 @@ CPersInc5::PersInc5()
 			Inc5Ptr_t arrayMemWrPtr = (Inc5Ptr_t)P_loopIdx;
 
 			// Issue read request to memory
-			ReadMem_arrayMem5(memRdAddr, arrayMemWrPtr);
+			ReadMem_arrayMem5(PR_rdGrpId, memRdAddr, arrayMemWrPtr);
 
 			bool bLast = P_loopIdx == P_elemCnt - 1;
 			if (bLast) {
 				P_loopIdx = 0;
-				ReadMemPause(INC5_WRITE);
+				ReadMemPause(PR_rdGrpId, INC5_WRITE);
 			} else {
 				P_loopIdx += 1;
 				HtContinue(INC5_READ);
@@ -54,7 +54,7 @@ CPersInc5::PersInc5()
 			}
 
 			// Increment memory data
-			uint64_t memWrData = GR_arrayMem5_data() + 1;
+			uint64_t memWrData = GR_arrayMem5.data + 1;
 
 			// Calculate memory write address
 			MemAddr_t memWrAddr = SR_arrayAddr + ((P_loopBase + P_loopIdx) << 3);

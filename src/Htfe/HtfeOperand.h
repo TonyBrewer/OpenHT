@@ -44,7 +44,7 @@ public:
     void Init() {
         m_pMember = 0; m_minWidth = 0; m_sigWidth = 0; m_bIsConstValue = false; m_bIsConstWidth = false;
         m_pOperand1 = 0; m_pOperand2 = 0; m_pOperand3 = 0; m_bIsScX = false; m_bIsSigned = false; m_bIsPosSignedConst = false;
-        m_bIsLeaf = false; m_bIsParenExpr = false; m_exprWidth = 0; m_pMemberType = 0; m_pCastType = 0;
+        m_bIsLeaf = false; m_bIsParenExpr = false; m_exprWidth = 0; m_pType = 0; m_pCastType = 0;
 		m_pSubField = 0; m_operatorToken = CHtfeLex::tk_eof; m_bIsErrOp = false; m_verWidth = 0; m_opWidth = 0; m_pLinkedOp = 0;
     }
 
@@ -99,17 +99,8 @@ public:
     }
    	void SetCastType(CHtfeIdent *pCastType) { m_pCastType = pCastType; }
 	CHtfeIdent *GetCastType() { return m_pCastType; }
- 	void SetMemberType(CHtfeIdent *pMemberType) { m_pMemberType = pMemberType; }
-	CHtfeIdent *GetMemberType() {
-		if (m_pMemberType)
-			return m_pMemberType;
-        else if (m_pMember)
-            return m_pMember->IsType() ? m_pMember : m_pMember->GetType();
-        else if (!m_bIsLeaf && m_operatorToken == CHtfeLex::tk_typeCast)
-            return m_pOperand1->GetMemberType();
-        else
-            return 0;
-    }
+ 	void SetType(CHtfeIdent *pType) { m_pType = pType; }
+	CHtfeIdent *GetType();
 	void SetLinkedOp(CHtfeOperand * pLinkedOp) { m_pLinkedOp = pLinkedOp; }
     CHtfeOperand &SetReadRef() {
         if (m_pMember && m_pMember->IsVariable())
@@ -321,7 +312,7 @@ public:
 
 private:
     CHtfeIdent *              m_pMember;
-	CHtfeIdent *              m_pMemberType;	// valid if pMember is a field or signal read()/write()
+	CHtfeIdent *              m_pType;
 	CHtfeIdent *              m_pCastType;	// valid if type cast is present
 
 	CHtfeOperand *            m_pLinkedOp;	// linked operand for common subexpression generation

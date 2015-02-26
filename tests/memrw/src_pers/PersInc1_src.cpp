@@ -10,7 +10,9 @@ CPersInc1::PersInc1()
 		{
 			P_loopIdx = 0;
 
-			if (m_htIdPool.empty())
+			P_waitCnt += 1;
+
+			if (m_htIdPool.empty() || PR_waitCnt >= 500)
 				// wait until all threads have started
 				HtContinue(INC1_READ);
 			else
@@ -55,7 +57,7 @@ CPersInc1::PersInc1()
 			}
 
 			// Increment memory data
-			uint64_t memWrData = GR_arrayMem1_data() + 1;
+			uint64_t memWrData = GR_arrayMem1.data + 1;
 
 			// Calculate memory write address
 			MemAddr_t memWrAddr = SR_arrayAddr + ((P_loopBase + P_loopIdx) << 3);

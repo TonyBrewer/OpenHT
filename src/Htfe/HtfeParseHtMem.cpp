@@ -835,6 +835,8 @@ void CHtfeDesign::InitHtQueuePushClockStatements(CHtfeIdent * pHier, CHtfeIdent 
 {
 	vector<int> refList(pIdent->GetDimenCnt(), 0);
 
+	int idxWidth = pIdent->GetType()->GetHtMemoryAddrWidth1() + pIdent->GetType()->GetHtMemoryAddrWidth2() + 1;
+
 	char buf[1024];
 	do {
 		string initDimStr;
@@ -852,16 +854,18 @@ void CHtfeDesign::InitHtQueuePushClockStatements(CHtfeIdent * pHier, CHtfeIdent 
 		statementStr += buf;
 
 		if (pIdent->IsHtBlockQue()) {
-			sprintf(buf, "%s_WrAddr2%s = %s ? 0 : %s_WrAddr%s; ",
+			sprintf(buf, "%s_WrAddr2%s = %s ? (ht_uint%d)0 : %s_WrAddr%s; ",
 				rQueName.c_str(), initDimStr.c_str(),
 				resetStr.c_str(),
+				idxWidth,
 				rQueName.c_str(), initDimStr.c_str() );
 			statementStr += buf;
 		}
-		sprintf(buf, "%s_WrAddr%s = %s ? 0 : %s_WrAddr%s; ",
+		sprintf(buf, "%s_WrAddr%s = %s ? (ht_uint%d)0 : %s_WrAddr%s; ",
 			rQueName.c_str(), initDimStr.c_str(),
 			resetStr.c_str(),
-			cQueName.c_str(), initDimStr.c_str() );
+			idxWidth,
+			cQueName.c_str(), initDimStr.c_str());
 		statementStr += buf;
 		statementStr += " }";
 

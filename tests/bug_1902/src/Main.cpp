@@ -4,7 +4,7 @@ using namespace Ht;
 int main(int argc, char **argv)
 {
 	uint64_t *arr;
-	posix_memalign((void **)&arr, 64, sizeof(uint64_t) * 8);
+	ht_posix_memalign((void **)&arr, 64, sizeof(uint64_t) * 8);
 
 	uint64_t act_sum = 0;
 	uint64_t exp_sum = 0;

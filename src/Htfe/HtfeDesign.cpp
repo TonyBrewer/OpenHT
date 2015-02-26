@@ -16,6 +16,35 @@
 CHtfeDesign * g_pHtfeDesign = 0;
 CHtfeDesign * CHtfeDesign::m_pHtDesign;
 
+CHtfeIdent * CHtfeDesign::m_pVoidType;
+CHtfeIdent * CHtfeDesign::m_pBoolType;
+CHtfeIdent * CHtfeDesign::m_pScUintType;
+CHtfeIdent * CHtfeDesign::m_pScIntType;
+CHtfeIdent * CHtfeDesign::m_pScBigUintType;
+CHtfeIdent * CHtfeDesign::m_pScBigIntType;
+CHtfeIdent * CHtfeDesign::m_pBigIntBaseType;
+CHtfeIdent * CHtfeDesign::m_pScStateType;
+CHtfeIdent * CHtfeDesign::m_pCharType;
+CHtfeIdent * CHtfeDesign::m_pUCharType;
+CHtfeIdent * CHtfeDesign::m_pShortType;
+CHtfeIdent * CHtfeDesign::m_pUShortType;
+CHtfeIdent * CHtfeDesign::m_pIntType;
+CHtfeIdent * CHtfeDesign::m_pUIntType;
+CHtfeIdent * CHtfeDesign::m_pLongType;
+CHtfeIdent * CHtfeDesign::m_pULongType;
+CHtfeIdent * CHtfeDesign::m_pInt8Type;
+CHtfeIdent * CHtfeDesign::m_pUInt8Type;
+CHtfeIdent * CHtfeDesign::m_pInt16Type;
+CHtfeIdent * CHtfeDesign::m_pUInt16Type;
+CHtfeIdent * CHtfeDesign::m_pInt32Type;
+CHtfeIdent * CHtfeDesign::m_pUInt32Type;
+CHtfeIdent * CHtfeDesign::m_pInt64Type;
+CHtfeIdent * CHtfeDesign::m_pUInt64Type;
+CHtfeIdent * CHtfeDesign::m_pFloatType;
+CHtfeIdent * CHtfeDesign::m_pDoubleType;
+CHtfeIdent * CHtfeDesign::m_pRangeType;
+
+
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
@@ -34,52 +63,98 @@ void CHtfeDesign::InitTables()
         ->SetId(CHtfeIdent::id_class)
         ->SetWidth(0);
 	m_pBoolType = m_pTopHier->InsertType("bool")
-        ->SetId(CHtfeIdent::id_class)
+		->SetId(CHtfeIdent::id_intType)
         ->SetWidth(1)
         ->SetOpWidth(32);
 	m_pCharType = m_pTopHier->InsertType("char")
-        ->SetId(CHtfeIdent::id_class)
+		->SetId(CHtfeIdent::id_intType)
         ->SetWidth(8)
         ->SetOpWidth(32)
         ->SetSizeof(1)
         ->SetIsSigned();
 	m_pUCharType = m_pTopHier->InsertType("unsigned char")
-        ->SetId(CHtfeIdent::id_class)
+		->SetId(CHtfeIdent::id_intType)
         ->SetWidth(8)
         ->SetOpWidth(32)
         ->SetPromoteToSigned()
         ->SetSizeof(1);
 	m_pShortType = m_pTopHier->InsertType("short")
-        ->SetId(CHtfeIdent::id_class)
+		->SetId(CHtfeIdent::id_intType)
         ->SetWidth(16)
         ->SetOpWidth(32)
         ->SetSizeof(2)
         ->SetIsSigned();
 	m_pUShortType = m_pTopHier->InsertType("unsigned short")
-        ->SetId(CHtfeIdent::id_class)
+		->SetId(CHtfeIdent::id_intType)
         ->SetOpWidth(32)
         ->SetWidth(16)
         ->SetSizeof(2)
         ->SetPromoteToSigned();
 	m_pIntType = m_pTopHier->InsertType("int")
-        ->SetId(CHtfeIdent::id_class)
+		->SetId(CHtfeIdent::id_intType)
         ->SetWidth(32)
         ->SetOpWidth(32)
         ->SetSizeof(4)
         ->SetIsSigned();
 	m_pUIntType = m_pTopHier->InsertType("unsigned int")
-        ->SetId(CHtfeIdent::id_class)
+		->SetId(CHtfeIdent::id_intType)
         ->SetWidth(32)
         ->SetOpWidth(32)
         ->SetSizeof(4);
-	m_pInt64Type = m_pTopHier->InsertType("long long")
-        ->SetId(CHtfeIdent::id_class)
+	m_pLongType = m_pTopHier->InsertType("long long")
+		->SetId(CHtfeIdent::id_intType)
+		->SetWidth(64)
+		->SetOpWidth(64)
+		->SetSizeof(8)
+		->SetIsSigned();
+	m_pULongType = m_pTopHier->InsertType("unsigned long long")
+		->SetId(CHtfeIdent::id_intType)
+		->SetWidth(64)
+		->SetOpWidth(64)
+		->SetSizeof(8);
+	m_pInt8Type = m_pTopHier->InsertType("int8_t")
+		->SetId(CHtfeIdent::id_intType)
+		->SetWidth(8)
+		->SetOpWidth(32)
+		->SetSizeof(1)
+		->SetIsSigned();
+	m_pUInt8Type = m_pTopHier->InsertType("uint8_t")
+		->SetId(CHtfeIdent::id_intType)
+		->SetWidth(8)
+		->SetOpWidth(32)
+		->SetSizeof(1)
+		->SetPromoteToSigned();
+	m_pInt16Type = m_pTopHier->InsertType("int16_t")
+		->SetId(CHtfeIdent::id_intType)
+		->SetWidth(16)
+		->SetOpWidth(32)
+		->SetSizeof(2)
+		->SetIsSigned();
+	m_pUInt16Type = m_pTopHier->InsertType("uint16_t")
+		->SetId(CHtfeIdent::id_intType)
+		->SetWidth(16)
+		->SetOpWidth(32)
+		->SetSizeof(2)
+		->SetPromoteToSigned();
+	m_pInt32Type = m_pTopHier->InsertType("int32_t")
+		->SetId(CHtfeIdent::id_intType)
+		->SetWidth(32)
+		->SetOpWidth(32)
+		->SetSizeof(4)
+		->SetIsSigned();
+	m_pUInt32Type = m_pTopHier->InsertType("uint32_t")
+		->SetId(CHtfeIdent::id_intType)
+		->SetWidth(32)
+		->SetOpWidth(32)
+		->SetSizeof(4);
+	m_pInt64Type = m_pTopHier->InsertType("int64_t")
+		->SetId(CHtfeIdent::id_intType)
         ->SetWidth(64)
         ->SetOpWidth(64)
         ->SetSizeof(8)
         ->SetIsSigned();
-	m_pUInt64Type = m_pTopHier->InsertType("unsigned long long")
-        ->SetId(CHtfeIdent::id_class)
+	m_pUInt64Type = m_pTopHier->InsertType("uint64_t")
+		->SetId(CHtfeIdent::id_intType)
         ->SetWidth(64)
         ->SetOpWidth(64)
         ->SetSizeof(8);
@@ -96,16 +171,26 @@ void CHtfeDesign::InitTables()
 	m_pScUintType = m_pTopHier->InsertType("sc_uint")
         ->SetId(CHtfeIdent::id_class)
         ->SetWidth(-1)
-        ->SetOpWidth(64);  // variable width
+        ->SetOpWidth(64)
+		->SetUserConvType(m_pUInt64Type);
 	m_pScBigUintType = m_pTopHier->InsertType("sc_biguint")
-        ->SetId(CHtfeIdent::id_class)
-        ->SetWidth(-1)
-        ->SetOpWidth(256);  // variable width
+		->SetId(CHtfeIdent::id_class)
+		->SetWidth(-1)
+		->SetOpWidth(256);  // variable width
+	m_pScBigIntType = m_pTopHier->InsertType("sc_bigint")
+		->SetId(CHtfeIdent::id_class)
+		->SetWidth(-1)
+		->SetOpWidth(256);  // variable width
+	m_pBigIntBaseType = m_pTopHier->InsertType("sc_bigintbase")
+		->SetId(CHtfeIdent::id_class)
+		->SetWidth(-1)
+		->SetOpWidth(256);
 	m_pScIntType = m_pTopHier->InsertType("sc_int")
         ->SetId(CHtfeIdent::id_class)
         ->SetWidth(-1)
         ->SetOpWidth(64)
-        ->SetIsSigned();  // variable width
+		->SetIsSigned()
+		->SetUserConvType(m_pIntType);  // variable width
 	m_pScStateType = m_pTopHier->InsertType("sc_state")
         ->SetWidth(-1);  // variable width
 	//m_pTopHier->InsertType("sc_biguint")->SetId(CHtfeIdent::id_class)->SetIsVariableWidth();  // variable width
@@ -125,6 +210,26 @@ void CHtfeDesign::InitTables()
         ->SetId(CHtfeIdent::id_function)
         ->SetType(m_pIntType)
         ->SetIsStatic();
+
+	m_pTopHier->AddNullConvOverloadedOperator(tk_plus, m_pBigIntBaseType, m_pIntType, m_pBigIntBaseType);
+	m_pTopHier->AddNullConvOverloadedOperator(tk_minus, m_pBigIntBaseType, m_pIntType, m_pBigIntBaseType);
+	m_pTopHier->AddNullConvOverloadedOperator(tk_lessLess, m_pBigIntBaseType, m_pIntType, m_pBigIntBaseType);
+	m_pTopHier->AddNullConvOverloadedOperator(tk_greaterGreater, m_pBigIntBaseType, m_pIntType, m_pBigIntBaseType);
+	m_pTopHier->AddNullConvOverloadedOperator(tk_vbar, m_pBigIntBaseType, m_pIntType, m_pBigIntBaseType);
+	m_pTopHier->AddNullConvOverloadedOperator(tk_ampersand, m_pIntType, m_pIntType, m_pBigIntBaseType);
+	m_pTopHier->AddNullConvOverloadedOperator(tk_carot, m_pBigIntBaseType, m_pIntType, m_pBigIntBaseType);
+	m_pTopHier->AddNullConvOverloadedOperator(tk_asterisk, m_pBigIntBaseType, m_pIntType, m_pBigIntBaseType);
+	m_pTopHier->AddNullConvOverloadedOperator(tk_slash, m_pBigIntBaseType, m_pIntType, m_pBigIntBaseType);
+	m_pTopHier->AddNullConvOverloadedOperator(tk_percent, m_pBigIntBaseType, m_pIntType, m_pBigIntBaseType);
+
+	m_pTopHier->AddNullConvOverloadedOperator(tk_vbarVbar, m_pBoolType, m_pIntType, m_pBigIntBaseType);
+	m_pTopHier->AddNullConvOverloadedOperator(tk_ampersandAmpersand, m_pBoolType, m_pIntType, m_pBigIntBaseType);
+	m_pTopHier->AddNullConvOverloadedOperator(tk_equalEqual, m_pBoolType, m_pIntType, m_pBigIntBaseType);
+	m_pTopHier->AddNullConvOverloadedOperator(tk_bangEqual, m_pBoolType, m_pIntType, m_pBigIntBaseType);
+	m_pTopHier->AddNullConvOverloadedOperator(tk_less, m_pBoolType, m_pIntType, m_pBigIntBaseType);
+	m_pTopHier->AddNullConvOverloadedOperator(tk_greater, m_pBoolType, m_pIntType, m_pBigIntBaseType);
+	m_pTopHier->AddNullConvOverloadedOperator(tk_lessEqual, m_pBoolType, m_pIntType, m_pBigIntBaseType);
+	m_pTopHier->AddNullConvOverloadedOperator(tk_greaterEqual, m_pBoolType, m_pIntType, m_pBigIntBaseType);
 
 	m_forStatementLevel = 0;
 	m_parseSwitchCount = 0;

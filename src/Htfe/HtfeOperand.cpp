@@ -20,3 +20,24 @@ int CHtfeOperand::GetSubFieldWidth()
 
     return subFieldWidth;
 }
+
+CHtfeIdent * CHtfeOperand::GetType()
+{
+	if (m_pType)
+		return m_pType;
+	else if (m_pMember)
+		return m_pMember->IsType() ? m_pMember : m_pMember->GetType();
+	else if (!m_bIsLeaf && m_operatorToken == CHtfeLex::tk_typeCast)
+		return m_pOperand1->GetType();
+	else if (IsConstValue()) {
+		CConstValue const & value = GetConstValue();
+		switch (value.GetConstType()) {
+		case CConstValue::SINT64: return CHtfeDesign::m_pInt64Type;
+		case CConstValue::SINT32: return CHtfeDesign::m_pIntType;
+		case CConstValue::UINT64: return CHtfeDesign::m_pUInt64Type;
+		case CConstValue::UINT32: return CHtfeDesign::m_pUIntType;
+		default: Assert(0);
+		}
+	}
+	return 0;
+}

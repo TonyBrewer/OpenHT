@@ -72,7 +72,7 @@ void CHtfeDesign::CheckWidthRules(CHtfeIdent *pHier, CHtfeStatement *pStatement,
             case st_switch:
                 {
                     CHtfeOperand * pExpr = pStatement->GetExpr();
-					if (pExpr->IsLeaf() ? pExpr->GetMemberType()->IsSigned() : pExpr->IsSigned())
+					if (pExpr->IsLeaf() ? pExpr->GetType()->IsSigned() : pExpr->IsSigned())
 						ParseMsg(PARSE_ERROR, pStatement->GetLineInfo(), "Signed switch expression not supported");
 
                     int switchWidth = SetExpressionWidth(pStatement->GetExpr());
@@ -164,29 +164,29 @@ int CHtfeDesign::SetExpressionWidth(CHtfeOperand *pExpr, int reqWidth, bool bFor
 void CHtfeDesign::SetOpWidthAndSign(CHtfeOperand *pExpr, EToken prevTk, bool bIsLeftOfEqual)
 {
 #ifdef WIN32
-	if (pExpr->GetLineInfo().m_lineNum == 17)
+	if (pExpr->GetLineInfo().m_lineNum == 416)
 		bool stop = true;
 #endif
     if (pExpr->IsLeaf()) {
 
         if (pExpr->IsVariable()) {
 
-			if (pExpr->GetMemberType()->IsScState())
+			if (pExpr->GetType()->IsScState())
 				return;
 
             bool bCompareOp = prevTk == tk_equalEqual || prevTk == tk_bangEqual || prevTk == tk_less
                 || prevTk == tk_greater || prevTk == tk_greaterEqual || prevTk == tk_lessEqual;
 
             // determine sign of expression
-            bool bIsSigned = pExpr->GetMemberType()->IsSigned();
+            bool bIsSigned = pExpr->GetType()->IsSigned();
 
-            if (!bIsLeftOfEqual && !bCompareOp && pExpr->GetMemberType()->IsPromoteToSigned())
+            if (!bIsLeftOfEqual && !bCompareOp && pExpr->GetType()->IsPromoteToSigned())
                 bIsSigned = true;
 
             pExpr->SetIsSigned(bIsSigned);
 
             if (pExpr->GetSubField() == 0 || pExpr->GetSubField()->m_pIdent == 0) {
-                pExpr->SetOpWidth( pExpr->GetMemberType()->GetOpWidth() );
+                pExpr->SetOpWidth( pExpr->GetType()->GetOpWidth() );
             } else {
                 CScSubField * pSubField = pExpr->GetSubField();
                 while (pSubField->m_pNext && pSubField->m_pNext->m_pIdent)
@@ -212,7 +212,7 @@ void CHtfeDesign::SetOpWidthAndSign(CHtfeOperand *pExpr, EToken prevTk, bool bIs
 
         } else if (pExpr->IsFunction()) {
 
-            pExpr->SetIsSigned(pExpr->GetMemberType()->IsSigned());
+            pExpr->SetIsSigned(pExpr->GetType()->IsSigned());
 
             //CHtfeIdent * pFunc = pExpr->GetMember();
             vector<CHtfeOperand *> &paramList = pExpr->GetParamList();
@@ -225,9 +225,9 @@ void CHtfeDesign::SetOpWidthAndSign(CHtfeOperand *pExpr, EToken prevTk, bool bIs
                 SetOpWidthAndSign(pParam);
             }
 
-            if (pExpr->GetMemberType() != m_pVoidType) {
+            if (pExpr->GetType() != m_pVoidType) {
                 if (pExpr->GetSubField() == 0 || pExpr->GetSubField()->m_pIdent == 0)
-                    pExpr->SetOpWidth( pExpr->GetMemberType()->GetOpWidth() );
+                    pExpr->SetOpWidth( pExpr->GetType()->GetOpWidth() );
                 else {
                     CScSubField * pSubField = pExpr->GetSubField();
                     while (pSubField->m_pNext && pSubField->m_pNext->m_pIdent)
@@ -242,7 +242,7 @@ void CHtfeDesign::SetOpWidthAndSign(CHtfeOperand *pExpr, EToken prevTk, bool bIs
 			pExpr->SetOpWidth(pExpr->GetConstValue().Is32Bit() ? 32 : 64);
 
         } else if (pExpr->GetMember()->IsType()) {
-            pExpr->SetIsSigned(pExpr->GetMemberType()->IsSigned());
+            pExpr->SetIsSigned(pExpr->GetType()->IsSigned());
 
         } else
             Assert(0);
@@ -318,10 +318,10 @@ void CHtfeDesign::SetOpWidthAndSign(CHtfeOperand *pExpr, EToken prevTk, bool bIs
                         pOp1->SetIsSigned(false);
                     }
 
-                } else if (pOp1->IsVariable() && pOp1->GetMemberType()->IsPromoteToSigned())
+                } else if (pOp1->IsVariable() && pOp1->GetType()->IsPromoteToSigned())
                     pOp1->SetIsSigned(true);
 
-                else if (pOp2->IsVariable() && pOp2->GetMemberType()->IsPromoteToSigned())
+                else if (pOp2->IsVariable() && pOp2->GetType()->IsPromoteToSigned())
                     pOp2->SetIsSigned(true);
             }
 
@@ -451,7 +451,7 @@ void CHtfeDesign::SetOpWidthAndSign(CHtfeOperand *pExpr, EToken prevTk, bool bIs
 				if (pOp2->IsLeaf())
 					op2Width = pOp2->GetWidth();
 				else if (pOp2->GetOperator() == tk_typeCast)
-					op2Width = pOp2->GetMemberType()->GetWidth();
+					op2Width = pOp2->GetType()->GetWidth();
 				else
 					op2Width = 6;
 
@@ -466,15 +466,13 @@ void CHtfeDesign::SetOpWidthAndSign(CHtfeOperand *pExpr, EToken prevTk, bool bIs
 					   ParseMsg(PARSE_ERROR, pExpr->GetLineInfo(), "shift by amount greater than operand width");
 
 					pOp2->GetConstValueRef() = pOp2->GetConstValue() & ((1 << width)-1);
-					//if (pOp2->GetConstValue().IsNeg() || pOp2->GetConstValue().GetUint64() > ((1 << width)-1))
-					//	pOp2->GetConstValueRef() = pOp2->GetConstValue().CastAsUint(width);
 
 				} else if (width < op2Width && (
-					pOp2->GetOperator() != tk_typeCast || pOp2->GetMemberType()->GetWidth() != width ||
-					pOp2->GetMemberType()->IsSigned()))
+					pOp2->GetOperator() != tk_typeCast || pOp2->GetType()->GetWidth() != width ||
+					pOp2->GetType()->IsSigned()))
 				{
 					// insert a typecast to limit with of shift amount operand
-					CHtfeIdent * pCastType = CreateUniqueTemplateType(m_pScUintType, width);
+					CHtfeIdent * pCastType = CreateUniqueScIntType(m_pScUintType, width);
 
 					CHtfeOperand * pTypeOp = HandleNewOperand();
 					pTypeOp->InitAsIdentifier(pExpr->GetLineInfo(), pCastType);
@@ -607,7 +605,7 @@ void CHtfeDesign::CheckWidthRules(CHtfeOperand *pExpr, bool bForceBoolean)
 
         } else if (pExpr->IsFunction()) {
 
-            //pExpr->SetIsSigned(pExpr->GetMemberType()->IsSigned());
+            //pExpr->SetIsSigned(pExpr->GetType()->IsSigned());
 
             CHtfeIdent * pFunc = pExpr->GetMember();
             vector<CHtfeOperand *> &paramList = pExpr->GetParamList();
@@ -630,7 +628,7 @@ void CHtfeDesign::CheckWidthRules(CHtfeOperand *pExpr, bool bForceBoolean)
                         i+1, pType->GetWidth(), GetParseMsgWidthStr(pParam, op1Buf));
             }
 
-            if (pExpr->GetMemberType() != m_pVoidType)
+            if (pExpr->GetType() != m_pVoidType)
                 pExpr->SetMinWidth( pExpr->GetSubFieldWidth() );
 
         } else if (!pExpr->IsConstValue())
@@ -1158,9 +1156,9 @@ bool CHtfeDesign::FoldConstantExpr(CHtfeOperand *pExpr)
 					Assert(0);  // left side of equal was not an identifier
 					return false;
 				case tk_typeCast:
-					Assert(pOp1->GetMemberType() != 0);
+					Assert(pOp1->GetType() != 0);
 
-					rslt = pOp2->GetConstValue().Cast(pOp1->GetMemberType()->IsSigned(), pOp1->GetMemberType()->GetWidth());
+					rslt = pOp2->GetConstValue().Cast(pOp1->GetType()->IsSigned(), pOp1->GetType()->GetWidth());
 					break;
 				case tk_comma: // concatenation
 					ParseMsg(PARSE_ERROR, "concatenation of constants not supported");
@@ -1306,10 +1304,10 @@ bool CHtfeDesign::EvalConstantExpr(CHtfeOperand *pExpr, CConstValue & rslt, bool
             case tk_percentEqual:
                 return false;
             case tk_typeCast:
-                Assert(pOp1->GetMemberType() != 0);
+                Assert(pOp1->GetType() != 0);
 
-				if (!pOp1->GetMemberType()->IsSigned())
-					rslt = op2Value.CastAsUint(pOp1->GetMemberType()->GetWidth());
+				if (!pOp1->GetType()->IsSigned())
+					rslt = op2Value.CastAsUint(pOp1->GetType()->GetWidth());
 				else
 					rslt = op2Value;
                 break;
@@ -1483,7 +1481,7 @@ void CHtfeDesign::GetExpressionWidth(CHtfeOperand *pExpr, int &minWidth, int &si
             }
 
             if (pExpr->GetSubField() == 0 || pExpr->GetSubField()->m_pIdent == 0)
-                opWidth = pExpr->GetMemberType()->GetOpWidth();
+                opWidth = pExpr->GetType()->GetOpWidth();
             else {
                 CScSubField * pSubField = pExpr->GetSubField();
                 while (pSubField->m_pNext && pSubField->m_pNext->m_pIdent)
@@ -1647,7 +1645,7 @@ void CHtfeDesign::GetExpressionWidth(CHtfeOperand *pExpr, int &minWidth, int &si
 
 void CHtfeDesign::InsertCompareOperator(CHtfeOperand *pExpr)
 {
-	if (pExpr->IsLeaf() && !pExpr->IsConstValue() && pExpr->IsFunction() && pExpr->GetMemberType() == m_pVoidType) {
+	if (pExpr->IsLeaf() && !pExpr->IsConstValue() && pExpr->IsFunction() && pExpr->GetType() == m_pVoidType) {
 		ParseMsg(PARSE_ERROR, "function %s() with void return type used in expression", pExpr->GetMember()->GetName().c_str());
 		return;
 	}

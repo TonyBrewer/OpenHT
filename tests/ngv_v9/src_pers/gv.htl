@@ -1,0 +1,20 @@
+// -cl $(HtToolsPath)\tests\ngv_v9\src_pers\gv.htl
+-wd $(HtToolsPath)\tests\ngv_v9\msvs12\
+
+-cp wx-690
+-mt
+-ac 1
+-uc 1
+-df 150
+-ri
+-rr
+-it
+-vr
+-pn ngv_v9
+-vcd_all
+-I ../src
+-I ../src_pers
+-D_HTL
+-ml 0.6
+../src_pers/gv.htd
+../ht/sysc

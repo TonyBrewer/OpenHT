@@ -1,21 +1,17 @@
-// -cl "C:\Ht\tests\ngv_v6\src_pers\gv.htl"
--wd "C:\Ht\tests\ngv_v6\msvs12\"
+// -cl $(HtToolsPath)/tests/ngv_v6/src_pers/gv.htl
+-wd $(HtToolsPath)/tests/ngv_v6/msvs12/
+
 -cp wx-690
-//-mt
 -ac 1
 -uc 1
 -df 150
 -ri
-//-rr
-//-it
-//-vr
 -pn ngv_v6
--vcd
+//-vcd
 //-vcd_all
--ngv
 -I ../src
 -I ../src_pers
 -D_HTL
 -ml 0.6
-"../src_pers/gv.htd"
+../src_pers/gv.htd
 ../ht/sysc

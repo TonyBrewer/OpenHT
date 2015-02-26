@@ -8,6 +8,10 @@ struct CStruct {
 	uint64_t m_u3:3;
 };
 
+struct CData {
+	uint64_t data;
+};
+
 ////////////////////////////////////////////////////
 // Inc Module
 
@@ -47,16 +51,13 @@ inc.AddCall(func=inc2)
 	;
 #endif
 
-inc.AddReadMem(queueW=5, rspCntW=1, maxBw=true)
-	.AddDst(var=arrayMem, field=data);
-inc.AddWriteMem(maxBw=true);
+inc.AddReadMem()
+	.AddDst(var=arrayMem.data);
+inc.AddWriteMem();
 
-inc.AddGlobal(var=arrayMem, addr1W=INC_HTID_W, addr1=arrayMemRdPtr)
-	.AddField(type=uint64_t, name=data, read=true, write=true)
-	;
-
-inc.AddGlobal(var=arrayMem2, addr1W=INC_HTID_W, addr1=arrayMemRdPtr)
-	.AddField(type=uint64_t, name=data, read=true, write=true)
+inc.AddGlobal()
+	.AddVar(type=CData, name=arrayMem, addr1=arrayMemRdPtr, read=true, write=true)
+	.AddVar(type=CData, name=arrayMem2, addr1=arrayMemRdPtr, read=true, write=true)
 	;
 
 inc.AddFunction(type=bool, name=fb);
@@ -85,9 +86,8 @@ dsnInfo.AddModule(name=inc2, htIdW=INC2_HTID_W);
 
 inc2.AddInst(name=INC2_INIT);
 
-
-inc2.AddGlobal(var=arrayMem2, addr1W=INC_HTID_W, extern=true)
-	.AddField(type=uint64_t, name=data, read=false, write=true)
+inc2.AddGlobal()
+	.AddVar(type=CData, name=arrayMem2, addr1W=INC_HTID_W, read=false, write=true)
 	;
 
 inc2.AddEntry(func=inc2, inst=INC2_INIT)

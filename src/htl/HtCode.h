@@ -30,14 +30,17 @@ using namespace std;
 class CHtFile {
 public:
 	CHtFile() : m_pFile(0), m_bOpenedFile(false) {}
-	CHtFile(FILE *fp) : m_bOpenedFile(false) {
+	CHtFile(FILE *fp) : m_bOpenedFile(false)
+	{
 		m_pFile = fp;
 	}
-	CHtFile(string name, char const * pMode) : m_bOpenedFile(false) {
+	CHtFile(string name, char const * pMode) : m_bOpenedFile(false)
+	{
 		FileOpen(name, pMode);
 	}
 
-	~CHtFile() {
+	~CHtFile()
+	{
 		if (m_bOpenedFile && m_pFile)
 			FileClose();
 	}
@@ -46,7 +49,8 @@ public:
 
 	FILE * GetFile() { return m_pFile; }
 
-	void FileOpen(string name, char const *pMode) {
+	void FileOpen(string name, char const *pMode)
+	{
 		HtlAssert(strcmp(pMode, "w") == 0 || strcmp(pMode, "r") == 0);
 
 		bool bWrite = strcmp(pMode, "w") == 0;
@@ -64,7 +68,8 @@ public:
 			m_writeFileList.push_back(name);
 	}
 
-	void FileClose() {
+	void FileClose()
+	{
 		HtlAssert(m_pFile != 0);
 		fclose(m_pFile);
 		m_pFile = 0;
@@ -80,7 +85,8 @@ public:
 		*ppFile = (*ppFile)->m_pNextOpenFile;
 	}
 
-	static void CloseOpenFiles() {
+	static void CloseOpenFiles()
+	{
 		CHtFile * pFile = m_pHeadOpenFile;
 		while (pFile) {
 			pFile->FileClose();
@@ -88,7 +94,8 @@ public:
 		}
 	}
 
-	static void DeleteWrittenFiles() {
+	static void DeleteWrittenFiles()
+	{
 
 		// first close all open files
 		CloseOpenFiles();
@@ -112,23 +119,28 @@ private:
 
 class CHtCode : public CHtFile {
 public:
-	CHtCode() {
+	CHtCode()
+	{
 		m_bFile = false;
 	}
-	CHtCode(FILE *fp) : CHtFile(fp) {
+	CHtCode(FILE *fp) : CHtFile(fp)
+	{
 		m_bFile = true;
 	}
-	void Open(string name) {
+	void Open(string name)
+	{
 		FileOpen(name, "w");
 		m_bFile = true;
 	}
-	void Close() {
+	void Close()
+	{
 		HtlAssert(m_bFile == true);
 		FileClose();
 	}
 	void Append(const char *format, ...);
 	void Write(FILE *fp, string indent = "");
-	void NewLine() {
+	void NewLine()
+	{
 		if (m_code.size() > 0)
 			Append("\n");
 	}
@@ -143,7 +155,7 @@ inline void CHtCode::Append(const char *format, ...)
 {
 	va_list marker;
 
-	va_start( marker, format );     /* Initialize variable arguments. */
+	va_start(marker, format);     /* Initialize variable arguments. */
 
 	if (m_bFile)
 		vfprintf(GetFile(), format, marker);
@@ -163,7 +175,7 @@ inline void CHtCode::Append(const char *format, ...)
 
 inline void CHtCode::Write(FILE *fp, string indent)
 {
-	if (m_code.size() == 0)
+	if (m_code.size() == 0 || m_code.size() == 1 && m_code.front() == "\n")
 		return;
 
 	bool bEmptyLine = false;

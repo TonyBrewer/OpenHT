@@ -6,6 +6,10 @@
 typedef sc_uint<INC_HTID_W> htid_t;
 typedef sc_uint<48> ht_uint48;
 
+struct CData {
+	uint64_t data;
+};
+
 dsnInfo.AddModule(name=inc, clock=2x, htIdW=INC_HTID_W);
 inc.AddInst(name=INC_INIT);
 inc.AddInst(name=INC_DATA);
@@ -31,10 +35,10 @@ inc.AddReturn(func=htmain)
 	.AddParam(type=uint16_t, name=loopCnt)
 	;
 
-inc.AddReadMem(queueW=5, rspCntW=2, maxBw=false)
-	.AddDst(name=arrayMem, var=arrayMem, field=data)
+inc.AddReadMem()
+	.AddDst(name=arrayMem, var=arrayMem.data)
 	;
 
-inc.AddGlobal(var=arrayMem, addr1=htId, addr2=arrayMemRdPtr, addr1W=INC_HTID_W, addr2W=2)
-	.AddField(type=uint64_t, name=data, read=true, write=false)
+inc.AddGlobal()
+	.AddVar(type=CData, name=arrayMem, addr1=htId, addr2=arrayMemRdPtr, read=true, write=false)
 	;

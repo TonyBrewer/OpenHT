@@ -20,7 +20,8 @@ CCxrIntf::GetSrcToDstUc()
 }
 
 const char *
-CCxrIntf::GetSignalDstToSrcLc() {
+CCxrIntf::GetSignalDstToSrcLc()
+{
 	if (m_signalDstToSrcLc.size() == 0) {
 		m_signalDstToSrcLc = m_pDstMod->m_modName.Lc();
 		if (m_pDstMod->m_modInstList.size() > 1) {
@@ -38,7 +39,8 @@ CCxrIntf::GetSignalDstToSrcLc() {
 }
 
 const char *
-CCxrIntf::GetSignalSrcToDstLc() {
+CCxrIntf::GetSignalSrcToDstLc()
+{
 	if (m_signalSrcToDstLc.size() == 0) {
 		m_signalSrcToDstLc = m_pSrcMod->m_modName.Lc();
 		if (m_pSrcMod->m_modInstList.size() > 1) {
@@ -56,7 +58,8 @@ CCxrIntf::GetSignalSrcToDstLc() {
 }
 
 const char *
-CCxrIntf::GetSignalNameDstToSrcLc() {
+CCxrIntf::GetSignalNameDstToSrcLc()
+{
 	if (m_signalNameDstToSrcLc.size() == 0) {
 		m_signalNameDstToSrcLc = m_pDstMod->m_modName.Lc();
 		m_signalNameDstToSrcLc += "To";
@@ -66,7 +69,8 @@ CCxrIntf::GetSignalNameDstToSrcLc() {
 }
 
 const char *
-CCxrIntf::GetSignalNameSrcToDstLc() {
+CCxrIntf::GetSignalNameSrcToDstLc()
+{
 	if (m_signalNameSrcToDstLc.size() == 0) {
 		m_signalNameSrcToDstLc = m_pSrcMod->m_modName.Lc();
 		m_signalNameSrcToDstLc += "To";
@@ -76,7 +80,8 @@ CCxrIntf::GetSignalNameSrcToDstLc() {
 }
 
 const char *
-CCxrIntf::GetSignalIndexDstToSrc() {
+CCxrIntf::GetSignalIndexDstToSrc()
+{
 	if (m_signalIndexDstToSrc.size() == 0) {
 		if (m_pDstMod->m_modInstList.size() >= m_pSrcMod->m_modInstList.size() && m_pDstMod->m_modInstList.size() > 1) {
 
@@ -91,7 +96,8 @@ CCxrIntf::GetSignalIndexDstToSrc() {
 }
 
 const char *
-CCxrIntf::GetSignalIndexSrcToDst() {
+CCxrIntf::GetSignalIndexSrcToDst()
+{
 	if (m_signalIndexSrcToDst.size() == 0) {
 		if (m_pSrcMod->m_modInstList.size() >= m_pDstMod->m_modInstList.size() && m_pSrcMod->m_modInstList.size() > 1) {
 
@@ -109,7 +115,8 @@ CCxrIntf::GetSignalIndexSrcToDst() {
 // Port name/index
 
 const char *
-CCxrIntf::GetPortNameDstToSrcLc() {
+CCxrIntf::GetPortNameDstToSrcLc()
+{
 	if (m_portNameDstToSrcLc.size() == 0) {
 		m_portNameDstToSrcLc = m_pDstMod->m_modName.Lc();
 		m_portNameDstToSrcLc += "To";
@@ -119,7 +126,8 @@ CCxrIntf::GetPortNameDstToSrcLc() {
 }
 
 const char *
-CCxrIntf::GetPortNameSrcToDstLc() {
+CCxrIntf::GetPortNameSrcToDstLc()
+{
 	if (m_portNameSrcToDstLc.size() == 0) {
 		m_portNameSrcToDstLc = m_pSrcMod->m_modName.Lc();
 		m_portNameSrcToDstLc += "To";
@@ -143,7 +151,8 @@ const char * CCxrIntf::GetPortReplIndex()
 }
 
 const char *
-CCxrIntf::GetPortReplDecl() {
+CCxrIntf::GetPortReplDecl()
+{
 	if (m_portReplDecl.size() == 0) {
 		if (m_cxrDir == CxrIn) {
 			if (m_srcReplCnt > 1)
@@ -154,4 +163,20 @@ CCxrIntf::GetPortReplDecl() {
 		}
 	}
 	return m_portReplDecl.c_str();
+}
+
+vector<CHtString> & CCxrIntf::GetPortReplDimen()
+{
+	if (m_cxrDir == CxrIn) {
+		if (m_srcReplCnt > 1 && m_portReplDimen.size() == 0) {
+			CHtString dimStr = m_srcReplCnt;
+			m_portReplDimen.push_back(dimStr);
+		}
+	} else {
+		if (m_dstReplCnt > 1 && m_portReplDimen.size() == 0) {
+			CHtString dimStr =m_dstReplCnt;
+			m_portReplDimen.push_back(dimStr);
+		}
+	}
+	return m_portReplDimen;
 }

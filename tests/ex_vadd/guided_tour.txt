@@ -44,8 +44,6 @@ vadd
 The host source src/Main.cpp does the following:
   - allocates memory and fills operand arrays
   - constructions the HtHif (HT Host Interface) class and allocates units
-  - copies arrays to coprocessor memory
-  - sends message to coprocessor with pointer to arrays
   - sends calls to the units to compute vector add
   - waits for return from each unit
   - checks results

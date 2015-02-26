@@ -2,12 +2,14 @@
 using namespace Ht;
 
 #define CNT 16
-uint64_t arr[CNT];
+uint64_t arr[CNT * 2];
 
 int main(int argc, char **argv)
 {
-	for (int i = 0; i < CNT; i++)
-		arr[i] = i;
+	for (int i = 0; i < CNT; i++) {
+		arr[i * 2] = i;
+		arr[i * 2 + 1] = 0xdeadbeefdeadbeefLL;
+	}
 
 	CHtHif *pHtHif;
 	try {
@@ -41,9 +43,9 @@ int main(int argc, char **argv)
 	// check results
 	int err_cnt = 0;
 	for (unsigned i = 0; i < CNT; i++) {
-		if (arr[i] != i + 1) {
+		if (arr[i * 2 + 1] != i + 1) {
 			printf("arr[%d] is %lld, should be %d\n",
-			       i, (long long)arr[i], i + 1);
+			       i, (long long)arr[i * 2 + 1], i + 1);
 			err_cnt++;
 		}
 	}

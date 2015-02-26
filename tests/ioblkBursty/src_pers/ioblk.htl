@@ -1,4 +1,6 @@
--wd "C:\Ht\tests\ioblkBursty\msvs12\"
+// -cl $(HtToolsPath)/tests/ioblkBursty/src_pers/ioblk.htl
+-wd $(HtToolsPath)/tests/ioblkBursty/msvs12/
+
 -cp hc-2
 -uc 1
 -un Au

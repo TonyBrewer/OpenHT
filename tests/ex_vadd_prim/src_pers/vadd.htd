@@ -89,9 +89,9 @@ add.AddReturn(func=add)
 	.AddParam(type=uint64_t, name=result)
 	;
 
-add.AddReadMem(queueW=5, rspCntW=6)
-	.AddDst(var=op1Mem)
-	.AddDst(var=op2Mem)
+add.AddReadMem()
+	.AddDst(var=op1Mem, elemCntW=0)
+	.AddDst(var=op2Mem, elemCntW=0)
 	;
 
 add.AddWriteMem();

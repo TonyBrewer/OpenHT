@@ -1,9 +1,10 @@
-// -cl "C:\Ht\tests\dsn16\src_pers\dsn16.htl"
+// -cl $(HtToolsPath)/tests/dsn16/src_pers/dsn16.htl
+-wd $(HtToolsPath)/tests/dsn16/msvs12/
+
 -cp hc-2
 -DTST=hc3
 -un Su
 -df 150
--if "C:\Ht\tests\dsn16\src_pers\dsn16.hti"
--wd "C:\Ht\tests\dsn16\msvs12\"
-"C:\Ht\tests\dsn16\src_pers\dsn16.htd"
+-if ../src_pers/dsn16.hti
+../src_pers/dsn16.htd
 ../ht/sysc

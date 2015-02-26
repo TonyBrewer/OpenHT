@@ -1,5 +1,6 @@
-// -cl "C:\Ht\tests\vadd_2d_stream_v2\src_pers\vadd.htl"
--wd "C:\Ht\tests\vadd_2d_stream_v2\msvs12"
+// -cl $(HtToolsPath)/tests/vadd_2d_stream_v2/src_pers/vadd.htl
+-wd $(HtToolsPath)/tests/vadd_2d_stream_v2/msvs12
+
 //-cp wx-690
 -cp hc-1
 -uc 1
@@ -8,7 +9,7 @@
 -pn vadd_2d_stream_v2
 -it
 -mt
--vcd_all
+//-vcd_all
 -D_WIN32
 -I ../src
 -if ../src_pers/vadd.hti

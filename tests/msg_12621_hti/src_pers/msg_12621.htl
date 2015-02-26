@@ -1,4 +1,6 @@
-// -cl "C:\Ht\tests\msg_12621_hti\src_pers\msg_12621.htl"
+// -cl $(HtToolsPath)/tests/msg_12621_hti/src_pers/msg_12621.htl
+-wd $(HtToolsPath)/tests/msg_12621_hti/msvs12/
+
 -cp wx-690
 -ac 1
 -uc 2
@@ -7,7 +9,6 @@
 -I ../src_pers
 -D_HTL
 -pn msg_12621_hti
--if "C:\Ht\tests\msg_12621_hti\src_pers\msg_12621.hti"
--wd "C:\Ht\tests\msg_12621_hti\msvs12\"
-"../src_pers/msg_12621.htd"
+-if ../src_pers/msg_12621.hti
+../src_pers/msg_12621.htd
 ../ht/sysc

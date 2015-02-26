@@ -89,8 +89,9 @@ CPersStencil::PersStencil()
 			//            tempa[0][P_i] = MifRdVal(1);
 			//            tempa[1][P_i] = MifRdVal(2);
 
-			GW_tempa_j0(P_ram_i, GR_mifRdVal_j0());
-			GW_tempa_j1(P_ram_i, GR_mifRdVal_j1());
+			GW_tempa.write_addr(P_ram_i);
+			GW_tempa.j0 = GR_mifRdVal.j0;
+			GW_tempa.j1 = GR_mifRdVal.j1;
 
 			// increment i and loop back
 			P_i = P_i + 1;
@@ -122,8 +123,8 @@ CPersStencil::PersStencil()
 				break;
 			}
 
-			P_t00 = GR_tempa_j0();
-			P_t10 = GR_tempa_j1();
+			P_t00 = GR_tempa.j0;
+			P_t10 = GR_tempa.j1;
 
 			// Set up to read from tempa[1] on next clock
 			P_ram_i = tempaIndex(1);
@@ -158,8 +159,8 @@ CPersStencil::PersStencil()
 				break;
 			}
 
-			P_t01 = GR_tempa_j0();
-			P_t11 = GR_tempa_j1();
+			P_t01 = GR_tempa.j0;
+			P_t11 = GR_tempa.j1;
 
 			memAddrT memAddr = addr(P_p_a, P_j + P_p_js, 1 + P_p_is);
 			sc_uint<STENCIL_HTID_W> ramWrAddr = PR_htId;    // P_t21
@@ -176,14 +177,15 @@ CPersStencil::PersStencil()
 
 		case J_LOOP_ASSIGN:     // 9
 		{
-			P_t20 = GR_mifRdVal_j0();
-			P_t21 = GR_mifRdVal_j1();
+			P_t20 = GR_mifRdVal.j0;
+			P_t21 = GR_mifRdVal.j1;
 
 			// Save these first two values (shift columns up) for next j
 			//            tempa[0][0] = P_t10;
 			//            tempa[1][0] = P_t20;
-			GW_tempa_j0(P_ram_i, P_t10);
-			GW_tempa_j1(P_ram_i, P_t20);
+			GW_tempa.write_addr(P_ram_i);
+			GW_tempa.j0 = P_t10;
+			GW_tempa.j1 = P_t20;
 #if 0
 			// block ram writes to slot 1 delayed until next clock
 			tempa[0][1] = P_t11;
@@ -204,8 +206,9 @@ CPersStencil::PersStencil()
 			//            tempa[0][1] = P_t11;
 			//            tempa[1][1] = P_t21;
 
-			GW_tempa_j0(P_ram_i, P_t11);
-			GW_tempa_j1(P_ram_i, P_t21);
+			GW_tempa.write_addr(P_ram_i);
+			GW_tempa.j0 = P_t11;
+			GW_tempa.j1 = P_t21;
 
 			// Set up to read from tempa[P_i] on next clock
 			P_ram_i = tempaIndex(P_i);
@@ -229,8 +232,8 @@ CPersStencil::PersStencil()
 			// Get third column
 			//            P_t02 = tempa[0][P_i];      // AE memory
 			//            P_t12 = tempa[1][P_i];      // AE memory
-			P_t02 = GR_tempa_j0();
-			P_t12 = GR_tempa_j1();
+			P_t02 = GR_tempa.j0;
+			P_t12 = GR_tempa.j1;
 
 			// P_t22 = a[j][i];   // main memory read
 
@@ -256,13 +259,14 @@ CPersStencil::PersStencil()
 			}
 
 			// Get third column
-			P_t22 = GR_mifRdVal_j0();
+			P_t22 = GR_mifRdVal.j0;
 
 			// Save these values (shift column up) for next j
 			//            tempa[0][P_i] = P_t12;
 			//            tempa[1][P_i] = P_t22;
-			GW_tempa_j0(P_ram_i, P_t12);
-			GW_tempa_j1(P_ram_i, P_t22);
+			GW_tempa.write_addr(P_ram_i);
+			GW_tempa.j0 = P_t12;
+			GW_tempa.j1 = P_t22;
 
 			P_res =
 				mulX(P_p_w0, P_t11) +

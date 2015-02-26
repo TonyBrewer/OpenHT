@@ -1,5 +1,6 @@
-// -cl "C:\Ht\tests\thread_rsv\src_pers\rsv.htl"
--wd "C:\Ht\tests\thread_rsv\msvs12\"		// working directory
+// -cl $(HtToolsPath)/tests/thread_rsv/src_pers/rsv.htl
+-wd $(HtToolsPath)/tests/thread_rsv/msvs12/		// working directory
+
 -cp wx-690
 //-rt
 -vcd
@@ -10,5 +11,5 @@
 -DHT_ASSERT
 -pn thread_rsv
 
-"C:\Ht\tests\thread_rsv\src_pers\rsv.htd"	    // design file location
+../src_pers/rsv.htd	    // design file location
 ../ht/sysc							// location for output files

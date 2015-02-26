@@ -28,7 +28,6 @@ ctl.AddEntry(func=htmain, inst=CTL_ENTRY, host=true)
 ctl.AddReturn(func=htmain)
 	;
 
-ctl.AddWriteMem(maxBw=true, rspGrpId=wrGrpId)
-//ctl.AddWriteMem(maxBw=true)
-	.AddSrc(name=data, var=wrBuf, multiWr=true, srcIdx=varIdx1, memDst=host)
+ctl.AddWriteMem(rspGrpW=1)
+	.AddSrc(name=data, var=wrBuf[], memDst=host)
 	;

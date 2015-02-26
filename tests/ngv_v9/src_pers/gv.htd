@@ -1,0 +1,102 @@
+#include "Gvar.h"
+
+////////////////////////////////////////////////////
+// Ctl Module
+
+dsnInfo.AddModule(name=ctl, htIdW=0, clock=1x);
+ctl.AddInst(name=ENTRY);
+ctl.AddInst(name=JOIN_GV1);
+ctl.AddInst(name=JOIN_GV2);
+ctl.AddInst(name=PAUSE_GV1);
+ctl.AddInst(name=PAUSE_GV2);
+ctl.AddInst(name=RETURN);
+
+ctl.AddEntry(func=htmain, inst=ENTRY, host=true)
+	.AddParam(hostType=CGVar*, type=ht_uint48, name=rdAddr)
+	.AddParam(hostType=CGVar*, type=ht_uint48, name=wrAddr)
+	;
+
+ctl.AddReturn(func=htmain)
+	.AddParam(type=uint16_t, name=errCnt)
+	;
+
+ctl.AddCall(func=gv1, fork=true)
+	;
+
+ctl.AddCall(func=gv2, fork=true)
+	;
+
+ctl.AddPrivate()
+	.AddVar(type=ht_uint48, name=rdAddr)
+	.AddVar(type=ht_uint48, name=wrAddr)
+	.AddVar(type=ht_uint8, name=forkCnt)
+	.AddVar(type=uint16_t, name=errCnt)
+	;
+
+////////////////////////////////////////////////////
+// Gv1 Module
+
+dsnInfo.AddModule(name=gv1, htIdW=0, clock=1x);
+gv1.AddInst(name=GV1_ENTRY);
+gv1.AddInst(name=GV1_WRITE1);
+gv1.AddInst(name=GV1_WRITE2);
+gv1.AddInst(name=GV1_WRITE3);
+gv1.AddInst(name=GV1_RETURN);
+
+gv1.AddEntry(func=gv1, inst=GV1_ENTRY)
+	.AddParam(type=ht_uint48, name=addr)
+	;
+
+gv1.AddPrivate()
+	.AddVar(type=ht_uint9, name=loopCnt)
+	.AddVar(type=ht_uint48, name=addr)
+	.AddVar(type=ht_uint5, name=gvAddr)
+	;
+
+gv1.AddReturn(func=gv1)
+	;
+
+gv1.AddGlobal()
+	.AddVar(type=CGVar, name=gvar1, addr1=gvAddr, read=true)
+	;
+
+gv1.AddWriteMem(reqPause=true)
+	.AddSrc(name=mwgv3, var=gvar1, memDst=host)
+	.AddSrc(type=CGVar, memDst=host)
+	;
+
+////////////////////////////////////////////////////
+// Gv2 Module
+
+dsnInfo.AddModule(name=gv2, htIdW=3, clock=2x);
+gv2.AddInst(name=GV2_ENTRY);
+gv2.AddInst(name=GV2_READ1);
+gv2.AddInst(name=GV2_READ2);
+gv2.AddInst(name=GV2_READ3);
+gv2.AddInst(name=GV2_LOOP);
+gv2.AddInst(name=GV2_RETURN);
+
+gv2.AddEntry(func=gv2, inst=GV2_ENTRY)
+	.AddParam(type=ht_uint48, name=addr)
+	;
+
+gv2.AddPrivate()
+	.AddVar(type=ht_uint9, name=loopCnt)
+	.AddVar(type=ht_uint48, name=addr)
+	.AddVar(type=ht_uint5, name=gvAddr)
+	.AddVar(type=uint16_t, name=errCnt)
+	;
+
+gv2.AddReturn(func=gv2)
+	.AddParam(type=uint16_t, name=errCnt)
+	;
+
+gv2.AddGlobal()
+	.AddVar(type=CGVar, name=gvar2, addr1=htId, addr2=gvAddr, write=false)
+	;
+
+gv2.AddReadMem()
+	.AddDst(name=mrgv, var=gvar2, memSrc=host)
+	//.AddDst(name=mrgv2, var=gvar2[1](,2).m_b[], memSrc=host)
+	//.AddDst(name=mrgv3, var=gvar2[](,).m_b[0], memSrc=host)
+	;

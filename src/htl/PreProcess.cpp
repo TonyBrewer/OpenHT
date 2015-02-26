@@ -156,11 +156,11 @@ bool CPreProcess::Open(const string &name, bool bProcessOnce)
 
 	int pos = m_pFs->m_lineInfo.m_fileName.find_last_of("\\/");
 	if (pos >= 0)
-		m_pFs->m_lineInfo.m_fileName.erase(0, pos+1);
+		m_pFs->m_lineInfo.m_fileName.erase(0, pos + 1);
 
 	m_pFs->m_lineInfo.m_lineNum = 0;
 
-    UpdateStaticLineInfo();
+	UpdateStaticLineInfo();
 
 	m_pFs->m_pDefine = 0;
 	m_pFs->m_pRdBufPos = m_pFs->m_pRdBufEnd = ""; // force a read
@@ -196,7 +196,7 @@ bool CPreProcess::Reopen()
 
 	m_pFs->m_lineInfo.m_lineNum = 0;
 
-    UpdateStaticLineInfo();
+	UpdateStaticLineInfo();
 
 	m_pFs->m_pDefine = 0;
 	m_pFs->m_pRdBufPos = m_pFs->m_pRdBufEnd = ""; // force a read
@@ -213,7 +213,7 @@ bool CPreProcess::Reopen()
 }
 
 void
-	CPreProcess::Close()
+CPreProcess::Close()
 {
 #if defined(_MSC_VER)
 	_close(m_pFs->m_fd);
@@ -299,8 +299,8 @@ bool CPreProcess::GetLine(string &lineBuf)
 			case dir_else:
 				if (m_pFs->m_bSkipStack.size() <= 1 ||
 					m_pFs->m_bElseStack.back() == true) {
-						ParseMsg(Error, "Unexpected #else directive");
-						break;
+					ParseMsg(Error, "Unexpected #else directive");
+					break;
 				}
 				m_bSkipLines = true;
 				m_pFs->m_bSkipStack.back() = true;
@@ -310,8 +310,8 @@ bool CPreProcess::GetLine(string &lineBuf)
 			case dir_elif:
 				if (m_pFs->m_bSkipStack.size() <= 1 ||
 					m_pFs->m_bElseStack.back() == true) {
-						ParseMsg(Error, "Unexpected #elif directive");
-						break;
+					ParseMsg(Error, "Unexpected #elif directive");
+					break;
 				}
 				m_bSkipLines = true;
 				m_pFs->m_bSkipStack.back() = true;
@@ -328,56 +328,56 @@ bool CPreProcess::GetLine(string &lineBuf)
 				m_pFs->m_bSkipToEndif.pop_back();
 				break;
 			case dir_pragma:
-				{
+			{
+				SkipSpace(pPos);
+				string pragmaName = ParseIdentifier(pPos);
+				if (pragmaName == "once") {
+					//printf("OnceList <= %s\n", m_pFs->m_lineInfo.m_pathName.c_str());
+					m_pragmaOnceList.push_back(m_pFs->m_lineInfo.m_pathName);
+
+				} else if (pragmaName == "htl") {
+
+					//pPos -= 10;
+					//memcpy((void *)pPos, "pragma_htl", 10);
+					lineBuf += "#";
+					return true;
+
+				} else if (pragmaName == "message") {
 					SkipSpace(pPos);
-					string pragmaName = ParseIdentifier(pPos);
-					if (pragmaName == "once") {
-						//printf("OnceList <= %s\n", m_pFs->m_lineInfo.m_pathName.c_str());
-						m_pragmaOnceList.push_back(m_pFs->m_lineInfo.m_pathName);
-
-					} else if (pragmaName == "htl") {
-
-						//pPos -= 10;
-						//memcpy((void *)pPos, "pragma_htl", 10);
-						lineBuf += "#";
-						return true;
-
-					} else if (pragmaName == "message") {
-						SkipSpace(pPos);
-						while (*pPos != '\0') {
-							if (*pPos == '"') {
-								pPos++;
-								while (*pPos != '"' && *pPos != '\n' && *pPos != '\0') {
-									if (*pPos == '\\') {
-										pPos+= 1;
-										switch (*pPos++) {
-										case 'n': putchar('\n'); break;
-										}
-									} else
-										putchar(*pPos++);
-								}
-								if (*pPos != '\0') pPos += 1;
-							} else {
-								// check for a macro to expand
-								string name = ParseIdentifier(pPos);
-
-								CMacro *pMacro;
-								if (pMacro = m_macroTbl.Find(name)) {
-									const char *pValueStr = pMacro->GetExpansion().c_str();
-									int value;
-									GetNextToken(pValueStr, false);
-									if (!ParseExpression(pValueStr, value, false))
-										fputs(pMacro->GetExpansion().c_str(), stdout);
-									else
-										printf("0x%x", value);
+					while (*pPos != '\0') {
+						if (*pPos == '"') {
+							pPos++;
+							while (*pPos != '"' && *pPos != '\n' && *pPos != '\0') {
+								if (*pPos == '\\') {
+									pPos += 1;
+									switch (*pPos++) {
+									case 'n': putchar('\n'); break;
+									}
 								} else
-									break;
+									putchar(*pPos++);
 							}
-							SkipSpace(pPos);
+							if (*pPos != '\0') pPos += 1;
+						} else {
+							// check for a macro to expand
+							string name = ParseIdentifier(pPos);
+
+							CMacro *pMacro;
+							if (pMacro = m_macroTbl.Find(name)) {
+								const char *pValueStr = pMacro->GetExpansion().c_str();
+								int value;
+								GetNextToken(pValueStr, false);
+								if (!ParseExpression(pValueStr, value, false))
+									fputs(pMacro->GetExpansion().c_str(), stdout);
+								else
+									printf("0x%x", value);
+							} else
+								break;
 						}
-						putchar('\n');
+						SkipSpace(pPos);
 					}
+					putchar('\n');
 				}
+			}
 				break;  // Ignore
 			default:
 				ParseMsg(Error, "Unknown preprocessing directive");
@@ -397,9 +397,8 @@ bool CPreProcess::GetLine(string &lineBuf)
 					ParseMsg(Error, "Unexpected #else directive");
 
 				m_pFs->m_bElseStack.back() = true;
-				if (m_pFs->m_bSkipStack[m_pFs->m_bSkipStack.size()-2] == false
-					&& m_pFs->m_bSkipToEndif.back() == false) 
-				{
+				if (m_pFs->m_bSkipStack[m_pFs->m_bSkipStack.size() - 2] == false
+					&& m_pFs->m_bSkipToEndif.back() == false) {
 					m_pFs->m_bSkipStack.back() = false;
 					m_bSkipLines = false;
 				}
@@ -409,9 +408,8 @@ bool CPreProcess::GetLine(string &lineBuf)
 				if (m_pFs->m_bElseStack.back() == true)
 					ParseMsg(Error, "Unexpected #elif directive");
 
-				if (m_pFs->m_bSkipStack[m_pFs->m_bSkipStack.size()-2] == false
-					&& m_pFs->m_bSkipToEndif.back() == false) 
-				{
+				if (m_pFs->m_bSkipStack[m_pFs->m_bSkipStack.size() - 2] == false
+					&& m_pFs->m_bSkipToEndif.back() == false) {
 					m_pFs->m_bSkipStack.back() = false;
 					m_bSkipLines = false;
 
@@ -457,7 +455,7 @@ string CPreProcess::ParseIdentifier(const char *&pPos)
 	while (*pPos == '_' || isalnum(*pPos))
 		pPos += 1;
 
-	identifier.assign(pInitPos, pPos-pInitPos);
+	identifier.assign(pInitPos, pPos - pInitPos);
 	return identifier;
 }
 
@@ -533,7 +531,7 @@ void CPreProcess::PerformMacroExpansion(string &lineBuf)
 						parenLvl -= 1;
 					pPos += 1;
 				}
-				while (pPos > pStartArgPos && (*(pPos-1) == ' ' || *pPos == '\t'))
+				while (pPos > pStartArgPos && (*(pPos - 1) == ' ' || *pPos == '\t'))
 					pPos -= 1;
 				if (*pPos == '\0') {
 					ParseMsg(Error, "Macro argument error");
@@ -568,9 +566,9 @@ void CPreProcess::PerformMacroExpansion(string &lineBuf)
 		}
 
 		// now replace macro in lineBuf
-		lineBuf.replace(startPos, endPos-startPos, expansion);
+		lineBuf.replace(startPos, endPos - startPos, expansion);
 
-		m_linePos.Delete(startPos, endPos-startPos);
+		m_linePos.Delete(startPos, endPos - startPos);
 		m_linePos.Insert(startPos, expansion.length());
 
 		pPos = lineBuf.c_str() + startPos;
@@ -600,7 +598,7 @@ void CPreProcess::ExpandMacro(CMacro *pMacro, vector<string> &argList, string &e
 		int endPos = pPos - expansion.c_str();
 
 		// now replace macro in lineBuf
-		expansion.replace(startPos, endPos-startPos,
+		expansion.replace(startPos, endPos - startPos,
 			argList[paramId]);
 
 		pPos = expansion.c_str() + startPos + argList[paramId].size();
@@ -733,9 +731,9 @@ void CPreProcess::PreProcessInclude(string &lineBuf, const char *&pPos)
 				char fullPathName[PATH_MAX];
 
 #				ifdef _MSC_VER
-					GetFullPathName(pathName.c_str(), 1024, fullPathName, 0);
+				GetFullPathName(pathName.c_str(), 1024, fullPathName, 0);
 #				else
-					realpath(pathName.c_str(), fullPathName);
+				realpath(pathName.c_str(), fullPathName);
 #				endif
 
 				m_includeList.push_back(CIncludeFile(fullPathName, pathName));
@@ -750,9 +748,9 @@ void CPreProcess::PreProcessInclude(string &lineBuf, const char *&pPos)
 		char fullPathName[PATH_MAX];
 
 #		ifdef _MSC_VER
-			GetFullPathName(fileName.c_str(), 1024, fullPathName, 0);
+		GetFullPathName(fileName.c_str(), 1024, fullPathName, 0);
 #		else
-			realpath(fileName.c_str(), fullPathName);
+		realpath(fileName.c_str(), fullPathName);
 #		endif
 
 		m_includeList.push_back(CIncludeFile(fullPathName, fileName));
@@ -956,8 +954,8 @@ bool CPreProcess::ParseExpression(const char *&pPos, int &rtnValue, bool bErrMsg
 }
 
 void
-	CPreProcess::EvaluateExpression(EToken2 tk, vector<int> &operandStack,
-	vector<int> &operatorStack)
+CPreProcess::EvaluateExpression(EToken2 tk, vector<int> &operandStack,
+vector<int> &operatorStack)
 {
 	int op1, op2, rslt;
 
@@ -975,26 +973,26 @@ void
 			} else if (stackTk == tk_unaryPlus || stackTk == tk_unaryMinus ||
 				stackTk == tk_tilda || stackTk == tk_bang) {
 
-					// get operand off stack
-					op1 = operandStack.back();
-					operandStack.pop_back();
+				// get operand off stack
+				op1 = operandStack.back();
+				operandStack.pop_back();
 
-					switch (stackTk) {
-					case tk_unaryPlus:
-						rslt = op1;
-						break;
-					case tk_unaryMinus:
-						rslt = -op1;
-						break;
-					case tk_tilda:
-						rslt = ~op1;
-						break;
-					case tk_bang:
-						rslt = !op1;
-						break;
-					default:
-						HtlAssert(0);
-					}
+				switch (stackTk) {
+				case tk_unaryPlus:
+					rslt = op1;
+					break;
+				case tk_unaryMinus:
+					rslt = -op1;
+					break;
+				case tk_tilda:
+					rslt = ~op1;
+					break;
+				case tk_bang:
+					rslt = !op1;
+					break;
+				default:
+					HtlAssert(0);
+				}
 			} else {
 
 				// binary operators
@@ -1076,53 +1074,54 @@ void
 }
 
 int
-	CPreProcess::GetTokenPrec(EToken2 tk) {
-		switch (tk) {
-		case tk_unaryPlus:
-		case tk_unaryMinus:
-		case tk_tilda:
-		case tk_bang:
-			return 3;
-		case tk_asterisk:
-		case tk_slash:
-		case tk_percent:
-			return 4;
-		case tk_plus:
-		case tk_minus:
-			return 5;
-		case tk_lessLess:
-		case tk_greaterGreater:
-			return 6;
-		case tk_less:
-		case tk_lessEqual:
-		case tk_greater:
-		case tk_greaterEqual:
-			return 7;
-		case tk_equalEqual:
-		case tk_bangEqual:
-			return 8;
-		case tk_ampersand:
-			return 9;
-		case tk_carot:
-			return 10;
-		case tk_vbar:
-			return 11;
-		case tk_ampersandAmpersand:
-			return 12;
-		case tk_vbarVbar:
-			return 13;
-		case tk_exprBegin:
-			return 17;
-		case tk_exprEnd:
-			return 18;
-		default:
-			HtlAssert(0);
-			return 0;
-		}
+CPreProcess::GetTokenPrec(EToken2 tk)
+{
+	switch (tk) {
+	case tk_unaryPlus:
+	case tk_unaryMinus:
+	case tk_tilda:
+	case tk_bang:
+		return 3;
+	case tk_asterisk:
+	case tk_slash:
+	case tk_percent:
+		return 4;
+	case tk_plus:
+	case tk_minus:
+		return 5;
+	case tk_lessLess:
+	case tk_greaterGreater:
+		return 6;
+	case tk_less:
+	case tk_lessEqual:
+	case tk_greater:
+	case tk_greaterEqual:
+		return 7;
+	case tk_equalEqual:
+	case tk_bangEqual:
+		return 8;
+	case tk_ampersand:
+		return 9;
+	case tk_carot:
+		return 10;
+	case tk_vbar:
+		return 11;
+	case tk_ampersandAmpersand:
+		return 12;
+	case tk_vbarVbar:
+		return 13;
+	case tk_exprBegin:
+		return 17;
+	case tk_exprEnd:
+		return 18;
+	default:
+		HtlAssert(0);
+		return 0;
+	}
 }
 
 
-CPreProcess::EToken2 CPreProcess::GetNextToken(const char *&pPos, bool bErrMsg) 
+CPreProcess::EToken2 CPreProcess::GetNextToken(const char *&pPos, bool bErrMsg)
 {
 	const char *pInitPos;
 
@@ -1195,7 +1194,7 @@ CPreProcess::EToken2 CPreProcess::GetNextToken(const char *&pPos, bool bErrMsg)
 		if (isalpha(*pPos) || *pPos == '_') {
 			pInitPos = pPos;
 			while (isalnum(*pPos) || *pPos == '_') pPos += 1;
-			m_tkString.assign(pInitPos, pPos-pInitPos);
+			m_tkString.assign(pInitPos, pPos - pInitPos);
 			return m_tk = tk_identifier;
 		}
 		if (isdigit(*pPos)) {
@@ -1203,11 +1202,11 @@ CPreProcess::EToken2 CPreProcess::GetNextToken(const char *&pPos, bool bErrMsg)
 			if (*pPos == '0' && pPos[1] == 'x') {
 				pPos += 2;
 				while (isxdigit(*pPos)) pPos += 1;
-				m_tkString.assign(pInitPos, pPos-pInitPos);
+				m_tkString.assign(pInitPos, pPos - pInitPos);
 				return m_tk = tk_num_hex;
 			} else {
 				while (isdigit(*pPos)) pPos += 1;
-				m_tkString.assign(pInitPos, pPos-pInitPos);
+				m_tkString.assign(pInitPos, pPos - pInitPos);
 				return m_tk = tk_num_int;
 			}
 		}
@@ -1254,7 +1253,7 @@ int CPreProcess::GetTokenValue()
 }
 
 bool
-	CPreProcess::PreProcessIfdef(string &lineBuf, const char *&pPos)
+CPreProcess::PreProcessIfdef(string &lineBuf, const char *&pPos)
 {
 	// pPos points just after directive
 	SkipSpace(pPos);
@@ -1275,7 +1274,7 @@ bool
 }
 
 bool
-	CPreProcess::PreProcessIfndef(string &lineBuf, const char *&pPos)
+CPreProcess::PreProcessIfndef(string &lineBuf, const char *&pPos)
 {
 	// pPos points just after directive
 	SkipSpace(pPos);
@@ -1309,8 +1308,8 @@ bool CPreProcess::GetLineWithCommentsStripped(string &lineBuf, bool bContinue)
 					return false; // End of file
 			}
 			//printf("Line: %s\n", lineBuf.c_str());
-			if (lineBuf.length() > 0 && lineBuf[lineBuf.length()-1] == '\\') {
-				lineBuf.resize(lineBuf.length()-1);
+			if (lineBuf.length() > 0 && lineBuf[lineBuf.length() - 1] == '\\') {
+				lineBuf.resize(lineBuf.length() - 1);
 
 				m_linePos.Delete(lineBuf.length(), 1);
 
@@ -1324,15 +1323,15 @@ bool CPreProcess::GetLineWithCommentsStripped(string &lineBuf, bool bContinue)
 			if (!m_bInComment) {
 				scanPos = lineBuf.find_first_of('/', scanPos);
 				if (scanPos != string::npos) {
-					if (lineBuf[scanPos+1] == '/') {
+					if (lineBuf[scanPos + 1] == '/') {
 						// double slash comment found
 						size_t len = lineBuf.length() - scanPos - 1;
-						m_linePos.Delete(scanPos+1, len);
+						m_linePos.Delete(scanPos + 1, len);
 
 						lineBuf[scanPos] = ' ';
-						lineBuf.resize(scanPos+1);
+						lineBuf.resize(scanPos + 1);
 						break;
-					} else if (lineBuf[scanPos+1] == '*') {
+					} else if (lineBuf[scanPos + 1] == '*') {
 						commentPos = scanPos;
 						scanPos += 2;
 						m_bInComment = true;
@@ -1344,9 +1343,9 @@ bool CPreProcess::GetLineWithCommentsStripped(string &lineBuf, bool bContinue)
 			if (m_bInComment) {
 				scanPos = lineBuf.find_first_of('*', scanPos);
 				//if (scanPos < 0 || scanPos == lineBuf.length()-1) {
-				if (scanPos == string::npos || scanPos == lineBuf.length()-1) {
+				if (scanPos == string::npos || scanPos == lineBuf.length() - 1) {
 					scanPos = lineBuf.length();
-				} else if (lineBuf[scanPos+1] == '/') {
+				} else if (lineBuf[scanPos + 1] == '/') {
 					// found end of comment
 					m_bInComment = false;
 					scanPos += 2;
@@ -1402,7 +1401,7 @@ bool CPreProcess::GetLineFromFile(string &lineBuf, bool bAppendLine)
 	while (pPos == pEnd || *pPos != '\n') {
 		if (pPos == pEnd) {
 			// refill read buffer, first transfer scanned bytes to line buffer
-			lineBuf.append(pInitPos, pPos-pInitPos);
+			lineBuf.append(pInitPos, pPos - pInitPos);
 #if defined(_MSC_VER)
 			rdBytes = _read(m_pFs->m_fd, m_pFs->m_rdBuf, RDBUF_SIZE);
 #else
@@ -1433,7 +1432,7 @@ bool CPreProcess::GetLineFromFile(string &lineBuf, bool bAppendLine)
 		}
 		if (*pPos == '\r') {
 			// copy scanned rdBuf to lineBuf
-			lineBuf.append(pInitPos, pPos-pInitPos);
+			lineBuf.append(pInitPos, pPos - pInitPos);
 			m_pFs->m_fileRdOffset += pPos - pInitPos + 1;
 
 			m_linePos.Delete(lineBuf.length(), 1);
@@ -1444,11 +1443,11 @@ bool CPreProcess::GetLineFromFile(string &lineBuf, bool bAppendLine)
 
 	m_pFs->m_lineInfo.m_lineNum += 1;
 
-    UpdateStaticLineInfo();
+	UpdateStaticLineInfo();
 
 	if (pPos != pInitPos) {
 		// this won't happen when '\r' preceeds '\n'
-		lineBuf.append(pInitPos, pPos-pInitPos);
+		lineBuf.append(pInitPos, pPos - pInitPos);
 		m_pFs->m_fileRdOffset += pPos - pInitPos;
 	}
 
@@ -1468,7 +1467,7 @@ bool CPreProcess::GetLineFromFile(string &lineBuf, bool bAppendLine)
 string CPreProcess::FormatString(const char *msgStr, ...)
 {
 	va_list marker;
-	va_start( marker, msgStr );
+	va_start(marker, msgStr);
 
 	char buf[1024];
 	vsprintf(buf, msgStr, marker);

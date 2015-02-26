@@ -12,6 +12,8 @@ stencil.AddInst(name=STENCIL_START);
 stencil.AddInst(name=STENCIL_WAIT);
 stencil.AddInst(name=STENCIL_RETURN);
 
+stencil.AddStencilBuffer(name=5x5r2, type=StType_t, gridSize={1024, 1024}, stencilSize={X_SIZE, Y_SIZE}, pipeLen=2);
+
 stencil.AddPrivate()
 	.AddVar(type=MemAddr_t, name=rdAddr)
 	.AddVar(type=MemAddr_t, name=wrAddr)
@@ -36,7 +38,7 @@ stencil.AddShared()
 	;
 
 stencil.AddStage()
-        .AddVar(type=bool, name=bValid, range=1-3, reset=true)
+    .AddVar(type=bool, name=bValid, range=1-3, reset=true)
 	.AddVar(type=StType_t, name=mult, dimen1=Y_SIZE, dimen2=X_SIZE, range=1)
 	.AddVar(type=StType_t, name=ysum, dimen1=X_SIZE, range=2)
 	.AddVar(type=StType_t, name=rslt, range=3)
@@ -59,4 +61,3 @@ stencil.AddReturn(func=htmain)
 stencil.AddReadStream(type=StType_t, memPort=STENCIL_READ_MEM_PORT);
 stencil.AddWriteStream(type=StType_t, memPort=STENCIL_WRITE_MEM_PORT, reserve=3);
 
-stencil.AddStencilBuffer(name=5x5r2, type=StType_t, gridSize={1024, 1024}, stencilSize={X_SIZE, Y_SIZE}, pipeLen=2);

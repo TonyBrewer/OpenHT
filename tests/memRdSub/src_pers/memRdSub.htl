@@ -1,12 +1,11 @@
-// -cl "C:\Ht\tests\memRdSub\src_pers\memRdSub.htl"
+// -cl $(HtToolsPath)/tests/memRdSub/src_pers/memRdSub.htl
+-wd $(HtToolsPath)/tests/memRdSub/msvs12/
+
 -cp wx-690
 -ac 1
 -uc 1
 -df 150
-//-ri
--rr
--it
+//-vcd_all
 -ml 0.2
--wd "C:\Ht\tests\memRdSub\msvs12\"
-"C:\Ht\tests\memRdSub\src_pers\memRdSub.htd"
+../src_pers/memRdSub.htd
 ../ht/sysc

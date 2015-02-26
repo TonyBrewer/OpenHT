@@ -1,5 +1,6 @@
-// -cl "C:\Ht\tests\bug_1904\src_pers\bug.htl"
--wd "C:\Ht\tests\bug_1904\msvs12\"
+// -cl $(HtToolsPath)/tests/bug_1904/src_pers/bug.htl
+-wd $(HtToolsPath)/tests/bug_1904/msvs12/
+
 -cp wx-690
 -ac 1
 -uc 1
@@ -7,7 +8,8 @@
 -I ../src
 -I ../src_pers
 -D_WIN32
+-vcd_all
 -ml 0.6
 -pn bug_1904
-"../src_pers/bug.htd"
+../src_pers/bug.htd
 ../ht/sysc

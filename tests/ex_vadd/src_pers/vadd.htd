@@ -79,7 +79,7 @@ add.AddReturn(func=add)
 	.AddParam(type=uint64_t, name=result)
 	;
 
-add.AddReadMem(maxBw=true)
+add.AddReadMem()
 	.AddDst(var=op1)
 	.AddDst(var=op2)
 	;

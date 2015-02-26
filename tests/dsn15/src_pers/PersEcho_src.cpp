@@ -44,7 +44,7 @@ CPersEcho::PersEcho()
 
 				RecvHostData();
 
-				uint64_t outData = inData + GR_arrayMem_data();
+				uint64_t outData = inData + GR_arrayMem.data;
 
 				SendHostData(outData);
 

@@ -61,12 +61,12 @@ int main(int argc, char **argv)
 	gettimeofday(&st, NULL);
 	unsigned int seed = (SEED != -1) ? SEED : (int)st.tv_usec;
 	printf("Seed = 0x%x\n", seed);
-	srandom(seed);
+	srand(seed);
 	
 	for (int i=0; i < 200; i++) {
-		uint64_t op  = (random() & 1) << 1;
-		uint64_t op1 = random() & 0xffffffff;
-		uint64_t op2 = random() & 0xffff;
+		uint64_t op  = (rand() & 1) << 1;
+		uint64_t op1 = rand() & 0xffffffff;
+		uint64_t op2 = rand() & 0xffff;
 
 		pAuUnit->SendCall_htmain(op, op1, op2);
 

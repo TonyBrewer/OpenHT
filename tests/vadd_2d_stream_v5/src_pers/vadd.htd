@@ -126,12 +126,14 @@ vadd.AddReturn(func=htmain)
 vadd.AddBarrier();
 
 vadd.AddReadMem()
-	.AddDst(var=readVar, memSrc=coproc, rdType=uint32)
+	.AddDst(var=readVar, memSrc=coproc, rdType=uint32_t)
 	;
 
 vadd.AddCall(func=sub, fork=true);
 
-vadd.AddWriteMem();
+vadd.AddWriteMem()
+	.AddSrc(name=uint32, type=uint32_t)
+	;
 
 vadd.AddReadStream(name=A, type=PersType_t, strmBw=STRM_BW_A, memPort=1, elemCntW=32);
 vadd.AddReadStream(name=B, type=PersType_t, strmBw=STRM_BW_B, memPort=1, elemCntW=32);

@@ -58,20 +58,20 @@ CPersInc11::PersInc11()
 			}
 
 			// Increment memory data
-			uint64_t memWrData = GR1_arrayMem11_data() + 1;
+			uint64_t memWrData = GR1_arrayMem11.data + 1;
 
 			// Calculate memory write address
 			MemAddr_t memWrAddr = SR_arrayAddr + ((P_loopBase + P_loopIdx[0][1]) << 3);
 
 			// Issue write memory request
 			//WriteMem(wrRspGrpId, memWrAddr, memWrData);
-			WriteMem(memWrAddr, memWrData);
+			WriteMem(PR_wrGrpId, memWrAddr, memWrData);
 
 			bool bLast = P_loopIdx[0][1] == P_elemCnt - 1;
 			if (bLast) {
 				P_loopIdx[0][1] = 0;
 				//WriteMemPause(wrRspGrpId, INC11_RTN);
-				WriteMemPause(INC11_RTN);
+				WriteMemPause(PR_wrGrpId, INC11_RTN);
 				//HtPause();
 			} else {
 				P_loopIdx[0][1] += 1;

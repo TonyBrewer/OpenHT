@@ -111,8 +111,8 @@ void CPersGv1::PersGv1()
 
 			P_loopCnt = 0;
 			HtContinue(GV1_LOOP);
-		}
 			break;
+		}
 		case GV1_LOOP:
 		{
 			// D_1x
@@ -274,8 +274,8 @@ void CPersGv1::PersGv1()
 			GW_gv_R_1x1x2x2x_4F_AA_m1[PR_htId].m_x[0] = P_x;
 
 			HtContinue(P_loopCnt++ < 100 ? GV1_LOOP : GV1_RETURN);
-		}
 			break;
+		}
 		case GV1_RETURN:
 		{
 			if (SendReturnBusy_gv1()) {
@@ -284,8 +284,8 @@ void CPersGv1::PersGv1()
 			}
 
 			SendReturn_gv1();
-		}
 			break;
+		}
 		default:
 			assert(0);
 		}

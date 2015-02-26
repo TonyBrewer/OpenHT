@@ -142,8 +142,8 @@ t3.AddShared()
 	.AddVar(name=totalCnt, type=uint32_t)
 	;
 
-t3.AddGlobal(var=strSetL, addr1W=5)
-	.AddField(type=uint64_t, name=data0, read=false, write=true)
+t3.AddGlobal()
+	.AddVar(type=uint64_t, name=strSetL, addr1W=5, read=false, write=true)
 	;
 
 t3.AddEntry(func=t3, inst=T3_INIT)
@@ -181,8 +181,8 @@ t4.AddShared()
 	.AddVar(name=totalCnt, type=uint32_t)
 	;
 
-t4.AddGlobal(var=strSetL, addr1W=5, extern=true, addr1=addr)
-	.AddField(type=uint64_t, name=data0, read=true, write=false)
+t4.AddGlobal()
+	.AddVar(type=uint64_t, name=strSetL, addr1=addr, read=true, write=false)
 	;
 
 t4.AddEntry(func=t4, inst=T4_INIT)

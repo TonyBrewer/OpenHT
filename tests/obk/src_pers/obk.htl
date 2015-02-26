@@ -1,9 +1,11 @@
+// -cl $(HtToolsPath)/tests/obk/src_pers/obk.htl
+-wd $(HtToolsPath)/tests/obk/msvs12/
+
 -cp hc-2
 -ac 4
 -uc 4
 -un Au
 -df 150
-//-if "C:\Ht\tests\obk\src_pers\HtInstance.txt"
--wd "C:\Ht\tests\obk\msvs12\"
-"C:\Ht\tests\obk\src_pers\obk.htd"
+//-if ../src_pers/HtInstance.txt
+../src_pers/obk.htd
 ../ht/sysc

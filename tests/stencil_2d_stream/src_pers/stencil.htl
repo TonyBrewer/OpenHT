@@ -1,5 +1,6 @@
-// -cl "C:\Ht\tests\stencil_2d_stream\src_pers\stencil.htl"
--wd "C:\Ht\tests\stencil_2d_stream\msvs12\"
+// -cl $(HtToolsPath)/tests/stencil_2d_stream/src_pers/stencil.htl
+-wd $(HtToolsPath)/tests/stencil_2d_stream/msvs12/
+
 -cp wx-690
 -uc 1
 -un Au

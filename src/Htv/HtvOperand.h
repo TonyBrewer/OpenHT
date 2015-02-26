@@ -26,7 +26,7 @@ public:
 
 	CHtvIdent * GetMember() { return (CHtvIdent *)CHtfeOperand::GetMember(); }
 	CHtvIdent *GetCastType() { return (CHtvIdent *)CHtfeOperand::GetCastType(); }
-	CHtvIdent *GetMemberType() { return (CHtvIdent *)CHtfeOperand::GetMemberType(); }
+	CHtvIdent *GetType() { return (CHtvIdent *)CHtfeOperand::GetType(); }
 
 	size_t GetParamCnt() { return GetParamList().size(); }
 	CHtvOperand * GetParam(int i) { return (CHtvOperand *)(GetParamList()[i]); }

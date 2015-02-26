@@ -1,0 +1,13 @@
+// -cl $(HtToolsPath)/tests/memSub/src_pers/memSub.htl
+-wd $(HtToolsPath)/tests/memSub/msvs12/
+
+-cp wx-690
+-ac 1
+-uc 1
+-df 150
+-vcd_all
+-pn memSub
+-ml 0.2
+-I ../src
+../src_pers/memSub.htd
+../ht/sysc

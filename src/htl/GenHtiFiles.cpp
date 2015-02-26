@@ -121,8 +121,8 @@ CDsnInfo::GenerateHtiFiles()
 
 	if (bCallCmdFields)
 		fprintf(incFile, "\tsc_out<C%s_%sIntf> o_%s_%s;\n",
-			callIntf.GetSrcToDstUc(), callIntf.GetIntfName(),
-			callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
+		callIntf.GetSrcToDstUc(), callIntf.GetIntfName(),
+		callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
 
 	fprintf(incFile, "\tsc_in<bool> i_%s_%sAvl;\n",
 		callIntf.GetDstToSrcLc(), callIntf.GetIntfName());
@@ -134,8 +134,8 @@ CDsnInfo::GenerateHtiFiles()
 
 	if (bRtnCmdFields)
 		fprintf(incFile, "\tsc_in<C%s_%sIntf> i_%s_%s;\n",
-			rtnIntf.GetSrcToDstUc(), rtnIntf.GetIntfName(),
-			rtnIntf.GetSrcToDstLc(), rtnIntf.GetIntfName());
+		rtnIntf.GetSrcToDstUc(), rtnIntf.GetIntfName(),
+		rtnIntf.GetSrcToDstLc(), rtnIntf.GetIntfName());
 
 	fprintf(incFile, "\tsc_out<bool> o_%s_%sAvl;\n",
 		rtnIntf.GetDstToSrcLc(), rtnIntf.GetIntfName());
@@ -187,7 +187,7 @@ CDsnInfo::GenerateHtiFiles()
 		// in bound interface
 		fprintf(incFile, "\tsc_out<bool> o_hifTo%s_%sRdy;\n",
 			pInQueIntf->m_modName.Uc().c_str(), pInQueIntf->m_queName.Lc().c_str());
-		string structName = pInQueIntf->m_structName + (pInQueIntf->m_bInclude ? "_inc" : "");
+		string structName = pInQueIntf->m_typeName + (pInQueIntf->m_bInclude ? "_inc" : "");
 		fprintf(incFile, "\tsc_out<%s> o_hifTo%s_%s;\n",
 			structName.c_str(),
 			pInQueIntf->m_modName.Uc().c_str(), pInQueIntf->m_queName.Lc().c_str());
@@ -200,7 +200,7 @@ CDsnInfo::GenerateHtiFiles()
 		// out bound interface
 		fprintf(incFile, "\tsc_in<bool> i_%sToHif_%sRdy;\n",
 			pOutQueIntf->m_modName.Lc().c_str(), pOutQueIntf->m_queName.Lc().c_str());
-		string structName = pOutQueIntf->m_structName + (pOutQueIntf->m_bInclude ? "_inc" : "");
+		string structName = pOutQueIntf->m_typeName + (pOutQueIntf->m_bInclude ? "_inc" : "");
 		fprintf(incFile, "\tsc_in<%s> i_%sToHif_%s;\n",
 			structName.c_str(),
 			pOutQueIntf->m_modName.Lc().c_str(), pOutQueIntf->m_queName.Lc().c_str());
@@ -227,12 +227,12 @@ CDsnInfo::GenerateHtiFiles()
 	fprintf(incFile, "\tht_dist_que<CHostDataQueIntf, 5> m_iDatQue;\n");
 	if (bRtnCmdFields)
 		fprintf(incFile, "\tht_dist_que<C%s_%sIntf, 5> m_oCmdQue;\n",
-			rtnIntf.GetSrcToDstUc(), rtnIntf.GetIntfName());
+		rtnIntf.GetSrcToDstUc(), rtnIntf.GetIntfName());
 	else
 		fprintf(incFile, "\tsc_uint<5> r_oCmdCnt;\n");
 
 	if (pOutQueIntf) {
-		string structName = pOutQueIntf->m_structName + (pOutQueIntf->m_bInclude ? "_inc" : "");
+		string structName = pOutQueIntf->m_typeName + (pOutQueIntf->m_bInclude ? "_inc" : "");
 		fprintf(incFile, "\tht_dist_que<%s, 5> m_%sToHif_%sQue;\n",
 			structName.c_str(),
 			pOutQueIntf->m_modName.Lc().c_str(), pOutQueIntf->m_queName.Lc().c_str());
@@ -257,8 +257,8 @@ CDsnInfo::GenerateHtiFiles()
 
 	if (bCallCmdFields)
 		fprintf(incFile, "\tC%s_%sIntf r_%s_%s;\n",
-			callIntf.GetSrcToDstUc(), callIntf.GetIntfName(),
-			callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
+		callIntf.GetSrcToDstUc(), callIntf.GetIntfName(),
+		callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
 
 	if (bCallClk2x) {
 		fprintf(incFile, "\tsc_signal<ht_uint1> r_%s_%sAvl_2x1;\n", callIntf.GetDstToSrcLc(), callIntf.GetIntfName());
@@ -289,17 +289,17 @@ CDsnInfo::GenerateHtiFiles()
 	if (pInQueIntf) {
 		fprintf(incFile, "\tbool r_hifTo%s_%sRdy;\n",
 			pInQueIntf->m_modName.Uc().c_str(), pInQueIntf->m_queName.Lc().c_str());
-		string structName = pInQueIntf->m_structName + (pInQueIntf->m_bInclude ? "_inc" : "");
-		fprintf(incFile, "\t%s r_hifTo%s_%s;\n", 
+		string structName = pInQueIntf->m_typeName + (pInQueIntf->m_bInclude ? "_inc" : "");
+		fprintf(incFile, "\t%s r_hifTo%s_%s;\n",
 			structName.c_str(),
 			pInQueIntf->m_modName.Uc().c_str(), pInQueIntf->m_queName.Lc().c_str());
 		fprintf(incFile, "\tht_uint6  r_hifTo%s_%sAvlCnt;\n",
 			pInQueIntf->m_modName.Uc().c_str(), pInQueIntf->m_queName.Lc().c_str());
 
 		if (bIhdClk2x) {
-			fprintf(incFile, "\tsc_signal<bool> r_%sToHif_%sAvl_2x1;\n", 
+			fprintf(incFile, "\tsc_signal<bool> r_%sToHif_%sAvl_2x1;\n",
 				pInQueIntf->m_modName.Lc().c_str(), pInQueIntf->m_queName.Lc().c_str());
-			fprintf(incFile, "\tsc_signal<bool> r_%sToHif_%sAvl_2x2;\n", 
+			fprintf(incFile, "\tsc_signal<bool> r_%sToHif_%sAvl_2x2;\n",
 				pInQueIntf->m_modName.Lc().c_str(), pInQueIntf->m_queName.Lc().c_str());
 		}
 	}
@@ -356,7 +356,8 @@ CDsnInfo::GenerateHtiFiles()
 	fprintf(incFile, "\n");
 
 	fprintf(incFile, "\t#ifndef _HTV\n");
-	fprintf(incFile, "\tvoid end_of_simulation() {\n");
+	fprintf(incFile, "\tvoid end_of_simulation()\n");
+	fprintf(incFile, "\t{\n");
 	fprintf(incFile, "\t\tassert(r_htiToHif_ctlAvlCnt == 1);\n");
 	fprintf(incFile, "\t\tassert(r_htiToHif_datAvlCnt == 32);\n");
 	fprintf(incFile, "\t\tassert(r_%s_%sAvlCnt == 1);\n", callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
@@ -408,7 +409,7 @@ CDsnInfo::GenerateHtiFiles()
 	fprintf(cppFile, "\tCHostDataQueIntf iDatQueDat = m_iDatQue.front();\n");
 	fprintf(cppFile, "\tbool c_htiToHif_datAvl = false;\n");
 	fprintf(cppFile, "\n");
- 
+
 	fprintf(cppFile, "\tsc_uint<2> c_callState = r_callState;\n");
 	fprintf(cppFile, "\tuint8_t c_callArgCnt = r_callArgCnt;\n");
 	fprintf(cppFile, "\tuint8_t c_callActiveCnt = r_callActiveCnt;\n");
@@ -417,16 +418,16 @@ CDsnInfo::GenerateHtiFiles()
 	fprintf(cppFile, "\tbool c_%s_%sRdy = false;\n", callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
 	if (bCallCmdFields)
 		fprintf(cppFile, "\tC%s_%sIntf c_%s_%s = r_%s_%s;\n",
-			callIntf.GetSrcToDstUc(), callIntf.GetIntfName(),
-			callIntf.GetSrcToDstLc(), callIntf.GetIntfName(),
-			callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
+		callIntf.GetSrcToDstUc(), callIntf.GetIntfName(),
+		callIntf.GetSrcToDstLc(), callIntf.GetIntfName(),
+		callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
 	fprintf(cppFile, "\n");
 
 	if (pInQueIntf) {
 		fprintf(cppFile, "\tbool c_hifTo%s_%sRdy = false;\n",
 			pInQueIntf->m_modName.Uc().c_str(), pInQueIntf->m_queName.Lc().c_str());
-		string structName = pInQueIntf->m_structName + (pInQueIntf->m_bInclude ? "_inc" : "");
-		fprintf(cppFile, "\t%s c_hifTo%s_%s;\n", 
+		string structName = pInQueIntf->m_typeName + (pInQueIntf->m_bInclude ? "_inc" : "");
+		fprintf(cppFile, "\t%s c_hifTo%s_%s;\n",
 			structName.c_str(),
 			pInQueIntf->m_modName.Uc().c_str(), pInQueIntf->m_queName.Lc().c_str());
 		fprintf(cppFile, "\tc_hifTo%s_%s.m_data = 0;\n",
@@ -443,9 +444,9 @@ CDsnInfo::GenerateHtiFiles()
 
 	int callQwCnt = 0;
 	for (size_t fldIdx = 0; fldIdx < callIntf.m_pFieldList->size(); fldIdx += 1) {
-		CField & field = (*callIntf.m_pFieldList)[fldIdx];
+		CField * pField = (*callIntf.m_pFieldList)[fldIdx];
 
-		int fldQwCnt = (FindHostTypeWidth(field) + 63) / 64;
+		int fldQwCnt = (FindHostTypeWidth(pField) + 63) / 64;
 		callQwCnt += fldQwCnt;
 	}
 
@@ -499,34 +500,30 @@ CDsnInfo::GenerateHtiFiles()
 
 		int argQwIdx = 0;
 		for (size_t fldIdx = 0; fldIdx < callIntf.m_pFieldList->size(); fldIdx += 1) {
-			CField & field = (*callIntf.m_pFieldList)[fldIdx];
+			CField * pField = (*callIntf.m_pFieldList)[fldIdx];
 
-			int width;
-			bool bSigned;
-			bool bIntType = FindIntType(field.m_type, width, bSigned);
-
-			if (bIntType) {
+			if (pField->m_pType->IsInt()) {
 				fprintf(cppFile, "\t\tcase %d: {\n", callQwCnt - argQwIdx);
-				if (field.m_type == "bool") {
+				if (pField->m_type == "bool") {
 					fprintf(cppFile, "\t\t\tc_%s_%s.m_%s = (iDatQueDat.m_data & 1) != 0;\n",
-						callIntf.GetSrcToDstLc(), callIntf.GetIntfName(), field.m_name.c_str());
+						callIntf.GetSrcToDstLc(), callIntf.GetIntfName(), pField->m_name.c_str());
 				} else {
 					fprintf(cppFile, "\t\t\tc_%s_%s.m_%s = (%s)iDatQueDat.m_data;\n",
-						callIntf.GetSrcToDstLc(), callIntf.GetIntfName(), field.m_name.c_str(),
-						field.m_type.c_str());
+						callIntf.GetSrcToDstLc(), callIntf.GetIntfName(), pField->m_name.c_str(),
+						pField->m_pType->m_typeName.c_str());
 				}
 				fprintf(cppFile, "\t\t\tbreak;\n");
 				fprintf(cppFile, "\t\t}\n");
 				argQwIdx += 1;
 			} else {
-				int fldQwCnt = (FindHostTypeWidth(field) + 63) / 64;
+				int fldQwCnt = (FindHostTypeWidth(pField) + 63) / 64;
 
 				for (int fldQwIdx = 0; fldQwIdx < fldQwCnt; fldQwIdx += 1) {
 					bool bBasicType;
 					CTypeDef * pTypeDef;
-					string type = field.m_type;
+					string type = pField->m_type;
 					while (!(bBasicType = IsBaseType(type))) {
-						if (!(pTypeDef = FindTypeDef(field.m_type)))
+						if (!(pTypeDef = FindTypeDef(pField->m_type)))
 							break;
 						type = pTypeDef->m_type;
 					}
@@ -534,25 +531,25 @@ CDsnInfo::GenerateHtiFiles()
 					fprintf(cppFile, "\t\tcase %d: {\n", callQwCnt - argQwIdx);
 
 					if (!bBasicType) {
-						fprintf(cppFile, "\t\t\tunion Arg_%s {\n", field.m_name.c_str());
-						fprintf(cppFile, "\t\t\t\t%s m_%s;\n", field.m_type.c_str(), field.m_name.c_str());
+						fprintf(cppFile, "\t\t\tunion Arg_%s {\n", pField->m_name.c_str());
+						fprintf(cppFile, "\t\t\t\t%s m_%s;\n", pField->m_pType->m_typeName.c_str(), pField->m_name.c_str());
 						fprintf(cppFile, "\t\t\t\tuint64_t m_data[%d];\n", fldQwCnt);
 						fprintf(cppFile, "\t\t\t} arg;\n");
 
-						fprintf(cppFile, "\t\t\targ.m_%s = c_%s_%s.m_%s;\n", field.m_name.c_str(),
-							callIntf.GetSrcToDstLc(), callIntf.GetIntfName(), field.m_name.c_str());
+						fprintf(cppFile, "\t\t\targ.m_%s = c_%s_%s.m_%s;\n", pField->m_name.c_str(),
+							callIntf.GetSrcToDstLc(), callIntf.GetIntfName(), pField->m_name.c_str());
 						fprintf(cppFile, "\t\t\targ.m_data[%d] = iDatQueDat.m_data;\n", fldQwIdx);
 						fprintf(cppFile, "\t\t\tc_%s_%s.m_%s = arg.m_%s;\n",
-							callIntf.GetSrcToDstLc(), callIntf.GetIntfName(), field.m_name.c_str(),
-							field.m_name.c_str());
+							callIntf.GetSrcToDstLc(), callIntf.GetIntfName(), pField->m_name.c_str(),
+							pField->m_name.c_str());
 					} else {
-						if (field.m_type == "bool") {
+						if (pField->m_type == "bool") {
 							fprintf(cppFile, "\t\t\tc_%s_%s.m_%s = (iDatQueDat.m_data & 1) != 0;\n",
-								callIntf.GetSrcToDstLc(), callIntf.GetIntfName(), field.m_name.c_str());
+								callIntf.GetSrcToDstLc(), callIntf.GetIntfName(), pField->m_name.c_str());
 						} else {
 							fprintf(cppFile, "\t\t\tc_%s_%s.m_%s = (%s)iDatQueDat.m_data;\n",
-								callIntf.GetSrcToDstLc(), callIntf.GetIntfName(), field.m_name.c_str(),
-								field.m_type.c_str());
+								callIntf.GetSrcToDstLc(), callIntf.GetIntfName(), pField->m_name.c_str(),
+								pField->m_pType->m_typeName.c_str());
 						}
 					}
 					fprintf(cppFile, "\t\t\tbreak;\n");
@@ -621,13 +618,13 @@ CDsnInfo::GenerateHtiFiles()
 		callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
 	if (bCallClk2x)
 		fprintf(cppFile, "\t\t+ r_%s_%sAvl_2x1.read() + r_%s_%sAvl_2x2.read() - c_%s_%sRdy;\n",
-			callIntf.GetDstToSrcLc(), callIntf.GetIntfName(),
-			callIntf.GetDstToSrcLc(), callIntf.GetIntfName(),
-			callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
+		callIntf.GetDstToSrcLc(), callIntf.GetIntfName(),
+		callIntf.GetDstToSrcLc(), callIntf.GetIntfName(),
+		callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
 	else
 		fprintf(cppFile, "\t\t+ i_%s_%sAvl.read() - c_%s_%sRdy;\n",
-			callIntf.GetDstToSrcLc(), callIntf.GetIntfName(),
-			callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
+		callIntf.GetDstToSrcLc(), callIntf.GetIntfName(),
+		callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
 
 	fprintf(cppFile, "\n");
 
@@ -638,13 +635,13 @@ CDsnInfo::GenerateHtiFiles()
 
 		if (bIhdClk2x)
 			fprintf(cppFile, "\t\t+ r_%sToHif_%sAvl_2x1.read() + r_%sToHif_%sAvl_2x2.read() - c_hifTo%s_%sRdy;\n",
-				pInQueIntf->m_modName.Lc().c_str(), pInQueIntf->m_queName.Lc().c_str(),
-				pInQueIntf->m_modName.Lc().c_str(), pInQueIntf->m_queName.Lc().c_str(),
-				pInQueIntf->m_modName.Uc().c_str(), pInQueIntf->m_queName.Lc().c_str());
+			pInQueIntf->m_modName.Lc().c_str(), pInQueIntf->m_queName.Lc().c_str(),
+			pInQueIntf->m_modName.Lc().c_str(), pInQueIntf->m_queName.Lc().c_str(),
+			pInQueIntf->m_modName.Uc().c_str(), pInQueIntf->m_queName.Lc().c_str());
 		else
 			fprintf(cppFile, "\t\t+ i_%sToHif_%sAvl.read() - c_hifTo%s_%sRdy;\n",
-				pInQueIntf->m_modName.Lc().c_str(), pInQueIntf->m_queName.Lc().c_str(),
-				pInQueIntf->m_modName.Uc().c_str(), pInQueIntf->m_queName.Lc().c_str());
+			pInQueIntf->m_modName.Lc().c_str(), pInQueIntf->m_queName.Lc().c_str(),
+			pInQueIntf->m_modName.Uc().c_str(), pInQueIntf->m_queName.Lc().c_str());
 	}
 
 	fprintf(cppFile, "\t//\n");
@@ -676,18 +673,18 @@ CDsnInfo::GenerateHtiFiles()
 
 		if (!bRtnClk2x)
 			fprintf(cppFile, "\tif (i_%s_%sRdy.read())\n",
-				rtnIntf.GetSrcToDstLc(), rtnIntf.GetIntfName());
+			rtnIntf.GetSrcToDstLc(), rtnIntf.GetIntfName());
 		else
 			fprintf(cppFile, "\tif (r_%s_%sRdy_2x.read())\n",
-				rtnIntf.GetSrcToDstLc(), rtnIntf.GetIntfName());
+			rtnIntf.GetSrcToDstLc(), rtnIntf.GetIntfName());
 		fprintf(cppFile, "\t\tc_oCmdCnt += 1;\n");
 	}
 
 	fprintf(cppFile, "\tbool c_%s_%sAvl = false;\n",
-			rtnIntf.GetDstToSrcLc(), rtnIntf.GetIntfName());
+		rtnIntf.GetDstToSrcLc(), rtnIntf.GetIntfName());
 	if (bRtnCmdFields)
 		fprintf(cppFile, "\tC%s_%sIntf oCmdQueDat = m_oCmdQue.front();\n",
-			rtnIntf.GetSrcToDstUc(), rtnIntf.GetIntfName());
+		rtnIntf.GetSrcToDstUc(), rtnIntf.GetIntfName());
 
 	fprintf(cppFile, "\tsc_uint<2> c_rtnState = r_rtnState;\n");
 	fprintf(cppFile, "\tuint8_t c_rtnCnt = r_rtnCnt;\n");
@@ -699,12 +696,12 @@ CDsnInfo::GenerateHtiFiles()
 	if (pOutQueIntf) {
 		if (!bOhdClk2x)
 			fprintf(cppFile, "\tif (i_%sToHif_%sRdy.read())\n\t\tm_%sToHif_%sQue.push(i_%sToHif_%s);\n",
-				pOutQueIntf->m_modName.Lc().c_str(), pOutQueIntf->m_queName.Lc().c_str(), pOutQueIntf->m_modName.Lc().c_str(),
-				pOutQueIntf->m_queName.Lc().c_str(), pOutQueIntf->m_modName.Lc().c_str(), pOutQueIntf->m_queName.Lc().c_str());
+			pOutQueIntf->m_modName.Lc().c_str(), pOutQueIntf->m_queName.Lc().c_str(), pOutQueIntf->m_modName.Lc().c_str(),
+			pOutQueIntf->m_queName.Lc().c_str(), pOutQueIntf->m_modName.Lc().c_str(), pOutQueIntf->m_queName.Lc().c_str());
 
-		string structName = pOutQueIntf->m_structName + (pOutQueIntf->m_bInclude ? "_inc" : "");
+		string structName = pOutQueIntf->m_typeName + (pOutQueIntf->m_bInclude ? "_inc" : "");
 		fprintf(cppFile, "\t%s %s = m_%sToHif_%sQue.front();\n",
-			structName.c_str(), pOutQueIntf->m_queName.Lc().c_str(), 
+			structName.c_str(), pOutQueIntf->m_queName.Lc().c_str(),
 			pOutQueIntf->m_modName.Lc().c_str(), pOutQueIntf->m_queName.Lc().c_str());
 		fprintf(cppFile, "\tbool c_hifTo%s_%sAvl = false;\n",
 			pOutQueIntf->m_modName.Uc().c_str(), pOutQueIntf->m_queName.Lc().c_str());
@@ -712,9 +709,9 @@ CDsnInfo::GenerateHtiFiles()
 
 	int rtnQwCnt = 0;
 	for (size_t fldIdx = 0; fldIdx < rtnIntf.m_pFieldList->size(); fldIdx += 1) {
-		CField & field = (*rtnIntf.m_pFieldList)[fldIdx];
+		CField * pField = (*rtnIntf.m_pFieldList)[fldIdx];
 
-		int fldQwCnt = (FindHostTypeWidth(field) + 63) / 64;
+		int fldQwCnt = (FindHostTypeWidth(pField) + 63) / 64;
 		rtnQwCnt += fldQwCnt;
 	}
 
@@ -734,7 +731,7 @@ CDsnInfo::GenerateHtiFiles()
 		fprintf(cppFile, "\t\tif (r_oCmdCnt > 0) {\n");
 
 	fprintf(cppFile, "\t\t\tc_rtnState = HTI_CMD;\n");
-		fprintf(cppFile, "\t\t}\n");
+	fprintf(cppFile, "\t\t}\n");
 
 	fprintf(cppFile, "\t\tbreak;\n");
 	fprintf(cppFile, "\tcase HTI_CMD:\n");
@@ -782,29 +779,25 @@ CDsnInfo::GenerateHtiFiles()
 
 		int argQwIdx = 0;
 		for (size_t fldIdx = 0; fldIdx < rtnIntf.m_pFieldList->size(); fldIdx += 1) {
-			CField & field = (*rtnIntf.m_pFieldList)[fldIdx];
+			CField * pField = (*rtnIntf.m_pFieldList)[fldIdx];
 
-			int width;
-			bool bSigned;
-			bool bIntType = FindIntType(field.m_type, width, bSigned);
-
-			if (bIntType) {
+			if (pField->m_pType->IsInt()) {
 				fprintf(cppFile, "\t\tcase %d: {\n", rtnQwCnt - argQwIdx);
 				fprintf(cppFile, "\t\t\tc_htiToHif_dat.m_data = (uint64_t)oCmdQueDat.m_%s;\n",
-					field.m_name.c_str());
+					pField->m_name.c_str());
 				fprintf(cppFile, "\t\t\tbreak;\n");
 				fprintf(cppFile, "\t\t}\n");
 				argQwIdx += 1;
 
 			} else {
-				int fldQwCnt = (FindHostTypeWidth(field) + 63) / 64;
+				int fldQwCnt = (FindHostTypeWidth(pField) + 63) / 64;
 
 				for (int fldQwIdx = 0; fldQwIdx < fldQwCnt; fldQwIdx += 1) {
 					bool bBasicType;
 					CTypeDef * pTypeDef;
-					string type = field.m_type;
+					string type = pField->m_type;
 					while (!(bBasicType = IsBaseType(type))) {
-						if (!(pTypeDef = FindTypeDef(field.m_type)))
+						if (!(pTypeDef = FindTypeDef(pField->m_type)))
 							break;
 						type = pTypeDef->m_type;
 					}
@@ -812,15 +805,15 @@ CDsnInfo::GenerateHtiFiles()
 					fprintf(cppFile, "\t\tcase %d: {\n", rtnQwCnt - argQwIdx);
 
 					if (!bBasicType) {
-						fprintf(cppFile, "\t\t\tunion Arg_%s {\n", field.m_name.c_str());
-						fprintf(cppFile, "\t\t\t\t%s m_%s;\n", field.m_type.c_str(), field.m_name.c_str());
+						fprintf(cppFile, "\t\t\tunion Arg_%s {\n", pField->m_name.c_str());
+						fprintf(cppFile, "\t\t\t\t%s m_%s;\n", pField->m_pType->m_typeName.c_str(), pField->m_name.c_str());
 						fprintf(cppFile, "\t\t\t\tuint64_t m_data[%d];\n", fldQwCnt);
 						fprintf(cppFile, "\t\t\t} arg;\n");
 
-						fprintf(cppFile, "\t\t\targ.m_%s = oCmdQueDat.m_%s;\n", field.m_name.c_str(), field.m_name.c_str());
+						fprintf(cppFile, "\t\t\targ.m_%s = oCmdQueDat.m_%s;\n", pField->m_name.c_str(), pField->m_name.c_str());
 						fprintf(cppFile, "\t\t\tc_htiToHif_dat.m_data = arg.m_data[%d];\n", fldQwIdx);
 					} else {
-						fprintf(cppFile, "\t\t\tc_htiToHif_dat.m_data = (uint64_t)oCmdQueDat.m_%s;\n", field.m_name.c_str());
+						fprintf(cppFile, "\t\t\tc_htiToHif_dat.m_data = (uint64_t)oCmdQueDat.m_%s;\n", pField->m_name.c_str());
 					}
 					fprintf(cppFile, "\t\t\tbreak;\n");
 					fprintf(cppFile, "\t\t}\n");
@@ -886,13 +879,13 @@ CDsnInfo::GenerateHtiFiles()
 		for (int j = 1; j < ohmSelCnt; j += 1) {
 			int k = (i + j) % ohmSelCnt;
 
-			uint32_t mask1 = (1ul << ohmSelCnt)-1;
-			uint32_t mask2 = ((1ul << j)-1) << (i+1);
+			uint32_t mask1 = (1ul << ohmSelCnt) - 1;
+			uint32_t mask2 = ((1ul << j) - 1) << (i + 1);
 			uint32_t mask3 = (mask2 & mask1) | (mask2 >> ohmSelCnt);
 
 			fprintf(cppFile, "\t\t(r_%sToHti_ohm.m_bValid && (r_htSelRr & 0x%x) != 0)%s\n",
 				ohmSelNameList[k].m_modName.Lc().c_str(),
-				mask3, j == ohmSelCnt-1 ? "));" : " ||");
+				mask3, j == ohmSelCnt - 1 ? "));" : " ||");
 		}
 	}
 
@@ -908,10 +901,10 @@ CDsnInfo::GenerateHtiFiles()
 			fprintf(cppFile, "\t\t\tc_htiTo%s_ohmAvl = true;\n", ohmSelNameList[i].m_modName.Uc().c_str());
 			fprintf(cppFile, "\t\t\tc_%sToHti_ohm.m_bValid = false;\n", ohmSelNameList[i].m_modName.Lc().c_str());
 			if (ohmSelCnt > 1)
-				if (i == ohmSelCnt-1)
+				if (i == ohmSelCnt - 1)
 					fprintf(cppFile, "\t\t\tc_htSelRr = 0x1;\n");
 				else
-					fprintf(cppFile, "\t\t\tc_htSelRr = 0x%x;\n", 1 << (i+1));
+					fprintf(cppFile, "\t\t\tc_htSelRr = 0x%x;\n", 1 << (i + 1));
 
 			fprintf(cppFile, "\t\t}");
 
@@ -961,10 +954,10 @@ CDsnInfo::GenerateHtiFiles()
 	if (pOutQueIntf) {
 		if (!bOhdClk2x)
 			fprintf(cppFile, "\tm_%sToHif_%sQue.clock(r_reset1x);\n",
-				pOutQueIntf->m_modName.Lc().c_str(), pOutQueIntf->m_queName.Lc().c_str());
+			pOutQueIntf->m_modName.Lc().c_str(), pOutQueIntf->m_queName.Lc().c_str());
 		else
 			fprintf(cppFile, "\tm_%sToHif_%sQue.pop_clock(r_reset1x);\n",
-				pOutQueIntf->m_modName.Lc().c_str(), pOutQueIntf->m_queName.Lc().c_str());
+			pOutQueIntf->m_modName.Lc().c_str(), pOutQueIntf->m_queName.Lc().c_str());
 	}
 
 	fprintf(cppFile, "\n");
@@ -1047,9 +1040,9 @@ CDsnInfo::GenerateHtiFiles()
 		fprintf(cppFile, "\tc_reset1x = r_reset1x;\n");
 	fprintf(cppFile, "\n");
 
-	fprintf(cppFile,"\t// register properties\n");
-	fprintf(cppFile,"\tht_attrib(keep, r_callState, \"true\");\n");
-	fprintf(cppFile,"\tht_attrib(keep, r_rtnState, \"true\");\n");
+	fprintf(cppFile, "\t// register properties\n");
+	fprintf(cppFile, "\tht_attrib(keep, r_callState, \"true\");\n");
+	fprintf(cppFile, "\tht_attrib(keep, r_rtnState, \"true\");\n");
 	fprintf(cppFile, "\n");
 
 	fprintf(cppFile, "\t///////////////////////////////////////////////////////////////////////////\n");
@@ -1072,16 +1065,16 @@ CDsnInfo::GenerateHtiFiles()
 
 	if (!bCallClk2x)
 		fprintf(cppFile, "\to_%s_%sRdy = r_%s_%sRdy;\n",
-			callIntf.GetSrcToDstLc(), callIntf.GetIntfName(),
-			callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
+		callIntf.GetSrcToDstLc(), callIntf.GetIntfName(),
+		callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
 	if (bCallCmdFields)
 		fprintf(cppFile, "\to_%s_%s = r_%s_%s;\n",
 		callIntf.GetSrcToDstLc(), callIntf.GetIntfName(),
 		callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
 	if (!bRtnClk2x)
 		fprintf(cppFile, "\to_%s_%sAvl = r_%s_%sAvl;\n",
-			rtnIntf.GetDstToSrcLc(), rtnIntf.GetIntfName(),
-			rtnIntf.GetDstToSrcLc(), rtnIntf.GetIntfName());
+		rtnIntf.GetDstToSrcLc(), rtnIntf.GetIntfName(),
+		rtnIntf.GetDstToSrcLc(), rtnIntf.GetIntfName());
 	fprintf(cppFile, "\n");
 
 	if (pInQueIntf) {
@@ -1125,8 +1118,8 @@ CDsnInfo::GenerateHtiFiles()
 
 		if (bOhdClk2x)
 			fprintf(cppFile, "\tif (i_%sToHif_%sRdy.read())\n\t\tm_%sToHif_%sQue.push(i_%sToHif_%s);\n",
-				pOutQueIntf->m_modName.Lc().c_str(), pOutQueIntf->m_queName.Lc().c_str(), pOutQueIntf->m_modName.Lc().c_str(),
-				pOutQueIntf->m_queName.Lc().c_str(), pOutQueIntf->m_modName.Lc().c_str(), pOutQueIntf->m_queName.Lc().c_str());
+			pOutQueIntf->m_modName.Lc().c_str(), pOutQueIntf->m_queName.Lc().c_str(), pOutQueIntf->m_modName.Lc().c_str(),
+			pOutQueIntf->m_queName.Lc().c_str(), pOutQueIntf->m_modName.Lc().c_str(), pOutQueIntf->m_queName.Lc().c_str());
 
 		fprintf(cppFile, "\t///////////////////////////////////////////////////////////////////////////\n");
 		fprintf(cppFile, "\t// Register assignments\n");
@@ -1138,7 +1131,7 @@ CDsnInfo::GenerateHtiFiles()
 
 		if (pOutQueIntf && bOhdClk2x)
 			fprintf(cppFile, "\tm_%sToHif_%sQue.push_clock(r_reset1x);\n",
-				pOutQueIntf->m_modName.Lc().c_str(), pOutQueIntf->m_queName.Lc().c_str());
+			pOutQueIntf->m_modName.Lc().c_str(), pOutQueIntf->m_queName.Lc().c_str());
 
 		if (bCallClk2x) {
 			fprintf(cppFile, "\tr_%s_%sRdy_2x = r_%s_%sRdy & r_phase;\n",
@@ -1158,9 +1151,9 @@ CDsnInfo::GenerateHtiFiles()
 		if (bRtnClk2x) {
 			if (!bRtnCmdFields)
 				fprintf(cppFile, "\tr_%s_%sRdy_2x = i_%s_%sRdy || r_%s_%sRdy_2x && r_phase;\n",
-					rtnIntf.GetSrcToDstLc(), rtnIntf.GetIntfName(),
-					rtnIntf.GetSrcToDstLc(), rtnIntf.GetIntfName(),
-					rtnIntf.GetSrcToDstLc(), rtnIntf.GetIntfName());
+				rtnIntf.GetSrcToDstLc(), rtnIntf.GetIntfName(),
+				rtnIntf.GetSrcToDstLc(), rtnIntf.GetIntfName(),
+				rtnIntf.GetSrcToDstLc(), rtnIntf.GetIntfName());
 
 			fprintf(cppFile, "\tr_%s_%sAvl_2x = r_%s_%sAvl & r_phase;\n\n",
 				rtnIntf.GetDstToSrcLc(), rtnIntf.GetIntfName(),
@@ -1188,13 +1181,13 @@ CDsnInfo::GenerateHtiFiles()
 
 		if (bCallClk2x)
 			fprintf(cppFile, "\to_%s_%sRdy = r_%s_%sRdy_2x;\n",
-				callIntf.GetSrcToDstLc(), callIntf.GetIntfName(),
-				callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
+			callIntf.GetSrcToDstLc(), callIntf.GetIntfName(),
+			callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
 
 		if (bRtnClk2x)
 			fprintf(cppFile, "\to_%s_%sAvl = r_%s_%sAvl_2x;\n",
-				rtnIntf.GetDstToSrcLc(), rtnIntf.GetIntfName(),
-				rtnIntf.GetDstToSrcLc(), rtnIntf.GetIntfName());
+			rtnIntf.GetDstToSrcLc(), rtnIntf.GetIntfName(),
+			rtnIntf.GetDstToSrcLc(), rtnIntf.GetIntfName());
 
 		fprintf(cppFile, "}\n");
 	}

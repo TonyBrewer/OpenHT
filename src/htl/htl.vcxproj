@@ -228,7 +228,6 @@ copy $(OutDir)\$(TargetFileName) $(ProjectDir)\..\..\bin\</Command>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Use</PrecompiledHeader>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CnyHt.h</PrecompiledHeaderFile>
     </ClCompile>
-    <ClCompile Include="GenModNgv.cpp" />
     <ClCompile Include="GenModOhm.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Use</PrecompiledHeader>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CnyHt.h</PrecompiledHeaderFile>

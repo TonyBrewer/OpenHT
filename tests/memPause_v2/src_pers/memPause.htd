@@ -1,0 +1,390 @@
+////////////////////////////////////////////////////
+// Pause Module
+#define PAUSE_HTID_W 3
+#define RSP_CNT_W 4
+
+#ifdef HT_VSIM
+#define PAUSE_LOOP_CNT 3
+#else
+#define PAUSE_LOOP_CNT 100
+#endif
+
+struct CData {
+	uint64_t data;
+};
+
+typedef sc_uint<48> MemAddr_t;
+
+dsnInfo.AddModule(name=pause, htIdW=PAUSE_HTID_W);
+pause.AddInst(name=PAUSE_SWITCH);
+pause.AddInst(name=PAUSE_RTN);
+
+pause.AddPrivate()
+	.AddVar(type=uint32_t, name=tstId)
+	.AddVar(type=uint16_t, name=err)
+	.AddVar(type=uint16_t, name=rtnErr)
+	.AddVar(type=MemAddr_t, name=arrayAddr)
+	;
+
+pause.AddEntry(func=htmain, inst=PAUSE_SWITCH, host=true)
+	.AddParam(hostType=uint64_t, type=MemAddr_t, name=arrayAddr)
+	.AddParam(hostType=uint32_t, type=uint32_t, name=tstId)
+	;
+
+pause.AddReturn(func=htmain)
+	.AddParam(hostType=uint32_t, type=uint16_t, name=err)
+	;
+
+pause.AddCall(func=rd1);
+pause.AddCall(func=rd2);
+pause.AddCall(func=rd3);
+pause.AddCall(func=rd4);
+
+pause.AddCall(func=wr1);
+pause.AddCall(func=wr2);
+pause.AddCall(func=wr3);
+pause.AddCall(func=wr4);
+
+////////////////////////////////////////////////////
+// rd1 Module
+#define RD1_HTID_W 0
+#define RD1_ADDR1_W RD1_HTID_W+1
+#define RD1_RD_GRP_W 1
+
+typedef sc_uint<RD1_ADDR1_W> Rd1Addr1_t;
+
+dsnInfo.AddModule(name=rd1, htIdW=RD1_HTID_W);
+rd1.AddInst(name=RD1_INIT);
+rd1.AddInst(name=RD1_READ1);
+rd1.AddInst(name=RD1_READ2);
+rd1.AddInst(name=RD1_READ3);
+rd1.AddInst(name=RD1_READ4);
+rd1.AddInst(name=RD1_LOOP);
+rd1.AddInst(name=RD1_TEST1);
+rd1.AddInst(name=RD1_TEST2);
+rd1.AddInst(name=RD1_TEST3);
+rd1.AddInst(name=RD1_TEST4);
+
+rd1.AddPrivate()
+	.AddVar(type=uint16_t, name=err)
+	.AddVar(type=uint16_t, name=loopCnt)
+	.AddVar(type=ht_uint5, name=pauseLoopCnt)
+	.AddVar(type=Rd1Addr1_t, name=arrayMemRd1Ptr)
+	.AddVar(type=ht_uint2, name=arrayMemRd2Ptr)
+	.AddVar(type=MemAddr_t, name=arrayAddr)
+	;
+
+rd1.AddEntry(func=rd1, inst=RD1_INIT)
+	.AddParam(hostType=uint64_t, type=MemAddr_t, name=arrayAddr)
+	;
+
+rd1.AddReturn(func=rd1)
+	.AddParam(hostType=uint32_t, type=uint16_t, name=rtnErr)
+	;
+
+rd1.AddReadMem(rspGrpW=RD1_RD_GRP_W)
+	.AddDst(name=rd1Mem, var=rd1Mem.data);
+
+rd1.AddGlobal()
+	.AddVar(type=CData, name=rd1Mem, addr1=arrayMemRd1Ptr, addr2=arrayMemRd2Ptr, read=true, write=false)
+	;
+//rd1.AddGlobal(var=rd1Mem, addr1W=RD1_ADDR1_W, addr1=arrayMemRd1Ptr, addr2W=2, addr2=arrayMemRd2Ptr)
+//	.AddField(type=uint64_t, name=data, read=true, write=false)
+//	;
+
+////////////////////////////////////////////////////
+// rd2 Module
+#define RD2_HTID_W 1
+#define RD2_ADDR1_W RD2_HTID_W+1
+#define RD2_RD_GRP_W 2
+
+typedef sc_uint<RD2_ADDR1_W> Rd2Addr1_t;
+
+dsnInfo.AddModule(name=rd2, htIdW=RD2_HTID_W);
+rd2.AddInst(name=RD2_INIT);
+rd2.AddInst(name=RD2_READ1);
+rd2.AddInst(name=RD2_READ2);
+rd2.AddInst(name=RD2_READ3);
+rd2.AddInst(name=RD2_READ4);
+rd2.AddInst(name=RD2_LOOP);
+rd2.AddInst(name=RD2_TEST1);
+rd2.AddInst(name=RD2_TEST2);
+rd2.AddInst(name=RD2_TEST3);
+rd2.AddInst(name=RD2_TEST4);
+
+rd2.AddPrivate()
+	.AddVar(type=uint16_t, name=err)
+	.AddVar(type=uint16_t, name=loopCnt)
+	.AddVar(type=ht_uint5, name=pauseLoopCnt)
+	.AddVar(type=Rd2Addr1_t, name=arrayMemRd1Ptr)
+	.AddVar(type=ht_uint2, name=arrayMemRd2Ptr)
+	.AddVar(type=MemAddr_t, name=arrayAddr)
+	.AddVar(type=sc_uint<RD2_RD_GRP_W>, name=rdGrpId)
+	;
+
+rd2.AddEntry(func=rd2, inst=RD2_INIT)
+	.AddParam(hostType=uint64_t, type=MemAddr_t, name=arrayAddr)
+	.AddParam(type=sc_uint<RD2_RD_GRP_W>, name=rdGrpId)
+	;
+
+rd2.AddReturn(func=rd2)
+	.AddParam(hostType=uint32_t, type=uint16_t, name=rtnErr)
+	;
+
+rd2.AddReadMem(rspGrpW=RD2_RD_GRP_W)
+	.AddDst(name=rd2Mem, var=rd2Mem.data);
+
+rd2.AddGlobal()
+	.AddVar(type=CData, name=rd2Mem, addr1=arrayMemRd1Ptr, addr2=arrayMemRd2Ptr, read=true, write=false)
+	;
+
+//rd2.AddGlobal(var=rd2Mem, addr1W=RD2_ADDR1_W, addr1=arrayMemRd1Ptr, addr2W=2, addr2=arrayMemRd2Ptr)
+//	.AddField(type=uint64_t, name=data, read=true, write=false)
+//	;
+
+
+////////////////////////////////////////////////////
+// rd3 Module
+#define RD3_HTID_W 2
+#define RD3_ADDR1_W RD3_HTID_W+1
+#define RD3_RD_GRP_W 3
+
+typedef sc_uint<RD3_ADDR1_W> Rd3Addr1_t;
+
+dsnInfo.AddModule(name=rd3, htIdW=RD3_HTID_W);
+rd3.AddInst(name=RD3_INIT);
+rd3.AddInst(name=RD3_READ1);
+rd3.AddInst(name=RD3_READ2);
+rd3.AddInst(name=RD3_READ3);
+rd3.AddInst(name=RD3_READ4);
+rd3.AddInst(name=RD3_LOOP);
+rd3.AddInst(name=RD3_TEST1);
+rd3.AddInst(name=RD3_TEST2);
+rd3.AddInst(name=RD3_TEST3);
+rd3.AddInst(name=RD3_TEST4);
+
+rd3.AddPrivate()
+	.AddVar(type=uint16_t, name=err)
+	.AddVar(type=uint16_t, name=loopCnt)
+	.AddVar(type=ht_uint5, name=pauseLoopCnt)
+	.AddVar(type=Rd3Addr1_t, name=arrayMemRd1Ptr)
+	.AddVar(type=ht_uint2, name=arrayMemRd2Ptr)
+	.AddVar(type=MemAddr_t, name=arrayAddr)
+	.AddVar(type=sc_uint<RD3_RD_GRP_W>, name=rdGrpId)
+	;
+
+rd3.AddEntry(func=rd3, inst=RD3_INIT)
+	.AddParam(hostType=uint64_t, type=MemAddr_t, name=arrayAddr)
+	.AddParam(type=sc_uint<RD3_RD_GRP_W>, name=rdGrpId)
+	;
+
+rd3.AddReturn(func=rd3)
+	.AddParam(hostType=uint32_t, type=uint16_t, name=rtnErr)
+	;
+
+rd3.AddReadMem(rspGrpW=RD3_RD_GRP_W)
+	.AddDst(name=rd3Mem, var=rd3Mem.data);
+
+rd3.AddGlobal()
+	.AddVar(type=CData, name=rd3Mem, addr1=arrayMemRd1Ptr, addr2=arrayMemRd2Ptr, read=true, write=false)
+	;
+
+//rd3.AddGlobal(var=rd3Mem, addr1W=RD3_ADDR1_W, addr1=arrayMemRd1Ptr, addr2W=2, addr2=arrayMemRd2Ptr)
+//	.AddField(type=uint64_t, name=data, read=true, write=false)
+//	;
+
+////////////////////////////////////////////////////
+// rd4 Module
+#define RD4_HTID_W 3
+#define RD4_ADDR1_W RD4_HTID_W+1
+#define RD4_RD_GRP_W 0
+
+typedef sc_uint<RD4_ADDR1_W> Rd4Addr1_t;
+
+dsnInfo.AddModule(name=rd4, htIdW=RD4_HTID_W);
+rd4.AddInst(name=RD4_INIT);
+rd4.AddInst(name=RD4_READ1);
+rd4.AddInst(name=RD4_READ2);
+rd4.AddInst(name=RD4_READ3);
+rd4.AddInst(name=RD4_READ4);
+rd4.AddInst(name=RD4_LOOP);
+rd4.AddInst(name=RD4_TEST1);
+rd4.AddInst(name=RD4_TEST2);
+rd4.AddInst(name=RD4_TEST3);
+rd4.AddInst(name=RD4_TEST4);
+rd4.AddInst(name=RD4_BAR1);
+rd4.AddInst(name=RD4_PAUSE);
+rd4.AddInst(name=RD4_BAR2);
+
+rd4.AddPrivate()
+	.AddVar(type=uint16_t, name=err)
+	.AddVar(type=uint16_t, name=loopCnt)
+	.AddVar(type=ht_uint5, name=pauseLoopCnt)
+	.AddVar(type=Rd4Addr1_t, name=arrayMemRd1Ptr)
+	.AddVar(type=ht_uint2, name=arrayMemRd2Ptr)
+	.AddVar(type=MemAddr_t, name=arrayAddr)
+	;
+
+rd4.AddEntry(func=rd4, inst=RD4_INIT)
+	.AddParam(hostType=uint64_t, type=MemAddr_t, name=arrayAddr)
+	;
+
+rd4.AddReturn(func=rd4)
+	.AddParam(hostType=uint32_t, type=uint16_t, name=rtnErr)
+	;
+
+rd4.AddReadMem(rspGrpW=RD4_RD_GRP_W)
+	.AddDst(name=rd4Mem, var=rd4Mem.data);
+
+rd4.AddGlobal()
+	.AddVar(type=CData, name=rd4Mem, addr1=arrayMemRd1Ptr, addr2=arrayMemRd2Ptr, read=true, write=false)
+	;
+
+rd4.AddBarrier();
+
+//rd4.AddGlobal(var=rd4Mem, addr1W=RD4_ADDR1_W, addr1=arrayMemRd1Ptr, addr2W=2, addr2=arrayMemRd2Ptr)
+//	.AddField(type=uint64_t, name=data, read=true, write=false)
+//	;
+
+
+////////////////////////////////////////////////////
+// wr1 Module
+#define WR1_HTID_W 0
+#define WR1_WR_GRP_W 1
+
+
+dsnInfo.AddModule(name=wr1, htIdW=WR1_HTID_W);
+wr1.AddInst(name=WR1_INIT);
+wr1.AddInst(name=WR1_WRITE1);
+wr1.AddInst(name=WR1_WRITE2);
+wr1.AddInst(name=WR1_WRITE3);
+wr1.AddInst(name=WR1_WRITE4);
+wr1.AddInst(name=WR1_LOOP);
+wr1.AddInst(name=WR1_RTN);
+
+wr1.AddPrivate()
+	.AddVar(type=uint16_t, name=err)
+	.AddVar(type=uint16_t, name=loopCnt)
+	.AddVar(type=ht_uint5, name=pauseLoopCnt)
+	.AddVar(type=MemAddr_t, name=arrayAddr)
+	.AddVar(type=sc_uint<WR1_WR_GRP_W>, name=wrGrpId)
+	;
+
+wr1.AddEntry(func=wr1, inst=WR1_INIT)
+	.AddParam(hostType=uint64_t, type=MemAddr_t, name=arrayAddr)
+	.AddParam(type=sc_uint<WR1_WR_GRP_W>, name=wrGrpId)
+	;
+
+wr1.AddReturn(func=wr1)
+	.AddParam(hostType=uint32_t, type=uint16_t, name=rtnErr)
+	;
+
+wr1.AddWriteMem(rspGrpW=WR1_WR_GRP_W);
+
+////////////////////////////////////////////////////
+// wr2 Module
+#define WR2_HTID_W 1
+#define WR2_WR_GRP_W 2
+
+dsnInfo.AddModule(name=wr2, htIdW=WR2_HTID_W);
+wr2.AddInst(name=WR2_INIT);
+wr2.AddInst(name=WR2_WRITE1);
+wr2.AddInst(name=WR2_WRITE2);
+wr2.AddInst(name=WR2_WRITE3);
+wr2.AddInst(name=WR2_WRITE4);
+wr2.AddInst(name=WR2_LOOP);
+wr2.AddInst(name=WR2_RTN);
+
+wr2.AddShared()
+	.AddVar(type=sc_uint<WR2_WR_GRP_W>, name=wrGrpId)
+	;
+
+wr2.AddPrivate()
+	.AddVar(type=uint16_t, name=err)
+	.AddVar(type=uint16_t, name=loopCnt)
+	.AddVar(type=ht_uint5, name=pauseLoopCnt)
+	.AddVar(type=MemAddr_t, name=arrayAddr)
+	.AddVar(type=sc_uint<WR2_WR_GRP_W>, name=wrGrpId)
+	;
+
+wr2.AddEntry(func=wr2, inst=WR2_INIT)
+	.AddParam(hostType=uint64_t, type=MemAddr_t, name=arrayAddr)
+	.AddParam(type=sc_uint<WR2_WR_GRP_W>, name=wrGrpId)
+	;
+
+wr2.AddReturn(func=wr2)
+	.AddParam(hostType=uint32_t, type=uint16_t, name=rtnErr)
+	;
+
+wr2.AddWriteMem(rspGrpW=WR2_WR_GRP_W);
+
+
+////////////////////////////////////////////////////
+// wr3 Module
+#define WR3_HTID_W 2
+#define WR3_WR_GRP_W 3
+
+dsnInfo.AddModule(name=wr3, htIdW=WR3_HTID_W);
+wr3.AddInst(name=WR3_INIT);
+wr3.AddInst(name=WR3_WRITE1);
+wr3.AddInst(name=WR3_WRITE2);
+wr3.AddInst(name=WR3_WRITE3);
+wr3.AddInst(name=WR3_WRITE4);
+wr3.AddInst(name=WR3_LOOP);
+wr3.AddInst(name=WR3_RTN);
+
+wr3.AddPrivate()
+	.AddVar(type=uint16_t, name=err)
+	.AddVar(type=uint16_t, name=loopCnt)
+	.AddVar(type=ht_uint5, name=pauseLoopCnt)
+	.AddVar(type=MemAddr_t, name=arrayAddr)
+	.AddVar(type=sc_uint<WR3_WR_GRP_W>, name=wrGrpId)
+	;
+
+wr3.AddEntry(func=wr3, inst=WR3_INIT)
+	.AddParam(hostType=uint64_t, type=MemAddr_t, name=arrayAddr)
+	.AddParam(type=sc_uint<WR3_WR_GRP_W>, name=wrGrpId)
+	;
+
+wr3.AddReturn(func=wr3)
+	.AddParam(hostType=uint32_t, type=uint16_t, name=rtnErr)
+	;
+
+wr3.AddWriteMem(rspGrpW=WR3_WR_GRP_W);
+
+
+////////////////////////////////////////////////////
+// wr4 Module
+#define WR4_HTID_W 3
+#define WR4_WR_GRP_W 0
+
+dsnInfo.AddModule(name=wr4, htIdW=WR4_HTID_W);
+wr4.AddInst(name=WR4_INIT);
+wr4.AddInst(name=WR4_WRITE1);
+wr4.AddInst(name=WR4_WRITE2);
+wr4.AddInst(name=WR4_WRITE3);
+wr4.AddInst(name=WR4_WRITE4);
+wr4.AddInst(name=WR4_LOOP);
+wr4.AddInst(name=WR4_RTN);
+wr4.AddInst(name=WR4_BAR1);
+wr4.AddInst(name=WR4_PAUSE);
+wr4.AddInst(name=WR4_BAR2);
+
+wr4.AddPrivate()
+	.AddVar(type=uint16_t, name=err)
+	.AddVar(type=uint16_t, name=loopCnt)
+	.AddVar(type=ht_uint5, name=pauseLoopCnt)
+	.AddVar(type=MemAddr_t, name=arrayAddr)
+	;
+
+wr4.AddEntry(func=wr4, inst=WR4_INIT)
+	.AddParam(hostType=uint64_t, type=MemAddr_t, name=arrayAddr)
+	;
+
+wr4.AddReturn(func=wr4)
+	.AddParam(hostType=uint32_t, type=uint16_t, name=rtnErr)
+	;
+
+wr4.AddWriteMem(rspGrpW=WR4_WR_GRP_W);
+
+wr4.AddBarrier();

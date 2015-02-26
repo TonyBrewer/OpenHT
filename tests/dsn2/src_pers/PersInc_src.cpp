@@ -26,7 +26,7 @@ CPersInc::PersInc()
 				P_loopCnt += 1;
 
 				// Issue read request to memory
-				ReadMem_arrayMem(memRdAddr, PR_htId, 1);
+				ReadMem_arrayMem(memRdAddr, 1);
 
 				ReadMemPause(INC_DATA);
 			}
@@ -48,7 +48,7 @@ CPersInc::PersInc()
 			} else {
 				uint64_t inData = RecvHostData();
 
-				uint64_t outData = inData + GR_arrayMem_data();
+				uint64_t outData = inData + GR_arrayMem.data;
 
 				SendHostData(outData);
 
@@ -57,7 +57,7 @@ CPersInc::PersInc()
 				P_loopCnt += 1;
 
 				// Issue read request to memory
-				ReadMem_arrayMem(memRdAddr, PR_htId, 1);
+				ReadMem_arrayMem(memRdAddr, 1);
 
 				ReadMemPause(INC_DATA);
 			}

@@ -1,9 +1,11 @@
-// -cl "C:\Ht\tests\ForkPrivWr\src_pers\ForkPrivWr.htl"
+// -cl $(HtToolsPath)/tests/ForkPrivWr/src_pers/ForkPrivWr.htl
+-wd $(HtToolsPath)/tests/ForkPrivWr/msvs12/
+
 -cp hc-2
 -uc 1
 -df 150
 -D_WIN32
--if "C:\Ht\tests\ForkPrivWr\src_pers\ForkPrivWr.hti"
--wd "C:\Ht\tests\ForkPrivWr\msvs12\"
-"C:\Ht\tests\ForkPrivWr\src_pers\ForkPrivWr.htd"
+-vcd_all
+-if ../src_pers/ForkPrivWr.hti
+../src_pers/ForkPrivWr.htd
 ../ht/sysc

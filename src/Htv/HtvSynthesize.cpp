@@ -1901,12 +1901,12 @@ void CHtvDesign::SynAssignmentStatement(CHtvIdent *pHier, CHtvObject * pObj, CHt
 			return;
 	}
 
-    CHtvOperand *pExpr = PrependObjExpr(pObj, pStatement->GetExpr());
-
 #ifdef _WIN32
-	if (pExpr->GetLineInfo().m_lineNum == 27)
+	if (pStatement->GetExpr()->GetLineInfo().m_lineNum == 619)
 		bool stop = true;
 #endif
+
+    CHtvOperand *pExpr = PrependObjExpr(pObj, pStatement->GetExpr());
 
     // handle distributed ram write enables
     if (!pExpr->IsLeaf() && pExpr->GetOperator() == tk_equal) {
@@ -2113,7 +2113,6 @@ CHtvOperand * CHtvDesign::CreateObject(CHtvOperand * pObj, CHtvOperand * pOp)
 {
 	CHtvOperand * pNewObj = new CHtvOperand;
 	pNewObj->InitAsIdentifier(pOp->GetLineInfo(), pObj->GetMember());
-	//pNewObj->SetMemberType(pOp->GetMemberType());
 	pNewObj->SetIndexList(pObj->GetIndexList());
 
 	if (pNewObj->IsLinkedOp())
@@ -2165,7 +2164,6 @@ void CHtvDesign::GenSubObject(CHtvObject * pSubObj, CHtvObject * pObj, CHtvOpera
 		// found a member, prepend the object
 		CHtvOperand * pNewOp = new CHtvOperand;
 		pNewOp->InitAsIdentifier(pOp->GetLineInfo(), pObj->m_pOp->GetMember());
-		//pNewOp->SetMemberType(pOp->GetMemberType());
 		pNewOp->SetIndexList(pObj->m_pOp->GetIndexList());
 
 		if (pNewOp->IsLinkedOp())
@@ -2226,6 +2224,7 @@ CHtvOperand * CHtvDesign::PrependObjExpr(CHtvObject * pObj, CHtvOperand * pExpr)
 
 				CHtvOperand * pNewExpr = new CHtvOperand;
 				pNewExpr->InitAsFunction(pExpr->GetLineInfo(), pExpr->GetMember());
+				pNewExpr->SetType(pExpr->GetType());
 
 				for (size_t paramIdx = 0; paramIdx < pExpr->GetParamCnt(); paramIdx += 1) {
 					CHtvOperand * pParamOp = pExpr->GetParam(paramIdx);
@@ -2254,6 +2253,7 @@ CHtvOperand * CHtvDesign::PrependObjExpr(CHtvObject * pObj, CHtvOperand * pExpr)
 
 		CHtvOperand * pNewExpr = new CHtvOperand;
 		pNewExpr->InitAsOperator(pExpr->GetLineInfo(), tk, pOp1, pOp2, pOp3);
+		pNewExpr->SetType(pExpr->GetType());
 		pNewExpr->SetIsParenExpr(pExpr->IsParenExpr());
 
 		return pNewExpr;
@@ -2269,6 +2269,7 @@ CHtvOperand * CHtvDesign::PrependObjExpr(CHtvObject * pObj, CHtvOperand * pObjOp
 	if (pObjOp->IsLeaf() || pObjOp->GetOperator() == tk_period) {
 		CHtvOperand * pNewExpr = new CHtvOperand;
 		pNewExpr->InitAsIdentifier(pExpr->GetLineInfo(), pObjOp->GetMember());
+		pNewExpr->SetType(pObjOp->GetType());
 		pNewExpr->SetIndexList(pObjOp->GetIndexList());
 
 		if (pNewExpr->IsLinkedOp())
@@ -2284,10 +2285,9 @@ CHtvOperand * CHtvDesign::PrependObjExpr(CHtvObject * pObj, CHtvOperand * pObjOp
 			pNewSubField = &pSf->m_pNext;
 		}
 
-		// append new subField to list
-		if (pExpr->GetSubField() == 0) {
+		// add expr's member as a subfield
+		if (pExpr->GetSubField() == 0 || pExpr->GetSubField()->m_pIdent != pExpr->GetMember()) {
 			CScSubField * pSf = new CScSubField;
-
 			pSf->m_pIdent = pExpr->GetMember();
 			pSf->m_indexList = pExpr->GetIndexList();
 			pSf->m_bBitIndex = false;
@@ -2295,7 +2295,11 @@ CHtvOperand * CHtvDesign::PrependObjExpr(CHtvObject * pObj, CHtvOperand * pObjOp
 			pSf->m_pNext = 0;
 
 			*pNewSubField = pSf;
-		} else {
+			pNewSubField = &pSf->m_pNext;
+		}
+
+		// append new subField to list
+		if (pExpr->GetSubField() != 0) {
 			pSubField = pExpr->GetSubField();
 
 			for (; pSubField; pSubField = pSubField->m_pNext) {
@@ -2331,6 +2335,7 @@ CHtvOperand * CHtvDesign::PrependObjExpr(CHtvObject * pObj, CHtvOperand * pObjOp
 
 		CHtvOperand * pNewExpr = new CHtvOperand;
 		pNewExpr->InitAsOperator(pExpr->GetLineInfo(), tk, pNewOp1, pNewOp2, pNewOp3);
+		pNewExpr->SetType(pObjOp->GetType());
 		pNewExpr->SetIsParenExpr(pExpr->IsParenExpr());
 
 		return pNewExpr;
@@ -2505,7 +2510,7 @@ bool CHtvDesign::FindIfSubExprRequired(CHtvOperand *pExpr, bool bIsLeftOfEqual, 
 			}
         }
 
-        if (pIdent->IsVariable() || pIdent->IsFunction() && !bIsLeftOfEqual && pExpr->GetMemberType() != GetVoidType()) {
+        if (pIdent->IsVariable() || pIdent->IsFunction() && !bIsLeftOfEqual && pExpr->GetType() != GetVoidType()) {
 
             // find sub expression in variable indexes
             for (size_t i = 0; i < pExpr->GetIndexCnt(); i += 1) {
@@ -2728,7 +2733,7 @@ void CHtvDesign::MarkSubExprTempVars(CHtvObject * &pObj, CHtvOperand *pExpr, vec
 
 		if (pIdent->IsFunction() && !bIsLeftOfEqual) {
 
-			if (pExpr->GetMemberType() != GetVoidType() && !pExpr->GetMember()->IsReturnRef()) {
+			if (pExpr->GetType() != GetVoidType() && !pExpr->GetMember()->IsReturnRef()) {
 				pExpr->SetIsSubExprRequired(true);
 				pExpr->SetFuncTempVar(GetTempVarName(GetExprBlockId(), tempVarList.size()), pIdent->IsSigned());
 				string tempVarName = GetTempVarName(GetExprBlockId(), tempVarList.size());
@@ -3068,7 +3073,7 @@ void CHtvDesign::MarkSubExprTempVars(CHtvObject * &pObj, CHtvOperand *pExpr, vec
 				CHtvOperand * pNewType = new CHtvOperand;
 				pNewType->SetLineInfo(pOp2->GetLineInfo());
 				pNewType->SetIsLeaf();
-				pNewType->SetMember(pOp1->GetMemberType());
+				pNewType->SetMember(pOp1->GetType());
 
 				CHtvOperand * pNewCast = new CHtvOperand;
 				pNewCast->SetLineInfo(pOp2->GetLineInfo());
@@ -3673,14 +3678,20 @@ void CHtvDesign::GenModuleHeader(CHtvIdent *pModule)
                 int highBit = (*pWeWidth)[j].m_highBit;
                 int lowBit = (*pWeWidth)[j].m_lowBit;
 
-				bool bWire = moduleIter->IsAssignOutput(0) || moduleIter->IsHtPrimOutput(0) || moduleIter->IsPrimOutput();
+				// iterate through array elements
+				for (int elemIdx = 0; elemIdx < moduleIter->GetDimenElemCnt(); elemIdx += 1) {
 
-                string name = VA("%s_%d_%d", moduleIter->GetName().c_str(), highBit, lowBit);
+					bool bWire = moduleIter->IsAssignOutput(elemIdx) || moduleIter->IsHtPrimOutput(elemIdx) || moduleIter->IsPrimOutput();
 
-                GenHtAttributes(moduleIter(), name.c_str());
+					string dimStr = moduleIter->GetVerilogName(elemIdx, false);
 
-                m_vFile.Print("%s%s   %-10s %s;\n", pFirstStr, bWire ? "wire" : "reg ", "", name.c_str());
-                pFirstStr = "";
+					string name = VA("%s_%d_%d%s", moduleIter->GetName().c_str(), highBit, lowBit, dimStr.c_str());
+
+					GenHtAttributes(moduleIter(), name.c_str());
+
+					m_vFile.Print("%s%s   %-10s %s;\n", pFirstStr, bWire ? "wire" : "reg ", "", name.c_str());
+					pFirstStr = "";
+				}
             }
         }
     }
@@ -4028,7 +4039,7 @@ void CHtvDesign::GenSubExpr(CHtvObject * pObj, CHtvObject * pRtnObj, CHtvOperand
 				}
 
 				CHtvObject rtnObj2;
-				CHtvObject * pRtnObj2 = pOp2->IsFunction() && pOp2->GetMemberType() == GetVoidType() ? 0 : &rtnObj2;
+				CHtvObject * pRtnObj2 = pOp2->IsFunction() && pOp2->GetType() == GetVoidType() ? 0 : &rtnObj2;
 
 				GenSubExpr(&subObj, pRtnObj2, pOp2, false, false, true, tk);
 
@@ -4138,7 +4149,7 @@ void CHtvDesign::GenSubExpr(CHtvObject * pObj, CHtvObject * pRtnObj, CHtvOperand
 
     // generate an expression, start at current node and decend until a temp variable or leaf node is found
     if (!bGenSubExpr || pExpr->HasExprTempVar()
-        || pExpr->IsLeaf() && pExpr->IsFunction() && pExpr->GetMemberType() == GetVoidType())
+        || pExpr->IsLeaf() && pExpr->IsFunction() && pExpr->GetType() == GetVoidType())
     {
         PrintSubExpr(pObj, pRtnObj, pExpr, bIsLeftOfEqual, true);
     }
@@ -4628,7 +4639,7 @@ void CHtvDesign::PrintSubExpr(CHtvObject * pObj, CHtvObject * pRtnObj, CHtvOpera
 
                         else if (pExpr->GetOperator() == tk_greaterGreater && (!pOp1->IsLeaf() && pOp1->IsSigned() ||
 							pOp1->IsLeaf() && pOp1->GetMember() == 0 && pOp1->IsSigned() ||
-							pOp1->IsLeaf() && pOp1->GetMember() && pOp1->GetMemberType()->IsSigned()))
+							pOp1->IsLeaf() && pOp1->GetMember() && pOp1->GetType()->IsSigned()))
 						{
 							// must use arithmetic shift right if op1 is signed
 							m_vFile.Print(" >>> ");
@@ -4698,7 +4709,7 @@ void CHtvDesign::PrintSubExpr(CHtvObject * pObj, CHtvObject * pRtnObj, CHtvOpera
 			EIdentFmt identFmt = FindIdentFmt(pObj, pRtnObj, pExpr, prevTk, bIsLeftOfEqual, bArrayIndexing, arrayName,
 				bIgnoreExprWidth, name, bTempVar, bSubField, subFieldLowBit, subFieldWidth, fieldPosName);
 
-            CHtvIdent *pType = pExpr->GetCastType() ? pExpr->GetCastType() : pExpr->GetMemberType();
+            CHtvIdent *pType = pExpr->GetCastType() ? pExpr->GetCastType() : pExpr->GetType();
             bool bSigned = !bIsLeftOfEqual && ((bTempVar && !bArrayIndexing) ? pExpr->IsExprTempVarSigned()
                 : pType && pType->IsSigned());
             if (bSigned)
@@ -4769,7 +4780,7 @@ void CHtvDesign::PrintSubExpr(CHtvObject * pObj, CHtvObject * pRtnObj, CHtvOpera
 
             GenVerilogFunctionCall(pObj, pRtnObj, pExpr);
 
-            if (pExpr->GetMemberType() != GetVoidType())
+            if (pExpr->GetType() != GetVoidType())
                 pExpr->SetIsFuncGenerated(true);
         }
     }

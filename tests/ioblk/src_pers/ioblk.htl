@@ -1,3 +1,6 @@
+// -cl $(HtToolsPath)/tests/ioblk/src_pers/ioblk.htl
+-wd $(HtToolsPath)/tests/ioblk/msvs12/
+
 -cp hc-2
 //-mo
 //-rt
@@ -6,7 +9,6 @@
 -uc 1
 -un Au
 -df 150
-//-if "C:\Ht\tests\ioblk\src_pers\HtInstance.txt"
--wd "C:\Ht\tests\ioblk\msvs12\"
-"C:\Ht\tests\ioblk\src_pers\ioblk.htd"
+//-if ../src_pers/HtInstance.txt
+../src_pers/ioblk.htd
 ../ht/sysc

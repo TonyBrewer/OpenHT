@@ -60,11 +60,12 @@ void CPersIncRd::PersIncRd()
 	}
 }
 
-void CPersIncRd::ReadMemResp_arrayMem(sc_uint<INCRD_RD_GRP_ID_W> rdRspGrpId, sc_uint<INCRD_MIF_DST_ARRAYMEM_INFO_W> rdRspInfo, sc_uint<64> rdRspData)
+void CPersIncRd::ReadMemResp_arrayMem(sc_uint<INCRD_RD_GRP_ID_W> rdRspGrpId, sc_uint<INCRD_HTID_W> rdRspInfo, sc_uint<64> rdRspData)
 {
 	assert(rdRspGrpId == rdRspInfo);
 
 	HtId_t wrAddr = rdRspGrpId | rdRspInfo;
 
-	GW_arrayMem_data(wrAddr, rdRspData + 1);
+	GW_arrayMem.write_addr(wrAddr);
+	GW_arrayMem.data = rdRspData + 1;
 }

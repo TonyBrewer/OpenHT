@@ -20,6 +20,8 @@
 #define IBLK_W 5
 #define JBLK_W 5
 
+#define STENCIL_HTID_W 5
+
 // Common Typedefs
 typedef sc_uint<MEM_ADR_W> memAddrT;
 typedef sc_uint<MEM_ADR_W> sc_Address;
@@ -36,12 +38,15 @@ typedef sc_uint<STENCIL_HTID_W> ram_val_t;
 #define W1 ((sc_FixedPnt)(ONE*(0.1*.25)))
 #define W2 ((sc_FixedPnt)(ONE*(0.2*.25)))
 
+struct CTwoFxPnt {
+	sc_FixedPnt j0;
+	sc_FixedPnt j1;
+};
+
 
 //------------------------------------------------------
 // Module 'stencil'. The primary computational kernel.
 //------------------------------------------------------
-#define STENCIL_HTID_W 5
-
 dsnInfo.AddModule(name=stencil, htIdW=STENCIL_HTID_W);
 
 // Instructions (states)
@@ -93,24 +98,22 @@ stencil.AddPrivate()
 	;
 
 // Ram for temp array
-stencil.AddGlobal(var=tempa, addr1=ram_i, addr1W=IBLK_W+STENCIL_HTID_W)
-	.AddField(type=sc_FixedPnt, name=j0, read=true, write=true)
-	.AddField(type=sc_FixedPnt, name=j1, read=true, write=true)
+stencil.AddGlobal()
+	.AddVar(type=CTwoFxPnt, name=tempa, addr1=ram_i, read=true, write=true)
 	;
 
 // Set up memory write interface
-stencil.AddWriteMem(queueW=5);
+stencil.AddWriteMem();
 
 // Set up memory read interface 
-stencil.AddReadMem(queueW=5, rspCntW=3)
-	.AddDst(name=j0, var=mifRdVal, field=j0)
-	.AddDst(name=j1, var=mifRdVal, field=j1)
+stencil.AddReadMem()
+	.AddDst(name=j0, var=mifRdVal.j0)
+	.AddDst(name=j1, var=mifRdVal.j1)
 	;
 
 // Ram for reading memory 
-stencil.AddGlobal(var=mifRdVal, addr1=ram_rdVal, addr1W=STENCIL_HTID_W)
-	.AddField(type=sc_FixedPnt, name=j0, read=true, write=false)
-	.AddField(type=sc_FixedPnt, name=j1, read=true, write=false)
+stencil.AddGlobal()
+	.AddVar(type=CTwoFxPnt, name=mifRdVal, addr1=ram_rdVal, read=true, write=false)
 	;
 
 // Callee interface

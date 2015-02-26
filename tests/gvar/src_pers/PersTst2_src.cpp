@@ -25,7 +25,7 @@ CPersTst2::PersTst2()
 				break;
 			}
 
-			if (GR_gvar_data(0) != 0xdeadbeef00002345ULL) {
+			if (GR_gvar[0].data != 0xdeadbeef00002345ULL) {
 				HtAssert(0, 0);
 				P_err += 1;
 			}

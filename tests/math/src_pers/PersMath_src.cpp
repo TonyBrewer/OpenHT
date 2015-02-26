@@ -9,7 +9,7 @@ void CPersMath::PersMath()
 		switch (PR_htInst) {
 		case TEST:
 		{
-			P_err = 0;
+			P_errMask = 0;
 			P_cnt = 0;
 
 			{
@@ -24,7 +24,7 @@ void CPersMath::PersMath()
 				if (a != b) {
 #ifndef _WIN32
 					HtAssert(0, 0);
-					P_err += 1;
+					P_errMask = 0x20000000000ull;
 #endif
 				}
 			}
@@ -37,7 +37,7 @@ void CPersMath::PersMath()
 
 				if (a != 1) {
 					HtAssert(0, a);
-					P_err += 1;
+					P_errMask = 0x10000000000ull;
 				}
 			}
 
@@ -49,7 +49,7 @@ void CPersMath::PersMath()
 
 				if (a != 1) {
 					HtAssert(0, a);
-					P_err += 1;
+					P_errMask = 0x8000000000ull;
 				}
 			}
 
@@ -61,7 +61,7 @@ void CPersMath::PersMath()
 
 				if (a != 0xffffffff) {
 					HtAssert(0, a);
-					P_err += 1;
+					P_errMask = 0x4000000000ull;
 				}
 			}
 
@@ -73,7 +73,7 @@ void CPersMath::PersMath()
 
 				if (a != -1) {
 					HtAssert(0, a);
-					P_err += 1;
+					P_errMask = 0x2000000000ull;
 				}
 			}
 
@@ -85,7 +85,7 @@ void CPersMath::PersMath()
 
 				if (a != 0xffffffff) {
 					HtAssert(0, a);
-					P_err += 1;
+					P_errMask = 0x1000000000ull;
 				}
 			}
 
@@ -97,7 +97,7 @@ void CPersMath::PersMath()
 
 				if (a != 0xffffffff) {
 					HtAssert(0, a);
-					P_err += 1;
+					P_errMask = 0x800000000ull;
 				}
 			}
 
@@ -109,7 +109,7 @@ void CPersMath::PersMath()
 
 				if (a != 0xfffffffe) {
 					HtAssert(0, a);
-					P_err += 1;
+					P_errMask = 0x400000000ull;
 				}
 			}
 
@@ -121,7 +121,7 @@ void CPersMath::PersMath()
 
 				if (a != -1) {
 					HtAssert(0, a);
-					P_err += 1;
+					P_errMask = 0x200000000ull;
 				}
 			}
 
@@ -129,7 +129,7 @@ void CPersMath::PersMath()
 				uint64_t a = (uint64_t)(int64_t)-1;
 				if (a != 0xffffffffffffffffull) {
 					HtAssert(0, 0);
-					P_err += 1;
+					P_errMask = 0x100000000ull;
 				}
 			}
 			
@@ -137,8 +137,8 @@ void CPersMath::PersMath()
 				Eabc abc = b;
 				if (abc != b) {
 					HtAssert(0,0);
-					P_err += 1;
-				} 
+					P_errMask = 0x80000000;
+				}
 
 				Eabc abc2;
 				switch (abc) {
@@ -157,7 +157,7 @@ void CPersMath::PersMath()
 
 				if (abc2 != b) {
 					HtAssert(0,0);
-					P_err += 1;
+					P_errMask = 0x40000000;
 				}
 			}
 
@@ -167,8 +167,8 @@ void CPersMath::PersMath()
 				Edef def = e;
 				if (def != e) {
 					HtAssert(0,0);
-					P_err += 1;
-				} 
+					P_errMask = 0x20000000;
+				}
 
 				Edef def2;
 				switch (def) {
@@ -187,7 +187,7 @@ void CPersMath::PersMath()
 
 				if (def2 != e) {
 					HtAssert(0,0);
-					P_err += 1;
+					P_errMask = 0x10000000;
 				}
 			}
 
@@ -198,7 +198,7 @@ void CPersMath::PersMath()
 
 				if (b != 1) {
 					HtAssert(0, 0);
-					P_err += 1;
+					P_errMask = 0x8000000;
 				}
 			}
 
@@ -210,7 +210,7 @@ void CPersMath::PersMath()
 
 				if (r0 != 1094) {
 					HtAssert(0, 0);
-					P_err += 1;
+					P_errMask = 0x4000000;
 				}
 			}
 
@@ -222,7 +222,7 @@ void CPersMath::PersMath()
 
 				if (r0 != false) {
 					HtAssert(0, 0);
-					P_err += 1;
+					P_errMask = 0x2000000;
 				}
 			}
 
@@ -231,7 +231,7 @@ void CPersMath::PersMath()
 
 				if (v0 != -2) {
 					HtAssert(0, 0);
-					P_err += 1;
+					P_errMask = 0x1000000;
 				}
 			}
 
@@ -242,7 +242,7 @@ void CPersMath::PersMath()
 
 				if (r0 != true) {
 					HtAssert(0, 0);
-					P_err += 1;
+					P_errMask = 0x800000;
 				}
 			}
 
@@ -252,7 +252,7 @@ void CPersMath::PersMath()
 
 				if (r != -1) {
 					HtAssert(0, 0);
-					P_err += 1;
+					P_errMask = 0x400000;
 				}
 			}
 
@@ -263,7 +263,7 @@ void CPersMath::PersMath()
 
 				if (r != 0x3fffffff) {
 					HtAssert(0, 0);
-					P_err += 1;
+					P_errMask = 0x200000;
 				}
 			}
 
@@ -273,7 +273,7 @@ void CPersMath::PersMath()
 
 				if (t != (int)0x80000000 || r != (int)0x80000000) {
 					HtAssert(0, 0);
-					P_err += 1;
+					P_errMask = 0x100000;
 				}
 			}
 
@@ -283,7 +283,7 @@ void CPersMath::PersMath()
 
 				if (t != 1) {
 					HtAssert(0, 0);
-					P_err += 1;
+					P_errMask = 0x80000;
 				}
 			}
 
@@ -297,7 +297,7 @@ void CPersMath::PersMath()
 
 				if (r0 != 2 || r1 != 2) {
 					HtAssert(0, 0);
-					P_err += 1;
+					P_errMask = 0x40000;
 				}
 			}
 			{
@@ -310,7 +310,7 @@ void CPersMath::PersMath()
 
 				if (r2 != 0 || r3 != 0) {
 					HtAssert(0, 0);
-					P_err += 1;
+					P_errMask = 0x20000;
 				}
 			}
 
@@ -341,7 +341,7 @@ void CPersMath::PersMath()
 
 				if (r != 6 || s.Get() != 0x123) {
 					HtAssert(0, 0);
-					P_err += 1;
+					P_errMask = 0x10000;
 				}
 			}
 
@@ -353,7 +353,7 @@ void CPersMath::PersMath()
 
 				if (r != 6 || s.Get() != 0x123) {
 					HtAssert(0, 0);
-					P_err += 1;
+					P_errMask = 0x8000;
 				}
 			}
 
@@ -366,7 +366,7 @@ void CPersMath::PersMath()
 
 				if (r != 5 || s.Get() != 0x14) {
 					HtAssert(0, 0);
-					P_err += 1;
+					P_errMask = 0x4000;
 				}
 			}
 
@@ -380,7 +380,7 @@ void CPersMath::PersMath()
 				ht_uint1 rslt = a.a ^ b.b;
 				if (rslt != 0) {
 					HtAssert(0, 0);
-					P_err += 1;
+					P_errMask = 0x2000;
 				}
 			}
 
@@ -400,7 +400,7 @@ void CPersMath::PersMath()
 
 				if (rslt != 0x6000e8250024ull) {
 					HtAssert(0, (uint32_t)(rslt >> 32));
-					P_err += 1;
+					P_errMask = 0x1000;
 				}
 			}
 #endif
@@ -417,7 +417,7 @@ void CPersMath::PersMath()
 
 				if (rslt != 0x5fffe8250024ull) {
 					HtAssert(0, (uint32_t)(rslt >> 32));
-					P_err += 1;
+					P_errMask = 0x800;
 				}
 			}
 
@@ -427,7 +427,7 @@ void CPersMath::PersMath()
 				bool rslt = (a + b) == 0x80000000u;
 				if (!rslt) {
 					HtAssert(0, 0);
-					P_err += 1;
+					P_errMask = 0x400;
 				}
 			}
 
@@ -437,17 +437,17 @@ void CPersMath::PersMath()
 				uint8_t rslt = (uint8_t)(a + b);
 				if (rslt != 0xff) {
 					HtAssert(0, (uint32_t)rslt);
-					P_err += 1;
+					P_errMask = 0x200;
 				}
 			}
 
 			{
 				ht_int40 a = 4;
 				ht_uint5 b = 31;
-			bool rslt = a < (ht_int6)b;
+				bool rslt = a < (ht_int6)b;
 				if (!rslt) {
 					HtAssert(0, (uint32_t)rslt);
-					P_err += 1;
+					P_errMask = 0x100;
 				}
 			}
 
@@ -459,7 +459,7 @@ void CPersMath::PersMath()
 					;
 				} else {
 					HtAssert(0, (uint32_t)rslt);
-					P_err += 1;
+					P_errMask = 0x80;
 				}
 			}
 
@@ -472,7 +472,7 @@ void CPersMath::PersMath()
 					;
 				} else {
 					HtAssert(0, (uint32_t)((a << 16) | rslt));
-					P_err += 1;
+					P_errMask = 0x40;
 				}
 			}
 
@@ -485,7 +485,7 @@ void CPersMath::PersMath()
 					;
 				} else {
 					HtAssert(0, (uint32_t)((a << 16) | rslt));
-					P_err += 1;
+					P_errMask = 0x20;
 				}
 			}
 
@@ -497,7 +497,7 @@ void CPersMath::PersMath()
 					;
 				} else {
 					HtAssert(0, (uint32_t)(rslt >> 16));
-					P_err += 1;
+					P_errMask = 0x10;
 				}
 
 				a = 0xf80ull;
@@ -506,7 +506,7 @@ void CPersMath::PersMath()
 					;
 				} else {
 					HtAssert(0, (uint32_t)rslt);
-					P_err += 1;
+					P_errMask = 0x8;
 				}
 			}
 
@@ -516,7 +516,7 @@ void CPersMath::PersMath()
 				b[a++] += 4u;
 				if (b[1] != -1 || a != 2) {
 					HtAssert(0, (uint32_t)b[1]);
-					P_err += 1;
+					P_errMask = 0x4;
 				}
 			}
 
@@ -534,7 +534,7 @@ void CPersMath::PersMath()
 				if (a.f[b] < 0) {
 				} else {
 					HtAssert(0, 0);
-					P_err += 1;
+					P_errMask = 0x2;
 				}
 			}
 
@@ -546,11 +546,11 @@ void CPersMath::PersMath()
 				bool d = !!((a & b) >> 4);
 				if (c != d) {
 					HtAssert(0, 0);
-					P_err += 1;
+					P_errMask = 0x1;
 				}
 			}
 
-			if (P_err)
+			if (P_errMask != 0)
 				P_cnt = 128;
 
 			HtContinue(RTN);
@@ -569,7 +569,7 @@ void CPersMath::PersMath()
 				HtContinue(RTN);
 			}
 
-			SendReturn_htmain(P_err);
+			SendReturn_htmain(P_errMask);
 		}
 		break;
 		default:

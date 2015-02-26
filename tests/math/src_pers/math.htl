@@ -1,4 +1,6 @@
-// -cl "C:\Ht\tests\math\src_pers\math.htl"
+// -cl $(HtToolsPath)/tests/math/src_pers/math.htl
+-wd $(HtToolsPath)/tests/math/msvs12/		// working directory
+
 -cp hc-2
 -mt				// enable memory tracing
 -uc 1			// unit count
@@ -6,6 +8,5 @@
 -df 150			// default frequence
 -rr				// random retry
 
--wd "C:\Ht\tests\math\msvs12\"		// working directory
-"C:\Ht\tests\math\src_pers\math.htd"	// design file location
+../src_pers/math.htd	// design file location
 ../ht/sysc							// location for output files

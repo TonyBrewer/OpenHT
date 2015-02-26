@@ -7,7 +7,7 @@ void CPersTest::PersTest()
 		switch (PR_htInst) {
 		case CALL:
 		{
-			P_err = SR_msgVar != 0;
+			P_err = SR_msgVar != 1;
 
 			HtContinue(RTN);
 		}

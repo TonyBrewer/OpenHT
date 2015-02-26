@@ -126,14 +126,14 @@
     <Link>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <ProgramDatabaseFile>.\Release/ScLint.pdb</ProgramDatabaseFile>
+      <ProgramDatabaseFile>.\Release\Htv.pdb</ProgramDatabaseFile>
       <SubSystem>Console</SubSystem>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
       <TargetMachine>MachineX86</TargetMachine>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Ht\src\htv\Release</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>./Release</AdditionalLibraryDirectories>
       <AdditionalDependencies>Htfe.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Bscmake>
@@ -226,7 +226,7 @@ copy $(OutDir)\$(TargetFileName) $(ProjectDir)\..\..\bin\htv.exe</Command>
       </DataExecutionPrevention>
       <TargetMachine>MachineX86</TargetMachine>
       <Profile>false</Profile>
-      <AdditionalLibraryDirectories>C:\Ht\src\htv\Debug;</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>./Debug</AdditionalLibraryDirectories>
       <AdditionalDependencies>Htfe.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Bscmake>

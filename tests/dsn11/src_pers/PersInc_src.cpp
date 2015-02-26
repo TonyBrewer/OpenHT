@@ -153,7 +153,7 @@ void CPersInc::PersInc()
 			}
 
 			// Increment memory data
-			uint64_t memWrData = GR_arrayMem_data() + 1;
+			uint64_t memWrData = GR_arrayMem.data + 1;
 
 			// Calculate memory write address
 			MemAddr_t memWrAddr = SR_arrayAddr + (P_loopCnt << 3);
@@ -161,7 +161,7 @@ void CPersInc::PersInc()
 			// Issue write memory request
 			WriteMem(memWrAddr, memWrData);
 
-			memWrData = GR_arrayMem2_data();
+			memWrData = GR_arrayMem2.data;
 
 			// Increment loop count
 			P_loopCnt = P_loopCnt + 1;

@@ -34,17 +34,27 @@ void CPersPoll2::PersPoll2()
 				// Set address for reading memory response data
 				P_arrayMemRdPtr = (Poll2Addr1_t)PR_htId;
 
-				HtContinue(POLL2_TEST);
+				HtContinue(POLL2_WAIT);
 			}
 		}
 		break;
-		case POLL2_TEST:
+		case POLL2_WAIT:
 		{
-			if (ReadMemBusy() || ReadMemPoll()) {
+			if (ReadMemBusy()) {
 				HtRetry();
 				break;
 			}
-			if (GR_arrayMem2_data() != (P_loopCnt & 0xf)) {
+
+			ReadMemPoll(POLL2_TEST);
+			break;
+		}
+		case POLL2_TEST:
+		{
+			if (ReadMemBusy()) {
+				HtRetry();
+				break;
+			}
+			if (GR_arrayMem2.data != (P_loopCnt & 0xf)) {
 				HtAssert(0, 0);
 				P_err += 1;
 			}

@@ -15,18 +15,23 @@ int main(int argc, char **argv)
 	CHtHif *pHtHif = new CHtHif();
 	CHtAuUnit *pAuUnit = new CHtAuUnit(pHtHif);
 
-	pAuUnit->SendCall_htmain((uint64_t)&data);
+	int totalErr = 0;
+	for (int callCnt = 0; callCnt < 2; callCnt += 1) {
+		pAuUnit->SendCall_htmain((uint64_t)&data);
 
-	uint16_t err;
-	while (!pAuUnit->RecvReturn_htmain(err))
-		usleep(1000);
+		uint16_t err;
+		while (!pAuUnit->RecvReturn_htmain(err))
+			usleep(1000);
+
+		totalErr += err;
+	}
 
 	delete pHtHif;
 
-	if (err > 0)
+	if (totalErr > 0)
 		printf("FAILED\n");
 	else
 		printf("PASSED\n");
 
-	return err;
+	return totalErr;
 }

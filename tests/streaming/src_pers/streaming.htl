@@ -1,4 +1,6 @@
--wd "C:\Ht\tests\streaming\msvs12\"
+// -cl $(HtToolsPath)/tests/streaming/src_pers/streaming.htl
+-wd $(HtToolsPath)/tests/streaming/msvs12/
+
 -cp hc-2
 -uc 1
 -un Au

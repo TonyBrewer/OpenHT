@@ -13,7 +13,8 @@
 CHtFile * CHtFile::m_pHeadOpenFile = 0;
 vector<string> CHtFile::m_writeFileList;
 
-void ErrorExit() {
+void ErrorExit()
+{
 	// fatal error, close all open files, delete written files and exit
 	CHtFile::DeleteWrittenFiles();
 	exit(1);

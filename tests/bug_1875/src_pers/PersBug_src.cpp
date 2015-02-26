@@ -9,7 +9,8 @@ CPersBug::PersBug()
 		case BUG_ENTER: {
 			P_idx1 = 1;
 			P_idx2 = 4;
-			PW_v1(1, 4, 0x45);
+			PW_v1.write_addr(1, 4);
+			PW_v1 = 0x45;
 			HtContinue(BUG_RTN);
 		}
 		break;
@@ -29,10 +30,4 @@ CPersBug::PersBug()
 			assert(0);
 		}
 	}
-
-	//S_distQue.push(false);
-	//if (!S_distQue.empty()) {
-	//	bool data = S_distQue.front();
-	//	S_distQue.pop();
-	//}
 }

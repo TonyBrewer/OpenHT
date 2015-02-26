@@ -23,7 +23,7 @@ hello.AddWriteMem();
 /**************************************************************/
 // The three lines below mess up the generated PersHello.h-file
 hello.AddReadMem(maxBw=true)
-	.AddDst(var=pReadBuf)
+	.AddDst(var=pReadBuf, rdType=uint64_t)
 	;
 
 hello.AddStage(execStg=2);

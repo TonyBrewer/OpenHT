@@ -7,6 +7,10 @@
 
 typedef sc_uint<48> MemAddr_t;
 
+struct CData {
+	uint64_t data;
+};
+
 ////////////////////////////////////////////////////
 // Poll Module
 #define POLL_HTID_W 3
@@ -49,6 +53,7 @@ typedef sc_uint<POLL0_ADDR1_W> Poll0Addr1_t;
 dsnInfo.AddModule(name=poll0, htIdW=POLL0_HTID_W);
 poll0.AddInst(name=POLL0_INIT);
 poll0.AddInst(name=POLL0_READ);
+poll0.AddInst(name=POLL0_WAIT);
 poll0.AddInst(name=POLL0_TEST);
 
 poll0.AddPrivate()
@@ -66,11 +71,11 @@ poll0.AddReturn(func=poll0)
 	.AddParam(hostType=uint32_t, type=uint16_t, name=err)
 	;
 
-poll0.AddReadMem(queueW=5, rspCntW=3, maxBw=true, pause=false, poll=true)
-	.AddDst(var=arrayMem0, field=data);
+poll0.AddReadMem(pause=false, poll=true)
+	.AddDst(var=arrayMem0.data);
 
-poll0.AddGlobal(var=arrayMem0, addr1W=POLL0_ADDR1_W, addr1=arrayMemRdPtr)
-	.AddField(type=uint64_t, name=data, read=true, write=false)
+poll0.AddGlobal()
+	.AddVar(type=CData, name=arrayMem0, addr1=arrayMemRdPtr, read=true, write=false)
 	;
 
 ////////////////////////////////////////////////////
@@ -83,6 +88,7 @@ typedef sc_uint<POLL1_ADDR1_W> Poll1Addr1_t;
 dsnInfo.AddModule(name=poll1, htIdW=POLL1_HTID_W);
 poll1.AddInst(name=POLL1_INIT);
 poll1.AddInst(name=POLL1_READ);
+poll1.AddInst(name=POLL1_WAIT);
 poll1.AddInst(name=POLL1_TEST);
 
 poll1.AddPrivate()
@@ -100,11 +106,11 @@ poll1.AddReturn(func=poll1)
 	.AddParam(hostType=uint32_t, type=uint16_t, name=err)
 	;
 
-poll1.AddReadMem(queueW=5, rspCntW=3, maxBw=true, pause=false, poll=true)
-	.AddDst(var=arrayMem1, field=data);
+poll1.AddReadMem(pause=false, poll=true)
+	.AddDst(var=arrayMem1.data);
 
-poll1.AddGlobal(var=arrayMem1, addr1W=POLL1_ADDR1_W, addr1=arrayMemRdPtr)
-	.AddField(type=uint64_t, name=data, read=true, write=false)
+poll1.AddGlobal()
+	.AddVar(type=CData, name=arrayMem1, addr1=arrayMemRdPtr, read=true, write=false)
 	;
 
 ////////////////////////////////////////////////////
@@ -117,6 +123,7 @@ typedef sc_uint<POLL2_ADDR1_W> Poll2Addr1_t;
 dsnInfo.AddModule(name=poll2, htIdW=POLL2_HTID_W);
 poll2.AddInst(name=POLL2_INIT);
 poll2.AddInst(name=POLL2_READ);
+poll2.AddInst(name=POLL2_WAIT);
 poll2.AddInst(name=POLL2_TEST);
 
 poll2.AddPrivate()
@@ -134,11 +141,11 @@ poll2.AddReturn(func=poll2)
 	.AddParam(hostType=uint32_t, type=uint16_t, name=err)
 	;
 
-poll2.AddReadMem(queueW=5, rspCntW=3, maxBw=true, pause=false, poll=true)
-	.AddDst(var=arrayMem2, field=data);
+poll2.AddReadMem(pause=false, poll=true)
+	.AddDst(var=arrayMem2.data);
 
-poll2.AddGlobal(var=arrayMem2, addr1W=POLL2_ADDR1_W, addr1=arrayMemRdPtr)
-	.AddField(type=uint64_t, name=data, read=true, write=false)
+poll2.AddGlobal()
+	.AddVar(type=CData, name=arrayMem2, addr1=arrayMemRdPtr, read=true, write=false)
 	;
 
 ////////////////////////////////////////////////////
@@ -151,6 +158,7 @@ typedef sc_uint<POLL3_ADDR1_W> Poll3Addr1_t;
 dsnInfo.AddModule(name=poll3, htIdW=POLL3_HTID_W);
 poll3.AddInst(name=POLL3_INIT);
 poll3.AddInst(name=POLL3_READ);
+poll3.AddInst(name=POLL3_WAIT);
 poll3.AddInst(name=POLL3_TEST);
 
 poll3.AddPrivate()
@@ -168,11 +176,11 @@ poll3.AddReturn(func=poll3)
 	.AddParam(hostType=uint32_t, type=uint16_t, name=err)
 	;
 
-poll3.AddReadMem(queueW=5, rspCntW=3, maxBw=true, pause=false, poll=true)
-	.AddDst(var=arrayMem3, field=data);
+poll3.AddReadMem(pause=false, poll=true)
+	.AddDst(var=arrayMem3.data);
 
-poll3.AddGlobal(var=arrayMem3, addr1W=POLL3_ADDR1_W, addr1=arrayMemRdPtr)
-	.AddField(type=uint64_t, name=data, read=true, write=false)
+poll3.AddGlobal()
+	.AddVar(type=CData, name=arrayMem3, addr1=arrayMemRdPtr, read=true, write=false)
 	;
 
 ////////////////////////////////////////////////////
@@ -186,6 +194,7 @@ typedef sc_uint<5> RdRspGrp_t;
 dsnInfo.AddModule(name=poll4, htIdW=POLL4_HTID_W);
 poll4.AddInst(name=POLL4_INIT);
 poll4.AddInst(name=POLL4_READ);
+poll4.AddInst(name=POLL4_WAIT);
 poll4.AddInst(name=POLL4_TEST);
 
 poll4.AddPrivate()
@@ -204,9 +213,9 @@ poll4.AddReturn(func=poll4)
 	.AddParam(hostType=uint32_t, type=uint16_t, name=err)
 	;
 
-poll4.AddReadMem(queueW=5, rspCntW=3, rspGrpId=memReadGrpId, pause=false, poll=true)
-	.AddDst(var=arrayMem4, field=data);
+poll4.AddReadMem(rspGrpW=5, pause=false, poll=true)
+	.AddDst(var=arrayMem4.data);
 
-poll4.AddGlobal(var=arrayMem4, addr1W=POLL4_ADDR1_W, addr1=arrayMemRdPtr)
-	.AddField(type=uint64_t, name=data, read=true, write=false)
+poll4.AddGlobal()
+	.AddVar(type=CData, name=arrayMem4, addr1=arrayMemRdPtr, read=true, write=false)
 	;

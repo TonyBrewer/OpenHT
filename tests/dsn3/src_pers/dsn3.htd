@@ -5,6 +5,10 @@
 dsnInfo.AddModule(name=xyz, htIdW=XYZ_HTID_W);
 typedef sc_uint<XYZ_HTID_W> htid_t;
 
+struct CData {
+	uint64_t data;
+};
+
 xyz.AddInst(name=XYZ_INIT);
 xyz.AddInst(name=XYZ_READ);
 xyz.AddInst(name=XYZ_WRITE);
@@ -31,10 +35,11 @@ xyz.AddReturn(func=htmain)
 	.AddParam(hostType=uint32_t, type=uint8_t, name=elemCnt)
 	;
 
-xyz.AddReadMem(queueW=5, rspCntW=3)
-	.AddDst(name=arrayMem, var=arrayMem, field=data);
+xyz.AddReadMem()
+	.AddDst(name=arrayMem, var=arrayMem.data)
+	;
 xyz.AddWriteMem();
 
-xyz.AddGlobal(var=arrayMem, addr1=arrayMemRdPtr)
-	.AddField(type=uint64_t, name=data, read=true, write=true)
+xyz.AddGlobal()
+	.AddVar(type=CData, name=arrayMem, addr1=arrayMemRdPtr, read=true, write=true)
 	;

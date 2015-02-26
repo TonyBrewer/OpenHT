@@ -53,20 +53,20 @@ CPersInc9::PersInc9()
 			}
 
 			// Increment memory data
-			uint64_t memWrData = GR_arrayMem9_data() + 1;
+			uint64_t memWrData = GR_arrayMem9.data + 1;
 
 			// Calculate memory write address
 			MemAddr_t memWrAddr = SR_arrayAddr + ((P_loopBase + P_loopIdx) << 3);
 
 			// Issue write memory request
 			//WriteMem(wrRspGrpId, memWrAddr, memWrData);
-			WriteMem(memWrAddr, memWrData);
+			WriteMem(PR_wrGrpId, memWrAddr, memWrData);
 
 			bool bLast = P_loopIdx == P_elemCnt - 1;
 			if (bLast) {
 				P_loopIdx = 0;
 				//WriteMemPause(wrRspGrpId, INC_RTN);
-				WriteMemPause(INC9_RTN);
+				WriteMemPause(PR_wrGrpId, INC9_RTN);
 				//HtPause();
 			} else {
 				P_loopIdx += 1;

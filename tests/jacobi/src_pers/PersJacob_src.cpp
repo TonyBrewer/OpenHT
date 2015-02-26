@@ -110,7 +110,7 @@ CPersJacob::PersJacob()
 			// alternating two arrays here will im_prove performance
 #if 0
 			fprintf(stderr, "doing call for sizes %d %d and indices %d %d from jacob tid %d\n",
-				M_iiblk, M_jjblk, M_ii, M_jj, (int)c_ts_htId);
+				(int)M_iiblk, (int)M_jjblk, (int)M_ii, (int)M_jj, 0);// , (int)c_ts_htId);
 #endif
 			if (M_iteration & 0x1)
 				SendCallFork_stencil(STENCIL_JOIN, P_a, P_newa, M_ii, M_jj, M_iiblk, M_jjblk, P_w0, P_w1, P_w2);

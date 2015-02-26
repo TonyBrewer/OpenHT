@@ -80,7 +80,7 @@ void CHtfeIdent::NewFlatTable() {
 	m_pFlatTbl = new CHtfeIdentTbl;
 }
 
-CHtfeIdent * CHtfeIdent::InsertIdent(const string &name, bool bInsertFlatTbl)
+CHtfeIdent * CHtfeIdent::InsertIdent(const string &name, bool bInsertFlatTbl, bool bAllowOverloading)
 {
 	if (bInsertFlatTbl) {
 		string flatVarName = name;
@@ -90,14 +90,14 @@ CHtfeIdent * CHtfeIdent::InsertIdent(const string &name, bool bInsertFlatTbl)
 	}
 
     if (m_pIdentTbl == 0) m_pIdentTbl = new CHtfeIdentTbl;
-	CHtfeIdent *pHierIdent = m_pIdentTbl->Insert(name);
+	CHtfeIdent *pHierIdent = m_pIdentTbl->Insert(name, bAllowOverloading);
 	pHierIdent->SetPrevHier(this);
 	pHierIdent->SetIsLocal(IsLocal());
     return pHierIdent;
 }
 
-CHtfeIdent * CHtfeIdent::InsertIdent(const string &heirVarName, const string &flatVarName) {
-
+CHtfeIdent * CHtfeIdent::InsertIdent(const string &heirVarName, const string &flatVarName)
+{
     if (m_pIdentTbl == 0) m_pIdentTbl = new CHtfeIdentTbl;
 	CHtfeIdent *pHierIdent = m_pIdentTbl->Insert(heirVarName);
 	if (pHierIdent->GetId() != id_new)
@@ -964,12 +964,18 @@ bool CHtfeIdent::DimenIter(vector<int> &refList, vector<bool> &constList)
 	return bDone;
 }
 
-CHtfeIdent * CHtfeIdentTbl::Insert(const string &str) {
+CHtfeIdent * CHtfeIdentTbl::Insert(const string &str, bool bAllowOverloading)
+{
     IdentTblMap_InsertPair insertPair;
     insertPair = m_identTblMap.insert(IdentTblMap_ValuePair(str, (CHtfeIdent *)0));
 	if (insertPair.first->second == 0) {
 		insertPair.first->second = CHtfeDesign::NewIdent();
 		insertPair.first->second->SetName(str);
+	} else if (bAllowOverloading) {
+		CHtfeIdent * pIdent = CHtfeDesign::NewIdent();
+		pIdent->SetName(str);
+		pIdent->SetOverloadedNext(insertPair.first->second);
+		insertPair.first->second = pIdent;
 	}
     return insertPair.first->second;
 }

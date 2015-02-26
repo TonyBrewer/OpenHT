@@ -1,12 +1,26 @@
-/* Copyright (c) 2015 Convey Computer Corporation
- *
- * This file is part of the OpenHT toolset located at:
- *
- * https://github.com/TonyBrewer/OpenHT
- *
- * Use and distribution licensed under the BSD 3-clause license.
- * See the LICENSE file for the complete license text.
- */
+/*****************************************************************************/
+//
+// Module          : bbox_wrap.v
+// Revision        : $$
+// Last Modified On: $$
+// Last Modified By: $$
+//
+//-----------------------------------------------------------------------------
+//
+// Original Author : Bryan Hornung
+// Created On      : Mon Feb 13 13:06:02 2012
+//
+//-----------------------------------------------------------------------------
+//
+// Description     : top level interface of black box
+//
+//-----------------------------------------------------------------------------
+//
+// Copyright (c) 2012 : created by Convey Computer Corp. This model is the
+// confidential and proprietary property of Convey Computer Corp.
+//
+/*****************************************************************************/
+/* $Id: $ */
 
 `timescale 1 ns / 1 ps
 

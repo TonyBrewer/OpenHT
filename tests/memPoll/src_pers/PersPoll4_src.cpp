@@ -30,22 +30,32 @@ void CPersPoll4::PersPoll4()
 				MemAddr_t memRdAddr = P_arrayAddr + ((P_loopCnt & 0xf) << 3);
 
 				// Issue read request to memory
-				ReadMem_arrayMem4(memRdAddr, (Poll4Addr1_t)PR_htId);
+				ReadMem_arrayMem4(PR_memReadGrpId, memRdAddr, (Poll4Addr1_t)PR_htId);
 
 				// Set address for reading memory response data
 				P_arrayMemRdPtr = (Poll4Addr1_t)PR_htId;
 
-				HtContinue(POLL4_TEST);
+				HtContinue(POLL4_WAIT);
 			}
 		}
 		break;
-		case POLL4_TEST:
+		case POLL4_WAIT:
 		{
-			if (ReadMemBusy() || ReadMemPoll(PR_memReadGrpId)) {
+			if (ReadMemBusy()) {
 				HtRetry();
 				break;
 			}
-			if (GR_arrayMem4_data() != (P_loopCnt & 0xf)) {
+
+			ReadMemPoll(PR_memReadGrpId, POLL4_TEST);
+			break;
+		}
+		case POLL4_TEST:
+		{
+			if (ReadMemBusy()) {
+				HtRetry();
+				break;
+			}
+			if (GR_arrayMem4.data != (P_loopCnt & 0xf)) {
 				HtAssert(0, 0);
 				P_err += 1;
 			}

@@ -7,7 +7,6 @@ bug.AddEntry(func=bug, inst=BUG_ENTER, host=true)
 	;
 
 bug.AddShared()
-	//.AddVar(name=distQue, type=bool, queueW=6, blockRam=true)
 	.AddVar(name=ramWc4, type=uint8_t, wrSelW=2, addr1W=6, blockRam=true)
 	.AddVar(name=ramRc4, type=uint8_t, rdSelW=2, addr1W=6, blockRam=true)
 	;

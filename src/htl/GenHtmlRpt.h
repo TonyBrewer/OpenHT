@@ -14,9 +14,9 @@ public:
 	CGenHtmlRpt(string htlPath, string fileName, int argc, char const **argv);
 	~CGenHtmlRpt();
 
-	void AddLevel(const char *pFormat, ... );
-	void AddItem(const char *pFormat, ... );
-	void AddText(const char *pFormat, ... );
+	void AddLevel(const char *pFormat, ...);
+	void AddItem(const char *pFormat, ...);
+	void AddText(const char *pFormat, ...);
 	void EndLevel();
 
 	FILE * GetFp() { return m_fp; }

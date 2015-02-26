@@ -1,4 +1,6 @@
-// -cl "C:\Ht\tests\dsn1\src_pers\dsn1.htl"
+// -cl $(HtToolsPath)/tests/dsn1/src_pers/dsn1.htl
+-wd $(HtToolsPath)/tests/dsn1/msvs12/
+
 -cp wx-690
 -mt
 -ac 1
@@ -9,11 +11,10 @@
 -rr
 -it
 -vr
--vcd
+-vcd_all
 -I ../src
 -I ../src_pers
 -D_HTL
 -ml 0.6
--wd "C:\Ht\tests\dsn1\msvs12\"
-"../src_pers/Dsn1.htd"
+../src_pers/Dsn1.htd
 ../ht/sysc

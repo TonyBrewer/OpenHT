@@ -11,12 +11,12 @@ math.AddInst(name=RTN);
 
 
 math.AddPrivate()
-	.AddVar(type=int32_t, name=err)
+	.AddVar(type=uint64_t, name=errMask)
 	.AddVar(type=uint8_t, name=cnt)
 	;
 
 math.AddEntry(func=htmain, inst=TEST, host=true);
 
 math.AddReturn(func=htmain) 
-	.AddParam(type=int32_t, name=err)
+	.AddParam(type=uint64_t, name=errMask)
 	;

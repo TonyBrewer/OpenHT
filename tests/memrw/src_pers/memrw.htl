@@ -1,9 +1,12 @@
+// -cl $(HtToolsPath)/tests/memrw/src_pers/memrw.htl
+-wd $(HtToolsPath)/tests/memrw/msvs12/
+
 -cp hc-1
 -uc 1
 -un Su
 -df 150
+//-vcd_all
 -I ../src
 -I ../src_pers
--wd "C:\Ht\tests\memrw\msvs12\"
-"C:\Ht\tests\memrw\src_pers\memrw.htd"
+../src_pers/memrw.htd
 ../ht/sysc

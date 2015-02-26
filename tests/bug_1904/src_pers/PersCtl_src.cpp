@@ -20,7 +20,7 @@ CPersCtl::PersCtl()
 			S_wrBuf[6] = 6;
 			S_wrBuf[7] = 7;
 
-			P_wrGrpId = 0;
+			P_wrGrpId = 1;
 
 			HtContinue(CTL_ST);
 		}
@@ -31,10 +31,10 @@ CPersCtl::PersCtl()
 
 			if (PR_cnt == PR_length) {
 				// Done Writes
-				WriteMemPause(CTL_RTN);
+				WriteMemPause(PR_wrGrpId, CTL_RTN);
 			} else {
 				// More writes to do
-				WriteMem_data(S_addr, 0, 8);
+				WriteMem_data(PR_wrGrpId, S_addr, 0, 8);
 				S_addr += 8*8;
 				P_cnt = PR_cnt + 1;
 				HtContinue(CTL_ST);

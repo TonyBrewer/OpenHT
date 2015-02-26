@@ -1,0 +1,37 @@
+////////////////////////////////////////////////////
+// BigInt Module
+
+dsnInfo.AddModule(name=BigInt, htIdW=0);
+BigInt.AddInst(name=BI_INIT);
+BigInt.AddInst(name=BI_READ);
+BigInt.AddInst(name=BI_WRITE);
+
+BigInt.AddEntry(func=htmain, inst=BI_INIT, host=true)
+	//.AddParam(hostType=uint64_t, type=ht_uint48, name=elemCnt)
+	;
+
+BigInt.AddReturn(func=htmain)
+	.AddParam(type=bool, name=err)
+	;
+
+//BigInt.AddReadMem()
+//	;
+
+//BigInt.AddWriteMem()
+//	;
+
+BigInt.AddPrivate()
+	.AddVar(name=err, type=bool)
+	//.AddVar(name=elemCnt, type=uint8_t)
+	;
+
+BigInt.AddShared()
+	;
+
+BigInt.AddGlobal()
+	;
+
+BigInt.AddFunction(type=bool, name=fb);
+BigInt.AddFunction(type=void, name=fv)
+	.AddParam(dir=output, type=ht_uint4, name=c)
+	;

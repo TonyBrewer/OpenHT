@@ -17,6 +17,67 @@ void CPersMethod::PersMethod()
 				P_cnt = 0;
 
 				{
+					struct A {
+						operator uint32_t () { return d; }
+						bool GetBool() { return b; }
+					public:
+						bool b;
+						uint32_t d;
+					};
+
+					struct B {
+						operator A () { return a; }
+						operator bool() { return c; }
+					public:
+						A a;
+						bool c;
+					};
+
+					A aa2; aa2.b = true;
+					bool b3 = aa2.GetBool();
+					if (b3 != true) {
+						HtAssert(0, 0);
+						P_err |= 0x100000;
+					}
+
+					B bb;
+					bb.a.d = 0x123;
+					bb.c = true;
+
+					if (bb != true) {
+						HtAssert(0, 0);
+						P_err |= 0x80000;
+					}
+
+					if (bb.a != 0x123) {
+						HtAssert(0, 0);
+						P_err |= 0x80000;
+					}
+
+					A aa = bb;
+					if (aa != 0x123) {
+						HtAssert(0, 0);
+						P_err |= 0x40000;
+					}
+
+					uint32_t d = 4;
+					uint32_t e1 = bb.a + d;
+					uint32_t e2 = d + bb.a;
+
+					if (e1 != 0x127 || e2 != 0x127) {
+						HtAssert(0, 0);
+						P_err |= 0x40000;
+					}
+
+					B b1, b2;
+					b1.c = false;
+					b2.c = false;
+					if (b1 == b2) {
+						HtAssert(0, 0);
+					}
+				}
+
+				{
 					S_sx.m_b = 0x11;
 
 					ht_uint5 r = funcSx().m_b;

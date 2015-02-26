@@ -1,0 +1,90 @@
+////////////////////////////////////////////////////
+// Top-level
+
+dsnInfo.AddModule(name=ctl, htIdW=0);
+
+ctl.AddInst(name=CTL_ENTRY);
+ctl.AddInst(name=CTL_ADD);
+ctl.AddInst(name=CTL_JOIN);
+ctl.AddInst(name=CTL_RTN);
+
+ctl.AddHostMsg(dir=in, name=VEC_LEN)
+	.AddDst(var=vecLen)
+	;
+
+
+ctl.AddShared()
+	.AddVar(type=uint64_t, name=vecLen)
+	.AddVar(type=uint64_t, name=sum)
+	;
+
+ctl.AddPrivate()
+	.AddVar(type=uint32_t, name=vecIdx)
+	.AddVar(type=uint32_t, name=vecStride)
+	.AddVar(type=uint64_t, name=result)
+	;
+
+ctl.AddEntry(func=htmain, inst=CTL_ENTRY, host=true)
+	.AddParam(type=uint32_t, name=vecIdx)
+	.AddParam(type=uint32_t, name=vecStride)
+	;
+
+ctl.AddReturn(func=htmain)
+	.AddParam(type=uint64_t, name=sum)
+	;
+
+ctl.AddCall(func=add, fork=true);
+
+
+////////////////////////////////////////////////////
+// Loads vector elements from op arrays, adds, stores results
+#define ADD_HTID_W 7
+typedef ht_uint48 MemAddr_t;
+
+dsnInfo.AddModule(name=add, htIdW=ADD_HTID_W);
+
+add.AddInst(name=ADD_LD1);
+add.AddInst(name=ADD_LD2);
+add.AddInst(name=ADD_ST);
+add.AddInst(name=ADD_RTN);
+
+add.AddHostMsg(dir=in, name=OP1_ADDR)
+	.AddDst(var=op1Addr)
+	;
+add.AddHostMsg(dir=in, name=OP2_ADDR)
+	.AddDst(var=op2Addr)
+	;
+add.AddHostMsg(dir=in, name=RES_ADDR)
+	.AddDst(var=resAddr)
+	;
+
+add.AddPrivate()
+	.AddVar(type=uint32_t, name=vecIdx)
+	.AddVar(type=uint64_t, name=result)
+	.AddVar(type=uint64_t, name=op1)
+	.AddVar(type=uint64_t, name=op2)
+	;
+
+add.AddShared()
+	.AddVar(type=MemAddr_t, name=op1Addr)
+	.AddVar(type=MemAddr_t, name=op2Addr)
+	.AddVar(type=MemAddr_t, name=resAddr)
+	;
+
+add.AddEntry(func=add, inst=ADD_LD1)
+	.AddParam(type=uint32_t, name=vecIdx)
+	;
+
+add.AddReturn(func=add)
+	.AddParam(type=uint64_t, name=result)
+	;
+
+add.AddReadMem()
+	.AddDst(var=op1)
+	.AddDst(var=op2)
+	;
+
+add.AddWriteMem();
+
+add.AddMsgIntf(dir=out, name=A, type=uint64_t, autoConn=false);
+add.AddMsgIntf(dir=in, name=A, type=uint64_t, autoConn=false);

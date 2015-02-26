@@ -51,7 +51,7 @@ void CDsnInfo::GenerateCommonIncludeFile()
 	fprintf(incFile, "#define HT_JOIN_AND_CONT 8\n");
 	fprintf(incFile, "\n");
 
-	for(size_t i=0; i< m_defineTable.size(); i += 1) {
+	for (size_t i = 0; i< m_defineTable.size(); i += 1) {
 		//	must be a unit or host
 		if (m_defineTable[i].m_scope.compare("unit") == 0 && !m_defineTable[i].m_bPreDefined) {
 			fprintf(incFile, "#define %s",
@@ -78,7 +78,7 @@ void CDsnInfo::GenerateCommonIncludeFile()
 
 	for (size_t typedefIdx = 0; typedefIdx < m_typedefList.size(); typedefIdx += 1) {
 		CTypeDef &typeDef = m_typedefList[typedefIdx];
-		if(typeDef.m_scope.compare("unit") != 0) {
+		if (typeDef.m_scope.compare("unit") != 0) {
 			continue;							// host or module or auto
 		}
 
@@ -93,12 +93,12 @@ void CDsnInfo::GenerateCommonIncludeFile()
 				continue;
 
 			if (width > 0) {
-				if (typeDef.m_type.substr(0,3) == "int")
+				if (typeDef.m_type.substr(0, 3) == "int")
 					fprintf(incFile, "typedef %s<%s> %s;\n",
-						width > 64 ? "sc_bigint" : "sc_int", typeDef.m_width.c_str(), typeDef.m_name.c_str());
-				else if (typeDef.m_type.substr(0,4) == "uint")
+					width > 64 ? "sc_bigint" : "sc_int", typeDef.m_width.c_str(), typeDef.m_name.c_str());
+				else if (typeDef.m_type.substr(0, 4) == "uint")
 					fprintf(incFile, "typedef %s<%s> %s;\n",
-						width > 64 ? "sc_biguint" : "sc_uint", typeDef.m_width.c_str(), typeDef.m_name.c_str());
+					width > 64 ? "sc_biguint" : "sc_uint", typeDef.m_width.c_str(), typeDef.m_name.c_str());
 				else
 					ParseMsg(Fatal, typeDef.m_lineInfo, "unexpected type '%s'", typeDef.m_type.c_str());
 			}
@@ -110,21 +110,21 @@ void CDsnInfo::GenerateCommonIncludeFile()
 	fprintf(incFile, "// Common structs and unions\n");
 	fprintf(incFile, "\n");
 
-	for (size_t structIdx = 0; structIdx < m_structList.size(); structIdx += 1) {
+	for (size_t structIdx = 0; structIdx < m_recordList.size(); structIdx += 1) {
 
-		if (m_structList[structIdx].m_scope != eUnit && !m_structList[structIdx].m_bInclude) continue;
-		//if (!m_structList[structIdx].m_bNeedIntf) continue;
+		if (m_recordList[structIdx].m_scope != eUnit && !m_recordList[structIdx].m_bInclude) continue;
+		//if (!m_recordList[structIdx].m_bNeedIntf) continue;
 
-		if (m_structList[structIdx].m_bCStyle)
-			GenIntfStruct(incFile, m_structList[structIdx].m_structName, m_structList[structIdx].m_fieldList,
-				m_structList[structIdx].m_bCStyle, m_structList[structIdx].m_bInclude,
-				false, m_structList[structIdx].m_bUnion);
+		if (m_recordList[structIdx].m_bCStyle)
+			GenIntfStruct(incFile, m_recordList[structIdx].m_typeName, m_recordList[structIdx].m_fieldList,
+			m_recordList[structIdx].m_bCStyle, m_recordList[structIdx].m_bInclude,
+			false, m_recordList[structIdx].m_bUnion);
 		else
-			GenUserStructs(incFile, m_structList[structIdx]);
+			GenUserStructs(incFile, m_recordList[structIdx]);
 
 		CHtCode htFile(incFile);
-		GenUserStructBadData(htFile, true, m_structList[structIdx].m_structName,
-			m_structList[structIdx].m_fieldList, m_structList[structIdx].m_bCStyle, "");
+		GenUserStructBadData(htFile, true, m_recordList[structIdx].m_typeName,
+			m_recordList[structIdx].m_fieldList, m_recordList[structIdx].m_bCStyle, "");
 	}
 	fprintf(incFile, "\n");
 
@@ -138,7 +138,7 @@ void CDsnInfo::GenerateCommonIncludeFile()
 		for (size_t gvIdx = 0; gvIdx < m_ngvList.size(); gvIdx += 1) {
 			CNgvInfo * pNgvInfo = m_ngvList[gvIdx];
 			CRam * pNgv = pNgvInfo->m_modInfoList[0].m_pNgv;
-			GenGlobalVarWriteTypes(incFile, pNgv->m_type, pNgvInfo->m_atomicMask, gvTypeList, pNgv);
+			GenGlobalVarWriteTypes(incFile, pNgv->m_pType, pNgvInfo->m_atomicMask, gvTypeList, pNgv);
 		}
 	}
 
@@ -146,7 +146,7 @@ void CDsnInfo::GenerateCommonIncludeFile()
 	fprintf(incFile, "#define INT(a) a\n");
 	fprintf(incFile, "#else\n");
 	fprintf(incFile, "#define INT(a) int(a)\n");
-	fprintf(incFile, "#define HT_CYC_1X ((long long)sc_time_stamp().value()/10000)\n");
+	fprintf(incFile, "#define HT_CYC_1X ((long long)sc_time_stamp().value() / 10000)\n");
 	fprintf(incFile, "#endif\n");
 	fprintf(incFile, "\n");
 
@@ -177,12 +177,12 @@ void CDsnInfo::GenerateCommonIncludeFile()
 	fprintf(incFile, "#endif\n");
 	fprintf(incFile, "\n");
 
-	CStruct htAssert;
-	htAssert.AddStructField("bool", "bAssert");
-	htAssert.AddStructField("bool", "bCollision");
-	htAssert.AddStructField("ht_uint8", "module");
-	htAssert.AddStructField("ht_uint16", "lineNum");
-	htAssert.AddStructField("ht_uint32", "info");
+	CRecord htAssert;
+	htAssert.AddStructField(&g_bool, "bAssert");
+	htAssert.AddStructField(&g_bool, "bCollision");
+	htAssert.AddStructField(FindHtIntType(eUnsigned, 8), "module");
+	htAssert.AddStructField(FindHtIntType(eUnsigned, 16), "lineNum");
+	htAssert.AddStructField(FindHtIntType(eUnsigned, 32), "info");
 	GenIntfStruct(incFile, "CHtAssert", htAssert.m_fieldList, htAssert.m_bCStyle, false, false, false);
 
 	fprintf(incFile, "#ifdef _HTV\n");
@@ -205,10 +205,10 @@ void CDsnInfo::GenerateCommonIncludeFile()
 	fprintf(incFile, "// Host Control interfaces\n");
 	fprintf(incFile, "\n");
 
-	CStruct ctrlMsgIntf;
-	ctrlMsgIntf.AddStructField("ht_uint1", "bValid");
-	ctrlMsgIntf.AddStructField("ht_uint7", "msgType");
-	ctrlMsgIntf.AddStructField("ht_uint56", "msgData");
+	CRecord ctrlMsgIntf;
+	ctrlMsgIntf.AddStructField(&g_uint64, "bValid", "1");
+	ctrlMsgIntf.AddStructField(&g_uint64, "msgType", "7");
+	ctrlMsgIntf.AddStructField(&g_uint64, "msgData", "56");
 	GenIntfStruct(incFile, "CHostCtrlMsg", ctrlMsgIntf.m_fieldList, false, false, true, false);
 
 	fprintf(incFile, "//////////////////////////////////\n");
@@ -222,9 +222,9 @@ void CDsnInfo::GenerateCommonIncludeFile()
 	fprintf(incFile, "#define HT_DQ_HALT\t7\n");
 
 
-	CStruct hostDataQue;
-	hostDataQue.AddStructField("ht_uint64", "data");
-	hostDataQue.AddStructField("ht_uint3", "ctl");
+	CRecord hostDataQue;
+	hostDataQue.AddStructField(FindHtIntType(eUnsigned, 64), "data");
+	hostDataQue.AddStructField(FindHtIntType(eUnsigned, 3), "ctl");
 	GenIntfStruct(incFile, "CHostDataQue", hostDataQue.m_fieldList, false, false, false, false);
 
 	fprintf(incFile, "//////////////////////////////////\n");
@@ -246,16 +246,16 @@ void CDsnInfo::GenerateCommonIncludeFile()
 				else
 					sprintf(queIntfName, "C%sTo%s_%sIntf", mod.m_modName.Uc().c_str(), queIntf.m_modName.Uc().c_str(), queIntf.m_queName.Lc().c_str());
 
-				queIntf.m_structName = queIntfName;
+				queIntf.m_typeName = queIntfName;
 			} else
-				queIntf.m_structName = "CHostDataQueIntf";
+				queIntf.m_typeName = "CHostDataQueIntf";
 
 			if (queIntf.m_queType == Push || bHifQue) continue;
 
 			GenUserStructs(incFile, queIntf);
 
 			CHtCode htFile(incFile);
-			GenUserStructBadData(htFile, true, queIntf.m_structName, queIntf.m_fieldList, queIntf.m_bCStyle, "");
+			GenUserStructBadData(htFile, true, queIntf.m_typeName, queIntf.m_fieldList, queIntf.m_bCStyle, "");
 		}
 	}
 
@@ -303,45 +303,45 @@ void CDsnInfo::GenerateCommonIncludeFile()
 				if (cxrIntf.m_cxrType == CxrCall) {
 
 					if (cxrIntf.m_pSrcGroup->m_htIdW.AsInt() > 0) {
-						cxrIntf.m_fullFieldList.push_back(CField(cxrIntf.m_pSrcGroup->m_htIdType, "rtnHtId"));
-						cxrIntf.m_fullFieldList.back().DimenListInit(lineInfo);
+						cxrIntf.m_fullFieldList.push_back(new CField(cxrIntf.m_pSrcGroup->m_pHtIdType, "rtnHtId"));
+						cxrIntf.m_fullFieldList.back()->InitDimen(lineInfo);
 					}
-					if (cxrIntf.m_pSrcMod->m_instrType.size() > 0) {
-						cxrIntf.m_fullFieldList.push_back(CField(cxrIntf.m_pSrcMod->m_instrType, "rtnInstr"));
-						cxrIntf.m_fullFieldList.back().DimenListInit(lineInfo);
+					if (cxrIntf.m_pSrcMod->m_pInstrType) {
+						cxrIntf.m_fullFieldList.push_back(new CField(cxrIntf.m_pSrcMod->m_pInstrType, "rtnInstr"));
+						cxrIntf.m_fullFieldList.back()->InitDimen(lineInfo);
 					}
 
 				} else if (cxrIntf.m_cxrType == CxrTransfer) { // else Transfer
 
 					if (cxrIntf.m_pSrcGroup->m_rtnSelW > 0) {
-						cxrIntf.m_fullFieldList.push_back(CField(cxrIntf.m_pSrcGroup->m_rtnSelType, "rtnSel"));
-						cxrIntf.m_fullFieldList.back().DimenListInit(lineInfo);
+						cxrIntf.m_fullFieldList.push_back(new CField(cxrIntf.m_pSrcGroup->m_pRtnSelType, "rtnSel"));
+						cxrIntf.m_fullFieldList.back()->InitDimen(lineInfo);
 					}
 					if (cxrIntf.m_pSrcGroup->m_rtnHtIdW > 0) {
-						cxrIntf.m_fullFieldList.push_back(CField(cxrIntf.m_pSrcGroup->m_rtnHtIdType, "rtnHtId"));
-						cxrIntf.m_fullFieldList.back().DimenListInit(lineInfo);
+						cxrIntf.m_fullFieldList.push_back(new CField(cxrIntf.m_pSrcGroup->m_pRtnHtIdType, "rtnHtId"));
+						cxrIntf.m_fullFieldList.back()->InitDimen(lineInfo);
 					}
 					if (cxrIntf.m_pSrcGroup->m_rtnInstrW > 0) {
-						cxrIntf.m_fullFieldList.push_back(CField(cxrIntf.m_pSrcGroup->m_rtnInstrType, "rtnInstr"));
-						cxrIntf.m_fullFieldList.back().DimenListInit(lineInfo);
+						cxrIntf.m_fullFieldList.push_back(new CField(cxrIntf.m_pSrcGroup->m_pRtnInstrType, "rtnInstr"));
+						cxrIntf.m_fullFieldList.back()->InitDimen(lineInfo);
 					}
 
 				} else { // CxrReturn
 
 					if (cxrIntf.m_pDstGroup->m_htIdW.AsInt() > 0) {
-						cxrIntf.m_fullFieldList.push_back(CField(cxrIntf.m_pDstGroup->m_htIdType, "rtnHtId"));
-						cxrIntf.m_fullFieldList.back().DimenListInit(lineInfo);
+						cxrIntf.m_fullFieldList.push_back(new CField(cxrIntf.m_pDstGroup->m_pHtIdType, "rtnHtId"));
+						cxrIntf.m_fullFieldList.back()->InitDimen(lineInfo);
 					}
-					if (cxrIntf.m_pDstMod->m_instrType.size() > 0) {
-						cxrIntf.m_fullFieldList.push_back(CField(cxrIntf.m_pDstMod->m_instrType, "rtnInstr"));
-						cxrIntf.m_fullFieldList.back().DimenListInit(lineInfo);
+					if (cxrIntf.m_pDstMod->m_pInstrType != 0) {
+						cxrIntf.m_fullFieldList.push_back(new CField(cxrIntf.m_pDstMod->m_pInstrType, "rtnInstr"));
+						cxrIntf.m_fullFieldList.back()->InitDimen(lineInfo);
 					}
 
 				}
 
 				if (cxrIntf.m_bRtnJoin) {
-					cxrIntf.m_fullFieldList.push_back(CField("bool", "rtnJoin"));
-					cxrIntf.m_fullFieldList.back().DimenListInit(lineInfo);
+					cxrIntf.m_fullFieldList.push_back(new CField(&g_bool, "rtnJoin"));
+					cxrIntf.m_fullFieldList.back()->InitDimen(lineInfo);
 				}
 
 				if (cxrIntf.m_fullFieldList.size() == 0)
@@ -352,66 +352,66 @@ void CDsnInfo::GenerateCommonIncludeFile()
 		}
 	}
 
-	fprintf(incFile, "//////////////////////////////////\n");
-	fprintf(incFile, "// Ram interfaces\n");
-	fprintf(incFile, "\n");
+	//fprintf(incFile, "//////////////////////////////////\n");
+	//fprintf(incFile, "// Ram interfaces\n");
+	//fprintf(incFile, "\n");
 
-	for (size_t modIdx = 0; modIdx < m_modList.size(); modIdx += 1) {
-		CModule &mod = *m_modList[modIdx];
+	//for (size_t modIdx = 0; modIdx < m_modList.size(); modIdx += 1) {
+	//	CModule &mod = *m_modList[modIdx];
 
-		// Generate ram interface structs
-		for (size_t ramIdx = 0; ramIdx < mod.m_extRamList.size(); ramIdx += 1) {
-			CRam & ram = mod.m_extRamList[ramIdx];
+	//	// Generate ram interface structs
+	//	for (size_t ramIdx = 0; ramIdx < mod.m_extRamList.size(); ramIdx += 1) {
+	//		CRam & ram = mod.m_extRamList[ramIdx];
 
-			bool bRead = false;
-			bool bWrite = false;
-			for (size_t fieldIdx = 0; fieldIdx < ram.m_fieldList.size(); fieldIdx += 1) {
-				bRead = bRead | ram.m_fieldList[fieldIdx].m_bSrcRead | ram.m_fieldList[fieldIdx].m_bMifRead;
-				bWrite = bWrite | ram.m_fieldList[fieldIdx].m_bSrcWrite | ram.m_fieldList[fieldIdx].m_bMifWrite;
-			}
+	//		bool bRead = false;
+	//		bool bWrite = false;
+	//		for (size_t fieldIdx = 0; fieldIdx < ram.m_fieldList.size(); fieldIdx += 1) {
+	//			bRead = bRead | ram.m_fieldList[fieldIdx]->m_bSrcRead | ram.m_fieldList[fieldIdx]->m_bMifRead;
+	//			bWrite = bWrite | ram.m_fieldList[fieldIdx]->m_bSrcWrite | ram.m_fieldList[fieldIdx]->m_bMifWrite;
+	//		}
 
-			if (bRead) {
-				string intfName = "C" + ram.m_modName.Uc() + "To" + mod.m_modName.Uc() + "_" + ram.m_gblName.AsStr() + "RdData";
-				GenRamIntfStruct(incFile, intfName, ram, eStructRamRdData);
-			}
+	//		if (bRead) {
+	//			string intfName = "C" + ram.m_modName.Uc() + "To" + mod.m_modName.Uc() + "_" + ram.m_gblName.AsStr() + "RdData";
+	//			GenRamIntfStruct(incFile, intfName, ram, eStructRamRdData);
+	//		}
 
-			if (bWrite) {
-				string intfName = "C" + mod.m_modName.Uc() + "To" + ram.m_modName.Uc() + "_" + ram.m_gblName.AsStr() + "WrData";
-				GenRamIntfStruct(incFile, intfName, ram, eGenRamWrData);
-			}
+	//		if (bWrite) {
+	//			string intfName = "C" + mod.m_modName.Uc() + "To" + ram.m_modName.Uc() + "_" + ram.m_gblName.AsStr() + "WrData";
+	//			GenRamIntfStruct(incFile, intfName, ram, eGenRamWrData);
+	//		}
 
-			if (bWrite) {
-				string intfName = "C" + mod.m_modName.Uc() + "To" + ram.m_modName.Uc() + "_" + ram.m_gblName.AsStr() + "WrEn";
-				GenRamIntfStruct(incFile, intfName, ram, eGenRamWrEn);
-			}
-		}
-	}
+	//		if (bWrite) {
+	//			string intfName = "C" + mod.m_modName.Uc() + "To" + ram.m_modName.Uc() + "_" + ram.m_gblName.AsStr() + "WrEn";
+	//			GenRamIntfStruct(incFile, intfName, ram, eGenRamWrEn);
+	//		}
+	//	}
+	//}
 
 	incFile.FileClose();
 }
 
 void CDsnInfo::MarkNeededIncludeStructs()
 {
-	for (size_t structIdx = 0; structIdx < m_structList.size(); structIdx += 1) {
-		CStruct & struct_ = m_structList[structIdx];
+	for (size_t structIdx = 0; structIdx < m_recordList.size(); structIdx += 1) {
+		CRecord & record = m_recordList[structIdx];
 
-		if (struct_.m_scope != eUnit && !struct_.m_bInclude) continue;
-		if (!struct_.m_bNeedIntf) continue;
+		if (record.m_scope != eUnit && !record.m_bInclude) continue;
+		if (!record.m_bNeedIntf) continue;
 
 		// walk struct and see it if has embedded structures
-		MarkNeededIncludeStructs(struct_);
+		MarkNeededIncludeStructs(record);
 	}
 }
 
-void CDsnInfo::MarkNeededIncludeStructs(CStruct & struct_)
+void CDsnInfo::MarkNeededIncludeStructs(CRecord & record)
 {
-	for (size_t fieldIdx = 0; fieldIdx < struct_.m_fieldList.size(); fieldIdx += 1) {
-		CField &field = struct_.m_fieldList[fieldIdx];
+	for (size_t fieldIdx = 0; fieldIdx < record.m_fieldList.size(); fieldIdx += 1) {
+		CField * pField = record.m_fieldList[fieldIdx];
 
-		for (size_t struct2Idx = 0; struct2Idx < m_structList.size(); struct2Idx += 1) {
-			CStruct & struct2 = m_structList[struct2Idx];
+		for (size_t struct2Idx = 0; struct2Idx < m_recordList.size(); struct2Idx += 1) {
+			CRecord & struct2 = m_recordList[struct2Idx];
 
-			if (struct2.m_structName == field.m_type && !struct2.m_bNeedIntf) {
+			if (struct2.m_typeName == pField->m_type && !struct2.m_bNeedIntf) {
 				struct2.m_bNeedIntf = true;
 				MarkNeededIncludeStructs(struct2);
 			}
@@ -419,11 +419,11 @@ void CDsnInfo::MarkNeededIncludeStructs(CStruct & struct_)
 	}
 }
 
-void CDsnInfo::GenGlobalVarWriteTypes(CHtFile & htFile, string &typeName, int &atomicMask, vector<string> &gvTypeList, CRam * pGv)
+void CDsnInfo::GenGlobalVarWriteTypes(CHtFile & htFile, CType * pType, int &atomicMask, vector<string> &gvTypeList, CRam * pGv)
 {
-	string ramTypeName = typeName;
+	string ramTypeName = pType->m_typeName;
 	if (pGv) {
-		ramTypeName = VA("%s_A%d_%d", typeName.c_str(), pGv->m_addr1W.AsInt(), pGv->m_addr2W.AsInt());
+		ramTypeName = VA("%s_A%d", pType->m_typeName.c_str(), pGv->m_addrW);
 		pGv->m_pNgvInfo->m_ngvWrType = ramTypeName;
 	}
 
@@ -435,53 +435,56 @@ void CDsnInfo::GenGlobalVarWriteTypes(CHtFile & htFile, string &typeName, int &a
 	default: break;
 	}
 
-	CStruct * pStruct = FindStruct(typeName);
+	CRecord * pRecord = pType->AsRecord();
 
 	// check if type already generated
 	for (size_t i = 0; i < gvTypeList.size(); i += 1) {
 		if (gvTypeList[i] == wrTypeName) {
-			if (pStruct)
-				atomicMask |= pStruct->m_atomicMask;
+			if (pRecord)
+				atomicMask |= pRecord->m_atomicMask;
 			return;
 		}
 	}
 
 	gvTypeList.push_back(wrTypeName);
 
-	if (pStruct) {
-		for (size_t fieldIdx = 0; fieldIdx < pStruct->m_fieldList.size(); fieldIdx += 1) {
-			CField &field = pStruct->m_fieldList[fieldIdx];
+	if (pRecord) {
+		for (CStructElemIter iter(this, pRecord, false, false); !iter.end(); iter++) {
+			CField & field = iter();
 
-			GenGlobalVarWriteTypes(htFile, field.m_type, field.m_atomicMask, gvTypeList);
+			CType * pFieldType = 0;
+			if (field.m_fieldWidth.size() > 0) {
+				int width;
+				bool bSigned;
+				bool bFound = FindCIntType(field.m_type, width, bSigned);
+				HtlAssert(bFound);
 
-			pStruct->m_atomicMask |= field.m_atomicMask;
+				pFieldType = FindHtIntType(bSigned ? eSigned : eUnsigned, field.m_fieldWidth.AsInt());
+
+			} else {
+				pFieldType = field.m_pType;
+			}
+
+			GenGlobalVarWriteTypes(htFile, pFieldType, field.m_atomicMask, gvTypeList);
+
+			pRecord->m_atomicMask |= field.m_atomicMask;
 		}
 	}
 
 	fprintf(htFile, "struct %s {\n", wrTypeName.c_str());
 	fprintf(htFile, "#\tifndef _HTV\n");
-	fprintf(htFile, "\tbool operator == (const %s & rhs) const {\n", wrTypeName.c_str());
+	fprintf(htFile, "\tbool operator == (const %s & rhs) const\n", wrTypeName.c_str());
+	fprintf(htFile, "\t{\n");
 
-	if (pStruct) {
-		if (pGv && pGv->m_addr1W.AsInt() > 0) {
-			fprintf(htFile, "\t\tif (!(m_bAddr == rhs.m_bAddr)) return false;\n");
-			if (pGv->m_addr1W.AsInt() > 0)
-				fprintf(htFile, "\t\tif (!(m_addr1 == rhs.m_addr1)) return false;\n");
-			if (pGv->m_addr2W.AsInt() > 0)
-				fprintf(htFile, "\t\tif (!(m_addr2 == rhs.m_addr2)) return false;\n");
-		}
+	if (pGv && pGv->m_addrW > 0) {
+		fprintf(htFile, "\t\tif (!(m_bAddr == rhs.m_bAddr)) return false;\n");
+		fprintf(htFile, "\t\tif (!(m_addr == rhs.m_addr)) return false;\n");
+	}
 
-		for (size_t fieldIdx = 0; fieldIdx < pStruct->m_fieldList.size(); fieldIdx += 1) {
-			CField &field = pStruct->m_fieldList[fieldIdx];
-
-			vector<int> refList(field.m_dimenList.size());
-			do {
-				string dimIdx = IndexStr(refList);
-
-				fprintf(htFile, "\t\tif (!(%s%s == rhs.%s%s)) return false;\n",
-					field.m_name.c_str(), dimIdx.c_str(), field.m_name.c_str(), dimIdx.c_str());
-
-			} while (DimenIter(field.m_dimenList, refList));
+	if (pRecord) {
+		for (CStructElemIter iter(this, pRecord, false); !iter.end(); iter++) {
+			fprintf(htFile, "\t\tif (!(%s == rhs.%s)) return false;\n",
+				iter.GetHeirFieldName(false).c_str(), iter.GetHeirFieldName(false).c_str());
 		}
 	} else {
 		fprintf(htFile, "\t\tif (!(m_bWrite == rhs.m_bWrite)) return false;\n");
@@ -497,66 +500,34 @@ void CDsnInfo::GenGlobalVarWriteTypes(CHtFile & htFile, string &typeName, int &a
 	fprintf(htFile, "\t\treturn true;\n");
 	fprintf(htFile, "\t}\n");
 
-	if (pStruct) {
+	if (pRecord) {
 		fprintf(htFile, "\tvoid operator = (int zero) {\n");
 		fprintf(htFile, "\t\tassert(zero == 0);\n");
 
-		if (pStruct) {
-			if (pGv && pGv->m_addr1W.AsInt() > 0) {
-				fprintf(htFile, "\t\tm_bAddr = false;\n");
-				if (pGv->m_addr1W.AsInt() > 0)
-					fprintf(htFile, "\t\tm_addr1 = 0;\n");
-				if (pGv->m_addr2W.AsInt() > 0)
-					fprintf(htFile, "\t\tm_addr2 = 0;\n");
-			}
+		if (pGv && pGv->m_addrW > 0) {
+			fprintf(htFile, "\t\tm_bAddr = false;\n");
+			fprintf(htFile, "\t\tm_addr = 0;\n");
+		}
 
-			for (size_t fieldIdx = 0; fieldIdx < pStruct->m_fieldList.size(); fieldIdx += 1) {
-				CField &field = pStruct->m_fieldList[fieldIdx];
-
-				vector<int> refList(field.m_dimenList.size());
-				do {
-					string dimIdx = IndexStr(refList);
-
-					fprintf(htFile, "\t\t%s%s = 0;\n", field.m_name.c_str(), dimIdx.c_str());
-
-				} while (DimenIter(field.m_dimenList, refList));
-			}
-		} else {
-			fprintf(htFile, "\t\tm_bWrite = false;\n");
-			switch (atomicMask) {
-			case ATOMIC_INC: fprintf(htFile, "\t\tm_bInc = false;\n"); break;
-			case ATOMIC_SET: fprintf(htFile, "\t\tm_bSet = false;\n"); break;
-			case ATOMIC_ADD: fprintf(htFile, "\t\tm_bAdd = false;\n"); break;
-			default: break;
-			}
-			fprintf(htFile, "\t\tm_data = 0;\n");
+		for (CStructElemIter iter(this, pRecord, false); !iter.end(); iter++) {
+			fprintf(htFile, "\t\t%s = 0;\n", iter.GetHeirFieldName(false).c_str());
 		}
 
 		fprintf(htFile, "\t}\n");
 	}
 	fprintf(htFile, "#\tifdef HT_SYSC\n");
-	fprintf(htFile, "\tfriend void sc_trace(sc_trace_file *tf, const %s & v, const std::string & NAME) {\n", wrTypeName.c_str());
+	fprintf(htFile, "\tfriend void sc_trace(sc_trace_file *tf, const %s & v, const std::string & NAME)\n", wrTypeName.c_str());
+	fprintf(htFile, "\t{\n");
 
-	if (pStruct) {
-		if (pGv && pGv->m_addr1W.AsInt() > 0) {
-			fprintf(htFile, "\t\tsc_trace(tf, v.m_bAddr, NAME + \".m_bAddr\");\n");
-			if (pGv->m_addr1W.AsInt() > 0)
-				fprintf(htFile, "\t\tsc_trace(tf, v.m_addr1, NAME + \".m_addr1\");\n");
-			if (pGv->m_addr2W.AsInt() > 0)
-				fprintf(htFile, "\t\tsc_trace(tf, v.m_addr2, NAME + \".m_addr2\");\n");
-		}
+	if (pGv && pGv->m_addrW > 0) {
+		fprintf(htFile, "\t\tsc_trace(tf, v.m_bAddr, NAME + \".m_bAddr\");\n");
+		fprintf(htFile, "\t\tsc_trace(tf, v.m_addr, NAME + \".m_addr\");\n");
+	}
 
-		for (size_t fieldIdx = 0; fieldIdx < pStruct->m_fieldList.size(); fieldIdx += 1) {
-			CField &field = pStruct->m_fieldList[fieldIdx];
-
-			vector<int> refList(field.m_dimenList.size());
-			do {
-				string dimIdx = IndexStr(refList);
-
-				fprintf(htFile, "\t\tsc_trace(tf, v.%s%s, NAME + \".%s%s\");\n", 
-					field.m_name.c_str(), dimIdx.c_str(), field.m_name.c_str(), dimIdx.c_str());
-
-			} while (DimenIter(field.m_dimenList, refList));
+	if (pRecord) {
+		for (CStructElemIter iter(this, pRecord/*->m_structName*/, false); !iter.end(); iter++) {
+			fprintf(htFile, "\t\tsc_trace(tf, v.%s, NAME + \".%s\");\n",
+				iter.GetHeirFieldName(false).c_str(), iter.GetHeirFieldName(false).c_str());
 		}
 	} else {
 		fprintf(htFile, "\t\tsc_trace(tf, v.m_bWrite, NAME + \".m_bWrite\");\n");
@@ -574,63 +545,178 @@ void CDsnInfo::GenGlobalVarWriteTypes(CHtFile & htFile, string &typeName, int &a
 	fprintf(htFile, "#\tendif\n");
 	fprintf(htFile, "#\tendif\n");
 
-	if (pStruct) {
-		fprintf(htFile, "\tvoid init() {\n");
-		if (pGv && pGv->m_addr1W.AsInt() > 0) {
-			fprintf(htFile, "\t\tm_bAddr = false;\n");
-			fprintf(htFile, "\t\tm_addr1 = 0;\n");
-			if (pGv->m_addr2W.AsInt() > 0)
-				fprintf(htFile, "\t\tm_addr2 = 0;\n");
-		}
-		CHtCode htCode(htFile);
-		for (size_t fieldIdx = 0; fieldIdx < pStruct->m_fieldList.size(); fieldIdx += 1) {
-			CField &field = pStruct->m_fieldList[fieldIdx];
+	if (pRecord) {
+		if (pGv) {
+			int htIdW = 0;
+			if (pGv->m_addr0W.AsInt() > 0)
+				htIdW = pGv->m_addr0W.AsInt();
+			else if (pGv->m_addr1Name == "htId")
+				htIdW = pGv->m_addr1W.AsInt();
+			else if (pGv->m_addr2Name == "htId")
+				htIdW = pGv->m_addr2W.AsInt();
 
-			string tabs = "\t\t";
-			GenIndexLoops(htCode, tabs, field.m_dimenList);
-			fprintf(htFile, "%s%s%s.init();\n", tabs.c_str(), field.m_name.c_str(), field.m_dimenIndex.c_str());
+			if (htIdW > 0)
+				fprintf(htFile, "\tvoid InitZero(ht_uint%d htId) {\n", htIdW);
+			else
+				fprintf(htFile, "\tvoid InitZero() {\n");
+
+			if (pGv->m_addrW > 0) {
+				fprintf(htFile, "\t\tm_bAddr = false;\n");
+				fprintf(htFile, "\t\tm_addr = 0;\n");
+			}
+
+			if (htIdW > 0) {
+				if (pGv->m_addr0W.AsInt() > 0)
+					fprintf(htFile, "\t\tm_addr(%d, %d) = htId;\n", pGv->m_addrW - 1, pGv->m_addrW - pGv->m_addr0W.AsInt());
+				if (pGv->m_addr1Name == "htId")
+					fprintf(htFile, "\t\tm_addr(%d, %d) = htId;\n", pGv->m_addr1W.AsInt() + pGv->m_addr2W.AsInt() - 1, pGv->m_addr2W.AsInt());
+				if (pGv->m_addr2Name == "htId")
+					fprintf(htFile, "\t\tm_addr(%d, 0) = htId;\n", pGv->m_addr2W.AsInt() - 1);
+			}
+		} else
+			fprintf(htFile, "\tvoid InitZero() {\n");
+
+		CHtCode htCode(htFile);
+		for (CStructElemIter iter(this, pRecord/*->m_structName*/, false); !iter.end(); iter++) {
+			fprintf(htFile, "\t\t%s.InitZero();\n", iter.GetHeirFieldName(false).c_str());
 		}
 		fprintf(htFile, "\t}\n");
 
-		if (pGv && pGv->m_addr1W.AsInt() > 0) {
-			fprintf(htFile, "\tvoid write_addr(ht_uint%d addr1%s) {\n", pGv->m_addr1W.AsInt(),
-				VA(pGv->m_addr2W.AsInt() == 0 ? "" : ", ht_uint%d addr2", pGv->m_addr2W.AsInt()).c_str());
-			if (pGv && pGv->m_addr1W.AsInt() > 0) {
-				fprintf(htFile, "\t\tm_bAddr = true;\n");
-				fprintf(htFile, "\t\tm_addr1 = addr1;\n");
-				if (pGv->m_addr2W.AsInt() > 0)
-					fprintf(htFile, "\t\tm_addr2 = addr2;\n");
+		if (pGv) {
+			int htIdW = 0;
+			if (pGv->m_addr0W.AsInt() > 0)
+				htIdW = pGv->m_addr0W.AsInt();
+			else if (pGv->m_addr1Name == "htId")
+				htIdW = pGv->m_addr1W.AsInt();
+			else if (pGv->m_addr2Name == "htId")
+				htIdW = pGv->m_addr2W.AsInt();
+
+			if (htIdW > 0) {
+				fprintf(htFile, "\tvoid InitData(ht_uint%d htId, %s _data_)\n", htIdW, pType->m_typeName.c_str());
+				fprintf(htFile, "\t{\n");
+
+				if (pGv->m_addrW > 0) {
+					fprintf(htFile, "\t\tm_bAddr = false;\n");
+					fprintf(htFile, "\t\tm_addr = 0;\n");
+				}
+				if (pGv->m_addr0W.AsInt() > 0)
+					fprintf(htFile, "\t\tm_addr(%d, %d) = htId;\n", pGv->m_addrW - 1, pGv->m_addrW - pGv->m_addr0W.AsInt());
+				if (pGv->m_addr1Name == "htId")
+					fprintf(htFile, "\t\tm_addr(%d, %d) = htId;\n", pGv->m_addr1W.AsInt() + pGv->m_addr2W.AsInt() - 1, pGv->m_addr2W.AsInt());
+				if (pGv->m_addr2Name == "htId")
+					fprintf(htFile, "\t\tm_addr(%d, 0) = htId;\n", pGv->m_addr2W.AsInt() - 1);
+			} else {
+				fprintf(htFile, "\tvoid InitData(%s _data_)\n", pType->m_typeName.c_str());
+				fprintf(htFile, "\t{\n");
+			}
+
+			for (CStructElemIter iter(this, pRecord, false); !iter.end(); iter++) {
+				fprintf(htFile, "\t\t%s.InitData(_data_.%s);\n", 
+					iter.GetHeirFieldName(false).c_str(), iter.GetHeirFieldName(false).c_str());
+			}
+			fprintf(htFile, "\t}\n");
+		} else {
+			fprintf(htFile, "\tvoid InitData(%s _data_)\n", pType->m_typeName.c_str());
+			fprintf(htFile, "\t{\n");
+
+			for (CStructElemIter iter(this, pRecord, false); !iter.end(); iter++) {
+				fprintf(htFile, "\t\t%s.InitData(_data_.%s);\n",
+					iter.GetHeirFieldName(false).c_str(), iter.GetHeirFieldName(false).c_str());
 			}
 			fprintf(htFile, "\t}\n");
 		}
 
-		fprintf(htFile, "\tvoid operator = (%s rhs) {\n", typeName.c_str());
-		for (size_t fieldIdx = 0; fieldIdx < pStruct->m_fieldList.size(); fieldIdx += 1) {
-			CField &field = pStruct->m_fieldList[fieldIdx];
+		if (pGv) {
+			bool bAddr1EqHtId = pGv->m_addr1Name == "htId";
+			bool bAddr2EqHtId = pGv->m_addr2Name == "htId";
+			bool bAddr1WEq0 = pGv->m_addr1W.AsInt() == 0;
+			bool bAddr2WEq0 = pGv->m_addr2W.AsInt() == 0;
 
-			string tabs = "\t\t";
-			GenIndexLoops(htCode, tabs, field.m_dimenList);
-			fprintf(htFile, "%s%s%s = rhs.%s%s;\n", tabs.c_str(), 
-				field.m_name.c_str(), field.m_dimenIndex.c_str(),
-				field.m_name.c_str(), field.m_dimenIndex.c_str());
+			if (pGv->m_addr1W.size() > 0 && !bAddr1EqHtId || pGv->m_addr2W.size() > 0 && !bAddr2EqHtId) {
+				fprintf(htFile, "\tvoid write_addr(");
+				if (pGv->m_addr1W.size() > 0 && !bAddr1EqHtId)
+					fprintf(htFile, "ht_uint%d addr1", bAddr1WEq0 ? 1 : pGv->m_addr1W.AsInt());
+				if (pGv->m_addr1W.size() > 0 && !bAddr1EqHtId && pGv->m_addr2W.size() > 0 && !bAddr2EqHtId)
+					fprintf(htFile, ", ");
+				if (pGv->m_addr2W.size() > 0 && !bAddr2EqHtId)
+					fprintf(htFile, "ht_uint%d addr2", bAddr2WEq0 ? 1 : pGv->m_addr2W.AsInt());
+				fprintf(htFile, ")\n");
+				fprintf(htFile, "\t{\n");
+
+				if (pGv->m_addr1W.size() > 0 && bAddr1WEq0)
+					fprintf(htFile, "\t\tht_assert(addr1 == 0); // addr1 bounds check\n");
+
+				if (pGv->m_addr2W.size() > 0 && bAddr2WEq0)
+					fprintf(htFile, "\t\tht_assert(addr2 == 0); // addr2 bounds check\n");
+
+				if (pGv->m_addrW > 0)
+					fprintf(htFile, "\t\tm_bAddr = true;\n");
+
+				string bitRange = pGv->m_addr0W.AsInt() > 0 ? VA("(%d, 0)", pGv->m_addr1W.AsInt() + pGv->m_addr2W.AsInt() - 1) : "";
+				if (pGv->m_addr1W.AsInt() > 0 && !bAddr1EqHtId)
+					fprintf(htFile, "\t\tm_addr(%d, %d) = addr1;\n", pGv->m_addr1W.AsInt() + pGv->m_addr2W.AsInt() - 1, pGv->m_addr2W.AsInt());
+				if (pGv->m_addr2W.AsInt() > 0 && !bAddr2EqHtId)
+					fprintf(htFile, "\t\tm_addr(%d, 0) = addr2;\n", pGv->m_addr2W.AsInt() - 1);
+
+				fprintf(htFile, "\t}\n");
+			}
+		}
+
+		fprintf(htFile, "\tvoid operator = (%s rhs) {\n", pType->m_typeName.c_str());
+		for (CStructElemIter iter(this, pRecord/*->m_structName*/, false); !iter.end(); iter++) {
+			fprintf(htFile, "\t\t%s = rhs.%s;\n",
+				iter.GetHeirFieldName(false).c_str(), iter.GetHeirFieldName(false).c_str());
 		}
 		fprintf(htFile, "\t}\n");
 
-		if (pGv && pGv->m_addr1W.AsInt() > 0) {
-			fprintf(htFile, "\tbool m_bAddr;\n");
-			fprintf(htFile, "\tht_uint%d m_addr1;\n", pGv->m_addr1W.AsInt());
-			if (pGv->m_addr2W.AsInt() > 0)
-				fprintf(htFile, "\tht_uint%d m_addr2;\n", pGv->m_addr2W.AsInt());
+		fprintf(htFile, "\toperator %s () const\n", pType->m_typeName.c_str());
+		fprintf(htFile, "\t{\n");
+
+		fprintf(htFile, "\t\t%s _data_;\n", pType->m_typeName.c_str());
+
+		for (CStructElemIter iter(this, pRecord, false); !iter.end(); iter++) {
+			fprintf(htFile, "\t\t_data_.%s = %s.GetData();\n",
+				iter.GetHeirFieldName(false).c_str(), iter.GetHeirFieldName(false).c_str());
 		}
+		fprintf(htFile, "\t\treturn _data_;\n");
+		fprintf(htFile, "\t}\n");
 
-		for (size_t fieldIdx = 0; fieldIdx < pStruct->m_fieldList.size(); fieldIdx += 1) {
-			CField &field = pStruct->m_fieldList[fieldIdx];
+		fprintf(htFile, "\t%s GetData() const\n", pType->m_typeName.c_str());
+		fprintf(htFile, "\t{\n");
 
-			CStruct * pFieldStruct = FindStruct(field.m_type);
+		fprintf(htFile, "\t\t%s _data_;\n", pType->m_typeName.c_str());
 
-			string fieldTypeName = "CGW_" + field.m_type;
+		for (CStructElemIter iter(this, pRecord, false); !iter.end(); iter++) {
+			fprintf(htFile, "\t\t_data_.%s = %s.GetData();\n",
+				iter.GetHeirFieldName(false).c_str(), iter.GetHeirFieldName(false).c_str());
+		}
+		fprintf(htFile, "\t\treturn _data_;\n");
+		fprintf(htFile, "\t}\n");
 
-			if (!pFieldStruct) {
+		if (pGv && pGv->m_addrW > 0)
+			fprintf(htFile, "\tht_uint%d GetAddr() const { return m_addr; }\n", pGv->m_addrW);
+
+		fprintf(htFile, "public:\n");
+
+		for (CStructElemIter iter(this, pRecord, false, false); !iter.end(); iter++) {
+			CField & field = iter();
+
+			string fieldTypeName = "CGW_";
+			if (field.m_fieldWidth.size() > 0) {
+				int width;
+				bool bSigned;
+				bool bFound = FindCIntType(field.m_type, width, bSigned);
+				HtlAssert(bFound);
+
+				if (bSigned)
+					fieldTypeName += VA("ht_int%d", field.m_fieldWidth.AsInt());
+				else
+					fieldTypeName += VA("ht_uint%d", field.m_fieldWidth.AsInt());
+			} else {
+				fieldTypeName += field.m_type;
+			}
+
+			if (!field.m_pType->IsRecord()) {
 				switch (field.m_atomicMask) {
 				case ATOMIC_INC: fieldTypeName += "_I"; break;
 				case ATOMIC_SET: fieldTypeName += "_S"; break;
@@ -641,8 +727,41 @@ void CDsnInfo::GenGlobalVarWriteTypes(CHtFile & htFile, string &typeName, int &a
 
 			fprintf(htFile, "\t%s %s%s;\n", fieldTypeName.c_str(), field.m_name.c_str(), field.m_dimenDecl.c_str());
 		}
+
+		fprintf(htFile, "private:\n");
+
+		if (pGv && pGv->m_addrW > 0) {
+			fprintf(htFile, "\tbool m_bAddr;\n");
+			fprintf(htFile, "\tht_uint%d m_addr;\n", pGv->m_addrW);
+		}
 	} else {
-		fprintf(htFile, "\tvoid init() {\n");
+		if (pGv) {
+			int htIdW = 0;
+			if (pGv->m_addr0W.AsInt() > 0)
+				htIdW = pGv->m_addr0W.AsInt();
+			else if (pGv->m_addr1Name == "htId")
+				htIdW = pGv->m_addr1W.AsInt();
+			else if (pGv->m_addr2Name == "htId")
+				htIdW = pGv->m_addr2W.AsInt();
+
+			if (htIdW > 0) {
+				fprintf(htFile, "\tvoid InitZero(ht_uint%d htId)\n", pGv->m_addr0W.AsInt());
+				fprintf(htFile, "\t{\n");
+				if (pGv->m_addr0W.AsInt() > 0)
+					fprintf(htFile, "\t\tm_addr(%d, %d) = htId;\n", pGv->m_addrW - 1, pGv->m_addrW - pGv->m_addr0W.AsInt());
+				if (pGv->m_addr1Name == "htId")
+					fprintf(htFile, "\t\tm_addr(%d, %d) = htId;\n", pGv->m_addr1W.AsInt() + pGv->m_addr2W.AsInt() - 1, pGv->m_addr2W.AsInt());
+				if (pGv->m_addr2Name == "htId")
+					fprintf(htFile, "\t\tm_addr(%d, 0) = htId;\n", pGv->m_addr2W.AsInt() - 1);
+			} else {
+				fprintf(htFile, "\tvoid InitZero()\n");
+				fprintf(htFile, "\t{\n");
+			}
+		} else {
+			fprintf(htFile, "\tvoid InitZero()\n");
+			fprintf(htFile, "\t{\n");
+		}
+
 		fprintf(htFile, "\t\tm_bWrite = false;\n");
 		switch (atomicMask) {
 		case ATOMIC_INC: fprintf(htFile, "\t\tm_bInc = false;\n"); break;
@@ -653,29 +772,102 @@ void CDsnInfo::GenGlobalVarWriteTypes(CHtFile & htFile, string &typeName, int &a
 		fprintf(htFile, "\t\tm_data = 0;\n");
 		fprintf(htFile, "\t}\n");
 
-		fprintf(htFile, "\tvoid operator = (%s rhs) {\n", typeName.c_str());
+		if (pGv) {
+			int htIdW = 0;
+			if (pGv->m_addr0W.AsInt() > 0)
+				htIdW = pGv->m_addr0W.AsInt();
+			else if (pGv->m_addr1Name == "htId")
+				htIdW = pGv->m_addr1W.AsInt();
+			else if (pGv->m_addr2Name == "htId")
+				htIdW = pGv->m_addr2W.AsInt();
+
+			if (htIdW > 0) {
+				fprintf(htFile, "\tvoid InitData(ht_uint%d htId, %s _data_)\n", htIdW, pType->m_typeName.c_str());
+				fprintf(htFile, "\t{\n");
+				if (pGv->m_addr0W.AsInt() > 0)
+					fprintf(htFile, "\t\tm_addr(%d, %d) = htId;\n", pGv->m_addrW - 1, pGv->m_addrW - pGv->m_addr0W.AsInt());
+				if (pGv->m_addr1Name == "htId")
+					fprintf(htFile, "\t\tm_addr(%d, %d) = htId;\n", pGv->m_addr1W.AsInt() + pGv->m_addr2W.AsInt() - 1, pGv->m_addr2W.AsInt());
+				if (pGv->m_addr2Name == "htId")
+					fprintf(htFile, "\t\tm_addr(%d, 0) = htId;\n", pGv->m_addr2W.AsInt() - 1);
+			} else {
+				fprintf(htFile, "\tvoid InitData(%s _data_)\n", pType->m_typeName.c_str());
+				fprintf(htFile, "\t{\n");
+			}
+			fprintf(htFile, "\t\tm_bWrite = false;\n");
+			switch (atomicMask) {
+			case ATOMIC_INC: fprintf(htFile, "\t\tm_bInc = false;\n"); break;
+			case ATOMIC_SET: fprintf(htFile, "\t\tm_bSet = false;\n"); break;
+			case ATOMIC_ADD: fprintf(htFile, "\t\tm_bAdd = false;\n"); break;
+			default: break;
+			}
+			fprintf(htFile, "\t\tm_data = _data_;\n");
+			fprintf(htFile, "\t}\n");
+		} else {
+			fprintf(htFile, "\tvoid InitData(%s _data_)\n", pType->m_typeName.c_str());
+			fprintf(htFile, "\t{\n");
+			fprintf(htFile, "\t\tm_bWrite = false;\n");
+			switch (atomicMask) {
+			case ATOMIC_INC: fprintf(htFile, "\t\tm_bInc = false;\n"); break;
+			case ATOMIC_SET: fprintf(htFile, "\t\tm_bSet = false;\n"); break;
+			case ATOMIC_ADD: fprintf(htFile, "\t\tm_bAdd = false;\n"); break;
+			default: break;
+			}
+			fprintf(htFile, "\t\tm_data = _data_;\n");
+			fprintf(htFile, "\t}\n");
+		}
+
+		if (pGv && pGv->m_addr1W.AsInt() > 0) {
+			fprintf(htFile, "\tvoid write_addr(ht_uint%d addr1%s) {\n", pGv->m_addr1W.AsInt(),
+				VA(pGv->m_addr2W.AsInt() == 0 ? "" : ", ht_uint%d addr2", pGv->m_addr2W.AsInt()).c_str());
+
+			fprintf(htFile, "\t\tm_bAddr = true;\n");
+
+			string bitRange = pGv->m_addr0W.AsInt() > 0 ? VA("(%d, 0)", pGv->m_addr1W.AsInt() + pGv->m_addr2W.AsInt() - 1) : "";
+			if (pGv->m_addr2W.AsInt() == 0)
+				fprintf(htFile, "\t\tm_addr%s = addr1;\n", bitRange.c_str());
+			else
+				fprintf(htFile, "\t\tm_addr%s = (addr1, addr2);\n", bitRange.c_str());
+
+			fprintf(htFile, "\t}\n");
+		}
+
+		fprintf(htFile, "\tvoid operator = (%s rhs)\n", pType->m_typeName.c_str());
+		fprintf(htFile, "\t{\n");
 		fprintf(htFile, "\t\tm_bWrite = true;\n");
 		fprintf(htFile, "\t\tm_data = rhs;\n");
 		fprintf(htFile, "\t}\n");
 
 		switch (atomicMask) {
 		case ATOMIC_INC:
-			fprintf(htFile, "\tvoid AtomicInc() {\n");
-			fprintf(htFile, "\t\tm_bInc = true;\n");
-			fprintf(htFile, "\t}\n");
+			fprintf(htFile, "\tvoid AtomicInc() { m_bInc = true; }\n");
+			fprintf(htFile, "\tbool GetIncEn() { return m_bInc; }\n");
 			break;
 		case ATOMIC_SET:
-			fprintf(htFile, "\tvoid AtomicSet() {\n");
-			fprintf(htFile, "\t\tm_bSet = true;\n");
-			fprintf(htFile, "\t}\n");
+			fprintf(htFile, "\tvoid AtomicSet() { m_bSet = true; }\n");
+			fprintf(htFile, "\tbool GetSetEn() { return m_bSet; }\n");
 			break;
 		case ATOMIC_ADD:
-			fprintf(htFile, "\tvoid AtomicAdd(%s rhs) {\n", typeName.c_str());
+			fprintf(htFile, "\tvoid AtomicAdd(%s rhs) {\n", pType->m_typeName.c_str());
 			fprintf(htFile, "\t\tm_bAdd = true;\n");
 			fprintf(htFile, "\t\tm_data = rhs;\n");
 			fprintf(htFile, "\t}\n");
+			fprintf(htFile, "\tbool GetAddEn() { return m_bAdd; }\n");
 			break;
 		default: break;
+		}
+
+		fprintf(htFile, "\tbool GetWrEn() const { return m_bWrite; }\n");
+		if (pGv && pGv->m_addrW > 0)
+			fprintf(htFile, "\tht_uint%d GetAddr() const { return m_addr; }\n", pGv->m_addrW);
+		fprintf(htFile, "\t%s GetData() const { return m_data; }\n", pType->m_typeName.c_str());
+		fprintf(htFile, "\toperator %s () const { return m_data; }\n", pType->m_typeName.c_str());
+
+		fprintf(htFile, "private:\n");
+
+		if (pGv && pGv->m_addrW > 0) {
+			fprintf(htFile, "\tbool m_bAddr;\n");
+			fprintf(htFile, "\tht_uint%d m_addr;\n", pGv->m_addrW);
 		}
 
 		fprintf(htFile, "\tbool m_bWrite;\n");
@@ -685,12 +877,12 @@ void CDsnInfo::GenGlobalVarWriteTypes(CHtFile & htFile, string &typeName, int &a
 		case ATOMIC_ADD: fprintf(htFile, "\tbool m_bAdd;\n"); break;
 		default: break;
 		}
-		fprintf(htFile, "\t%s m_data;\n", typeName.c_str());
+		fprintf(htFile, "\t%s m_data;\n", pType->m_typeName.c_str());
 	}
 
 	fprintf(htFile, "};\n");
 	fprintf(htFile, "\n");
 
-	if (pStruct)
-		atomicMask |= pStruct->m_atomicMask;
+	if (pRecord)
+		atomicMask |= pRecord->m_atomicMask;
 }

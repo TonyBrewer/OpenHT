@@ -10,6 +10,7 @@ CPersPipe::PersPipe()
 	T1_addr = (MemAddr_t)0;
 	T1_operation = (ht_uint12)0;
 	T1_scalar = (uint64_t)0;
+
 	if (PR_htValid) {
 		switch (PR_htInst) {
 		case PIPE_ENTRY: {
@@ -36,7 +37,7 @@ CPersPipe::PersPipe()
 				break;
 			}
 			if (S_cmpValidCnt == 0 && m_writeQueue.empty())
-				WriteMemPause(PIPE_RTN);
+				WriteMemPause(SR_wrGrp, PIPE_RTN);
 			else
 				HtContinue(PIPE_DRAIN);
 		}
@@ -56,8 +57,8 @@ CPersPipe::PersPipe()
 
 	// operations can be launched through this pipe every cycle.
 
-	T1_opA = GR1_opMem_opA();
-	T1_opB = GR1_opMem_opB();
+	T1_opA = GR1_opMem.opA;
+	T1_opB = GR1_opMem.opB;
 
 	// may not need the 26th stage for rsltT, but not worried about pipe length at the moment
 	bbox_wrap(T25_rsltVm, T25_rsltT,
@@ -77,7 +78,7 @@ CPersPipe::PersPipe()
 		CWriteQueue c_popInfo;
 		c_popInfo = m_writeQueue.front();
 		m_writeQueue.pop();
-		WriteMem(c_popInfo.m_addr, c_popInfo.m_rsltT);
+		WriteMem(SR_wrGrp, c_popInfo.m_addr, c_popInfo.m_rsltT);
 	}
 
 	if (GR_htReset)

@@ -2,7 +2,6 @@
 // WrSub Module
 #define WS_HTID_W 5
 
-typedef sc_uint<WS_HTID_W> HtId_t;
 typedef sc_uint<48> MemAddr_t;
 
 dsnInfo.AddModule(name=WrSub, htIdW=WS_HTID_W);
@@ -13,6 +12,7 @@ WrSub.AddPrivate()
 	.AddVar(type=MemAddr_t, name=wrAddr)
 	.AddVar(type=uint64_t, name=wrData)
 	.AddVar(type=ht_uint2, name=wrSize)
+	.AddVar(type=ht_uint6, name=wrGrp)
 	;
 
 WrSub.AddEntry(func=WrSub, inst=WS_WRITE, host=true)
@@ -25,8 +25,9 @@ WrSub.AddReturn(func=WrSub)
 	.AddParam(type=bool, name=boolVar)
 	;
 
-WrSub.AddWriteMem(maxBw=true);
-
-//WrSub.AddGlobal(var=mapHead, dimen1=8, extern=false)
-// .AddField(type=uint16_t, name=ptr, read=true, write=true)
-// ;
+WrSub.AddWriteMem()
+	.AddSrc(name=uint8, type=uint8_t)
+	.AddSrc(name=uint16, type=uint16_t)
+	.AddSrc(name=uint32, type=uint32_t)
+	.AddSrc(name=uint64, type=uint64_t)
+	;

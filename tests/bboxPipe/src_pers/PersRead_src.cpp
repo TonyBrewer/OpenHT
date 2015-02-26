@@ -14,11 +14,7 @@ CPersRead::PersRead()
 
 			if (P_flush) {
 				// don't start new reads, check that reads are complete before txfr control to pipe
-				if (ReadMemPoll()) {
-					HtRetry();
-					break;
-				}
-				HtContinue(READ_TFR);
+				ReadMemPoll(READ_TFR);
 			} else {
 				// Memory read request
 				ReadMem_opAMem(P_vaAddr, PR_idx, false);

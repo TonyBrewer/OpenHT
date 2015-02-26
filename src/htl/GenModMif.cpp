@@ -10,27 +10,38 @@
 #include "CnyHt.h"
 #include "DsnInfo.h"
 
+#define MIF_CHK_STATE g_appArgs.IsVcdAllEnabled()
+
 void CDsnInfo::InitAndValidateModMif()
 {
-	// foreach MIF find the maximum dst ram address width (number of bits needed in response TID).
+	CCoprocInfo const & coprocInfo = g_appArgs.GetCoprocInfo();
+
 	for (size_t modIdx = 0; modIdx < m_modList.size(); modIdx += 1) {
 		CModule &mod = *m_modList[modIdx];
 		CMif &mif = mod.m_mif;
 
 		if (!mif.m_bMif) continue;
 
-		mod.m_rsmSrcCnt += (mif.m_bMifRd && mod.m_mif.m_mifRd.m_bPause) ? 1 : 0;
-		mod.m_rsmSrcCnt += (mif.m_bMifWr && mod.m_mif.m_mifWr.m_bPause) ? 1 : 0;
+		if (mif.m_mifRd.m_bPause && mif.m_mifWr.m_bPause)
+			mod.m_rsmSrcCnt += 3;
+		else if (mif.m_mifRd.m_bPause || mif.m_mifWr.m_bPause)
+			mod.m_rsmSrcCnt += 2;
+		else if (mif.m_mifRd.m_bPoll || mif.m_mifWr.m_bPoll)
+			mod.m_rsmSrcCnt += 1;
 
 		if (mif.m_bMifRd) {
-			mif.m_mifRd.m_queueW.InitValue( mif.m_mifRd.m_lineInfo );
-			mif.m_mifRd.m_rspCntW.InitValue( mif.m_mifRd.m_lineInfo );
+			mif.m_mifRd.m_queueW.InitValue(mif.m_mifRd.m_lineInfo);
+			mif.m_mifRd.m_rspGrpW.InitValue(mif.m_mifRd.m_lineInfo, false, mod.m_threads.m_htIdW.AsInt());
+			mif.m_mifRd.m_rspGrpIdW = mif.m_mifRd.m_rspGrpW.AsInt();
+			mif.m_mifRd.m_rspCntW.InitValue(mif.m_mifRd.m_lineInfo);
 			mif.m_queueW = mif.m_mifRd.m_queueW.AsInt();
 		}
 
 		if (mif.m_bMifWr) {
-			mif.m_mifWr.m_queueW.InitValue( mif.m_mifWr.m_lineInfo );
-			mif.m_mifWr.m_rspCntW.InitValue( mif.m_mifWr.m_lineInfo );
+			mif.m_mifWr.m_queueW.InitValue(mif.m_mifWr.m_lineInfo);
+			mif.m_mifWr.m_rspGrpW.InitValue(mif.m_mifWr.m_lineInfo, false, mod.m_threads.m_htIdW.AsInt());
+			mif.m_mifWr.m_rspGrpIdW = mif.m_mifWr.m_rspGrpW.AsInt();
+			mif.m_mifWr.m_rspCntW.InitValue(mif.m_mifWr.m_lineInfo);
 			mif.m_queueW = mif.m_mifWr.m_queueW.AsInt();
 		}
 
@@ -39,94 +50,7 @@ void CDsnInfo::InitAndValidateModMif()
 				ParseMsg(Error, mif.m_mifRd.m_lineInfo, "expected queueW parameter for AddReadMem and AddWriteMem to have the same value");
 		}
 
-		// Find m_mifRd.m_rspGrpIdW value
-		if (mif.m_bMifRd) {
-			if (mif.m_mifRd.m_rspGrpId.size() == 0)
-				mif.m_mifRd.m_rspGrpIdW = mod.m_threads.m_htIdW.AsInt();
-			else {
-				if (!mod.m_bHasThreads)
-					ParseMsg(Fatal, mif.m_mifRd.m_lineInfo, "private variable for rspGrpId not supported when multiple groups are defined");
-
-				// find private variable with specified name
-				size_t prIdx;
-				for (prIdx = 0; prIdx < mod.m_threads.m_htPriv.m_fieldList.size(); prIdx += 1) {
-					CField & priv = mod.m_threads.m_htPriv.m_fieldList[prIdx];
-
-					if (priv.m_name != mif.m_mifRd.m_rspGrpId.AsStr()) continue;
-
-					// found a private variable
-					mif.m_mifRd.m_rspGrpIdW = FindTypeWidth(priv.m_name, priv.m_type, priv.m_bitWidth, mif.m_mifRd.m_lineInfo);
-					mif.m_mifRd.m_bRspGrpIdPriv = true;
-
-					break;
-				}
-
-				if (prIdx == mod.m_threads.m_htPriv.m_fieldList.size()) {
-					// private variable not found, check shared variables
-					size_t shIdx;
-					for (shIdx = 0; shIdx < mod.m_shared.m_fieldList.size(); shIdx += 1) {
-						CField & shared = mod.m_shared.m_fieldList[shIdx];
-
-						if (shared.m_name != mif.m_mifRd.m_rspGrpId.AsStr()) continue;
-
-						// found a private variable
-						mif.m_mifRd.m_rspGrpIdW = FindTypeWidth(shared.m_name, shared.m_type, shared.m_bitWidth, mif.m_mifRd.m_lineInfo);
-						mif.m_mifRd.m_bRspGrpIdPriv = false;
-
-						break;
-					}
-
-					if (shIdx == mod.m_shared.m_fieldList.size())
-						ParseMsg(Fatal, mif.m_mifRd.m_lineInfo, "unable to find rspGrpId as private or shared variable, '%s'", mif.m_mifRd.m_rspGrpId.AsStr().c_str());
-				}
-			}
-		}
-
-		// Find m_mifWd.m_rspGrpIdW value
-		if (mif.m_bMifWr) {
-			if (mif.m_mifWr.m_rspGrpId.size() == 0)
-				mif.m_mifWr.m_rspGrpIdW = mod.m_threads.m_htIdW.AsInt();
-			else {
-				if (!mod.m_bHasThreads)
-					ParseMsg(Fatal, mif.m_mifWr.m_lineInfo, "private variable for rspGrpId not supported when multiple groups are defined");
-
-				// find private variable with specified name
-				size_t prIdx;
-				for (prIdx = 0; prIdx < mod.m_threads.m_htPriv.m_fieldList.size(); prIdx += 1) {
-					CField & priv = mod.m_threads.m_htPriv.m_fieldList[prIdx];
-
-					if (priv.m_name != mif.m_mifWr.m_rspGrpId.AsStr()) continue;
-
-					// found a private variable
-					mif.m_mifWr.m_rspGrpIdW = FindTypeWidth(priv.m_name, priv.m_type, priv.m_bitWidth, mif.m_mifWr.m_lineInfo);
-					mif.m_mifWr.m_bRspGrpIdPriv = true;
-
-					break;
-				}
-
-				if (prIdx == mod.m_threads.m_htPriv.m_fieldList.size()) {
-					// private variable not found, check shared variables
-					size_t shIdx;
-					for (shIdx = 0; shIdx < mod.m_shared.m_fieldList.size(); shIdx += 1) {
-						CField & shared = mod.m_shared.m_fieldList[shIdx];
-
-						if (shared.m_name != mif.m_mifWr.m_rspGrpId.AsStr()) continue;
-
-						if (shared.m_rdSelW.AsInt() > 0 || shared.m_wrSelW.AsInt() > 0)
-							ParseMsg(Error, mif.m_mifWr.m_lineInfo, "unable to use shared asymetrical block ram for source variable");
-
-						// found a private variable
-						mif.m_mifWr.m_rspGrpIdW = FindTypeWidth(shared.m_name, shared.m_type, shared.m_bitWidth, mif.m_mifWr.m_lineInfo);
-						mif.m_mifWr.m_bRspGrpIdPriv = false;
-
-						break;
-					}
-
-					if (shIdx == mod.m_shared.m_fieldList.size())
-						ParseMsg(Fatal, mif.m_mifWr.m_lineInfo, "unable to find rspGrpId private variable, '%s'", mif.m_mifWr.m_rspGrpId.AsStr().c_str());
-				}
-			}
-		}
+		mif.m_mifReqStgCnt = 0;
 
 		if (mif.m_bMifRd) {
 
@@ -134,83 +58,82 @@ void CDsnInfo::InitAndValidateModMif()
 			for (size_t rdDstIdx = 0; rdDstIdx < mif.m_mifRd.m_rdDstList.size(); rdDstIdx += 1) {
 				CMifRdDst & rdDst = mif.m_mifRd.m_rdDstList[rdDstIdx];
 
-				if (rdDst.m_bMultiRd)
-					mif.m_mifRd.m_bMultiRd = true;
+				rdDst.m_elemCntW.InitValue(rdDst.m_lineInfo, false);
 
-				if (rdDst.m_rdType[0] == 'i')
-					sscanf(rdDst.m_rdType.c_str()+3, "%d", &rdDst.m_memSize);
-				else
-					sscanf(rdDst.m_rdType.c_str()+4, "%d", &rdDst.m_memSize);
+				char const * pStr = rdDst.m_var.c_str();
+				char const * pFldName = pStr;
+				while (isalpha(*pStr) || isdigit(*pStr) || *pStr == '_') pStr += 1;
+				string varName(pFldName, pStr - pFldName);
 
 				if (rdDst.m_infoW.size() > 0) {
 					mif.m_mifRd.m_maxRsmDly = max(mif.m_mifRd.m_maxRsmDly, rdDst.m_rsmDly.AsInt());
+					rdDst.m_pDstType = &g_uint64;
+					rdDst.m_varAddr0W = 0;
+					rdDst.m_varAddr1W = -1;
+					rdDst.m_varAddr2W = -1;
+					rdDst.m_memSize = 64;
+
+					int rdRspInfoW = 20;	// need to calculate this value
+
+					if (rdDst.m_bMultiQwRdReq || rdRspInfoW > 0)
+						mif.m_mifReqStgCnt = max(mif.m_mifReqStgCnt, 1);
+
 					continue;	// function call
 				}
 
-				rdDst.m_dataLsb.InitValue(rdDst.m_lineInfo);
-
 				// first check if rdDst name is unique
-				bool bFoundIntGbl = false;
-				bool bFoundExtGbl = false;
 				bool bFoundShared = false;
 				bool bFoundPrivate = false;
 				bool bFoundNewGbl = false;
-				int ramIdx = 0;
+				CRam * pRam = 0;
+				CField * pField = 0;
 
-				for (size_t ngvIdx = 0; ngvIdx < mod.m_globalVarList.size(); ngvIdx += 1) {
-					CRam * pNgv = mod.m_globalVarList[ngvIdx];
+				for (size_t ngvIdx = 0; ngvIdx < mod.m_ngvList.size(); ngvIdx += 1) {
+					CRam * pNgv = mod.m_ngvList[ngvIdx];
 
-					if (pNgv->m_gblName == rdDst.m_var) {
+					if (pNgv->m_gblName == varName) {
 						bFoundNewGbl = true;
-						ramIdx = ngvIdx;
-					}
-				}
-
-				for (size_t igvIdx = 0; igvIdx < mod.m_intGblList.size(); igvIdx += 1) {
-					CRam &intRam = *mod.m_intGblList[igvIdx];
-
-					if (intRam.m_gblName == rdDst.m_var) {
-						bFoundIntGbl = true;
-						ramIdx = igvIdx;
-					}
-				}
-
-				for (size_t egvIdx = 0; egvIdx < mod.m_extRamList.size(); egvIdx += 1) {
-					CRam &extRam = mod.m_extRamList[egvIdx];
-
-					if (extRam.m_gblName == rdDst.m_var) {
-						bFoundExtGbl = true;
-						ramIdx = egvIdx;
+						pRam = pNgv;
 					}
 				}
 
 				for (size_t shIdx = 0; shIdx < mod.m_shared.m_fieldList.size(); shIdx += 1) {
-					CField & shared = mod.m_shared.m_fieldList[shIdx];
+					CField * pShared = mod.m_shared.m_fieldList[shIdx];
 
-					if (shared.m_name == rdDst.m_var) {
+					if (pShared->m_name == varName) {
 						bFoundShared = true;
-						ramIdx = shIdx;
+						pField = pShared;
 					}
 				}
 
 				for (size_t prIdx = 0; prIdx < mod.m_threads.m_htPriv.m_fieldList.size(); prIdx += 1) {
-					CField & priv = mod.m_threads.m_htPriv.m_fieldList[prIdx];
+					CField * pPriv = mod.m_threads.m_htPriv.m_fieldList[prIdx];
 
-					if (priv.m_name == rdDst.m_var) {
+					if (pPriv->m_name == varName) {
 						bFoundPrivate = true;
-						ramIdx = prIdx;
+						pField = pPriv;
 					}
 				}
 
-				if (bFoundNewGbl + bFoundIntGbl + bFoundExtGbl + bFoundShared + bFoundPrivate == 0) {
+				string ramName = mod.m_modName.AsStr() + "__" + varName;
 
-					ParseMsg(Fatal, rdDst.m_lineInfo, "unable to find private, shared or global destination variable, '%s'", rdDst.m_var.c_str());
+				// check for private variable converted to a global ram
+				for (size_t ngvIdx = 0; ngvIdx < mod.m_ngvList.size(); ngvIdx += 1) {
+					CRam * pNgv = mod.m_ngvList[ngvIdx];
 
-				} else if (bFoundNewGbl + bFoundIntGbl + bFoundExtGbl + bFoundShared + bFoundPrivate > 1) {
+					if (pNgv->m_gblName == ramName) {
+						bFoundNewGbl = true;
+						pRam = pNgv;
+					}
+				}
+
+				if (bFoundNewGbl + bFoundShared + bFoundPrivate == 0) {
+
+					ParseMsg(Fatal, rdDst.m_lineInfo, "unable to find private, shared or global destination variable, '%s'", varName.c_str());
+
+				} else if (bFoundNewGbl + bFoundShared + bFoundPrivate > 1) {
 					string msg;
 					if (bFoundNewGbl)
-						msg += "new global";
-					if (bFoundIntGbl || bFoundExtGbl)
 						msg += "global";
 					if (bFoundShared) {
 						if (msg.size() > 0)
@@ -232,276 +155,124 @@ void CDsnInfo::InitAndValidateModMif()
 				// Find the width of the address for the destination ram
 
 				if (bFoundNewGbl) {
-					CRam * pNgv = mod.m_globalVarList[ramIdx];
+
+					rdDst.m_pGblVar = pRam;
+					rdDst.m_pGblVar->m_bWriteForMifRead = true;
 
 					rdDst.m_varAddr0W = 0;
-					rdDst.m_varAddr1W = pNgv->m_addr1W.AsInt();
-					rdDst.m_varAddr2W = pNgv->m_addr2W.AsInt();
-					rdDst.m_varDimen1 = pNgv->GetDimen(0);
-					rdDst.m_varDimen2 = pNgv->GetDimen(1);
+					rdDst.m_varAddr1W = pRam->m_addr1W.size() == 0 ? -1 : pRam->m_addr1W.AsInt();
+					rdDst.m_varAddr2W = pRam->m_addr2W.size() == 0 ? -1 : pRam->m_addr2W.AsInt();
+					rdDst.m_varAddr1IsHtId = pRam->m_addr1Name == "htId";
+					rdDst.m_varAddr2IsHtId = pRam->m_addr2Name == "htId";
+					rdDst.m_varDimen1 = pRam->GetDimen(0);
+					rdDst.m_varDimen2 = pRam->GetDimen(1);
+
+					vector<CVarAddr> varAddrList;
+					if (pRam->m_addr1W.size() > 0) varAddrList.push_back(CVarAddr(pRam->m_addr1W.AsInt(), rdDst.m_varAddr1IsHtId));
+					if (pRam->m_addr2W.size() > 0) varAddrList.push_back(CVarAddr(pRam->m_addr2W.AsInt(), rdDst.m_varAddr2IsHtId));
 
 					// check if ram has field specified in AddRdDst
-					CStructElemIter iter(this, pNgv->m_type);
-					for ( ; !iter.end(); iter++) {
-						if (iter.IsStructOrUnion()) continue;
+					ParseVarRefSpec(rdDst.m_lineInfo, pRam->m_gblName, pRam->m_dimenList, varAddrList,
+						pRam->m_type, rdDst.m_var, rdDst.m_fieldRefList, rdDst.m_pDstType);
 
-						if (iter.GetHeirFieldName(false) == rdDst.m_field)
-							break;
-					}
-
-					if (iter.end()) {
-						ParseMsg(Error, rdDst.m_lineInfo, "field '%s' does not exist for variable '%s'",
-							rdDst.m_field.c_str(), rdDst.m_var.c_str());
-
-					}  else {
-						CField & field = iter();
-
-						pNgv->m_bMifWrite = true;
-						field.m_bMifWrite = true;
-
-						rdDst.m_pNgvRam = pNgv;
-						rdDst.m_fldDimen1 = field.GetDimen(0);
-						rdDst.m_fldDimen2 = field.GetDimen(1);
-
-						// verify that fieldW + dataLsb <= 64
-						rdDst.m_fldW = FindTypeWidth(field);
-						rdDst.m_memSize = rdDst.m_fldW;
-
-						if (rdDst.m_fldW != 8 && rdDst.m_fldW != 16 && rdDst.m_fldW != 32 && rdDst.m_fldW != 64)
-							ParseMsg(Error, rdDst.m_lineInfo, "field width (%d) must be 8, 16, 32 or 64 bits", rdDst.m_fldW);
-
-						if (rdDst.m_fldW + rdDst.m_dataLsb.AsInt() > rdDst.m_memSize)
-							ParseMsg(Error, rdDst.m_lineInfo, "sum of dst field width (%d) and dataLsb (%d) must be less than rdType width (%d)",
-							rdDst.m_fldW, rdDst.m_dataLsb.AsInt(), rdDst.m_memSize);
-					}
-
-
-				} else if (bFoundIntGbl) {
-					CRam &intRam = *mod.m_intGblList[ramIdx];
-
-					if (intRam.m_gblName == rdDst.m_var) {
-
-						rdDst.m_varAddr0W = 0;
-						rdDst.m_varAddr1W = intRam.m_addr1W.AsInt();
-						rdDst.m_varAddr2W = intRam.m_addr2W.AsInt();
-						rdDst.m_varDimen1 = intRam.GetDimen(0);
-						rdDst.m_varDimen2 = intRam.GetDimen(1);
-
-						// check if ram has field specified in AddRdDst
-						size_t fldIdx;
-						for (fldIdx = 0; fldIdx < intRam.m_fieldList.size(); fldIdx += 1) {
-							CField & field = intRam.m_fieldList[fldIdx];
-
-							if (field.m_name == rdDst.m_field)
-								break;
-						}
-
-						if (fldIdx == intRam.m_fieldList.size())
-							ParseMsg(Error, rdDst.m_lineInfo, "field '%s' does not exist for variable '%s'",
-							rdDst.m_field.c_str(), rdDst.m_var.c_str());
-
-						else {
-							CField & field = intRam.m_fieldList[fldIdx];
-
-							intRam.m_bMifWrite = true;
-							field.m_bMifWrite = true;
-
-							rdDst.m_pIntGbl = &intRam;
-							rdDst.m_fldDimen1 = field.GetDimen(0);
-							rdDst.m_fldDimen2 = field.GetDimen(1);
-
-							// verify that fieldW + dataLsb <= 64
-							rdDst.m_fldW = FindTypeWidth(field);
-
-							if (rdDst.m_fldW + rdDst.m_dataLsb.AsInt() > rdDst.m_memSize)
-								ParseMsg(Error, rdDst.m_lineInfo, "sum of dst field width (%d) and dataLsb (%d) must be less than rdType width (%d)",
-								rdDst.m_fldW, rdDst.m_dataLsb.AsInt(), rdDst.m_memSize);
-						}
-					}
-				} else if (bFoundExtGbl) {
-
-					CRam &extRam = mod.m_extRamList[ramIdx];
-
-					if (extRam.m_gblName == rdDst.m_var) {
-
-						rdDst.m_varAddr0W = 0;
-						rdDst.m_varAddr1W = extRam.m_addr1W.AsInt();
-						rdDst.m_varAddr2W = extRam.m_addr2W.AsInt();
-						rdDst.m_varDimen1 = extRam.GetDimen(0);
-						rdDst.m_varDimen2 = extRam.GetDimen(1);
-
-						// check if ram has field specified in AddRdDst
-						size_t fldIdx;
-						for (fldIdx = 0; fldIdx < extRam.m_fieldList.size(); fldIdx += 1) {
-							CField & field = extRam.m_fieldList[fldIdx];
-
-							if (field.m_name == rdDst.m_field)
-								break;
-						}
-
-						if (fldIdx == extRam.m_fieldList.size())
-							ParseMsg(Error, rdDst.m_lineInfo, "field '%s' does not exist for variable '%s'",
-							rdDst.m_field.c_str(), rdDst.m_var.c_str());
-
-						else {
-							CField & field = extRam.m_fieldList[fldIdx];
-
-							extRam.m_bMifWrite = true;
-							field.m_bMifWrite = true;
-
-							rdDst.m_pExtRam = &extRam;
-							rdDst.m_fldDimen1 = field.GetDimen(0);
-							rdDst.m_fldDimen2 = field.GetDimen(1);
-
-							// verify that fieldW + dataLsb <= 64
-							rdDst.m_fldW = FindTypeWidth(field);
-
-							if (rdDst.m_fldW + rdDst.m_dataLsb.AsInt() > 64)
-								ParseMsg(Error, rdDst.m_lineInfo, "sum of field width (%d) and dataLsb (%d) must be less than 64",
-								rdDst.m_fldW, rdDst.m_dataLsb.AsInt());
-						}
-					}
 				} else if (bFoundShared) {
 
-					CField & shared = mod.m_shared.m_fieldList[ramIdx];
-
-					if (shared.m_name != rdDst.m_var) continue;
-
 					// found a shared variable
-					rdDst.m_pSharedVar = &shared;
+					rdDst.m_pSharedVar = pField;
 					rdDst.m_varAddr0W = 0;
-					rdDst.m_varAddr1W = shared.m_addr1W.AsInt();
-					rdDst.m_varAddr2W = shared.m_addr2W.AsInt();
-					rdDst.m_varDimen1 = shared.GetDimen(0);
-					rdDst.m_varDimen2 = shared.GetDimen(1);
+					rdDst.m_varAddr1W = pField->m_addr1W.size() == 0 ? -1 : pField->m_addr1W.AsInt();
+					rdDst.m_varAddr2W = pField->m_addr2W.size() == 0 ? -1 : pField->m_addr2W.AsInt();
+					rdDst.m_varDimen1 = pField->GetDimen(0);
+					rdDst.m_varDimen2 = pField->GetDimen(1);
 
-					if (rdDst.m_field.size() == 0)
-						rdDst.m_fldW = FindTypeWidth(shared);
+					vector<CVarAddr> varAddrList;
+					if (pField->m_addr1W.size() > 0) varAddrList.push_back(CVarAddr(pField->m_addr1W.AsInt(), rdDst.m_varAddr1IsHtId));
+					if (pField->m_addr2W.size() > 0) varAddrList.push_back(CVarAddr(pField->m_addr2W.AsInt(), rdDst.m_varAddr2IsHtId));
 
-					else {
-						// check if shared variable has field specified in AddDst
-						bool bCStyle;
-						CField const * pBaseField, *pLastField;
-						bool bFldFound = FindFieldInStruct(rdDst.m_lineInfo, shared.m_type, rdDst.m_field, false,
-							bCStyle, pBaseField, pLastField);
+					// check if ram has field specified in AddDst
+					ParseVarRefSpec(rdDst.m_lineInfo, pField->m_name, pField->m_dimenList, varAddrList,
+						pField->m_type, rdDst.m_var, rdDst.m_fieldRefList, rdDst.m_pDstType);
 
-						if (!bCStyle)
-							rdDst.m_field = "m_" + rdDst.m_field;
+					if (pField->m_queueW.AsInt() > 0)
+						ParseMsg(Error, pField->m_lineInfo, "memory read to shared queue variable not supported");
 
-						if (bFldFound) {
-							rdDst.m_fldDimen1 = pBaseField->GetDimen(0);
-							rdDst.m_fldDimen2 = pBaseField->GetDimen(1);
-
-							// verify that fieldW + dataLsb <= 64
-							rdDst.m_fldW = FindTypeWidth(*pLastField);
-
-							if (rdDst.m_fldW + rdDst.m_dataLsb.AsInt() > 64)
-								ParseMsg(Error, rdDst.m_lineInfo, "sum of field width (%d) and dataLsb (%d) must be less than 64",
-								rdDst.m_fldW, rdDst.m_dataLsb.AsInt());
-
-						} else
-							ParseMsg(Error, rdDst.m_lineInfo, "field '%s' does not exist for shared variable '%s'",
-							rdDst.m_field.c_str(), rdDst.m_var.c_str());
-					}
-
-					if (rdDst.m_bMultiRd && shared.m_queueW.AsInt() == 0 && rdDst.m_dstIdx.size() == 0)
-						ParseMsg(Error, "Multi-quadword reads require a dstIdx to be specified");
-
-					if (rdDst.m_varAddr1W > 0 && rdDst.m_dstIdx.substr(0, 3) == "fld")
-						ParseMsg(Error, rdDst.m_lineInfo, "AddDst field indexing on a shared variable with depth is not supported");
+					if (rdDst.m_pSharedVar->m_ramType == eBlockRam && rdDst.m_varAddr1W >= 0 && 
+						rdDst.m_pDstType->m_clangMinAlign != 1 && rdDst.m_pDstType->m_clangBitWidth != rdDst.m_pDstType->m_clangMinAlign)
+						ParseMsg(Error, pField->m_lineInfo, "memory read to shared variable with read type that requires multiple block ram writes not supported");
 
 				} else if (bFoundPrivate) {
 
-					CField & priv = mod.m_threads.m_htPriv.m_fieldList[ramIdx];
-
-					if (priv.m_name != rdDst.m_var) continue;
-
-					if (mod.m_clkRate == eClk2x)
-						ParseMsg(Fatal, rdDst.m_lineInfo, "private variables with memory read or write within clk2x module not supported");
-
 					// found a private variable
-					if (priv.m_pPrivGbl == 0) {
-						// create a global variable
-						string rdStg = "1";
-						string wrStg = mod.m_stage.m_execStg.AsStr();
-						string nullStr;
+					rdDst.m_pPrivVar = pField;
+					rdDst.m_varAddr0W = 0;
+					rdDst.m_varAddr1W = pField->m_addr1W.size() == 0 ? -1 : pField->m_addr1W.AsInt();
+					rdDst.m_varAddr2W = pField->m_addr2W.size() == 0 ? -1 : pField->m_addr2W.AsInt();
+					rdDst.m_varDimen1 = pField->GetDimen(0);
+					rdDst.m_varDimen2 = pField->GetDimen(1);
 
-						priv.m_pPrivGbl = &mod.AddIntRam(priv.m_name, priv.m_addr1Name, priv.m_addr2Name,
-							priv.m_addr1W.AsStr(), priv.m_addr2W.AsStr(), nullStr,
-							nullStr, rdStg, wrStg);
-						priv.m_pPrivGbl->m_addr0W = mod.m_threads.m_htIdW;
+					vector<CVarAddr> varAddrList;
+					if (pField->m_addr1W.size() > 0) varAddrList.push_back(CVarAddr(pField->m_addr1W.AsInt(), rdDst.m_varAddr1IsHtId));
+					if (pField->m_addr2W.size() > 0) varAddrList.push_back(CVarAddr(pField->m_addr2W.AsInt(), rdDst.m_varAddr2IsHtId));
 
-						priv.m_pPrivGbl->m_bPrivGbl = true;
-						priv.m_pPrivGbl->m_addr0W.InitValue(priv.m_pPrivGbl->m_lineInfo, false, 0);
-						priv.m_pPrivGbl->m_addr1W.InitValue(priv.m_pPrivGbl->m_lineInfo, false, 0);
-						priv.m_pPrivGbl->m_addr2W.InitValue(priv.m_pPrivGbl->m_lineInfo, false, 0);
-						priv.m_pPrivGbl->DimenListInit(priv.m_pPrivGbl->m_lineInfo);
-						priv.m_pPrivGbl->m_rdStg.InitValue(priv.m_pPrivGbl->m_lineInfo, false, 1);
-						priv.m_pPrivGbl->m_wrStg.InitValue(priv.m_pPrivGbl->m_lineInfo, false, 1);
-						priv.m_pPrivGbl->InitDimen();
+					// check if ram has field specified in AddDst
+					ParseVarRefSpec(rdDst.m_lineInfo, pField->m_name, pField->m_dimenList, varAddrList,
+						pField->m_type, rdDst.m_var, rdDst.m_fieldRefList, rdDst.m_pDstType);
 
-						priv.m_pPrivGbl->AddGlobalField(priv.m_type, "data");
-						CField & field = priv.m_pPrivGbl->m_fieldList.back();
+				} else
+					HtlAssert(0);
 
-						field.m_dimenList = priv.m_dimenList;
-						field.DimenListInit(priv.m_pPrivGbl->m_lineInfo);
-						field.InitDimen();
-					}
+				if (rdDst.m_pRdType) {
 
-					rdDst.m_pIntGbl = priv.m_pPrivGbl;
-					rdDst.m_varAddr0W = mod.m_threads.m_htIdW.AsInt();
-					rdDst.m_varAddr1W = priv.m_addr1W.AsInt();
-					rdDst.m_varAddr2W = priv.m_addr2W.AsInt();
-					rdDst.m_field = "data";
+					rdDst.m_memSize = rdDst.m_pRdType->m_clangBitWidth;
 
-					CField *pField = &priv.m_pPrivGbl->m_fieldList[0];
-					HtlAssert(pField->m_name == rdDst.m_field);
-
-					pField->m_bMifWrite = true;
-
-					rdDst.m_fldDimen1 = pField->GetDimen(0);
-					rdDst.m_fldDimen2 = pField->GetDimen(1);
-
-					if (rdDst.m_dstIdx == "varIdx1")
-						rdDst.m_dstIdx = "fldIdx1";
-					else if (rdDst.m_dstIdx == "varIdx2")
-						rdDst.m_dstIdx = "fldIdx2";
-
-					// verify that fieldW + dataLsb <= 64
-					rdDst.m_fldW = FindTypeWidth(*pField);
-
-					if (rdDst.m_fldW + rdDst.m_dataLsb.AsInt() > 64)
-						ParseMsg(Error, rdDst.m_lineInfo, "sum of field width (%d) and dataLsb (%d) must be less than 64",
-						rdDst.m_fldW, rdDst.m_dataLsb.AsInt());
-
+				} else {
+					if (rdDst.m_pDstType) {
+						rdDst.m_memSize = rdDst.m_pDstType->m_clangMinAlign;
+						if (rdDst.m_memSize == 1) {
+							if (rdDst.m_pDstType->m_clangBitWidth == 8 || rdDst.m_pDstType->m_clangBitWidth == 16 ||
+								rdDst.m_pDstType->m_clangBitWidth == 32 || rdDst.m_pDstType->m_clangBitWidth == 64)
+							{
+								rdDst.m_memSize = rdDst.m_pDstType->m_clangBitWidth;
+							} else
+								ParseMsg(Error, rdDst.m_lineInfo, "rdType parameter must be specified when type is an ht_uint or ht_int");
+						}
+					} else
+						rdDst.m_memSize = 64;
 				}
 
-				if (rdDst.m_dstIdx == "varAddr1" && rdDst.m_varAddr1W == 0)
-					ParseMsg(Error, rdDst.m_lineInfo, "varAddr1 indexing specified but variable has addr1W == 0");
+				int rdDstSize = 1;
+				if (rdDst.m_fieldRefList.size() > 0) {
+					for (size_t i = 0; i < rdDst.m_fieldRefList.back().m_refDimenList.size(); i += 1)
+						rdDstSize *= rdDst.m_fieldRefList.back().m_refDimenList[i].m_size;
+				}
 
-				if (rdDst.m_dstIdx == "varAddr2" && rdDst.m_varAddr2W == 0)
-					ParseMsg(Error, rdDst.m_lineInfo, "varAddr2 indexing specified but variable has addr2W == 0");
+				rdDst.m_bMultiElemRd = (rdDst.m_elemCntW.size() == 0 || rdDst.m_elemCntW.AsInt() > 0) &&
+					(rdDst.m_fieldRefList.size() == 1 && rdDst.m_varAddr1W > 0 ||
+					rdDstSize > 1);
 
-				if (rdDst.m_dstIdx == "varIdx1" && rdDst.m_varDimen1 == 0)
-					ParseMsg(Error, rdDst.m_lineInfo, "varIdx1 indexing specified but variable has dimen1 == 0");
+				rdDst.m_bMultiQwRdReq = rdDst.m_bMultiElemRd || rdDst.m_pDstType->m_clangMinAlign != 1 && 
+					rdDst.m_pDstType->m_clangBitWidth > rdDst.m_pDstType->m_clangMinAlign;
+				rdDst.m_bMultiQwHostRdReq = rdDst.m_bMultiQwRdReq && (rdDst.m_memSrc.size() == 0 || rdDst.m_memSrc == "host");
+				rdDst.m_bMultiQwCoprocRdReq = rdDst.m_bMultiQwRdReq && (rdDst.m_memSrc.size() == 0 || rdDst.m_memSrc == "coproc");
 
-				if (rdDst.m_dstIdx == "varIdx2" && rdDst.m_varDimen2 == 0)
-					ParseMsg(Error, rdDst.m_lineInfo, "varIdx2 indexing specified but variable has dimen2 == 0");
+				rdDst.m_bMultiQwHostRdMif = rdDst.m_bMultiQwHostRdReq && coprocInfo.GetMaxHostQwReadCnt() > 1 && rdDst.m_memSize == 64;
+				rdDst.m_bMultiQwCoprocRdMif = rdDst.m_bMultiQwCoprocRdReq && coprocInfo.GetMaxCoprocQwReadCnt() > 1 && rdDst.m_memSize == 64;
 
-				if (rdDst.m_dstIdx == "fldIdx1" && rdDst.m_fldDimen1 == 0)
-					ParseMsg(Error, rdDst.m_lineInfo, "fldIdx1 indexing specified but variable field '%s' has dimen1 == 0",
-					rdDst.m_field.c_str());
+				mif.m_mifRd.m_bMultiQwRdReq |= rdDst.m_bMultiQwRdReq;
+				mif.m_mifRd.m_bHostRdReq |= (rdDst.m_memSrc.size() == 0 || rdDst.m_memSrc == "host");
+				mif.m_mifRd.m_bCoprocRdReq |= (rdDst.m_memSrc.size() == 0 || rdDst.m_memSrc == "coproc");
 
-				if (rdDst.m_dstIdx == "fldIdx2" && rdDst.m_fldDimen2 == 0)
-					ParseMsg(Error, rdDst.m_lineInfo, "fldIdx2 indexing specified but variable field '%s' has dimen2 == 0",
-					rdDst.m_field.c_str());
+				mif.m_mifRd.m_bMultiQwHostRdReq |= rdDst.m_bMultiQwHostRdReq;
+				mif.m_mifRd.m_bMultiQwCoprocRdReq |= rdDst.m_bMultiQwCoprocRdReq;
+
+				mif.m_mifRd.m_bMultiQwHostRdMif |= rdDst.m_bMultiQwHostRdMif;
+				mif.m_mifRd.m_bMultiQwCoprocRdMif |= rdDst.m_bMultiQwCoprocRdMif;
+
+				int rdRspInfoW = 20;	// need to calculate this value
+
+				if (rdDst.m_bMultiQwRdReq || rdRspInfoW > 0)
+					mif.m_mifReqStgCnt = max(mif.m_mifReqStgCnt, 1);
 			}
-
-			if (mif.m_mifRd.m_bMultiRd && mif.m_mifRd.m_rspCntW.AsInt() < 4)
-				ParseMsg(Error, mif.m_mifRd.m_lineInfo, "multi-quadword reads requires rspCntW >= 4");
-
-			if (mif.m_mifRd.m_bMultiRd && mif.m_mifRd.m_queueW.AsInt() < 4)
-				ParseMsg(Error, mif.m_mifRd.m_lineInfo, "multi-quadword reads requires queueW >= 4");
 		}
 
 		if (mif.m_bMifWr) {
@@ -509,71 +280,84 @@ void CDsnInfo::InitAndValidateModMif()
 			for (size_t wrSrcIdx = 0; wrSrcIdx < mif.m_mifWr.m_wrSrcList.size(); wrSrcIdx += 1) {
 				CMifWrSrc & wrSrc = mif.m_mifWr.m_wrSrcList[wrSrcIdx];
 
-				if (wrSrc.m_bMultiWr)
-					mif.m_mifWr.m_bMultiWr = true;
+				if (wrSrc.m_pType != 0) {
 
-				// first check if rdDst name is unique
-				bool bFoundIntGbl = false;
-				bool bFoundExtGbl = false;
+					wrSrc.m_pSrcType = wrSrc.m_pType;
+
+					wrSrc.m_varAddr1W = -1;
+					wrSrc.m_varAddr2W = -1;
+					wrSrc.m_memSize = wrSrc.m_pSrcType->m_clangMinAlign;
+
+					wrSrc.m_bMultiElemWr = false;
+
+					wrSrc.m_bMultiQwWrReq = wrSrc.m_pSrcType->m_clangBitWidth > 64 && wrSrc.m_pSrcType->m_clangMinAlign == 64;
+					mif.m_mifWr.m_bMultiQwWrReq |= wrSrc.m_bMultiQwWrReq;
+
+					mif.m_mifReqStgCnt = max(mif.m_mifReqStgCnt, 1);
+
+					continue;
+				}
+
+				wrSrc.m_elemCntW.InitValue(wrSrc.m_lineInfo, false);
+
+				char const * pStr = wrSrc.m_var.c_str();
+				char const * pFldName = pStr;
+				while (isalpha(*pStr) || isdigit(*pStr) || *pStr == '_') pStr += 1;
+				string varName(pFldName, pStr - pFldName);
+
+				// first check if wrSrc name is unique
 				bool bFoundShared = false;
 				bool bFoundPrivate = false;
 				bool bFoundNewGbl = false;
-				int ramIdx = 0;
+				CRam * pRam = 0;
+				CField * pField = 0;
 
-				for (size_t ngvIdx = 0; ngvIdx < mod.m_globalVarList.size(); ngvIdx += 1) {
-					CRam * pNgv = mod.m_globalVarList[ngvIdx];
+				for (size_t ngvIdx = 0; ngvIdx < mod.m_ngvList.size(); ngvIdx += 1) {
+					CRam * pNgv = mod.m_ngvList[ngvIdx];
 
-					if (pNgv->m_gblName == wrSrc.m_var) {
+					if (pNgv->m_gblName == varName) {
 						bFoundNewGbl = true;
-						ramIdx = ngvIdx;
-					}
-				}
-
-				for (size_t igvIdx = 0; igvIdx < mod.m_intGblList.size(); igvIdx += 1) {
-					CRam &intRam = *mod.m_intGblList[igvIdx];
-
-					if (intRam.m_gblName == wrSrc.m_var && !intRam.m_bPrivGbl) {
-						bFoundIntGbl = true;
-						ramIdx = igvIdx;
-					}
-				}
-
-				for (size_t egvIdx = 0; egvIdx < mod.m_extRamList.size(); egvIdx += 1) {
-					CRam &extRam = mod.m_extRamList[egvIdx];
-
-					if (extRam.m_gblName == wrSrc.m_var) {
-						bFoundExtGbl = true;
-						ramIdx = egvIdx;
+						pRam = pNgv;
 					}
 				}
 
 				for (size_t shIdx = 0; shIdx < mod.m_shared.m_fieldList.size(); shIdx += 1) {
-					CField & shared = mod.m_shared.m_fieldList[shIdx];
+					CField * pShared = mod.m_shared.m_fieldList[shIdx];
 
-					if (shared.m_name == wrSrc.m_var) {
+					if (pShared->m_name == varName) {
 						bFoundShared = true;
-						ramIdx = shIdx;
+						pField = pShared;
 					}
 				}
 
 				for (size_t prIdx = 0; prIdx < mod.m_threads.m_htPriv.m_fieldList.size(); prIdx += 1) {
-					CField & priv = mod.m_threads.m_htPriv.m_fieldList[prIdx];
+					CField * pPriv = mod.m_threads.m_htPriv.m_fieldList[prIdx];
 
-					if (priv.m_name == wrSrc.m_var) {
+					if (pPriv->m_name == varName) {
 						bFoundPrivate = true;
-						ramIdx = prIdx;
+						pField = pPriv;
 					}
 				}
 
-				if (bFoundNewGbl + bFoundIntGbl + bFoundExtGbl + bFoundShared + bFoundPrivate == 0) {
+				string ramName = mod.m_modName.AsStr() + "__" + varName;
 
-					ParseMsg(Fatal, wrSrc.m_lineInfo, "unable to find private, shared or global destination variable, '%s'", wrSrc.m_var.c_str());
+				// check for private variable converted to a global ram
+				for (size_t ngvIdx = 0; ngvIdx < mod.m_ngvList.size(); ngvIdx += 1) {
+					CRam * pNgv = mod.m_ngvList[ngvIdx];
 
-				} else if (bFoundNewGbl + bFoundIntGbl + bFoundExtGbl + bFoundShared + bFoundPrivate > 1) {
+					if (pNgv->m_gblName == ramName) {
+						bFoundNewGbl = true;
+						pRam = pNgv;
+					}
+				}
+
+				if (bFoundNewGbl + bFoundShared + bFoundPrivate == 0) {
+
+					ParseMsg(Fatal, wrSrc.m_lineInfo, "unable to find private, shared or global variable, '%s'", varName.c_str());
+
+				} else if (bFoundNewGbl + bFoundShared + bFoundPrivate > 1) {
 					string msg;
 					if (bFoundNewGbl)
-						msg += "new global";
-					if (bFoundIntGbl || bFoundExtGbl)
 						msg += "global";
 					if (bFoundShared) {
 						if (msg.size() > 0)
@@ -589,298 +373,135 @@ void CDsnInfo::InitAndValidateModMif()
 						msg += "private";
 					}
 
-					ParseMsg(Error, wrSrc.m_lineInfo, "write source name is ambiguous, could be %s variable", msg.c_str());
+					ParseMsg(Error, wrSrc.m_lineInfo, "write source variable name is ambiguous, could be %s variable", msg.c_str());
 				}
 
-				if (bFoundIntGbl + bFoundExtGbl + bFoundShared + bFoundPrivate > 1) {
-					string msg;
-					if (bFoundIntGbl || bFoundExtGbl)
-						msg += "global";
-					if (bFoundShared) {
-						if (msg.size() > 0)
-							if (bFoundPrivate)
-								msg += ", ";
-							else
-								msg += " or ";
-						msg += "shared";
-					}
-					if (bFoundPrivate) {
-						if (msg.size() > 0)
-							msg += " or ";
-						msg += "private";
-					}
+				// Find the width of the address for the destination ram
 
-					ParseMsg(Error, wrSrc.m_lineInfo, "write source name is ambiguous, could be %s variable", msg.c_str());
-				}
-
-				// Find the width of the address for the destination ram - check internal rams
 				if (bFoundNewGbl) {
-					CRam * pNgv = mod.m_globalVarList[ramIdx];
+
+					wrSrc.m_pGblVar = pRam;
+					wrSrc.m_pGblVar->m_bReadForMifWrite = !pRam->m_bPrivGbl || pRam->m_addrW > mod.m_threads.m_htIdW.AsInt();
 
 					wrSrc.m_varAddr0W = 0;
-					wrSrc.m_varAddr1W = pNgv->m_addr1W.AsInt();
-					wrSrc.m_varAddr2W = pNgv->m_addr2W.AsInt();
-					wrSrc.m_varDimen1 = pNgv->GetDimen(0);
-					wrSrc.m_varDimen2 = pNgv->GetDimen(1);
+					wrSrc.m_varAddr1W = pRam->m_addr1W.size() == 0 ? -1 : pRam->m_addr1W.AsInt();
+					wrSrc.m_varAddr2W = pRam->m_addr2W.size() == 0 ? -1 : pRam->m_addr2W.AsInt();
+					wrSrc.m_varAddr1IsHtId = pRam->m_addr1Name == "htId";
+					wrSrc.m_varAddr2IsHtId = pRam->m_addr2Name == "htId";
+					wrSrc.m_varDimen1 = pRam->GetDimen(0);
+					wrSrc.m_varDimen2 = pRam->GetDimen(1);
 
-					// check if ram has field specified in AddRdDst
-					CStructElemIter iter(this, pNgv->m_type);
-					for (; !iter.end(); iter++) {
-						if (iter.IsStructOrUnion()) continue;
+					vector<CVarAddr> varAddrList;
+					if (pRam->m_addr1W.size() > 0) varAddrList.push_back(CVarAddr(pRam->m_addr1W.AsInt(), wrSrc.m_varAddr1IsHtId));
+					if (pRam->m_addr2W.size() > 0) varAddrList.push_back(CVarAddr(pRam->m_addr2W.AsInt(), wrSrc.m_varAddr2IsHtId));
 
-						if (iter.GetHeirFieldName(false) == wrSrc.m_field)
-							break;
-					}
+					// check if ram has field specified in AddSrc
+					ParseVarRefSpec(wrSrc.m_lineInfo, pRam->m_gblName, pRam->m_dimenList, varAddrList,
+						pRam->m_type, wrSrc.m_var, wrSrc.m_fieldRefList, wrSrc.m_pSrcType);
 
-					if (iter.end()) {
-						ParseMsg(Error, wrSrc.m_lineInfo, "field '%s' does not exist for variable '%s'",
-							wrSrc.m_field.c_str(), wrSrc.m_var.c_str());
-
-					} else {
-						CField & field = iter();
-
-						pNgv->m_bMifRead = true;
-						field.m_bMifRead = true;
-
-						wrSrc.m_pField = &field;
-						wrSrc.m_pNgvRam = pNgv;
-						wrSrc.m_fldDimen1 = field.GetDimen(0);
-						wrSrc.m_fldDimen2 = field.GetDimen(1);
-
-						// verify that fieldW + dataLsb <= 64
-						wrSrc.m_fldW = FindTypeWidth(field);
-
-						if (wrSrc.m_fldW != 8 && wrSrc.m_fldW != 16 && wrSrc.m_fldW != 32 && wrSrc.m_fldW != 64)
-							ParseMsg(Error, wrSrc.m_lineInfo, "field width (%d) must be 8, 16, 32 or 64 bits",
-							wrSrc.m_fldW);
-					}
-
-				} else if (bFoundIntGbl) {
-					CRam &intRam = *mod.m_intGblList[ramIdx];
-
-					wrSrc.m_varAddr0W = 0;
-					wrSrc.m_varAddr1W = intRam.m_addr1W.AsInt();
-					wrSrc.m_varAddr2W = intRam.m_addr2W.AsInt();
-					wrSrc.m_varDimen1 = intRam.GetDimen(0);
-					wrSrc.m_varDimen2 = intRam.GetDimen(1);
-
-					// find field
-					size_t fldIdx;
-					for (fldIdx = 0; fldIdx < intRam.m_fieldList.size(); fldIdx += 1) {
-						CField & field = intRam.m_fieldList[fldIdx];
-
-						if (field.m_name == wrSrc.m_field)
-							break;
-					}
-
-					if (fldIdx == intRam.m_fieldList.size())
-						ParseMsg(Error, wrSrc.m_lineInfo, "field '%s' does not exist for variable '%s'",
-						wrSrc.m_field.c_str(), wrSrc.m_var.c_str());
-
-					else {
-						CField & field = intRam.m_fieldList[fldIdx];
-
-						intRam.m_bMifRead = true;
-						field.m_bMifRead = true;
-
-						wrSrc.m_pField = &field;
-						wrSrc.m_pIntGbl = &intRam;
-						wrSrc.m_fldDimen1 = field.GetDimen(0);
-						wrSrc.m_fldDimen2 = field.GetDimen(1);
-
-						// verify that fieldW + dataLsb <= 64
-						wrSrc.m_fldW = FindTypeWidth(field);
-
-						if (wrSrc.m_fldW != 64)
-							ParseMsg(Error, wrSrc.m_lineInfo, "field width (%d) must be 64 bits",
-							wrSrc.m_fldW);
-					}
-
-				} else if (bFoundExtGbl) {
-
-					// Find the width of the address for the destination ram - check external rams
-					CRam &extRam = mod.m_extRamList[ramIdx];
-
-					wrSrc.m_varAddr0W = 0;
-					wrSrc.m_varAddr1W = extRam.m_addr1W.AsInt();
-					wrSrc.m_varAddr2W = extRam.m_addr2W.AsInt();
-					wrSrc.m_varDimen1 = extRam.GetDimen(0);
-					wrSrc.m_varDimen2 = extRam.GetDimen(1);
-
-					// check if ram has field specified in AddRdDst
-					size_t fldIdx;
-					for (fldIdx = 0; fldIdx < extRam.m_fieldList.size(); fldIdx += 1) {
-						CField & field = extRam.m_fieldList[fldIdx];
-
-						if (field.m_name == wrSrc.m_field)
-							break;
-					}
-
-					if (fldIdx == extRam.m_fieldList.size())
-						ParseMsg(Error, wrSrc.m_lineInfo, "field '%s' does not exist for variable '%s'",
-						wrSrc.m_field.c_str(), wrSrc.m_var.c_str());
-
-					else {
-						CField & field = extRam.m_fieldList[fldIdx];
-
-						extRam.m_bMifRead = true;
-						field.m_bMifRead = true;
-
-						wrSrc.m_pExtRam = &extRam;
-						wrSrc.m_fldDimen1 = field.GetDimen(0);
-						wrSrc.m_fldDimen2 = field.GetDimen(1);
-
-						// verify that fieldW + dataLsb <= 64
-						wrSrc.m_fldW = FindTypeWidth(field);
-
-						if (wrSrc.m_fldW != 64)
-							ParseMsg(Error, wrSrc.m_lineInfo, "field width (%d) must be 64 bits",
-							wrSrc.m_fldW);
-					}
-						
-					ParseMsg(Error, wrSrc.m_lineInfo, "multi-quadword write to global variable is not supported");
-					continue;
-
-				} if (bFoundShared) {
-					CField & shared = mod.m_shared.m_fieldList[ramIdx];
+				} else if (bFoundShared) {
 
 					// found a shared variable
-					wrSrc.m_pSharedVar = &shared;
-					wrSrc.m_varAddr1W = shared.m_addr1W.AsInt();
-					wrSrc.m_varAddr2W = shared.m_addr2W.AsInt();
-					wrSrc.m_varDimen1 = shared.GetDimen(0);
-					wrSrc.m_varDimen2 = shared.GetDimen(1);
+					wrSrc.m_pSharedVar = pField;
+					wrSrc.m_varAddr0W = 0;
+					wrSrc.m_varAddr1W = pField->m_addr1W.size() == 0 ? -1 : pField->m_addr1W.AsInt();
+					wrSrc.m_varAddr2W = pField->m_addr2W.size() == 0 ? -1 : pField->m_addr2W.AsInt();
+					wrSrc.m_varDimen1 = pField->GetDimen(0);
+					wrSrc.m_varDimen2 = pField->GetDimen(1);
 
-					if (wrSrc.m_field.size() == 0)
-						wrSrc.m_fldW = FindTypeWidth(shared);
+					vector<CVarAddr> varAddrList;
+					if (pField->m_addr1W.size() > 0) varAddrList.push_back(CVarAddr(pField->m_addr1W.AsInt(), wrSrc.m_varAddr1IsHtId));
+					if (pField->m_addr2W.size() > 0) varAddrList.push_back(CVarAddr(pField->m_addr2W.AsInt(), wrSrc.m_varAddr2IsHtId));
 
-					else {
-						// check if shared variable has field specified in AddDst
-						bool bCStyle;
-						CField const * pBaseField, *pLastField;
-						bool bFldFound = FindFieldInStruct(shared.m_lineInfo, shared.m_type, wrSrc.m_field, false,
-							bCStyle, pBaseField, pLastField);
-
-						if (!bCStyle)
-							wrSrc.m_field = "m_" + wrSrc.m_field;
-
-						if (bFldFound) {
-							wrSrc.m_fldDimen1 = pBaseField->GetDimen(0);
-							wrSrc.m_fldDimen2 = pBaseField->GetDimen(1);
-
-							// verify that fieldW + dataLsb <= 64
-							wrSrc.m_fldW = FindTypeWidth(*pLastField);
-
-							if (wrSrc.m_fldW != 64)
-								ParseMsg(Error, wrSrc.m_lineInfo, "field width (%d) must be 64 bits",
-								wrSrc.m_fldW);
-
-						} else
-							ParseMsg(Error, wrSrc.m_lineInfo, "field '%s' does not exist for shared variable '%s'",
-							wrSrc.m_field.c_str(), wrSrc.m_var.c_str());
-					}
-
-					if (wrSrc.m_bMultiWr && shared.m_queueW.AsInt() == 0 && wrSrc.m_srcIdx.size() == 0)
-						ParseMsg(Error, "Multi-quadword writes require a srcIdx to be specified");
-
-					if (wrSrc.m_varAddr1W > 0 && wrSrc.m_srcIdx.substr(0, 3) == "fld")
-						ParseMsg(Error, wrSrc.m_lineInfo, "AddSrc field indexing on a shared variable with depth is not supported");
+					// check if ram has field specified in AddSrc
+					ParseVarRefSpec(wrSrc.m_lineInfo, pField->m_name, pField->m_dimenList, varAddrList,
+						pField->m_type, wrSrc.m_var, wrSrc.m_fieldRefList, wrSrc.m_pSrcType);
 
 				} else if (bFoundPrivate) {
 
-					CField & priv = mod.m_threads.m_htPriv.m_fieldList[ramIdx];
+					// found a shared variable
+					wrSrc.m_pPrivVar = pField;
+					wrSrc.m_varAddr0W = 0;
+					wrSrc.m_varAddr1W = pField->m_addr1W.size() == 0 ? -1 : pField->m_addr1W.AsInt();
+					wrSrc.m_varAddr2W = pField->m_addr2W.size() == 0 ? -1 : pField->m_addr2W.AsInt();
+					wrSrc.m_varDimen1 = pField->GetDimen(0);
+					wrSrc.m_varDimen2 = pField->GetDimen(1);
 
-					if (mod.m_clkRate == eClk2x)
-						ParseMsg(Fatal, wrSrc.m_lineInfo, "private variables with memory read or write within clk2x module not supported");
+					vector<CVarAddr> varAddrList;
+					if (pField->m_addr1W.size() > 0) varAddrList.push_back(CVarAddr(pField->m_addr1W.AsInt(), wrSrc.m_varAddr1IsHtId));
+					if (pField->m_addr2W.size() > 0) varAddrList.push_back(CVarAddr(pField->m_addr2W.AsInt(), wrSrc.m_varAddr2IsHtId));
 
-					// found a private variable
-					if (priv.m_pPrivGbl == 0) {
-						// create a global variable
-						string rdStg = "1";
-						string wrStg = mod.m_stage.m_execStg.AsStr();
-						string nullStr;
+					// check if ram has field specified in AddSrc
+					ParseVarRefSpec(wrSrc.m_lineInfo, pField->m_name, pField->m_dimenList, varAddrList,
+						pField->m_type, wrSrc.m_var, wrSrc.m_fieldRefList, wrSrc.m_pSrcType);
+				} else
+					HtlAssert(0);
 
-						priv.m_pPrivGbl = &mod.AddIntRam(priv.m_name, priv.m_addr1Name, priv.m_addr2Name,
-							priv.m_addr1W.AsStr(), priv.m_addr2W.AsStr(), nullStr,
-							nullStr, rdStg, wrStg);
-						priv.m_pPrivGbl->m_addr0W = mod.m_threads.m_htIdW;
+				if (wrSrc.m_pSrcType) {
+					wrSrc.m_memSize = wrSrc.m_pSrcType->m_clangMinAlign;
+					if (wrSrc.m_memSize == 1)
+						ParseMsg(Error, wrSrc.m_lineInfo, "AddSrc type of ht_uint or ht_int not supported");
+				} else
+					wrSrc.m_memSize = 64;
 
-						priv.m_pPrivGbl->m_bPrivGbl = true;
-						priv.m_pPrivGbl->m_addr0W.InitValue(priv.m_pPrivGbl->m_lineInfo, false, 0);
-						priv.m_pPrivGbl->m_addr1W.InitValue(priv.m_pPrivGbl->m_lineInfo, false, 0);
-						priv.m_pPrivGbl->m_addr2W.InitValue(priv.m_pPrivGbl->m_lineInfo, false, 0);
-						priv.m_pPrivGbl->DimenListInit(priv.m_pPrivGbl->m_lineInfo);
-						priv.m_pPrivGbl->m_rdStg.InitValue(priv.m_pPrivGbl->m_lineInfo, false, 1);
-						priv.m_pPrivGbl->m_wrStg.InitValue(priv.m_pPrivGbl->m_lineInfo, false, 1);
-						priv.m_pPrivGbl->InitDimen();
-
-						priv.m_pPrivGbl->AddGlobalField(priv.m_type, "data");
-						CField & field = priv.m_pPrivGbl->m_fieldList.back();
-						field.m_gblFieldIdx = 0;
-						field.m_dimenList = priv.m_dimenList;
-						field.DimenListInit(priv.m_pPrivGbl->m_lineInfo);
-						field.InitDimen();
-					}
-
-					wrSrc.m_pIntGbl = priv.m_pPrivGbl;
-					wrSrc.m_varAddr0W = mod.m_threads.m_htIdW.AsInt();
-					wrSrc.m_varAddr1W = priv.m_addr1W.AsInt();
-					wrSrc.m_varAddr2W = priv.m_addr2W.AsInt();
-					wrSrc.m_field = "data";
-
-					CField *pField = &priv.m_pPrivGbl->m_fieldList[0];
-					HtlAssert(pField->m_name == wrSrc.m_field);
-
-					pField->m_bMifRead = true;
-
-					wrSrc.m_pField = pField;
-					wrSrc.m_fldDimen1 = pField->GetDimen(0);
-					wrSrc.m_fldDimen2 = pField->GetDimen(1);
-
-					if (wrSrc.m_srcIdx == "varIdx1")
-						wrSrc.m_srcIdx = "fldIdx1";
-					else if (wrSrc.m_srcIdx == "varIdx2")
-						wrSrc.m_srcIdx = "fldIdx2";
-
-					// verify that fieldW + dataLsb <= 64
-					wrSrc.m_fldW = FindTypeWidth(*pField);
-
-					if (wrSrc.m_fldW != 64)
-						ParseMsg(Error, wrSrc.m_lineInfo, "field width (%d) must be 64 bits",
-						wrSrc.m_fldW);
+				int wrSrcSize = 1;
+				if (wrSrc.m_fieldRefList.size() > 0) {
+					for (size_t i = 0; i < wrSrc.m_fieldRefList.back().m_refDimenList.size(); i += 1)
+						wrSrcSize *= wrSrc.m_fieldRefList.back().m_refDimenList[i].m_size;
 				}
 
-				if (wrSrc.m_srcIdx == "varAddr1" && wrSrc.m_varAddr1W == 0)
-					ParseMsg(Error, wrSrc.m_lineInfo, "varAddr1 indexing specified but variable has addr1W == 0");
+				wrSrc.m_bMultiElemWr = (wrSrc.m_elemCntW.size() == 0 || wrSrc.m_elemCntW.AsInt() > 0) &&
+					(wrSrc.m_fieldRefList.size() == 1 && wrSrc.m_varAddr1W > 0 ||
+					wrSrcSize > 1);
 
-				if (wrSrc.m_srcIdx == "varAddr2" && wrSrc.m_varAddr2W == 0)
-					ParseMsg(Error, wrSrc.m_lineInfo, "varAddr2 indexing specified but variable has addr2W == 0");
+				wrSrc.m_bMultiQwWrReq = wrSrc.m_bMultiElemWr || wrSrc.m_pSrcType &&
+					wrSrc.m_pSrcType->m_clangMinAlign != 1 && wrSrc.m_pSrcType->m_clangBitWidth > wrSrc.m_pSrcType->m_clangMinAlign;
+				wrSrc.m_bMultiQwHostWrReq = wrSrc.m_bMultiQwWrReq && (wrSrc.m_memDst.size() == 0 || wrSrc.m_memDst == "host");
+				wrSrc.m_bMultiQwCoprocWrReq = wrSrc.m_bMultiQwWrReq && (wrSrc.m_memDst.size() == 0 || wrSrc.m_memDst == "coproc");
 
-				if (wrSrc.m_srcIdx == "varIdx1" && wrSrc.m_varDimen1 == 0)
-					ParseMsg(Error, wrSrc.m_lineInfo, "varIdx1 indexing specified but variable has dimen1 == 0");
+				wrSrc.m_bMultiQwHostWrMif = wrSrc.m_bMultiQwHostWrReq && coprocInfo.GetMaxHostQwWriteCnt() > 1 && wrSrc.m_memSize == 64;
+				wrSrc.m_bMultiQwCoprocWrMif = wrSrc.m_bMultiQwCoprocWrReq && coprocInfo.GetMaxCoprocQwWriteCnt() > 1 && wrSrc.m_memSize == 64;
 
-				if (wrSrc.m_srcIdx == "varIdx2" && wrSrc.m_varDimen2 == 0)
-					ParseMsg(Error, wrSrc.m_lineInfo, "varIdx2 indexing specified but variable has dimen2 == 0");
+				mif.m_mifWr.m_bMultiQwWrReq |= wrSrc.m_bMultiQwWrReq;
+				mif.m_mifWr.m_bHostWrReq |= (wrSrc.m_memDst.size() == 0 || wrSrc.m_memDst == "host");
+				mif.m_mifWr.m_bCoprocWrReq |= (wrSrc.m_memDst.size() == 0 || wrSrc.m_memDst == "coproc");
 
-				if (wrSrc.m_srcIdx == "fldIdx1" && wrSrc.m_fldDimen1 == 0)
-					ParseMsg(Error, wrSrc.m_lineInfo, "fldIdx1 indexing specified but variable field '%s' has dimen1 == 0",
-					wrSrc.m_field.c_str());
+				mif.m_mifWr.m_bMultiQwHostWrReq |= wrSrc.m_bMultiQwHostWrReq;
+				mif.m_mifWr.m_bMultiQwCoprocWrReq |= wrSrc.m_bMultiQwCoprocWrReq;
 
-				if (wrSrc.m_srcIdx == "fldIdx2" && wrSrc.m_fldDimen2 == 0)
-					ParseMsg(Error, wrSrc.m_lineInfo, "fldIdx2 indexing specified but variable field '%s' has dimen2 == 0",
-					wrSrc.m_field.c_str());
+				mif.m_mifWr.m_bMultiQwHostWrMif |= wrSrc.m_bMultiQwHostWrMif;
+				mif.m_mifWr.m_bMultiQwCoprocWrMif |= wrSrc.m_bMultiQwCoprocWrMif;
+
+				if (wrSrc.m_varAddr1W > 0)
+					mif.m_mifReqStgCnt = max(mif.m_mifReqStgCnt, 2);
+				else
+					mif.m_mifReqStgCnt = max(mif.m_mifReqStgCnt, 1);
 			}
-
-			if (mif.m_mifWr.m_bMultiWr && mif.m_mifWr.m_rspCntW.AsInt() < 4)
-				ParseMsg(Error, mif.m_mifWr.m_lineInfo, "multi-quadword write requires rspCntW >= 4");
-
-			if (mif.m_mifWr.m_bMultiWr && mif.m_mifWr.m_queueW.AsInt() < 4)
-				ParseMsg(Error, mif.m_mifWr.m_lineInfo, "multi-quadword write requires queueW >= 4");
 		}
 
 		mod.m_memPortList[0]->m_queueW = mif.m_queueW;
-		mod.m_memPortList[0]->m_bMultiRd |= mif.m_mifRd.m_bMultiRd;
-		mod.m_memPortList[0]->m_bMultiWr |= mif.m_mifWr.m_bMultiWr;
+		mod.m_memPortList[0]->m_bMultiQwRdReq |= mif.m_mifRd.m_bMultiQwRdReq;
+		mod.m_memPortList[0]->m_bMultiQwWrReq |= mif.m_mifWr.m_bMultiQwWrReq;
+
+		if ((coprocInfo.GetMaxHostQwReadCnt() > 1 || coprocInfo.GetMaxCoprocQwReadCnt() > 1)
+			&& mif.m_mifRd.m_bMultiQwRdReq)
+		{
+			if (mif.m_bMifRd && mif.m_mifRd.m_rspCntW.AsInt() < 4)
+				ParseMsg(Error, mif.m_mifRd.m_lineInfo, "AddReadMem rspCntW parameter must be greater or equal to 4 for multi-cycle memory requests");
+			if (mif.m_bMifRd && mif.m_mifRd.m_queueW.AsInt() < 4)
+				ParseMsg(Error, mif.m_mifRd.m_lineInfo, "AddReadMem queueW parameter must be greater or equal to 4 for multi-cycle memory requests");
+		} else if (mif.m_bMifRd && mif.m_mifRd.m_rspCntW.AsInt() < 3)
+			ParseMsg(Error, mif.m_mifRd.m_lineInfo, "AddReadMem rspCntW parameter must be greater or equal to 3");
+
+		if ((coprocInfo.GetMaxHostQwWriteCnt() > 1 || coprocInfo.GetMaxCoprocQwWriteCnt() > 1)
+			&& mif.m_mifWr.m_bMultiQwWrReq) 
+		{
+			if (mif.m_bMifWr && mif.m_mifWr.m_rspCntW.AsInt() < 4)
+				ParseMsg(Error, mif.m_mifWr.m_lineInfo, "AddWriteMem rspCntW parameter must be greater or equal to 4 for multi-cycle memory requests");
+			if (mif.m_bMifWr && mif.m_mifWr.m_queueW.AsInt() < 4)
+				ParseMsg(Error, mif.m_mifWr.m_lineInfo, "AddWriteMem queueW parameter must be greater or equal to 4 for multi-cycle memory requests");
+		} else if (mif.m_bMifWr && mif.m_mifWr.m_rspCntW.AsInt() < 3)
+			ParseMsg(Error, mif.m_mifWr.m_lineInfo, "AddWriteMem rspCntW parameter must be greater or equal to 3");
 	}
 
 	// fill unit wide mifInstList
@@ -913,11 +534,149 @@ void CDsnInfo::InitAndValidateModMif()
 	}
 
 	if (m_mifInstList.size() * g_appArgs.GetAeUnitCnt() > 16) {
-		ParseMsg(Error, "required memory interface ports (%d) for AE is greater then number available (16)", 
-			(int)(m_mifInstList.size() * g_appArgs.GetAeUnitCnt()) );
+		ParseMsg(Error, "required memory interface ports (%d) for AE is greater then number available (16)",
+			(int)(m_mifInstList.size() * g_appArgs.GetAeUnitCnt()));
 		ParseMsg(Info, "   required memory interface ports is product of Unit count (%d) and memory ports per Unit (%d)",
 			(int)g_appArgs.GetAeUnitCnt(), (int)m_mifInstList.size());
 	}
+}
+
+CField * CDsnInfo::FindField(CLineInfo & lineInfo, CRecord * pRecord, string & fieldName)
+{
+	vector<CField *> & fieldList = pRecord->m_fieldList;
+
+	size_t fldIdx;
+	for (fldIdx = 0; fldIdx < fieldList.size(); fldIdx += 1) {
+		if (fieldList[fldIdx]->m_pType->IsRecord() && fieldList[fldIdx]->m_name == "") {
+
+			CField * pField = FindField(lineInfo, fieldList[fldIdx]->m_pType->AsRecord(), fieldName);
+			if (pField)
+				return pField;
+
+		} else if (fieldList[fldIdx]->m_name == fieldName)
+			return fieldList[fldIdx];
+	}
+
+	return 0;
+}
+
+void CDsnInfo::ParseVarRefSpec(CLineInfo & lineInfo, string const & name,
+	vector<CHtString> const & dimenList, vector<CVarAddr> const & varAddrList,
+	string const & baseType, string & varRefSpec, vector<CFieldRef> & varRefList, CType * &pDstType)
+{
+	pDstType = 0;
+	char const * pStr = varRefSpec.c_str();
+	if (*pStr == '\0')
+		return;
+
+	string fldType = baseType;
+	for (;;) {
+
+		// parse next field name
+		varRefList.push_back(CFieldRef());
+		CFieldRef & fieldRef = varRefList.back();
+
+		char const * pFldName = pStr;
+		while (isalpha(*pStr) || isdigit(*pStr) || *pStr == '_') pStr += 1;
+		fieldRef.m_fieldName = string(pFldName, pStr - pFldName);
+
+		vector<CHtString> const * pDimenList;
+		if (varRefList.size() == 1) {
+			pDimenList = &dimenList;
+		} else {
+			// find field name in struct list
+			CRecord * pStruct = FindRecord(fldType);
+
+			CField * pField = FindField(lineInfo, pStruct, fieldRef.m_fieldName);
+
+			if (pField == 0) {
+				ParseMsg(Error, lineInfo, "field %s was not found", fieldRef.m_fieldName.c_str());
+				return;
+			}
+			pDimenList = &pField->m_dimenList;
+
+			fldType = pField->m_type;
+		}
+
+		size_t dimenCnt = 0;
+		while (*pStr == ' ') pStr += 1;
+		while (*pStr == '[') {
+			pStr += 1; while (*pStr == ' ') pStr += 1;
+
+			if (pDimenList->size() <= dimenCnt) {
+				ParseMsg(Error, lineInfo, "field %s has %d dimensions", fieldRef.m_fieldName.c_str(), (int)pDimenList->size());
+				return;
+			}
+
+			if (*pStr == ']') {
+				fieldRef.m_refDimenList.push_back(CRefDimen(-1, (*pDimenList)[dimenCnt].AsInt()));
+
+			} else {
+				char * pEnd;
+				int value = strtol(pStr, &pEnd, 10);
+				if (pEnd == pStr) {
+					ParseMsg(Error, lineInfo, "field %s has invalid dimension", fieldRef.m_fieldName.c_str());
+					return;
+				}
+				pStr = pEnd; while (*pStr == ' ') pStr += 1;
+				if (*pStr != ']') {
+					ParseMsg(Error, lineInfo, "field %s has invalid dimension", fieldRef.m_fieldName.c_str());
+					return;
+				}
+				fieldRef.m_refDimenList.push_back(CRefDimen(value, (*pDimenList)[dimenCnt].AsInt()));
+			}
+			pStr += 1; while (isspace(*pStr)) pStr += 1;
+			dimenCnt += 1;
+		}
+
+		if (pDimenList->size() != dimenCnt) {
+			ParseMsg(Error, lineInfo, "variable/field %s has invalid dimension count, expected %d",
+				fieldRef.m_fieldName.c_str(), (int)pDimenList->size());
+			return;
+		}
+
+		if (varRefList.size() == 1 && *pStr == '(') {
+			size_t addrCnt = 0;
+			do {
+				pStr += 1; while (isspace(*pStr)) pStr += 1;
+
+				if (varAddrList.size() <= addrCnt) {
+					ParseMsg(Error, lineInfo, "variable %s has %d required addresses", fieldRef.m_fieldName.c_str(), (int)varAddrList.size());
+					return;
+				}
+
+				if (*pStr == ',' || *pStr == ')') {
+					fieldRef.m_refAddrList.push_back(CRefAddr(-1, varAddrList[addrCnt].m_sizeW, varAddrList[addrCnt].m_isHtId));
+				} else {
+					char * pEnd;
+					int value = strtol(pStr, &pEnd, 10);
+					if (pEnd == pStr) {
+						ParseMsg(Error, lineInfo, "field %s has invalid address value", fieldRef.m_fieldName.c_str());
+						return;
+					}
+					pStr = pEnd; while (isspace(*pStr)) pStr += 1;
+					if (*pStr != ',' && *pStr != ')') {
+						ParseMsg(Error, lineInfo, "field %s has invalid address value", fieldRef.m_fieldName.c_str());
+						return;
+					}
+					fieldRef.m_refAddrList.push_back(CRefAddr(value, varAddrList[addrCnt].m_sizeW, varAddrList[addrCnt].m_isHtId));
+				}
+				addrCnt += 1;
+			} while (*pStr != ')');
+			pStr += 1;
+		}
+
+		if (*pStr != '\0' && *pStr != '.')
+			ParseMsg(Error, lineInfo, "unexpected char (%c) after field %s", *pStr, fieldRef.m_fieldName.c_str());
+
+		if (*pStr == '.')
+			pStr += 1;
+		else
+			break;
+		while (*pStr == ' ') pStr += 1;
+	}
+
+	pDstType = FindType(fldType, lineInfo);
 }
 
 void CDsnInfo::GenModMifStatements(CModule &mod)
@@ -925,378 +684,292 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 	if (!mod.m_mif.m_bMif)
 		return;
 
+	bool bNeedMifContQue = false;
+	bool bNeedMifPollQue = false;
+	bool bNeedMifRdRsmQue = false;
+	bool bNeedMifWrRsmQue = false;
+
 	g_appArgs.GetDsnRpt().AddLevel("Memory Interface\n");
 
 	string vcdModName = VA("Pers%s", mod.m_modName.Uc().c_str());
 
-	if (mod.m_mif.m_bMif) {
-		CMif &mif = mod.m_mif;
+	CMif &mif = mod.m_mif;
 
-		m_mifIoDecl.Append("\t// Memory Interface\n");
-		GenModDecl(eVcdUser, m_mifIoDecl, vcdModName, "sc_out<bool>", VA("o_%sP0ToMif_reqRdy", mod.m_modName.Lc().c_str()));
-		GenModDecl(eVcdAll, m_mifIoDecl, vcdModName, "sc_out<CMemRdWrReqIntf>", VA("o_%sP0ToMif_req", mod.m_modName.Lc().c_str()));
+	m_mifIoDecl.Append("\t// Memory Interface\n");
+	GenModDecl(eVcdUser, m_mifIoDecl, vcdModName, "sc_out<bool>", VA("o_%sP0ToMif_reqRdy", mod.m_modName.Lc().c_str()));
+	GenModDecl(eVcdAll, m_mifIoDecl, vcdModName, "sc_out<CMemRdWrReqIntf>", VA("o_%sP0ToMif_req", mod.m_modName.Lc().c_str()));
 
-		m_mifIoDecl.Append("\tsc_in<bool> i_mifTo%sP0_reqAvl;\n", mod.m_modName.Uc().c_str());
+	m_mifIoDecl.Append("\tsc_in<bool> i_mifTo%sP0_reqAvl;\n", mod.m_modName.Uc().c_str());
+	m_mifIoDecl.Append("\n");
+
+	if (mif.m_bMifRd) {
+		GenModDecl(eVcdUser, m_mifIoDecl, vcdModName, "sc_in<bool>", VA("i_mifTo%sP0_rdRspRdy", mod.m_modName.Uc().c_str()));
+		GenModDecl(eVcdUser, m_mifIoDecl, vcdModName, "sc_in<CMemRdRspIntf>", VA("i_mifTo%sP0_rdRsp", mod.m_modName.Uc().c_str()));
+		GenModDecl(eVcdUser, m_mifIoDecl, vcdModName, "sc_out<bool>", VA("o_%sP0ToMif_rdRspFull", mod.m_modName.Lc().c_str()));
 		m_mifIoDecl.Append("\n");
+	}
 
-		if (mif.m_bMifRd) {
-			GenModDecl(eVcdUser, m_mifIoDecl, vcdModName, "sc_in<bool>", VA("i_mifTo%sP0_rdRspRdy", mod.m_modName.Uc().c_str()));
-			GenModDecl(eVcdUser, m_mifIoDecl, vcdModName, "sc_in<CMemRdRspIntf>", VA("i_mifTo%sP0_rdRsp", mod.m_modName.Uc().c_str()));
-			m_mifIoDecl.Append("\n");
-		}
-
-		if (mif.m_bMifWr) {
-			GenModDecl(eVcdUser, m_mifIoDecl, vcdModName, "sc_in<bool>", VA("i_mifTo%sP0_wrRspRdy", mod.m_modName.Uc().c_str()));
-			if (mod.m_threads.m_htIdW.AsInt() == 0)
-				GenModDecl(eVcdAll, m_mifIoDecl, vcdModName, "sc_in<sc_uint<MIF_TID_W> > ht_noload", VA("i_mifTo%sP0_wrRspTid", mod.m_modName.Uc().c_str()));
-			else
-				GenModDecl(eVcdAll, m_mifIoDecl, vcdModName, "sc_in<sc_uint<MIF_TID_W> >", VA("i_mifTo%sP0_wrRspTid", mod.m_modName.Uc().c_str()));
-			m_mifIoDecl.Append("\n");
-		}
+	if (mif.m_bMifWr) {
+		GenModDecl(eVcdUser, m_mifIoDecl, vcdModName, "sc_in<bool>", VA("i_mifTo%sP0_wrRspRdy", mod.m_modName.Uc().c_str()));
+		if (mod.m_mif.m_mifWr.m_rspGrpW.AsInt() == 0)
+			GenModDecl(eVcdAll, m_mifIoDecl, vcdModName, "sc_in<sc_uint<MIF_TID_W> > ht_noload", VA("i_mifTo%sP0_wrRspTid", mod.m_modName.Uc().c_str()));
+		else
+			GenModDecl(eVcdAll, m_mifIoDecl, vcdModName, "sc_in<sc_uint<MIF_TID_W> >", VA("i_mifTo%sP0_wrRspTid", mod.m_modName.Uc().c_str()));
+		m_mifIoDecl.Append("\n");
 	}
 
 	string unitNameUc = !g_appArgs.IsModuleUnitNamesEnabled() ? m_unitName.Uc() : "";
 
 	CHtCode	& mifPreInstr = mod.m_clkRate == eClk1x ? m_mifPreInstr1x : m_mifPreInstr2x;
 	CHtCode	& mifPostInstr = mod.m_clkRate == eClk1x ? m_mifPostInstr1x : m_mifPostInstr2x;
-	CHtCode	& mifRamClock = mod.m_clkRate == eClk1x ? m_mifRamClock1x : m_mifRamClock2x;
 	CHtCode	& mifReg = mod.m_clkRate == eClk1x ? m_mifReg1x : m_mifReg2x;
 	CHtCode	& mifPostReg = mod.m_clkRate == eClk1x ? m_mifPostReg1x : m_mifPostReg2x;
 	CHtCode	& mifOut = mod.m_clkRate == eClk1x ? m_mifOut1x : m_mifOut2x;
+	CHtCode & mifReset = mod.m_clkRate == eClk1x ? m_mifReset1x : m_mifReset2x;
 
-	CMif & mif = mod.m_mif;
-	int rdGrpBankCnt = mif.m_mifRd.m_bMaxBw ? 4 : 2;
-	int wrGrpBankCnt = mif.m_mifWr.m_bMaxBw ? 4 : 2;
+	CCoprocInfo const & coprocInfo = g_appArgs.GetCoprocInfo();
 
-	bool is_hc1 = g_appArgs.GetCoproc() == hc1 ||
-		g_appArgs.GetCoproc() == hc1ex;
-	bool is_hc2 = g_appArgs.GetCoproc() == hc2 ||
-		g_appArgs.GetCoproc() == hc2ex;
-	bool is_wx = g_appArgs.GetCoproc() == wx690 ||
-		g_appArgs.GetCoproc() == wx2k;
+	bool bMultiQwReq = mif.m_mifRd.m_bMultiQwRdReq || mif.m_mifWr.m_bMultiQwWrReq;
 
-	mif.m_bSingleReqMode = (!mif.m_bMifRd || mif.m_mifRd.m_rspCntW.AsInt() == 0)
-		&& (!mif.m_bMifWr || mif.m_mifWr.m_rspCntW.AsInt() == 0);
+	bool bMultiQwHostRdMif = mif.m_mifRd.m_bMultiQwHostRdMif;
+	bool bMultiQwCoprocRdMif = mif.m_mifRd.m_bMultiQwCoprocRdMif;
+	bool bMultiQwHostWrMif = mif.m_mifWr.m_bMultiQwHostWrMif;
+	bool bMultiQwCoprocWrMif = mif.m_mifWr.m_bMultiQwCoprocWrMif;
 
-	bool bNeed_reqQwCnt = mod.m_mif.m_mifWr.m_bMultiWr || mod.m_mif.m_mifRd.m_bMultiRd;
+	// instruction has multi QW requestm
+	bool bMultiQwMif = bMultiQwHostRdMif || bMultiQwCoprocRdMif || bMultiQwHostWrMif || bMultiQwCoprocWrMif;
 
-	bool bNeed_reqQwIdx = mod.m_mif.m_mifWr.m_bMultiWr
-		|| !is_wx && mod.m_mif.m_mifRd.m_bMultiRd;
+	// generate multi QW request to mif
+	bool bMultiQwRdMif = bMultiQwHostRdMif || bMultiQwCoprocRdMif;
 
-	bool bNeed_reqQwSplit = is_hc2
-		&& (mod.m_mif.m_mifWr.m_bMultiWr || mod.m_mif.m_mifRd.m_bMultiRd);
+	bool bRdRspInfoPool = mif.m_bMifRd;
 
-	bool bNeed_reqBusy = mod.m_mif.m_mifWr.m_bMultiWr
-		|| !is_wx && mod.m_mif.m_mifRd.m_bMultiRd;
+	// scan rdDstList and gather info
+	bool bMultiElemMod = false;
+	bool bReadFromHost = false;
+	bool bWriteToHost = false;
+	vector<int> vIdxWList;
 
-	bool bNeed_rdRspQwIdx = mod.m_mif.m_mifRd.m_bMultiRd && (is_hc2 || is_wx);
+	// list of write types
+	vector<CType *> wrSrcTypeList;
 
-	// thread resume logic
-	m_mifDefines.Append("#define %s_MIF_TYPE_W 2\n\n", mod.m_modName.Upper().c_str());
+	int maxElemCnt = 1;
+	int maxRdElemQwCnt = 1;
 
-	int dstIdW = mif.m_mifRd.m_rdDstList.size() <= 1 ? 0 : FindLg2(mif.m_mifRd.m_rdDstList.size()-1);
+	bool bRdDstNonNgv = false;
+	vector<CRam *> rdDstNgvRamList;
+	int rdDstRdyCnt = 0;
 
-	mif.m_maxDstW = 0;
-	for (size_t dstIdx = 0; dstIdx < mif.m_mifRd.m_rdDstList.size(); dstIdx += 1) {
-		CMifRdDst & rdDst = mif.m_mifRd.m_rdDstList[dstIdx];
+	bool bSingleMemSize = true;
+	int modMemSize = 0;
 
-		// tid format:
-		//   dstId - least significant bits
-		//   fIdx
-		//   lIdx
-		//   varAddr1
-		//   varAddr2
-		//   varIdx1
-		//   varIdx2
-		//   fldIdx1
-		//   fldIdx2 - most significant bits of rdDst
-		//   qwCntM1 - <28:26>
+	for (size_t rdDstIdx = 0; rdDstIdx < mif.m_mifRd.m_rdDstList.size(); rdDstIdx += 1) {
+		CMifRdDst &rdDst = mif.m_mifRd.m_rdDstList[rdDstIdx];
 
-		int multiRdW = rdDst.m_bMultiRd ? 6 : 0;
+		if (rdDst.m_memSrc == "host")
+			bReadFromHost = true;
 
-		if (rdDst.m_pIntGbl && rdDst.m_pIntGbl->m_bPrivGbl) {
-			m_mifDefines.Append("#define %s_MIF_DST_%s_VAR_ADDR0_W %d\n",
-				mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(), rdDst.m_varAddr0W);
-			m_mifDefines.Append("#define %s_MIF_DST_%s_VAR_ADDR0_SHF %d\n",
-				mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(), dstIdW + multiRdW);
-			m_mifDefines.Append("#define %s_MIF_DST_%s_VAR_ADDR0_MSK 0x%x\n",
-				mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(), (1ul << rdDst.m_varAddr0W)-1);
+		if (rdDst.m_infoW.size() > 0) {
+			if (!bRdDstNonNgv)
+				rdDstRdyCnt += 1;
+			bRdDstNonNgv = true;
+			continue;
 		}
 
-		if (rdDst.m_varAddr1W > 0) {
-			m_mifDefines.Append("#define %s_MIF_DST_%s_VAR_ADDR1_W %d\n",
-				mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(), rdDst.m_varAddr1W);
-			m_mifDefines.Append("#define %s_MIF_DST_%s_VAR_ADDR1_SHF %d\n",
-				mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(), dstIdW + multiRdW + rdDst.m_varAddr0W);
-			m_mifDefines.Append("#define %s_MIF_DST_%s_VAR_ADDR1_MSK 0x%x\n",
-				mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(), (1ul << rdDst.m_varAddr1W)-1);
+		int elemQwCnt = rdDst.m_pDstType->m_clangMinAlign == 1 ? 1 :
+			((rdDst.m_pDstType->m_clangBitWidth + rdDst.m_pDstType->m_clangMinAlign - 1) / rdDst.m_pDstType->m_clangMinAlign);
+		maxRdElemQwCnt = max(maxRdElemQwCnt, elemQwCnt);
+
+		int elemCnt = 1;
+		if (rdDst.m_fieldRefList.size() == 1 && rdDst.m_varAddr1W > 0) {
+			elemCnt *= 1 << (rdDst.m_varAddr1W >= 0 ? rdDst.m_varAddr1W : 0);
+			elemCnt *= 1 << (rdDst.m_varAddr2W >= 0 ? rdDst.m_varAddr2W : 0);
+		} else if (rdDst.m_fieldRefList.back().m_refDimenList.size() > 0) {
+			vector<CRefDimen> & refDimen = rdDst.m_fieldRefList.back().m_refDimenList;
+			for (size_t i = 0; i < refDimen.size(); i += 1)
+				elemCnt *= refDimen[i].m_size;
+		}
+		if (rdDst.m_elemCntW.size() > 0)
+			elemCnt = min(elemCnt, 1 << rdDst.m_elemCntW.AsInt());
+		maxElemCnt = max(maxElemCnt, elemCnt);
+
+		// generate common list of vIdx widths
+		bool bMultiElemRd = (rdDst.m_elemCntW.size() == 0 || rdDst.m_elemCntW.AsInt() > 0) &&
+			(rdDst.m_fieldRefList.size() == 1 && rdDst.m_varAddr1W > 0 ||
+			rdDst.m_fieldRefList.back().m_refDimenList.size() > 0);
+
+		if (bMultiElemRd) {
+			if (rdDst.m_fieldRefList.size() == 1 && rdDst.m_varAddr1W > 0) {
+				int addr1W = rdDst.m_varAddr1IsHtId ? 0 : rdDst.m_varAddr1W;
+				if (vIdxWList.size() <= 0)
+					vIdxWList.push_back(addr1W);
+				else
+					vIdxWList[0] = max(vIdxWList[0], addr1W);
+
+				int addr2W = rdDst.m_varAddr2IsHtId ? 0 : rdDst.m_varAddr2W;
+				if (rdDst.m_varAddr2W > 0) {
+					if (vIdxWList.size() <= 1)
+						vIdxWList.push_back(addr2W);
+					else
+						vIdxWList[1] = max(vIdxWList[1], addr2W);
+				}
+			} else {
+				for (size_t dimIdx = 0; dimIdx < rdDst.m_fieldRefList.back().m_refDimenList.size(); dimIdx += 1) {
+					CRefDimen & refDimen = rdDst.m_fieldRefList.back().m_refDimenList[dimIdx];
+					int vIdx = refDimen.m_size;
+					int vIdxW = FindLg2(vIdx);
+					if (vIdxWList.size() <= dimIdx)
+						vIdxWList.push_back(vIdxW);
+					else
+						vIdxWList[dimIdx] = max(vIdxWList[dimIdx], vIdxW);
+				}
+			}
 		}
 
-		if (rdDst.m_varAddr2W > 0) {
-			m_mifDefines.Append("#define %s_MIF_DST_%s_VAR_ADDR2_W %d\n",
-				mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(), rdDst.m_varAddr2W);
-			m_mifDefines.Append("#define %s_MIF_DST_%s_VAR_ADDR2_SHF %d\n",
-				mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(), dstIdW + multiRdW + rdDst.m_varAddr0W + rdDst.m_varAddr1W);
-			m_mifDefines.Append("#define %s_MIF_DST_%s_VAR_ADDR2_MSK 0x%x\n",
-				mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(), (1ul << rdDst.m_varAddr2W)-1);
+		bMultiElemMod |= bMultiElemRd;
+
+		if (rdDst.m_pGblVar == 0) {
+			if (!bRdDstNonNgv)
+				rdDstRdyCnt += 1;
+			bRdDstNonNgv = true;
+			continue;
 		}
 
-		int varDimen1W = 0;
-		if (rdDst.m_varDimen1 > 0) {
-			varDimen1W = FindLg2(rdDst.m_varDimen1-1);
-			m_mifDefines.Append("#define %s_MIF_DST_%s_VAR_IDX1_W %d\n",
-				mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(), varDimen1W);
-			m_mifDefines.Append("#define %s_MIF_DST_%s_VAR_IDX1_SHF %d\n",
-				mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(), dstIdW + multiRdW + rdDst.m_varAddr0W + rdDst.m_varAddr1W + rdDst.m_varAddr2W);
-			m_mifDefines.Append("#define %s_MIF_DST_%s_VAR_IDX1_MSK 0x%x\n",
-				mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(), (1ul << varDimen1W)-1);
+		size_t i;
+		for (i = 0; i < rdDstNgvRamList.size(); i += 1) {
+			if (rdDstNgvRamList[i] == rdDst.m_pGblVar)
+				break;
 		}
 
-		int varDimen2W = 0;
-		if (rdDst.m_varDimen2 > 0) {
-			varDimen2W = FindLg2(rdDst.m_varDimen2-1);
-			m_mifDefines.Append("#define %s_MIF_DST_%s_VAR_IDX2_W %d\n",
-				mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(), varDimen2W);
-			m_mifDefines.Append("#define %s_MIF_DST_%s_VAR_IDX2_SHF %d\n",
-				mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(),
-				dstIdW + multiRdW + rdDst.m_varAddr0W + rdDst.m_varAddr1W + rdDst.m_varAddr2W + varDimen1W);
-			m_mifDefines.Append("#define %s_MIF_DST_%s_VAR_IDX2_MSK 0x%x\n",
-				mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(), (1ul << varDimen2W)-1);
+		if (i == rdDstNgvRamList.size()) {
+			rdDstNgvRamList.push_back(rdDst.m_pGblVar);
+			rdDstRdyCnt += rdDst.m_pGblVar->m_elemCnt;
 		}
 
-		int fldDimen1W = 0;
-		if (rdDst.m_fldDimen1 > 0) {
-			fldDimen1W = FindLg2(rdDst.m_fldDimen1-1);
-			m_mifDefines.Append("#define %s_MIF_DST_%s_FLD_IDX1_W %d\n",
-				mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(), fldDimen1W);
-			m_mifDefines.Append("#define %s_MIF_DST_%s_FLD_IDX1_SHF %d\n",
-				mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(),
-				dstIdW + multiRdW + rdDst.m_varAddr0W + rdDst.m_varAddr1W + rdDst.m_varAddr2W + varDimen1W + varDimen2W);
-			m_mifDefines.Append("#define %s_MIF_DST_%s_FLD_IDX1_MSK 0x%x\n",
-				mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(), (1ul << fldDimen1W)-1);
-		}
-
-		int fldDimen2W = 0;
-		if (rdDst.m_fldDimen2 > 0) {
-			fldDimen2W = FindLg2(rdDst.m_fldDimen2-1);
-			m_mifDefines.Append("#define %s_MIF_DST_%s_FLD_IDX2_W %d\n",
-				mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(), fldDimen2W);
-			m_mifDefines.Append("#define %s_MIF_DST_%s_FLD_IDX2_SHF %d\n",
-				mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(),
-				dstIdW + multiRdW + rdDst.m_varAddr0W + rdDst.m_varAddr1W + rdDst.m_varAddr2W + varDimen1W + varDimen2W + fldDimen1W);
-			m_mifDefines.Append("#define %s_MIF_DST_%s_FLD_IDX2_MSK 0x%x\n",
-				mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(), (1ul << fldDimen2W)-1);
-		}
-
-		int infoW = rdDst.m_infoW.AsInt();
-		if (infoW > 0) {
-			m_mifDefines.Append("#define %s_MIF_DST_%s_INFO_W %d\n",
-				mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(), infoW);
-			m_mifDefines.Append("#define %s_MIF_DST_%s_INFO_SHF %d\n",
-				mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(), dstIdW + multiRdW);
-			m_mifDefines.Append("#define %s_MIF_DST_%s_INFO_MSK 0x%x\n",
-				mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(), (1ul << infoW)-1);
-		}
-
-		if (infoW > 0 && rdDst.m_bMultiRd && !is_wx) {
-			m_mifDefines.Append("#define %s_MIF_DST_%s_RSP_IDX_W 3\n",
-				mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str());
-			m_mifDefines.Append("#define %s_MIF_DST_%s_RSP_IDX_SHF %d\n",
-				mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(), dstIdW + multiRdW + infoW);
-			m_mifDefines.Append("#define %s_MIF_DST_%s_RSP_IDX_MSK 0x7\n",
-				mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str());
-		}
-
-		rdDst.m_dstW = dstIdW + multiRdW + rdDst.m_varAddr0W + rdDst.m_varAddr1W + rdDst.m_varAddr2W + varDimen1W + varDimen2W + fldDimen1W + fldDimen2W + infoW;
-		mif.m_maxDstW = max(mif.m_maxDstW, rdDst.m_dstW);
-
-		if (rdDst.m_dstW > 25)
-			ParseMsg(Error, "ReadMem response info field exceeds 25 bits, '%s'\n", rdDst.m_name.c_str());
+		// check for req size
+		if (modMemSize == 0)
+			modMemSize = rdDst.m_memSize;
+		else if (modMemSize != rdDst.m_memSize)
+			bSingleMemSize = false;
 	}
 
-	m_mifDefines.Append("#define %s_MIF_DST_IDX_W %d\n",
-		mod.m_modName.Upper().c_str(), dstIdW);
-	m_mifDefines.Append("#define %s_MIF_DST_IDX_SHF %d\n",
-		mod.m_modName.Upper().c_str(), 0);
-	m_mifDefines.Append("#define %s_MIF_DST_IDX_MSK 0x%x\n",
-		mod.m_modName.Upper().c_str(), (1ul << dstIdW) - 1);
+	int maxWrElemQwCnt = 1;
 
-	if (mif.m_mifRd.m_bMultiRd && is_wx) {
-		m_mifDefines.Append("#define %s_MIF_DST_QW_FIRST_W 3\n", mod.m_modName.Upper().c_str());
-		m_mifDefines.Append("#define %s_MIF_DST_QW_FIRST_SHF %d\n", mod.m_modName.Upper().c_str(), dstIdW);
-		m_mifDefines.Append("#define %s_MIF_DST_QW_FIRST_MSK 0x7\n", mod.m_modName.Upper().c_str());
-		m_mifDefines.Append("#define %s_MIF_DST_QW_LAST_W 3\n", mod.m_modName.Upper().c_str());
-		m_mifDefines.Append("#define %s_MIF_DST_QW_LAST_SHF %d\n", mod.m_modName.Upper().c_str(), dstIdW+3);
-		m_mifDefines.Append("#define %s_MIF_DST_QW_LAST_MSK 0x7\n", mod.m_modName.Upper().c_str());
+	for (size_t wrSrcIdx = 0; wrSrcIdx < mif.m_mifWr.m_wrSrcList.size(); wrSrcIdx += 1) {
+		CMifWrSrc &wrSrc = mif.m_mifWr.m_wrSrcList[wrSrcIdx];
+
+		if (wrSrc.m_memDst == "host")
+			bWriteToHost = true;
+
+		int elemQwCnt = wrSrc.m_pSrcType->m_clangMinAlign == 1 ? 1 : 
+			((wrSrc.m_pSrcType->m_clangBitWidth + wrSrc.m_pSrcType->m_clangMinAlign - 1) / wrSrc.m_pSrcType->m_clangMinAlign);
+		maxWrElemQwCnt = max(maxWrElemQwCnt, elemQwCnt);
+
+		int elemCnt = 1;
+		if (wrSrc.m_pType != 0) {
+			;
+		} else if (wrSrc.m_fieldRefList.size() == 1 && wrSrc.m_varAddr1W > 0) {
+			elemCnt *= 1 << (wrSrc.m_varAddr1W >= 0 ? wrSrc.m_varAddr1W : 0);
+			elemCnt *= 1 << (wrSrc.m_varAddr2W >= 0 ? wrSrc.m_varAddr2W : 0);
+		} else if (wrSrc.m_fieldRefList.back().m_refDimenList.size() > 0) {
+			vector<CRefDimen> & refDimen = wrSrc.m_fieldRefList.back().m_refDimenList;
+			for (size_t i = 0; i < refDimen.size(); i += 1)
+				elemCnt *= refDimen[i].m_size;
+		}
+		if (wrSrc.m_elemCntW.size() > 0)
+			elemCnt = min(elemCnt, 1 << wrSrc.m_elemCntW.AsInt());
+		maxElemCnt = max(maxElemCnt, elemCnt);
+
+		// generate common list of vIdx widths
+		bool bMultiElemWr = (wrSrc.m_pType == 0) &&
+			(wrSrc.m_elemCntW.size() == 0 || wrSrc.m_elemCntW.AsInt() > 0) &&
+			(wrSrc.m_fieldRefList.size() == 1 && wrSrc.m_varAddr1W > 0 ||
+			wrSrc.m_fieldRefList.back().m_refDimenList.size() > 0);
+
+		if (bMultiElemWr) {
+			if (wrSrc.m_fieldRefList.size() == 1 && wrSrc.m_varAddr1W > 0) {
+				int addr1W = wrSrc.m_varAddr1IsHtId ? 0 : wrSrc.m_varAddr1W;
+				if (vIdxWList.size() <= 0)
+					vIdxWList.push_back(addr1W);
+				else
+					vIdxWList[0] = max(vIdxWList[0], addr1W);
+
+				int addr2W = wrSrc.m_varAddr2IsHtId ? 0 : wrSrc.m_varAddr2W;
+				if (wrSrc.m_varAddr2W > 0) {
+					if (vIdxWList.size() <= 1)
+						vIdxWList.push_back(addr2W);
+					else
+						vIdxWList[1] = max(vIdxWList[1], addr2W);
+				}
+			} else {
+				for (size_t dimIdx = 0; dimIdx < wrSrc.m_fieldRefList.back().m_refDimenList.size(); dimIdx += 1) {
+					int vIdx = wrSrc.m_fieldRefList.back().m_refDimenList[dimIdx].m_size;
+					int vIdxW = FindLg2(vIdx);
+					if (vIdxWList.size() <= dimIdx)
+						vIdxWList.push_back(vIdxW);
+					else
+						vIdxWList[dimIdx] = max(vIdxWList[dimIdx], vIdxW);
+				}
+			}
+		}
+
+		bMultiElemMod |= bMultiElemWr;
 	}
+	int maxElemQwCnt = max(maxRdElemQwCnt, maxWrElemQwCnt);
+	int maxQwCnt = maxElemCnt * maxElemQwCnt;
 
-	m_mifDefines.Append("#define %s_MIF_DST_W %d\n\n",
-		mod.m_modName.Upper().c_str(), mif.m_maxDstW);
+	bool bRdRspGrpIdIsHtId = mif.m_mifRd.m_rspGrpW.size() == 0;
+	int rdRspGrpIdW = 0;
 
-	int srcIdW = mif.m_mifWr.m_wrSrcList.size()+1 <= 1 ? 0 : FindLg2(mif.m_mifWr.m_wrSrcList.size());
-
-	mif.m_maxSrcW = 0;
-	for (size_t srcIdx = 0; srcIdx < mif.m_mifWr.m_wrSrcList.size(); srcIdx += 1) {
-		CMifWrSrc & wrSrc = mif.m_mifWr.m_wrSrcList[srcIdx];
-
-		// tid format:
-		//   srcId - least significant bits
-		//   fIdx
-		//   lIdx
-		//   varAddr1
-		//   varAddr2
-		//   varIdx1
-		//   varIdx2
-		//   fldIdx1
-		//   fldIdx2 - most significant bits of wrSrc
-		//   qwCntM1 - <28:26>
-
-		int multiWrW = /*wrSrc.m_bMultiWr ? 6 :*/ 0;
-
-		if (wrSrc.m_pIntGbl && wrSrc.m_pIntGbl->m_bPrivGbl) {
-			m_mifDefines.Append("#define %s_MIF_SRC_%s_VAR_ADDR0_W %d\n",
-				mod.m_modName.Upper().c_str(), wrSrc.m_name.Upper().c_str(), wrSrc.m_varAddr0W);
-			m_mifDefines.Append("#define %s_MIF_SRC_%s_VAR_ADDR0_SHF %d\n",
-				mod.m_modName.Upper().c_str(), wrSrc.m_name.Upper().c_str(), srcIdW + multiWrW);
-			m_mifDefines.Append("#define %s_MIF_SRC_%s_VAR_ADDR0_MSK 0x%x\n",
-				mod.m_modName.Upper().c_str(), wrSrc.m_name.Upper().c_str(), (1ul << wrSrc.m_varAddr0W)-1);
-		}
-
-		if (wrSrc.m_varAddr1W > 0) {
-			m_mifDefines.Append("#define %s_MIF_SRC_%s_VAR_ADDR1_W %d\n",
-				mod.m_modName.Upper().c_str(), wrSrc.m_name.Upper().c_str(), wrSrc.m_varAddr1W);
-			m_mifDefines.Append("#define %s_MIF_SRC_%s_VAR_ADDR1_SHF %d\n",
-				mod.m_modName.Upper().c_str(), wrSrc.m_name.Upper().c_str(), srcIdW + multiWrW + wrSrc.m_varAddr0W);
-			m_mifDefines.Append("#define %s_MIF_SRC_%s_VAR_ADDR1_MSK 0x%x\n",
-				mod.m_modName.Upper().c_str(), wrSrc.m_name.Upper().c_str(), (1ul << wrSrc.m_varAddr1W)-1);
-		}
-
-		if (wrSrc.m_varAddr2W > 0) {
-			m_mifDefines.Append("#define %s_MIF_SRC_%s_VAR_ADDR2_W %d\n",
-				mod.m_modName.Upper().c_str(), wrSrc.m_name.Upper().c_str(), wrSrc.m_varAddr2W);
-			m_mifDefines.Append("#define %s_MIF_SRC_%s_VAR_ADDR2_SHF %d\n",
-				mod.m_modName.Upper().c_str(), wrSrc.m_name.Upper().c_str(), srcIdW + multiWrW + wrSrc.m_varAddr0W + wrSrc.m_varAddr1W);
-			m_mifDefines.Append("#define %s_MIF_SRC_%s_VAR_ADDR2_MSK 0x%x\n",
-				mod.m_modName.Upper().c_str(), wrSrc.m_name.Upper().c_str(), (1ul << wrSrc.m_varAddr2W)-1);
-		}
-
-		int varDimen1W = 0;
-		if (wrSrc.m_varDimen1 > 0) {
-			varDimen1W = FindLg2(wrSrc.m_varDimen1-1);
-			m_mifDefines.Append("#define %s_MIF_SRC_%s_VAR_IDX1_W %d\n",
-				mod.m_modName.Upper().c_str(), wrSrc.m_name.Upper().c_str(), varDimen1W);
-			m_mifDefines.Append("#define %s_MIF_SRC_%s_VAR_IDX1_SHF %d\n",
-				mod.m_modName.Upper().c_str(), wrSrc.m_name.Upper().c_str(), srcIdW + multiWrW + wrSrc.m_varAddr0W + wrSrc.m_varAddr1W + wrSrc.m_varAddr2W);
-			m_mifDefines.Append("#define %s_MIF_SRC_%s_VAR_IDX1_MSK 0x%x\n",
-				mod.m_modName.Upper().c_str(), wrSrc.m_name.Upper().c_str(), (1ul << varDimen1W)-1);
-		}
-
-		int varDimen2W = 0;
-		if (wrSrc.m_varDimen2 > 0) {
-			varDimen2W = FindLg2(wrSrc.m_varDimen2-1);
-			m_mifDefines.Append("#define %s_MIF_SRC_%s_VAR_IDX2_W %d\n",
-				mod.m_modName.Upper().c_str(), wrSrc.m_name.Upper().c_str(), varDimen2W);
-			m_mifDefines.Append("#define %s_MIF_SRC_%s_VAR_IDX2_SHF %d\n",
-				mod.m_modName.Upper().c_str(), wrSrc.m_name.Upper().c_str(),
-				srcIdW + multiWrW + wrSrc.m_varAddr0W + wrSrc.m_varAddr1W + wrSrc.m_varAddr2W + varDimen1W);
-			m_mifDefines.Append("#define %s_MIF_SRC_%s_VAR_IDX2_MSK 0x%x\n",
-				mod.m_modName.Upper().c_str(), wrSrc.m_name.Upper().c_str(), (1ul << varDimen2W)-1);
-		}
-
-		int fldDimen1W = 0;
-		if (wrSrc.m_fldDimen1 > 0) {
-			fldDimen1W = FindLg2(wrSrc.m_fldDimen1-1);
-			m_mifDefines.Append("#define %s_MIF_SRC_%s_FLD_IDX1_W %d\n",
-				mod.m_modName.Upper().c_str(), wrSrc.m_name.Upper().c_str(), fldDimen1W);
-			m_mifDefines.Append("#define %s_MIF_SRC_%s_FLD_IDX1_SHF %d\n",
-				mod.m_modName.Upper().c_str(), wrSrc.m_name.Upper().c_str(),
-				srcIdW + multiWrW + wrSrc.m_varAddr0W + wrSrc.m_varAddr1W + wrSrc.m_varAddr2W + varDimen1W + varDimen2W);
-			m_mifDefines.Append("#define %s_MIF_SRC_%s_FLD_IDX1_MSK 0x%x\n",
-				mod.m_modName.Upper().c_str(), wrSrc.m_name.Upper().c_str(), (1ul << fldDimen1W)-1);
-		}
-
-		int fldDimen2W = 0;
-		if (wrSrc.m_fldDimen2 > 0) {
-			fldDimen2W = FindLg2(wrSrc.m_fldDimen2-1);
-			m_mifDefines.Append("#define %s_MIF_SRC_%s_FLD_IDX2_W %d\n",
-				mod.m_modName.Upper().c_str(), wrSrc.m_name.Upper().c_str(), fldDimen2W);
-			m_mifDefines.Append("#define %s_MIF_SRC_%s_FLD_IDX2_SHF %d\n",
-				mod.m_modName.Upper().c_str(), wrSrc.m_name.Upper().c_str(),
-				srcIdW + multiWrW + wrSrc.m_varAddr0W + wrSrc.m_varAddr1W + wrSrc.m_varAddr2W + varDimen1W + varDimen2W + fldDimen1W);
-			m_mifDefines.Append("#define %s_MIF_SRC_%s_FLD_IDX2_MSK 0x%x\n",
-				mod.m_modName.Upper().c_str(), wrSrc.m_name.Upper().c_str(), (1ul << fldDimen2W)-1);
-		}
-
-		wrSrc.m_srcW = srcIdW + multiWrW + wrSrc.m_varAddr0W + wrSrc.m_varAddr1W + wrSrc.m_varAddr2W + varDimen1W + varDimen2W + fldDimen1W + fldDimen2W;
-		mif.m_maxSrcW = max(mif.m_maxSrcW, wrSrc.m_srcW);
-
-		if (wrSrc.m_srcW > 25)
-			ParseMsg(Error, "WriteMem response info field exceeds 25 bits, '%s'\n", wrSrc.m_name.c_str());
-	}
-
-	m_mifDefines.Append("#define %s_MIF_SRC_IDX_W %d\n",
-		mod.m_modName.Upper().c_str(), srcIdW);
-	m_mifDefines.Append("#define %s_MIF_SRC_IDX_SHF %d\n",
-		mod.m_modName.Upper().c_str(), 0);
-	m_mifDefines.Append("#define %s_MIF_SRC_IDX_MSK 0x%x\n",
-		mod.m_modName.Upper().c_str(), (1ul << srcIdW) - 1);
-
-	m_mifDefines.Append("#define %s_MIF_SRC_W %d\n\n",
-		mod.m_modName.Upper().c_str(), mif.m_maxSrcW);
-
-	if (mif.m_bMifRd && mif.m_mifRd.m_rspCntW.AsInt() > 0) {
-		m_mifDefines.Append("#define %s_MIF_RLEN_W %d\n", mod.m_modName.Upper().c_str(), mif.m_mifRd.m_rspCntW.AsInt());
-		m_mifDefines.Append("#define %s_MIF_RLEN (1 << %s_MIF_RLEN_W)\n",
-			mod.m_modName.Upper().c_str(), mod.m_modName.Upper().c_str());
-	}
-
-	if (mif.m_bMifWr && mif.m_mifWr.m_rspCntW.AsInt() > 0) {
-		m_mifDefines.Append("#define %s_MIF_WLEN_W %d\n", mod.m_modName.Upper().c_str(), mif.m_mifWr.m_rspCntW.AsInt());
-		m_mifDefines.Append("#define %s_MIF_WLEN (1 << %s_MIF_WLEN_W)\n",
-			mod.m_modName.Upper().c_str(), mod.m_modName.Upper().c_str());
-		m_mifDefines.NewLine();
-	}
+	if (MIF_CHK_STATE)
+		m_mifDefines.Append("#define %s_CHK_GRP_ID 0\n", mod.m_modName.Upper().c_str());
 
 	if (mif.m_bMifRd) {
+		rdRspGrpIdW = mif.m_mifRd.m_rspGrpW.AsInt();
+
 		m_mifDefines.Append("#define %s_RD_RSP_CNT_W %d\n",
 			mod.m_modName.Upper().c_str(), mif.m_mifRd.m_rspCntW.AsInt());
 
-		if (mif.m_mifRd.m_rspGrpId.size() == 0)
+		if (bRdRspGrpIdIsHtId) {
 			m_mifDefines.Append("#define %s_RD_GRP_ID_W %s_HTID_W\n",
-			mod.m_modName.Upper().c_str(), mod.m_modName.Upper().c_str());
-		else
+				mod.m_modName.Upper().c_str(), mod.m_modName.Upper().c_str());
+		} else {
 			m_mifDefines.Append("#define %s_RD_GRP_ID_W %d\n",
-			mod.m_modName.Upper().c_str(), mif.m_mifRd.m_rspGrpIdW);
+				mod.m_modName.Upper().c_str(), mif.m_mifRd.m_rspGrpW.AsInt());
+		}
 	}
 
+	bool bWrRspGrpIdIsHtId = mif.m_mifWr.m_rspGrpW.size() == 0;
+	int wrRspGrpIdW = 0;
+
 	if (mif.m_bMifWr) {
+		wrRspGrpIdW = mif.m_mifWr.m_rspGrpW.AsInt();
+
 		m_mifDefines.Append("#define %s_WR_RSP_CNT_W %d\n",
 			mod.m_modName.Upper().c_str(), mif.m_mifWr.m_rspCntW.AsInt());
 
-		if (mif.m_mifWr.m_rspGrpId.size() == 0)
+		if (bWrRspGrpIdIsHtId) {
 			m_mifDefines.Append("#define %s_WR_GRP_ID_W %s_HTID_W\n",
-			mod.m_modName.Upper().c_str(), mod.m_modName.Upper().c_str());
-		else
+				mod.m_modName.Upper().c_str(), mod.m_modName.Upper().c_str());
+		} else {
 			m_mifDefines.Append("#define %s_WR_GRP_ID_W %d\n",
-			mod.m_modName.Upper().c_str(), mif.m_mifWr.m_rspGrpIdW);
+				mod.m_modName.Upper().c_str(), mif.m_mifWr.m_rspGrpW.AsInt());
+		}
 	}
 
 	m_mifDefines.NewLine();
 
-	const char *pRdGrpIdMask = (mif.m_mifRd.m_rspGrpIdW == 2 || mif.m_mifRd.m_bMaxBw) ? "3" : "1";
-	const char *pRdGrpShfAmt = (mif.m_mifRd.m_rspGrpIdW == 2 || mif.m_mifRd.m_bMaxBw) ? "2" : "1";
-
-	char rdRspGrpName[32];
+	string rdRspGrpName;
 	if (mif.m_bMifRd) {
 		m_mifMacros.Append("// Memory Read Interface Routines\n");
 
 		if (mif.m_mifRd.m_rspGrpId.size() == 0)
-			sprintf(rdRspGrpName, "r_t%d_htId", mod.m_execStg);
-		else if (mif.m_mifRd.m_bRspGrpIdPriv)
-			sprintf(rdRspGrpName, "r_t%d_htPriv.m_%s",
-			mod.m_execStg, mif.m_mifRd.m_rspGrpId.AsStr().c_str());
-		else
-			sprintf(rdRspGrpName, "r_%s", mif.m_mifRd.m_rspGrpId.AsStr().c_str());
+			rdRspGrpName = VA("r_t%d_htId", mod.m_execStg);
+		else if (mif.m_mifRd.m_bRspGrpIdPriv) {
+			rdRspGrpName = VA("r_t%d_htPriv.m_%s",
+				mod.m_execStg, mif.m_mifRd.m_rspGrpId.AsStr().c_str());
+		} else
+			rdRspGrpName = VA("r_%s", mif.m_mifRd.m_rspGrpId.AsStr().c_str());
 
 		///////////////////////////////////////////////////////////
 		// generate ReadMemBusy routine
@@ -1309,35 +982,20 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 			unitNameUc.c_str(), mod.m_modName.Uc().c_str());
 		m_mifMacros.Append("{\n");
 
-		char reqBusy[32];
-		if (bNeed_reqBusy)
-			sprintf(reqBusy, " || r_t%d_reqBusy", mod.m_execStg);
+		string rdMemBusy;
+		if (bMultiQwReq)
+			rdMemBusy = VA("r_t%d_memReqBusy", mod.m_execStg);
 		else
-			reqBusy[0] = '\0';
+			rdMemBusy = VA("r_rdGrpRspCntBusy || r_%sToMif_reqAvlCntBusy", mod.m_modName.Lc().c_str());
 
-		if (mif.m_mifRd.m_rspGrpIdW <= 2) { // using registers
+		mifPostReg.Append("#\tifdef _HTV\n");
+		mifPostReg.Append("\tc_t%d_bReadMemBusy = %s;\n",
+			mod.m_execStg, rdMemBusy.c_str());
 
-			mifPostReg.Append("#\tifdef _HTV\n");
-			mifPostReg.Append("\tc_t%d_bReadMemBusy = r_%sToMif_reqAvlCntBusy || r_t%d_rdRspBusyCntMax%s;\n",
-				mod.m_execStg, mod.m_modName.Lc().c_str(), mod.m_execStg, reqBusy);
+		mifPostReg.Append("#\telse\n");
 
-			mifPostReg.Append("#\telse\n");
-
-			mifPostReg.Append("\tc_t%d_bReadMemBusy = r_%sToMif_reqAvlCntBusy || r_t%d_rdRspBusyCntMax%s ||\n",
-				mod.m_execStg, mod.m_modName.Lc().c_str(), mod.m_execStg, reqBusy);
-
-		} else {
-
-			mifPostReg.Append("#\tifdef _HTV\n");
-			mifPostReg.Append("\tc_t%d_bReadMemBusy = r_t%d_bReadRspBusy || r_%sToMif_reqAvlCntBusy || r_t%d_rdRspBusyCntMax%s;\n",
-				mod.m_execStg, mod.m_execStg, mod.m_modName.Lc().c_str(), mod.m_execStg, reqBusy);
-
-			mifPostReg.Append("#\telse\n");
-
-			mifPostReg.Append("\tc_t%d_bReadMemBusy = r_t%d_bReadRspBusy || r_%sToMif_reqAvlCntBusy || r_t%d_rdRspBusyCntMax%s ||\n",
-				mod.m_execStg, mod.m_execStg, mod.m_modName.Lc().c_str(), mod.m_execStg, reqBusy);
-		}
-
+		mifPostReg.Append("\tc_t%d_bReadMemBusy = %s ||\n",
+			mod.m_execStg, rdMemBusy.c_str());
 		mifPostReg.Append("\t\t(%s_RND_RETRY && !!(g_rndRetry() & 1));\n", mod.m_modName.Upper().c_str());
 		mifPostReg.Append("#\tendif\n");
 
@@ -1347,58 +1005,17 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 		m_mifMacros.NewLine();
 
 		///////////////////////////////////////////////////////////
-		// generate ReadMemPoll routine
-
-		if (mif.m_mifRd.m_bPoll) {
-
-			string paramStr;
-			if (mif.m_mifRd.m_rspGrpId.size() > 0)
-				paramStr = VA("sc_uint<%s_RD_GRP_ID_W> rdRspGrpId", mod.m_modName.Upper().c_str());
-
-			g_appArgs.GetDsnRpt().AddLevel("bool ReadMemPoll(%s)\n", paramStr.c_str());
-			g_appArgs.GetDsnRpt().EndLevel();
-
-			m_mifFuncDecl.Append("\tbool ReadMemPoll(%s);\n", paramStr.c_str());
-			m_mifMacros.Append("bool CPers%s%s::ReadMemPoll(%s)\n",
-				unitNameUc.c_str(), mod.m_modName.Uc().c_str(), paramStr.c_str());
-			m_mifMacros.Append("{\n");
-
-			if (mif.m_mifRd.m_rspGrpId.size() == 0 || mif.m_mifRd.m_rspGrpIdW == 0) {
-				m_mifMacros.Append("\tassert_msg(c_t%d_bReadMemAvail, \"Runtime check failed in CPers%s::ReadMemPoll()"
-					" - expected ReadMemBusy() to have been called and not busy\");\n", mod.m_execStg, mod.m_modName.Uc().c_str());
-				m_mifMacros.NewLine();
-
-				m_mifMacros.Append("\treturn !r_t%d_rdRspPollCntZero;\n", mod.m_execStg);
-
-			} else if (mif.m_mifRd.m_rspGrpIdW <= 2) {
-
-				m_mifMacros.Append("\treturn !r_rdGrpRspCntZero[rdRspGrpId];\n");
-
-			} else {
-
-				const char *pRdGrpIdMask = (mif.m_mifRd.m_rspGrpIdW == 2 || mif.m_mifRd.m_bMaxBw) ? "3" : "1";
-				const char *pRdGrpShfAmt = (mif.m_mifRd.m_rspGrpIdW == 2 || mif.m_mifRd.m_bMaxBw) ? "2" : "1";
-
-				m_mifMacros.Append("\tm_rdGrpRspCntZero[rdRspGrpId & %s].read_addr(rdRspGrpId >> %s);\n", pRdGrpIdMask, pRdGrpShfAmt);
-				m_mifMacros.Append("\treturn !m_rdGrpRspCntZero[rdRspGrpId & %s].read_mem();\n", pRdGrpIdMask);
-			}
-
-			m_mifMacros.Append("}\n");
-			m_mifMacros.NewLine();
-		}
-
-		///////////////////////////////////////////////////////////
 		// generate ReadMem or ReadMem_var routines
 
-		for (size_t dstIdx = 0; dstIdx < mif.m_mifRd.m_rdDstList.size(); dstIdx += 1) {
-			CMifRdDst &rdDst = mif.m_mifRd.m_rdDstList[dstIdx];
+		for (int rdDstIdx = 0; rdDstIdx < (int)mif.m_mifRd.m_rdDstList.size(); rdDstIdx += 1) {
+			CMifRdDst &rdDst = mif.m_mifRd.m_rdDstList[rdDstIdx];
 
 			char dstName[64] = "";
 			if (rdDst.m_name.size() > 0)
 				sprintf(dstName, "_%s", rdDst.m_name.c_str());
 
 			if (true || g_appArgs.IsMemTraceEnabled()) {
-				m_mifFuncDecl.Append("\t#ifdef _HTV\n");
+				m_mifFuncDecl.Append("#\tifdef _HTV\n");
 				m_mifMacros.Append("#ifdef _HTV\n");
 			}
 
@@ -1413,194 +1030,196 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 			} else
 				HtlAssert(0);
 
-			g_appArgs.GetDsnRpt().AddLevel("void %sMem%s(sc_uint<MEM_ADDR_W> memAddr", pMemOpName, dstName);
+			g_appArgs.GetDsnRpt().AddLevel("void %sMem%s(", pMemOpName, dstName);
 
-			m_mifFuncDecl.Append("\tvoid %sMem%s(sc_uint<MEM_ADDR_W> memAddr",
-				pMemOpName, dstName);
+			m_mifFuncDecl.Append("\tvoid %sMem%s(", pMemOpName, dstName);
 
-			m_mifMacros.Append("void CPers%s%s::%sMem%s(sc_uint<MEM_ADDR_W> memAddr",
+			m_mifMacros.Append("void CPers%s%s::%sMem%s(",
 				unitNameUc.c_str(), mod.m_modName.Uc().c_str(),
 				pMemOpName, dstName);
 
-			int argCnt = 1;
-			if (rdDst.m_pIntGbl && (rdDst.m_pIntGbl->m_addr1W.size() > 0 || rdDst.m_pIntGbl->m_addr1Name.size() > 0)) {
-				argCnt += 1;
-				int varAddr1W = rdDst.m_pIntGbl->m_addr1W.AsInt() == 0 ? 1 : rdDst.m_pIntGbl->m_addr1W.AsInt();
-				g_appArgs.GetDsnRpt().AddText(", ht_uint%d varAddr1", varAddr1W);
-				m_mifFuncDecl.Append(", ht_uint%d varAddr1", varAddr1W);
-				m_mifMacros.Append(", ht_uint%d %svarAddr1", varAddr1W, rdDst.m_pIntGbl->m_addr1W.AsInt() == 0 ? "ht_noload " : "");
-
-			} else if (rdDst.m_pExtRam && (rdDst.m_pExtRam->m_addr1W.size() > 0 || rdDst.m_pExtRam->m_addr1Name.size() > 0)) {
-				argCnt += 1;
-				int varAddr1W = rdDst.m_pExtRam->m_addr1W.AsInt() == 0 ? 1 : rdDst.m_pExtRam->m_addr1W.AsInt();
-				g_appArgs.GetDsnRpt().AddText(", ht_uint%d varAddr1", varAddr1W);
-				m_mifFuncDecl.Append(", ht_uint%d varAddr1", varAddr1W);
-				m_mifMacros.Append(", ht_uint%d %svarAddr1", varAddr1W, rdDst.m_pExtRam->m_addr1W.AsInt() == 0 ? "ht_noload" : "");
-
-			} else if (rdDst.m_pSharedVar && rdDst.m_pSharedVar->m_addr1W.size() > 0) {
-				argCnt += 1;
-				int varAddr1W = rdDst.m_pSharedVar->m_addr1W.AsInt() == 0 ? 1 : rdDst.m_pSharedVar->m_addr1W.AsInt();
-				g_appArgs.GetDsnRpt().AddText(", ht_uint%d varAddr1", varAddr1W);
-				m_mifFuncDecl.Append(", ht_uint%d varAddr1", varAddr1W);
-				m_mifMacros.Append(", ht_uint%d %svarAddr1", varAddr1W, rdDst.m_pSharedVar->m_addr1W.AsInt() == 0 ? "ht_noload" : "");
+			if (!bRdRspGrpIdIsHtId && rdRspGrpIdW > 0) {
+				g_appArgs.GetDsnRpt().AddText("sc_uint<%s_RD_GRP_ID_W> rdGrpId, ", mod.m_modName.Upper().c_str());
+				m_mifFuncDecl.Append("sc_uint<%s_RD_GRP_ID_W> rdGrpId, ", mod.m_modName.Upper().c_str());
+				m_mifMacros.Append("sc_uint<%s_RD_GRP_ID_W> rdGrpId, ", mod.m_modName.Upper().c_str());
 			}
 
-			if (rdDst.m_pIntGbl && (rdDst.m_pIntGbl->m_addr2W.size() > 0 || rdDst.m_pIntGbl->m_addr2Name.size() > 0)) {
-				argCnt += 1;
-				int varAddr2W = rdDst.m_pIntGbl->m_addr2W.AsInt() == 0 ? 1 : rdDst.m_pIntGbl->m_addr2W.AsInt();
-				g_appArgs.GetDsnRpt().AddText(", ht_uint%d varAddr2", varAddr2W);
-				m_mifFuncDecl.Append(", ht_uint%d varAddr2", varAddr2W);
-				m_mifMacros.Append(", ht_uint%d %svarAddr2", varAddr2W, rdDst.m_pIntGbl->m_addr2W.AsInt() == 0 ? "ht_noload" : "");
+			g_appArgs.GetDsnRpt().AddText("sc_uint<MEM_ADDR_W> memAddr");
+			m_mifFuncDecl.Append("sc_uint<MEM_ADDR_W> memAddr");
+			m_mifMacros.Append("sc_uint<MEM_ADDR_W> memAddr");
 
-			} else if (rdDst.m_pExtRam && (rdDst.m_pExtRam->m_addr2W.size() > 0 || rdDst.m_pExtRam->m_addr2Name.size() > 0)) {
-				argCnt += 1;
-				int varAddr2W = rdDst.m_pExtRam->m_addr2W.AsInt() == 0 ? 1 : rdDst.m_pExtRam->m_addr2W.AsInt();
-				g_appArgs.GetDsnRpt().AddText(", ht_uint%d varAddr2", varAddr2W);
-				m_mifFuncDecl.Append(", ht_uint%d varAddr2", varAddr2W);
-				m_mifMacros.Append(", ht_uint%d %svarAddr2", varAddr2W, rdDst.m_pExtRam->m_addr2W.AsInt() == 0 ? "ht_noload" : "");
+			//for (size_t addrIdx = 0; addrIdx < rdDst.m_fieldRefList[0].m_refAddrList.size(); addrIdx += 1) {
+			//	CRefAddr & refAddr = rdDst.m_fieldRefList[0].m_refAddrList[addrIdx];
+			//	if (refAddr.m_isHtId) continue;
 
-			} else if (rdDst.m_pSharedVar && rdDst.m_pSharedVar->m_addr2W.size() > 0) {
-				argCnt += 1;
-				int varAddr2W = rdDst.m_pSharedVar->m_addr2W.AsInt() == 0 ? 1 : rdDst.m_pSharedVar->m_addr2W.AsInt();
-				g_appArgs.GetDsnRpt().AddText(", ht_uint%d varAddr2", varAddr2W);
-				m_mifFuncDecl.Append(", ht_uint%d varAddr2", varAddr2W);
-				m_mifMacros.Append(", ht_uint%d %svarAddr2", varAddr2W, rdDst.m_pSharedVar->m_addr2W.AsInt() == 0 ? "ht_noload" : "");
-			}
+			//	int W = max(1, refAddr.m_sizeW);
+			//	g_appArgs.GetDsnRpt().AddText(", ht_uint%d varAddr%d", W, (int)addrIdx);
+			//	m_mifFuncDecl.Append(", ht_uint%d varAddr%d", W, (int)addrIdx);
+			//	m_mifMacros.Append(", ht_uint%d %svarAddr%d", W, refAddr.m_sizeW == 0 ? "ht_noload " : "", (int)addrIdx);
+			//}
 
-			if (rdDst.m_varDimen1 > 0) {
-				argCnt += 1;
-				int varDimen1W = FindLg2(rdDst.m_varDimen1-1);
-				g_appArgs.GetDsnRpt().AddText(", ht_uint%d varIdx1", varDimen1W);
-				m_mifFuncDecl.Append(", ht_uint%d varIdx1", varDimen1W);
-				m_mifMacros.Append(", ht_uint%d varIdx1", varDimen1W);
-			}
-			if (rdDst.m_varDimen2 > 0) {
-				argCnt += 1;
-				int varDimen2W = FindLg2(rdDst.m_varDimen2-1);
-				g_appArgs.GetDsnRpt().AddText(", ht_uint%d varIdx2", varDimen2W);
-				m_mifFuncDecl.Append(", ht_uint%d varIdx2", varDimen2W);
-				m_mifMacros.Append(", ht_uint%d varIdx2", varDimen2W);
+			if (rdDst.m_varAddr1W >= 0 && !rdDst.m_varAddr1IsHtId) {
+				int W = max(1, rdDst.m_varAddr1W);
+				g_appArgs.GetDsnRpt().AddText(", ht_uint%d varAddr1", W);
+				m_mifFuncDecl.Append(", ht_uint%d varAddr1", W);
+				m_mifMacros.Append(", ht_uint%d %svarAddr1", W, rdDst.m_varAddr1W == 0 ? "ht_noload " : "");
 			}
 
-			if (rdDst.m_fldDimen1 > 0) {
-				argCnt += 1;
-				int fldDimen1W = FindLg2(rdDst.m_fldDimen1-1);
-				g_appArgs.GetDsnRpt().AddText(", ht_uint%d fldIdx1", fldDimen1W);
-				m_mifFuncDecl.Append(", ht_uint%d fldIdx1", fldDimen1W);
-				m_mifMacros.Append(", ht_uint%d fldIdx1", fldDimen1W);
+			if (rdDst.m_varAddr2W >= 0 && !rdDst.m_varAddr2IsHtId) {
+				int W = max(1, rdDst.m_varAddr2W);
+				g_appArgs.GetDsnRpt().AddText(", ht_uint%d varAddr2", W);
+				m_mifFuncDecl.Append(", ht_uint%d varAddr2", W);
+				m_mifMacros.Append(", ht_uint%d %svarAddr2", W, rdDst.m_varAddr2W ? "ht_noload " : "");
 			}
-			if (rdDst.m_fldDimen2 > 0) {
-				argCnt += 1;
-				int fldDimen2W = FindLg2(rdDst.m_fldDimen2-1);
-				g_appArgs.GetDsnRpt().AddText(", ht_uint%d fldIdx2", fldDimen2W);
-				m_mifFuncDecl.Append(", ht_uint%d fldIdx2", fldDimen2W);
-				m_mifMacros.Append(", ht_uint%d fldIdx2", fldDimen2W);
+
+			for (size_t fldIdx = 0; fldIdx < rdDst.m_fieldRefList.size(); fldIdx += 1) {
+				string fldName = fldIdx == 0 ? "var" : VA("fld%d", (int)fldIdx);
+				for (size_t dimIdx = 0; dimIdx < rdDst.m_fieldRefList[fldIdx].m_refDimenList.size(); dimIdx += 1) {
+					CRefDimen & refDimen = rdDst.m_fieldRefList[fldIdx].m_refDimenList[dimIdx];
+
+					if (refDimen.m_value < 0) {
+						int varDimenW = FindLg2(rdDst.m_fieldRefList[fldIdx].m_refDimenList[dimIdx].m_size - 1, true);
+						g_appArgs.GetDsnRpt().AddText(", ht_uint%d %sIdx%d", varDimenW, fldName.c_str(), (int)dimIdx + 1);
+						m_mifFuncDecl.Append(", ht_uint%d ht_noload %sIdx%d", varDimenW, fldName.c_str(), (int)dimIdx + 1);
+						m_mifMacros.Append(", ht_uint%d ht_noload %sIdx%d", varDimenW, fldName.c_str(), (int)dimIdx + 1);
+					}
+				}
 			}
+
 			if (rdDst.m_infoW.AsInt() > 0) {
-				argCnt += 1;
 				g_appArgs.GetDsnRpt().AddText(", ht_uint%d info", rdDst.m_infoW.AsInt());
 				m_mifFuncDecl.Append(", ht_uint%d info", rdDst.m_infoW.AsInt());
 				m_mifMacros.Append(", ht_uint%d info", rdDst.m_infoW.AsInt());
 			}
-			if (rdDst.m_bMultiRd) {
-				argCnt += 1;
-				g_appArgs.GetDsnRpt().AddText(", sc_uint<4> qwCnt");
-				m_mifFuncDecl.Append(", sc_uint<4> qwCnt");
-				m_mifMacros.Append(", sc_uint<4> qwCnt");
+
+			int rdDstSize = 1;
+			bool bNeedElemParam = false;
+			if (rdDst.m_fieldRefList.size() > 0) {
+				for (size_t i = 0; i < rdDst.m_fieldRefList.back().m_refDimenList.size(); i += 1) {
+					if (rdDst.m_fieldRefList.back().m_refDimenList[i].m_value < 0)
+						rdDstSize *= rdDst.m_fieldRefList.back().m_refDimenList[i].m_size;
+					bNeedElemParam |= rdDst.m_fieldRefList.back().m_refDimenList[i].m_value < 0;
+				}
 			}
 
-			g_appArgs.GetDsnRpt().AddText(", bool orderChk=true)\n");
-			m_mifFuncDecl.Append(", bool ht_noload orderChk=true);\n");
+			bool bMultiElemDstParam = rdDst.m_infoW.size() == 0 && 
+				(rdDst.m_elemCntW.size() == 0 || rdDst.m_elemCntW.AsInt() > 0) &&
+				(rdDst.m_fieldRefList.size() == 1 && rdDst.m_varAddr1W > 0 || bNeedElemParam);
+
+			bool bMultiElemDst = rdDst.m_infoW.size() == 0 && 
+				(rdDst.m_elemCntW.size() == 0 || rdDst.m_elemCntW.AsInt() > 0) &&
+				(rdDst.m_fieldRefList.size() == 1 && rdDst.m_varAddr1W > 0 ||
+				rdDst.m_fieldRefList.back().m_refDimenList.size() > 0 && rdDstSize > 1);
+
+			int elemCntW = 0;
+			int maxElemCnt = 1;
+			if (bMultiElemDstParam) {
+				if (rdDst.m_varAddr1W > 0) {
+					if (!rdDst.m_varAddr1IsHtId)
+						maxElemCnt *= 1 << rdDst.m_varAddr1W;
+					if (rdDst.m_varAddr2W > 0 && !rdDst.m_varAddr2IsHtId)
+						maxElemCnt *= 1 << rdDst.m_varAddr2W;
+				} else {
+					maxElemCnt = rdDstSize;
+				}
+				elemCntW = FindLg2(maxElemCnt);
+
+				if (rdDst.m_elemCntW.size() > 0 && rdDst.m_elemCntW.AsInt() < elemCntW)
+					elemCntW = rdDst.m_elemCntW.AsInt();
+
+				g_appArgs.GetDsnRpt().AddText(", ht_uint%d elemCnt", elemCntW);
+				m_mifFuncDecl.Append(", ht_uint%d ht_noload elemCnt", elemCntW);
+				m_mifMacros.Append(", ht_uint%d ht_noload elemCnt", elemCntW);
+			}
+
+			if (rdDst.m_memSrc.size() == 0 && bMultiElemDstParam) {
+				g_appArgs.GetDsnRpt().AddText(", bool bHost = false");
+				m_mifFuncDecl.Append(", bool ht_noload bHost = false");
+				m_mifMacros.Append(", bool ht_noload bHost");
+			}
+
+			g_appArgs.GetDsnRpt().AddText(", bool orderChk = true)\n");
+			m_mifFuncDecl.Append(", bool ht_noload orderChk = true);\n");
 			m_mifMacros.Append(", bool ht_noload orderChk)\n");
 
 			g_appArgs.GetDsnRpt().EndLevel();
 
 			if (true || g_appArgs.IsMemTraceEnabled()) {
-				m_mifFuncDecl.Append("\t#else\n");
+				m_mifFuncDecl.Append("#\telse\n");
 				m_mifMacros.Append("#else\n");
 
-				m_mifFuncDecl.Append("\t#define %sMem%s(", pMemOpName, dstName);
+				m_mifFuncDecl.Append("#\tdefine %sMem%s(", pMemOpName, dstName);
 				m_mifFuncDecl.Append("...) %sMem%s_(", pMemOpName, dstName);
 				m_mifFuncDecl.Append("(char *)__FILE__, __LINE__, __VA_ARGS__)\n");
-				m_mifFuncDecl.Append("\tvoid %sMem%s_(char *file, int line, sc_uint<MEM_ADDR_W> memAddr",
+				m_mifFuncDecl.Append("\tvoid %sMem%s_(char *file, int line, ",
 					pMemOpName, dstName);
 
-				m_mifMacros.Append("void CPers%s%s::%sMem%s_(char *file, int line, sc_uint<MEM_ADDR_W> memAddr",
+				m_mifMacros.Append("void CPers%s%s::%sMem%s_(char *file, int line, ",
 					unitNameUc.c_str(), mod.m_modName.Uc().c_str(),
 					pMemOpName, dstName);
 
-				if (rdDst.m_pIntGbl && (rdDst.m_pIntGbl->m_addr1W.size() > 0 || rdDst.m_pIntGbl->m_addr1Name.size() > 0)) {
-
-					int varAddr1W = rdDst.m_pIntGbl->m_addr1W.AsInt() == 0 ? 1 : rdDst.m_pIntGbl->m_addr1W.AsInt();
-					m_mifFuncDecl.Append(", ht_uint%d varAddr1", varAddr1W);
-					m_mifMacros.Append(", ht_uint%d varAddr1", varAddr1W);
-
-				} else if (rdDst.m_pExtRam && (rdDst.m_pExtRam->m_addr1W.size() > 0 || rdDst.m_pExtRam->m_addr1Name.size() > 0)) {
-
-					int varAddr1W = rdDst.m_pExtRam->m_addr1W.AsInt() == 0 ? 1 : rdDst.m_pExtRam->m_addr1W.AsInt();
-					m_mifFuncDecl.Append(", ht_uint%d varAddr1", varAddr1W);
-					m_mifMacros.Append(", ht_uint%d varAddr1", varAddr1W);
-
-				} else if (rdDst.m_pSharedVar && rdDst.m_pSharedVar->m_addr1W.size() > 0) {
-
-					int varAddr1W = rdDst.m_pSharedVar->m_addr1W.AsInt() == 0 ? 1 : rdDst.m_pSharedVar->m_addr1W.AsInt();
-					m_mifFuncDecl.Append(", ht_uint%d varAddr1", varAddr1W);
-					m_mifMacros.Append(", ht_uint%d varAddr1", varAddr1W);
+				if (!bRdRspGrpIdIsHtId && rdRspGrpIdW > 0) {
+					m_mifFuncDecl.Append("sc_uint<%s_RD_GRP_ID_W> rdGrpId, ", mod.m_modName.Upper().c_str());
+					m_mifMacros.Append("sc_uint<%s_RD_GRP_ID_W> rdGrpId, ", mod.m_modName.Upper().c_str());
 				}
 
-				if (rdDst.m_pIntGbl && (rdDst.m_pIntGbl->m_addr2W.size() > 0 || rdDst.m_pIntGbl->m_addr2Name.size() > 0)) {
+				m_mifFuncDecl.Append("sc_uint<MEM_ADDR_W> memAddr");
+				m_mifMacros.Append("sc_uint<MEM_ADDR_W> memAddr");
 
-					int varAddr2W = rdDst.m_pIntGbl->m_addr2W.AsInt() == 0 ? 1 : rdDst.m_pIntGbl->m_addr2W.AsInt();
-					m_mifFuncDecl.Append(", ht_uint%d varAddr2", varAddr2W);
-					m_mifMacros.Append(", ht_uint%d varAddr2", varAddr2W);
+				//for (size_t addrIdx = 0; addrIdx < rdDst.m_fieldRefList[0].m_refAddrList.size(); addrIdx += 1) {
+				//	CRefAddr & refAddr = rdDst.m_fieldRefList[0].m_refAddrList[addrIdx];
+				//	if (refAddr.m_isHtId) continue;
 
-				} else if (rdDst.m_pExtRam && (rdDst.m_pExtRam->m_addr2W.size() > 0 || rdDst.m_pExtRam->m_addr2Name.size() > 0)) {
+				//	int W = max(1, refAddr.m_sizeW);
+				//	m_mifFuncDecl.Append(", ht_uint%d varAddr%d", W, (int)addrIdx);
+				//	m_mifMacros.Append(", ht_uint%d varAddr%d", W, (int)addrIdx);
+				//}
 
-					int varAddr2W = rdDst.m_pExtRam->m_addr2W.AsInt() == 0 ? 1 : rdDst.m_pExtRam->m_addr2W.AsInt();
-					m_mifFuncDecl.Append(", ht_uint%d varAddr2", varAddr2W);
-					m_mifMacros.Append(", ht_uint%d varAddr2", varAddr2W);
 
-				} else if (rdDst.m_pSharedVar && rdDst.m_pSharedVar->m_addr2W.size() > 0) {
-
-					int varAddr2W = rdDst.m_pSharedVar->m_addr2W.AsInt() == 0 ? 1 : rdDst.m_pSharedVar->m_addr2W.AsInt();
-					m_mifFuncDecl.Append(", ht_uint%d varAddr2", varAddr2W);
-					m_mifMacros.Append(", ht_uint%d varAddr2", varAddr2W);
+				if (rdDst.m_varAddr1W >= 0 && !rdDst.m_varAddr1IsHtId) {
+					int W = max(1, rdDst.m_varAddr1W);
+					m_mifFuncDecl.Append(", ht_uint%d varAddr1", W);
+					m_mifMacros.Append(", ht_uint%d varAddr1", W);
 				}
 
-				if (rdDst.m_varDimen1 > 0) {
-					int varDimen1W = FindLg2(rdDst.m_varDimen1-1);
-					m_mifFuncDecl.Append(", ht_uint%d varIdx1", varDimen1W);
-					m_mifMacros.Append(", ht_uint%d varIdx1", varDimen1W);
-				}
-				if (rdDst.m_varDimen2 > 0) {
-					int varDimen2W = FindLg2(rdDst.m_varDimen2-1);
-					m_mifFuncDecl.Append(", ht_uint%d varIdx2", varDimen2W);
-					m_mifMacros.Append(", ht_uint%d varIdx2", varDimen2W);
+				if (rdDst.m_varAddr2W >= 0 && !rdDst.m_varAddr2IsHtId) {
+					int W = max(1, rdDst.m_varAddr2W);
+					m_mifFuncDecl.Append(", ht_uint%d varAddr2", W);
+					m_mifMacros.Append(", ht_uint%d varAddr2", W);
 				}
 
-				if (rdDst.m_fldDimen1 > 0) {
-					int fldDimen1W = FindLg2(rdDst.m_fldDimen1-1);
-					m_mifFuncDecl.Append(", ht_uint%d fldIdx1", fldDimen1W);
-					m_mifMacros.Append(", ht_uint%d fldIdx1", fldDimen1W);
+				for (size_t fldIdx = 0; fldIdx < rdDst.m_fieldRefList.size(); fldIdx += 1) {
+					string fldName = fldIdx == 0 ? "var" : VA("fld%d", (int)fldIdx);
+					for (size_t dimIdx = 0; dimIdx < rdDst.m_fieldRefList[fldIdx].m_refDimenList.size(); dimIdx += 1) {
+						CRefDimen & refDimen = rdDst.m_fieldRefList[fldIdx].m_refDimenList[dimIdx];
+
+						if (refDimen.m_value < 0) {
+							int varDimenW = FindLg2(rdDst.m_fieldRefList[fldIdx].m_refDimenList[dimIdx].m_size - 1);
+							m_mifFuncDecl.Append(", ht_uint%d ht_noload %sIdx%d", varDimenW, fldName.c_str(), (int)dimIdx + 1);
+							m_mifMacros.Append(", ht_uint%d ht_noload %sIdx%d", varDimenW, fldName.c_str(), (int)dimIdx + 1);
+						}
+					}
 				}
-				if (rdDst.m_fldDimen2 > 0) {
-					int fldDimen2W = FindLg2(rdDst.m_fldDimen2-1);
-					m_mifFuncDecl.Append(", ht_uint%d fldIdx2", fldDimen2W);
-					m_mifMacros.Append(", ht_uint%d fldIdx2", fldDimen2W);
-				}
+
 				if (rdDst.m_infoW.AsInt() > 0) {
 					m_mifFuncDecl.Append(", ht_uint%d info", rdDst.m_infoW.AsInt());
 					m_mifMacros.Append(", ht_uint%d info", rdDst.m_infoW.AsInt());
 				}
-				if (rdDst.m_bMultiRd) {
-					m_mifFuncDecl.Append(", sc_uint<4> qwCnt");
-					m_mifMacros.Append(", sc_uint<4> qwCnt");
+
+				if (bMultiElemDstParam) {
+					m_mifFuncDecl.Append(", ht_uint%d ht_noload elemCnt", elemCntW);
+					m_mifMacros.Append(", ht_uint%d ht_noload elemCnt", elemCntW);
 				}
 
-				m_mifFuncDecl.Append(", bool orderChk=true);\n");
+				if (rdDst.m_memSrc.size() == 0 && bMultiElemDstParam) {
+					m_mifFuncDecl.Append(", bool ht_noload bHost = false");
+					m_mifMacros.Append(", bool ht_noload bHost");
+				}
+
+				m_mifFuncDecl.Append(", bool orderChk = true);\n");
 				m_mifMacros.Append(", bool orderChk)\n");
 
-				m_mifFuncDecl.Append("\t#endif\n");
+				m_mifFuncDecl.Append("#\tendif\n");
 				m_mifMacros.Append("#endif\n");
 			}
 
@@ -1609,13 +1228,33 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 			m_mifMacros.Append("\tassert_msg(c_t%d_bReadMemAvail, \"Runtime check failed in CPers%s::%sMem%s(...) - ReadMemBusy was not called\\n\");\n",
 				mod.m_execStg, mod.m_modName.Uc().c_str(), pMemOpName, dstName);
 
-			if (rdDst.m_varDimen1 > 0 && (!IsPowerTwo(rdDst.m_varDimen1) || rdDst.m_varDimen1 == 1))
-				m_mifMacros.Append("\tassert_msg(varIdx1 < %d, \"Runtime check failed in CPers%s%s::%sMem%s(...) - varIdx1 (%%d) out of range (0-%d)\\n\", (uint32_t)varIdx1);\n",
-					rdDst.m_varDimen1, unitNameUc.c_str(), mod.m_modName.Uc().c_str(), pMemOpName, dstName, rdDst.m_varDimen1-1);
+			if (rdRspGrpIdW == 0) {
+				m_mifMacros.Append("\t//assert_msg(!c_rdGrpState.m_pause, \"Runtime check failed in CPers%s::%sMem%s(...) - expected ReadMem_%s() to be called before ReadMemPause()\\n\");\n",
+					mod.m_modName.Uc().c_str(), pMemOpName, dstName, dstName);
+			} else if (rdRspGrpIdW <= 2) {
+				m_mifMacros.Append("\t//assert_msg(!c_rdGrpState[%s].m_pause, \"Runtime check failed in CPers%s::%sMem%s(...) - expected ReadMem_%s() to be called before ReadMemPause()\\n\");\n",
+					rdRspGrpName.c_str(), mod.m_modName.Uc().c_str(), pMemOpName, dstName, dstName);
+			} else {
+				;
+			}
 
-			if (rdDst.m_varDimen2 > 0 && (!IsPowerTwo(rdDst.m_varDimen2) || rdDst.m_varDimen2 == 1))
-				m_mifMacros.Append("\tassert_msg(varIdx2 < %d, \"Runtime check failed in CPers%s%s::%sMem%s(...) - varIdx2 (%%d) out of range (0-%d)\\n\", (uint32_t)varIdx2);\n",
-					rdDst.m_varDimen2, unitNameUc.c_str(), mod.m_modName.Uc().c_str(), pMemOpName, dstName, rdDst.m_varDimen2-1);
+			for (size_t fldIdx = 0; fldIdx < rdDst.m_fieldRefList.size(); fldIdx += 1) {
+				string fldName = fldIdx == 0 ? "var" : VA("fld%d", (int)fldIdx);
+				for (size_t dimIdx = 0; dimIdx < rdDst.m_fieldRefList[fldIdx].m_refDimenList.size(); dimIdx += 1) {
+					CRefDimen & refDimen = rdDst.m_fieldRefList[fldIdx].m_refDimenList[dimIdx];
+
+					if (refDimen.m_value < 0 && (refDimen.m_size == 1 || !IsPowerTwo(refDimen.m_size))) {
+
+						m_mifMacros.Append("\tassert_msg(%sIdx%d < %d, \"Runtime check failed in CPers%s%s::%sMem%s(...) - %sIdx%d (%%d) out of range (0-%d)\\n\", (uint32_t)%sIdx%d);\n",
+							fldName.c_str(), (int)dimIdx + 1,
+							refDimen.m_size,
+							unitNameUc.c_str(), mod.m_modName.Uc().c_str(), pMemOpName, dstName,
+							fldName.c_str(), (int)dimIdx + 1,
+							refDimen.m_size - 1,
+							fldName.c_str(), (int)dimIdx + 1);
+					}
+				}
+			}
 
 			switch (rdDst.m_memSize) {
 			case 8:
@@ -1635,62 +1274,188 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 			default:
 				HtlAssert(0);
 			}
+
+			for (size_t fldIdx = 0; fldIdx < rdDst.m_fieldRefList.size(); fldIdx += 1) {
+				string fldName = fldIdx == 0 ? "var" : VA("fld%d", (int)fldIdx);
+				for (size_t dimIdx = 0; dimIdx < rdDst.m_fieldRefList[fldIdx].m_refDimenList.size(); dimIdx += 1) {
+					CRefDimen & refDimen = rdDst.m_fieldRefList[fldIdx].m_refDimenList[dimIdx];
+
+					if (refDimen.m_value < 0 && (refDimen.m_size == 1 || !IsPowerTwo(refDimen.m_size))) {
+
+						m_mifMacros.Append("\tassert_msg(%sIdx%d < %d, \"Runtime check failed in CPers%s%s::%sMem%s(...) - %sIdx%d (%%d) out of range (0-%d)\\n\", (uint32_t)%sIdx%d);\n",
+							fldName.c_str(), (int)dimIdx + 1,
+							refDimen.m_size,
+							unitNameUc.c_str(), mod.m_modName.Uc().c_str(), pMemOpName, dstName,
+							fldName.c_str(), (int)dimIdx + 1,
+							refDimen.m_size - 1,
+							fldName.c_str(), (int)dimIdx + 1);
+					}
+				}
+			}
+
+			if (bMultiElemDstParam) {
+				m_mifMacros.Append("\tassert_msg(");
+				
+				if (rdDst.m_varAddr1W > 0) {
+					if (!rdDst.m_varAddr1IsHtId) {
+						m_mifMacros.Append("varAddr1");
+						if (rdDst.m_varAddr2W > 0)
+							m_mifMacros.Append(" * %d + ", 1 << rdDst.m_varAddr2W);
+					}
+					if (rdDst.m_varAddr2W > 0 && !rdDst.m_varAddr2IsHtId)
+						m_mifMacros.Append("varAddr2");
+				} else {
+					bool bNeedMul = false;
+					size_t fldIdx = rdDst.m_fieldRefList.size() - 1;
+					for (size_t dimIdx = 0; dimIdx < rdDst.m_fieldRefList.back().m_refDimenList.size(); dimIdx += 1) {
+						string fldName = fldIdx == 0 ? "var" : VA("fld%d", (int)fldIdx);
+						CRefDimen & refDimen = rdDst.m_fieldRefList.back().m_refDimenList[dimIdx];
+						if (bNeedMul) {
+							m_mifMacros.Append(" * %d + ", refDimen.m_size);
+						}
+						if (refDimen.m_value < 0) {
+							m_mifMacros.Append("%sIdx%d", fldName.c_str(), (int)dimIdx + 1);
+							bNeedMul = true;
+						}
+					}
+				}
+				m_mifMacros.Append(" + elemCnt <= %d, ", maxElemCnt);
+				m_mifMacros.Append(" \"Runtime check failed in CPers%s%s::%sMem%s(...) - elemCnt range check failed\\n\");\n",
+					unitNameUc.c_str(), mod.m_modName.Uc().c_str(), pMemOpName, dstName);
+			}
 			m_mifMacros.NewLine();
 
-			if (rdDst.m_bMultiRd) {
-				m_mifMacros.Append("\tassert_msg(qwCnt > 0 && qwCnt <= 8,"
-					" \"Runtime check failed in CPers%s%s::%sMem%s(...) - "
-					"expected multi-qw access to be within 64B memory line\\n\");\n",
-					unitNameUc.c_str(), mod.m_modName.Uc().c_str(), pMemOpName, dstName);
-				m_mifMacros.Append("\tassert_msg(((memAddr >> 3) & 7) + qwCnt <= 8,"
-					" \"Runtime check failed in CPers%s%s::%sMem%s(...) - "
-					"expected multi-qw access to be within 64B memory line\\n\");\n",
-					unitNameUc.c_str(), mod.m_modName.Uc().c_str(), pMemOpName, dstName);
+			int qwCnt = rdDst.m_pDstType->m_clangMinAlign == 1 ? 1 : 
+				((rdDst.m_pDstType->m_clangBitWidth + rdDst.m_pDstType->m_clangMinAlign - 1) / rdDst.m_pDstType->m_clangMinAlign);
+
+			if (mif.m_mifReqStgCnt > 0)
+				m_mifMacros.Append("\tc_t%d_memReq.m_valid = %s;\n", mod.m_execStg, bMultiElemDstParam ? "elemCnt > 0" : "true");
+
+			m_mifMacros.Append("\tc_t%d_memReq.m_rdReq = %s;\n", mod.m_execStg, bMultiElemDstParam ? "elemCnt > 0" : "true");
+
+			if (bMultiQwReq) {
+				if (bMultiElemDst)
+					m_mifMacros.Append("\tc_t%d_memReq.m_qwRem = %d * elemCnt;\n", mod.m_execStg, qwCnt);
+				else
+					m_mifMacros.Append("\tc_t%d_memReq.m_qwRem = %d;\n", mod.m_execStg, qwCnt);
+
+				if (bMultiQwMif)
+					m_mifMacros.Append("\tc_t%d_memReq.m_reqQwRem = 0;\n", mod.m_execStg);
+
+				bool bNeedCntM1 = false;
+				if (rdDst.m_varAddr1W > 0) {
+					if (bMultiElemDst && rdDst.m_fieldRefList.size() == 1) {
+						if (!rdDst.m_varAddr1IsHtId) {
+							m_mifMacros.Append("\tc_t%d_memReq.m_vIdx1 = varAddr1;\n",
+								mod.m_execStg);
+						}
+						rdDst.m_varAddr1IsIdx = true;
+						bNeedCntM1 = !rdDst.m_varAddr1IsHtId;
+					}
+				}
+
+				if (rdDst.m_varAddr2W > 0) {
+					if (bMultiElemDst && rdDst.m_fieldRefList.size() == 1) {
+						if (!rdDst.m_varAddr2IsHtId) {
+							m_mifMacros.Append("\tc_t%d_memReq.m_vIdx2 = varAddr2;\n",
+								mod.m_execStg);
+							if (bNeedCntM1)
+								m_mifMacros.Append("\tc_t%d_memReq.m_vIdx2CntM1 = %d;\n", mod.m_execStg, (1 << rdDst.m_varAddr2W) - 1);
+						}
+						rdDst.m_varAddr2IsIdx = true;
+						bNeedCntM1 |= !rdDst.m_varAddr2IsHtId;
+					}
+				}
+
+				if (rdDst.m_varAddr1W <= 0 || rdDst.m_fieldRefList.size() > 1) {
+					for (size_t fldIdx = 0; fldIdx < rdDst.m_fieldRefList.size(); fldIdx += 1) {
+						string fldName = fldIdx == 0 ? "var" : VA("fld%d", (int)fldIdx);
+						vector<CRefDimen> & indexRangeList = rdDst.m_fieldRefList[fldIdx].m_refDimenList;
+						for (size_t dimIdx = 0; dimIdx < indexRangeList.size(); dimIdx += 1) {
+							if (bMultiElemDst && fldIdx + 1 == rdDst.m_fieldRefList.size()) {
+								m_mifMacros.Append("\tc_t%d_memReq.m_vIdx%d = %sIdx%d;\n",
+									mod.m_execStg, dimIdx + 1, fldName.c_str(), (int)dimIdx + 1);
+								rdDst.m_fieldRefList[fldIdx].m_refDimenList[dimIdx].m_isIdx = true;
+								if (dimIdx > 0) {
+									m_mifMacros.Append("\tc_t%d_memReq.m_vIdx%dCntM1 = %d;\n",
+										mod.m_execStg, dimIdx + 1, rdDst.m_fieldRefList[fldIdx].m_refDimenList[dimIdx].m_size - 1);
+								}
+								bNeedCntM1 = true;
+							}
+						}
+					}
+				}
+
+				if (maxQwCnt > 1) {
+					if (maxElemQwCnt > 1) {
+						m_mifMacros.Append("\tc_t%d_memReq.m_elemQwIdx = 0;\n", mod.m_execStg);
+						if (maxElemCnt > 1)
+							m_mifMacros.Append("\tc_t%d_memReq.m_elemQwCntM1 = %d;\n", mod.m_execStg, qwCnt - 1);
+					}
+				}
+
 				m_mifMacros.NewLine();
 			}
 
-			char const * pTidQwCntM1 = "(qwCnt-1)";
-			char tidQwCntBuf[64];
-			if (bNeed_reqQwSplit && rdDst.m_bMultiRd && rdDst.m_memSrc == "host") {
-				m_mifMacros.Append("\tht_uint3 tidQwCntM1 = qwCnt != 8 ? 0 : 7;\n\n");
-				pTidQwCntM1 = "tidQwCntM1";
-			} else if (is_wx && rdDst.m_bMultiRd) {
-				sprintf(tidQwCntBuf, "(c_t%d_reqQwCnt-1)", mod.m_execStg);
-				pTidQwCntM1 = tidQwCntBuf;
+			if (rdRspGrpIdW == 0) {
+				// rspGrpId == 0
+			} else if (bRdRspGrpIdIsHtId) {
+				m_mifMacros.Append("\tc_t%d_memReq.m_rdGrpId = r_t%d_htId;\n", mod.m_execStg, mod.m_execStg);
+				m_mifMacros.NewLine();
+
+				m_mifMacros.Append("\tc_t%d_rdRspInfo.m_grpId = r_t%d_htId;\n", mod.m_execStg, mod.m_execStg);
+			} else {
+				m_mifMacros.Append("\tc_t%d_memReq.m_rdGrpId = rdGrpId;\n", mod.m_execStg);
+				m_mifMacros.NewLine();
+
+				m_mifMacros.Append("\tc_t%d_rdRspInfo.m_grpId = rdGrpId;\n", mod.m_execStg);
 			}
 
-			if (mif.m_bMifWr)
-				m_mifMacros.Append("\tc_t%d_bReadMem = true;\n", mod.m_execStg);
-			if (bNeed_reqQwCnt) {
-				if (rdDst.m_bMultiRd) {
-					if (is_wx) {
-						m_mifMacros.Append("\tc_t%d_reqQwCnt = qwCnt == 1 ? 1 : 8;\n", mod.m_execStg);
-						m_mifMacros.Append("\tht_uint3 c_t%d_reqQwFirst = (qwCnt == 1) ? 0 : (memAddr >> 3) & 0x7;\n", mod.m_execStg);
-						m_mifMacros.Append("\tht_uint3 c_t%d_reqQwLast = (ht_uint3)(c_t%d_reqQwFirst + qwCnt - 1);\n",
-							mod.m_execStg, mod.m_execStg);
-					} else
-						m_mifMacros.Append("\tc_t%d_reqQwCnt = qwCnt;\n", mod.m_execStg);
-				} else
-					m_mifMacros.Append("\tc_t%d_reqQwCnt = 1;\n", mod.m_execStg);
-			}
-			if (bNeed_reqQwSplit) {
-				if (rdDst.m_memSrc == "coproc" || !rdDst.m_bMultiRd)
-					m_mifMacros.Append("\tc_t%d_reqQwSplit = true;\n", mod.m_execStg);
-				else
-					m_mifMacros.Append("\tc_t%d_reqQwSplit = qwCnt != 8;\n", mod.m_execStg);
-			}
-			m_mifMacros.Append("\tc_t%d_%sToMif_reqRdy = true;\n", mod.m_execStg, mod.m_modName.Lc().c_str());
+			if (mif.m_mifRd.m_rdDstList.size() > 1)
+				m_mifMacros.Append("\tc_t%d_rdRspInfo.m_dst = %d;\n", mod.m_execStg, rdDstIdx);
 
-			if (rdDst.m_bMultiRd)
-				m_mifMacros.Append("\tc_t%d_%sToMif_req.m_host = %s;\n", mod.m_execStg, mod.m_modName.Lc().c_str(),
-				rdDst.m_memSrc == "host" ? "true" : "false");
+			if (rdDst.m_infoW.AsInt() > 0)
+				m_mifMacros.Append("\tc_t%d_rdRspInfo.m_d%d_info = info;\n", mod.m_execStg, rdDstIdx);
+
+			if (rdDst.m_varAddr1W > 0 && !rdDst.m_varAddr1IsIdx && !rdDst.m_varAddr1IsHtId) {
+				m_mifMacros.Append("\tc_t%d_rdRspInfo.m_d%d_f1Addr1 = varAddr1;\n", mod.m_execStg, rdDstIdx);
+			}
+
+			if (rdDst.m_varAddr2W > 0 && !rdDst.m_varAddr2IsIdx && !rdDst.m_varAddr2IsHtId) {
+				m_mifMacros.Append("\tc_t%d_rdRspInfo.m_d%d_f1Addr2 = varAddr2;\n", mod.m_execStg, rdDstIdx);
+			}
+
+			for (size_t fldIdx = 0; fldIdx < rdDst.m_fieldRefList.size(); fldIdx += 1) {
+				string fldName = fldIdx == 0 ? "var" : VA("fld%d", (int)fldIdx);
+				for (size_t dimIdx = 0; dimIdx < rdDst.m_fieldRefList[fldIdx].m_refDimenList.size(); dimIdx += 1) {
+					CRefDimen & refDimen = rdDst.m_fieldRefList[fldIdx].m_refDimenList[dimIdx];
+
+					if (refDimen.m_value < 0 && refDimen.m_size > 1 && !refDimen.m_isIdx) {
+						m_mifMacros.Append("\tc_t%d_rdRspInfo.m_d%d_f%dIdx%d = %sIdx%d;\n",
+							mod.m_execStg, rdDstIdx, (int)fldIdx + 1, dimIdx + 1, fldName.c_str(), dimIdx + 1);
+					}
+				}
+			}
+
+			m_mifMacros.NewLine();
+
+			if (mif.m_mifReqStgCnt == 0) {
+				m_mifMacros.Append("\tc_t%d_%sToMif_reqRdy = true;\n",
+					mod.m_execStg, mod.m_modName.Lc().c_str());
+			}
+
+			if (rdDst.m_bMultiQwRdReq) {
+				if (rdDst.m_memSrc.size() == 0 && bMultiElemDst)
+					m_mifMacros.Append("\tc_t%d_%sToMif_req.m_host = bHost;\n", mod.m_execStg, mod.m_modName.Lc().c_str());
+				else {
+					m_mifMacros.Append("\tc_t%d_%sToMif_req.m_host = %s;\n", mod.m_execStg, mod.m_modName.Lc().c_str(),
+						rdDst.m_memSrc == "host" ? "true" : "false");
+				}
+			}
 
 			m_mifMacros.Append("\tc_t%d_%sToMif_req.m_type = %s;\n", mod.m_execStg, mod.m_modName.Lc().c_str(), pReadType);
 
-			if (rdDst.m_bMultiRd && is_wx)
-				m_mifMacros.Append("\tc_t%d_%sToMif_req.m_addr = memAddr & (qwCnt == 1 ? ~0x0LL : ~0x3fLL);\n", mod.m_execStg, mod.m_modName.Lc().c_str());
-			else
-				m_mifMacros.Append("\tc_t%d_%sToMif_req.m_addr = memAddr;\n", mod.m_execStg, mod.m_modName.Lc().c_str());
+			m_mifMacros.Append("\tc_t%d_%sToMif_req.m_addr = memAddr;\n", mod.m_execStg, mod.m_modName.Lc().c_str());
 
 			char const * pReqSize = "";
 			switch (rdDst.m_memSize) {
@@ -1703,131 +1468,10 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 
 			m_mifMacros.Append("\tc_t%d_%sToMif_req.m_size = %s;\n", mod.m_execStg, mod.m_modName.Lc().c_str(), pReqSize);
 
-			m_mifMacros.Append("\tc_t%d_%sToMif_req.m_tid = (sc_uint<MIF_TID_W>)(\n", mod.m_execStg, mod.m_modName.Lc().c_str());
-
-			char const * pRdRspGrpW = mif.m_mifRd.m_rspGrpId.size() == 0 ? "_HTID_W" : "_RD_GRP_ID_W";
-
-			if (rdDst.m_bMultiRd && (is_wx || rdDst.m_memSrc == "host" && is_hc2))
-			{
-				m_mifMacros.Append("\t\t((%s & MIF_TID_QWCNT_MSK) << MIF_TID_QWCNT_SHF) |\n",
-					pTidQwCntM1);
-			}
-
-			if (rdDst.m_dstW > 0) {
-
-				if (rdDst.m_infoW.size() > 0) {
-					if (rdDst.m_infoW.AsInt() > 0) {
-						m_mifMacros.Append("\t\t(info << (%s_MIF_DST_%s_INFO_SHF + 1 + %s%s)) |\n",
-							mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(),
-							mod.m_modName.Upper().c_str(), pRdRspGrpW);
-					}
-				} else {
-					if (rdDst.m_varAddr0W > 0) {
-						m_mifMacros.Append("\t\t(r_t%d_htId << (%s_MIF_DST_%s_VAR_ADDR0_SHF + 1 + %s%s)) |\n",
-							mod.m_execStg,
-							mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(),
-							mod.m_modName.Upper().c_str(), pRdRspGrpW);
-					}
-
-					if (rdDst.m_pIntGbl && rdDst.m_pIntGbl->m_addr1W.AsInt() > 0
-						|| rdDst.m_pExtRam && rdDst.m_pExtRam->m_addr1W.AsInt() > 0
-						|| rdDst.m_pSharedVar && rdDst.m_pSharedVar->m_addr1W.AsInt() > 0)
-					{
-						if (rdDst.m_pIntGbl && rdDst.m_pIntGbl->m_addr1W.AsInt() > 0 &&
-							(!g_appArgs.IsGlobalWriteHtidEnabled() && rdDst.m_pIntGbl->m_addr1Name == "htId"))
-
-							m_mifMacros.Append("\t\t(r_t%d_htId << (%s_MIF_DST_%s_VAR_ADDR1_SHF + 1 + %s%s)) |\n",
-								mod.m_execStg,
-								mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(),
-								mod.m_modName.Upper().c_str(), pRdRspGrpW);
-
-						else if (rdDst.m_pExtRam && rdDst.m_pExtRam->m_addr1W.AsInt() > 0 &&
-							(!g_appArgs.IsGlobalWriteHtidEnabled() && rdDst.m_pExtRam->m_addr1Name == "htId"))
-
-							m_mifMacros.Append("\t\t(r_t%d_htId << (%s_MIF_DST_%s_VAR_ADDR1_SHF + 1 + %s%s)) |\n",
-								mod.m_execStg,
-								mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(),
-								mod.m_modName.Upper().c_str(), pRdRspGrpW);
-
-						else
-							m_mifMacros.Append("\t\t(varAddr1 << (%s_MIF_DST_%s_VAR_ADDR1_SHF + 1 + %s%s)) |\n",
-								mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(),
-								mod.m_modName.Upper().c_str(), pRdRspGrpW);
-					}
-
-					if (rdDst.m_pIntGbl && rdDst.m_pIntGbl->m_addr2W.AsInt() > 0
-						|| rdDst.m_pExtRam && rdDst.m_pExtRam->m_addr2W.AsInt() > 0
-						|| rdDst.m_pSharedVar && rdDst.m_pSharedVar->m_addr2W.AsInt() > 0)
-					{
-						if (rdDst.m_pIntGbl && rdDst.m_pIntGbl->m_addr2W.AsInt() > 0 &&
-							(!g_appArgs.IsGlobalWriteHtidEnabled() && rdDst.m_pIntGbl->m_addr2Name == "htId"))
-
-							m_mifMacros.Append("\t\t(r_t%d_htId << (%s_MIF_DST_%s_VAR_ADDR2_SHF + 1 + %s%s)) |\n",
-								mod.m_execStg,
-								mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(),
-								mod.m_modName.Upper().c_str(), pRdRspGrpW);
-
-						else if (rdDst.m_pExtRam && rdDst.m_pExtRam->m_addr2W.AsInt() > 0 &&
-							(!g_appArgs.IsGlobalWriteHtidEnabled() && rdDst.m_pExtRam->m_addr2Name == "htId"))
-
-							m_mifMacros.Append("\t\t(r_t%d_htId << (%s_MIF_DST_%s_VAR_ADDR2_SHF + 1 + %s%s)) |\n",
-								mod.m_execStg,
-								mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(),
-								mod.m_modName.Upper().c_str(), pRdRspGrpW);
-
-						else
-							m_mifMacros.Append("\t\t(varAddr2 << (%s_MIF_DST_%s_VAR_ADDR2_SHF + 1 + %s%s)) |\n",
-								mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(),
-								mod.m_modName.Upper().c_str(), pRdRspGrpW);
-					}
-
-					if (rdDst.m_varDimen1 > 0)
-						m_mifMacros.Append("\t\t(varIdx1 << (%s_MIF_DST_%s_VAR_IDX1_SHF + 1 + %s%s)) |\n",
-						mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(),
-						mod.m_modName.Upper().c_str(), pRdRspGrpW);
-
-					if (rdDst.m_varDimen2 > 0)
-						m_mifMacros.Append("\t\t(varIdx2 << (%s_MIF_DST_%s_VAR_IDX2_SHF + 1 + %s%s)) |\n",
-						mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(),
-						mod.m_modName.Upper().c_str(), pRdRspGrpW);
-
-					if (rdDst.m_fldDimen1 > 0)
-						m_mifMacros.Append("\t\t(fldIdx1 << (%s_MIF_DST_%s_FLD_IDX1_SHF + 1 + %s%s)) |\n",
-						mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(),
-						mod.m_modName.Upper().c_str(), pRdRspGrpW);
-
-					if (rdDst.m_fldDimen2 > 0)
-						m_mifMacros.Append("\t\t(fldIdx2 << (%s_MIF_DST_%s_FLD_IDX2_SHF + 1 + %s%s)) |\n",
-						mod.m_modName.Upper().c_str(), rdDst.m_name.Upper().c_str(),
-						mod.m_modName.Upper().c_str(), pRdRspGrpW);
-				}
-			}
-
-			if (is_wx && rdDst.m_bMultiRd) {
-				m_mifMacros.Append("\t\t(c_t%d_reqQwFirst << (%s_MIF_DST_QW_FIRST_SHF + 1 + %s%s)) |\n",
-					mod.m_execStg, mod.m_modName.Upper().c_str(), mod.m_modName.Upper().c_str(), pRdRspGrpW);
-				m_mifMacros.Append("\t\t(c_t%d_reqQwLast << (%s_MIF_DST_QW_LAST_SHF + 1 + %s%s)) |\n",
-					mod.m_execStg, mod.m_modName.Upper().c_str(), mod.m_modName.Upper().c_str(), pRdRspGrpW);
-			}
-
-			m_mifMacros.Append("\t\t(%d << (1 + %s%s)) |\n",
-				dstIdx, mod.m_modName.Upper().c_str(), pRdRspGrpW);
-
-			m_mifMacros.Append("\t\t(0 << %s%s)",
-				mod.m_modName.Upper().c_str(), pRdRspGrpW);
-
-			if (mif.m_mifRd.m_rspGrpIdW == 0)
-				m_mifMacros.Append(");\n");
-			else if (mif.m_mifRd.m_rspGrpId.size() == 0)
-				m_mifMacros.Append(" |\n\t\tr_t%d_htId);\n", mod.m_execStg);
-			else if (mif.m_mifRd.m_bRspGrpIdPriv)
-				m_mifMacros.Append(" |\n\t\tr_t%d_htPriv.m_%s);\n",
-				mod.m_execStg, mif.m_mifRd.m_rspGrpId.AsStr().c_str());
-			else
-				m_mifMacros.Append(" |\n\t\tr_%s);\n", mif.m_mifRd.m_rspGrpId.AsStr().c_str());
+			m_mifMacros.Append("\tc_t%d_%sToMif_req.m_tid = 0;\n", mod.m_execStg, mod.m_modName.Lc().c_str());
 
 			if (true || g_appArgs.IsMemTraceEnabled()) {
-				m_mifMacros.Append("\t#ifndef _HTV\n");
+				m_mifMacros.Append("#\tifndef _HTV\n");
 				m_mifMacros.Append("\tc_t%d_%sToMif_req.m_file = file;\n",
 					mod.m_execStg, mod.m_modName.Lc().c_str());
 				m_mifMacros.Append("\tc_t%d_%sToMif_req.m_line = line;\n",
@@ -1836,8 +1480,9 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 					mod.m_execStg, mod.m_modName.Lc().c_str());
 				m_mifMacros.Append("\tc_t%d_%sToMif_req.m_orderChk = orderChk;\n",
 					mod.m_execStg, mod.m_modName.Lc().c_str());
-				m_mifMacros.Append("\t#endif\n");
+				m_mifMacros.Append("#\tendif\n");
 			}
+
 			m_mifMacros.Append("}\n");
 			m_mifMacros.NewLine();
 		}
@@ -1847,107 +1492,178 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 
 		if (mif.m_mifRd.m_bPause) {
 
-			g_appArgs.GetDsnRpt().AddLevel("void ReadMemPause(ht_uint%d rsmInstr)\n",
-				mod.m_instrW);
-			g_appArgs.GetDsnRpt().EndLevel();
+			g_appArgs.GetDsnRpt().AddLevel("void ReadMemPause(");
 
-			m_mifFuncDecl.Append("\tvoid ReadMemPause(ht_uint%d rsmInstr);\n",
-				mod.m_instrW);
-			m_mifMacros.Append("void CPers%s%s::ReadMemPause(ht_uint%d rsmInstr)\n",
-				unitNameUc.c_str(), mod.m_modName.Uc().c_str(), mod.m_instrW);
+			m_mifFuncDecl.Append("\tvoid ReadMemPause(");
+			m_mifMacros.Append("void CPers%s%s::ReadMemPause(",
+				unitNameUc.c_str(), mod.m_modName.Uc().c_str());
+
+			if (!bRdRspGrpIdIsHtId && rdRspGrpIdW > 0) {
+				g_appArgs.GetDsnRpt().AddText("sc_uint<%s_RD_GRP_ID_W> rdGrpId, ", mod.m_modName.Upper().c_str());
+				m_mifFuncDecl.Append("sc_uint<%s_RD_GRP_ID_W> rdGrpId, ", mod.m_modName.Upper().c_str());
+				m_mifMacros.Append("sc_uint<%s_RD_GRP_ID_W> rdGrpId, ", mod.m_modName.Upper().c_str());
+			}
+
+			g_appArgs.GetDsnRpt().AddText("ht_uint%d rsmInstr)\n", mod.m_instrW);
+			m_mifFuncDecl.Append("ht_uint%d rsmInstr);\n", mod.m_instrW);
+			m_mifMacros.Append("ht_uint%d rsmInstr)\n", mod.m_instrW);
+
+			g_appArgs.GetDsnRpt().EndLevel();
 			m_mifMacros.Append("{\n");
 
 			m_mifMacros.Append("\tassert_msg(c_t%d_bReadMemAvail, \"Runtime check failed in CPers%s::ReadMemPause()"
 				" - expected ReadMemBusy() to have been called and not busy\");\n", mod.m_execStg, mod.m_modName.Uc().c_str());
-			m_mifMacros.NewLine();
 
 			m_mifMacros.Append("\tassert_msg(c_t%d_htCtrl == HT_INVALID, \"Runtime check failed in CPers%s::ReadMemPause()"
 				" - an Ht control routine was already called\");\n", mod.m_execStg, mod.m_modName.Uc().c_str());
 			m_mifMacros.NewLine();
 
-			if (mif.m_mifRd.m_rspGrpIdW == 0) {
+			string rdGrpId;
+			if (rdRspGrpIdW == 0) {
+				// rspGrpId == 0
+			} else if (bRdRspGrpIdIsHtId)
+				rdGrpId = VA("r_t%d_htId", mod.m_execStg);
+			else
+				rdGrpId = "rdGrpId";
 
-				m_mifMacros.Append("\tc_t%d_memReadPause = true;\n", mod.m_execStg);
+			if (rdRspGrpIdW == 0) {
+
+				m_mifMacros.Append("\tc_t%d_memReq.m_valid = true;\n", mod.m_execStg);
+				m_mifMacros.Append("\tc_t%d_memReq.m_rdPause = true;\n", mod.m_execStg);
+				m_mifMacros.Append("\tc_t%d_memReq.m_rsmInstr = rsmInstr;\n", mod.m_execStg);
 				m_mifMacros.NewLine();
 
-				m_mifMacros.Append("\tif (r_t%d_rdRspPauseCntZero && !(c_t%d_%sToMif_reqRdy",
-					mod.m_execStg, mod.m_execStg, mod.m_modName.Lc().c_str());
+				if (mod.m_threads.m_htIdW.AsInt() > 0)
+					m_mifMacros.Append("\tc_t%d_memReq.m_rsmHtId = r_t%d_htId;\n", mod.m_execStg, mod.m_execStg);
 
-				if (mod.m_mif.m_bMifWr)
-					m_mifMacros.Append(" && c_t%d_bReadMem))\n", mod.m_execStg);
-				else
-					m_mifMacros.Append("))\n");
+				m_mifMacros.Append("\tc_t%d_htCtrl = HT_PAUSE;\n", mod.m_execStg);
 
-				m_mifMacros.Append("\t\tHtContinue(rsmInstr);\n");
-				m_mifMacros.Append("\telse {\n");
-				m_mifMacros.Append("\t\t// should not occur - verify waiting flag not already set\n");
-				m_mifMacros.Append("\t\tassert(c_rdGrpRsmWait == false);\n");
-				m_mifMacros.Append("\t\tc_rdGrpRsmWait = true;\n");
-				m_mifMacros.Append("\t\tc_rdGrpRsmInstr = rsmInstr;\n");
+			} else if (rdRspGrpIdW <= 2) {
 
-				if (mif.m_mifRd.m_rspGrpId.size() != 0 && mod.m_threads.m_htIdW.AsInt() > 0)
-					m_mifMacros.Append("\t\tc_rdGrpRsmHtId = r_t%d_htId;\n", mod.m_execStg);
-
-				m_mifMacros.Append("\t\tc_t%d_htCtrl = HT_PAUSE;\n", mod.m_execStg);
-				m_mifMacros.Append("\t\tc_t%d_htNextInstr = rsmInstr;\n", mod.m_execStg);
-				m_mifMacros.Append("\t}\n");
-
-			} else if (mif.m_mifRd.m_rspGrpIdW <= 2) {
-
-				m_mifMacros.Append("\tc_t%d_memReadPause = true;\n", mod.m_execStg);
+				m_mifMacros.Append("\tc_t%d_rdRspInfo.m_grpId = %s;\n",
+					mod.m_execStg, rdGrpId.c_str());
 				m_mifMacros.NewLine();
 
-				m_mifMacros.Append("\tif (r_t%d_rdRspPauseCntZero && !(c_t%d_%sToMif_reqRdy",
-					mod.m_execStg, mod.m_execStg, mod.m_modName.Lc().c_str());
+				m_mifMacros.Append("\tc_t%d_memReq.m_valid = true;\n", mod.m_execStg);
+				m_mifMacros.Append("\tc_t%d_memReq.m_rdPause = true;\n", mod.m_execStg);
+				if (mod.m_threads.m_htIdW.AsInt() > 0)
+					m_mifMacros.Append("\tc_t%d_memReq.m_rsmHtId = r_t%d_htId;\n", mod.m_execStg, mod.m_execStg);
+				if (!bRdRspGrpIdIsHtId)
+					m_mifMacros.Append("\tc_t%d_memReq.m_rdGrpId = %s;\n", mod.m_execStg, rdGrpId.c_str());
 
-				if (mod.m_mif.m_bMifWr)
-					m_mifMacros.Append(" && c_t%d_bReadMem))\n", mod.m_execStg);
-				else
-					m_mifMacros.Append("))\n");
+				m_mifMacros.Append("\tc_t%d_memReq.m_rsmInstr = rsmInstr;\n", mod.m_execStg);
+				m_mifMacros.NewLine();
 
-				m_mifMacros.Append("\t\tHtContinue(rsmInstr);\n");
-				m_mifMacros.Append("\telse {\n");
-				m_mifMacros.Append("\t\t// should not occur - verify waiting flag not already set\n");
-				m_mifMacros.Append("\t\tassert(c_rdGrpRsmWait[INT(%s)] == false);\n", rdRspGrpName);
-				m_mifMacros.Append("\t\tc_rdGrpRsmWait[INT(%s)] = true;\n", rdRspGrpName);
-				m_mifMacros.Append("\t\tc_rdGrpRsmInstr[INT(%s)] = rsmInstr;\n", rdRspGrpName);
-
-				if (mif.m_mifRd.m_rspGrpId.size() != 0 && mod.m_threads.m_htIdW.AsInt() > 0)
-					m_mifMacros.Append("\t\tc_rdGrpRsmHtId[INT(%s)] = r_t%d_htId;\n",
-					rdRspGrpName, mod.m_execStg);
-
-				m_mifMacros.Append("\t\tc_t%d_htCtrl = HT_PAUSE;\n", mod.m_execStg);
-				m_mifMacros.Append("\t\tc_t%d_htNextInstr = rsmInstr;\n", mod.m_execStg);
-				m_mifMacros.Append("\t}\n");
+				m_mifMacros.Append("\tc_t%d_htCtrl = HT_PAUSE;\n", mod.m_execStg);
 
 			} else {
-				m_mifMacros.Append("\tm_rdGrpRsmWait[%s & %s].write_addr(%s >> %s);\n",
-					rdRspGrpName, pRdGrpIdMask, rdRspGrpName, pRdGrpShfAmt);
-				m_mifMacros.Append("\tm_rdGrpRsmInstr[%s & %s].write_addr(%s >> %s);\n",
-					rdRspGrpName, pRdGrpIdMask, rdRspGrpName, pRdGrpShfAmt);
-				if (mif.m_mifRd.m_rspGrpId.size() != 0 && mod.m_threads.m_htIdW.AsInt() > 0)
-					m_mifMacros.Append("\tm_rdGrpRsmHtId[%s & %s].write_addr(%s >> %s);\n",
-					rdRspGrpName, pRdGrpIdMask, rdRspGrpName, pRdGrpShfAmt);
+
+				m_mifMacros.Append("\tc_t%d_rdRspInfo.m_grpId = %s;\n",
+					mod.m_execStg, rdGrpId.c_str());
 				m_mifMacros.NewLine();
 
-				m_mifMacros.Append("\tif (r_t%d_rdRspPauseCntZero && !(c_t%d_%sToMif_reqRdy",
-					mod.m_execStg, mod.m_execStg, mod.m_modName.Lc().c_str());
+				m_mifMacros.Append("\tc_t%d_memReq.m_valid = true;\n", mod.m_execStg);
+				m_mifMacros.Append("\tc_t%d_memReq.m_rdPause = true;\n", mod.m_execStg);
 
-				if (mod.m_mif.m_bMifWr)
-					m_mifMacros.Append(" && c_t%d_bReadMem))\n", mod.m_execStg);
-				else
-					m_mifMacros.Append("))\n");
+				if (mod.m_threads.m_htIdW.AsInt() > 0)
+					m_mifMacros.Append("\tc_t%d_memReq.m_rsmHtId = r_t%d_htId;\n", mod.m_execStg, mod.m_execStg);
+				if (!bRdRspGrpIdIsHtId)
+					m_mifMacros.Append("\tc_t%d_memReq.m_rdGrpId = %s;\n", mod.m_execStg, rdGrpId.c_str());
+				m_mifMacros.Append("\tc_t%d_memReq.m_rsmInstr = rsmInstr;\n", mod.m_execStg);
+				m_mifMacros.NewLine();
 
-				m_mifMacros.Append("\t\tHtContinue(rsmInstr);\n");
-				m_mifMacros.Append("\telse {\n");
-				m_mifMacros.Append("\t\tm_rdGrpRsmWait[%s & %s].write_mem(true);\n", rdRspGrpName, pRdGrpIdMask);
-				m_mifMacros.Append("\t\tm_rdGrpRsmInstr[%s & %s].write_mem(rsmInstr);\n", rdRspGrpName, pRdGrpIdMask);
-				if (mif.m_mifRd.m_rspGrpId.size() != 0 && mod.m_threads.m_htIdW.AsInt() > 0)
-					m_mifMacros.Append("\t\tm_rdGrpRsmHtId[%s & %s].write_mem(r_t%d_htId);\n",
-					rdRspGrpName, pRdGrpIdMask, mod.m_execStg);
-				m_mifMacros.Append("\t\tc_t%d_htCtrl = HT_PAUSE;\n", mod.m_execStg);
-				m_mifMacros.Append("\t\tc_t%d_htNextInstr = rsmInstr;\n", mod.m_execStg);
-				m_mifMacros.Append("\t}\n");
+				m_mifMacros.Append("\tc_t%d_htCtrl = HT_PAUSE;\n", mod.m_execStg);
+			}
+
+			m_mifMacros.Append("}\n");
+			m_mifMacros.NewLine();
+		}
+
+		///////////////////////////////////////////////////////////
+		// generate ReadMemPoll routine
+
+		if (mif.m_mifRd.m_bPoll) {
+
+			g_appArgs.GetDsnRpt().AddLevel("void ReadMemPoll(");
+
+			m_mifFuncDecl.Append("\tvoid ReadMemPoll(");
+			m_mifMacros.Append("void CPers%s%s::ReadMemPoll(",
+				unitNameUc.c_str(), mod.m_modName.Uc().c_str());
+
+			if (!bRdRspGrpIdIsHtId && rdRspGrpIdW > 0) {
+				g_appArgs.GetDsnRpt().AddText("sc_uint<%s_RD_GRP_ID_W> rdGrpId, ", mod.m_modName.Upper().c_str());
+				m_mifFuncDecl.Append("sc_uint<%s_RD_GRP_ID_W> rdGrpId, ", mod.m_modName.Upper().c_str());
+				m_mifMacros.Append("sc_uint<%s_RD_GRP_ID_W> rdGrpId, ", mod.m_modName.Upper().c_str());
+			}
+
+			g_appArgs.GetDsnRpt().AddText("ht_uint%d rsmInstr)\n", mod.m_instrW);
+			m_mifFuncDecl.Append("ht_uint%d rsmInstr);\n", mod.m_instrW);
+			m_mifMacros.Append("ht_uint%d rsmInstr)\n", mod.m_instrW);
+
+			g_appArgs.GetDsnRpt().EndLevel();
+			m_mifMacros.Append("{\n");
+
+			m_mifMacros.Append("\tassert_msg(c_t%d_bReadMemAvail, \"Runtime check failed in CPers%s::ReadMemPoll()"
+				" - expected ReadMemBusy() to have been called and not busy\");\n", mod.m_execStg, mod.m_modName.Uc().c_str());
+
+			m_mifMacros.Append("\tassert_msg(c_t%d_htCtrl == HT_INVALID, \"Runtime check failed in CPers%s::ReadMemPoll()"
+				" - an Ht control routine was already called\");\n", mod.m_execStg, mod.m_modName.Uc().c_str());
+			m_mifMacros.NewLine();
+
+			string rdGrpId;
+			if (rdRspGrpIdW == 0) {
+				// rspGrpId == 0
+			} else if (bRdRspGrpIdIsHtId)
+				rdGrpId = VA("r_t%d_htId", mod.m_execStg);
+			else
+				rdGrpId = "rdGrpId";
+
+			if (rdRspGrpIdW == 0) {
+
+				m_mifMacros.Append("\tc_t%d_memReq.m_rdPoll = true;\n", mod.m_execStg);
+				m_mifMacros.Append("\tc_t%d_memReq.m_rsmInstr = rsmInstr;\n", mod.m_execStg);
+				m_mifMacros.Append("\tc_t%d_memReq.m_pollInstr = r_t%d_htInstr;\n", mod.m_execStg, mod.m_execStg);
+				m_mifMacros.NewLine();
+
+				if (mod.m_threads.m_htIdW.AsInt() > 0)
+					m_mifMacros.Append("\tc_t%d_memReq.m_rsmHtId = r_t%d_htId;\n", mod.m_execStg, mod.m_execStg);
+
+				m_mifMacros.Append("\tc_t%d_htCtrl = HT_PAUSE;\n", mod.m_execStg);
+
+			} else if (rdRspGrpIdW <= 2) {
+
+				m_mifMacros.Append("\tc_t%d_rdRspInfo.m_grpId = %s;\n",
+					mod.m_execStg, rdGrpId.c_str());
+				m_mifMacros.NewLine();
+
+				m_mifMacros.Append("\tc_t%d_memReq.m_rdPoll = true;\n", mod.m_execStg);
+				if (mod.m_threads.m_htIdW.AsInt() > 0)
+					m_mifMacros.Append("\tc_t%d_memReq.m_rsmHtId = r_t%d_htId;\n", mod.m_execStg, mod.m_execStg);
+				if (!bRdRspGrpIdIsHtId)
+					m_mifMacros.Append("\tc_t%d_memReq.m_rdGrpId = %s;\n", mod.m_execStg, rdGrpId.c_str());
+
+				m_mifMacros.Append("\tc_t%d_memReq.m_rsmInstr = rsmInstr;\n", mod.m_execStg);
+				m_mifMacros.Append("\tc_t%d_memReq.m_pollInstr = r_t%d_htInstr;\n", mod.m_execStg, mod.m_execStg);
+				m_mifMacros.NewLine();
+
+				m_mifMacros.Append("\tc_t%d_htCtrl = HT_PAUSE;\n", mod.m_execStg);
+
+			} else {
+
+				m_mifMacros.Append("\tc_t%d_rdRspInfo.m_grpId = %s;\n",
+					mod.m_execStg, rdGrpId.c_str());
+				m_mifMacros.NewLine();
+
+				m_mifMacros.Append("\tc_t%d_memReq.m_rdPoll = true;\n", mod.m_execStg);
+				if (mod.m_threads.m_htIdW.AsInt() > 0)
+					m_mifMacros.Append("\tc_t%d_memReq.m_rsmHtId = r_t%d_htId;\n", mod.m_execStg, mod.m_execStg);
+				if (!bRdRspGrpIdIsHtId)
+					m_mifMacros.Append("\tc_t%d_memReq.m_rdGrpId = %s;\n", mod.m_execStg, rdGrpId.c_str());
+				m_mifMacros.Append("\tc_t%d_memReq.m_rsmInstr = rsmInstr;\n", mod.m_execStg);
+				m_mifMacros.Append("\tc_t%d_memReq.m_pollInstr = r_t%d_htInstr;\n", mod.m_execStg, mod.m_execStg);
+				m_mifMacros.NewLine();
+
+				m_mifMacros.Append("\tc_t%d_htCtrl = HT_PAUSE;\n", mod.m_execStg);
 			}
 
 			m_mifMacros.Append("}\n");
@@ -1955,21 +1671,16 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 		}
 	}
 
-	const char *pWrGrpIdMask = (mif.m_mifWr.m_rspGrpIdW == 2 || mif.m_mifWr.m_bMaxBw) ? "3" : "1";
-	const char *pWrGrpShfAmt = (mif.m_mifWr.m_rspGrpIdW == 2 || mif.m_mifWr.m_bMaxBw) ? "2" : "1";
-
-	char wrRspGrpName[64];
+	string wrGrpId;
 	if (mif.m_bMifWr) {
-		// write busy macros
-		m_mifMacros.Append("// Memory Write Interface Macros\n");
+		m_mifMacros.Append("// Memory Write Interface Routines\n");
 
-		if (mif.m_mifWr.m_rspGrpId.size() == 0)
-			sprintf(wrRspGrpName, "r_t%d_htId", mod.m_execStg);
-		else if (mif.m_mifWr.m_bRspGrpIdPriv)
-			sprintf(wrRspGrpName, "r_t%d_htPriv.m_%s",
-			mod.m_execStg, mif.m_mifWr.m_rspGrpId.AsStr().c_str());
+		if (wrRspGrpIdW == 0) {
+			// rspGrpId == 0
+		} else if (bWrRspGrpIdIsHtId)
+			wrGrpId = VA("r_t%d_htId", mod.m_execStg);
 		else
-			sprintf(wrRspGrpName, "r_%s", mif.m_mifWr.m_rspGrpId.AsStr().c_str());
+			wrGrpId = "wrGrpId";
 
 		///////////////////////////////////////////////////////////
 		// generate WriteMemBusy routine
@@ -1982,36 +1693,21 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 			unitNameUc.c_str(), mod.m_modName.Uc().c_str());
 		m_mifMacros.Append("{\n");
 
-		string rspGrpId = mif.m_mifWr.m_rspGrpId.size() == 0 ? "" : "rspGrpId";
-
-		char reqBusy[32];
-		if (bNeed_reqBusy)
-			sprintf(reqBusy, " || r_t%d_reqBusy", mod.m_execStg);
-		else
-			reqBusy[0] = '\0';
-
-		if (mif.m_mifWr.m_rspGrpIdW <= 2) {
-
-			mifPostReg.Append("#\tifdef _HTV\n");
-			mifPostReg.Append("\tc_t%d_bWriteMemBusy = r_%sToMif_reqAvlCntBusy || r_t%d_wrGrpRspCntMax%s;\n",
-				mod.m_execStg, mod.m_modName.Lc().c_str(), mod.m_execStg, reqBusy);
-
-			mifPostReg.Append("#\telse\n");
-
-			mifPostReg.Append("\tc_t%d_bWriteMemBusy = r_%sToMif_reqAvlCntBusy || r_t%d_wrGrpRspCntMax%s ||\n",
-				mod.m_execStg, mod.m_modName.Lc().c_str(), mod.m_execStg, reqBusy);
-
-		} else {
-			mifPostReg.Append("#\tifdef _HTV\n");
-			mifPostReg.Append("\tc_t%d_bWriteMemBusy = r_t%d_bWriteRspBusy || r_%sToMif_reqAvlCntBusy || r_t%d_wrGrpRspCntMax%s;\n",
-				mod.m_execStg, mod.m_execStg, mod.m_modName.Lc().c_str(), mod.m_execStg, reqBusy);
-
-			mifPostReg.Append("#\telse\n");
-
-			mifPostReg.Append("\tc_t%d_bWriteMemBusy = r_t%d_bWriteRspBusy || r_%sToMif_reqAvlCntBusy || r_t%d_wrGrpRspCntMax%s ||\n",
-				mod.m_execStg, mod.m_execStg, mod.m_modName.Lc().c_str(), mod.m_execStg, reqBusy);
+		string wrMemBusy;
+		if (bMultiQwReq)
+			wrMemBusy = VA("r_t%d_memReqBusy", mod.m_execStg);
+		else {
+			wrMemBusy = VA("r_wrGrpRspCntBusy || r_%sToMif_reqAvlCntBusy", mod.m_modName.Lc().c_str());
 		}
 
+		mifPostReg.Append("#\tifdef _HTV\n");
+		mifPostReg.Append("\tc_t%d_bWriteMemBusy = %s;\n",
+			mod.m_execStg, wrMemBusy.c_str());
+
+		mifPostReg.Append("#\telse\n");
+
+		mifPostReg.Append("\tc_t%d_bWriteMemBusy = %s ||\n",
+			mod.m_execStg, wrMemBusy.c_str());
 		mifPostReg.Append("\t\t(%s_RND_RETRY && !!(g_rndRetry() & 1));\n", mod.m_modName.Upper().c_str());
 		mifPostReg.Append("#\tendif\n");
 
@@ -2025,286 +1721,79 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 
 		if (mif.m_mifWr.m_bPoll) {
 
-			g_appArgs.GetDsnRpt().AddLevel("bool WriteMemPoll()\n");
-			g_appArgs.GetDsnRpt().EndLevel();
+			g_appArgs.GetDsnRpt().AddLevel("void WriteMemPoll(");
 
-			m_mifFuncDecl.Append("\tbool WriteMemPoll();\n");
-			m_mifMacros.Append("bool CPers%s%s::WriteMemPoll()\n",
+			m_mifFuncDecl.Append("\tvoid WriteMemPoll(");
+			m_mifMacros.Append("void CPers%s%s::WriteMemPoll(",
 				unitNameUc.c_str(), mod.m_modName.Uc().c_str());
+
+			if (!bWrRspGrpIdIsHtId && wrRspGrpIdW > 0) {
+				g_appArgs.GetDsnRpt().AddText("sc_uint<%s_WR_GRP_ID_W> wrGrpId, ", mod.m_modName.Upper().c_str());
+				m_mifFuncDecl.Append("sc_uint<%s_WR_GRP_ID_W> wrGrpId, ", mod.m_modName.Upper().c_str());
+				m_mifMacros.Append("sc_uint<%s_WR_GRP_ID_W> wrGrpId, ", mod.m_modName.Upper().c_str());
+			}
+
+			g_appArgs.GetDsnRpt().AddText("ht_uint%d rsmInstr)\n", mod.m_instrW);
+			m_mifFuncDecl.Append("ht_uint%d rsmInstr);\n", mod.m_instrW);
+			m_mifMacros.Append("ht_uint%d rsmInstr)\n", mod.m_instrW);
+
+			g_appArgs.GetDsnRpt().EndLevel();
 			m_mifMacros.Append("{\n");
 
 			m_mifMacros.Append("\tassert_msg(c_t%d_bWriteMemAvail, \"Runtime check failed in CPers%s::WriteMemPoll()"
 				" - expected WriteMemBusy() to have been called and not busy\");\n", mod.m_execStg, mod.m_modName.Uc().c_str());
+
+			m_mifMacros.Append("\tassert_msg(c_t%d_htCtrl == HT_INVALID, \"Runtime check failed in CPers%s::WriteMemPoll()"
+				" - an Ht control routine was already called\");\n", mod.m_execStg, mod.m_modName.Uc().c_str());
 			m_mifMacros.NewLine();
 
-			m_mifMacros.Append("\treturn !r_t%d_wrGrpRspCntZero;\n", mod.m_execStg);
-
-			m_mifMacros.Append("}\n");
-			m_mifMacros.NewLine();
-		}
-
-		///////////////////////////////////////////////////////////
-		// generate WriteMem routine
-
-		if (true || g_appArgs.IsMemTraceEnabled()) {
-			m_mifFuncDecl.Append("\t#ifdef _HTV\n");
-			m_mifFuncDecl.Append("\tvoid WriteMem(sc_uint<MEM_ADDR_W> memAddr, uint64_t memData, bool ht_noload orderChk=true);\n", mod.m_instrW);
-			m_mifFuncDecl.Append("\tvoid WriteMem_uint8(sc_uint<MEM_ADDR_W> memAddr, uint8_t memData, bool ht_noload orderChk=true);\n", mod.m_instrW);
-			m_mifFuncDecl.Append("\tvoid WriteMem_uint16(sc_uint<MEM_ADDR_W> memAddr, uint16_t memData, bool ht_noload orderChk=true);\n", mod.m_instrW);
-			m_mifFuncDecl.Append("\tvoid WriteMem_uint32(sc_uint<MEM_ADDR_W> memAddr, uint32_t memData, bool ht_noload orderChk=true);\n", mod.m_instrW);
-			m_mifFuncDecl.Append("\tvoid WriteMem_uint64(sc_uint<MEM_ADDR_W> memAddr, uint64_t memData, bool ht_noload orderChk=true);\n", mod.m_instrW);
-			m_mifFuncDecl.Append("\tvoid WriteMem_int8(sc_uint<MEM_ADDR_W> memAddr, int8_t memData, bool ht_noload orderChk=true);\n", mod.m_instrW);
-			m_mifFuncDecl.Append("\tvoid WriteMem_int16(sc_uint<MEM_ADDR_W> memAddr, int16_t memData, bool ht_noload orderChk=true);\n", mod.m_instrW);
-			m_mifFuncDecl.Append("\tvoid WriteMem_int32(sc_uint<MEM_ADDR_W> memAddr, int32_t memData, bool ht_noload orderChk=true);\n", mod.m_instrW);
-			m_mifFuncDecl.Append("\tvoid WriteMem_int64(sc_uint<MEM_ADDR_W> memAddr, int64_t memData, bool ht_noload orderChk=true);\n", mod.m_instrW);
-			m_mifFuncDecl.Append("\t#else\n");
-			m_mifFuncDecl.Append("\t#define WriteMem_uint8(...) WriteMem_uint8_((char *)__FILE__, __LINE__, __VA_ARGS__)\n");
-			m_mifFuncDecl.Append("\tvoid WriteMem_uint8_(char *file, int line, sc_uint<MEM_ADDR_W> memAddr, uint8_t memData, bool orderChk=true);\n",
-				mod.m_instrW);
-			m_mifFuncDecl.Append("\t#define WriteMem_uint16(...) WriteMem_uint16_((char *)__FILE__, __LINE__, __VA_ARGS__)\n");
-			m_mifFuncDecl.Append("\tvoid WriteMem_uint16_(char *file, int line, sc_uint<MEM_ADDR_W> memAddr, uint16_t memData, bool orderChk=true);\n",
-				mod.m_instrW);
-			m_mifFuncDecl.Append("\t#define WriteMem_uint32(...) WriteMem_uint32_((char *)__FILE__, __LINE__, __VA_ARGS__)\n");
-			m_mifFuncDecl.Append("\tvoid WriteMem_uint32_(char *file, int line, sc_uint<MEM_ADDR_W> memAddr, uint32_t memData, bool orderChk=true);\n",
-				mod.m_instrW);
-			m_mifFuncDecl.Append("\t#define WriteMem(...) WriteMem_uint64_((char *)__FILE__, __LINE__, __VA_ARGS__)\n");
-			m_mifFuncDecl.Append("\t#define WriteMem_uint64(...) WriteMem_uint64_((char *)__FILE__, __LINE__, __VA_ARGS__)\n");
-			m_mifFuncDecl.Append("\tvoid WriteMem_uint64_(char *file, int line, sc_uint<MEM_ADDR_W> memAddr, uint64_t memData, bool orderChk=true);\n",
-				mod.m_instrW);
-
-			m_mifFuncDecl.Append("\t#define WriteMem_int8(...) WriteMem_int8_((char *)__FILE__, __LINE__, __VA_ARGS__)\n");
-			m_mifFuncDecl.Append("\tvoid WriteMem_int8_(char *file, int line, sc_uint<MEM_ADDR_W> memAddr, int8_t memData, bool orderChk=true);\n",
-				mod.m_instrW);
-			m_mifFuncDecl.Append("\t#define WriteMem_int16(...) WriteMem_int16_((char *)__FILE__, __LINE__, __VA_ARGS__)\n");
-			m_mifFuncDecl.Append("\tvoid WriteMem_int16_(char *file, int line, sc_uint<MEM_ADDR_W> memAddr, int16_t memData, bool orderChk=true);\n",
-				mod.m_instrW);
-			m_mifFuncDecl.Append("\t#define WriteMem_int32(...) WriteMem_int32_((char *)__FILE__, __LINE__, __VA_ARGS__)\n");
-			m_mifFuncDecl.Append("\tvoid WriteMem_int32_(char *file, int line, sc_uint<MEM_ADDR_W> memAddr, int32_t memData, bool orderChk=true);\n",
-				mod.m_instrW);
-			m_mifFuncDecl.Append("\t#define WriteMem_int64(...) WriteMem_int64_((char *)__FILE__, __LINE__, __VA_ARGS__)\n");
-			m_mifFuncDecl.Append("\tvoid WriteMem_int64_(char *file, int line, sc_uint<MEM_ADDR_W> memAddr, int64_t memData, bool orderChk=true);\n",
-				mod.m_instrW);
-
-			m_mifFuncDecl.Append("\t#endif\n");
-		}
-
-		for (int memWrSize = 0; memWrSize < 8; memWrSize += 1) {
-			m_mifMacros.Append("#ifdef _HTV\n");
-
-			string routineName;
-
-			switch (memWrSize) {
-			case 0:
-				routineName = "WriteMem_uint8";
-
-				g_appArgs.GetDsnRpt().AddLevel("void WriteMem_uint8(sc_uint<MEM_ADDR_W> memAddr, uint8_t memData, bool orderChk=true)\n");
-				g_appArgs.GetDsnRpt().EndLevel();
-
-				m_mifMacros.Append("void CPers%s%s::WriteMem_uint8(sc_uint<MEM_ADDR_W> memAddr, uint8_t memData, bool ht_noload orderChk)\n",
-					unitNameUc.c_str(), mod.m_modName.Uc().c_str(), mod.m_instrW);
-				break;
-			case 1:
-				routineName = "WriteMem_uint16";
-
-				g_appArgs.GetDsnRpt().AddLevel("void WriteMem_uint16(sc_uint<MEM_ADDR_W> memAddr, uint8_t memData, bool orderChk=true)\n");
-				g_appArgs.GetDsnRpt().EndLevel();
-
-				m_mifMacros.Append("void CPers%s%s::WriteMem_uint16(sc_uint<MEM_ADDR_W> memAddr, uint16_t memData, bool ht_noload orderChk)\n",
-					unitNameUc.c_str(), mod.m_modName.Uc().c_str(), mod.m_instrW);
-				break;
-			case 2:
-				routineName = "WriteMem_uint32";
-
-				g_appArgs.GetDsnRpt().AddLevel("void WriteMem_uint32(sc_uint<MEM_ADDR_W> memAddr, uint32_t memData, bool orderChk=true)\n");
-				g_appArgs.GetDsnRpt().EndLevel();
-
-				m_mifMacros.Append("void CPers%s%s::WriteMem_uint32(sc_uint<MEM_ADDR_W> memAddr, uint32_t memData, bool ht_noload orderChk)\n",
-					unitNameUc.c_str(), mod.m_modName.Uc().c_str(), mod.m_instrW);
-				break;
-			case 3:
-				routineName = "WriteMem";
-
-				g_appArgs.GetDsnRpt().AddLevel("void WriteMem(sc_uint<MEM_ADDR_W> memAddr, uint64_t memData, bool orderChk=true)\n");
-				g_appArgs.GetDsnRpt().EndLevel();
-
-				m_mifMacros.Append("void CPers%s%s::WriteMem(sc_uint<MEM_ADDR_W> memAddr, uint64_t memData, bool ht_noload orderChk) {\n",
-					unitNameUc.c_str(), mod.m_modName.Uc().c_str(), mod.m_instrW);
-				m_mifMacros.Append("\tWriteMem_uint64(memAddr, memData, orderChk);\n");
-				m_mifMacros.Append("}\n");
-
-				m_mifMacros.Append("void CPers%s%s::WriteMem_uint64(sc_uint<MEM_ADDR_W> memAddr, uint64_t memData, bool ht_noload orderChk)\n",
-					unitNameUc.c_str(), mod.m_modName.Uc().c_str(), mod.m_instrW);
-				break;
-			case 4:
-				routineName = "WriteMem_int8";
-
-				g_appArgs.GetDsnRpt().AddLevel("void WriteMem_int8(sc_uint<MEM_ADDR_W> memAddr, int8_t memData, bool orderChk=true)\n");
-				g_appArgs.GetDsnRpt().EndLevel();
-
-				m_mifMacros.Append("void CPers%s%s::WriteMem_int8(sc_uint<MEM_ADDR_W> memAddr, int8_t memData, bool ht_noload orderChk)\n",
-					unitNameUc.c_str(), mod.m_modName.Uc().c_str(), mod.m_instrW);
-				break;
-			case 5:
-				routineName = "WriteMem_int16";
-
-				g_appArgs.GetDsnRpt().AddLevel("void WriteMem_int16(sc_uint<MEM_ADDR_W> memAddr, int16_t memData, bool orderChk=true)\n");
-				g_appArgs.GetDsnRpt().EndLevel();
-
-				m_mifMacros.Append("void CPers%s%s::WriteMem_int16(sc_uint<MEM_ADDR_W> memAddr, int16_t memData, bool ht_noload orderChk)\n",
-					unitNameUc.c_str(), mod.m_modName.Uc().c_str(), mod.m_instrW);
-				break;
-			case 6:
-				routineName = "WriteMem_int32";
-
-				g_appArgs.GetDsnRpt().AddLevel("void WriteMem_int32(sc_uint<MEM_ADDR_W> memAddr, int32_t memData, bool orderChk=true)\n");
-				g_appArgs.GetDsnRpt().EndLevel();
-
-				m_mifMacros.Append("void CPers%s%s::WriteMem_int32(sc_uint<MEM_ADDR_W> memAddr, int32_t memData, bool ht_noload orderChk)\n",
-					unitNameUc.c_str(), mod.m_modName.Uc().c_str(), mod.m_instrW);
-				break;
-			case 7:
-				routineName = "WriteMem_int64";
-
-				g_appArgs.GetDsnRpt().AddLevel("void WriteMem_int64(sc_uint<MEM_ADDR_W> memAddr, int64_t memData, bool orderChk=true)\n");
-				g_appArgs.GetDsnRpt().EndLevel();
-
-				m_mifMacros.Append("void CPers%s%s::WriteMem_int64(sc_uint<MEM_ADDR_W> memAddr, int64_t memData, bool ht_noload orderChk)\n",
-					unitNameUc.c_str(), mod.m_modName.Uc().c_str(), mod.m_instrW);
-				break;
-			}
-			m_mifMacros.Append("#else\n");
-
-			switch (memWrSize) {
-			case 0:
-				m_mifMacros.Append("void CPers%s%s::WriteMem_uint8_(char *file, int line, sc_uint<MEM_ADDR_W> memAddr, uint8_t memData, bool orderChk)\n",
-					unitNameUc.c_str(), mod.m_modName.Uc().c_str(), mod.m_instrW);
-				break;
-			case 1:
-				m_mifMacros.Append("void CPers%s%s::WriteMem_uint16_(char *file, int line, sc_uint<MEM_ADDR_W> memAddr, uint16_t memData, bool orderChk)\n",
-					unitNameUc.c_str(), mod.m_modName.Uc().c_str(), mod.m_instrW);
-				break;
-			case 2:
-				m_mifMacros.Append("void CPers%s%s::WriteMem_uint32_(char *file, int line, sc_uint<MEM_ADDR_W> memAddr, uint32_t memData, bool orderChk)\n",
-					unitNameUc.c_str(), mod.m_modName.Uc().c_str(), mod.m_instrW);
-				break;
-			case 3:
-				m_mifMacros.Append("void CPers%s%s::WriteMem_uint64_(char *file, int line, sc_uint<MEM_ADDR_W> memAddr, uint64_t memData, bool orderChk)\n",
-					unitNameUc.c_str(), mod.m_modName.Uc().c_str(), mod.m_instrW);
-				break;
-			case 4:
-				m_mifMacros.Append("void CPers%s%s::WriteMem_int8_(char *file, int line, sc_uint<MEM_ADDR_W> memAddr, int8_t memData, bool orderChk)\n",
-					unitNameUc.c_str(), mod.m_modName.Uc().c_str(), mod.m_instrW);
-				break;
-			case 5:
-				m_mifMacros.Append("void CPers%s%s::WriteMem_int16_(char *file, int line, sc_uint<MEM_ADDR_W> memAddr, int16_t memData, bool orderChk)\n",
-					unitNameUc.c_str(), mod.m_modName.Uc().c_str(), mod.m_instrW);
-				break;
-			case 6:
-				m_mifMacros.Append("void CPers%s%s::WriteMem_int32_(char *file, int line, sc_uint<MEM_ADDR_W> memAddr, int32_t memData, bool orderChk)\n",
-					unitNameUc.c_str(), mod.m_modName.Uc().c_str(), mod.m_instrW);
-				break;
-			case 7:
-				m_mifMacros.Append("void CPers%s%s::WriteMem_int64_(char *file, int line, sc_uint<MEM_ADDR_W> memAddr, int64_t memData, bool orderChk)\n",
-					unitNameUc.c_str(), mod.m_modName.Uc().c_str(), mod.m_instrW);
-				break;
-			}
-
-			m_mifMacros.Append("#endif\n");
-			m_mifMacros.Append("{\n");
-
-			m_mifMacros.Append("\tassert_msg(c_t%d_bWriteMemAvail, \"Runtime check failed in CPers%s::%s()"
-				" - expected WriteMemBusy() to have been called and not busy\");\n",
-				mod.m_execStg, mod.m_modName.Uc().c_str(), routineName.c_str());
-			m_mifMacros.NewLine();
-
-			switch (memWrSize) {
-			case 0:
-			case 4:
-				break;
-			case 1:
-			case 5:
-				m_mifMacros.Append("\tassert_msg((memAddr & 1) == 0, \"Runtime check failed in CPers%s::%s()"
-					" - expected address to be uint16 aligned\");\n", mod.m_modName.Uc().c_str(), routineName.c_str());
-				break;
-			case 2:
-			case 6:
-				m_mifMacros.Append("\tassert_msg((memAddr & 3) == 0, \"Runtime check failed in CPers%s::%s()"
-					" - expected address to be uint32 aligned\");\n", mod.m_modName.Uc().c_str(), routineName.c_str());
-				break;
-			case 3:
-			case 7:
-				m_mifMacros.Append("\tassert_msg((memAddr & 7) == 0, \"Runtime check failed in CPers%s::%s()"
-					" - expected address to be uint64 aligned\");\n", mod.m_modName.Uc().c_str(), routineName.c_str());
-				break;
-			}
-
-			m_mifMacros.NewLine();
-
-			if (mif.m_bMifRd)
-				m_mifMacros.Append("\tc_t%d_bReadMem = false;\n", mod.m_execStg);
-			if (bNeed_reqQwCnt)
-				m_mifMacros.Append("\tc_t%d_reqQwCnt = 1;\n", mod.m_execStg);
-			if (bNeed_reqQwSplit)
-				m_mifMacros.Append("\tc_t%d_reqQwSplit = true;\n", mod.m_execStg);
-			m_mifMacros.Append("\tc_t%d_%sToMif_reqRdy = true;\n",
-				mod.m_execStg, mod.m_modName.Lc().c_str());
-
-			if (mif.m_bMifRd)
-				m_mifMacros.Append("\tc_t%d_%sToMif_req.m_type = MEM_REQ_WR;\n",
-				mod.m_execStg, mod.m_modName.Lc().c_str());
-
-			m_mifMacros.Append("\tc_t%d_%sToMif_req.m_addr = memAddr;\n",
-				mod.m_execStg, mod.m_modName.Lc().c_str());
-			m_mifMacros.Append("\tc_t%d_%sToMif_req.m_data = memData;\n",
-				mod.m_execStg, mod.m_modName.Lc().c_str());
-
-			switch (memWrSize) {
-			case 0:
-			case 4:
-				m_mifMacros.Append("\tc_t%d_%sToMif_req.m_size = MEM_REQ_U8;\n",
-					mod.m_execStg, mod.m_modName.Lc().c_str());
-				break;
-			case 1:
-			case 5:
-				m_mifMacros.Append("\tc_t%d_%sToMif_req.m_size = MEM_REQ_U16;\n",
-					mod.m_execStg, mod.m_modName.Lc().c_str());
-				break;
-			case 2:
-			case 6:
-				m_mifMacros.Append("\tc_t%d_%sToMif_req.m_size = MEM_REQ_U32;\n",
-					mod.m_execStg, mod.m_modName.Lc().c_str());
-				break;
-			case 3:
-			case 7:
-				m_mifMacros.Append("\tc_t%d_%sToMif_req.m_size = MEM_REQ_U64;\n",
-					mod.m_execStg, mod.m_modName.Lc().c_str());
-				break;
-			}
-
-			if (true || g_appArgs.IsMemTraceEnabled()) {
-				m_mifMacros.Append("\t#ifndef _HTV\n");
-				m_mifMacros.Append("\tc_t%d_%sToMif_req.m_file = file;\n",
-					mod.m_execStg, mod.m_modName.Lc().c_str());
-				m_mifMacros.Append("\tc_t%d_%sToMif_req.m_line = line;\n",
-					mod.m_execStg, mod.m_modName.Lc().c_str());
-				m_mifMacros.Append("\tc_t%d_%sToMif_req.m_time = sc_time_stamp().value();\n",
-					mod.m_execStg, mod.m_modName.Lc().c_str());
-				m_mifMacros.Append("\tc_t%d_%sToMif_req.m_orderChk = orderChk;\n",
-					mod.m_execStg, mod.m_modName.Lc().c_str());
-				m_mifMacros.Append("\t#endif\n");
-			}
-			char wrRspGrpId[32];
-			if (mif.m_mifWr.m_rspGrpId.size() == 0)
-				sprintf(wrRspGrpId, "r_t%d_htId", mod.m_execStg);
-			else if (mif.m_mifWr.m_bRspGrpIdPriv)
-				sprintf(wrRspGrpId, "r_t%d_htPriv.m_%s",
-				mod.m_execStg, mif.m_mifWr.m_rspGrpId.AsStr().c_str());
+			string wrGrpId;
+			if (wrRspGrpIdW == 0) {
+				// rspGrpId == 0
+			} else if (bWrRspGrpIdIsHtId)
+				wrGrpId = VA("r_t%d_htId", mod.m_execStg);
 			else
-				sprintf(wrRspGrpId, "r_%s", mif.m_mifWr.m_rspGrpId.AsStr().c_str());
+				wrGrpId = "wrGrpId";
 
-			if (mif.m_mifWr.m_rspGrpIdW > 0)
-				m_mifMacros.Append("\tc_t%d_%sToMif_req.m_tid = (sc_uint<MIF_TID_W>)%s;\n",
-				mod.m_execStg, mod.m_modName.Lc().c_str(), wrRspGrpId);
+			if (wrRspGrpIdW == 0) {
+
+				m_mifMacros.Append("\tc_t%d_memReq.m_wrPoll = true;\n", mod.m_execStg);
+				m_mifMacros.Append("\tc_t%d_memReq.m_rsmInstr = rsmInstr;\n", mod.m_execStg);
+				m_mifMacros.Append("\tc_t%d_memReq.m_pollInstr = r_t%d_htInstr;\n", mod.m_execStg, mod.m_execStg);
+				m_mifMacros.NewLine();
+
+				if (mod.m_threads.m_htIdW.AsInt() > 0)
+					m_mifMacros.Append("\tc_t%d_memReq.m_rsmHtId = r_t%d_htId;\n", mod.m_execStg, mod.m_execStg);
+
+				m_mifMacros.Append("\tc_t%d_htCtrl = HT_PAUSE;\n", mod.m_execStg);
+
+			} else if (wrRspGrpIdW <= 2) {
+
+				m_mifMacros.Append("\tc_t%d_memReq.m_wrPoll = true;\n", mod.m_execStg);
+				if (mod.m_threads.m_htIdW.AsInt() > 0)
+					m_mifMacros.Append("\tc_t%d_memReq.m_rsmHtId = r_t%d_htId;\n", mod.m_execStg, mod.m_execStg);
+				if (!bWrRspGrpIdIsHtId)
+					m_mifMacros.Append("\tc_t%d_memReq.m_wrGrpId = %s;\n", mod.m_execStg, wrGrpId.c_str());
+
+				m_mifMacros.Append("\tc_t%d_memReq.m_rsmInstr = rsmInstr;\n", mod.m_execStg);
+				m_mifMacros.Append("\tc_t%d_memReq.m_pollInstr = r_t%d_htInstr;\n", mod.m_execStg, mod.m_execStg);
+				m_mifMacros.NewLine();
+
+				m_mifMacros.Append("\tc_t%d_htCtrl = HT_PAUSE;\n", mod.m_execStg);
+
+			} else {
+
+				m_mifMacros.Append("\tc_t%d_memReq.m_wrPoll = true;\n", mod.m_execStg);
+				if (mod.m_threads.m_htIdW.AsInt() > 0)
+					m_mifMacros.Append("\tc_t%d_memReq.m_rsmHtId = r_t%d_htId;\n", mod.m_execStg, mod.m_execStg);
+				if (!bWrRspGrpIdIsHtId)
+					m_mifMacros.Append("\tc_t%d_memReq.m_wrGrpId = %s;\n", mod.m_execStg, wrGrpId.c_str());
+				m_mifMacros.Append("\tc_t%d_memReq.m_rsmInstr = rsmInstr;\n", mod.m_execStg);
+				m_mifMacros.Append("\tc_t%d_memReq.m_pollInstr = r_t%d_htInstr;\n", mod.m_execStg, mod.m_execStg);
+				m_mifMacros.NewLine();
+
+				m_mifMacros.Append("\tc_t%d_htCtrl = HT_PAUSE;\n", mod.m_execStg);
+			}
 
 			m_mifMacros.Append("}\n");
 			m_mifMacros.NewLine();
@@ -2313,508 +1802,564 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 		///////////////////////////////////////////////////////////
 		// generate WriteMem_var routines
 
-		for (size_t srcIdx = 0; srcIdx < mif.m_mifWr.m_wrSrcList.size(); srcIdx += 1) {
-			CMifWrSrc &wrSrc = mif.m_mifWr.m_wrSrcList[srcIdx];
+		string wrGrpIdDecl;
+		if (!bWrRspGrpIdIsHtId && wrRspGrpIdW > 0)
+			wrGrpIdDecl = VA("ht_uint%d wrGrpId, ", mif.m_mifWr.m_rspGrpW.AsInt());
+
+		for (size_t wrSrcIdx = 0; wrSrcIdx < mif.m_mifWr.m_wrSrcList.size(); wrSrcIdx += 1) {
+			CMifWrSrc &wrSrc = mif.m_mifWr.m_wrSrcList[wrSrcIdx];
 
 			char srcName[64] = "";
 			if (wrSrc.m_name.size() > 0)
 				sprintf(srcName, "_%s", wrSrc.m_name.c_str());
 
 			if (true || g_appArgs.IsMemTraceEnabled()) {
-				m_mifFuncDecl.Append("\t#ifdef _HTV\n");
+				m_mifFuncDecl.Append("#\tifdef _HTV\n");
 				m_mifMacros.Append("#ifdef _HTV\n");
 			}
 
-			g_appArgs.GetDsnRpt().AddLevel("void WriteMem%s(sc_uint<MEM_ADDR_W> memAddr",
+			g_appArgs.GetDsnRpt().AddLevel("void WriteMem%s(",
 				srcName);
 
-			m_mifFuncDecl.Append("\tvoid WriteMem%s(sc_uint<MEM_ADDR_W> memAddr",
+			m_mifFuncDecl.Append("\tvoid WriteMem%s(",
 				srcName);
 
-			m_mifMacros.Append("void CPers%s%s::WriteMem%s(sc_uint<MEM_ADDR_W> memAddr",
+			m_mifMacros.Append("void CPers%s%s::WriteMem%s(",
 				unitNameUc.c_str(), mod.m_modName.Uc().c_str(),
 				srcName);
 
-			int argCnt = 1;
-			if (wrSrc.m_pIntGbl && wrSrc.m_pIntGbl->m_addr1W.AsInt() > 0 && 
-				(g_appArgs.IsGlobalWriteHtidEnabled() || wrSrc.m_pIntGbl->m_addr1Name != "htId"))
-			{
-				argCnt += 1;
-				g_appArgs.GetDsnRpt().AddText(", ht_uint%d varAddr1", wrSrc.m_pIntGbl->m_addr1W.AsInt());
-				m_mifFuncDecl.Append(", ht_uint%d varAddr1", wrSrc.m_pIntGbl->m_addr1W.AsInt());
-				m_mifMacros.Append(", ht_uint%d varAddr1", wrSrc.m_pIntGbl->m_addr1W.AsInt());
-
-			} else if (wrSrc.m_pExtRam && wrSrc.m_pExtRam->m_addr1W.AsInt() > 0 &&
-				(g_appArgs.IsGlobalWriteHtidEnabled() || wrSrc.m_pExtRam->m_addr1Name != "htId"))
-			{
-				argCnt += 1;
-				g_appArgs.GetDsnRpt().AddText(", ht_uint%d varAddr1", wrSrc.m_pExtRam->m_addr1W.AsInt());
-				m_mifFuncDecl.Append(", ht_uint%d varAddr1", wrSrc.m_pExtRam->m_addr1W.AsInt());
-				m_mifMacros.Append(", ht_uint%d varAddr1", wrSrc.m_pExtRam->m_addr1W.AsInt());
-
-			} else if (wrSrc.m_pSharedVar && wrSrc.m_pSharedVar->m_addr1W.AsInt() > 0) {
-				argCnt += 1;
-				g_appArgs.GetDsnRpt().AddText(", ht_uint%d varAddr1", wrSrc.m_pSharedVar->m_addr1W.AsInt());
-				m_mifFuncDecl.Append(", ht_uint%d varAddr1", wrSrc.m_pSharedVar->m_addr1W.AsInt());
-				m_mifMacros.Append(", ht_uint%d varAddr1", wrSrc.m_pSharedVar->m_addr1W.AsInt());
+			if (!bWrRspGrpIdIsHtId && wrRspGrpIdW > 0) {
+				g_appArgs.GetDsnRpt().AddText("sc_uint<%s_WR_GRP_ID_W> wrGrpId, ", mod.m_modName.Upper().c_str());
+				m_mifFuncDecl.Append("sc_uint<%s_WR_GRP_ID_W> wrGrpId, ", mod.m_modName.Upper().c_str());
+				m_mifMacros.Append("sc_uint<%s_WR_GRP_ID_W> wrGrpId, ", mod.m_modName.Upper().c_str());
 			}
 
-			if (wrSrc.m_pIntGbl && wrSrc.m_pIntGbl->m_addr2W.AsInt() > 0 &&
-				(g_appArgs.IsGlobalWriteHtidEnabled() || wrSrc.m_pIntGbl->m_addr2Name != "htId"))
-			{
-				argCnt += 1;
-				g_appArgs.GetDsnRpt().AddText(", ht_uint%d varAddr2", wrSrc.m_pIntGbl->m_addr2W.AsInt());
-				m_mifFuncDecl.Append(", ht_uint%d varAddr2", wrSrc.m_pIntGbl->m_addr2W.AsInt());
-				m_mifMacros.Append(", ht_uint%d varAddr2", wrSrc.m_pIntGbl->m_addr2W.AsInt());
+			g_appArgs.GetDsnRpt().AddText("sc_uint<MEM_ADDR_W> memAddr");
+			m_mifFuncDecl.Append("sc_uint<MEM_ADDR_W> memAddr");
+			m_mifMacros.Append("sc_uint<MEM_ADDR_W> memAddr");
 
-			} else if (wrSrc.m_pExtRam && wrSrc.m_pExtRam->m_addr2W.AsInt() > 0 &&
-				(g_appArgs.IsGlobalWriteHtidEnabled() || wrSrc.m_pExtRam->m_addr2Name != "htId"))
-			{
-				argCnt += 1;
-				g_appArgs.GetDsnRpt().AddText(", ht_uint%d varAddr2", wrSrc.m_pExtRam->m_addr2W.AsInt());
-				m_mifFuncDecl.Append(", ht_uint%d varAddr2", wrSrc.m_pExtRam->m_addr2W.AsInt());
-				m_mifMacros.Append(", ht_uint%d varAddr2", wrSrc.m_pExtRam->m_addr2W.AsInt());
-
-			} else if (wrSrc.m_pSharedVar && wrSrc.m_pSharedVar->m_addr2W.AsInt() > 0) {
-				argCnt += 1;
-				g_appArgs.GetDsnRpt().AddText(", ht_uint%d varAddr2", wrSrc.m_pSharedVar->m_addr2W.AsInt());
-				m_mifFuncDecl.Append(", ht_uint%d varAddr2", wrSrc.m_pSharedVar->m_addr2W.AsInt());
-				m_mifMacros.Append(", ht_uint%d varAddr2", wrSrc.m_pSharedVar->m_addr2W.AsInt());
+			if (wrSrc.m_pType != 0) {
+				g_appArgs.GetDsnRpt().AddText(", %s data", wrSrc.m_pType->m_typeName.c_str());
+				m_mifFuncDecl.Append(", %s data", wrSrc.m_pType->m_typeName.c_str());
+				m_mifMacros.Append(", %s data", wrSrc.m_pType->m_typeName.c_str());
 			}
 
-			if (wrSrc.m_varDimen1 > 0) {
-				argCnt += 1;
-				int varDimen1W = FindLg2(wrSrc.m_varDimen1-1);
-				g_appArgs.GetDsnRpt().AddText(", ht_uint%d varIdx1", varDimen1W);
-				m_mifFuncDecl.Append(", ht_uint%d varIdx1", varDimen1W);
-				m_mifMacros.Append(", ht_uint%d varIdx1", varDimen1W);
-			}
-			if (wrSrc.m_varDimen2 > 0) {
-				argCnt += 1;
-				int varDimen2W = FindLg2(wrSrc.m_varDimen2-1);
-				g_appArgs.GetDsnRpt().AddText(", ht_uint%d varIdx2", varDimen2W);
-				m_mifFuncDecl.Append(", ht_uint%d varIdx2", varDimen2W);
-				m_mifMacros.Append(", ht_uint%d varIdx2", varDimen2W);
+			if (wrSrc.m_varAddr1W >= 0 && !wrSrc.m_varAddr1IsHtId) {
+				int W = max(1, wrSrc.m_varAddr1W);
+				g_appArgs.GetDsnRpt().AddText(", ht_uint%d varAddr1", W);
+				m_mifFuncDecl.Append(", ht_uint%d varAddr1", W);
+				m_mifMacros.Append(", ht_uint%d %svarAddr1", W, wrSrc.m_varAddr1W == 0 ? "ht_noload " : "");
 			}
 
-			if (wrSrc.m_fldDimen1 > 0) {
-				argCnt += 1;
-				int fldDimen1W = FindLg2(wrSrc.m_fldDimen1-1);
-				g_appArgs.GetDsnRpt().AddText(", ht_uint%d fldIdx1", fldDimen1W);
-				m_mifFuncDecl.Append(", ht_uint%d fldIdx1", fldDimen1W);
-				m_mifMacros.Append(", ht_uint%d fldIdx1", fldDimen1W);
-			}
-			if (wrSrc.m_fldDimen2 > 0) {
-				argCnt += 1;
-				int fldDimen2W = FindLg2(wrSrc.m_fldDimen2-1);
-				g_appArgs.GetDsnRpt().AddText(", ht_uint%d fldIdx2", fldDimen2W);
-				m_mifFuncDecl.Append(", ht_uint%d fldIdx2", fldDimen2W);
-				m_mifMacros.Append(", ht_uint%d fldIdx2", fldDimen2W);
-			}
-			if (wrSrc.m_bMultiWr) {
-				argCnt += 1;
-				g_appArgs.GetDsnRpt().AddText(", sc_uint<4> qwCnt");
-				m_mifFuncDecl.Append(", sc_uint<4> qwCnt");
-				m_mifMacros.Append(", sc_uint<4> qwCnt");
+			if (wrSrc.m_varAddr2W >= 0 && !wrSrc.m_varAddr2IsHtId) {
+				int W = max(1, wrSrc.m_varAddr2W);
+				g_appArgs.GetDsnRpt().AddText(", ht_uint%d varAddr2", W);
+				m_mifFuncDecl.Append(", ht_uint%d varAddr2", W);
+				m_mifMacros.Append(", ht_uint%d %svarAddr2", W, wrSrc.m_varAddr2W ? "ht_noload " : "");
 			}
 
-			g_appArgs.GetDsnRpt().AddText(", bool orderChk=true);\n");
-			m_mifFuncDecl.Append(", bool ht_noload orderChk=true);\n");
+			for (size_t fldIdx = 0; fldIdx < wrSrc.m_fieldRefList.size(); fldIdx += 1) {
+				string fldName = fldIdx == 0 ? "var" : VA("fld%d", (int)fldIdx);
+				for (size_t dimIdx = 0; dimIdx < wrSrc.m_fieldRefList[fldIdx].m_refDimenList.size(); dimIdx += 1) {
+					CRefDimen & refDimen = wrSrc.m_fieldRefList[fldIdx].m_refDimenList[dimIdx];
+
+					if (refDimen.m_value < 0) {
+						int varDimenW = FindLg2(wrSrc.m_fieldRefList[fldIdx].m_refDimenList[dimIdx].m_size - 1, true);
+						g_appArgs.GetDsnRpt().AddText(", ht_uint%d %sIdx%d", varDimenW, fldName.c_str(), (int)dimIdx + 1);
+						m_mifFuncDecl.Append(", ht_uint%d ht_noload %sIdx%d", varDimenW, fldName.c_str(), (int)dimIdx + 1);
+						m_mifMacros.Append(", ht_uint%d ht_noload %sIdx%d", varDimenW, fldName.c_str(), (int)dimIdx + 1);
+					}
+				}
+			}
+
+			int wrSrcSize = 1;
+			bool bNeedElemParam = false;
+			if (wrSrc.m_fieldRefList.size() > 0) {
+				for (size_t i = 0; i < wrSrc.m_fieldRefList.back().m_refDimenList.size(); i += 1) {
+					if (wrSrc.m_fieldRefList.back().m_refDimenList[i].m_value < 0)
+						wrSrcSize *= wrSrc.m_fieldRefList.back().m_refDimenList[i].m_size;
+					bNeedElemParam |= wrSrc.m_fieldRefList.back().m_refDimenList[i].m_value < 0;
+				}
+			}
+
+			bool bMultiElemDstParam = (wrSrc.m_pType == 0) &&
+				(wrSrc.m_elemCntW.size() == 0 || wrSrc.m_elemCntW.AsInt() > 0) &&
+				(wrSrc.m_fieldRefList.size() == 1 && wrSrc.m_varAddr1W > 0 || bNeedElemParam);
+
+			bool bMultiElemDst = (wrSrc.m_pType == 0) &&
+				(wrSrc.m_elemCntW.size() == 0 || wrSrc.m_elemCntW.AsInt() > 0) &&
+				(wrSrc.m_fieldRefList.size() == 1 && wrSrc.m_varAddr1W > 0 ||
+				wrSrc.m_fieldRefList.back().m_refDimenList.size() > 0 && wrSrcSize > 1);
+
+			int elemCntW = 0;
+			if (bMultiElemDstParam) {
+				if (wrSrc.m_elemCntW.AsInt() > 0)
+					elemCntW = wrSrc.m_elemCntW.AsInt();
+				else if (wrSrc.m_varAddr1W > 0) {
+					elemCntW = wrSrc.m_varAddr1W + 1;
+					if (wrSrc.m_varAddr2W > 0)
+						elemCntW += wrSrc.m_varAddr2W;
+				} else {
+					elemCntW = FindLg2(wrSrcSize, true);
+				}
+				g_appArgs.GetDsnRpt().AddText(", ht_uint%d elemCnt", elemCntW);
+				m_mifFuncDecl.Append(", ht_uint%d ht_noload elemCnt", elemCntW);
+				m_mifMacros.Append(", ht_uint%d ht_noload elemCnt", elemCntW);
+			}
+
+			if (wrSrc.m_memDst.size() == 0 && bMultiElemDstParam) {
+				g_appArgs.GetDsnRpt().AddText(", bool bHost = false");
+				m_mifFuncDecl.Append(", bool ht_noload bHost = false");
+				m_mifMacros.Append(", bool ht_noload bHost");
+			}
+
+			g_appArgs.GetDsnRpt().AddText(", bool orderChk = true);\n");
+			m_mifFuncDecl.Append(", bool ht_noload orderChk = true);\n");
 			m_mifMacros.Append(", bool ht_noload orderChk)\n");
 
 			g_appArgs.GetDsnRpt().EndLevel();
 
 			if (true || g_appArgs.IsMemTraceEnabled()) {
-				m_mifFuncDecl.Append("\t#else\n");
+				m_mifFuncDecl.Append("#\telse\n");
 				m_mifMacros.Append("#else\n");
 
-				m_mifFuncDecl.Append("\t#define WriteMem%s(", srcName);
+				m_mifFuncDecl.Append("#\tdefine WriteMem%s(", srcName);
 				m_mifFuncDecl.Append("...) WriteMem%s_(", srcName);
 				m_mifFuncDecl.Append("(char *)__FILE__, __LINE__, __VA_ARGS__)\n");
-				m_mifFuncDecl.Append("\tvoid WriteMem%s_(char *file, int line, sc_uint<MEM_ADDR_W> memAddr",
+				m_mifFuncDecl.Append("\tvoid WriteMem%s_(char *file, int line, ",
 					srcName);
 
-				m_mifMacros.Append("void CPers%s%s::WriteMem%s_(char *file, int line, sc_uint<MEM_ADDR_W> memAddr",
+				m_mifMacros.Append("void CPers%s%s::WriteMem%s_(char *file, int line, ",
 					unitNameUc.c_str(), mod.m_modName.Uc().c_str(),
 					srcName);
 
-				if (wrSrc.m_pIntGbl && wrSrc.m_pIntGbl->m_addr1W.AsInt() > 0 &&
-					(g_appArgs.IsGlobalWriteHtidEnabled() || wrSrc.m_pIntGbl->m_addr1Name != "htId"))
-				{
-					m_mifFuncDecl.Append(", ht_uint%d varAddr1", wrSrc.m_pIntGbl->m_addr1W.AsInt());
-					m_mifMacros.Append(", ht_uint%d varAddr1", wrSrc.m_pIntGbl->m_addr1W.AsInt());
-
-				} else if (wrSrc.m_pExtRam && wrSrc.m_pExtRam->m_addr1W.AsInt() > 0 &&
-					(g_appArgs.IsGlobalWriteHtidEnabled() || wrSrc.m_pExtRam->m_addr1Name != "htId"))
-				{
-					m_mifFuncDecl.Append(", ht_uint%d varAddr1", wrSrc.m_pExtRam->m_addr1W.AsInt());
-					m_mifMacros.Append(", ht_uint%d varAddr1", wrSrc.m_pExtRam->m_addr1W.AsInt());
-
-				} else if (wrSrc.m_pSharedVar && wrSrc.m_pSharedVar->m_addr1W.AsInt() > 0) {
-					m_mifFuncDecl.Append(", ht_uint%d varAddr1", wrSrc.m_pSharedVar->m_addr1W.AsInt());
-					m_mifMacros.Append(", ht_uint%d varAddr1", wrSrc.m_pSharedVar->m_addr1W.AsInt());
+				if (!bWrRspGrpIdIsHtId && wrRspGrpIdW > 0) {
+					m_mifFuncDecl.Append("sc_uint<%s_WR_GRP_ID_W> wrGrpId, ", mod.m_modName.Upper().c_str());
+					m_mifMacros.Append("sc_uint<%s_WR_GRP_ID_W> wrGrpId, ", mod.m_modName.Upper().c_str());
 				}
 
-				if (wrSrc.m_pIntGbl && wrSrc.m_pIntGbl->m_addr2W.AsInt() > 0 && 
-					(g_appArgs.IsGlobalWriteHtidEnabled() || wrSrc.m_pIntGbl->m_addr2Name != "htId"))
-				{
-					m_mifFuncDecl.Append(", ht_uint%d varAddr2", wrSrc.m_pIntGbl->m_addr2W.AsInt());
-					m_mifMacros.Append(", ht_uint%d varAddr2", wrSrc.m_pIntGbl->m_addr2W.AsInt());
+				m_mifFuncDecl.Append("sc_uint<MEM_ADDR_W> memAddr");
+				m_mifMacros.Append("sc_uint<MEM_ADDR_W> memAddr");
 
-				} else if (wrSrc.m_pExtRam && wrSrc.m_pExtRam->m_addr2W.AsInt() > 0 &&
-					(g_appArgs.IsGlobalWriteHtidEnabled() || wrSrc.m_pExtRam->m_addr2Name != "htId"))
-				{
-					m_mifFuncDecl.Append(", ht_uint%d varAddr2", wrSrc.m_pExtRam->m_addr2W.AsInt());
-					m_mifMacros.Append(", ht_uint%d varAddr2", wrSrc.m_pExtRam->m_addr2W.AsInt());
-
-				} else if (wrSrc.m_pSharedVar && wrSrc.m_pSharedVar->m_addr2W.AsInt() > 0) {
-					m_mifFuncDecl.Append(", ht_uint%d varAddr2", wrSrc.m_pSharedVar->m_addr2W.AsInt());
-					m_mifMacros.Append(", ht_uint%d varAddr2", wrSrc.m_pSharedVar->m_addr2W.AsInt());
+				if (wrSrc.m_pType != 0) {
+					m_mifFuncDecl.Append(", %s data", wrSrc.m_pType->m_typeName.c_str());
+					m_mifMacros.Append(", %s data", wrSrc.m_pType->m_typeName.c_str());
 				}
 
-				if (wrSrc.m_varDimen1 > 0) {
-					int varDimen1W = FindLg2(wrSrc.m_varDimen1-1);
-					m_mifFuncDecl.Append(", ht_uint%d varIdx1", varDimen1W);
-					m_mifMacros.Append(", ht_uint%d varIdx1", varDimen1W);
-				}
-				if (wrSrc.m_varDimen2 > 0) {
-					int varDimen2W = FindLg2(wrSrc.m_varDimen2-1);
-					m_mifFuncDecl.Append(", ht_uint%d varIdx2", varDimen2W);
-					m_mifMacros.Append(", ht_uint%d varIdx2", varDimen2W);
+				if (wrSrc.m_varAddr1W >= 0 && !wrSrc.m_varAddr1IsHtId) {
+					int W = max(1, wrSrc.m_varAddr1W);
+					m_mifFuncDecl.Append(", ht_uint%d varAddr1", W);
+					m_mifMacros.Append(", ht_uint%d varAddr1", W);
 				}
 
-				if (wrSrc.m_fldDimen1 > 0) {
-					int fldDimen1W = FindLg2(wrSrc.m_fldDimen1-1);
-					m_mifFuncDecl.Append(", ht_uint%d fldIdx1", fldDimen1W);
-					m_mifMacros.Append(", ht_uint%d fldIdx1", fldDimen1W);
-				}
-				if (wrSrc.m_fldDimen2 > 0) {
-					int fldDimen2W = FindLg2(wrSrc.m_fldDimen2-1);
-					m_mifFuncDecl.Append(", ht_uint%d fldIdx2", fldDimen2W);
-					m_mifMacros.Append(", ht_uint%d fldIdx2", fldDimen2W);
-				}
-				if (wrSrc.m_bMultiWr) {
-					m_mifFuncDecl.Append(", sc_uint<4> qwCnt");
-					m_mifMacros.Append(", sc_uint<4> qwCnt");
+				if (wrSrc.m_varAddr2W >= 0 && !wrSrc.m_varAddr2IsHtId) {
+					int W = max(1, wrSrc.m_varAddr2W);
+					m_mifFuncDecl.Append(", ht_uint%d varAddr2", W);
+					m_mifMacros.Append(", ht_uint%d varAddr2", W);
 				}
 
-				m_mifFuncDecl.Append(", bool orderChk=true);\n");
+				for (size_t fldIdx = 0; fldIdx < wrSrc.m_fieldRefList.size(); fldIdx += 1) {
+					string fldName = fldIdx == 0 ? "var" : VA("fld%d", (int)fldIdx);
+					for (size_t dimIdx = 0; dimIdx < wrSrc.m_fieldRefList[fldIdx].m_refDimenList.size(); dimIdx += 1) {
+						CRefDimen & refDimen = wrSrc.m_fieldRefList[fldIdx].m_refDimenList[dimIdx];
+
+						if (refDimen.m_value < 0) {
+							int varDimenW = FindLg2(wrSrc.m_fieldRefList[fldIdx].m_refDimenList[dimIdx].m_size - 1);
+							m_mifFuncDecl.Append(", ht_uint%d ht_noload %sIdx%d", varDimenW, fldName.c_str(), (int)dimIdx + 1);
+							m_mifMacros.Append(", ht_uint%d ht_noload %sIdx%d", varDimenW, fldName.c_str(), (int)dimIdx + 1);
+						}
+					}
+				}
+
+				if (bMultiElemDstParam) {
+					m_mifFuncDecl.Append(", ht_uint%d ht_noload elemCnt", elemCntW);
+					m_mifMacros.Append(", ht_uint%d ht_noload elemCnt", elemCntW);
+				}
+
+				if (wrSrc.m_memDst.size() == 0 && bMultiElemDstParam) {
+					m_mifFuncDecl.Append(", bool ht_noload bHost = false");
+					m_mifMacros.Append(", bool ht_noload bHost");
+				}
+
+				m_mifFuncDecl.Append(", bool orderChk = true);\n");
 				m_mifMacros.Append(", bool orderChk)\n");
 
-				m_mifFuncDecl.Append("\t#endif\n");
+				m_mifFuncDecl.Append("#\tendif\n");
 				m_mifMacros.Append("#endif\n");
 			}
 
 			m_mifMacros.Append("{\n");
 
-			m_mifMacros.Append("\tassert_msg(c_t%d_bWriteMemAvail, \"Runtime check failed in CPers%s::WriteMem%s()"
-				" - expected WriteMemBusy() to have been called and not busy\");\n",
-				mod.m_execStg, mod.m_modName.Uc().c_str(), srcName);
-			m_mifMacros.NewLine();
+			string routineName = VA("WriteMem%s", srcName);
 
-			if (wrSrc.m_pNgvRam == 0) {
-				m_mifMacros.Append("\tassert_msg((memAddr & 7) == 0, \"Runtime check failed in CPers%s::WriteMem%s()"
-					" - expected address to be uint64 aligned\");\n", mod.m_modName.Uc().c_str(), srcName);
+			m_mifMacros.Append("\tassert_msg(c_t%d_bWriteMemAvail, \"Runtime check failed in CPers%s::%s()"
+				" - expected WriteMemBusy() to have been called and not busy\");\n",
+				mod.m_execStg, mod.m_modName.Uc().c_str(), routineName.c_str());
+
+			if (wrRspGrpIdW == 0) {
+				m_mifMacros.Append("\t//assert_msg(!c_wrGrpState.m_pause, \"Runtime check failed in CPers%s::%s() - expected %s() to be called before WriteMemPause()\");\n",
+					mod.m_modName.Uc().c_str(), routineName.c_str(), routineName.c_str());
+			} else if (wrRspGrpIdW <= 2) {
+				m_mifMacros.Append("\t//assert_msg(!c_wrGrpState[%s].m_pause, \"Runtime check failed in CPers%s::%s() - expected %s() to be called before WriteMemPause()\");\n",
+					wrGrpId.c_str(), mod.m_modName.Uc().c_str(), routineName.c_str(), routineName.c_str());
+
 			} else {
-				switch (wrSrc.m_fldW) {
-				case 8:
-					break;
-				case 16:
-					m_mifMacros.Append("\tassert_msg((memAddr & 1) == 0, \"Runtime check failed in CPers%s::WriteMem%s()"
-						" - expected address to be uint16 aligned\");\n", mod.m_modName.Uc().c_str(), srcName);
-					break;
-				case 32:
-					m_mifMacros.Append("\tassert_msg((memAddr & 3) == 0, \"Runtime check failed in CPers%s::WriteMem%s()"
-						" - expected address to be uint32 aligned\");\n", mod.m_modName.Uc().c_str(), srcName);
-					break;
-				case 64:
-					m_mifMacros.Append("\tassert_msg((memAddr & 7) == 0, \"Runtime check failed in CPers%s::WriteMem%s()"
-						" - expected address to be uint64 aligned\");\n", mod.m_modName.Uc().c_str(), srcName);
-					break;
-				default:
-					break;
+				m_mifMacros.Append("\t//assert_msg(c_t%d_wrGrpReqState.m_pause == c_t%d_wrGrpRspState.m_pause, \"Runtime check failed in CPers%s::%s() - expected %s() to be called before WriteMemPause()\");\n",
+					mod.m_execStg, mod.m_execStg, mod.m_modName.Uc().c_str(), routineName.c_str(), routineName.c_str());
+			}
+
+			for (size_t fldIdx = 0; fldIdx < wrSrc.m_fieldRefList.size(); fldIdx += 1) {
+				string fldName = fldIdx == 0 ? "var" : VA("fld%d", (int)fldIdx);
+				for (size_t dimIdx = 0; dimIdx < wrSrc.m_fieldRefList[fldIdx].m_refDimenList.size(); dimIdx += 1) {
+					CRefDimen & refDimen = wrSrc.m_fieldRefList[fldIdx].m_refDimenList[dimIdx];
+
+					if (refDimen.m_value < 0 && (refDimen.m_size == 1 || !IsPowerTwo(refDimen.m_size))) {
+
+						m_mifMacros.Append("\tassert_msg(%sIdx%d < %d, \"Runtime check failed in CPers%s%s::WriteMem%s(...) - %sIdx%d (%%d) out of range (0-%d)\\n\", (uint32_t)%sIdx%d);\n",
+							fldName.c_str(), (int)dimIdx + 1,
+							refDimen.m_size,
+							unitNameUc.c_str(), mod.m_modName.Uc().c_str(), srcName,
+							fldName.c_str(), (int)dimIdx + 1,
+							refDimen.m_size - 1,
+							fldName.c_str(), (int)dimIdx + 1);
+					}
 				}
+			}
+
+			if (bMultiElemDstParam) {
+				m_mifMacros.Append("\tassert_msg(");
+
+				if (wrSrc.m_varAddr1W > 0) {
+					if (!wrSrc.m_varAddr1IsHtId) {
+						m_mifMacros.Append("varAddr1");
+						if (wrSrc.m_varAddr2W > 0)
+							m_mifMacros.Append(" * %d + ", 1 << wrSrc.m_varAddr2W);
+					}
+					if (wrSrc.m_varAddr2W > 0 && !wrSrc.m_varAddr2IsHtId)
+						m_mifMacros.Append("varAddr2");
+				} else {
+					bool bNeedMul = false;
+					size_t fldIdx = wrSrc.m_fieldRefList.size() - 1;
+					for (size_t dimIdx = 0; dimIdx < wrSrc.m_fieldRefList.back().m_refDimenList.size(); dimIdx += 1) {
+						string fldName = fldIdx == 0 ? "var" : VA("fld%d", (int)fldIdx);
+						CRefDimen & refDimen = wrSrc.m_fieldRefList.back().m_refDimenList[dimIdx];
+						if (bNeedMul) {
+							m_mifMacros.Append(" * %d + ", refDimen.m_size);
+						}
+						if (refDimen.m_value < 0) {
+							m_mifMacros.Append("%sIdx%d", fldName.c_str(), (int)dimIdx + 1);
+							bNeedMul = true;
+						}
+					}
+				}
+				m_mifMacros.Append(" + elemCnt <= %d, ", maxElemCnt);
+				m_mifMacros.Append(" \"Runtime check failed in CPers%s%s::WriteMem%s(...) - elemCnt range check failed\\n\");\n",
+					unitNameUc.c_str(), mod.m_modName.Uc().c_str(), srcName);
 			}
 			m_mifMacros.NewLine();
 
-			if (wrSrc.m_bMultiWr) {
-				m_mifMacros.Append("\tassert_msg(qwCnt > 0 && qwCnt <= 8, \"Runtime check failed in CPers%s::WriteMem%s()"
+			switch (wrSrc.m_pSrcType->m_clangMinAlign) {
+			case 8:
+				break;
+			case 16:
+				m_mifMacros.Append("\tassert_msg((memAddr & 1) == 0, \"Runtime check failed in CPers%s::WriteMem%s()"
+					" - expected address to be uint16 aligned\");\n", mod.m_modName.Uc().c_str(), srcName);
+				break;
+			case 32:
+				m_mifMacros.Append("\tassert_msg((memAddr & 3) == 0, \"Runtime check failed in CPers%s::WriteMem%s()"
+					" - expected address to be uint32 aligned\");\n", mod.m_modName.Uc().c_str(), srcName);
+				break;
+			case 64:
+				m_mifMacros.Append("\tassert_msg((memAddr & 7) == 0, \"Runtime check failed in CPers%s::WriteMem%s()"
+					" - expected address to be uint64 aligned\");\n", mod.m_modName.Uc().c_str(), srcName);
+				break;
+			default:
+				break;
+			}
+
+			if (wrSrc.m_bMultiQwWrReq && wrSrc.m_pGblVar == 0) {
+				m_mifMacros.Append("\t//assert_msg(qwCnt > 0 && qwCnt <= 8, \"Runtime check failed in CPers%s::WriteMem%s()"
 					" - expected multi-qw access to be within 64B memory line\");\n", mod.m_modName.Uc().c_str(), srcName);
-				m_mifMacros.Append("\tassert_msg(((memAddr >> 3) & 7) + qwCnt <= 8, \"Runtime check failed in CPers%s::WriteMem%s()"
+				m_mifMacros.Append("\t//assert_msg(((memAddr >> 3) & 7) + qwCnt <= 8, \"Runtime check failed in CPers%s::WriteMem%s()"
 					" - expected multi-qw access to be within 64B memory line\");\n", mod.m_modName.Uc().c_str(), srcName);
 				m_mifMacros.NewLine();
 			}
+			m_mifMacros.NewLine();
 
-			char const * pTidQwCntM1 = "(qwCnt-1)";
-			if (bNeed_reqQwSplit && wrSrc.m_bMultiWr && wrSrc.m_memDst == "host") {
-				m_mifMacros.Append("\tht_uint3 tidQwCntM1 = qwCnt != 8 ? 0 : 7;\n\n");
-				pTidQwCntM1 = "tidQwCntM1";
+			int qwCnt = wrSrc.m_pSrcType->m_clangMinAlign == 1 ? 1 :
+				((wrSrc.m_pSrcType->m_clangBitWidth + wrSrc.m_pSrcType->m_clangMinAlign - 1) / wrSrc.m_pSrcType->m_clangMinAlign);
+
+			if (mif.m_mifReqStgCnt > 0)
+				m_mifMacros.Append("\tc_t%d_memReq.m_valid = %s;\n", mod.m_execStg, bMultiElemDstParam ? "elemCnt > 0" : "true");
+
+			m_mifMacros.Append("\tc_t%d_memReq.m_wrReq = %s;\n", mod.m_execStg, bMultiElemDstParam ? "elemCnt > 0" : "true");
+
+			if (bMultiQwReq) {
+				if (bMultiElemDst)
+					m_mifMacros.Append("\tc_t%d_memReq.m_qwRem = %d * elemCnt;\n", mod.m_execStg, qwCnt);
+				else
+					m_mifMacros.Append("\tc_t%d_memReq.m_qwRem = %d;\n", mod.m_execStg, qwCnt);
+
+				if (bMultiQwMif)
+					m_mifMacros.Append("\tc_t%d_memReq.m_reqQwRem = 0;\n", mod.m_execStg);
+
+				bool bNeedCntM1 = false;
+				if (wrSrc.m_varAddr1W > 0) {
+					if (bMultiElemDst && wrSrc.m_fieldRefList.size() == 1) {
+						m_mifMacros.Append("\tc_t%d_memReq.m_vIdx1 = %s;\n",
+							mod.m_execStg,
+							wrSrc.m_varAddr1IsHtId ? VA("r_t%d_htId", mod.m_execStg).c_str() : "varAddr1");
+						wrSrc.m_varAddr1IsIdx = true;
+						bNeedCntM1 = true;
+					}
+				}
+
+				if (wrSrc.m_varAddr2W > 0) {
+					if (bMultiElemDst && wrSrc.m_fieldRefList.size() == 1) {
+						m_mifMacros.Append("\tc_t%d_memReq.m_vIdx2 = %s;\n",
+							mod.m_execStg,
+							wrSrc.m_varAddr2IsHtId ? VA("r_t%d_htId", mod.m_execStg).c_str() : "varAddr2");
+						if (bNeedCntM1)
+							m_mifMacros.Append("\tc_t%d_memReq.m_vIdx2CntM1 = %d;\n", mod.m_execStg, (1 << wrSrc.m_varAddr2W) - 1);
+						wrSrc.m_varAddr2IsIdx = true;
+						bNeedCntM1 = true;
+					}
+				}
+
+				if (wrSrc.m_varAddr1W <= 0 || wrSrc.m_fieldRefList.size() > 1) {
+					for (size_t fldIdx = 0; fldIdx < wrSrc.m_fieldRefList.size(); fldIdx += 1) {
+						string fldName = fldIdx == 0 ? "var" : VA("fld%d", (int)fldIdx);
+						for (size_t dimIdx = 0; dimIdx < wrSrc.m_fieldRefList[fldIdx].m_refDimenList.size(); dimIdx += 1) {
+							if (wrSrc.m_fieldRefList[fldIdx].m_refDimenList.size() > 0) {
+								if (bMultiElemDst && fldIdx + 1 == wrSrc.m_fieldRefList.size()) {
+									m_mifMacros.Append("\tc_t%d_memReq.m_vIdx%d = %sIdx%d;\n",
+										mod.m_execStg, dimIdx + 1, fldName.c_str(), (int)dimIdx + 1);
+									wrSrc.m_fieldRefList[fldIdx].m_refDimenList[dimIdx].m_isIdx = true;
+									if (dimIdx > 0) {
+										m_mifMacros.Append("\tc_t%d_memReq.m_vIdx%dCntM1 = %d;\n",
+											mod.m_execStg, dimIdx + 1, wrSrc.m_fieldRefList[fldIdx].m_refDimenList[dimIdx].m_size - 1);
+									}
+									bNeedCntM1 = true;
+								}
+							}
+						}
+					}
+				}
+
+				if (maxElemQwCnt > 1) {
+					m_mifMacros.Append("\tc_t%d_memReq.m_elemQwIdx = 0;\n", mod.m_execStg);
+					if (maxElemCnt > 1)
+						m_mifMacros.Append("\tc_t%d_memReq.m_elemQwCntM1 = %d;\n", mod.m_execStg, qwCnt - 1);
+				}
 			}
 
-			if (mif.m_bMifRd)
-				m_mifMacros.Append("\tc_t%d_bReadMem = false;\n", mod.m_execStg);
-			if (bNeed_reqQwCnt)
-				m_mifMacros.Append("\tc_t%d_reqQwCnt = qwCnt;\n", mod.m_execStg);
-			if (bNeed_reqQwSplit)
-				m_mifMacros.Append("\tc_t%d_reqQwSplit = true;\n", mod.m_execStg);
-			m_mifMacros.Append("\tc_t%d_%sToMif_reqRdy = true;\n", mod.m_execStg, mod.m_modName.Lc().c_str());
+			if (wrRspGrpIdW == 0) {
+				// rspGrpId == 0
+			} else if (bWrRspGrpIdIsHtId) {
+				m_mifMacros.Append("\tc_t%d_memReq.m_wrGrpId = r_t%d_htId;\n", mod.m_execStg, mod.m_execStg);
+			} else {
+				m_mifMacros.Append("\tc_t%d_memReq.m_wrGrpId = wrGrpId;\n", mod.m_execStg);
+			}
 
-			if (wrSrc.m_bMultiWr)
-				m_mifMacros.Append("\tc_t%d_%sToMif_req.m_host = %s;\n", mod.m_execStg, mod.m_modName.Lc().c_str(),
-				wrSrc.m_memDst == "host" ? "true" : "false");
+			if (mif.m_mifWr.m_wrSrcList.size() > 0)
+				m_mifMacros.Append("\tc_t%d_memReq.m_wrSrc = %d;\n", mod.m_execStg, wrSrcIdx);
+
+			if (wrSrc.m_pType != 0)
+				m_mifMacros.Append("\tc_t%d_memReq.m_wrData.m_%s = data;\n", mod.m_execStg, wrSrc.m_pType->m_typeName.c_str());
+
+			else if (wrSrc.m_pPrivVar || wrSrc.m_pGblVar && wrSrc.m_pGblVar->m_bPrivGbl &&
+				wrSrc.m_pGblVar->m_addrW == mod.m_threads.m_htIdW.AsInt())
+			{
+
+				string varName;
+				for (int fldIdx = 0; fldIdx < (int)wrSrc.m_fieldRefList.size(); fldIdx += 1) {
+					CFieldRef & fieldRef = wrSrc.m_fieldRefList[fldIdx];
+
+					if (fldIdx > 0) {
+						varName += '.';
+						varName += fieldRef.m_fieldName;
+					}
+
+					string fldName = fldIdx == 0 ? "var" : VA("fld%d", (int)fldIdx);
+
+					for (int dimIdx = 0; dimIdx < (int)fieldRef.m_refDimenList.size(); dimIdx += 1) {
+						CRefDimen & refDimen = fieldRef.m_refDimenList[dimIdx];
+
+						string idxStr;
+						if (refDimen.m_value >= 0)
+							idxStr = VA("[%d]", refDimen.m_value);
+
+						else if (refDimen.m_size == 1)
+							idxStr = "[0]";
+
+						else
+							idxStr = VA("[INT(%sIdx%d)]", fldName.c_str(), dimIdx + 1);
+
+						varName += idxStr;
+					}
+				}
+
+				if (wrSrc.m_pPrivVar) {
+					m_mifMacros.Append("\tc_t%d_memReq.m_wrData.m_%s = c_t%d_htPriv.m_%s%s;\n",
+						mod.m_execStg, wrSrc.m_pSrcType->m_typeName.c_str(),
+						mod.m_execStg, wrSrc.m_pPrivVar->m_name.c_str(), varName.c_str());
+				} else {
+					m_mifMacros.Append("\tc_t%d_memReq.m_wrData.m_%s = r_t%d_%sI%cData%s;\n",
+						mod.m_execStg, wrSrc.m_pSrcType->m_typeName.c_str(),
+						mod.m_execStg, wrSrc.m_pGblVar->m_gblName.c_str(), mod.m_execStg > mod.m_tsStg ? 'w' : 'r', varName.c_str());
+				}
+			}
+
+			if (wrSrc.m_varAddr1W > 0 && !wrSrc.m_varAddr1IsIdx && !wrSrc.m_varAddr1IsHtId) {
+				m_mifMacros.Append("\tc_t%d_memReq.m_s%d_f1Addr1 = varAddr1;\n", mod.m_execStg, wrSrcIdx);
+			}
+
+			if (wrSrc.m_varAddr2W > 0 && !wrSrc.m_varAddr2IsIdx && !wrSrc.m_varAddr2IsHtId) {
+				m_mifMacros.Append("\tc_t%d_memReq.m_s%d_f1Addr2 = varAddr2;\n", mod.m_execStg, wrSrcIdx);
+			}
+
+			for (size_t fldIdx = 0; fldIdx < wrSrc.m_fieldRefList.size(); fldIdx += 1) {
+				string fldName = fldIdx == 0 ? "var" : VA("fld%d", (int)fldIdx);
+				for (size_t dimIdx = 0; dimIdx < wrSrc.m_fieldRefList[fldIdx].m_refDimenList.size(); dimIdx += 1) {
+					CRefDimen & refDimen = wrSrc.m_fieldRefList[fldIdx].m_refDimenList[dimIdx];
+
+					if (refDimen.m_value < 0 && refDimen.m_size > 1 && !refDimen.m_isIdx) {
+						m_mifMacros.Append("\tc_t%d_memReq.m_s%d_f%dIdx%d = %sIdx%d;\n",
+							mod.m_execStg, wrSrcIdx, (int)fldIdx + 1, dimIdx + 1, fldName.c_str(), dimIdx + 1);
+					}
+				}
+			}
+
+			m_mifMacros.NewLine();
+
+			if (mif.m_mifReqStgCnt == 0) {
+				m_mifMacros.Append("\tc_t%d_%sToMif_reqRdy = true;\n",
+					mod.m_execStg, mod.m_modName.Lc().c_str());
+			}
+
+			if (wrSrc.m_bMultiQwWrReq) {
+				if (wrSrc.m_memDst.size() == 0 && bMultiElemDst)
+					m_mifMacros.Append("\tc_t%d_%sToMif_req.m_host = bHost;\n", mod.m_execStg, mod.m_modName.Lc().c_str());
+				else {
+					m_mifMacros.Append("\tc_t%d_%sToMif_req.m_host = %s;\n", mod.m_execStg, mod.m_modName.Lc().c_str(),
+						wrSrc.m_memDst == "host" ? "true" : "false");
+				}
+			}
 
 			m_mifMacros.Append("\tc_t%d_%sToMif_req.m_type = MEM_REQ_WR;\n", mod.m_execStg, mod.m_modName.Lc().c_str());
 
 			m_mifMacros.Append("\tc_t%d_%sToMif_req.m_addr = memAddr;\n", mod.m_execStg, mod.m_modName.Lc().c_str());
 
-			if (wrSrc.m_pNgvRam == 0) {
-				m_mifMacros.Append("\tc_t%d_%sToMif_req.m_size = MEM_REQ_U64;\n", mod.m_execStg, mod.m_modName.Lc().c_str());
+			char const * pReqSize = "";
+			switch (wrSrc.m_memSize) {
+			case 8: pReqSize = "MEM_REQ_U8"; break;
+			case 16: pReqSize = "MEM_REQ_U16"; break;
+			case 32: pReqSize = "MEM_REQ_U32"; break;
+			case 64: pReqSize = "MEM_REQ_U64"; break;
+			default: HtlAssert(0);
+			}
+
+			m_mifMacros.Append("\tc_t%d_%sToMif_req.m_size = %s;\n",
+				mod.m_execStg, mod.m_modName.Lc().c_str(), pReqSize);
+
+			if (wrRspGrpIdW == 0) {
+				m_mifMacros.Append("\tc_t%d_%sToMif_req.m_tid = 0;\n",
+					mod.m_execStg, mod.m_modName.Lc().c_str());
+			} else if (bWrRspGrpIdIsHtId) {
+				m_mifMacros.Append("\tc_t%d_%sToMif_req.m_tid = r_t%d_htId;\n",
+					mod.m_execStg, mod.m_modName.Lc().c_str(), mod.m_execStg);
 			} else {
-				switch (wrSrc.m_fldW) {
-				case 8:
-					m_mifMacros.Append("\tc_t%d_%sToMif_req.m_size = MEM_REQ_U8;\n", mod.m_execStg, mod.m_modName.Lc().c_str());
-					break;
-				case 16:
-					m_mifMacros.Append("\tc_t%d_%sToMif_req.m_size = MEM_REQ_U16;\n", mod.m_execStg, mod.m_modName.Lc().c_str());
-					break;
-				case 32:
-					m_mifMacros.Append("\tc_t%d_%sToMif_req.m_size = MEM_REQ_U32;\n", mod.m_execStg, mod.m_modName.Lc().c_str());
-					break;
-				case 64:
-					m_mifMacros.Append("\tc_t%d_%sToMif_req.m_size = MEM_REQ_U64;\n", mod.m_execStg, mod.m_modName.Lc().c_str());
-					break;
-				default:
-					break;
-				}
+				m_mifMacros.Append("\tc_t%d_%sToMif_req.m_tid = wrGrpId;\n",
+					mod.m_execStg, mod.m_modName.Lc().c_str());
 			}
 
-			m_mifMacros.Append("\tc_t%d_%sToMif_req.m_tid = (sc_uint<MIF_TID_W>)(\n", mod.m_execStg, mod.m_modName.Lc().c_str());
+			m_mifMacros.Append("#\tifndef _HTV\n");
+			m_mifMacros.Append("\tc_t%d_%sToMif_req.m_file = file;\n",
+				mod.m_execStg, mod.m_modName.Lc().c_str());
+			m_mifMacros.Append("\tc_t%d_%sToMif_req.m_line = line;\n",
+				mod.m_execStg, mod.m_modName.Lc().c_str());
+			m_mifMacros.Append("\tc_t%d_%sToMif_req.m_time = sc_time_stamp().value();\n",
+				mod.m_execStg, mod.m_modName.Lc().c_str());
+			m_mifMacros.Append("\tc_t%d_%sToMif_req.m_orderChk = orderChk;\n",
+				mod.m_execStg, mod.m_modName.Lc().c_str());
+			m_mifMacros.Append("#\tendif\n");
+			m_mifMacros.NewLine();
 
-			char const * pWrRspGrpW = mif.m_mifWr.m_rspGrpId.size() == 0 ? "_HTID_W" : "_WR_GRP_ID_W";
-
-			if (wrSrc.m_bMultiWr && (is_wx || wrSrc.m_memDst == "host" && is_hc2)) {
-
-				m_mifMacros.Append("\t\t((%s & MIF_TID_QWCNT_MSK) << MIF_TID_QWCNT_SHF) |\n",
-					pTidQwCntM1);
-			}
-
-			if (wrSrc.m_srcW > 0) {
-
-				if (wrSrc.m_varAddr0W > 0) {
-					m_mifMacros.Append("\t\t(r_t%d_htId << (%s_MIF_SRC_%s_VAR_ADDR0_SHF + 1 + %s%s)) |\n",
-						mod.m_execStg,
-						mod.m_modName.Upper().c_str(), wrSrc.m_name.Upper().c_str(),
-						mod.m_modName.Upper().c_str(), pWrRspGrpW);
-				}
-
-				if (wrSrc.m_pIntGbl && wrSrc.m_pIntGbl->m_addr1W.AsInt() > 0
-					|| wrSrc.m_pExtRam && wrSrc.m_pExtRam->m_addr1W.AsInt() > 0
-					|| wrSrc.m_pSharedVar && wrSrc.m_pSharedVar->m_addr1W.AsInt() > 0)
-				{
-					if (wrSrc.m_pIntGbl && wrSrc.m_pIntGbl->m_addr1W.AsInt() > 0 &&
-						(!g_appArgs.IsGlobalWriteHtidEnabled() && wrSrc.m_pIntGbl->m_addr1Name == "htId"))
-
-						m_mifMacros.Append("\t\t(r_t%d_htId << (%s_MIF_SRC_%s_VAR_ADDR1_SHF + 1 + %s%s)) |\n",
-							mod.m_execStg,
-							mod.m_modName.Upper().c_str(), wrSrc.m_name.Upper().c_str(),
-							mod.m_modName.Upper().c_str(), pWrRspGrpW);
-
-					else if (wrSrc.m_pExtRam && wrSrc.m_pExtRam->m_addr1W.AsInt() > 0 &&
-						(!g_appArgs.IsGlobalWriteHtidEnabled() && wrSrc.m_pExtRam->m_addr1Name == "htId"))
-
-						m_mifMacros.Append("\t\t(r_t%d_htId << (%s_MIF_SRC_%s_VAR_ADDR1_SHF + 1 + %s%s)) |\n",
-							mod.m_execStg,
-							mod.m_modName.Upper().c_str(), wrSrc.m_name.Upper().c_str(),
-							mod.m_modName.Upper().c_str(), pWrRspGrpW);
-
-					else
-						m_mifMacros.Append("\t\t(varAddr1 << (%s_MIF_SRC_%s_VAR_ADDR1_SHF + 1 + %s%s)) |\n",
-							mod.m_modName.Upper().c_str(), wrSrc.m_name.Upper().c_str(),
-							mod.m_modName.Upper().c_str(), pWrRspGrpW);
-				}
-
-				if (wrSrc.m_pIntGbl && wrSrc.m_pIntGbl->m_addr2W.AsInt() > 0
-					|| wrSrc.m_pExtRam && wrSrc.m_pExtRam->m_addr2W.AsInt() > 0
-					|| wrSrc.m_pSharedVar && wrSrc.m_pSharedVar->m_addr2W.AsInt() > 0)
-				{
-					if (wrSrc.m_pIntGbl && wrSrc.m_pIntGbl->m_addr2W.AsInt() > 0 &&
-						(!g_appArgs.IsGlobalWriteHtidEnabled() && wrSrc.m_pIntGbl->m_addr2Name == "htId"))
-
-						m_mifMacros.Append("\t\t(r_t%d_htId << (%s_MIF_SRC_%s_VAR_ADDR2_SHF + 1 + %s%s)) |\n",
-							mod.m_execStg,
-							mod.m_modName.Upper().c_str(), wrSrc.m_name.Upper().c_str(),
-							mod.m_modName.Upper().c_str(), pWrRspGrpW);
-
-					else if (wrSrc.m_pExtRam && wrSrc.m_pExtRam->m_addr2W.AsInt() > 0 && 
-						(!g_appArgs.IsGlobalWriteHtidEnabled() && wrSrc.m_pExtRam->m_addr2Name == "htId"))
-
-						m_mifMacros.Append("\t\t(r_t%d_htId << (%s_MIF_SRC_%s_VAR_ADDR2_SHF + 1 + %s%s)) |\n",
-							mod.m_execStg,
-							mod.m_modName.Upper().c_str(), wrSrc.m_name.Upper().c_str(),
-							mod.m_modName.Upper().c_str(), pWrRspGrpW);
-
-					else
-						m_mifMacros.Append("\t\t(varAddr2 << (%s_MIF_SRC_%s_VAR_ADDR2_SHF + 1 + %s%s)) |\n",
-							mod.m_modName.Upper().c_str(), wrSrc.m_name.Upper().c_str(),
-							mod.m_modName.Upper().c_str(), pWrRspGrpW);
-				}
-
-				if (wrSrc.m_varDimen1 > 0)
-					m_mifMacros.Append("\t\t(varIdx1 << (%s_MIF_SRC_%s_VAR_IDX1_SHF + 1 + %s%s)) |\n",
-					mod.m_modName.Upper().c_str(), wrSrc.m_name.Upper().c_str(),
-					mod.m_modName.Upper().c_str(), pWrRspGrpW);
-
-				if (wrSrc.m_varDimen2 > 0)
-					m_mifMacros.Append("\t\t(varIdx2 << (%s_MIF_SRC_%s_VAR_IDX2_SHF + 1 + %s%s)) |\n",
-					mod.m_modName.Upper().c_str(), wrSrc.m_name.Upper().c_str(),
-					mod.m_modName.Upper().c_str(), pWrRspGrpW);
-
-				if (wrSrc.m_fldDimen1 > 0)
-					m_mifMacros.Append("\t\t(fldIdx1 << (%s_MIF_SRC_%s_FLD_IDX1_SHF + 1 + %s%s)) |\n",
-					mod.m_modName.Upper().c_str(), wrSrc.m_name.Upper().c_str(),
-					mod.m_modName.Upper().c_str(), pWrRspGrpW);
-
-				if (wrSrc.m_fldDimen2 > 0)
-					m_mifMacros.Append("\t\t(fldIdx2 << (%s_MIF_SRC_%s_FLD_IDX2_SHF + 1 + %s%s)) |\n",
-					mod.m_modName.Upper().c_str(), wrSrc.m_name.Upper().c_str(),
-					mod.m_modName.Upper().c_str(), pWrRspGrpW);
-			}
-
-			m_mifMacros.Append("\t\t(%d << (%s_MIF_SRC_IDX_SHF + 1 + %s%s)) |\n",
-				srcIdx+1, mod.m_modName.Upper().c_str(), mod.m_modName.Upper().c_str(), pWrRspGrpW);
-
-			m_mifMacros.Append("\t\t(0 << %s%s)",
-				mod.m_modName.Upper().c_str(), pWrRspGrpW);
-
-			if (mif.m_mifWr.m_rspGrpIdW == 0)
-				m_mifMacros.Append(");\n");
-			else if (mif.m_mifWr.m_rspGrpId.size() == 0)
-				m_mifMacros.Append(" |\n\t\tr_t%d_htId);\n", mod.m_execStg);
-			else if (mif.m_mifWr.m_bRspGrpIdPriv)
-				m_mifMacros.Append(" |\n\t\tr_t%d_htPriv.m_%s);\n",
-				mod.m_execStg, mif.m_mifWr.m_rspGrpId.AsStr().c_str());
-			else
-				m_mifMacros.Append(" |\n\t\tr_%s);\n", mif.m_mifWr.m_rspGrpId.AsStr().c_str());
-
-			if (true || g_appArgs.IsMemTraceEnabled()) {
-				m_mifMacros.Append("\t#ifndef _HTV\n");
-				m_mifMacros.Append("\tc_t%d_%sToMif_req.m_file = file;\n",
-					mod.m_execStg, mod.m_modName.Lc().c_str());
-				m_mifMacros.Append("\tc_t%d_%sToMif_req.m_line = line;\n",
-					mod.m_execStg, mod.m_modName.Lc().c_str());
-				m_mifMacros.Append("\tc_t%d_%sToMif_req.m_time = sc_time_stamp().value();\n",
-					mod.m_execStg, mod.m_modName.Lc().c_str());
-				m_mifMacros.Append("\tc_t%d_%sToMif_req.m_orderChk = orderChk;\n",
-					mod.m_execStg, mod.m_modName.Lc().c_str());
-				m_mifMacros.Append("\t#endif\n");
-			}
 			m_mifMacros.Append("}\n");
 			m_mifMacros.NewLine();
 		}
-
 		///////////////////////////////////////////////////////////
 		// generate WriteMemPause routine
 
 		if (mif.m_mifWr.m_bPause) {
 
-			g_appArgs.GetDsnRpt().AddLevel("WriteMemPause(ht_uint%d rsmInstr)\n", mod.m_instrW);
+			g_appArgs.GetDsnRpt().AddLevel("WriteMemPause(%sht_uint%d rsmInstr)\n", wrGrpIdDecl.c_str(), mod.m_instrW);
 			g_appArgs.GetDsnRpt().EndLevel();
 
-			m_mifFuncDecl.Append("\tvoid WriteMemPause(ht_uint%d rsmInstr);\n", mod.m_instrW);
-			m_mifMacros.Append("void CPers%s%s::WriteMemPause(ht_uint%d rsmInstr)\n",
-				unitNameUc.c_str(), mod.m_modName.Uc().c_str(), mod.m_instrW);
+			m_mifFuncDecl.Append("\tvoid WriteMemPause(%sht_uint%d rsmInstr);\n", wrGrpIdDecl.c_str(), mod.m_instrW);
+			m_mifMacros.Append("void CPers%s%s::WriteMemPause(%sht_uint%d rsmInstr)\n",
+				unitNameUc.c_str(), mod.m_modName.Uc().c_str(), wrGrpIdDecl.c_str(), mod.m_instrW);
 			m_mifMacros.Append("{\n");
 
 			m_mifMacros.Append("\tassert_msg(c_t%d_bWriteMemAvail, \"Runtime check failed in CPers%s::WriteMemPause()"
 				" - expected WriteMemBusy() to have been called and not busy\");\n", mod.m_execStg, mod.m_modName.Uc().c_str());
-			m_mifMacros.NewLine();
 
 			m_mifMacros.Append("\tassert_msg(c_t%d_htCtrl == HT_INVALID, \"Runtime check failed in CPers%s::WriteMemPause()"
 				" - an Ht control routine was already called\");\n", mod.m_execStg, mod.m_modName.Uc().c_str());
 			m_mifMacros.NewLine();
 
-			if (mif.m_mifWr.m_rspGrpIdW == 0) {
+			if (wrRspGrpIdW == 0) {
 
-				m_mifMacros.Append("\tc_t%d_memWritePause = true;\n", mod.m_execStg);
+				m_mifMacros.Append("\tc_t%d_memReq.m_valid = true;\n", mod.m_execStg);
+				m_mifMacros.Append("\tc_t%d_memReq.m_wrPause = true;\n", mod.m_execStg);
+
+				if (mod.m_threads.m_htIdW.AsInt() > 0)
+					m_mifMacros.Append("\tc_t%d_memReq.m_rsmHtId = r_t%d_htId;\n", mod.m_execStg, mod.m_execStg);
+
+				m_mifMacros.Append("\tc_t%d_memReq.m_rsmInstr = rsmInstr;\n", mod.m_execStg);
 				m_mifMacros.NewLine();
 
-				m_mifMacros.Append("\tif (r_t%d_wrGrpRspCntZero && !(c_t%d_%sToMif_reqRdy",
-					mod.m_execStg, mod.m_execStg, mod.m_modName.Lc().c_str());
-				if (mod.m_mif.m_bMifRd)
-					m_mifMacros.Append(" && !c_t%d_bReadMem))\n", mod.m_execStg);
+				m_mifMacros.Append("\tc_t%d_htCtrl = HT_PAUSE;\n", mod.m_execStg);
+
+			} else if (wrRspGrpIdW <= 2) {
+
+				m_mifMacros.Append("\tc_t%d_memReq.m_valid = true;\n", mod.m_execStg);
+				m_mifMacros.Append("\tc_t%d_memReq.m_wrPause = true;\n", mod.m_execStg);
+
+				if (mod.m_threads.m_htIdW.AsInt() > 0)
+					m_mifMacros.Append("\tc_t%d_memReq.m_rsmHtId = r_t%d_htId;\n", mod.m_execStg, mod.m_execStg);
+
+				if (wrRspGrpIdW == 0) {
+					// rspGrpId == 0
+				} else if (bWrRspGrpIdIsHtId)
+					m_mifMacros.Append("\tc_t%d_memReq.m_wrGrpId = r_t%d_htId;\n", mod.m_execStg, mod.m_execStg);
 				else
-					m_mifMacros.Append("))\n");
+					m_mifMacros.Append("\tc_t%d_memReq.m_wrGrpId = wrGrpId;\n", mod.m_execStg);
 
-				m_mifMacros.Append("\t\tHtContinue(rsmInstr);\n");
-				m_mifMacros.Append("\telse {\n");
-				m_mifMacros.Append("\t\t// Should not occur - verify waiting flag not already set\n");
-				m_mifMacros.Append("\t\tassert(c_wrGrpRsmWait == false);\n");
-				m_mifMacros.Append("\t\tc_wrGrpRsmWait = true;\n");
-				m_mifMacros.Append("\t\tc_wrGrpRsmInstr = rsmInstr;\n");
-
-				if (mif.m_mifWr.m_rspGrpId.size() != 0 && mod.m_threads.m_htIdW.AsInt() > 0)
-					m_mifMacros.Append("\t\tc_wrGrpRsmHtId = r_t%d_htId;\n", mod.m_execStg);
-
-				m_mifMacros.Append("\t\tc_t%d_htCtrl = HT_PAUSE;\n", mod.m_execStg);
-				m_mifMacros.Append("\t\tc_t%d_htNextInstr = rsmInstr;\n", mod.m_execStg);
-				m_mifMacros.Append("\t}\n");
-
-			} else if (mif.m_mifWr.m_rspGrpIdW <= 2) {
-
-				m_mifMacros.Append("\tc_t%d_memWritePause = true;\n", mod.m_execStg);
+				m_mifMacros.Append("\tc_t%d_memReq.m_rsmInstr = rsmInstr;\n", mod.m_execStg);
 				m_mifMacros.NewLine();
 
-				m_mifMacros.Append("\tif (r_t%d_wrGrpRspCntZero && !(c_t%d_%sToMif_reqRdy",
-					mod.m_execStg, mod.m_execStg, mod.m_modName.Lc().c_str());
-
-				if (mod.m_mif.m_bMifRd)
-					m_mifMacros.Append(" && !c_t%d_bReadMem))\n", mod.m_execStg);
-				else
-					m_mifMacros.Append("))\n");
-
-				m_mifMacros.Append("\t\tHtContinue(rsmInstr);\n");
-				m_mifMacros.Append("\telse {\n");
-				m_mifMacros.Append("\t\t// should not occur - verify waiting flag not already set\n");
-				m_mifMacros.Append("\t\tassert(c_wrGrpRsmWait[INT(%s)] == false);\n", wrRspGrpName);
-				m_mifMacros.Append("\t\tc_wrGrpRsmWait[INT(%s)] = true;\n", wrRspGrpName);
-				m_mifMacros.Append("\t\tc_wrGrpRsmInstr[INT(%s)] = rsmInstr;\n", wrRspGrpName);
-
-				if (mif.m_mifWr.m_rspGrpId.size() != 0 && mod.m_threads.m_htIdW.AsInt() > 0)
-					m_mifMacros.Append("\t\tc_wrGrpRsmHtId[INT(%s)] = r_t%d_htId;\n",
-					wrRspGrpName, mod.m_execStg);
-
-				m_mifMacros.Append("\t\tc_t%d_htCtrl = HT_PAUSE;\n", mod.m_execStg);
-				m_mifMacros.Append("\t\tc_t%d_htNextInstr = rsmInstr;\n", mod.m_execStg);
-				m_mifMacros.Append("\t}\n");
+				m_mifMacros.Append("\tc_t%d_htCtrl = HT_PAUSE;\n", mod.m_execStg);
 
 			} else {
-				m_mifMacros.Append("\tm_wrGrpRsmWait[%s & %s].write_addr(%s >> %s);\n",
-					wrRspGrpName, pWrGrpIdMask, wrRspGrpName, pWrGrpShfAmt);
-				m_mifMacros.Append("\tm_wrGrpRsmInstr[%s & %s].write_addr(%s >> %s);\n",
-					wrRspGrpName, pWrGrpIdMask, wrRspGrpName, pWrGrpShfAmt);
-				if (mif.m_mifWr.m_rspGrpId.size() != 0)
-					m_mifMacros.Append("\tm_wrGrpRsmHtId[%s & %s].write_addr(%s >> %s);\n",
-					wrRspGrpName, pWrGrpIdMask, wrRspGrpName, pWrGrpShfAmt);
+
+				m_mifMacros.Append("\tc_t%d_memReq.m_valid = true;\n", mod.m_execStg);
+				m_mifMacros.Append("\tc_t%d_memReq.m_wrPause = true;\n", mod.m_execStg);
+
+				if (mod.m_threads.m_htIdW.AsInt() > 0)
+					m_mifMacros.Append("\tc_t%d_memReq.m_rsmHtId = r_t%d_htId;\n", mod.m_execStg, mod.m_execStg);
+
+				if (wrRspGrpIdW == 0) {
+					// rspGrpId == 0
+				} else if (bWrRspGrpIdIsHtId)
+					m_mifMacros.Append("\tc_t%d_memReq.m_wrGrpId = r_t%d_htId;\n", mod.m_execStg, mod.m_execStg);
+				else
+					m_mifMacros.Append("\tc_t%d_memReq.m_wrGrpId = wrGrpId;\n", mod.m_execStg);
+
+				m_mifMacros.Append("\tc_t%d_memReq.m_rsmInstr = rsmInstr;\n", mod.m_execStg);
 				m_mifMacros.NewLine();
 
-				m_mifMacros.Append("\tif (r_t%d_wrGrpRspCntZero && !(c_t%d_%sToMif_reqRdy",
-					mod.m_execStg, mod.m_execStg, mod.m_modName.Lc().c_str());
-
-				if (mod.m_mif.m_bMifRd)
-					m_mifMacros.Append(" && !c_t%d_bReadMem))\n", mod.m_execStg);
-				else
-					m_mifMacros.Append("))\n");
-
-				m_mifMacros.Append("\t\tHtContinue(rsmInstr);\n");
-				m_mifMacros.Append("\telse {\n");
-				m_mifMacros.Append("\t\tm_wrGrpRsmWait[%s & %s].write_mem(true);\n", wrRspGrpName, pWrGrpIdMask);
-				m_mifMacros.Append("\t\tm_wrGrpRsmInstr[%s & %s].write_mem(rsmInstr);\n", wrRspGrpName, pWrGrpIdMask);
-				if (mif.m_mifWr.m_rspGrpId.size() != 0)
-					m_mifMacros.Append("\t\tm_wrGrpRsmHtId[%s & %s].write_mem(r_t%d_htId);\n",
-					wrRspGrpName, pWrGrpIdMask, mod.m_execStg);
-				m_mifMacros.Append("\t\tc_t%d_htCtrl = HT_PAUSE;\n", mod.m_execStg);
-				m_mifMacros.Append("\t\tc_t%d_htNextInstr = rsmInstr;\n", mod.m_execStg);
-				m_mifMacros.Append("\t}\n");
+				m_mifMacros.Append("\tc_t%d_htCtrl = HT_PAUSE;\n", mod.m_execStg);
 			}
 
 			m_mifMacros.Append("}\n");
@@ -2838,21 +2383,16 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 				" - an Ht control routine was already called\");\n", mod.m_execStg, mod.m_modName.Uc().c_str());
 			m_mifMacros.NewLine();
 
-			if (mod.m_threads.m_htIdW.AsInt() > 0) {
-				m_mifMacros.Append("\tCHtCmd c_wrpCmd;\n");
-				m_mifMacros.Append("\tc_wrpCmd.m_htId = r_t%d_htId;\n", mod.m_execStg);
-				m_mifMacros.Append("\tc_wrpCmd.m_htInstr = rsmInstr;\n");
-				m_mifMacros.NewLine();
+			m_mifMacros.Append("\tc_t%d_memReq.m_valid = true;\n", mod.m_execStg);
+			m_mifMacros.Append("\tc_t%d_memReq.m_reqPause = true;\n", mod.m_execStg);
 
-				m_mifMacros.Append("\tm_wrpRsmQue.push(c_wrpCmd);\n");
-				m_mifMacros.NewLine();
-			}
+			if (mod.m_threads.m_htIdW.AsInt() > 0)
+				m_mifMacros.Append("\tc_t%d_memReq.m_rsmHtId = r_t%d_htId;\n", mod.m_execStg, mod.m_execStg);
+
+			m_mifMacros.Append("\tc_t%d_memReq.m_rsmInstr = rsmInstr;\n", mod.m_execStg);
+			m_mifMacros.NewLine();
 
 			m_mifMacros.Append("\tc_t%d_htCtrl = HT_PAUSE;\n", mod.m_execStg);
-			m_mifMacros.Append("\tc_t%d_bWrpRsm = true;\n", mod.m_execStg);
-
-			if (mod.m_threads.m_htIdW.AsInt() == 0)
-				m_mifMacros.Append("\t\tc_t%d_htNextInstr = rsmInstr;\n", mod.m_execStg);
 
 			m_mifMacros.Append("}\n");
 			m_mifMacros.NewLine();
@@ -2861,2392 +2401,1696 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 
 	g_appArgs.GetDsnRpt().EndLevel();
 
-	bool bMifWr = false;
-	int mifRsmCnt = 0;
+	m_mifRamDecl.Append("\t// Memory Interface State\n");
 
-	if (mod.m_threads.m_bPause)
-		mifRsmCnt += 1;
+	string reset = mod.m_clkRate == eClk2x ? "c_reset1x" : "r_reset1x";
 
-	if (mif.m_bMifRd && mif.m_mifRd.m_bPause) {
-		mifRsmCnt += 1;
-	}
-	if (mif.m_bMifWr && mif.m_mifWr.m_bPause) {
-		bMifWr = true;
-		mifRsmCnt += 1;
-	}
+	bool bNeedRdRspInfo = false;
+	if (mif.m_bMifRd) {
 
-	m_mifRamDecl.Append("\n\t// Memory Interface State\n");
+		CRecord rdRspInfo;
+		rdRspInfo.m_typeName = "CRdRspInfo";
+		rdRspInfo.m_bCStyle = true;
+		rdRspInfo.m_bUnion = true;
 
-	if (!mif.m_bSingleReqMode) {
+		int dstW = FindLg2(mif.m_mifRd.m_rdDstList.size() - 1, false);
+		int baseW = 0;
 
-		m_mifRamDecl.Append("\t#ifndef _HTV\n");
-		m_mifRamDecl.Append("\tint m_mif_rdReqFirstCnt[1 << %s_HTID_W];\n",
-			mod.m_modName.Upper().c_str());
-		m_mifRamDecl.Append("\tint m_mif_rdPrefReqCnt[1 << %s_HTID_W];\n",
-			mod.m_modName.Upper().c_str());
-		m_mifRamDecl.Append("\tint m_mif_rdPrefMemLength[1 << %s_HTID_W];\n",
-			mod.m_modName.Upper().c_str());
-		m_mifRamDecl.Append("\t#endif\n");
-		m_mifRamDecl.NewLine();
+		CRecord unnamed1;
+		{
+			unnamed1.m_typeName = "";
+			unnamed1.m_bCStyle = true;
+			unnamed1.m_bUnion = false;
 
-		m_mifRamDecl.Append("\tstruct CMifReq {\n");
-		m_mifRamDecl.Append("\t\t#ifndef _HTV\n");
-		m_mifRamDecl.Append("\t\tCMifReq() {}\n");
-		m_mifRamDecl.Append("\t\t#endif\n");
-		if (mod.m_threads.m_htIdW.AsInt() > 0)
-			m_mifRamDecl.Append("\t\tuint64_t\tm_htId : %s_HTID_W;\n", mod.m_modName.Upper().c_str());
-		m_mifRamDecl.Append("\t\tuint64_t\tm_type : 2;\n");
-		m_mifRamDecl.Append("\t\tuint64_t\tm_addr : MEM_ADDR_W;\n");
-		if (mif.m_bMifWr)
-			m_mifRamDecl.Append("\t\tuint64_t\tm_data : MEM_DATA_W;\n");
-		if (mif.m_bMifRd && mif.m_mifRd.m_rdDstList.size() > 1)
-			m_mifRamDecl.Append("\t\tuint64_t\tm_dst : %s_MIF_DST_W;\n", mod.m_modName.Upper().c_str());
-
-		m_mifRamDecl.Append("\t};\n");
-		m_mifRamDecl.NewLine();
-	}
-
-	if (mif.m_bMifRd && mif.m_bMifWr) {
-		m_mifDecl.Append("\tbool c_t%d_bReadMem;\n", mod.m_execStg);
-		mifPreInstr.Append("\tc_t%d_bReadMem = false;\n", mod.m_execStg);
-	}
-
-	// Initialize memory request fields to zero
-	m_mifDecl.Append("\tbool c_t%d_%sToMif_reqRdy;\n", mod.m_execStg, mod.m_modName.Lc().c_str());
-	m_mifDecl.Append("\tCMemRdWrReqIntf c_t%d_%sToMif_req;\n",
-		mod.m_execStg, mod.m_modName.Lc().c_str());
-	if (mif.m_mifRd.m_bMultiRd || mif.m_mifWr.m_bMultiWr) {
-		m_mifDecl.Append("\tht_uint4 c_t%d_reqQwCnt;\n", mod.m_execStg);
-		if (bNeed_reqQwSplit)
-			m_mifDecl.Append("\tbool c_t%d_reqQwSplit;\n", mod.m_execStg);
-
-		mifPreInstr.Append("\t// Memory write request\n");
-		if (bNeed_reqBusy) {
-			mifPreInstr.Append("\tif (r_t%d_reqBusy) {\n", mod.m_execStg);
-			mifPreInstr.Append("\t\tc_t%d_%sToMif_reqRdy = true;\n",
-				mod.m_execStg, mod.m_modName.Lc().c_str());
-			mifPreInstr.Append("\t\tc_t%d_%sToMif_req = r_t%d_%sToMif_req;\n",
-				mod.m_execStg, mod.m_modName.Lc().c_str(), mod.m_execStg+1, mod.m_modName.Lc().c_str());
-			if (bNeed_reqQwCnt)
-				mifPreInstr.Append("\t\tc_t%d_reqQwCnt = r_t%d_reqQwCnt;\n", mod.m_execStg, mod.m_execStg+1);
-			if (bNeed_reqQwSplit)
-				mifPreInstr.Append("\t\tc_t%d_reqQwSplit = r_t%d_reqQwSplit;\n", mod.m_execStg, mod.m_execStg+1);
-			if (mif.m_mifWr.m_bReqPause) {
-				m_mifDecl.Append("\tbool c_t%d_bWrpRsm;\n", mod.m_execStg);
-				mifPreInstr.Append("\t\tc_t%d_bWrpRsm = r_t%d_bWrpRsm;\n", mod.m_execStg, mod.m_execStg+1);
+			if (mod.m_threads.m_htIdW.AsInt() > 0) {
+				unnamed1.AddStructField(&g_uint32, "m_htId", VA("%d", mod.m_threads.m_htIdW.AsInt()));
+				baseW += mod.m_threads.m_htIdW.AsInt();
 			}
-			mifPreInstr.Append("\t} else {\n");
-			mifPreInstr.Append("\t\tc_t%d_%sToMif_reqRdy = false;\n",
-				mod.m_execStg, mod.m_modName.Lc().c_str());
-			mifPreInstr.Append("\t\tc_t%d_%sToMif_req = 0;\n",
-				mod.m_execStg, mod.m_modName.Lc().c_str());
-			if (bNeed_reqQwCnt)
-				mifPreInstr.Append("\t\tc_t%d_reqQwCnt = 0;\n", mod.m_execStg);
-			if (bNeed_reqQwSplit)
-				mifPreInstr.Append("\t\tc_t%d_reqQwSplit = false;\n", mod.m_execStg);
-			if (mif.m_mifWr.m_bReqPause)
-				mifPreInstr.Append("\t\tc_t%d_bWrpRsm = false;\n", mod.m_execStg);
-			mifPreInstr.Append("\t}\n");
-		} else {
-			mifPreInstr.Append("\tc_t%d_%sToMif_reqRdy = false;\n",
-				mod.m_execStg, mod.m_modName.Lc().c_str());
-			mifPreInstr.Append("\tc_t%d_%sToMif_req = 0;\n",
-				mod.m_execStg, mod.m_modName.Lc().c_str());
-			if (bNeed_reqQwCnt)
-				mifPreInstr.Append("\tc_t%d_reqQwCnt = 0;\n", mod.m_execStg);
-			if (bNeed_reqQwSplit)
-				mifPreInstr.Append("\tc_t%d_reqQwSplit = false;\n", mod.m_execStg);
+
+			if (!bRdRspGrpIdIsHtId && rdRspGrpIdW > 0) {
+				unnamed1.AddStructField(&g_uint32, "m_grpId", VA("%d", rdRspGrpIdW));
+				baseW += rdRspGrpIdW;
+			}
+
+			if (dstW > 0) {
+				unnamed1.AddStructField(&g_uint32, "m_dst", VA("%d", dstW));
+				baseW += dstW;
+			}
+
+			if (bMultiQwRdMif) {
+				unnamed1.AddStructField(&g_uint32, "m_multiQwReq", "1");
+				unnamed1.AddStructField(&g_uint32, "m_qwFst", "3");
+				unnamed1.AddStructField(&g_uint32, "m_qwLst", "3");
+				baseW += 7;
+			}
+
+			bool bNeedCntM1 = false;
+			for (int idx = 0; idx < (int)vIdxWList.size(); idx += 1) {
+				if (vIdxWList[idx] > 0) {
+					unnamed1.AddStructField(&g_uint32, VA("m_vIdx%d", idx + 1), VA("%d", vIdxWList[idx]));
+					baseW += vIdxWList[idx];
+					if (bNeedCntM1) {
+						unnamed1.AddStructField(&g_uint32, VA("m_vIdx%dCntM1", idx + 1), VA("%d", vIdxWList[idx]));
+						baseW += vIdxWList[idx];
+					}
+					bNeedCntM1 = true;
+				}
+			}
+
+			if (maxQwCnt > 1) {
+				if (maxElemQwCnt > 1) {
+					int elemQwIdxW = FindLg2(maxElemQwCnt - 1);
+					unnamed1.AddStructField(&g_uint32, "m_elemQwIdx", VA("%d", elemQwIdxW));
+					baseW += elemQwIdxW;
+					if (bNeedCntM1) {
+						unnamed1.AddStructField(&g_uint32, "m_elemQwCntM1", VA("%d", elemQwIdxW));
+						baseW += elemQwIdxW;
+					}
+				}
+			}
+
+			if (unnamed1.m_fieldList.size() > 0) {
+				rdRspInfo.AddStructField(&unnamed1, "");
+			}
 		}
 
-		if (bNeed_reqQwIdx)
-			mifPreInstr.Append("\tht_uint4 c_t%d_reqQwCnt = r_t%d_reqQwCnt;\n", mod.m_execStg+1, mod.m_execStg+1);
-		if (bNeed_reqQwSplit)
-			mifPreInstr.Append("\tbool c_t%d_reqQwSplit = r_t%d_reqQwSplit;\n", mod.m_execStg+1, mod.m_execStg+1);
-		if (mif.m_mifWr.m_bReqPause)
-			mifPreInstr.Append("bool\tc_t%d_bWrpRsm = r_t%d_bWrpRsm;\n", mod.m_execStg+1, mod.m_execStg+1);
-	} else {
-		mifPreInstr.Append("\tc_t%d_%sToMif_reqRdy = false;\n", mod.m_execStg, mod.m_modName.Lc().c_str());
-		mifPreInstr.Append("\tc_t%d_%sToMif_req = 0;\n", mod.m_execStg, mod.m_modName.Lc().c_str());
+		CRecord unnamed2;
+		if (bRdRspGrpIdIsHtId && rdRspGrpIdW > 0) {
+			// common fields
+			unnamed2.m_typeName = "";
+			unnamed2.m_bCStyle = true;
+			unnamed2.m_bUnion = false;
+
+			unnamed2.AddStructField(&g_uint32, "m_grpId", VA("%d", rdRspGrpIdW));
+
+			rdRspInfo.AddStructField(&unnamed2, "");
+		}
+
+		// per dst fields
+		vector<CRecord> dstRecordList;
+		for (size_t rdDstIdx = 0; rdDstIdx < mif.m_mifRd.m_rdDstList.size(); rdDstIdx += 1) {
+			CMifRdDst &rdDst = mif.m_mifRd.m_rdDstList[rdDstIdx];
+
+			CRecord dstRecord;
+			dstRecord.m_typeName = "";
+			dstRecord.m_bCStyle = true;
+			dstRecord.m_bUnion = false;
+
+			if (baseW > 0)
+				dstRecord.AddStructField(&g_uint32, VA("m_d%d_pad", rdDstIdx), VA("%d", baseW));
+
+			if (rdDst.m_infoW.AsInt() > 0)
+				dstRecord.AddStructField(&g_uint32, VA("m_d%d_info", rdDstIdx), VA("%d", rdDst.m_infoW.AsInt()));
+
+			if (rdDst.m_varAddr1W > 0 && !rdDst.m_varAddr1IsHtId && !rdDst.m_varAddr1IsIdx)
+				dstRecord.AddStructField(&g_uint32, VA("m_d%d_f1Addr1", rdDstIdx), VA("%d", rdDst.m_varAddr1W));
+
+			if (rdDst.m_varAddr2W > 0 && !rdDst.m_varAddr2IsHtId && !rdDst.m_varAddr2IsIdx)
+				dstRecord.AddStructField(&g_uint32, VA("m_d%d_f1Addr2", rdDstIdx), VA("%d", rdDst.m_varAddr2W));
+
+			for (size_t fldIdx = 0; fldIdx < rdDst.m_fieldRefList.size(); fldIdx += 1) {
+				for (size_t dimIdx = 0; dimIdx < rdDst.m_fieldRefList[fldIdx].m_refDimenList.size(); dimIdx += 1) {
+					CRefDimen & refDimen = rdDst.m_fieldRefList[fldIdx].m_refDimenList[dimIdx];
+
+					if (refDimen.m_value < 0 && refDimen.m_size > 1 && !refDimen.m_isIdx) {
+						int varDimenW = FindLg2(rdDst.m_fieldRefList[fldIdx].m_refDimenList[dimIdx].m_size - 1);
+						dstRecord.AddStructField(&g_uint32, VA("m_d%d_f%dIdx%d",
+							rdDstIdx, (int)fldIdx + 1, (int)dimIdx + 1), VA("%d", varDimenW));
+					}
+				}
+			}
+
+			if ((int)dstRecord.m_fieldList.size() > (baseW == 0 ? 0 : 1))
+				dstRecordList.push_back(dstRecord);
+		}
+
+		for (size_t listIdx = 0; listIdx < dstRecordList.size(); listIdx += 1) {
+			rdRspInfo.AddStructField(&dstRecordList[listIdx], "");
+		}
+
+		if (rdRspInfo.m_fieldList.size() > 0) {
+			rdRspInfo.AddStructField(&g_uint32, "m_uint32");
+
+			GenUserStructs(m_mifDecl, rdRspInfo, "\t");
+
+			string fullName = VA("CPers%s::CRdRspInfo", mod.m_modName.Uc().c_str());
+
+			GenUserStructBadData(m_mifBadDecl, true, fullName, rdRspInfo.m_fieldList, rdRspInfo.m_bCStyle, "");
+
+			bNeedRdRspInfo = true;
+		}
 	}
-	mifPreInstr.NewLine();
 
-	m_mifAvlCntChk.Append("\t\tassert(r_%sToMif_reqAvlCnt == %d);\n",
-		mod.m_modName.Lc().c_str(), 1 << mif.m_queueW);
+	{
+		CRecord memReq;
+		memReq.m_typeName = "CMemReq";
+		memReq.m_bCStyle = true;
 
-	m_mifDecl.Append("\tht_uint%d r_%sToMif_reqAvlCnt;\n",
-		mif.m_queueW+1, mod.m_modName.Lc().c_str());
-	m_mifDecl.Append("\tbool r_%sToMif_reqAvlCntBusy;\n",
-		mod.m_modName.Lc().c_str());
+		memReq.AddStructField(&g_bool, "m_valid");
+
+		bool bNeedCntM1 = false;
+		for (int idx = 0; idx < (int)vIdxWList.size(); idx += 1) {
+			if (vIdxWList[idx] > 0) {
+				memReq.AddStructField(FindHtIntType(eUnsigned, vIdxWList[idx]), VA("m_vIdx%d", idx + 1));
+				if (bNeedCntM1)
+					memReq.AddStructField(FindHtIntType(eUnsigned, vIdxWList[idx]), VA("m_vIdx%dCntM1", idx + 1));
+				bNeedCntM1 = true;
+			}
+		}
+
+		if (maxQwCnt > 1) {
+			if (maxElemQwCnt > 1) {
+				memReq.AddStructField(FindHtIntType(eUnsigned, FindLg2(maxElemQwCnt - 1)), "m_elemQwIdx");
+				if (bNeedCntM1)
+					memReq.AddStructField(FindHtIntType(eUnsigned, FindLg2(maxElemQwCnt - 1)), "m_elemQwCntM1");
+			}
+
+			memReq.AddStructField(FindHtIntType(eUnsigned, FindLg2(maxQwCnt)), "m_qwRem");
+
+			if (bMultiQwMif) {
+				memReq.AddStructField(FindHtIntType(eUnsigned, 3), "m_reqQwRem");
+			}
+		}
+
+		if (mif.m_bMifRd) {
+			memReq.AddStructField(&g_bool, "m_rdReq");
+			if (mif.m_mifRd.m_bPause)
+				memReq.AddStructField(&g_bool, "m_rdPause");
+			if (mif.m_mifRd.m_bPoll)
+				memReq.AddStructField(&g_bool, "m_rdPoll");
+		}
+
+		if (mif.m_bMifWr) {
+			memReq.AddStructField(&g_bool, "m_wrReq");
+			if (mif.m_mifWr.m_bPause)
+				memReq.AddStructField(&g_bool, "m_wrPause");
+			if (mif.m_mifWr.m_bPoll)
+				memReq.AddStructField(&g_bool, "m_wrPoll");
+			if (mif.m_mifWr.m_bReqPause)
+				memReq.AddStructField(&g_bool, "m_reqPause");
+
+			int wrSrcW = mif.m_mifWr.m_wrSrcList.size() == 0 ? 0 : FindLg2(mif.m_mifWr.m_wrSrcList.size(), false);
+			if (wrSrcW > 0)
+				memReq.AddStructField(&g_uint32, "m_wrSrc", VA("%d", wrSrcW));
+		}
+
+		CRecord htIdUnion;
+		if (mod.m_threads.m_htIdW.AsInt() > 0) {
+			if (bRdRspGrpIdIsHtId || bWrRspGrpIdIsHtId) {
+				htIdUnion.m_typeName = "";
+				htIdUnion.m_bCStyle = true;
+				htIdUnion.m_bUnion = true;
+
+				htIdUnion.AddStructField(&g_uint32, "m_rsmHtId", VA("%d", mod.m_threads.m_htIdW.AsInt()));
+
+				if (bRdRspGrpIdIsHtId && rdRspGrpIdW > 0)
+					htIdUnion.AddStructField(&g_uint32, "m_rdGrpId", VA("%d", rdRspGrpIdW));
+				if (bWrRspGrpIdIsHtId && wrRspGrpIdW > 0)
+					htIdUnion.AddStructField(&g_uint32, "m_wrGrpId", VA("%d", wrRspGrpIdW));
+
+				memReq.AddStructField(&htIdUnion, "");
+			} else {
+				memReq.AddStructField(&g_uint32, "m_rsmHtId", VA("%d", mod.m_threads.m_htIdW.AsInt()));
+			}
+		}
+		if (!bRdRspGrpIdIsHtId && rdRspGrpIdW > 0)
+			memReq.AddStructField(FindHtIntType(eUnsigned, rdRspGrpIdW), "m_rdGrpId");
+		if (!bWrRspGrpIdIsHtId && wrRspGrpIdW > 0)
+			memReq.AddStructField(FindHtIntType(eUnsigned, wrRspGrpIdW), "m_wrGrpId");
+
+		memReq.AddStructField(FindHtIntType(eUnsigned, mod.m_instrW), "m_rsmInstr");
+
+		if (mif.m_mifRd.m_bPoll || mif.m_mifWr.m_bPoll)
+			memReq.AddStructField(FindHtIntType(eUnsigned, mod.m_instrW), "m_pollInstr");
+
+		CRecord wrUnion;
+		CRecord wrTypeUnion;
+		vector<CRecord> srcRecordList;
+
+		if (mif.m_bMifWr) {
+
+			wrUnion.m_typeName = "";
+			wrUnion.m_bCStyle = true;
+			wrUnion.m_bUnion = true;
+
+			// per wrSrc fields
+			for (size_t wrSrcIdx = 0; wrSrcIdx < mif.m_mifWr.m_wrSrcList.size(); wrSrcIdx += 1) {
+				CMifWrSrc &wrSrc = mif.m_mifWr.m_wrSrcList[wrSrcIdx];
+
+				CRecord srcRecord;
+				srcRecord.m_typeName = "";
+				srcRecord.m_bCStyle = true;
+				srcRecord.m_bUnion = false;
+
+				if (wrSrc.m_varAddr1W > 0 && !wrSrc.m_varAddr1IsIdx && !wrSrc.m_varAddr1IsHtId)
+					srcRecord.AddStructField(&g_uint32, VA("m_s%d_f1Addr1", wrSrcIdx), VA("%d", wrSrc.m_varAddr1W));
+
+				if (wrSrc.m_varAddr2W > 0 && !wrSrc.m_varAddr2IsIdx && !wrSrc.m_varAddr2IsHtId)
+					srcRecord.AddStructField(&g_uint32, VA("m_s%d_f1Addr2", wrSrcIdx), VA("%d", wrSrc.m_varAddr2W));
+
+				for (size_t fldIdx = 0; fldIdx < wrSrc.m_fieldRefList.size(); fldIdx += 1) {
+					for (size_t dimIdx = 0; dimIdx < wrSrc.m_fieldRefList[fldIdx].m_refDimenList.size(); dimIdx += 1) {
+						CRefDimen & refDimen = wrSrc.m_fieldRefList[fldIdx].m_refDimenList[dimIdx];
+
+						if (refDimen.m_value < 0 && refDimen.m_size > 1 && !refDimen.m_isIdx) {
+							int varDimenW = FindLg2(wrSrc.m_fieldRefList[fldIdx].m_refDimenList[dimIdx].m_size - 1);
+							srcRecord.AddStructField(&g_uint32, VA("m_s%d_f%dIdx%d",
+								wrSrcIdx, (int)fldIdx + 1, (int)dimIdx + 1), VA("%d", varDimenW));
+						}
+					}
+				}
+
+				if (srcRecord.m_fieldList.size() > 0)
+					srcRecordList.push_back(srcRecord);
+			}
+
+			for (size_t listIdx = 0; listIdx < srcRecordList.size(); listIdx += 1) {
+				wrUnion.AddStructField(&srcRecordList[listIdx], "");
+			}
+
+			if (wrUnion.m_fieldList.size() > 0) {
+				memReq.AddStructField(&wrUnion, "");
+			}
+
+			wrTypeUnion.m_typeName = "CMifWrData";
+			wrTypeUnion.m_bCStyle = true;
+			wrTypeUnion.m_bUnion = true;
+
+			// union of storage for write types
+			for (size_t wrSrcIdx = 0; wrSrcIdx < mif.m_mifWr.m_wrSrcList.size(); wrSrcIdx += 1) {
+				CMifWrSrc &wrSrc = mif.m_mifWr.m_wrSrcList[wrSrcIdx];
+
+				size_t wrSrcTypeIdx;
+				for (wrSrcTypeIdx = 0; wrSrcTypeIdx < wrSrcTypeList.size(); wrSrcTypeIdx += 1) {
+					if (wrSrc.m_pSrcType == wrSrcTypeList[wrSrcTypeIdx])
+						break;
+				}
+
+				if (wrSrcTypeIdx < wrSrcTypeList.size()) continue;
+
+				wrSrcTypeList.push_back(wrSrc.m_pSrcType);
+
+				wrTypeUnion.AddStructField(wrSrc.m_pSrcType, VA("m_%s", wrSrc.m_pSrcType->m_typeName.c_str()));
+			}
+
+			if (wrTypeUnion.m_fieldList.size() > 0)
+				memReq.AddStructField(&wrTypeUnion, "m_wrData");
+		}
+
+		if (memReq.m_fieldList.size() == 0)
+			memReq.AddStructField(&g_uint32, "m_pad", "1");
+
+		if (wrTypeUnion.m_fieldList.size() > 0)
+			GenUserStructs(m_mifDecl, wrTypeUnion, "\t");
+
+		GenUserStructs(m_mifDecl, memReq, "\t");
+	}
+
+	if (bMultiQwReq) {
+		GenModDecl(eVcdAll, m_mifDecl, vcdModName, "bool", "r_memReqHold");
+		mifReg.Append("\tr_memReqHold = !%s && c_memReqHold;\n", reset.c_str());
+	}
+
+	{
+		GenModDecl(eVcdAll, m_mifDecl, vcdModName, VA("ht_uint%d", mif.m_queueW + 1), VA("r_%sToMif_reqAvlCnt", mod.m_modName.Lc().c_str()));
+		mifReg.Append("\tr_%sToMif_reqAvlCnt = %s ? (ht_uint%d)%d : c_%sToMif_reqAvlCnt;\n",
+			mod.m_modName.Lc().c_str(),
+			reset.c_str(),
+			mif.m_queueW + 1,
+			1 << mif.m_queueW,
+			mod.m_modName.Lc().c_str());
+
+		m_mifAvlCntChk.Append("\t\tht_assert(r_%sToMif_reqAvlCnt == %d);\n",
+			mod.m_modName.Lc().c_str(), 1 << mif.m_queueW);
+	}
+
+	{
+		GenModDecl(eVcdAll, m_mifDecl, vcdModName, "bool", VA("r_%sToMif_reqAvlCntBusy", mod.m_modName.Lc().c_str()));
+		mifReg.Append("\tr_%sToMif_reqAvlCntBusy = !%s && c_%sToMif_reqAvlCntBusy;\n",
+			mod.m_modName.Lc().c_str(),
+			reset.c_str(),
+			mod.m_modName.Lc().c_str());
+		mifReg.NewLine();
+	}
+
+	if (bMultiQwReq) {
+		GenModDecl(eVcdAll, m_mifDecl, vcdModName, "bool", VA("r_t%d_memReqBusy", mod.m_execStg));
+		mifReg.Append("\tr_t%d_memReqBusy = !%s && c_t%d_memReqBusy;\n",
+			mod.m_execStg,
+			reset.c_str(),
+			mod.m_execStg - 1);
+	}
 	m_mifDecl.NewLine();
 
-	char reqBusy[32];
-	if (bNeed_reqBusy)
-		sprintf(reqBusy, " || r_t%d_reqBusy", mod.m_execStg);
-	else
-		reqBusy[0] = '\0';
+	if (bMultiQwReq) {
+		GenModDecl(eVcdAll, m_mifDecl, vcdModName, "CMemReq", VA("r_t%d_memReqLas", mod.m_execStg + 1));
+		mifReg.Append("\tr_t%d_memReqLas = c_t%d_memReqLas;\n",
+			mod.m_execStg + 1,
+			mod.m_execStg);
+	}
 
+	{
+		m_mifDecl.Append("\tCMemReq c_t%d_memReq;\n", mod.m_execStg, mod.m_modName.Lc().c_str());
+		mifPreInstr.Append("\tc_t%d_memReq = 0;\n",
+			mod.m_execStg);
+		if (mif.m_bMifRd) {
+			m_mifCtorInit.Append("\t\tr_t%d_memReq.m_rdReq = false;\n", mod.m_execStg + 1);
+			if (mif.m_mifRd.m_bPause)
+				m_mifCtorInit.Append("\t\tr_t%d_memReq.m_rdPause = false;\n", mod.m_execStg + 1);
+			if (mif.m_mifRd.m_bPoll)
+				m_mifCtorInit.Append("\t\tr_t%d_memReq.m_rdPoll = false;\n", mod.m_execStg + 1);
+		}
+		if (mif.m_bMifWr) {
+			m_mifCtorInit.Append("\t\tr_t%d_memReq.m_wrReq = false;\n", mod.m_execStg + 1);
+			if (mif.m_mifWr.m_bPause)
+				m_mifCtorInit.Append("\t\tr_t%d_memReq.m_wrPause = false;\n", mod.m_execStg + 1);
+			if (mif.m_mifWr.m_bPoll)
+				m_mifCtorInit.Append("\t\tr_t%d_memReq.m_wrPoll = false;\n", mod.m_execStg + 1);
+		}
+		mifPreInstr.NewLine();
+
+		GenModDecl(eVcdAll, m_mifDecl, vcdModName, "CMemReq", VA("r_t%d_memReq", mod.m_execStg + 1));
+		mifReg.Append("\tr_t%d_memReq = c_t%d_memReq;\n",
+			mod.m_execStg + 1,
+			mod.m_execStg);
+	}
+
+	if (bMultiQwReq) {
+		GenModDecl(eVcdAll, m_mifDecl, vcdModName, "CMemReq", VA("r_t%d_memReq", mod.m_execStg + 2));
+		mifReg.Append("\tr_t%d_memReq = c_t%d_memReq;\n",
+			mod.m_execStg + 2,
+			mod.m_execStg + 1);
+		mifReg.NewLine();
+	}
+
+	if (bMultiQwReq && mif.m_bMifRd && bNeedRdRspInfo) {
+		GenModDecl(eVcdAll, m_mifDecl, vcdModName, "CRdRspInfo", VA("r_t%d_rdRspInfoLas", mod.m_execStg + 1));
+		mifReg.Append("\tr_t%d_rdRspInfoLas = c_t%d_rdRspInfoLas;\n",
+			mod.m_execStg + 1,
+			mod.m_execStg);
+	}
+
+	if (mif.m_bMifRd && bNeedRdRspInfo) {
+		m_mifDecl.Append("\tCRdRspInfo c_t%d_rdRspInfo;\n", mod.m_execStg, mod.m_modName.Lc().c_str());
+		mifPreInstr.Append("\tc_t%d_rdRspInfo = r_t%d_rdRspInfo;\n",
+			mod.m_execStg,
+			mod.m_execStg + 1);
+		mifPreInstr.NewLine();
+
+		GenModDecl(eVcdAll, m_mifDecl, vcdModName, "CRdRspInfo", VA("r_t%d_rdRspInfo", mod.m_execStg + 1));
+		mifReg.Append("\tr_t%d_rdRspInfo = c_t%d_rdRspInfo;\n",
+			mod.m_execStg + 1,
+			mod.m_execStg);
+		mifReg.NewLine();
+	}
+	mifReg.NewLine();
+	m_mifDecl.NewLine();
+
+	if (bMultiQwReq) {
+		mifPreInstr.NewLine();
+
+		GenModDecl(eVcdAll, m_mifDecl, vcdModName, "CMemRdWrReqIntf", VA("r_t%d_%sToMif_reqLas", mod.m_execStg + 1, mod.m_modName.Lc().c_str()));
+		mifReg.Append("\tr_t%d_%sToMif_reqLas = c_t%d_%sToMif_reqLas;\n",
+			mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
+			mod.m_execStg, mod.m_modName.Lc().c_str());
+	}
+
+	for (int stg = 0; stg <= mif.m_mifReqStgCnt; stg += 1) {
+		if (stg == 0 && mif.m_mifReqStgCnt == 0) {
+			m_mifDecl.Append("\tbool c_t%d_%sToMif_reqRdy;\n",
+				mod.m_execStg + stg, mod.m_modName.Lc().c_str());
+
+			mifPreInstr.Append("\tc_t%d_%sToMif_reqRdy = false;\n",
+				mod.m_execStg + stg, mod.m_modName.Lc().c_str());
+		}
+		if (stg > 0 || mif.m_mifReqStgCnt == 0) {
+			GenModDecl(eVcdAll, m_mifDecl, vcdModName, "bool", VA("r_t%d_%sToMif_reqRdy", mod.m_execStg + 1 + stg, mod.m_modName.Lc().c_str()));
+			mifReg.Append("\tr_t%d_%sToMif_reqRdy = !%s && c_t%d_%sToMif_reqRdy;\n",
+				mod.m_execStg + 1 + stg, mod.m_modName.Lc().c_str(),
+				reset.c_str(),
+				mod.m_execStg + stg, mod.m_modName.Lc().c_str());
+		}
+		if (stg == 0) {
+			m_mifDecl.Append("\tCMemRdWrReqIntf c_t%d_%sToMif_req;\n",
+				mod.m_execStg + stg, mod.m_modName.Lc().c_str());
+			mifPreInstr.Append("\tc_t%d_%sToMif_req = 0;\n",
+				mod.m_execStg + stg, mod.m_modName.Lc().c_str());
+		}
+		mifPreInstr.NewLine();
+
+		GenModDecl(eVcdAll, m_mifDecl, vcdModName, "CMemRdWrReqIntf", VA("r_t%d_%sToMif_req", mod.m_execStg + 1 + stg, mod.m_modName.Lc().c_str()));
+		mifReg.Append("\tr_t%d_%sToMif_req = c_t%d_%sToMif_req;\n",
+			mod.m_execStg + 1 + stg, mod.m_modName.Lc().c_str(),
+			mod.m_execStg + stg, mod.m_modName.Lc().c_str());
+	}
 
 	if (mif.m_bMifRd) {
-		string mifRdMemBusy = mif.m_bMifWr ? VA(" !c_t%d_bReadMem ||", mod.m_execStg) : "";
+		GenModDecl(eVcdUser, m_mifDecl, vcdModName, "bool", VA("r_%sToMif_rdRspFull", mod.m_modName.Lc().c_str()));
 
-		mifPostInstr.Append("\tassert_msg(c_reset1x || !c_t%d_%sToMif_reqRdy%s ||%s c_t%d_bReadMemAvail,"
-			" \"Runtime check failed in CPers%s::Pers%s_%s()"
-			" - expected ReadMemBusy() to have been called and not busy\");\n",
-			mod.m_execStg, mod.m_modName.Lc().c_str(), reqBusy, mifRdMemBusy.c_str(), mod.m_execStg, mod.m_modName.Uc().c_str(),
-			mod.m_modName.Uc().c_str(), mod.m_clkRate == eClk1x ? "1x" : "2x");
-	}
-	
-	if (mif.m_bMifWr) {
-		string mifWrMemBusy = mif.m_bMifRd ? VA(" c_t%d_bReadMem ||", mod.m_execStg) : "";
+		mifPreInstr.Append("\tbool c_%sToMif_rdRspFull = ", mod.m_modName.Lc().c_str());
 
-		mifPostInstr.Append("\tassert_msg(c_reset1x || !c_t%d_%sToMif_reqRdy%s ||%s c_t%d_bWriteMemAvail,"
-			" \"Runtime check failed in CPers%s::Pers%s_%s()"
-			" - expected WriteMemBusy() to have been called and not busy\");\n",
-			mod.m_execStg, mod.m_modName.Lc().c_str(), reqBusy, mifWrMemBusy.c_str(), mod.m_execStg, mod.m_modName.Uc().c_str(),
-			mod.m_modName.Uc().c_str(), mod.m_clkRate == eClk1x ? "1x" : "2x");
-	}
+		string separator;
+		for (size_t gvIdx = 0; gvIdx < mod.m_ngvList.size(); gvIdx += 1) {
+			CRam * pGv = mod.m_ngvList[gvIdx];
 
-	mifPostInstr.NewLine();
+			if (!pGv->m_bWriteForMifRead) continue;
+			if (!pGv->m_pNgvInfo->m_bNeedQue) continue;
 
-	if (mif.m_mifWr.m_bReqPause) {
-		if (mif.m_bMifRd)
-			mifPostInstr.Append("\tassert_msg(c_reset1x || !c_t%d_bWrpRsm || c_t%d_%sToMif_reqRdy && !c_t%d_bReadMem,\n",
-				mod.m_execStg, mod.m_execStg, mod.m_modName.Lc().c_str(), mod.m_execStg);
-		else
-			mifPostInstr.Append("\tassert_msg(c_reset1x || !c_t%d_bWrpRsm || c_t%d_%sToMif_reqRdy,\n",
-				mod.m_execStg, mod.m_execStg, mod.m_modName.Lc().c_str());
+			vector<int> refList(pGv->m_dimenList.size());
+			do {
+				string dimIdx = IndexStr(refList);
 
-		mifPostInstr.Append("\t\t\"Runtime check failed in CPers%s::Pers%s_%s()"
-			" - expected WriteMemPause() to be called in an Ht Instruction with a memory write call\");\n",
-			mod.m_modName.Uc().c_str(), mod.m_modName.Uc().c_str(), mod.m_clkRate == eClk1x ? "1x" : "2x");
+				mifPreInstr.Append("%si_%sTo%s_mwFull%s",
+					separator.c_str(), pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), pGv->m_dimenDecl.c_str());
 
-		mifPostInstr.NewLine();
-	}
+				separator = " || ";
+			} while (DimenIter(pGv->m_dimenList, refList));
+		}
 
-	char notReqBusy[32];
-	if (bNeed_reqBusy)
-		sprintf(notReqBusy, " && !r_t%d_reqBusy", mod.m_execStg);
-	else
-		notReqBusy[0] = '\0';
+		if (separator.size() == 0)
+			mifPreInstr.Append("false");
+		mifPreInstr.Append(";\n");
 
-	mifPostInstr.Append("\tht_uint%d\tc_%sToMif_reqAvlCnt = r_%sToMif_reqAvlCnt;\n",
-		mif.m_queueW+1,
-		mod.m_modName.Lc().c_str(),
-		mod.m_modName.Lc().c_str());
-
-	if (mif.m_mifWr.m_bMultiWr || mif.m_mifRd.m_bMultiRd) {
-		mifPostInstr.Append("\tif (c_t%d_%sToMif_reqRdy%s)\n",
-			mod.m_execStg, mod.m_modName.Lc().c_str(), notReqBusy);
-
-		if (is_wx) {
-			if (mif.m_bMifRd && mif.m_bMifWr)
-				mifPostInstr.Append("\t\tc_%sToMif_reqAvlCnt -= c_t%d_bReadMem ? (ht_uint4)1 : c_t%d_reqQwCnt;\n",
-				mod.m_modName.Lc().c_str(), mod.m_execStg, mod.m_execStg);
-			else if (mif.m_bMifRd)
-				mifPostInstr.Append("\t\tc_%sToMif_reqAvlCnt -= 1;\n",
-				mod.m_modName.Lc().c_str(), mod.m_execStg, mod.m_execStg);
-			else
-				mifPostInstr.Append("\t\tc_%sToMif_reqAvlCnt -= c_t%d_reqQwCnt;\n",
-				mod.m_modName.Lc().c_str(), mod.m_execStg, mod.m_execStg);
-		} else if (bNeed_reqQwSplit)
-			mifPostInstr.Append("\t\tc_%sToMif_reqAvlCnt -= c_t%d_reqQwSplit ? c_t%d_reqQwCnt : (ht_uint4)1;\n",
-			mod.m_modName.Lc().c_str(), mod.m_execStg, mod.m_execStg);
-		else
-			mifPostInstr.Append("\t\tc_%sToMif_reqAvlCnt -= c_t%d_reqQwCnt;\n",
-			mod.m_modName.Lc().c_str(), mod.m_execStg);
-
-		mifPostInstr.Append("\tif (i_mifTo%sP0_reqAvl)\n",
-			mod.m_modName.Uc().c_str());
-		mifPostInstr.Append("\t\tc_%sToMif_reqAvlCnt += 1;\n",
-			mod.m_modName.Lc().c_str());
-
-		mifPostInstr.Append("\tbool c_%sToMif_reqAvlCntBusy = c_%sToMif_reqAvlCnt < 8;\n",
-			mod.m_modName.Lc().c_str(), mod.m_modName.Lc().c_str());
-	} else {
-		mifPostInstr.Append("\tbool c_%sToMif_reqAvlCntBusy = r_%sToMif_reqAvlCntBusy;\n",
-			mod.m_modName.Lc().c_str(), mod.m_modName.Lc().c_str());
-
-		mifPostInstr.Append("\tif ((c_t%d_%sToMif_reqRdy%s) != i_mifTo%sP0_reqAvl) {\n",
-			mod.m_execStg, mod.m_modName.Lc().c_str(),
-			notReqBusy,
-			mod.m_modName.Uc().c_str());
-
-		if (mif.m_queueW > 0) {
-			mifPostInstr.Append("\t\tc_%sToMif_reqAvlCnt = r_%sToMif_reqAvlCnt + (i_mifTo%sP0_reqAvl.read() ? 1 : -1);\n",
-				mod.m_modName.Lc().c_str(),
-				mod.m_modName.Lc().c_str(),
-				mod.m_modName.Uc().c_str());
-			mifPostInstr.Append("\t\tc_%sToMif_reqAvlCntBusy = r_%sToMif_reqAvlCnt == 1 && !i_mifTo%sP0_reqAvl.read();\n",
-				mod.m_modName.Lc().c_str(),
-				mod.m_modName.Lc().c_str(),
-				mod.m_modName.Uc().c_str());
-		} else
-			mifPostInstr.Append("\t\tc_%sToMif_reqAvlCnt = r_%sToMif_reqAvlCnt + 1ul;\n",
+		mifReg.Append("\tr_%sToMif_rdRspFull = c_%sToMif_rdRspFull;\n",
 			mod.m_modName.Lc().c_str(),
 			mod.m_modName.Lc().c_str());
+	}
+	mifReg.NewLine();
+	m_mifDecl.NewLine();
 
-		mifPostInstr.Append("\t}\n");
+	if (mif.m_bMifRd) {
+		;// Memory read state declaration
+		if (rdRspGrpIdW <= 2) {
+
+			CRecord reqState;
+			reqState.m_typeName = "CRdGrpState";
+			reqState.m_bCStyle = true;
+
+			if (mif.m_mifRd.m_bPause) {
+				reqState.AddStructField(&g_bool, "m_pause");
+				reqState.m_fieldList.back()->InitDimen(mod.m_threads.m_lineInfo);
+			}
+
+			if (!bRdRspGrpIdIsHtId && mod.m_threads.m_htIdW.AsInt() > 0)
+				reqState.AddStructField(&g_uint32, "m_rsmHtId", VA("%d", mod.m_threads.m_htIdW.AsInt()));
+
+			if (mod.m_instrW > 0) {
+				reqState.AddStructField(FindHtIntType(eUnsigned, mod.m_instrW), "m_rsmInstr");
+				reqState.m_fieldList.back()->InitDimen(mod.m_threads.m_lineInfo);
+			}
+
+			reqState.AddStructField(FindHtIntType(eUnsigned, mod.m_mif.m_mifRd.m_rspCntW.AsInt()), "m_cnt");
+
+			GenUserStructs(m_mifDecl, reqState, "\t");
+
+		} else {
+			;
+			{
+				CRecord reqState;
+				reqState.m_typeName = "CRdGrpReqState";
+				reqState.m_bCStyle = true;
+
+				if (mif.m_mifRd.m_bPause) {
+					reqState.AddStructField(&g_bool, "m_pause");
+					reqState.m_fieldList.back()->InitDimen(mod.m_threads.m_lineInfo);
+				}
+
+				if (!bRdRspGrpIdIsHtId && mod.m_threads.m_htIdW.AsInt() > 0)
+					reqState.AddStructField(&g_uint32, "m_rsmHtId", VA("%d", mod.m_threads.m_htIdW.AsInt()));
+
+				if (mod.m_instrW > 0) {
+					reqState.AddStructField(FindHtIntType(eUnsigned, mod.m_instrW), "m_rsmInstr");
+					reqState.m_fieldList.back()->InitDimen(mod.m_threads.m_lineInfo);
+				}
+
+				reqState.AddStructField(FindHtIntType(eUnsigned, mif.m_mifRd.m_rspCntW.AsInt()), "m_cnt");
+
+				GenUserStructs(m_mifDecl, reqState, "\t");
+			}
+
+			{
+				CRecord rspState;
+				rspState.m_typeName = "CRdGrpRspState";
+				rspState.m_bCStyle = true;
+
+				if (mif.m_mifRd.m_bPause) {
+					rspState.AddStructField(&g_bool, "m_pause");
+					rspState.m_fieldList.back()->InitDimen(mod.m_threads.m_lineInfo);
+				}
+
+				rspState.AddStructField(FindHtIntType(eUnsigned, mif.m_mifRd.m_rspCntW.AsInt()), "m_cnt");
+
+				GenUserStructs(m_mifDecl, rspState, "\t");
+			}
+		}
+
+		if (rdRspGrpIdW > 2) {
+			GenModDecl(eVcdAll, m_mifDecl, vcdModName, VA("sc_uint<%s_RD_GRP_ID_W + 1>", mod.m_modName.Upper().c_str()),
+				"r_rdRspGrpInitCnt");
+			mifReg.Append("\tr_rdRspGrpInitCnt = %s ? (sc_uint<%s_RD_GRP_ID_W + 1>)0 : c_rdRspGrpInitCnt;\n",
+				reset.c_str(),
+				mod.m_modName.Upper().c_str());
+		}
+
+		{
+			GenModDecl(eVcdAll, m_mifDecl, vcdModName, VA("sc_uint<%s_RD_RSP_CNT_W + 1>", mod.m_modName.Upper().c_str()),
+				"r_rdRspIdInit");
+			mifReg.Append("\tr_rdRspIdInit = %s ? (sc_uint<%s_RD_RSP_CNT_W + 1>)0 : c_rdRspIdInit;\n",
+				reset.c_str(),
+				mod.m_modName.Upper().c_str());
+		}
+
+		{
+			GenModDecl(eVcdAll, m_mifDecl, vcdModName, "bool", "r_rdGrpRspCntBusy");
+			mifReg.Append("\tr_rdGrpRspCntBusy = c_rdGrpRspCntBusy;\n");
+		}
+
+		{
+			GenModDecl(eVcdAll, m_mifDecl, vcdModName, "bool", "r_m1_rdRspRdy");
+			mifReg.Append("\tr_m1_rdRspRdy = !%s && c_m0_rdRspRdy;\n",
+				reset.c_str());
+
+			m_mifCtorInit.Append("\t\tr_m1_rdRspRdy = false;\n");
+		}
+
+		{
+			GenModDecl(eVcdAll, m_mifDecl, vcdModName, "CMemRdRspIntf", "r_m1_rdRsp");
+			mifReg.Append("\tr_m1_rdRsp = i_mifTo%sP0_rdRsp;\n",
+				mod.m_modName.Uc().c_str());
+		}
+
+		{
+			GenModDecl(eVcdAll, m_mifDecl, vcdModName, "bool", "r_m2_rdRspRdy");
+			mifReg.Append("\tr_m2_rdRspRdy = c_m1_rdRspRdy;\n");
+
+			m_mifCtorInit.Append("\t\tr_m2_rdRspRdy = false;\n");
+		}
+
+		{
+			GenModDecl(eVcdAll, m_mifDecl, vcdModName, "CMemRdRspIntf", "r_m2_rdRsp");
+			mifReg.Append("\tr_m2_rdRsp = c_m1_rdRsp;\n");
+		}
+
+		if (bNeedRdRspInfo) {
+			GenModDecl(eVcdAll, m_mifDecl, vcdModName, "CRdRspInfo", "r_m2_rdRspInfo");
+			mifReg.Append("\tr_m2_rdRspInfo = c_m1_rdRspInfo;\n");
+		}
+
+		if (rdRspGrpIdW > 0 && rdDstNgvRamList.size() > 0 && bNeedRdRspInfo) {
+			GenModDecl(eVcdAll, m_mifDecl, vcdModName, "CRdRspInfo", "r_m3_rdRspInfo");
+			mifReg.Append("\tr_m3_rdRspInfo = c_m2_rdRspInfo;\n");
+		}
+
+		if (bMultiQwReq) {
+			GenModDecl(eVcdAll, m_mifDecl, vcdModName, "ht_uint3", "r_m2_rdRspQwIdx");
+			mifReg.Append("\tr_m2_rdRspQwIdx = %s ? (ht_uint3)0 : c_m1_rdRspQwIdx;\n", reset.c_str());
+		}
+		mifReg.NewLine();
+
+		if (rdDstNgvRamList.size() > 0) {
+			GenModDecl(eVcdAll, m_mifDecl, vcdModName, "bool", "r_rdCompRdy");
+			mifReg.Append("\tr_rdCompRdy = c_rdCompRdy;\n");
+		}
+
+		if (rdDstNgvRamList.size() > 0 && rdRspGrpIdW > 0) {
+			GenModDecl(eVcdAll, m_mifDecl, vcdModName, VA("ht_uint%d", mif.m_mifRd.m_rspGrpW.AsInt()), "r_rdCompGrpId");
+			mifReg.Append("\tr_rdCompGrpId = c_rdCompGrpId;\n");
+		}
+
+		if (rdDstRdyCnt > 1) {
+			if (rdRspGrpIdW == 0) {
+
+				for (size_t i = 0; i < rdDstNgvRamList.size(); i += 1) {
+					m_mifDecl.Append("\tht_uint%d c_%sTo%s_mwCompCnt%s;\n",
+						FindLg2(rdDstRdyCnt + 1),
+						rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), rdDstNgvRamList[i]->m_dimenDecl.c_str());
+
+					GenModDecl(eVcdAll, m_mifDecl, vcdModName, VA("ht_uint%d", FindLg2(rdDstRdyCnt + 1)), VA("r_%sTo%s_mwCompCnt",
+						rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str()), rdDstNgvRamList[i]->m_dimenList);
+
+					vector<int> refList(rdDstNgvRamList[i]->m_dimenList.size());
+					do {
+						string dimIdx = IndexStr(refList);
+
+						mifReg.Append("\tr_%sTo%s_mwCompCnt%s = c_%sTo%s_mwCompCnt%s;\n",
+							rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
+							rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+
+						mifReset.Append("\t\tc_%sTo%s_mwCompCnt%s = 0;\n",
+							rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+
+					} while (DimenIter(rdDstNgvRamList[i]->m_dimenList, refList));
+				}
+			} else {
+				mifReg.NewLine();
+				for (size_t i = 0; i < rdDstNgvRamList.size(); i += 1) {
+
+					m_mifDecl.Append("\tht_dist_que<ht_uint%d, 5> m_%sTo%s_mwCompQue%s;\n",
+						mif.m_mifRd.m_rspGrpW.AsInt(),
+						rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), rdDstNgvRamList[i]->m_dimenDecl.c_str());
+
+					vector<int> refList(rdDstNgvRamList[i]->m_dimenList.size());
+					do {
+						string dimIdx = IndexStr(refList);
+
+						mifReg.Append("\tm_%sTo%s_mwCompQue%s.clock(%s);\n",
+							rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
+							reset.c_str());
+
+					} while (DimenIter(rdDstNgvRamList[i]->m_dimenList, refList));
+				}
+			}
+		}
+		mifReg.NewLine();
+
+		if (rdRspGrpIdW == 0) {
+
+			m_mifDecl.Append("\tCRdGrpState c_rdGrpState;\n");
+			mifPreInstr.Append("\tc_rdGrpState = r_rdGrpState;\n");
+
+			if (mif.m_mifRd.m_bPause)
+				mifReset.Append("\t\tc_rdGrpState.m_pause = false;\n");
+			mifReset.Append("\t\tc_rdGrpState.m_cnt = 0;\n");
+
+			GenModDecl(eVcdAll, m_mifDecl, vcdModName, "CRdGrpState", "r_rdGrpState");
+			mifReg.Append("\tr_rdGrpState = c_rdGrpState;\n");
+			mifReg.NewLine();
+
+		} else if (rdRspGrpIdW <= 2) {
+
+			m_mifDecl.Append("\tsc_uint<%s_RD_RSP_CNT_W> c_rdGrpBusyCnt;\n", mod.m_modName.Upper().c_str());
+			mifPreInstr.Append("\tc_rdGrpBusyCnt = r_rdGrpBusyCnt;\n");
+			mifPreInstr.NewLine();
+
+			GenModDecl(eVcdAll, m_mifDecl, vcdModName, VA("sc_uint<%s_RD_RSP_CNT_W>", mod.m_modName.Upper().c_str()), "r_rdGrpBusyCnt");
+			mifReg.Append("\tr_rdGrpBusyCnt = %s ? (sc_uint<%s_RD_RSP_CNT_W>)0 : c_rdGrpBusyCnt;\n",
+				reset.c_str(), mod.m_modName.Upper().c_str());
+			mifReg.NewLine();
+
+			vector<CHtString> dimVec;
+			CHtString dimStr = 1 << rdRspGrpIdW;
+			dimVec.push_back(dimStr);
+
+			m_mifDecl.Append("\tCRdGrpState c_rdGrpState[%d];\n",
+				1 << rdRspGrpIdW);
+			for (int idx = 0; idx < (1 << rdRspGrpIdW); idx += 1)
+				mifPreInstr.Append("\tc_rdGrpState[%d] = r_rdGrpState[%d];\n", idx, idx);
+
+			for (int idx = 0; idx < (1 << rdRspGrpIdW); idx += 1) {
+				if (mif.m_mifRd.m_bPause)
+					mifReset.Append("\t\tc_rdGrpState[%d].m_pause = false;\n", idx);
+				mifReset.Append("\t\tc_rdGrpState[%d].m_cnt = 0;\n", idx);
+			}
+
+			GenModDecl(eVcdAll, m_mifDecl, vcdModName, "CRdGrpState", "r_rdGrpState", dimVec);
+			for (int idx = 0; idx < (1 << rdRspGrpIdW); idx += 1) {
+				mifReg.Append("\tr_rdGrpState[%d] = c_rdGrpState[%d];\n",
+					idx,
+					idx);
+			}
+			mifReg.NewLine();
+
+		} else {
+
+			m_mifDecl.Append("\tsc_uint<%s_RD_RSP_CNT_W> c_rdGrpBusyCnt;\n", mod.m_modName.Upper().c_str());
+			mifPreInstr.Append("\tc_rdGrpBusyCnt = r_rdGrpBusyCnt;\n");
+
+			GenModDecl(eVcdAll, m_mifDecl, vcdModName, VA("sc_uint<%s_RD_RSP_CNT_W>", mod.m_modName.Upper().c_str()), "r_rdGrpBusyCnt");
+			mifReg.Append("\tr_rdGrpBusyCnt = %s ? (sc_uint<%s_RD_RSP_CNT_W>)0 : c_rdGrpBusyCnt;\n",
+				reset.c_str(), mod.m_modName.Upper().c_str());
+			mifReg.NewLine();
+
+			m_mifDecl.Append("\tht_dist_ram<CRdGrpReqState, %s_RD_GRP_ID_W> m_rdGrpReqState0;\n",
+				mod.m_modName.Upper().c_str());
+			if (mif.m_mifRd.m_bPause) {
+				m_mifDecl.Append("\tht_dist_ram<CRdGrpReqState, %s_RD_GRP_ID_W> m_rdGrpReqState1;\n",
+					mod.m_modName.Upper().c_str());
+			}
+			m_mifDecl.Append("\tht_dist_ram<CRdGrpRspState, %s_RD_GRP_ID_W> m_rdGrpRspState0;\n",
+				mod.m_modName.Upper().c_str());
+			m_mifDecl.Append("\tht_dist_ram<CRdGrpRspState, %s_RD_GRP_ID_W> m_rdGrpRspState1;\n",
+				mod.m_modName.Upper().c_str());
+
+			mifReg.Append("\tm_rdGrpReqState0.clock();\n");
+			if (mif.m_mifRd.m_bPause)
+				mifReg.Append("\tm_rdGrpReqState1.clock();\n");
+			mifReg.Append("\tm_rdGrpRspState0.clock();\n");
+			mifReg.Append("\tm_rdGrpRspState1.clock();\n");
+			mifReg.NewLine();
+		}
+
+		if (bNeedRdRspInfo) {
+			m_mifDecl.Append("\tht_block_que<sc_uint<%s_RD_RSP_CNT_W>, %s_RD_RSP_CNT_W> m_rdRspIdPool;\n",
+				mod.m_modName.Upper().c_str(),
+				mod.m_modName.Upper().c_str());
+			m_mifDecl.Append("\tht_block_ram<CRdRspInfo, %s_RD_RSP_CNT_W> m_rdRspInfo;\n",
+				mod.m_modName.Upper().c_str());
+
+			mifReg.Append("\tm_rdRspIdPool.clock(%s);\n", reset.c_str());
+			mifReg.Append("\tm_rdRspInfo.clock();\n");
+			mifReg.NewLine();
+		}
+	}
+
+
+	if (mif.m_bMifWr) {
+		;// Memory write state declaration
+		if (wrRspGrpIdW <= 2) {
+
+			CRecord reqState;
+			reqState.m_typeName = "CWrGrpState";
+			reqState.m_bCStyle = true;
+
+			if (mif.m_mifWr.m_bPause) {
+				reqState.AddStructField(&g_bool, "m_pause");
+				reqState.m_fieldList.back()->InitDimen(mod.m_threads.m_lineInfo);
+			}
+
+			if (mod.m_instrW > 0) {
+				reqState.AddStructField(FindHtIntType(eUnsigned, mod.m_instrW), "m_rsmInstr");
+				reqState.m_fieldList.back()->InitDimen(mod.m_threads.m_lineInfo);
+			}
+
+			if (!bWrRspGrpIdIsHtId && mod.m_threads.m_htIdW.AsInt() > 0)
+				reqState.AddStructField(&g_uint32, "m_rsmHtId", VA("%d", mod.m_threads.m_htIdW.AsInt()));
+
+			reqState.AddStructField(FindHtIntType(eUnsigned, mod.m_mif.m_mifWr.m_rspCntW.AsInt()), "m_cnt");
+
+			GenUserStructs(m_mifDecl, reqState, "\t");
+
+		} else {
+			;
+			{
+				CRecord reqState;
+				reqState.m_typeName = "CWrGrpReqState";
+				reqState.m_bCStyle = true;
+
+				if (mif.m_mifWr.m_bPause) {
+					reqState.AddStructField(&g_bool, "m_pause");
+					reqState.m_fieldList.back()->InitDimen(mod.m_threads.m_lineInfo);
+				}
+
+				if (mod.m_instrW > 0) {
+					reqState.AddStructField(FindHtIntType(eUnsigned, mod.m_instrW), "m_rsmInstr");
+					reqState.m_fieldList.back()->InitDimen(mod.m_threads.m_lineInfo);
+				}
+
+				if (!bWrRspGrpIdIsHtId && mod.m_threads.m_htIdW.AsInt() > 0)
+					reqState.AddStructField(&g_uint32, "m_rsmHtId", VA("%d", mod.m_threads.m_htIdW.AsInt()));
+
+				reqState.AddStructField(FindHtIntType(eUnsigned, mod.m_mif.m_mifWr.m_rspCntW.AsInt()), "m_cnt");
+
+				GenUserStructs(m_mifDecl, reqState, "\t");
+			}
+
+			{
+				CRecord rspState;
+				rspState.m_typeName = "CWrGrpRspState";
+				rspState.m_bCStyle = true;
+
+				if (mif.m_mifWr.m_bPause) {
+					rspState.AddStructField(&g_bool, "m_pause");
+					rspState.m_fieldList.back()->InitDimen(mod.m_threads.m_lineInfo);
+				}
+
+				rspState.AddStructField(FindHtIntType(eUnsigned, mod.m_mif.m_mifWr.m_rspCntW.AsInt()), "m_cnt");
+
+				GenUserStructs(m_mifDecl, rspState, "\t");
+			}
+		}
+
+		if (wrRspGrpIdW > 2) {
+			GenModDecl(eVcdAll, m_mifDecl, vcdModName, VA("sc_uint<%s_WR_GRP_ID_W + 1>", mod.m_modName.Upper().c_str()),
+				"r_wrRspGrpInitCnt");
+			mifReg.Append("\tr_wrRspGrpInitCnt = %s ? (sc_uint<%s_WR_GRP_ID_W + 1>)0 : c_wrRspGrpInitCnt;\n",
+				reset.c_str(),
+				mod.m_modName.Upper().c_str());
+		}
+
+		{
+			GenModDecl(eVcdAll, m_mifDecl, vcdModName, "bool", "r_wrGrpRspCntBusy");
+			mifReg.Append("\tr_wrGrpRspCntBusy = c_wrGrpRspCntBusy;\n");
+		}
+
+		{
+			GenModDecl(eVcdAll, m_mifDecl, vcdModName, "bool", "r_m1_wrRspRdy");
+			mifReg.Append("\tr_m1_wrRspRdy = !%s && c_m0_wrRspRdy;\n",
+				reset.c_str());
+
+			m_mifCtorInit.Append("\t\tr_m1_wrRspRdy = false;\n");
+		}
+
+		if (wrRspGrpIdW > 0) {
+			GenModDecl(eVcdAll, m_mifDecl, vcdModName, VA("sc_uint<%s_WR_GRP_ID_W>", mod.m_modName.Upper().c_str()), "r_m1_wrGrpId");
+			mifReg.Append("\tr_m1_wrGrpId = c_m0_wrGrpId;\n");
+			mifReg.NewLine();
+		}
+
+		if (wrRspGrpIdW == 0) {
+
+			m_mifDecl.Append("\tCWrGrpState c_wrGrpState;\n");
+			mifPreInstr.Append("\tc_wrGrpState = r_wrGrpState;\n");
+
+			if (mif.m_mifWr.m_bPause)
+				mifReset.Append("\t\tc_wrGrpState.m_pause = false;\n");
+			mifReset.Append("\t\tc_wrGrpState.m_cnt = 0;\n");
+
+			GenModDecl(eVcdAll, m_mifDecl, vcdModName, "CWrGrpState", "r_wrGrpState");
+			mifReg.Append("\tr_wrGrpState = c_wrGrpState;\n");
+			mifReg.NewLine();
+
+		} else if (wrRspGrpIdW <= 2) {
+
+			m_mifDecl.Append("\tsc_uint<%s_WR_RSP_CNT_W> c_wrGrpBusyCnt;\n", mod.m_modName.Upper().c_str());
+			mifPreInstr.Append("\tc_wrGrpBusyCnt = r_wrGrpBusyCnt;\n");
+			mifPreInstr.NewLine();
+
+			GenModDecl(eVcdAll, m_mifDecl, vcdModName, VA("sc_uint<%s_WR_RSP_CNT_W>", mod.m_modName.Upper().c_str()), "r_wrGrpBusyCnt");
+			mifReg.Append("\tr_wrGrpBusyCnt = %s ? (sc_uint<%s_WR_RSP_CNT_W>)0 : c_wrGrpBusyCnt;\n",
+				reset.c_str(), mod.m_modName.Upper().c_str());
+			mifReg.NewLine();
+
+			m_mifDecl.Append("\tCWrGrpState c_wrGrpState[%d];\n",
+				1 << wrRspGrpIdW);
+			for (int idx = 0; idx < (1 << wrRspGrpIdW); idx += 1)
+				mifPreInstr.Append("\tc_wrGrpState[%d] = r_wrGrpState[%d];\n", idx, idx);
+
+			for (int idx = 0; idx < (1 << wrRspGrpIdW); idx += 1) {
+				if (mif.m_mifWr.m_bPause)
+					mifReset.Append("\t\tc_wrGrpState[%d].m_pause = false;\n", idx);
+				mifReset.Append("\t\tc_wrGrpState[%d].m_cnt = 0;\n", idx);
+			}
+
+			vector<CHtString> dimVec;
+			CHtString dimStr = 1 << wrRspGrpIdW;
+			dimVec.push_back(dimStr);
+
+			GenModDecl(eVcdAll, m_mifDecl, vcdModName, "CWrGrpState", "r_wrGrpState", dimVec);
+			for (int idx = 0; idx < (1 << wrRspGrpIdW); idx += 1) {
+				mifReg.Append("\tr_wrGrpState[%d] = c_wrGrpState[%d];\n",
+					idx,
+					idx);
+			}
+			mifReg.NewLine();
+
+		} else {
+
+			m_mifDecl.Append("\tsc_uint<%s_WR_RSP_CNT_W> c_wrGrpBusyCnt;\n", mod.m_modName.Upper().c_str());
+			mifPreInstr.Append("\tc_wrGrpBusyCnt = r_wrGrpBusyCnt;\n");
+
+			GenModDecl(eVcdAll, m_mifDecl, vcdModName, VA("sc_uint<%s_WR_RSP_CNT_W>", mod.m_modName.Upper().c_str()), "r_wrGrpBusyCnt");
+			mifReg.Append("\tr_wrGrpBusyCnt = %s ? (sc_uint<%s_WR_RSP_CNT_W>)0 : c_wrGrpBusyCnt;\n",
+				reset.c_str(), mod.m_modName.Upper().c_str());
+			mifReg.NewLine();
+
+			m_mifDecl.Append("\tht_dist_ram<CWrGrpReqState, %s_WR_GRP_ID_W> m_wrGrpReqState0;\n",
+				mod.m_modName.Upper().c_str());
+			if (mif.m_mifWr.m_bPause) {
+				m_mifDecl.Append("\tht_dist_ram<CWrGrpReqState, %s_WR_GRP_ID_W> m_wrGrpReqState1;\n",
+					mod.m_modName.Upper().c_str());
+			}
+			m_mifDecl.Append("\tht_dist_ram<CWrGrpRspState, %s_WR_GRP_ID_W> m_wrGrpRspState0;\n",
+				mod.m_modName.Upper().c_str());
+			m_mifDecl.Append("\tht_dist_ram<CWrGrpRspState, %s_WR_GRP_ID_W> m_wrGrpRspState1;\n",
+				mod.m_modName.Upper().c_str());
+
+			mifReg.Append("\tm_wrGrpReqState0.clock();\n");
+			if (mif.m_mifWr.m_bPause)
+				mifReg.Append("\tm_wrGrpReqState1.clock();\n");
+			mifReg.Append("\tm_wrGrpRspState0.clock();\n");
+			mifReg.Append("\tm_wrGrpRspState1.clock();\n");
+			mifReg.NewLine();
+		}
+	}
+
+	string or_memReqHold;
+	string andNot_memReqHold;
+	if (bMultiQwReq) {
+		or_memReqHold = " || r_memReqHold";
+		andNot_memReqHold = " && !r_memReqHold";
+	}
+
+	if (mif.m_bMifRd) {
+		mifPostInstr.Append("\tassert_msg(c_reset1x || !c_t%d_memReq.m_valid || !c_t%d_memReq.m_rdReq%s || c_t%d_bReadMemAvail,"
+			" \"Runtime check failed in CPers%s::Pers%s_%s()"
+			" - expected ReadMemBusy() to have been called and not busy\");\n",
+			mod.m_execStg,
+			mod.m_execStg,
+			or_memReqHold.c_str(),
+			mod.m_execStg,
+			mod.m_modName.Uc().c_str(),
+			mod.m_modName.Uc().c_str(), mod.m_clkRate == eClk1x ? "1x" : "2x");
+	}
+
+	if (mif.m_bMifWr) {
+		mifPostInstr.Append("\tassert_msg(c_reset1x || !c_t%d_memReq.m_valid || !c_t%d_memReq.m_wrReq%s || c_t%d_bWriteMemAvail,"
+			" \"Runtime check failed in CPers%s::Pers%s_%s()"
+			" - expected WriteMemBusy() to have been called and not busy\");\n",
+			mod.m_execStg,
+			mod.m_execStg,
+			or_memReqHold.c_str(),
+			mod.m_execStg,
+			mod.m_modName.Uc().c_str(),
+			mod.m_modName.Uc().c_str(), mod.m_clkRate == eClk1x ? "1x" : "2x");
 	}
 	mifPostInstr.NewLine();
 
 	if (mif.m_bMifRd) {
-
-		if (mif.m_mifRd.m_rspGrpIdW == 0) {
-			// using single register
-
-			m_mifDecl.Append("\tsc_uint<%s_RD_RSP_CNT_W> r_rdGrpRspCnt;\n",
-				mod.m_modName.Upper().c_str());
-
-			if (mif.m_mifRd.m_bPause) {
-				m_mifDecl.Append("\tbool r_rdGrpRsmWait;\n");
-				m_mifDecl.Append("\tsc_uint<%s_INSTR_W> r_rdGrpRsmInstr;\n",
-					mod.m_modName.Upper().c_str());
-			}
-
-			m_mifDecl.Append("\tbool r_m1_rdRspRdy;\n");
-			if (mif.m_mifRd.m_bPoll) {
-				m_mifDecl.Append("\tbool r_m2_rdRspRdy;\n");
-				m_mifDecl.Append("\tbool r_m3_rdRspRdy;\n");
-			}
-			m_mifDecl.Append("\tCMemRdRspIntf r_m1_rdRsp;\n");
-			m_mifDecl.NewLine();
-
-			if (mif.m_mifRd.m_bPause) {
-				m_mifDecl.Append("\tbool c_t%d_memReadPause;\n", mod.m_execStg);
-				m_mifDecl.Append("\tbool r_t%d_rdRspPauseCntZero;\n", mod.m_execStg);
-			}
-
-			if (mif.m_mifRd.m_bPoll) {
-				m_mifDecl.Append("\tbool r_t%d_rdRspPollCntZero;\n", mod.m_execStg);
-			}
-			m_mifDecl.Append("\tbool r_t%d_rdRspBusyCntMax;\n", mod.m_execStg);
-			m_mifDecl.NewLine();
-
-			mifPreInstr.Append("\tsc_uint<%s_RD_RSP_CNT_W> c_rdGrpRspCnt;\n",
-				mod.m_modName.Upper().c_str());
-			mifPreInstr.Append("\tc_rdGrpRspCnt = r_rdGrpRspCnt;\n");
-			mifPreInstr.NewLine();
-
-			if (mif.m_mifRd.m_bPause) {
-				m_mifDecl.Append("\tbool c_rdGrpRsmWait;\n");
-				mifPreInstr.Append("\tc_rdGrpRsmWait = r_rdGrpRsmWait;\n");
-				mifPreInstr.NewLine();
-
-				m_mifDecl.Append("\tsc_uint<%s_INSTR_W> c_rdGrpRsmInstr;\n",
-					mod.m_modName.Upper().c_str());
-				mifPreInstr.Append("\tc_rdGrpRsmInstr = r_rdGrpRsmInstr;\n");
-				mifPreInstr.NewLine();
-
-				if (mif.m_mifRd.m_rspGrpId.size() != 0 && mod.m_threads.m_htIdW.AsInt() > 0) {
-					m_mifDecl.Append("\tsc_uint<%s_HTID_W> c_rdGrpRsmHtId;\n",
-						mod.m_modName.Upper().c_str());
-					mifPreInstr.Append("\tc_rdGrpRsmHtId = r_rdGrpRsmHtId;\n");
-					mifPreInstr.NewLine();
-				}
-			}
-
-			mifReg.Append("\tr_rdGrpRspCnt = r_reset1x ? (sc_uint<%s_RD_RSP_CNT_W>)0 : c_rdGrpRspCnt;\n",
-				mod.m_modName.Upper().c_str());
-			mifReg.NewLine();
-
-			if (mif.m_mifRd.m_bPause) {
-				mifReg.Append("\tr_rdGrpRsmWait = !r_reset1x && c_rdGrpRsmWait;\n");
-				mifReg.NewLine();
-
-				mifReg.Append("\tr_rdGrpRsmInstr = c_rdGrpRsmInstr;\n");
-				mifReg.NewLine();
-
-				if (mif.m_mifRd.m_rspGrpId.size() != 0 && mod.m_threads.m_htIdW.AsInt() > 0) {
-					mifReg.Append("\tr_rdGrpRsmHtId = c_rdGrpRsmHtId;\n");
-					mifReg.NewLine();
-				}
-			}
-
-		} else if (mif.m_mifRd.m_rspGrpIdW <= 2) {
-			// using array of registers
-
-			m_mifDecl.Append("\tsc_uint<%s_RD_RSP_CNT_W> r_rdGrpRspCnt[%d];\n",
-				mod.m_modName.Upper().c_str(), 1<<mif.m_mifRd.m_rspGrpIdW);
-
-			if (mif.m_mifRd.m_bPause) {
-				m_mifDecl.Append("\tbool r_rdGrpRsmWait[%d];\n",
-					1<<mif.m_mifRd.m_rspGrpIdW);
-
-				m_mifDecl.Append("\tsc_uint<%s_INSTR_W> r_rdGrpRsmInstr[%d];\n",
-					mod.m_modName.Upper().c_str(),1<< mif.m_mifRd.m_rspGrpIdW);
-
-				if (mif.m_mifRd.m_rspGrpId.size() != 0 && mod.m_threads.m_htIdW.AsInt() > 0)
-					m_mifDecl.Append("\tsc_uint<%s_HTID_W> r_rdGrpRsmHtId[%d];\n",
-					mod.m_modName.Upper().c_str(), 1<<mif.m_mifRd.m_rspGrpIdW);
-			}
-
-			if (mif.m_mifRd.m_bPoll) {
-				if (mif.m_mifRd.m_rspGrpId.size() > 0)
-					m_mifDecl.Append("\tbool r_rdGrpRspCntZero[%d];\n", 
-						1<<mif.m_mifRd.m_rspGrpIdW);
-			}
-
-			m_mifDecl.Append("\tbool r_m1_rdRspRdy;\n");
-			if (mif.m_mifRd.m_bPoll)
-				m_mifDecl.Append("\tbool r_m2_rdRspRdy;\n");
-			if (mif.m_mifRd.m_bPause && mif.m_mifRd.m_bPoll)
-				m_mifDecl.Append("\tbool r_m3_rdRspRdy;\n");
-
-			m_mifDecl.Append("\tsc_uint<%s_RD_GRP_ID_W> r_m1_rdRspGrpId;\n",
-				mod.m_modName.Upper().c_str());
-			if (mif.m_mifRd.m_bPoll)
-				m_mifDecl.Append("\tsc_uint<%s_RD_GRP_ID_W> r_m2_rdRspGrpId;\n",
-				mod.m_modName.Upper().c_str());
-			if (mif.m_mifRd.m_bPause && mif.m_mifRd.m_bPoll)
-				m_mifDecl.Append("\tsc_uint<%s_RD_GRP_ID_W> r_m3_rdRspGrpId;\n",
-				mod.m_modName.Upper().c_str());
-			m_mifDecl.Append("\tCMemRdRspIntf r_m1_rdRsp;\n");
-			//if (mif.m_mifRd.m_bMultiRd && mif.m_mifRd.m_bPoll)
-			//	m_mifDecl.Append("\tht_uint1 r_m2_rdRspQwCnt;\n");
-			//if (mif.m_mifRd.m_bMultiRd && mif.m_mifRd.m_bPause && mif.m_mifRd.m_bPoll)
-			//	m_mifDecl.Append("\tht_uint1 r_m3_rdRspQwCnt;\n");
-			m_mifDecl.NewLine();
-
-			if (mif.m_mifRd.m_bPause) {
-				m_mifDecl.Append("\tbool c_t%d_memReadPause;\n", mod.m_execStg);
-				m_mifDecl.Append("\tbool r_t%d_rdRspPauseCntZero;\n", mod.m_execStg);
-			}
-
-			if (mif.m_mifRd.m_bPoll) {
-				if (mif.m_mifRd.m_rspGrpId.size() == 0)
-					m_mifDecl.Append("\tbool r_t%d_rdRspPollCntZero;\n", mod.m_execStg);
-			}
-			m_mifDecl.Append("\tbool r_t%d_rdRspBusyCntMax;\n", mod.m_execStg);
-			m_mifDecl.Append("\tbool r_m%d_bRdRspRdy[%d];\n",
-				mif.m_mifRd.m_bPoll ? 3 : 1, 1<<mif.m_mifRd.m_rspGrpIdW);
-
-			m_mifDecl.NewLine();
-
-			mifPreInstr.Append("\tsc_uint<%s_RD_RSP_CNT_W> c_rdGrpRspCnt[%d];\n",
-				mod.m_modName.Upper().c_str(), 1<<mif.m_mifRd.m_rspGrpIdW);
-			for (int i = 0; i < 1<<mif.m_mifRd.m_rspGrpIdW; i += 1)
-				mifPreInstr.Append("\tc_rdGrpRspCnt[%d] = r_rdGrpRspCnt[%d];\n", i, i);
-			mifPreInstr.NewLine();
-
-			if (mif.m_mifRd.m_bPause) {
-				m_mifDecl.Append("\tbool c_rdGrpRsmWait[%d];\n",
-					1<<mif.m_mifRd.m_rspGrpIdW);
-				for (int i = 0; i < 1<<mif.m_mifRd.m_rspGrpIdW; i += 1)
-					mifPreInstr.Append("\tc_rdGrpRsmWait[%d] = r_rdGrpRsmWait[%d];\n", i, i);
-				mifPreInstr.NewLine();
-
-				m_mifDecl.Append("\tsc_uint<%s_INSTR_W> c_rdGrpRsmInstr[%d];\n",
-					mod.m_modName.Upper().c_str(), 1<<mif.m_mifRd.m_rspGrpIdW);
-				for (int i = 0; i < 1<<mif.m_mifRd.m_rspGrpIdW; i += 1)
-					mifPreInstr.Append("\tc_rdGrpRsmInstr[%d] = r_rdGrpRsmInstr[%d];\n", i, i);
-				mifPreInstr.NewLine();
-
-				if (mif.m_mifRd.m_rspGrpId.size() != 0 && mod.m_threads.m_htIdW.AsInt() > 0) {
-					m_mifDecl.Append("\tsc_uint<%s_HTID_W> c_rdGrpRsmHtId[%d];\n",
-						mod.m_modName.Upper().c_str(), 1<<mif.m_mifRd.m_rspGrpIdW);
-					for (int i = 0; i < 1<<mif.m_mifRd.m_rspGrpIdW; i += 1)
-						mifPreInstr.Append("\tc_rdGrpRsmHtId[%d] = r_rdGrpRsmHtId[%d];\n", i, i);
-					mifPreInstr.NewLine();
-				}
-			}
-
-			if (mif.m_mifRd.m_bPoll && mif.m_mifRd.m_rspGrpId.size() > 0) {
-				mifPreInstr.Append("\tbool c_rdGrpRspCntZero[%d];\n",
-					1<<mif.m_mifRd.m_rspGrpIdW);
-				for (int i = 0; i < 1<<mif.m_mifRd.m_rspGrpIdW; i += 1)
-					mifPreInstr.Append("\tc_rdGrpRspCntZero[%d] = r_rdGrpRspCntZero[%d];\n", i, i);
-				mifPreInstr.NewLine();
-			}
-
-			for (int i = 0; i < 1<<mif.m_mifRd.m_rspGrpIdW; i += 1) {
-				mifReg.Append("\tr_m%d_bRdRspRdy[%d] = c_m%d_bRdRspRdy[%d];\n",
-					mif.m_mifRd.m_bPoll ? 3 : 1, i,
-					mif.m_mifRd.m_bPoll ? 2 : 0, i);
-			}
-			mifReg.NewLine();
-
-			for (int i = 0; i < 1<<mif.m_mifRd.m_rspGrpIdW; i += 1)
-				mifReg.Append("\tr_rdGrpRspCnt[%d] = r_reset1x ? (sc_uint<%s_RD_RSP_CNT_W>)0 : c_rdGrpRspCnt[%d];\n",
-					i, mod.m_modName.Upper().c_str(), i);
-			mifReg.NewLine();
-
-			if (mif.m_mifRd.m_bPause) {
-				for (int i = 0; i < 1<<mif.m_mifRd.m_rspGrpIdW; i += 1)
-					mifReg.Append("\tr_rdGrpRsmWait[%d] = !r_reset1x && c_rdGrpRsmWait[%d];\n", i, i);
-				mifReg.NewLine();
-
-				for (int i = 0; i < 1<<mif.m_mifRd.m_rspGrpIdW; i += 1)
-					mifReg.Append("\tr_rdGrpRsmInstr[%d] = c_rdGrpRsmInstr[%d];\n", i, i);
-				mifReg.NewLine();
-
-				if (mif.m_mifRd.m_rspGrpId.size() != 0 && mod.m_threads.m_htIdW.AsInt() > 0) {
-					for (int i = 0; i < 1<<mif.m_mifRd.m_rspGrpIdW; i += 1)
-						mifReg.Append("\tr_rdGrpRsmHtId[%d] = c_rdGrpRsmHtId[%d];\n", i, i);
-					mifReg.NewLine();
-				}
-			}
-
-			if (mif.m_mifRd.m_bPoll && mif.m_mifRd.m_rspGrpId.size() > 0) {
-				for (int i = 0; i < 1<<mif.m_mifRd.m_rspGrpIdW; i += 1)
-					mifReg.Append("\tr_rdGrpRspCntZero[%d] = r_reset1x ? true : c_rdGrpRspCntZero[%d];\n",
-						i, i);
-				mifReg.NewLine();
-			}
-
+		if (rdRspGrpIdW == 0) {
+			mifPostInstr.Append("\tbool c_rdGrpRspCntBusy = r_rdGrpState.m_cnt >= ((1ul << %s_RD_RSP_CNT_W) - %d);\n",
+				mod.m_modName.Upper().c_str(),
+				bMultiQwMif ? 11 : 4);
 		} else {
-			// using dist ram
-			m_mifRamDecl.Append("\tht_dist_ram<sc_uint<%s_RD_RSP_CNT_W>, %s_RD_GRP_ID_W-%s> m_rdGrpRspCnt[%d];\n",
-				mod.m_modName.Upper().c_str(), mod.m_modName.Upper().c_str(), pRdGrpShfAmt, rdGrpBankCnt);
-
-			if (mif.m_mifRd.m_bPoll && mif.m_mifRd.m_rspGrpId.size() > 0)
-				m_mifRamDecl.Append("\tht_dist_ram<bool, %s_RD_GRP_ID_W-%s> m_rdGrpRspCntZero[%d];\n",
-					mod.m_modName.Upper().c_str(), pRdGrpShfAmt, rdGrpBankCnt);
-
-			if (mif.m_mifRd.m_bPause) {
-				m_mifRamDecl.Append("\tht_dist_ram<bool, %s_RD_GRP_ID_W-%s> m_rdGrpRsmWait[%d];\n",
-					mod.m_modName.Upper().c_str(), pRdGrpShfAmt, rdGrpBankCnt);
-				m_mifRamDecl.Append("\tht_dist_ram<sc_uint<%s_INSTR_W>, %s_RD_GRP_ID_W-%s> m_rdGrpRsmInstr[%d];\n",
-					mod.m_modName.Upper().c_str(), mod.m_modName.Upper().c_str(), pRdGrpShfAmt, rdGrpBankCnt);
-
-				if (mif.m_mifRd.m_rspGrpId.size() != 0 && mod.m_threads.m_htIdW.AsInt() > 0)
-					m_mifRamDecl.Append("\tht_dist_ram<sc_uint<%s_HTID_W>, %s_RD_GRP_ID_W-%s> m_rdGrpRsmHtId[%d];\n",
-						mod.m_modName.Upper().c_str(), mod.m_modName.Upper().c_str(), pRdGrpShfAmt, rdGrpBankCnt);
-			}
-
-			m_mifDecl.Append("\tsc_uint<%s_RD_GRP_ID_W+1> r_rdRspGrpInitCnt;\n", mod.m_modName.Upper().c_str());
-			m_mifDecl.NewLine();
-
-			m_mifDecl.Append("\tbool r_m1_rdRspRdy;\n");
-			if (mif.m_mifRd.m_bPoll)
-				m_mifDecl.Append("\tbool r_m2_rdRspRdy;\n");
-			if (mif.m_mifRd.m_bPause && mif.m_mifRd.m_bPoll)
-				m_mifDecl.Append("\tbool r_m3_rdRspRdy;\n");
-			m_mifDecl.Append("\tsc_uint<%s_RD_GRP_ID_W> r_m1_rdRspGrpId;\n",
-				mod.m_modName.Upper().c_str());
-			if (mif.m_mifRd.m_bPoll)
-				m_mifDecl.Append("\tsc_uint<%s_RD_GRP_ID_W> r_m2_rdRspGrpId;\n",
-				mod.m_modName.Upper().c_str());
-			if (mif.m_mifRd.m_bPause && mif.m_mifRd.m_bPoll)
-				m_mifDecl.Append("\tsc_uint<%s_RD_GRP_ID_W> r_m3_rdRspGrpId;\n",
-				mod.m_modName.Upper().c_str());
-			m_mifDecl.Append("\tCMemRdRspIntf r_m1_rdRsp;\n");
-			//if (bNeed_rdRspQwIdx)
-			//	m_mifDecl.Append("\tht_uint3 r_m1_rdRspQwIdx;\n");
-			//if (mif.m_mifRd.m_bMultiRd && mif.m_mifRd.m_bPoll)
-			//	m_mifDecl.Append("\tht_uint1 r_m2_rdRspQwCnt;\n");
-			//if (mif.m_mifRd.m_bMultiRd && mif.m_mifRd.m_bPause && mif.m_mifRd.m_bPoll)
-			//	m_mifDecl.Append("\tht_uint1 r_m3_rdRspQwCnt;\n");
-			m_mifDecl.NewLine();
-
-			m_mifDecl.Append("\tbool r_t%d_bReadRspBusy;\n", mod.m_execStg);
-			if (mif.m_mifRd.m_bPause)
-				m_mifDecl.Append("\tbool r_t%d_rdRspPauseCntZero;\n", mod.m_execStg);
-			if (mif.m_mifRd.m_bPoll) {
-				if (mif.m_mifRd.m_rspGrpId.size() == 0)
-					m_mifDecl.Append("\tbool r_t%d_rdRspPollCntZero;\n", mod.m_execStg);
-			}
-			m_mifDecl.Append("\tbool r_t%d_rdRspBusyCntMax;\n", mod.m_execStg);
-			m_mifDecl.Append("\tbool r_m%d_bRdRspRdy[%d];\n",
-				mif.m_mifRd.m_bPoll ? 3 : 1, rdGrpBankCnt);
-
-			m_mifDecl.Append("\tsc_uint<%s_RD_RSP_CNT_W> r_rdGrpRspCnt[%d];\n", mod.m_modName.Upper().c_str(), rdGrpBankCnt);
-			m_mifDecl.Append("\tsc_uint<%s_RD_GRP_ID_W> r_rdGrpRspCntAddr[%d];\n", mod.m_modName.Upper().c_str(), rdGrpBankCnt);
-
-			m_mifDecl.NewLine();
-
-			for (int bankIdx = 0; bankIdx < rdGrpBankCnt; bankIdx += 1) {
-				mifRamClock.Append("\tm_rdGrpRspCnt[%d].clock();\n", bankIdx);
-
-				if (mif.m_mifRd.m_bPoll && mif.m_mifRd.m_rspGrpId.size() > 0)
-					mifRamClock.Append("\tm_rdGrpRspCntZero[%d].clock();\n", bankIdx);
-
-				if (mif.m_mifRd.m_bPause) {
-					mifRamClock.Append("\tm_rdGrpRsmWait[%d].clock();\n", bankIdx);
-					mifRamClock.Append("\tm_rdGrpRsmInstr[%d].clock();\n", bankIdx);
-
-					if (mif.m_mifRd.m_rspGrpId.size() != 0 && mod.m_threads.m_htIdW.AsInt() > 0)
-						mifRamClock.Append("\tm_rdGrpRsmHtId[%d].clock();\n", bankIdx);
-				}
-			}
-
-			mifRamClock.NewLine();
+			mifPostInstr.Append("\tbool c_rdGrpRspCntBusy = r_rdGrpBusyCnt >= ((1ul << %s_RD_RSP_CNT_W) - %d);\n",
+				mod.m_modName.Upper().c_str(),
+				bMultiQwMif ? 11 : 4);
 		}
-
-		if (mif.m_mifRd.m_maxRsmDly > 0 && mif.m_mifRd.m_bPause) {
-			if (mod.m_threads.m_htIdW.AsInt() > 0) {
-				m_mifDecl.Append("\tbool r_rdRspRsmValid[%d];\n", mif.m_mifRd.m_maxRsmDly);
-				m_mifDecl.Append("\tCHtRsm r_rdRspRsm[%d];\n", mif.m_mifRd.m_maxRsmDly);
-			} else {
-				m_mifDecl.Append("\tbool r_rdRspRsmRdy[%d];\n", mif.m_mifRd.m_maxRsmDly);
-				m_mifDecl.Append("\tht_uint%d r_rdRspRsmInstr[%d];\n", mod.m_instrW, mif.m_mifRd.m_maxRsmDly);
-			}
-		}
+		mifPostInstr.NewLine();
 	}
 
 	if (mif.m_bMifWr) {
-
-		if (mif.m_mifWr.m_rspGrpIdW == 0) {
-
-			m_mifDecl.Append("\tsc_uint<%s_WR_RSP_CNT_W> r_wrGrpRspCnt;\n",
-				mod.m_modName.Upper().c_str());
-
-			if (mif.m_mifWr.m_bPause) {
-				m_mifDecl.Append("\tbool r_wrGrpRsmWait;\n");
-				m_mifDecl.Append("\tsc_uint<%s_INSTR_W> r_wrGrpRsmInstr;\n",
-					mod.m_modName.Upper().c_str());
-			}
-
-			if (mif.m_mifWr.m_bPause) {
-				m_mifDecl.Append("\tbool r_m1_wrRspRdy;\n");
-				m_mifDecl.NewLine();
-				m_mifDecl.Append("\tbool c_t%d_memWritePause;\n", mod.m_execStg);
-			}
-
-			m_mifDecl.Append("\tbool r_t%d_wrGrpRspCntZero;\n", mod.m_execStg);
-			m_mifDecl.Append("\tbool r_t%d_wrGrpRspCntMax;\n", mod.m_execStg);
-			m_mifDecl.Append("\tbool r_m1_bWrRspRdy;\n");
-			m_mifDecl.NewLine();
-
-			mifPreInstr.Append("\tsc_uint<%s_WR_RSP_CNT_W> c_wrGrpRspCnt;\n",
-				mod.m_modName.Upper().c_str());
-			mifPreInstr.Append("\tc_wrGrpRspCnt = r_wrGrpRspCnt;\n");
-			mifPreInstr.NewLine();
-
-			if (mif.m_mifWr.m_bPause) {
-				m_mifDecl.Append("\tbool c_wrGrpRsmWait;\n");
-				mifPreInstr.Append("\tc_wrGrpRsmWait = r_wrGrpRsmWait;\n");
-				mifPreInstr.NewLine();
-
-				m_mifDecl.Append("\tsc_uint<%s_INSTR_W> c_wrGrpRsmInstr;\n",
-					mod.m_modName.Upper().c_str());
-				mifPreInstr.Append("\tc_wrGrpRsmInstr = r_wrGrpRsmInstr;\n");
-				mifPreInstr.NewLine();
-
-				if (mif.m_mifWr.m_rspGrpId.size() != 0 && mod.m_threads.m_htIdW.AsInt() > 0) {
-					m_mifDecl.Append("\tsc_uint<%s_HTID_W> c_wrGrpRsmHtId;\n",
-						mod.m_modName.Upper().c_str());
-					mifPreInstr.Append("\tc_wrGrpRsmHtId = r_wrGrpRsmHtId;\n");
-					mifPreInstr.NewLine();
-				}
-			}
-
-			mifReg.Append("\tr_m1_bWrRspRdy = c_m0_bWrRspRdy;\n");
-			mifReg.NewLine();
-
-			mifReg.Append("\tr_wrGrpRspCnt = r_reset1x ? (sc_uint<%s_WR_RSP_CNT_W>)0 : c_wrGrpRspCnt;\n",
-				mod.m_modName.Upper().c_str());
-			mifReg.NewLine();
-
-			if (mif.m_mifWr.m_bPause) {
-				mifReg.Append("\tr_wrGrpRsmWait = !r_reset1x && c_wrGrpRsmWait;\n");
-				mifReg.NewLine();
-
-				mifReg.Append("\tr_wrGrpRsmInstr = c_wrGrpRsmInstr;\n");
-				mifReg.NewLine();
-
-				if (mif.m_mifWr.m_rspGrpId.size() != 0 && mod.m_threads.m_htIdW.AsInt() > 0) {
-					mifReg.Append("\tr_wrGrpRsmHtId = c_wrGrpRsmHtId;\n");
-					mifReg.NewLine();
-				}
-			}
-
-		} else if (mif.m_mifWr.m_rspGrpIdW <= 2) {
-			// using array of registers
-
-			m_mifDecl.Append("\tsc_uint<%s_WR_RSP_CNT_W> r_wrGrpRspCnt[%d];\n",
-				mod.m_modName.Upper().c_str(), 1<<mif.m_mifWr.m_rspGrpIdW);
-
-			if (mif.m_mifWr.m_bPause) {
-				m_mifDecl.Append("\tbool r_wrGrpRsmWait[%d];\n",
-					1<<mif.m_mifWr.m_rspGrpIdW);
-				m_mifDecl.Append("\tsc_uint<%s_INSTR_W> r_wrGrpRsmInstr[%d];\n",
-					mod.m_modName.Upper().c_str(),1<< mif.m_mifWr.m_rspGrpIdW);
-				if (mif.m_mifWr.m_rspGrpId.size() != 0 && mod.m_threads.m_htIdW.AsInt() > 0)
-					m_mifDecl.Append("\tsc_uint<%s_HTID_W> r_wrGrpRsmHtId[%d];\n",
-					mod.m_modName.Upper().c_str(), 1<<mif.m_mifWr.m_rspGrpIdW);
-			}
-
-			if (mif.m_mifWr.m_bPause) {
-				m_mifDecl.Append("\tbool r_m1_wrRspRdy;\n");
-				m_mifDecl.Append("\tsc_uint<MIF_TID_W> r_m1_wrRspTid;\n");
-				m_mifDecl.NewLine();
-
-				m_mifDecl.Append("\tbool c_t%d_memWritePause;\n", mod.m_execStg);
-			}
-
-			m_mifDecl.Append("\tbool r_t%d_wrGrpRspCntZero;\n", mod.m_execStg);
-			m_mifDecl.Append("\tbool r_t%d_wrGrpRspCntMax;\n", mod.m_execStg);
-			m_mifDecl.Append("\tbool r_m1_bWrRspRdy[%d];\n", 1<<mif.m_mifWr.m_rspGrpIdW);
-			m_mifDecl.NewLine();
-
-			mifPreInstr.Append("\tsc_uint<%s_WR_RSP_CNT_W> c_wrGrpRspCnt[%d];\n",
-				mod.m_modName.Upper().c_str(), 1<<mif.m_mifWr.m_rspGrpIdW);
-			for (int i = 0; i < 1<<mif.m_mifWr.m_rspGrpIdW; i += 1)
-				mifPreInstr.Append("\tc_wrGrpRspCnt[%d] = r_wrGrpRspCnt[%d];\n", i, i);
-			mifPreInstr.NewLine();
-
-			if (mif.m_mifWr.m_bPause) {
-				m_mifDecl.Append("\tbool c_wrGrpRsmWait[%d];\n",
-					1<<mif.m_mifWr.m_rspGrpIdW);
-				for (int i = 0; i < 1<<mif.m_mifWr.m_rspGrpIdW; i += 1)
-					mifPreInstr.Append("\tc_wrGrpRsmWait[%d] = r_wrGrpRsmWait[%d];\n", i, i);
-				mifPreInstr.NewLine();
-
-				m_mifDecl.Append("\tsc_uint<%s_INSTR_W> c_wrGrpRsmInstr[%d];\n",
-					mod.m_modName.Upper().c_str(), 1<<mif.m_mifWr.m_rspGrpIdW);
-				for (int i = 0; i < 1<<mif.m_mifWr.m_rspGrpIdW; i += 1)
-					mifPreInstr.Append("\tc_wrGrpRsmInstr[%d] = r_wrGrpRsmInstr[%d];\n", i, i);
-				mifPreInstr.NewLine();
-
-				if (mif.m_mifWr.m_rspGrpId.size() != 0 && mod.m_threads.m_htIdW.AsInt() > 0) {
-					m_mifDecl.Append("\tsc_uint<%s_HTID_W> c_wrGrpRsmHtId[%d];\n",
-						mod.m_modName.Upper().c_str(), 1<<mif.m_mifWr.m_rspGrpIdW);
-					for (int i = 0; i < 1<<mif.m_mifWr.m_rspGrpIdW; i += 1)
-						mifPreInstr.Append("\tc_wrGrpRsmHtId[%d] = r_wrGrpRsmHtId[%d];\n", i, i);
-					mifPreInstr.NewLine();
-				}
-			}
-
-			for (int i = 0; i < 1<<mif.m_mifWr.m_rspGrpIdW; i += 1)
-				mifReg.Append("\tr_m1_bWrRspRdy[%d] = c_m0_bWrRspRdy[%d];\n", i, i);
-			mifReg.NewLine();
-
-			for (int i = 0; i < 1<<mif.m_mifWr.m_rspGrpIdW; i += 1)
-				mifReg.Append("\tr_wrGrpRspCnt[%d] = r_reset1x ? (sc_uint<%s_WR_RSP_CNT_W>)0 : c_wrGrpRspCnt[%d];\n",
-				i, mod.m_modName.Upper().c_str(), i);
-			mifReg.NewLine();
-
-			if (mif.m_mifWr.m_bPause) {
-				for (int i = 0; i < 1<<mif.m_mifWr.m_rspGrpIdW; i += 1)
-					mifReg.Append("\tr_wrGrpRsmWait[%d] = !r_reset1x && c_wrGrpRsmWait[%d];\n", i, i);
-				mifReg.NewLine();
-
-				for (int i = 0; i < 1<<mif.m_mifWr.m_rspGrpIdW; i += 1)
-					mifReg.Append("\tr_wrGrpRsmInstr[%d] = c_wrGrpRsmInstr[%d];\n", i, i);
-				mifReg.NewLine();
-
-				if (mif.m_mifWr.m_rspGrpId.size() != 0 && mod.m_threads.m_htIdW.AsInt() > 0) {
-					for (int i = 0; i < 1<<mif.m_mifWr.m_rspGrpIdW; i += 1)
-						mifReg.Append("\tr_wrGrpRsmHtId[%d] = c_wrGrpRsmHtId[%d];\n", i, i);
-					mifReg.NewLine();
-				}
-			}
-		} else {
-			// using dist ram
-			m_mifRamDecl.Append("\tht_dist_ram<sc_uint<%s_WR_RSP_CNT_W>, %s_WR_GRP_ID_W-%s> m_wrGrpRspCnt[%d];\n",
-				mod.m_modName.Upper().c_str(), mod.m_modName.Upper().c_str(), pWrGrpShfAmt, wrGrpBankCnt);
-			if (mif.m_mifWr.m_bPause) {
-				m_mifRamDecl.Append("\tht_dist_ram<bool, %s_WR_GRP_ID_W-%s> m_wrGrpRsmWait[%d];\n",
-					mod.m_modName.Upper().c_str(), pWrGrpShfAmt, wrGrpBankCnt);
-				m_mifRamDecl.Append("\tht_dist_ram<sc_uint<%s_INSTR_W>, %s_WR_GRP_ID_W-%s> m_wrGrpRsmInstr[%d];\n",
-					mod.m_modName.Upper().c_str(), mod.m_modName.Upper().c_str(), pWrGrpShfAmt, wrGrpBankCnt);
-				if (mif.m_mifWr.m_rspGrpId.size() != 0)
-					m_mifRamDecl.Append("\tht_dist_ram<sc_uint<%s_HTID_W>, %s_WR_GRP_ID_W-%s> m_wrGrpRsmHtId[%d];\n",
-					mod.m_modName.Upper().c_str(), mod.m_modName.Upper().c_str(), pWrGrpShfAmt, wrGrpBankCnt);
-			}
-			m_mifRamDecl.NewLine();
-
-			m_mifDecl.Append("\tsc_uint<%s_WR_GRP_ID_W+1> r_wrRspGrpInitCnt;\n", mod.m_modName.Upper().c_str());
-			m_mifDecl.NewLine();
-
-			if (mif.m_mifWr.m_bPause) {
-				m_mifDecl.Append("\tbool r_m1_wrRspRdy;\n");
-				m_mifDecl.Append("\tsc_uint<MIF_TID_W> r_m1_wrRspTid;\n");
-				m_mifDecl.NewLine();
-			}
-
-			m_mifDecl.Append("\tbool r_t%d_bWriteRspBusy;\n", mod.m_execStg);
-			m_mifDecl.Append("\tbool r_t%d_wrGrpRspCntZero;\n", mod.m_execStg);
-			m_mifDecl.Append("\tbool r_t%d_wrGrpRspCntMax;\n", mod.m_execStg);
-			m_mifDecl.Append("\tbool r_m1_bWrRspRdy[%d];\n", wrGrpBankCnt);
-			m_mifDecl.Append("\tsc_uint<%s_WR_RSP_CNT_W> r_wrGrpRspCnt[%d];\n", mod.m_modName.Upper().c_str(), wrGrpBankCnt);
-			m_mifDecl.Append("\tsc_uint<%s_WR_GRP_ID_W> r_wrGrpRspCntAddr[%d];\n", mod.m_modName.Upper().c_str(), wrGrpBankCnt);
-
-			m_mifDecl.NewLine();
-
-			for (int bankIdx = 0; bankIdx < wrGrpBankCnt; bankIdx += 1) {
-				mifRamClock.Append("\tm_wrGrpRspCnt[%d].clock();\n", bankIdx);
-				if (mif.m_mifWr.m_bPause) {
-					mifRamClock.Append("\tm_wrGrpRsmWait[%d].clock();\n", bankIdx);
-					mifRamClock.Append("\tm_wrGrpRsmInstr[%d].clock();\n", bankIdx);
-
-					if (mif.m_mifWr.m_rspGrpId.size() != 0)
-						mifRamClock.Append("\tm_wrGrpRsmHtId[%d].clock();\n", bankIdx);
-				}
-			}
-			mifRamClock.NewLine();
-		}
-	}
-
-	if (mif.m_bMifRd) {
-		mifPostInstr.Append("\tbool c_m0_rdRspRdy = i_mifTo%sP0_rdRspRdy.read();\n",
-			mod.m_modName.Uc().c_str());
-		mifPostInstr.Append("\tbool c_m1_rdRspRdy = r_m1_rdRspRdy;\n");
-		if (mif.m_mifRd.m_bPoll)
-			mifPostInstr.Append("\tbool c_m2_rdRspRdy = r_m2_rdRspRdy;\n");
-		if (mif.m_mifRd.m_bPause && mif.m_mifRd.m_bPoll || mif.m_mifRd.m_bPoll && mif.m_mifRd.m_rspGrpIdW == 0)
-			mifPostInstr.Append("\tbool c_m3_rdRspRdy = r_m3_rdRspRdy;\n");
-		mifPostInstr.NewLine();
-
-		if (mif.m_mifRd.m_rspGrpIdW > 0) {
-			mifPostInstr.Append("\tsc_uint<%s_RD_GRP_ID_W> c_m0_rdRspGrpId = i_mifTo%sP0_rdRsp.read().m_tid & ((1 << %s_RD_GRP_ID_W)-1);\n",
+		if (wrRspGrpIdW == 0) {
+			mifPostInstr.Append("\tbool c_wrGrpRspCntBusy = r_wrGrpState.m_cnt >= ((1ul << %s_WR_RSP_CNT_W) - %d);\n",
 				mod.m_modName.Upper().c_str(),
-				mod.m_modName.Uc().c_str(),
-				mod.m_modName.Upper().c_str());
-			mifPostInstr.Append("\tsc_uint<%s_RD_GRP_ID_W> c_m1_rdRspGrpId = r_m1_rdRspGrpId;\n",
-				mod.m_modName.Upper().c_str());
-			if (mif.m_mifRd.m_bPoll)
-				mifPostInstr.Append("\tsc_uint<%s_RD_GRP_ID_W> c_m2_rdRspGrpId = r_m2_rdRspGrpId;\n",
-				mod.m_modName.Upper().c_str());
-			if (mif.m_mifRd.m_bPause && mif.m_mifRd.m_bPoll)
-				mifPostInstr.Append("\tsc_uint<%s_RD_GRP_ID_W> c_m3_rdRspGrpId = r_m3_rdRspGrpId;\n",
-				mod.m_modName.Upper().c_str());
-			mifPostInstr.NewLine();
-		}
-	}
-
-	if (mif.m_bMifRd) {
-		char rdRspGrpId[128];
-		if (mif.m_mifRd.m_rspGrpId.size() == 0)
-			sprintf(rdRspGrpId, "r_t%d_htId", mod.m_execStg-1);
-		else if (mif.m_mifRd.m_bRspGrpIdPriv)
-			sprintf(rdRspGrpId, "r_t%d_htPriv.m_%s",
-			mod.m_execStg-1, mif.m_mifRd.m_rspGrpId.AsStr().c_str());
-		else
-			sprintf(rdRspGrpId, "c_%s", mif.m_mifRd.m_rspGrpId.AsStr().c_str());
-
-		char const * pRdRspGrpW = mif.m_mifRd.m_rspGrpId.size() > 0 ? "_RD_GRP_ID_W" : "_HTID_W";
-
-		if (mif.m_mifRd.m_rspCntW.AsInt() > 0) {
-			if (mif.m_maxDstW > 0)
-				mifPostInstr.Append("\tsc_uint<%s_MIF_DST_W> c_m1_rdRsp_dst = (r_m1_rdRsp.m_tid >> (1+%s%s)) & ((1ul << %s_MIF_DST_W)-1);\n",
-				mod.m_modName.Upper().c_str(),
-				mod.m_modName.Upper().c_str(), pRdRspGrpW, mod.m_modName.Upper().c_str());
+				bMultiQwMif ? 11 : 4);
 		} else {
-			if (mif.m_maxDstW > 0)
-				mifPostInstr.Append("\tsc_uint<%s_MIF_DST_W> c_m1_rdRsp_dst = (i_mifTo%sP0_rdRsp.read().m_tid >> (1+%s%s)) & ((1ul << %s_MIF_DST_W)-1);\n",
-				mod.m_modName.Upper().c_str(), mod.m_modName.Uc().c_str(),
-				mod.m_modName.Upper().c_str(), pRdRspGrpW, mod.m_modName.Upper().c_str());
-		}
-		if (mif.m_mifRd.m_rdDstList.size() > 1)
-			mifPostInstr.Append("\tsc_uint<%s_MIF_DST_IDX_W> c_m1_rdRsp_dstIdx = c_m1_rdRsp_dst & %s_MIF_DST_IDX_MSK;\n",
-			mod.m_modName.Upper().c_str(), mod.m_modName.Upper().c_str());
-
-		for (size_t i = 0; i < mif.m_mifRd.m_rdDstList.size(); i += 1) {
-			CMifRdDst &mifRdDst = mif.m_mifRd.m_rdDstList[i];
-
-			if (bNeed_rdRspQwIdx && mifRdDst.m_dstIdx.size() > 0 && (is_wx || mifRdDst.m_memSrc == "host")) {
-				mifPostInstr.Append("\tht_uint3 c_m1_rdRspQwIdx = (r_m1_rdRsp.m_tid >> MIF_TID_QWCNT_SHF) & MIF_TID_QWCNT_MSK;\n");
-				break;
-			}
-		}
-		//if (mif.m_mifRd.m_bMultiRd) {
-		//	if (mif.m_mifRd.m_bPoll)
-		//		mifPostInstr.Append("\tht_uint1 c_m2_rdRspQwCnt = r_m2_rdRspQwCnt;\n");
-		//	if (mif.m_mifRd.m_bPause && mif.m_mifRd.m_bPoll)
-		//		mifPostInstr.Append("\tht_uint1 c_m3_rdRspQwCnt = r_m3_rdRspQwCnt;\n");
-		//	mifPostInstr.NewLine();
-		//}
-	}
-
-	if (mif.m_bMifRd && mif.m_mifRd.m_bPause) {
-
-		if (mif.m_mifRd.m_maxRsmDly > 0) {
-			if (mod.m_threads.m_htIdW.AsInt() > 0) {
-				mifPostInstr.Append("\tbool c_rdRspRsmValid = false;\n");
-				mifPostInstr.Append("\tCHtRsm c_rdRspRsm;\n");
-			} else {
-				mifPostInstr.Append("\tbool c_rdRspRsmRdy = false;\n");
-				mifPostInstr.Append("\tht_uint%d c_rdRspRsmInstr = 0;\n", mod.m_instrW);
-			}
-			mifPostInstr.NewLine();
-		}
-
-		if (mif.m_mifRd.m_rspGrpIdW == 0) {
-
-			mifPostInstr.Append("\tif (c_m%d_rdRspRdy) {\n",
-				mif.m_mifRd.m_bPoll ? 3 : 1);
-			mifPostInstr.NewLine();
-			mifPostInstr.Append("\t\tbool c_m%d_rdGrpRsmWait = r_rdGrpRsmWait == true || c_t%d_memReadPause;\n",
-				mif.m_mifRd.m_bPoll ? 3 : 1, mod.m_execStg);
-			mifPostInstr.NewLine();
-			mifPostInstr.Append("\t\tif (c_m%d_rdGrpRsmWait && r_rdGrpRspCnt == 1) {\n",
-				mif.m_mifRd.m_bPoll ? 3 : 1);
-			mifPostInstr.Append("\t\t\t// last read response arrived, resume thread\n");
-			mifPostInstr.Append("\t\t\tc_rdGrpRsmWait = false;\n");
-
-			if (mifRsmCnt > 1) {
-				if (mod.m_threads.m_htIdW.AsInt() > 0) {
-					mifPostInstr.NewLine();
-					mifPostInstr.Append("\t\t\tCHtRsm rdRspRsm;\n");
-					mifPostInstr.Append("\t\t\trdRspRsm.m_htId = c_m%d_rdRspGrpId;\n",
-						mif.m_mifRd.m_bPoll ? 3 : 1);
-					mifPostInstr.Append("\t\t\trdRspRsm.m_htInstr = c_rdGrpRsmInstr;\n");
-					mifPostInstr.NewLine();
-					mifPostInstr.Append("\t\t\tm_mif_rdRsmQue.push(rdRspRsm);\n");
-				} else {
-					mifPostInstr.Append("\t\t\tc_t0_rsmHtRdy = true;\n");
-					mifPostInstr.Append("\t\t\tc_t0_rsmHtInstr = c_rdGrpRsmInstr;\n");
-				}
-			} else {
-				if (mod.m_threads.m_htIdW.AsInt() > 0) {
-					mifPostInstr.Append("\t\t\tc_t0_rsmHtRdy = true;\n");
-					mifPostInstr.Append("\t\t\tc_t0_rsmHtId = c_m%d_rdRspGrpId;\n",
-						mif.m_mifRd.m_bPoll ? 3 : 1);
-					mifPostInstr.Append("\t\t\tc_t0_rsmHtInstr = c_rdGrpRsmInstr;\n");
-				} else {
-					if (mif.m_mifRd.m_maxRsmDly > 0) {
-						mifPostInstr.Append("\t\t\tc_rdRspRsmRdy = true;\n");
-						mifPostInstr.Append("\t\t\tc_rdRspRsmInstr = c_rdGrpRsmInstr;\n");
-					} else {
-						mifPostInstr.Append("\t\t\tc_t0_rsmHtRdy = true;\n");
-						mifPostInstr.Append("\t\t\tc_t0_rsmHtInstr = c_rdGrpRsmInstr;\n");
-					}
-				}
-			}
-
-			mifPostInstr.Append("\t\t}\n");
-			mifPostInstr.Append("\t}\n");
-			mifPostInstr.Append("\n");
-
-		} else if (mif.m_mifRd.m_rspGrpIdW <= 2) {
-
-			mifPostInstr.Append("\tif (c_m%d_rdRspRdy) {\n", mif.m_mifRd.m_bPoll ? 3 : 1);
-			mifPostInstr.Append("\t\tbool c_m%d_rdGrpRsmWait = r_rdGrpRsmWait[INT(c_m%d_rdRspGrpId)] == true\n",
-				mif.m_mifRd.m_bPoll ? 3 : 1, mif.m_mifRd.m_bPoll ? 3 : 1);
-			mifPostInstr.Append("\t\t\t|| (c_t%d_memReadPause && %s == c_m%d_rdRspGrpId);\n",
-				mod.m_execStg, rdRspGrpName, mif.m_mifRd.m_bPoll ? 3 : 1);
-			mifPostInstr.NewLine();
-			mifPostInstr.Append("\t\tif (c_m%d_rdGrpRsmWait && r_rdGrpRspCnt[INT(c_m%d_rdRspGrpId)] == 1) {\n",
-				mif.m_mifRd.m_bPoll ? 3 : 1, mif.m_mifRd.m_bPoll ? 3 : 1);
-			mifPostInstr.Append("\t\t\t// last read response arrived, resume thread\n");
-			mifPostInstr.Append("\t\t\tc_rdGrpRsmWait[INT(c_m%d_rdRspGrpId)] = false;\n",
-				mif.m_mifRd.m_bPoll ? 3 : 1);
-			mifPostInstr.NewLine();
-
-			if (mifRsmCnt > 1) {
-
-				if (mod.m_threads.m_htIdW.AsInt() > 0) {
-					if (mif.m_mifRd.m_maxRsmDly == 0) {
-						mifPostInstr.Append("\t\t\tCHtRsm rdRspRsm;\n");
-						if (mif.m_mifRd.m_rspGrpId.size() == 0)
-							mifPostInstr.Append("\t\t\trdRspRsm.m_htId = c_m%d_rdRspGrpId;\n",
-								mif.m_mifRd.m_bPoll ? 3 : 1);
-						else
-							mifPostInstr.Append("\t\t\trdRspRsm.m_htId = c_rdGrpRsmHtId[INT(c_m%d_rdRspGrpId)];\n",
-								mif.m_mifRd.m_bPoll ? 3 : 1);
-						mifPostInstr.Append("\t\t\trdRspRsm.m_htInstr = c_rdGrpRsmInstr[INT(c_m%d_rdRspGrpId)];\n",
-							mif.m_mifRd.m_bPoll ? 3 : 1);
-						mifPostInstr.NewLine();
-						mifPostInstr.Append("\t\t\tm_mif_rdRsmQue.push(rdRspRsm);\n");
-					} else {
-						mifPostInstr.Append("\t\t\tc_rdRspRsmValid = true;\n");
-						mifPostInstr.Append("\t\t\tc_rdRspRsm.m_htId = c_rdGrpRsmHtId[INT(c_m%d_rdRspGrpId)];\n",
-							mif.m_mifRd.m_bPoll ? 3 : 1);
-						mifPostInstr.Append("\t\t\tc_rdRspRsm.m_htInstr = c_rdGrpRsmInstr[INT(c_m%d_rdRspGrpId)];\n",
-							mif.m_mifRd.m_bPoll ? 3 : 1);
-					}
-				} else {
-					if (mif.m_mifRd.m_maxRsmDly == 0) {
-						mifPostInstr.Append("\t\t\tc_t0_rsmHtRdy = true;\n");
-						mifPostInstr.Append("\t\t\tc_t0_rsmHtInstr = c_rdGrpRsmInstr[INT(c_m%d_rdRspGrpId)];\n",
-							mif.m_mifRd.m_bPoll ? 3 : 1);
-					} else {
-						mifPostInstr.Append("\t\t\tc_rdRspRsmRdy = true;\n");
-						mifPostInstr.Append("\t\t\tc_rdRspRsmInstr = c_rdGrpRsmInstr[INT(c_m%d_rdRspGrpId)];\n",
-							mif.m_mifRd.m_bPoll ? 3 : 1);
-					}
-				}
-
-			} else {
-
-				if (mod.m_threads.m_htIdW.AsInt() > 0) {
-					if (mif.m_mifRd.m_maxRsmDly == 0) {
-						mifPostInstr.Append("\t\t\tc_t0_rsmHtRdy = true;\n");
-						if (mif.m_mifRd.m_rspGrpId.size() == 0)
-							mifPostInstr.Append("\t\t\tc_t0_rsmHtId = c_m%d_rdRspGrpId;\n",
-								mif.m_mifRd.m_bPoll ? 3 : 1);
-						else
-							mifPostInstr.Append("\t\t\tc_t0_rsmHtId = c_rdGrpRsmHtId[INT(c_m%d_rdRspGrpId)];\n",
-								mif.m_mifRd.m_bPoll ? 3 : 1);
-
-						mifPostInstr.Append("\t\t\tc_t0_rsmHtInstr = c_rdGrpRsmInstr[INT(c_m%d_rdRspGrpId)];\n",
-							mif.m_mifRd.m_bPoll ? 3 : 1);
-					} else {
-						mifPostInstr.Append("\t\t\tc_rdRspRsmValid = true;\n");
-						mifPostInstr.Append("\t\t\tc_rdRspRsm.m_htId = c_rdGrpRsmHtId[INT(c_m%d_rdRspGrpId)];\n",
-							mif.m_mifRd.m_bPoll ? 3 : 1);
-						mifPostInstr.Append("\t\t\tc_rdRspRsm.m_htInstr = c_rdGrpRsmInstr[INT(c_m%d_rdRspGrpId)];\n",
-							mif.m_mifRd.m_bPoll ? 3 : 1);
-					}
-				} else {
-					if (mif.m_mifRd.m_maxRsmDly == 0) {
-						mifPostInstr.Append("\t\t\tc_t0_rsmHtRdy = true;\n");
-						mifPostInstr.Append("\t\t\tc_t0_rsmHtInstr = c_rdGrpRsmInstr[INT(c_m%d_rdRspGrpId)];\n",
-							mif.m_mifRd.m_bPoll ? 3 : 1);
-					} else {
-						mifPostInstr.Append("\t\t\tc_rdRspRsmRdy = true;\n");
-						mifPostInstr.Append("\t\t\tc_rdRspRsmInstr = c_rdGrpRsmInstr[INT(c_m%d_rdRspGrpId)];\n",
-							mif.m_mifRd.m_bPoll ? 3 : 1);
-					}
-				}
-			}
-
-			mifPostInstr.Append("\t\t}\n");
-			mifPostInstr.Append("\t}\n");
-
-		} else {
-
-			mifPostInstr.Append("\tm_rdGrpRsmWait[c_m%d_rdRspGrpId & %s].read_addr(c_m%d_rdRspGrpId >> %s);\n",
-				mif.m_mifRd.m_bPoll ? 3 : 1, pRdGrpIdMask,
-				mif.m_mifRd.m_bPoll ? 3 : 1, pRdGrpShfAmt);
-			mifPostInstr.Append("\tm_rdGrpRsmInstr[c_m%d_rdRspGrpId & %s].read_addr(c_m%d_rdRspGrpId >> %s);\n",
-				mif.m_mifRd.m_bPoll ? 3 : 1, pRdGrpIdMask,
-				mif.m_mifRd.m_bPoll ? 3 : 1, pRdGrpShfAmt);
-			if (mif.m_mifRd.m_rspGrpId.size() != 0 && mod.m_threads.m_htIdW.AsInt() > 0)
-				mifPostInstr.Append("\tm_rdGrpRsmHtId[c_m%d_rdRspGrpId & %s].read_addr(c_m%d_rdRspGrpId >> %s);\n",
-					mif.m_mifRd.m_bPoll ? 3 : 1, pRdGrpIdMask,
-					mif.m_mifRd.m_bPoll ? 3 : 1, pRdGrpShfAmt);
-
-			mifPostInstr.Append("\tif (c_m%d_rdRspRdy) {\n",
-				mif.m_mifRd.m_bPoll ? 3 : 1);
-
-			mifPostInstr.Append("\t\tm_rdGrpRsmWait[c_m%d_rdRspGrpId & %s].write_addr(c_m%d_rdRspGrpId >> %s);\n",
-				mif.m_mifRd.m_bPoll ? 3 : 1, pRdGrpIdMask,
-				mif.m_mifRd.m_bPoll ? 3 : 1, pRdGrpShfAmt);
-			mifPostInstr.NewLine();
-			mifPostInstr.Append("\t\tbool c_m%d_rdGrpRsmWait = m_rdGrpRsmWait[c_m%d_rdRspGrpId & %s].read_mem();\n",
-				mif.m_mifRd.m_bPoll ? 3 : 1, mif.m_mifRd.m_bPoll ? 3 : 1, pRdGrpIdMask);
-			mifPostInstr.NewLine();
-			mifPostInstr.Append("\t\tif (c_m%d_rdGrpRsmWait == true && r_rdGrpRspCnt[c_m%d_rdRspGrpId & %s] == 1) {\n",
-				mif.m_mifRd.m_bPoll ? 3 : 1, mif.m_mifRd.m_bPoll ? 3 : 1, pRdGrpIdMask);
-
-			mifPostInstr.Append("\t\t\t// last read response arrived, resume thread\n");
-			mifPostInstr.Append("\t\t\tm_rdGrpRsmWait[c_m%d_rdRspGrpId & %s].write_mem(false);\n",
-				mif.m_mifRd.m_bPoll ? 3 : 1, pRdGrpIdMask);
-			mifPostInstr.NewLine();
-
-			if (mifRsmCnt > 1) {
-
-				if (mod.m_threads.m_htIdW.AsInt() > 0) {
-					if (mif.m_mifRd.m_maxRsmDly == 0) {
-						mifPostInstr.Append("\t\t\tCHtRsm rdRspRsm;\n");
-						if (mif.m_mifRd.m_rspGrpId.size() == 0)
-							mifPostInstr.Append("\t\t\trdRspRsm.m_htId = c_m%d_rdRspGrpId;\n",
-								mif.m_mifRd.m_bPoll ? 3 : 1);
-						else
-							mifPostInstr.Append("\t\t\trdRspRsm.m_htId = m_rdGrpRsmHtId[c_m%d_rdRspGrpId & %s].read_mem();\n",
-								mif.m_mifRd.m_bPoll ? 3 : 1, pRdGrpIdMask);
-						mifPostInstr.Append("\t\t\trdRspRsm.m_htInstr = m_rdGrpRsmInstr[c_m%d_rdRspGrpId & %s].read_mem();\n",
-							mif.m_mifRd.m_bPoll ? 3 : 1, pRdGrpIdMask);
-						mifPostInstr.NewLine();
-						mifPostInstr.Append("\t\t\tm_mif_rdRsmQue.push(rdRspRsm);\n");
-					} else {
-						mifPostInstr.Append("\t\t\tc_rdRspRsmValid = true;\n");
-						if (mif.m_mifRd.m_rspGrpId.size() == 0)
-							mifPostInstr.Append("\t\t\tc_rdRspRsm.m_htId = c_m%d_rdRspGrpId;\n",
-								mif.m_mifRd.m_bPoll ? 3 : 1);
-						else
-							mifPostInstr.Append("\t\t\tc_rdRspRsm.m_htId = m_rdGrpRsmHtId[c_m%d_rdRspGrpId & %s].read_mem();\n",
-								mif.m_mifRd.m_bPoll ? 3 : 1, pRdGrpIdMask);
-						mifPostInstr.Append("\t\t\tc_rdRspRsm.m_htInstr = m_rdGrpRsmInstr[c_m%d_rdRspGrpId & %s].read_mem();\n",
-							mif.m_mifRd.m_bPoll ? 3 : 1, pRdGrpIdMask);
-					}
-				} else {
-					if (mif.m_mifRd.m_maxRsmDly == 0) {
-						mifPostInstr.Append("\t\t\tc_t0_rsmHtRdy = true;\n");
-						mifPostInstr.Append("\t\t\tc_t0_rsmHtInstr = m_rdGrpRsmInstr[c_m%d_rdRspGrpId & %s].read_mem();\n",
-							mif.m_mifRd.m_bPoll ? 3 : 1, pRdGrpIdMask);
-					} else {
-						mifPostInstr.Append("\t\t\tc_rdRspRsmRdy = true;\n");
-						mifPostInstr.Append("\t\t\tc_rdRspRsmInstr = m_rdGrpRsmInstr[c_m%d_rdRspGrpId & %s].read_mem();\n",
-							mif.m_mifRd.m_bPoll ? 3 : 1, pRdGrpIdMask);
-					}
-				}
-
-			} else {
-
-				if (mod.m_threads.m_htIdW.AsInt() > 0) {
-					if (mif.m_mifRd.m_maxRsmDly == 0) {
-						mifPostInstr.Append("\t\t\tc_t0_rsmHtRdy = true;\n");
-						if (mif.m_mifRd.m_rspGrpId.size() == 0)
-							mifPostInstr.Append("\t\t\tc_t0_rsmHtId = c_m%d_rdRspGrpId;\n",
-							mif.m_mifRd.m_bPoll ? 3 : 1);
-						else
-							mifPostInstr.Append("\t\t\tc_t0_rsmHtId = m_rdGrpRsmHtId[c_m%d_rdRspGrpId & %s].read_mem();\n",
-							mif.m_mifRd.m_bPoll ? 3 : 1, pRdGrpIdMask);
-						mifPostInstr.Append("\t\t\tc_t0_rsmHtInstr = m_rdGrpRsmInstr[c_m%d_rdRspGrpId & %s].read_mem();\n",
-							mif.m_mifRd.m_bPoll ? 3 : 1, pRdGrpIdMask);
-					} else {
-						mifPostInstr.Append("\t\t\tc_rdRspRsmValid = true;\n");
-						if (mif.m_mifRd.m_rspGrpId.size() == 0)
-							mifPostInstr.Append("\t\t\tc_rdRspRsm.m_htId = c_m%d_rdRspGrpId;\n",
-								mif.m_mifRd.m_bPoll ? 3 : 1);
-						else
-							mifPostInstr.Append("\t\t\tc_rdRspRsm.m_htId = m_rdGrpRsmHtId[c_m%d_rdRspGrpId & %s].read_mem();\n",
-								mif.m_mifRd.m_bPoll ? 3 : 1, pRdGrpIdMask);
-						mifPostInstr.Append("\t\t\tc_rdRspRsm.m_htInstr = m_rdGrpRsmInstr[c_m%d_rdRspGrpId & %s].read_mem();\n",
-							mif.m_mifRd.m_bPoll ? 3 : 1, pRdGrpIdMask);
-					}
-				} else {
-					if (mif.m_mifRd.m_maxRsmDly == 0) {
-						mifPostInstr.Append("\t\t\tc_t0_rsmHtRdy = true;\n");
-						mifPostInstr.Append("\t\t\tc_t0_rsmHtInstr = m_rdGrpRsmInstr[c_m%d_rdRspGrpId & %s].read_mem();\n",
-							mif.m_mifRd.m_bPoll ? 3 : 1, pRdGrpIdMask);
-					} else {
-						mifPostInstr.Append("\t\t\tc_rdRspRsmRdy = true;\n");
-						mifPostInstr.Append("\t\t\tc_rdRspRsmInstr = m_rdGrpRsmInstr[c_m%d_rdRspGrpId & %s].read_mem();\n",
-							mif.m_mifRd.m_bPoll ? 3 : 1, pRdGrpIdMask);
-					}
-				}
-			}
-
-			mifPostInstr.Append("\t\t}\n");
-			mifPostInstr.Append("\t}\n");
-		}
-
-		if (mif.m_mifRd.m_maxRsmDly > 0) {
-			if (mifRsmCnt > 1) {
-				if (mod.m_threads.m_htIdW.AsInt() > 0) {
-					mifPostInstr.Append("\tif (r_rdRspRsmValid[%d])\n", mif.m_mifRd.m_maxRsmDly-1);
-					mifPostInstr.Append("\t\tm_mif_rdRsmQue.push(r_rdRspRsm[%d]);\n", mif.m_mifRd.m_maxRsmDly-1);
-				} else {
-					mifPostInstr.Append("\tif (r_rdRspRsmRdy[%d]) {\n", mif.m_mifRd.m_maxRsmDly-1);
-					mifPostInstr.Append("\t\tc_t0_rsmHtRdy = true;\n");
-					mifPostInstr.Append("\t\tc_t0_rsmHtInstr = r_rdRspRsmInstr[%d];\n", mif.m_mifRd.m_maxRsmDly-1);
-					mifPostInstr.Append("\t}\n");
-				}
-			} else {
-				if (mod.m_threads.m_htIdW.AsInt() > 0) {
-					mifPostInstr.Append("\tc_t0_rsmHtRdy = r_rdRspRsmValid[%d];\n", mif.m_mifRd.m_maxRsmDly-1);
-					mifPostInstr.Append("\tc_t0_rsmHtId = r_rdRspRsm[%d].m_htId;\n", mif.m_mifRd.m_maxRsmDly-1);
-					mifPostInstr.Append("\tc_t0_rsmHtInstr = r_rdRspRsm[%d].m_htInstr;\n", mif.m_mifRd.m_maxRsmDly-1);
-				} else {
-					mifPostInstr.Append("\tc_t0_rsmHtRdy = r_rdRspRsmRdy[%d];\n", mif.m_mifRd.m_maxRsmDly-1);
-					mifPostInstr.Append("\tc_t0_rsmHtInstr = r_rdRspRsmInstr[%d];\n", mif.m_mifRd.m_maxRsmDly-1);
-				}
-			}
-			mifPostInstr.Append("\n");
-		}
-	}
-
-	if (mif.m_bMifRd) {
-		char rdRspGrpId[128];
-		if (mif.m_mifRd.m_rspGrpId.size() == 0)
-			sprintf(rdRspGrpId, "r_t%d_htId", mod.m_execStg-1);
-		else if (mif.m_mifRd.m_bRspGrpIdPriv) {
-			if (mod.m_threads.m_htIdW.AsInt() == 0)
-				sprintf(rdRspGrpId, "r_htPriv.m_%s",
-					mif.m_mifRd.m_rspGrpId.AsStr().c_str());
-			else
-				sprintf(rdRspGrpId, "c_t%d_htPriv.m_%s",
-					mod.m_execStg-1, mif.m_mifRd.m_rspGrpId.AsStr().c_str());
-		} else
-			sprintf(rdRspGrpId, "c_%s", mif.m_mifRd.m_rspGrpId.AsStr().c_str());
-
-		if (mif.m_mifRd.m_rspGrpIdW == 0) {
-			mifPostInstr.Append("\t// update r_rdGrpRspCnt\n");
-
-			if (mif.m_bMifRd && mif.m_bMifWr)
-				mifPostInstr.Append("\tbool c_t%d_bRdReqRdy = c_t%d_%sToMif_reqRdy%s && c_t%d_bReadMem;\n",
-				mod.m_execStg, mod.m_execStg, mod.m_modName.Lc().c_str(), notReqBusy, mod.m_execStg);
-			else
-				mifPostInstr.Append("\tbool c_t%d_bRdReqRdy = c_t%d_%sToMif_reqRdy%s;\n",
-				mod.m_execStg, mod.m_execStg, mod.m_modName.Lc().c_str(), notReqBusy);
-
-			mifPostInstr.Append("\tc_rdGrpRspCnt = r_rdGrpRspCnt;\n",
-				mod.m_modName.Upper().c_str());
-			mifPostInstr.NewLine();
-
-			if (mif.m_mifRd.m_bMultiRd) {
-				mifPostInstr.Append("\tif (c_m%d_rdRspRdy)\n", mif.m_mifRd.m_bPoll ? 3 : 1);
-				mifPostInstr.Append("\t\tc_rdGrpRspCnt -= 1;\n");
-				mifPostInstr.Append("\tif (c_t%d_bRdReqRdy)\n", mod.m_execStg);
-				if (is_wx)
-					mifPostInstr.Append("\t\tc_rdGrpRspCnt = c_rdGrpRspCnt + (c_t%d_reqQwCnt == 1 ? 1 : 8u);\n", mod.m_execStg);
-				else
-					mifPostInstr.Append("\t\tc_rdGrpRspCnt += c_t%d_reqQwCnt;\n", mod.m_execStg);
-			} else {
-				mifPostInstr.Append("\tif (c_m%d_rdRspRdy != c_t%d_bRdReqRdy)\n",
-					mif.m_mifRd.m_bPoll ? 3 : 1, mod.m_execStg);
-				mifPostInstr.Append("\t\tc_rdGrpRspCnt += c_m%d_rdRspRdy ? (sc_uint<%s_RD_RSP_CNT_W>)-1 : (sc_uint<%s_RD_RSP_CNT_W>)+1;\n",
-					mif.m_mifRd.m_bPoll ? 3 : 1, mod.m_modName.Upper().c_str(), mod.m_modName.Upper().c_str());
-			}
-			mifPostInstr.NewLine();
-
-			mifPostInstr.Append("\tsc_uint<%s_RD_RSP_CNT_W> c_t%d_rdRspBusyCnt = c_rdGrpRspCnt;\n",
-				mod.m_modName.Upper().c_str(), mod.m_execStg-1);
-
-		} else if (mif.m_mifRd.m_rspGrpIdW <= 2) {
-
-			mifPostInstr.Append("\t// update r_rdGrpRspCnt\n");
-			mifPostInstr.Append("\tbool c_m%d_bRdRspRdy[%d];\n",
-				mif.m_mifRd.m_bPoll ? 2 : 0,
-				1 << mif.m_mifRd.m_rspGrpIdW);
-			mifPostInstr.Append("\tbool c_m%d_bRdRspRdy[%d];\n",
-				mif.m_mifRd.m_bPoll ? 3 : 1,
-				1 << mif.m_mifRd.m_rspGrpIdW);
-
-			mifPostInstr.NewLine();
-
-			mifPostInstr.Append("\tfor (unsigned i = 0; i < %du; i += 1) {\n", 1<<mif.m_mifRd.m_rspGrpIdW);
-			mifPostInstr.Append("\t\tc_m%d_bRdRspRdy[i] = c_m%d_rdRspRdy && (c_m%d_rdRspGrpId & %s) == i;\n",
-				mif.m_mifRd.m_bPoll ? 2 : 0,
-				mif.m_mifRd.m_bPoll ? 2 : 0,
-				mif.m_mifRd.m_bPoll ? 2 : 0,
-				pRdGrpIdMask);
-			mifPostInstr.Append("\t\tc_m%d_bRdRspRdy[i] = r_m%d_bRdRspRdy[i];\n",
-				mif.m_mifRd.m_bPoll ? 3 : 1,
-				mif.m_mifRd.m_bPoll ? 3 : 1);
-
-			mifPostInstr.NewLine();
-
-			if (mif.m_bMifRd && mif.m_bMifWr)
-				mifPostInstr.Append("\t\tbool c_t%d_bRdReqRdy = c_t%d_%sToMif_reqRdy%s && c_t%d_bReadMem && (c_t%d_%sToMif_req.m_tid & %s) == i;\n",
-				mod.m_execStg, mod.m_execStg, mod.m_modName.Lc().c_str(), notReqBusy, mod.m_execStg, mod.m_execStg, mod.m_modName.Lc().c_str(), pRdGrpIdMask);
-			else
-				mifPostInstr.Append("\t\tbool c_t%d_bRdReqRdy = c_t%d_%sToMif_reqRdy%s && (c_t%d_%sToMif_req.m_tid & %s) == i;\n",
-				mod.m_execStg, mod.m_execStg, mod.m_modName.Lc().c_str(), notReqBusy, mod.m_execStg, mod.m_modName.Lc().c_str(), pRdGrpIdMask);
-
-			mifPostInstr.Append("\t\tc_rdGrpRspCnt[i] = r_rdGrpRspCnt[i];\n",
-				mod.m_modName.Upper().c_str());
-			mifPostInstr.NewLine();
-
-			if (mif.m_mifRd.m_bMultiRd) {
-				mifPostInstr.Append("\t\tif (c_m%d_bRdRspRdy[i] || c_t%d_bRdReqRdy) {\n",
-					mif.m_mifRd.m_bPoll ? 3 : 1, mod.m_execStg);
-				mifPostInstr.Append("\t\t\tif (c_m%d_bRdRspRdy[i])\n", mif.m_mifRd.m_bPoll ? 3 : 1);
-				mifPostInstr.Append("\t\t\t\tc_rdGrpRspCnt[i] -= 1;\n");
-				mifPostInstr.Append("\t\t\tif (c_t%d_bRdReqRdy)\n", mod.m_execStg);
-				if (is_wx)
-					mifPostInstr.Append("\t\t\t\tc_rdGrpRspCnt[i] = c_rdGrpRspCnt[i] + (c_t%d_reqQwCnt == 1 ? 1 : 8u);\n", mod.m_execStg);
-				else
-					mifPostInstr.Append("\t\t\t\tc_rdGrpRspCnt[i] += c_t%d_reqQwCnt;\n", mod.m_execStg);
-				mifPostInstr.Append("\t\t}\n");
-			} else {
-				mifPostInstr.Append("\t\tif (c_m%d_bRdRspRdy[i] != c_t%d_bRdReqRdy)\n",
-					mif.m_mifRd.m_bPoll ? 3 : 1, mod.m_execStg);
-				mifPostInstr.Append("\t\t\tc_rdGrpRspCnt[i] += c_m%d_bRdRspRdy[i] ? (sc_uint<%s_RD_RSP_CNT_W>)-1 : (sc_uint<%s_RD_RSP_CNT_W>)+1;\n",
-					mif.m_mifRd.m_bPoll ? 3 : 1, mod.m_modName.Upper().c_str(), mod.m_modName.Upper().c_str());
-			}
-
-			if (mif.m_mifRd.m_bPoll && mif.m_mifRd.m_rspGrpId.size() > 0) {
-				mifPostInstr.Append("\n");
-				mifPostInstr.Append("\t\tc_rdGrpRspCntZero[i] = c_rdGrpRspCnt[i] == 0;\n");
-			}
-			mifPostInstr.Append("\t}\n");
-			mifPostInstr.NewLine();
-
-			mifPostInstr.Append("\tsc_uint<%s_RD_RSP_CNT_W> c_t%d_rdRspBusyCnt = c_rdGrpRspCnt[INT(%s)];\n",
-				mod.m_modName.Upper().c_str(), mod.m_execStg-1, rdRspGrpId);
-		} else {
-
-			mifPostInstr.Append("\t// update m_rdGrpRspCnt rams\n");
-			mifPostInstr.Append("\tsc_uint<%s_RD_GRP_ID_W> c_rdGrpRspCntAddr[%d];\n",
+			mifPostInstr.Append("\tbool c_wrGrpRspCntBusy = r_wrGrpBusyCnt >= ((1ul << %s_WR_RSP_CNT_W) - %d);\n",
 				mod.m_modName.Upper().c_str(),
-				rdGrpBankCnt);
-			mifPostInstr.Append("\tsc_uint<%s_RD_RSP_CNT_W> c_rdGrpRspCnt[%d];\n",
-				mod.m_modName.Upper().c_str(),
-				rdGrpBankCnt);
-			mifPostInstr.Append("\tbool c_m%d_bRdRspRdy[%d];\n",
-				mif.m_mifRd.m_bPoll ? 2 : 0,
-				rdGrpBankCnt);
-			mifPostInstr.Append("\tbool c_m%d_bRdRspRdy[%d];\n",
-				mif.m_mifRd.m_bPoll ? 3 : 1,
-				rdGrpBankCnt);
-
-			mifPostInstr.NewLine();
-			mifPostInstr.Append("\tfor (unsigned i = 0; i < %du; i += 1) {\n", rdGrpBankCnt);
-			mifPostInstr.Append("\t\tc_m%d_bRdRspRdy[i] = c_m%d_rdRspRdy && (c_m%d_rdRspGrpId & %s) == i;\n",
-				mif.m_mifRd.m_bPoll ? 2 : 0,
-				mif.m_mifRd.m_bPoll ? 2 : 0,
-				mif.m_mifRd.m_bPoll ? 2 : 0,
-				pRdGrpIdMask);
-			mifPostInstr.Append("\t\tc_m%d_bRdRspRdy[i] = r_m%d_bRdRspRdy[i];\n",
-				mif.m_mifRd.m_bPoll ? 3 : 1,
-				mif.m_mifRd.m_bPoll ? 3 : 1);
-
-			mifPostInstr.Append("\t\tc_rdGrpRspCntAddr[i] = c_m%d_bRdRspRdy[i] ? c_m%d_rdRspGrpId : %s;\n",
-				mif.m_mifRd.m_bPoll ? 2 : 0, mif.m_mifRd.m_bPoll ? 2 : 0, rdRspGrpId);
-
-			mifPostInstr.Append("\t\tm_rdGrpRspCnt[i].read_addr(c_rdGrpRspCntAddr[i] >> %s);\n", pRdGrpShfAmt);
-			mifPostInstr.Append("\t\tbool bBypass = c_rdGrpRspCntAddr[i] == r_rdGrpRspCntAddr[i] && (r_rdGrpRspCntAddr[i] & %s) == i;\n",
-				pRdGrpIdMask);
-			mifPostInstr.NewLine();
-
-			if (mif.m_bMifRd && mif.m_bMifWr)
-				mifPostInstr.Append("\t\tbool c_t%d_bRdReqRdy = c_t%d_%sToMif_reqRdy%s && c_t%d_bReadMem && (c_t%d_%sToMif_req.m_tid & %s) == i;\n",
-				mod.m_execStg, mod.m_execStg, mod.m_modName.Lc().c_str(), notReqBusy, mod.m_execStg, mod.m_execStg, mod.m_modName.Lc().c_str(), pRdGrpIdMask);
-			else
-				mifPostInstr.Append("\t\tbool c_t%d_bRdReqRdy = c_t%d_%sToMif_reqRdy%s && (c_t%d_%sToMif_req.m_tid & %s) == i;\n",
-				mod.m_execStg, mod.m_execStg, mod.m_modName.Lc().c_str(), notReqBusy, mod.m_execStg, mod.m_modName.Lc().c_str(), pRdGrpIdMask);
-
-			mifPostInstr.Append("\t\tsc_uint<%s_RD_RSP_CNT_W> c_rdGrpRspCntOut = r_rdGrpRspCnt[i];\n",
-				mod.m_modName.Upper().c_str());
-			mifPostInstr.NewLine();
-
-			if (mif.m_mifRd.m_bMultiRd) {
-				mifPostInstr.Append("\t\tif ((c_m%d_bRdRspRdy[i] || c_t%d_bRdReqRdy) && r_rdRspGrpInitCnt[%s_RD_GRP_ID_W] == 1) {\n",
-					mif.m_mifRd.m_bPoll ? 3 : 1, mod.m_execStg, mod.m_modName.Upper().c_str());
-
-				mifPostInstr.Append("\t\t\tif (c_m%d_bRdRspRdy[i])\n", mif.m_mifRd.m_bPoll ? 3 : 1);
-				mifPostInstr.Append("\t\t\t\tc_rdGrpRspCntOut -= 1;\n");
-				mifPostInstr.Append("\t\t\tif (c_t%d_bRdReqRdy)\n", mod.m_execStg);
-				if (is_wx)
-					mifPostInstr.Append("\t\t\t\tc_rdGrpRspCntOut = c_rdGrpRspCntOut + (c_t%d_reqQwCnt == 1 ? 1 : 8u);\n", mod.m_execStg);
-				else
-					mifPostInstr.Append("\t\t\t\tc_rdGrpRspCntOut += c_t%d_reqQwCnt;\n", mod.m_execStg);
-			} else {
-				mifPostInstr.Append("\t\tif (c_m%d_bRdRspRdy[i] != c_t%d_bRdReqRdy && r_rdRspGrpInitCnt[%s_RD_GRP_ID_W] == 1) {\n",
-					mif.m_mifRd.m_bPoll ? 3 : 1, mod.m_execStg, mod.m_modName.Upper().c_str());
-
-				mifPostInstr.Append("\t\t\tc_rdGrpRspCntOut += c_m%d_bRdRspRdy[i] ? (sc_uint<%s_RD_RSP_CNT_W>)-1 : (sc_uint<%s_RD_RSP_CNT_W>)+1;\n",
-					mif.m_mifRd.m_bPoll ? 3 : 1, mod.m_modName.Upper().c_str(), mod.m_modName.Upper().c_str());
-			}
-
-			mifPostInstr.Append("\t\t\tm_rdGrpRspCnt[i].write_addr(r_rdGrpRspCntAddr[i] >> %s);\n", pRdGrpShfAmt);
-			mifPostInstr.Append("\t\t\tm_rdGrpRspCnt[i].write_mem(c_rdGrpRspCntOut);\n");
-
-			if (mif.m_mifRd.m_bPoll && mif.m_mifRd.m_rspGrpId.size() > 0) {
-				mifPostInstr.NewLine();
-				mifPostInstr.Append("\t\t\tm_rdGrpRspCntZero[i].write_addr(r_rdGrpRspCntAddr[i] >> %s);\n", pRdGrpShfAmt);
-				mifPostInstr.Append("\t\t\tm_rdGrpRspCntZero[i].write_mem(c_rdGrpRspCntOut == 0);\n");
-			}
-			mifPostInstr.Append("\t\t}\n");
-			mifPostInstr.NewLine();
-			mifPostInstr.Append("\t\tc_rdGrpRspCnt[i] = bBypass ? c_rdGrpRspCntOut : m_rdGrpRspCnt[i].read_mem();\n");
-			mifPostInstr.Append("\t}\n");
-			mifPostInstr.NewLine();
-
-			mifPostInstr.Append("\tsc_uint<%s_RD_RSP_CNT_W> c_t%d_rdRspBusyCnt = c_rdGrpRspCnt[%s & %s];\n",
-				mod.m_modName.Upper().c_str(), mod.m_execStg-1, rdRspGrpId, pRdGrpIdMask);
-		}
-
-		mifPostInstr.Append("\tbool c_t%d_rdRspBusyCntMax = c_t%d_rdRspBusyCnt >= ((1ul << %s_RD_RSP_CNT_W)-%d);\n",
-			mod.m_execStg-1, mod.m_execStg-1, mod.m_modName.Upper().c_str(), mod.m_mif.m_mifRd.m_bMultiRd ? 8 : 1);
-		if (mif.m_mifRd.m_bPause)
-			mifPostInstr.Append("\tbool c_t%d_rdRspPauseCntZero = c_t%d_rdRspBusyCnt == 0;\n",
-			mod.m_execStg-1, mod.m_execStg-1);
-		if (mif.m_mifRd.m_bPoll) {
-			if (mif.m_mifRd.m_rspGrpId.size() == 0)
-				mifPostInstr.Append("\tbool c_t%d_rdRspPollCntZero = c_t%d_rdRspBusyCnt == 0;\n",
-					mod.m_execStg-1, mod.m_execStg-1);
+				bMultiQwMif ? 11 : 4);
 		}
 		mifPostInstr.NewLine();
-
-		if (mif.m_mifRd.m_rspGrpIdW > 2) {
-			mifPostInstr.Append("\tbool c_t%d_bReadRspBusy = c_m%d_rdRspRdy && ((c_m%d_rdRspGrpId & %s) == (%s & %s));\n",
-				mod.m_execStg-1,
-				mif.m_mifRd.m_bPoll ? 2 : 0,
-				mif.m_mifRd.m_bPoll ? 2 : 0,
-				pRdGrpIdMask, rdRspGrpId, pRdGrpIdMask);
-			mifPostInstr.NewLine();
-		}
 	}
 
-	if (bNeed_reqBusy) {
-		mifPostInstr.Append("\tif (r_t%d_reqQwIdx > 0) {\n", mod.m_execStg+1);
-		mifPostInstr.Append("\t\tc_t%d_%sToMif_reqRdy = true;\n",
-			mod.m_execStg+1, mod.m_modName.Lc().c_str());
+	string reqValid;
+	if (mif.m_bMifWr) reqValid += VA("r_t%d_memReq.m_wrReq", mod.m_execStg + 1);
+	if (mif.m_bMifRd && mif.m_bMifWr) reqValid += " || ";
+	if (mif.m_bMifRd) reqValid += VA("r_t%d_memReq.m_rdReq", mod.m_execStg + 1);
+
+	if (bMultiQwReq) {
+		mifPostInstr.Append("\tbool c_t%d_memReqHold = r_t%d_memReq.m_valid && (r_t%d_memReq.m_qwRem > 1 || r_memReqHold);\n",
+			mod.m_execStg + 1,
+			mod.m_execStg + 1,
+			mod.m_execStg + 1);
+		mifPostInstr.NewLine();
+
+		mifPostInstr.Append("\tbool c_t%d_memReqLasHold = r_t%d_memReqLas.m_valid && c_t%d_memReqHold;\n",
+			mod.m_execStg + 1,
+			mod.m_execStg + 1,
+			mod.m_execStg + 1);
+
+		mifPostInstr.Append("\tCMemReq c_t%d_memReqLas = c_t%d_memReqLasHold ? r_t%d_memReqLas : c_t%d_memReq;\n",
+			mod.m_execStg, mod.m_execStg + 1, mod.m_execStg + 1, mod.m_execStg);
+
+		mifPostInstr.Append("\tc_t%d_memReqLas.m_valid = c_t%d_memReqLasHold || c_t%d_memReqHold && c_t%d_memReq.m_valid;\n",
+			mod.m_execStg,
+			mod.m_execStg + 1,
+			mod.m_execStg + 1,
+			mod.m_execStg);
+
+		if (mif.m_bMifRd && bNeedRdRspInfo) {
+			mifPostInstr.Append("\tCRdRspInfo c_t%d_rdRspInfoLas = c_t%d_memReqLasHold ? r_t%d_rdRspInfoLas : c_t%d_rdRspInfo;\n",
+				mod.m_execStg, mod.m_execStg + 1, mod.m_execStg + 1, mod.m_execStg);
+		}
+		mifPostInstr.Append("\tCMemRdWrReqIntf c_t%d_%sToMif_reqLas = c_t%d_memReqLasHold ? r_t%d_%sToMif_reqLas : c_t%d_%sToMif_req;\n",
+			mod.m_execStg, mod.m_modName.Lc().c_str(),
+			mod.m_execStg + 1,
+			mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
+			mod.m_execStg, mod.m_modName.Lc().c_str());
+		mifPostInstr.NewLine();
+
+		mifPostInstr.Append("\tif (c_t%d_memReqHold) {\n",
+			mod.m_execStg + 1);
 		mifPostInstr.Append("\t\tc_t%d_%sToMif_req = r_t%d_%sToMif_req;\n",
-			mod.m_execStg+1, mod.m_modName.Lc().c_str(), mod.m_execStg+2, mod.m_modName.Lc().c_str());
-		mifPostInstr.Append("\t\tc_t%d_%sToMif_req.m_addr &= ~0x38ULL;\n",
-			mod.m_execStg+1, mod.m_modName.Lc().c_str());
-		mifPostInstr.Append("\t\tc_t%d_%sToMif_req.m_addr |= (r_t%d_%sToMif_req.m_addr + 8) & 0x38;\n",
-			mod.m_execStg+1, mod.m_modName.Lc().c_str(), mod.m_execStg+2, mod.m_modName.Lc().c_str());
-		if (bNeed_reqQwIdx)
-			mifPostInstr.Append("\t\tc_t%d_reqQwCnt = r_t%d_reqQwCnt;\n", mod.m_execStg+1, mod.m_execStg+2);
-		if (bNeed_reqQwSplit)
-			mifPostInstr.Append("\t\tc_t%d_reqQwSplit = r_t%d_reqQwSplit;\n", mod.m_execStg+1, mod.m_execStg+2);
-		if (mif.m_mifWr.m_bReqPause)
-			mifPostInstr.Append("\t\tc_t%d_bWrpRsm = r_t%d_bWrpRsm;\n", mod.m_execStg+1, mod.m_execStg+2);
+			mod.m_execStg, mod.m_modName.Lc().c_str(),
+			mod.m_execStg + 1, mod.m_modName.Lc().c_str());
+		mifPostInstr.Append("\t\tc_t%d_memReq = r_t%d_memReq;\n",
+			mod.m_execStg,
+			mod.m_execStg + 1);
+		if (mif.m_bMifRd) {
+			mifPostInstr.Append("\t\tc_t%d_rdRspInfo = r_t%d_rdRspInfo;\n",
+				mod.m_execStg,
+				mod.m_execStg + 1);
+		}
+		mifPostInstr.Append("\t} else if (r_t%d_memReqLas.m_valid) {\n",
+			mod.m_execStg + 1);
+		mifPostInstr.Append("\t\tc_t%d_%sToMif_req = r_t%d_%sToMif_reqLas;\n",
+			mod.m_execStg, mod.m_modName.Lc().c_str(),
+			mod.m_execStg + 1, mod.m_modName.Lc().c_str());
+		mifPostInstr.Append("\t\tc_t%d_memReq = r_t%d_memReqLas;\n",
+			mod.m_execStg,
+			mod.m_execStg + 1);
+		if (mif.m_bMifRd) {
+			mifPostInstr.Append("\t\tc_t%d_rdRspInfo = r_t%d_rdRspInfoLas;\n",
+				mod.m_execStg,
+				mod.m_execStg + 1);
+		}
+		mifPostInstr.Append("\t}\n");
 		mifPostInstr.NewLine();
 
-		char const * pRdRspGrpW = mif.m_mifRd.m_rspGrpId.size() == 0 ? "_HTID_W" : "_RD_GRP_ID_W";
+		string rspCntBusy;
+		if (mif.m_bMifRd) rspCntBusy += "r_rdGrpRspCntBusy";
+		if (rspCntBusy.size() > 0 && mif.m_bMifWr) rspCntBusy += " || ";
+		if (mif.m_bMifWr) rspCntBusy += "r_wrGrpRspCntBusy";
 
-		if (!is_wx && mif.m_mifRd.m_bMultiRd) {
-			mifPostInstr.Append("\t\tif (c_t%d_%sToMif_req.m_type == MEM_REQ_RD) {\n",
-				mod.m_execStg+1, mod.m_modName.Lc().c_str());
+		string reqQwRemEqZ;
+		if (bMultiQwMif) reqQwRemEqZ = VA(" && r_t%d_memReq.m_reqQwRem == 0", mod.m_execStg + mif.m_mifReqStgCnt);
 
-			if (mif.m_mifRd.m_rdDstList.size() > 1) {
-				mifPostInstr.Append("\t\t\tsc_uint<%s_MIF_DST_IDX_W> c_t%d_mifDstIdx = (c_t%d_%sToMif_req.m_tid >> (%s_MIF_DST_IDX_SHF + 1 + %s%s))\n",
-					mod.m_modName.Upper().c_str(),
-					mod.m_execStg+1, mod.m_execStg+1, mod.m_modName.Lc().c_str(),
-					mod.m_modName.Upper().c_str(),
-					mod.m_modName.Upper().c_str(), pRdRspGrpW);
-				mifPostInstr.Append("\t\t\t\t& %s_MIF_DST_IDX_MSK;\n", mod.m_modName.Upper().c_str());
-				mifPostInstr.Append("\n");
-				mifPostInstr.Append("\t\t\tswitch (c_t%d_mifDstIdx) {\n", mod.m_execStg+1);
-			}
+		mifPostInstr.Append("\tbool c_memReqHold = r_memReqHold && (%s || r_%sToMif_reqAvlCntBusy) ||\n",
+			rspCntBusy.c_str(), mod.m_modName.Lc().c_str());
+		mifPostInstr.Append("\t\t!r_memReqHold && r_t%d_memReq.m_valid%s && (%s || r_%sToMif_reqAvlCntBusy);\n",
+			mod.m_execStg + mif.m_mifReqStgCnt,
+			reqQwRemEqZ.c_str(),
+			rspCntBusy.c_str(),
+			mod.m_modName.Lc().c_str());
+		mifPostInstr.NewLine();
 
-			for (size_t i = 0; i < mif.m_mifRd.m_rdDstList.size(); i += 1) {
-				CMifRdDst &mifRdDst = mif.m_mifRd.m_rdDstList[i];
+		mifPostInstr.Append("\tbool c_t%d_memReqBusy = c_t%d_memReqLas.m_valid;\n",
+			mod.m_execStg - 1, mod.m_execStg, mod.m_modName.Lc().c_str());
+		mifPostInstr.NewLine();
 
-				char *pTabs = "\t\t\t";
-				if (mif.m_mifRd.m_rdDstList.size() > 1) {
-					mifPostInstr.Append("\t\t\tcase %d:\n", (int)i);
-					mifPostInstr.Append("\t\t\t\t{\n");
-					pTabs = "\t\t\t\t\t";
-				}
-
-				if (mif.m_mifRd.m_bMultiRd && mifRdDst.m_dstIdx.size() > 0) {
-					char const * pIdxName = 0;
-					if (mifRdDst.m_dstIdx == "fldIdx1")
-						pIdxName = "FLD_IDX1";
-					else if (mifRdDst.m_dstIdx == "fldIdx2")
-						pIdxName = "FLD_IDX2";
-					else if (mifRdDst.m_dstIdx == "varIdx1")
-						pIdxName = "VAR_IDX1";
-					else if (mifRdDst.m_dstIdx == "varIdx2")
-						pIdxName = "VAR_IDX2";
-					else if (mifRdDst.m_dstIdx == "varAddr1")
-						pIdxName = "VAR_ADDR1";
-					else if (mifRdDst.m_dstIdx == "varAddr2")
-						pIdxName = "VAR_ADDR2";
-					else if (mifRdDst.m_dstIdx == "rspIdx")
-						pIdxName = "RSP_IDX";
-					else
-						HtlAssert(0);
-
-					mifPostInstr.Append("%ssc_uint<%s_MIF_DST_%s_%s_W> %s = (c_t%d_%sToMif_req.m_tid\n", pTabs,
-						mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str(), pIdxName,
-						mifRdDst.m_dstIdx.c_str(),
-						mod.m_execStg+1, mod.m_modName.Lc().c_str());
-					mifPostInstr.Append("%s\t>> (%s_MIF_DST_%s_%s_SHF + 1 + %s%s)) & %s_MIF_DST_%s_%s_MSK;\n", pTabs,
-						mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str(), pIdxName,
-						mod.m_modName.Upper().c_str(), pRdRspGrpW,
-						mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str(), pIdxName);
-					mifPostInstr.Append("%s%s += 1u;\n", pTabs, mifRdDst.m_dstIdx.c_str());
-					mifPostInstr.Append("%sc_t%d_%sToMif_req.m_tid = (c_t%d_%sToMif_req.m_tid &\n", pTabs,
-						mod.m_execStg+1, mod.m_modName.Lc().c_str(),
-						mod.m_execStg+1, mod.m_modName.Lc().c_str());
-					mifPostInstr.Append("%s\t~(%s_MIF_DST_%s_%s_MSK << (%s_MIF_DST_%s_%s_SHF + 1 + %s%s))) |\n", pTabs,
-						mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str(), pIdxName,
-						mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str(), pIdxName,
-						mod.m_modName.Upper().c_str(), pRdRspGrpW);
-					mifPostInstr.Append("%s\t(%s << (%s_MIF_DST_%s_%s_SHF + 1 + %s%s));\n", pTabs,
-						mifRdDst.m_dstIdx.c_str(),
-						mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str(), pIdxName,
-						mod.m_modName.Upper().c_str(), pRdRspGrpW);
-				}
-
-				if (mif.m_mifRd.m_rdDstList.size() > 1) {
-					mifPostInstr.Append("\t\t\t\t}\n");
-					mifPostInstr.Append("\t\t\t\tbreak;\n");
-				}
-			}
-
-			if (mif.m_mifRd.m_rdDstList.size() > 1) {
-				mifPostInstr.Append("\t\t\tdefault:\n");
-				mifPostInstr.Append("\t\t\t\tassert(0);\n");
-				mifPostInstr.Append("\t\t\t}\n");
-			}
-
-			mifPostInstr.Append("\t\t}\n");
+		string reqValidQwRemEqZ = reqValid;
+		if (mif.m_bMifRd && mif.m_bMifWr) reqValid = string("(") + reqValid + ")";
+		if (bMultiQwMif && mif.m_bMifRd) {
+			reqValidQwRemEqZ = VA("(%s && r_t%d_memReq.m_reqQwRem == 0)", reqValidQwRemEqZ.c_str(), mod.m_execStg + 1);
 		}
 
-		mifPostInstr.Append("\t}\n");
+		if (mif.m_mifReqStgCnt == 1) {
+			mifPostInstr.Append("\tbool c_t%d_%sToMif_reqRdy = !c_memReqHold && (%s || r_memReqHold);\n",
+				mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
+				reqValidQwRemEqZ.c_str());
+		} else {
+			HtlAssert(mif.m_mifReqStgCnt == 2);
+			mifPostInstr.Append("\tbool c_t%d_%sToMif_reqRdy = r_memReqHold ? r_t%d_%sToMif_reqRdy : %s;\n",
+				mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
+				mod.m_execStg + 2, mod.m_modName.Lc().c_str(),
+				reqValidQwRemEqZ.c_str());
+		}
+		mifPostInstr.Append("\tCMemRdWrReqIntf c_t%d_%sToMif_req = r_memReqHold ? r_t%d_%sToMif_req : r_t%d_%sToMif_req;\n",
+			mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
+			mod.m_execStg + 2, mod.m_modName.Lc().c_str(),
+			mod.m_execStg + 1, mod.m_modName.Lc().c_str());
+		mifPostInstr.Append("\tCMemReq c_t%d_memReq = r_memReqHold ? r_t%d_memReq : r_t%d_memReq;\n",
+			mod.m_execStg + 1,
+			mod.m_execStg + 2,
+			mod.m_execStg + 1);
 		mifPostInstr.NewLine();
 	}
 
-	int mifReqStgCnt = 0;
+	if (!bMultiQwReq && (mif.m_mifReqStgCnt == 1 || mif.m_bMifRd && mif.m_mifReqStgCnt == 2)) {
+		mifPostInstr.Append("\tbool c_t%d_%sToMif_reqRdy = %s;\n",
+			mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
+			reqValid.c_str());
+		mifPostInstr.Append("\tCMemRdWrReqIntf c_t%d_%sToMif_req = r_t%d_%sToMif_req;\n",
+			mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
+			mod.m_execStg + 1, mod.m_modName.Lc().c_str());
+		mifPostInstr.NewLine();
+	}
 
 	if (mif.m_bMifRd) {
-		mifPostInstr.Append("\t// write read response to ram\n");
+		mifPostInstr.Append("\tsc_uint<%s_RD_RSP_CNT_W + 1> c_rdRspIdInit = r_rdRspIdInit;\n",
+			mod.m_modName.Upper().c_str());
+		mifPostInstr.NewLine();
+	}
 
-		if (!is_wx && mif.m_mifRd.m_bMultiRd)
-			mifReqStgCnt = 1;
+	if (mif.m_bMifRd && !bMultiQwReq && bRdRspInfoPool && bNeedRdRspInfo) {
 
-		if (mif.m_mifRd.m_rspCntW.AsInt() > 0)
-			mifPostInstr.Append("\tif (r_m1_rdRspRdy) {\n");
-		else
-			mifPostInstr.Append("\tif (i_mifTo%sP0_rdRspRdy.read()) {\n", mod.m_modName.Uc().c_str());
+		mifPostInstr.Append("\tif (r_t%d_memReq.m_rdReq) {\n",
+			mod.m_execStg + 1);
+		mifPostInstr.NewLine();
 
-		char *pTabs = "\t";
-		if (mif.m_mifRd.m_rdDstList.size() > 1)
-			pTabs = "\t\t";
+		mifPostInstr.Append("\t\tsc_uint<%s_RD_RSP_CNT_W> c_rdRspId = 0;\n",
+			mod.m_modName.Upper().c_str());
+		mifPostInstr.NewLine();
 
-		if (is_wx && mif.m_mifRd.m_bMultiRd) {
-			mifPostInstr.Append("%sht_uint3 c_m1_rdRspQwFirst = (c_m1_rdRsp_dst >> %s_MIF_DST_QW_FIRST_SHF) & %s_MIF_DST_QW_FIRST_MSK;\n",
-				pTabs, mod.m_modName.Upper().c_str(), mod.m_modName.Upper().c_str());
-			mifPostInstr.Append("%sht_uint3 c_m1_rdRspQwLast = (c_m1_rdRsp_dst >> %s_MIF_DST_QW_LAST_SHF) & %s_MIF_DST_QW_LAST_MSK;\n",
-				pTabs, mod.m_modName.Upper().c_str(), mod.m_modName.Upper().c_str());
-			mifPostInstr.Append("%sbool c_m1_varWrEn = c_m1_rdRspQwFirst <= c_m1_rdRspQwIdx && c_m1_rdRspQwIdx <= c_m1_rdRspQwLast;\n", pTabs);
-			mifPostInstr.Append("\n");
-		}
+		mifPostInstr.Append("\t\tif (r_rdRspIdInit[%s_RD_RSP_CNT_W]) {\n",
+			mod.m_modName.Upper().c_str());
+		mifPostInstr.Append("\t\t\tc_rdRspId = m_rdRspIdPool.front();\n");
+		mifPostInstr.Append("\t\t\tm_rdRspIdPool.pop();\n");
+		mifPostInstr.Append("\t\t} else {\n");
+		mifPostInstr.Append("\t\t\tc_rdRspId = r_rdRspIdInit(%s_RD_RSP_CNT_W - 1, 0);\n",
+			mod.m_modName.Upper().c_str());
+		mifPostInstr.Append("\t\t\tc_rdRspIdInit = r_rdRspIdInit + 1;\n");
+		mifPostInstr.Append("\t\t}\n");
+		mifPostInstr.NewLine();
 
-		if (mif.m_mifRd.m_rdDstList.size() > 1) {
-			mifPostInstr.Append("\t\tswitch (c_m1_rdRsp_dstIdx) {\n");
-			pTabs = "\t\t\t";
-		} else
-			pTabs = "\t\t";
+		mifPostInstr.Append("\t\tc_t%d_%sToMif_req.m_tid = c_rdRspId;\n",
+			mod.m_execStg + 1, mod.m_modName.Lc().c_str());
+		mifPostInstr.NewLine();
 
-		for (size_t i = 0; i < mif.m_mifRd.m_rdDstList.size(); i += 1) {
-			CMifRdDst &mifRdDst = mif.m_mifRd.m_rdDstList[i];
-
-			if (mif.m_mifRd.m_rdDstList.size() > 1) {
-				mifPostInstr.Append("\t\tcase %d:\n", (int)i);
-				mifPostInstr.Append("\t\t\t{\n");
-				pTabs = "\t\t\t\t";
-			}
-
-			// read rsp data to rdRspData variable
-			if (mif.m_mifRd.m_rspCntW.AsInt() > 0) {
-
-				mifPostInstr.Append("%sht_uint64 c_m1_rdRspData = (%s_t)r_m1_rdRsp.m_data;\n", pTabs, mifRdDst.m_rdType.c_str());
-
-			} else {
-
-				mifPostInstr.Append("%sht_uint64 c_m1_rdRspData = (%s_t)i_mifTo%sP0_rdRsp.read().m_data;\n", pTabs,
-					mifRdDst.m_rdType.c_str(), mod.m_modName.Uc().c_str());
-			}
-
-			if (mifRdDst.m_infoW.size() > 0) {
-				// function call
-
-				if (mifRdDst.m_infoW.AsInt() > 0) {
-					mifPostInstr.Append("%ssc_uint<%s_MIF_DST_%s_INFO_W> c_m1_rdRsp_info = (c_m1_rdRsp_dst\n", pTabs,
-						mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str());
-					mifPostInstr.Append("%s\t>> %s_MIF_DST_%s_INFO_SHF) & %s_MIF_DST_%s_INFO_MSK;\n", pTabs,
-						mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str(),
-						mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str());
-				}
-				mifPostInstr.NewLine();
-
-				if (mifRdDst.m_bMultiRd && !is_wx) {
-					mifPostInstr.Append("%ssc_uint<%s_MIF_DST_%s_RSP_IDX_W> c_m1_rspIdx = (c_m1_rdRsp_dst\n", pTabs,
-						mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str());
-					mifPostInstr.Append("%s\t>> %s_MIF_DST_%s_RSP_IDX_SHF) & %s_MIF_DST_%s_RSP_IDX_MSK;\n", pTabs,
-						mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str(),
-						mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str());
-
-					//if (bNeed_rdRspQwIdx)
-					//	mifPostInstr.Append("%sc_m1_rspIdx += c_m1_rdRspQwIdx;\n", pTabs);
-					mifPostInstr.NewLine();
-				}
-
-				if (is_wx && mifRdDst.m_bMultiRd)
-					mifPostInstr.Append("%sif (c_m1_varWrEn)\n\t", pTabs);
-
-				mifPostInstr.Append("%sReadMemResp_%s(", pTabs, mifRdDst.m_name.c_str());
-				m_mifFuncDecl.Append("\tvoid ReadMemResp_%s(", mifRdDst.m_name.c_str());
-
-				if (mifRdDst.m_bMultiRd) {
-					if (is_wx)
-						mifPostInstr.Append("c_m1_rdRspQwIdx - c_m1_rdRspQwFirst, ");
-					else
-						mifPostInstr.Append("c_m1_rspIdx, ");
-					m_mifFuncDecl.Append("ht_uint3 rspIdx, ");
-				}
-
-				if (mif.m_mifRd.m_rspGrpIdW > 0) {
-					mifPostInstr.Append("c_m1_rdRspGrpId, ");
-					m_mifFuncDecl.Append("sc_uint<%s_RD_GRP_ID_W> rdRspGrpId, ", mod.m_modName.Upper().c_str());
-				}
-
-				if (mifRdDst.m_infoW.AsInt() > 0) {
-					mifPostInstr.Append("c_m1_rdRsp_info, ");
-					m_mifFuncDecl.Append("sc_uint<%s_MIF_DST_%s_INFO_W> rdRsp_info, ",
-						mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str());
-				}
-
-				mifPostInstr.Append("c_m1_rdRspData);\n");
-				m_mifFuncDecl.Append("ht_uint64 rdRspData);\n");
-
-			} else {
-
-				if (mifRdDst.m_varAddr0W > 0) {
-					mifPostInstr.Append("%ssc_uint<%s_MIF_DST_%s_VAR_ADDR0_W> c_m1_varAddr0 = (c_m1_rdRsp_dst >> %s_MIF_DST_%s_VAR_ADDR0_SHF) & %s_MIF_DST_%s_VAR_ADDR0_MSK;\n", pTabs,
-						mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str(),
-						mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str(),
-						mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str());
-				}
-
-				if (mifRdDst.m_varAddr1W > 0) {
-					mifPostInstr.Append("%ssc_uint<%s_MIF_DST_%s_VAR_ADDR1_W> c_m1_varAddr1 = (c_m1_rdRsp_dst >> %s_MIF_DST_%s_VAR_ADDR1_SHF) & %s_MIF_DST_%s_VAR_ADDR1_MSK;\n", pTabs,
-						mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str(),
-						mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str(),
-						mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str());
-				}
-
-				if (mifRdDst.m_varAddr2W > 0) {
-					mifPostInstr.Append("%ssc_uint<%s_MIF_DST_%s_VAR_ADDR2_W> c_m1_varAddr2 = (c_m1_rdRsp_dst >> %s_MIF_DST_%s_VAR_ADDR2_SHF) & %s_MIF_DST_%s_VAR_ADDR2_MSK;\n", pTabs,
-						mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str(),
-						mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str(),
-						mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str());
-				}
-
-				string varIdx;
-				if (mifRdDst.m_varDimen1 > 0) {
-					varIdx = "[INT(c_m1_varIdx1)]";
-					mifPostInstr.Append("%ssc_uint<%s_MIF_DST_%s_VAR_IDX1_W> c_m1_varIdx1 = (c_m1_rdRsp_dst >> %s_MIF_DST_%s_VAR_IDX1_SHF) & %s_MIF_DST_%s_VAR_IDX1_MSK;\n", pTabs,
-						mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str(),
-						mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str(),
-						mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str());
-				}
-
-				if (mifRdDst.m_varDimen2 > 0) {
-					varIdx += "[INT(c_m1_varIdx2)]";
-					mifPostInstr.Append("%ssc_uint<%s_MIF_DST_%s_VAR_IDX2_W> c_m1_varIdx2 = (c_m1_rdRsp_dst >> %s_MIF_DST_%s_VAR_IDX2_SHF) & %s_MIF_DST_%s_VAR_IDX2_MSK;\n", pTabs,
-						mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str(),
-						mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str(),
-						mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str());
-				}
-
-				string fldIdx;
-				if (mifRdDst.m_fldDimen1 > 0) {
-					fldIdx = "[INT(c_m1_fldIdx1)]";
-					mifPostInstr.Append("%ssc_uint<%s_MIF_DST_%s_FLD_IDX1_W> c_m1_fldIdx1 = (c_m1_rdRsp_dst\n", pTabs,
-						mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str());
-					mifPostInstr.Append("%s\t>> %s_MIF_DST_%s_FLD_IDX1_SHF) & %s_MIF_DST_%s_FLD_IDX1_MSK;\n", pTabs,
-						mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str(),
-						mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str());
-				}
-
-				if (mifRdDst.m_fldDimen2 > 0) {
-					fldIdx += "[INT(c_m1_fldIdx2)]";
-					mifPostInstr.Append("%ssc_uint<%s_MIF_DST_%s_FLD_IDX2_W> c_m1_fldIdx2 = (c_m1_rdRsp_dst\n", pTabs,
-						mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str());
-					mifPostInstr.Append("%s\t>> %s_MIF_DST_%s_FLD_IDX2_SHF) & %s_MIF_DST_%s_FLD_IDX2_MSK;\n", pTabs,
-						mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str(),
-						mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str());
-				}
-
-				// memory destination address and write enables
-				string dotFieldName;
-				if (mifRdDst.m_pNgvRam == 0)
-					dotFieldName = mifRdDst.m_field.size() > 0 ? (string(".m_") + mifRdDst.m_field) : "";
-				else
-					dotFieldName = mifRdDst.m_field.size() > 0 ? (string(".") + mifRdDst.m_field) : "";
-
-				// generate bit range for subrange writes
-				char dataIdx[32] = "";
-				if (mifRdDst.m_dataLsb.AsInt() > 0 || mifRdDst.m_fldW != 64)
-					sprintf(dataIdx, "(%d,%d)", mifRdDst.m_fldW + mifRdDst.m_dataLsb.AsInt()-1, mifRdDst.m_dataLsb.AsInt());
-
-				string dstIdx;
-				// write rdRspData to destination
-				if (mifRdDst.m_pSharedVar) {
-					CField &sharedVar = *mifRdDst.m_pSharedVar;
-
-					// scalar variable
-					string fieldStr;
-					if (mifRdDst.m_field.size() > 0)
-						fieldStr = "." + mifRdDst.m_field;
-
-					if (bNeed_rdRspQwIdx && mifRdDst.m_dstIdx.size() > 0 && (is_wx || mifRdDst.m_memSrc == "host")) {
-						string idxVarName = mifRdDst.m_dstIdx[0] == 'v' ? "VAR_" : "FLD_";
-						idxVarName += mifRdDst.m_dstIdx[3] == 'A' ? "ADDR" : "IDX";
-						int backIdx = mifRdDst.m_dstIdx.size() - 1;
-						idxVarName += mifRdDst.m_dstIdx[backIdx] == '1' ? "1" : "2";
-
-						if (is_wx && mifRdDst.m_bMultiRd)
-							mifPostInstr.Append("%sc_m1_%s += (sc_uint<%s_MIF_DST_%s_%s_W>)(c_m1_rdRspQwIdx - c_m1_rdRspQwFirst);\n", pTabs,
-							mifRdDst.m_dstIdx.c_str(),
-							mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str(), idxVarName.c_str());
-						else
-							mifPostInstr.Append("%sc_m1_%s += (sc_uint<%s_MIF_DST_%s_%s_W>)c_m1_rdRspQwIdx;\n", pTabs,
-							mifRdDst.m_dstIdx.c_str(),
-							mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str(), idxVarName.c_str());
-					}
-
-					if (sharedVar.m_addr1W.AsInt() > 0) {
-
-						if (mifRdDst.m_varAddr1W > 0 && mifRdDst.m_varAddr2W > 0)
-							mifPostInstr.Append("%sm_%s%s.write_addr( c_m1_varAddr1, c_m1_varAddr2 );\n",
-							pTabs, mifRdDst.m_var.c_str(), varIdx.c_str());
-						else if (mifRdDst.m_varAddr1W > 0)
-							mifPostInstr.Append("%sm_%s%s.write_addr(c_m1_varAddr1);\n",
-							pTabs, mifRdDst.m_var.c_str(), varIdx.c_str());
-						else if (mifRdDst.m_varAddr2W > 0)
-							mifPostInstr.Append("%sm_%s%s.write_addr(c_m1_varAddr2);\n",
-							pTabs, mifRdDst.m_var.c_str(), varIdx.c_str());
-
-						if (is_wx && mifRdDst.m_bMultiRd)
-							mifPostInstr.Append("%sif (c_m1_varWrEn)\n\t", pTabs);
-
-						if (fieldStr.size() == 0)
-							mifPostInstr.Append("%sm_%s%s.write_mem(c_m1_rdRspData%s);\n", pTabs,
-							mifRdDst.m_var.c_str(), varIdx.c_str(),
-							dataIdx);
-						else
-							mifPostInstr.Append("%sm_%s%s.write_mem()%s%s = c_m1_rdRspData%s;\n", pTabs,
-							mifRdDst.m_var.c_str(), varIdx.c_str(), fieldStr.c_str(), fldIdx.c_str(),
-							dataIdx);
-
-					} else if (sharedVar.m_queueW.AsInt() > 0) {
-
-						if (is_wx && mifRdDst.m_bMultiRd)
-							mifPostInstr.Append("%sif (c_m1_varWrEn)\n\t", pTabs);
-
-						mifPostInstr.Append("%sm_%s%s.push( c_m1_rdRspData%s );\n", pTabs,
-							mifRdDst.m_var.c_str(), varIdx.c_str(),
-							dataIdx);
-
-					} else {
-
-						if (is_wx && mifRdDst.m_bMultiRd)
-							mifPostInstr.Append("%sif (c_m1_varWrEn)\n\t", pTabs);
-
-						string castStr;
-						switch (mifRdDst.m_fldW) {
-						case 8: castStr = "(uint8_t)"; break;
-						case 16: castStr = "(uint16_t)"; break;
-						case 32: castStr = "(uint32_t)"; break;
-						default: break;
-						}
-
-						mifPostInstr.Append("%sc_%s%s%s%s = %sc_m1_rdRspData%s;\n", pTabs,
-							mifRdDst.m_var.c_str(), varIdx.c_str(), fieldStr.c_str(), fldIdx.c_str(),
-							castStr.c_str(),
-							dataIdx);
-					}
-				} else if (mifRdDst.m_pNgvRam) {
-
-					if (bNeed_rdRspQwIdx && mifRdDst.m_dstIdx.size() > 0 && (is_wx || mifRdDst.m_memSrc == "host")) {
-						string idxVarName = mifRdDst.m_dstIdx[0] == 'v' ? "VAR_" : "FLD_";
-						idxVarName += mifRdDst.m_dstIdx[3] == 'A' ? "ADDR" : "IDX";
-						int backIdx = mifRdDst.m_dstIdx.size() - 1;
-						idxVarName += mifRdDst.m_dstIdx[backIdx] == '1' ? "1" : "2";
-
-						if (is_wx && mifRdDst.m_bMultiRd)
-							mifPostInstr.Append("%sc_m1_%s += (sc_uint<%s_MIF_DST_%s_%s_W>)(c_m1_rdRspQwIdx - c_m1_rdRspQwFirst);\n", pTabs,
-							mifRdDst.m_dstIdx.c_str(),
-							mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str(), idxVarName.c_str());
-						else
-							mifPostInstr.Append("%sc_m1_%s += (sc_uint<%s_MIF_DST_%s_%s_W>)c_m1_rdRspQwIdx;\n", pTabs,
-							mifRdDst.m_dstIdx.c_str(),
-							mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str(), idxVarName.c_str());
-					}
-					if (is_wx && mifRdDst.m_bMultiRd)
-						mifPostInstr.Append("%sc_m1_%sWrEn%s%s%s = c_m1_varWrEn;\n", pTabs,
-						mifRdDst.m_var.c_str(), varIdx.c_str(), dotFieldName.c_str(), fldIdx.c_str());
-
-					if (mifRdDst.m_varAddr1W > 0 && mifRdDst.m_varAddr2W > 0)
-						mifPostInstr.Append("%sc_m1_%sMwData%s.write_addr(c_m1_varAddr1, c_m1_varAddr2);\n", pTabs,
-						mifRdDst.m_var.c_str(), varIdx.c_str());
-					else if (mifRdDst.m_varAddr1W > 0)
-						mifPostInstr.Append("%sc_m1_%sMwData%s.write_addr(c_m1_varAddr1);\n", pTabs,
-						mifRdDst.m_var.c_str(), varIdx.c_str());
-					else if (mifRdDst.m_varAddr2W > 0)
-						mifPostInstr.Append("%sc_m1_%sMwData%s.write_addr(c_m1_varAddr2);\n", pTabs,
-						mifRdDst.m_var.c_str(), varIdx.c_str());
-
-					string castStr;
-					switch (mifRdDst.m_fldW) {
-					case 8: castStr = "(uint8_t)"; break;
-					case 16: castStr = "(uint16_t)"; break;
-					case 32: castStr = "(uint32_t)"; break;
-					default: break;
-					}
-
-					mifPostInstr.Append("%sc_m1_%sMwData%s%s%s = %sc_m1_rdRspData%s;\n", pTabs,
-						mifRdDst.m_var.c_str(), varIdx.c_str(), dotFieldName.c_str(), fldIdx.c_str(),
-						castStr.c_str(),
-						dataIdx);
-
-				} else {
-
-					if (bNeed_rdRspQwIdx && mifRdDst.m_dstIdx.size() > 0 && (is_wx || mifRdDst.m_memSrc == "host"))
-					{
-						string idxVarName = mifRdDst.m_dstIdx[0] == 'v' ? "VAR_" : "FLD_";
-						idxVarName += mifRdDst.m_dstIdx[3] == 'A' ? "ADDR" : "IDX";
-						int backIdx = mifRdDst.m_dstIdx.size()-1;
-						idxVarName += mifRdDst.m_dstIdx[backIdx] == '1' ? "1" : "2";
-
-						if (is_wx && mifRdDst.m_bMultiRd)
-							mifPostInstr.Append("%sc_m1_%s += (sc_uint<%s_MIF_DST_%s_%s_W>)(c_m1_rdRspQwIdx - c_m1_rdRspQwFirst);\n", pTabs,
-							mifRdDst.m_dstIdx.c_str(),
-							mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str(), idxVarName.c_str());
-						else
-							mifPostInstr.Append("%sc_m1_%s += (sc_uint<%s_MIF_DST_%s_%s_W>)c_m1_rdRspQwIdx;\n", pTabs,
-							mifRdDst.m_dstIdx.c_str(),
-							mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str(), idxVarName.c_str());
-					}
-					if (is_wx && mifRdDst.m_bMultiRd)
-						mifPostInstr.Append("%sc_m1_%sWrEn%s%s%s = c_m1_varWrEn;\n", pTabs,
-						mifRdDst.m_var.c_str(), varIdx.c_str(), dotFieldName.c_str(), fldIdx.c_str());
-					else
-						mifPostInstr.Append("%sc_m1_%sWrEn%s%s%s = true;\n", pTabs,
-						mifRdDst.m_var.c_str(), varIdx.c_str(), dotFieldName.c_str(), fldIdx.c_str());
-
-					if (mifRdDst.m_varAddr0W > 0) {
-						if (mifRdDst.m_varAddr1W > 0 && mifRdDst.m_varAddr2W > 0)
-							mifPostInstr.Append("%sc_m1_%sWrAddr%s = (c_m1_varAddr0, c_m1_varAddr1, c_m1_varAddr2);\n", pTabs,
-								mifRdDst.m_var.c_str(), varIdx.c_str());
-						else if (mifRdDst.m_varAddr1W > 0)
-							mifPostInstr.Append("%sc_m1_%sWrAddr%s = (c_m1_varAddr0, c_m1_varAddr1);\n", pTabs,
-								mifRdDst.m_var.c_str(), varIdx.c_str());
-						else if (mifRdDst.m_varAddr2W > 0)
-							mifPostInstr.Append("%sc_m1_%sWrAddr%s = (c_m1_varAddr0, c_m1_varAddr2);\n", pTabs,
-								mifRdDst.m_var.c_str(), varIdx.c_str());
-						else
-							mifPostInstr.Append("%sc_m1_%sWrAddr%s = c_m1_varAddr0;\n", pTabs,
-								mifRdDst.m_var.c_str(), varIdx.c_str());
-					} else {
-						if (mifRdDst.m_varAddr1W > 0 && mifRdDst.m_varAddr2W > 0)
-							mifPostInstr.Append("%sc_m1_%sWrAddr%s = (c_m1_varAddr1, c_m1_varAddr2);\n", pTabs,
-							mifRdDst.m_var.c_str(), varIdx.c_str());
-						else if (mifRdDst.m_varAddr1W > 0)
-							mifPostInstr.Append("%sc_m1_%sWrAddr%s = c_m1_varAddr1;\n", pTabs,
-							mifRdDst.m_var.c_str(), varIdx.c_str());
-						else if (mifRdDst.m_varAddr2W > 0)
-							mifPostInstr.Append("%sc_m1_%sWrAddr%s = c_m1_varAddr2;\n", pTabs,
-							mifRdDst.m_var.c_str(), varIdx.c_str());
-					}
-
-					string castStr;
-					switch (mifRdDst.m_fldW) {
-					case 8: castStr = "(uint8_t)"; break;
-					case 16: castStr = "(uint16_t)"; break;
-					case 32: castStr = "(uint32_t)"; break;
-					default: break;
-					}
-
-					mifPostInstr.Append("%sc_m1_%sWrData%s%s%s = %sc_m1_rdRspData%s;\n", pTabs,
-						mifRdDst.m_var.c_str(), varIdx.c_str(), dotFieldName.c_str(), fldIdx.c_str(),
-						castStr.c_str(),
-						dataIdx);
-				}
-			}
-
-			if (mif.m_mifRd.m_rdDstList.size() > 1) {
-				mifPostInstr.Append("\t\t\t\tbreak;\n");
-				mifPostInstr.Append("\t\t\t}\n");
-			}
-		}
-
-		if (mif.m_mifRd.m_rdDstList.size() > 1) {
-			mifPostInstr.Append("\t\tdefault:\n");
-			mifPostInstr.Append("\t\t\tassert(0);\n");
-			mifPostInstr.Append("\t\t}\n");
-		}
+		mifPostInstr.Append("\t\tm_rdRspInfo.write_addr(c_rdRspId);\n");
+		mifPostInstr.Append("\t\tm_rdRspInfo.write_mem(r_t%d_rdRspInfo);\n",
+			mod.m_execStg + 1);
 
 		mifPostInstr.Append("\t}\n");
 		mifPostInstr.NewLine();
 	}
 
-	if (bMifWr) {
-		mifPostInstr.Append("\t// Handle write responses\n");
-		mifPostInstr.Append("\tbool c_m0_wrRspRdy = i_mifTo%sP0_wrRspRdy.read();\n",
-			mod.m_modName.Uc().c_str());
-	}
+	if (bMultiQwReq) {
+		mifPostInstr.Append("\tif (!r_memReqHold) {\n");
 
-	if (mif.m_bMifWr && mif.m_mifWr.m_bPause) {
+		if (bMultiQwMif) {
+			string checkReqSize;
+			if (!bSingleMemSize)
+				checkReqSize = VA(" && r_t%d_%sToMif_req.m_size == 3", mod.m_execStg + 1, mod.m_modName.Lc().c_str());
 
-		if (mif.m_mifWr.m_rspGrpIdW == 0) {
-
-			mifPostInstr.Append("\tif (r_m1_wrRspRdy) {\n");
-			mifPostInstr.NewLine();
-			mifPostInstr.Append("\t\tbool c_m1_wrGrpRsmWait = r_wrGrpRsmWait == true || c_t%d_memWritePause;\n",
-				mod.m_execStg);
-			mifPostInstr.NewLine();
-			mifPostInstr.Append("\t\tif (c_m1_wrGrpRsmWait && r_wrGrpRspCnt == 1) {\n");
-			mifPostInstr.Append("\t\t\t// last write response arrived, resume thread\n");
-			mifPostInstr.Append("\t\t\tc_wrGrpRsmWait = false;\n");
-
-			if (mifRsmCnt > 1) {
-				if (mod.m_threads.m_htIdW.AsInt() > 0) {
-					mifPostInstr.NewLine();
-					mifPostInstr.Append("\t\t\tCHtRsm wrRspRsm;\n");
-					mifPostInstr.Append("\t\t\twrRspRsm.m_htId = r_m1_wrRspGrpId;\n");
-					mifPostInstr.Append("\t\t\twrRspRsm.m_htInstr = c_wrGrpRsmInstr;\n");
-					mifPostInstr.NewLine();
-					mifPostInstr.Append("\t\t\tm_mif_wrRsmQue.push(wrRspRsm);\n");
-				} else {
-					mifPostInstr.Append("\t\t\tc_t0_rsmHtRdy = true;\n");
-					mifPostInstr.Append("\t\t\tc_t0_rsmHtInstr = c_wrGrpRsmInstr;\n");
-				}
-			} else {
-				if (mod.m_threads.m_htIdW.AsInt() > 0) {
-					mifPostInstr.Append("\t\t\tc_t0_rsmHtRdy = true;\n");
-					mifPostInstr.Append("\t\t\tc_t0_rsmHtId = r_m1_wrRspGrpId;\n");
-					mifPostInstr.Append("\t\t\tc_t0_rsmHtInstr = c_wrGrpRsmInstr;\n");
-				} else {
-					mifPostInstr.Append("\t\t\tc_t0_rsmHtRdy = true;\n");
-					mifPostInstr.Append("\t\t\tc_t0_rsmHtInstr = c_wrGrpRsmInstr;\n");
-				}
+			mifPostInstr.Append("\t\tbool bMultiQwReq = ");
+			string separator;
+			if (bMultiQwHostRdMif) {
+				mifPostInstr.Append("%s(r_t%d_%sToMif_req.m_host && r_t%d_%sToMif_req.m_type == MEM_REQ_RD%s\n\t\t\t&& (r_t%d_%sToMif_req.m_addr & 0x38) != 7 && r_t%d_memReq.m_qwRem >= 2)", separator.c_str(),
+					mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
+					mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
+					checkReqSize.c_str(),
+					mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
+					mod.m_execStg + 1);
+				separator = "\n\t\t\t|| ";
 			}
-
-			mifPostInstr.Append("\t\t}\n");
-			mifPostInstr.Append("\t}\n");
-			mifPostInstr.Append("\t\n");
-
-		} else if (mif.m_mifWr.m_rspGrpIdW <= 2) {
-
-			mifPostInstr.Append("\tsc_uint<%s_WR_GRP_ID_W> c_m1_wrRspGrpId = r_m1_wrRspTid & ((1 << %s_WR_GRP_ID_W)-1);\n",
-				mod.m_modName.Upper().c_str(), mod.m_modName.Upper().c_str());
-
-			mifPostInstr.Append("\tif (r_m1_wrRspRdy) {\n");
-			mifPostInstr.Append("\t\tbool c_m1_wrGrpRsmWait = r_wrGrpRsmWait[INT(c_m1_wrRspGrpId)] == true\n");
-			mifPostInstr.Append("\t\t\t|| (c_t%d_memWritePause && %s == c_m1_wrRspGrpId);\n",
-				mod.m_execStg, wrRspGrpName);
-			mifPostInstr.NewLine();
-			mifPostInstr.Append("\t\tif (c_m1_wrGrpRsmWait && r_wrGrpRspCnt[INT(c_m1_wrRspGrpId)] == 1) {\n");
-			mifPostInstr.Append("\t\t\t// last read response arrived, resume thread\n");
-			mifPostInstr.Append("\t\t\tc_wrGrpRsmWait[INT(c_m1_wrRspGrpId)] = false;\n");
-			mifPostInstr.NewLine();
-
-			if (mifRsmCnt > 1) {
-
-				if (mod.m_threads.m_htIdW.AsInt() > 0) {
-					mifPostInstr.Append("\t\t\tCHtRsm wrRspRsm;\n");
-					if (mif.m_mifWr.m_rspGrpId.size() == 0)
-						mifPostInstr.Append("\t\t\twrRspRsm.m_htId = c_m1_wrRspGrpId;\n");
-					else
-						mifPostInstr.Append("\t\t\twrRspRsm.m_htId = r_wrGrpRsmHtId[INT(c_m1_wrRspGrpId)];\n");
-					mifPostInstr.Append("\t\t\twrRspRsm.m_htInstr = r_wrGrpRsmInstr[INT(c_m1_wrRspGrpId)];\n");
-					mifPostInstr.NewLine();
-					mifPostInstr.Append("\t\t\tm_mif_wrRsmQue.push(wrRspRsm);\n");
-				} else {
-					mifPostInstr.Append("\t\t\tc_t0_rsmHtRdy = true;\n");
-					mifPostInstr.Append("\t\t\tc_t0_rsmHtInstr = c_wrGrpRsmInstr[INT(c_m1_wrRspGrpId)];\n");
-				}
-
-			} else {
-
-				if (mod.m_threads.m_htIdW.AsInt() > 0) {
-					mifPostInstr.Append("\t\t\tc_t0_rsmHtRdy = true;\n");
-					if (mif.m_mifWr.m_rspGrpId.size() == 0)
-						mifPostInstr.Append("\t\t\tc_t0_rsmHtId = c_m1_wrRspGrpId;\n");
-					else
-						mifPostInstr.Append("\t\t\tc_t0_rsmHtId = r_wrGrpRsmHtId[INT(c_m1_wrRspGrpId)];\n");
-					mifPostInstr.Append("\t\t\tc_t0_rsmHtInstr = c_wrGrpRsmInstr[INT(c_m1_wrRspGrpId)];\n");
-				} else {
-					mifPostInstr.Append("\t\t\tc_t0_rsmHtRdy = true;\n");
-					mifPostInstr.Append("\t\t\tc_t0_rsmHtInstr = c_wrGrpRsmInstr[INT(c_m1_wrRspGrpId)];\n");
-				}
+			if (bMultiQwCoprocRdMif) {
+				mifPostInstr.Append("%s(!r_t%d_%sToMif_req.m_host && r_t%d_%sToMif_req.m_type == MEM_REQ_RD%s\n\t\t\t&& (r_t%d_%sToMif_req.m_addr & 0x38) != 7 && r_t%d_memReq.m_qwRem >= 2)", separator.c_str(),
+					mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
+					mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
+					checkReqSize.c_str(),
+					mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
+					mod.m_execStg + 1);
+				separator = "\n\t\t\t|| ";
 			}
-
-			mifPostInstr.Append("\t\t}\n");
-			mifPostInstr.Append("\t}\n");
-
-		} else {
-
-			mifPostInstr.Append("\tsc_uint<%s_WR_GRP_ID_W> c_m1_wrRspGrpId = r_m1_wrRspTid & ((1ul << %s_WR_GRP_ID_W)-1);\n",
-				mod.m_modName.Upper().c_str(), mod.m_modName.Upper().c_str());
-			mifPostInstr.Append("\tm_wrGrpRsmWait[c_m1_wrRspGrpId & %s].read_addr(c_m1_wrRspGrpId >> %s);\n", pWrGrpIdMask, pWrGrpShfAmt);
-			mifPostInstr.Append("\tm_wrGrpRsmInstr[c_m1_wrRspGrpId & %s].read_addr(c_m1_wrRspGrpId >> %s);\n", pWrGrpIdMask, pWrGrpShfAmt);
-			if (mif.m_mifWr.m_rspGrpId.size() != 0)
-				mifPostInstr.Append("\tm_wrGrpRsmHtId[c_m1_wrRspGrpId & %s].read_addr(c_m1_wrRspGrpId >> %s);\n", pWrGrpIdMask, pWrGrpShfAmt);
-
-			mifPostInstr.Append("\tif (r_m1_wrRspRdy) {\n");
-
-			mifPostInstr.Append("\t\tm_wrGrpRsmWait[c_m1_wrRspGrpId & %s].write_addr(c_m1_wrRspGrpId >> %s);\n", pWrGrpIdMask, pWrGrpShfAmt);
-			mifPostInstr.Append("\t\tbool c_m1_wrGrpRsmWait = m_wrGrpRsmWait[c_m1_wrRspGrpId & %s].read_mem();\n", pWrGrpIdMask);
-			mifPostInstr.NewLine();
-			mifPostInstr.Append("\t\tif (c_m1_wrGrpRsmWait && r_wrGrpRspCnt[c_m1_wrRspGrpId & %s] == 1) {\n", pWrGrpIdMask);
-
-			mifPostInstr.Append("\t\t\t// last read response arrived, resume thread\n");
-			mifPostInstr.Append("\t\t\tm_wrGrpRsmWait[c_m1_wrRspGrpId & %s].write_mem(false);\n", pWrGrpIdMask);
-			mifPostInstr.NewLine();
-
-			if (mifRsmCnt > 1) {
-
-				if (mod.m_threads.m_htIdW.AsInt() > 0) {
-					mifPostInstr.Append("\t\t\tCHtRsm wrRspRsm;\n");
-					if (mif.m_mifWr.m_rspGrpId.size() == 0)
-						mifPostInstr.Append("\t\t\twrRspRsm.m_htId = c_m1_wrRspGrpId;\n");
-					else
-						mifPostInstr.Append("\t\t\twrRspRsm.m_htId = m_wrGrpRsmHtId[c_m1_wrRspGrpId & %s].read_mem();\n", pWrGrpIdMask);
-					mifPostInstr.Append("\t\t\twrRspRsm.m_htInstr = m_wrGrpRsmInstr[c_m1_wrRspGrpId & %s].read_mem();\n", pWrGrpIdMask);
-					mifPostInstr.NewLine();
-					mifPostInstr.Append("\t\t\tm_mif_wrRsmQue.push(wrRspRsm);\n");
-				} else {
-					mifPostInstr.Append("\t\t\tc_bWrGrpRsmRdy = true;\n");
-					mifPostInstr.Append("\t\t\tc_wrMemRspHtInstr = m_wrGrpRsmInstr[c_m1_wrRspGrpId & %s].read_mem();\n");
-				}
-
-			} else {
-
-				if (mod.m_threads.m_htIdW.AsInt() > 0) {
-					mifPostInstr.Append("\t\t\tc_t0_rsmHtRdy = true;\n");
-					if (mif.m_mifWr.m_rspGrpId.size() == 0)
-						mifPostInstr.Append("\t\t\tc_t0_rsmHtId = c_m1_wrRspGrpId;\n");
-					else
-						mifPostInstr.Append("\t\t\tc_t0_rsmHtId = m_wrGrpRsmHtId[c_m1_wrRspGrpId & %s].read_mem();\n", pWrGrpIdMask);
-					mifPostInstr.Append("\t\t\tc_t0_rsmHtInstr = m_wrGrpRsmInstr[c_m1_wrRspGrpId & %s].read_mem();\n", pWrGrpIdMask);
-				} else {
-					mifPostInstr.Append("\t\t\tc_bWrGrpRsmRdy = true;\n");
-					mifPostInstr.Append("\t\t\tc_wrMemRspHtInstr = m_wrGrpRsmInstr[c_m1_wrRspGrpId & %s].read_mem();\n");
-				}
+			if (bMultiQwHostWrMif) {
+				mifPostInstr.Append("%s(r_t%d_%sToMif_req.m_host && r_t%d_%sToMif_req.m_type == MEM_REQ_WR%s\n\t\t\t&& (r_t%d_%sToMif_req.m_addr & 0x38) %s && r_t%d_memReq.m_qwRem >= %d)", separator.c_str(),
+					mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
+					mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
+					checkReqSize.c_str(),
+					mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
+					coprocInfo.IsVarQwReqCnt() ? "!= 7" : " == 0",
+					mod.m_execStg + 1,
+					coprocInfo.IsVarQwReqCnt() ? 2 : 8);
+				separator = "\n\t\t\t|| ";
 			}
+			if (bMultiQwCoprocWrMif) {
+				mifPostInstr.Append("%s(!r_t%d_%sToMif_req.m_host && r_t%d_%sToMif_req.m_type == MEM_REQ_WR%s\n\t\t\t&& (r_t%d_%sToMif_req.m_addr & 0x38) %s && r_t%d_memReq.m_qwRem >= %d)", separator.c_str(),
+					mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
+					mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
+					checkReqSize.c_str(),
+					mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
+					coprocInfo.IsVarQwReqCnt() ? "!= 7" : " == 0",
+					mod.m_execStg + 1,
+					coprocInfo.IsVarQwReqCnt() ? 2 : 8);
+				separator = "\n\t\t\t|| ";
+			}
+			mifPostInstr.Append(";\n");
+			mifPostInstr.NewLine();
 
-			mifPostInstr.Append("\t\t}\n");
-			mifPostInstr.Append("\t}\n");
-		}
-	}
+			mifPostInstr.Append("\t\tht_uint3 qwFst = (r_t%d_%sToMif_req.m_addr >> 3) & 0x7;\n",
+				mod.m_execStg + 1, mod.m_modName.Lc().c_str());
+			mifPostInstr.Append("\t\tbool bSpanMemLines = (qwFst + r_t%d_memReq.m_qwRem) >= 0x8;\n",
+				mod.m_execStg + 1);
+			mifPostInstr.Append("\t\tht_uint3 qwLst = bSpanMemLines ? 7 : ((qwFst + r_t%d_memReq.m_qwRem - 1) & 0x7);\n",
+				mod.m_execStg + 1);
 
-	int reqQwIdxStgCnt = 1;
-	if (mif.m_bMifWr) {
-		char wrRspGrpId[128];
-		string wrRspGrpIdW;
-		if (mif.m_mifWr.m_rspGrpId.size() == 0) {
-			sprintf(wrRspGrpId, "r_t%d_htId", mod.m_execStg-1);
-			wrRspGrpIdW = VA("%s_HTID_W", mod.m_modName.Upper().c_str());
-		} else if (mif.m_mifWr.m_bRspGrpIdPriv) {
-			sprintf(wrRspGrpId, "c_t%d_htPriv.m_%s",
-				mod.m_execStg-1, mif.m_mifWr.m_rspGrpId.AsStr().c_str());
-			wrRspGrpIdW = VA("%s_WR_GRP_ID_W", mod.m_modName.Upper().c_str());
-		} else {
-			sprintf(wrRspGrpId, "c_%s", mif.m_mifWr.m_rspGrpId.AsStr().c_str());
-			wrRspGrpIdW = VA("%s_WR_GRP_ID_W", mod.m_modName.Upper().c_str());
+			if (mif.m_bMifRd && mif.m_bMifWr) {
+				mifPostInstr.Append("\t\tht_uint3 lineQwCntM1 = r_t%d_memReq.m_rdReq ? 7 : (qwLst - qwFst);\n",
+					mod.m_execStg + 1);
+			} else if (mif.m_bMifRd)
+				mifPostInstr.Append("\t\tht_uint3 lineQwCntM1 = 7;\n");
+			else
+				mifPostInstr.Append("\t\tht_uint3 lineQwCntM1 = qwLst - qwFst;\n");
+			mifPostInstr.NewLine();
 		}
 
-		if (mif.m_mifWr.m_rspGrpIdW == 0) {
-			mifPostInstr.Append("\t// update r_wrGrpRspCnt\n");
-			mifPostInstr.Append("\tbool c_m0_bWrRspRdy = i_mifTo%sP0_wrRspRdy.read();\n",
-				mod.m_modName.Uc().c_str());
+		mifPostInstr.Append("\t\tif (r_t%d_memReq.m_valid && r_t%d_memReq.m_qwRem > 1) {\n",
+			mod.m_execStg + 1,
+			mod.m_execStg + 1);
 
-			mifPostInstr.NewLine();
-
-			if (mif.m_bMifRd && mif.m_bMifWr)
-				mifPostInstr.Append("\tbool c_t%d_bWrReqRdy = c_t%d_%sToMif_reqRdy%s && !c_t%d_bReadMem;\n",
-				mod.m_execStg, mod.m_execStg, mod.m_modName.Lc().c_str(), notReqBusy, mod.m_execStg, mod.m_modName.Lc().c_str());
-			else
-				mifPostInstr.Append("\tbool c_t%d_bWrReqRdy = c_t%d_%sToMif_reqRdy%s;\n",
-				mod.m_execStg, mod.m_execStg, mod.m_modName.Lc().c_str(), notReqBusy);
-
-			mifPostInstr.Append("\tc_wrGrpRspCnt = r_wrGrpRspCnt;\n",
-				mod.m_modName.Upper().c_str());
-			mifPostInstr.NewLine();
-
-			if (mif.m_mifWr.m_bMultiWr && is_hc1) {
-				mifPostInstr.Append("\tif (c_t%d_bWrReqRdy)\n", mod.m_execStg);
-				mifPostInstr.Append("\t\tc_wrGrpRspCnt += c_t%d_reqQwCnt;\n", mod.m_execStg);
-				mifPostInstr.Append("\tif (r_m1_bWrRspRdy)\n");
-				mifPostInstr.Append("\t\tc_wrGrpRspCnt -= 1;\n");
-
-			} else if (mif.m_mifWr.m_bMultiWr && is_hc2) {
-				mifPostInstr.Append("\tif (c_t%d_bWrReqRdy)\n", mod.m_execStg);
-				mifPostInstr.Append("\t\tc_wrGrpRspCnt += (c_t%d_reqQwCnt == 8 && c_t%d_%sToMif_req.m_host) ? (ht_uint4)1 : c_t%d_reqQwCnt;\n",
-					mod.m_execStg, mod.m_execStg, mod.m_modName.Lc().c_str(), mod.m_execStg);
-				mifPostInstr.Append("\tif (r_m1_bWrRspRdy)\n");
-				mifPostInstr.Append("\t\tc_wrGrpRspCnt -= 1;\n");
-
-			} else {
-				mifPostInstr.Append("\tif (r_m1_bWrRspRdy != c_t%d_bWrReqRdy)\n",
-					mod.m_execStg);
-				mifPostInstr.Append("\t\tc_wrGrpRspCnt += r_m1_bWrRspRdy ? (sc_uint<%s_WR_RSP_CNT_W>)-1 : (sc_uint<%s_WR_RSP_CNT_W>)+1;\n",
-					mod.m_modName.Upper().c_str(), mod.m_modName.Upper().c_str());
-			}
-			mifPostInstr.NewLine();
-
-			mifPostInstr.Append("\tsc_uint<%s_WR_RSP_CNT_W> c_t%d_wrGrpRspCnt = c_wrGrpRspCnt;\n",
-				mod.m_modName.Upper().c_str(), mod.m_execStg-1);
-		} else if (mif.m_mifWr.m_rspGrpIdW <= 2) {
-			mifPostInstr.Append("\t// update r_wrGrpRspCnt\n");
-			mifPostInstr.Append("\tbool c_m0_bWrRspRdy[%d];\n",
-				1<<mif.m_mifWr.m_rspGrpIdW);
-			mifPostInstr.NewLine();
-			mifPostInstr.Append("\tfor (unsigned i = 0; i < %du; i += 1) {\n", 1<<mif.m_mifWr.m_rspGrpIdW);
-			mifPostInstr.Append("\t\tc_m0_bWrRspRdy[i] = i_mifTo%sP0_wrRspRdy.read() && (i_mifTo%sP0_wrRspTid.read() & %s) == i;\n",
-				mod.m_modName.Uc().c_str(), mod.m_modName.Uc().c_str(), pWrGrpIdMask);
-
-			mifPostInstr.NewLine();
-
-			if (mif.m_bMifRd && mif.m_bMifWr)
-				mifPostInstr.Append("\t\tbool c_t%d_bWrReqRdy = c_t%d_%sToMif_reqRdy%s && !c_t%d_bReadMem && (c_t%d_%sToMif_req.m_tid & %s) == i;\n",
-				mod.m_execStg, mod.m_execStg, mod.m_modName.Lc().c_str(), notReqBusy, mod.m_execStg, mod.m_execStg, mod.m_modName.Lc().c_str(), pWrGrpIdMask);
-			else
-				mifPostInstr.Append("\t\tbool c_t%d_bWrReqRdy = c_t%d_%sToMif_reqRdy%s && (c_t%d_%sToMif_req.m_tid & %s) == i;\n",
-				mod.m_execStg, mod.m_execStg, mod.m_modName.Lc().c_str(), notReqBusy, mod.m_execStg, mod.m_modName.Lc().c_str(), pWrGrpIdMask);
-
-			mifPostInstr.Append("\t\tc_wrGrpRspCnt[i] = r_wrGrpRspCnt[i];\n",
-				mod.m_modName.Upper().c_str());
-			mifPostInstr.NewLine();
-
-			if (mif.m_mifWr.m_bMultiWr && is_hc1) {
-				mifPostInstr.Append("\t\tif (r_m1_bWrRspRdy[i] || c_t%d_bWrReqRdy) {\n", mod.m_execStg);
-				mifPostInstr.Append("\t\t\tif (c_t%d_bWrReqRdy)\n", mod.m_execStg);
-				mifPostInstr.Append("\t\t\t\tc_wrGrpRspCnt[i] += c_t%d_reqQwCnt;\n", mod.m_execStg);
-				mifPostInstr.Append("\t\t\tif (r_m1_bWrRspRdy[i])\n");
-				mifPostInstr.Append("\t\t\t\tc_wrGrpRspCnt[i] -= 1;\n");
-				mifPostInstr.Append("\t\t}\n");
-
-			} else if (mif.m_mifWr.m_bMultiWr && is_hc2) {
-				mifPostInstr.Append("\t\tif (r_m1_bWrRspRdy[i] || c_t%d_bWrReqRdy) {\n", mod.m_execStg);
-				mifPostInstr.Append("\t\t\tif (c_t%d_bWrReqRdy)\n", mod.m_execStg);
-				mifPostInstr.Append("\t\t\t\tc_wrGrpRspCnt[i] += (c_t%d_reqQwCnt == 8 && c_t%d_%sToMif_req.m_host) ? (ht_uint4)1 : c_t%d_reqQwCnt;\n",
-					mod.m_execStg, mod.m_execStg, mod.m_modName.Lc().c_str(), mod.m_execStg);
-				//c_t%d_reqQwCnt;\n", mod.m_execStg);
-				mifPostInstr.Append("\t\t\tif (r_m1_bWrRspRdy[i])\n");
-				mifPostInstr.Append("\t\t\t\tc_wrGrpRspCnt[i] -= 1;\n");
-				mifPostInstr.Append("\t\t}\n");
-
-			} else {
-				mifPostInstr.Append("\t\tif (r_m1_bWrRspRdy[i] != c_t%d_bWrReqRdy)\n",
-					mod.m_execStg, mod.m_modName.Upper().c_str());
-				mifPostInstr.Append("\t\t\tc_wrGrpRspCnt[i] += r_m1_bWrRspRdy[i] ? (sc_uint<%s_WR_RSP_CNT_W>)-1 : (sc_uint<%s_WR_RSP_CNT_W>)+1;\n",
-					mod.m_modName.Upper().c_str(), mod.m_modName.Upper().c_str());
-			}
-
-			mifPostInstr.Append("\t}\n");
-			mifPostInstr.NewLine();
-
-			mifPostInstr.Append("\tsc_uint<%s_WR_RSP_CNT_W> c_t%d_wrGrpRspCnt = c_wrGrpRspCnt[INT(%s)];\n",
-				mod.m_modName.Upper().c_str(), mod.m_execStg-1, wrRspGrpId);
-		} else {
-			mifPostInstr.Append("\t// update m_wrGrpRspCnt rams\n");
-			mifPostInstr.Append("\tsc_uint<%s_WR_GRP_ID_W> c_wrGrpRspCntAddr[%d];\n",
-				mod.m_modName.Upper().c_str(),
-				wrGrpBankCnt);
-			mifPostInstr.Append("\tsc_uint<%s_WR_RSP_CNT_W> c_wrGrpRspCnt[%d];\n",
-				mod.m_modName.Upper().c_str(),
-				wrGrpBankCnt);
-			mifPostInstr.Append("\tsc_uint<%s_WR_GRP_ID_W> c_m0_wrRspGrpId = i_mifTo%sP0_wrRspTid.read() & ((1 << %s_WR_GRP_ID_W)-1);\n",
-				mod.m_modName.Upper().c_str(),
-				mod.m_modName.Uc().c_str(),
-				mod.m_modName.Upper().c_str());
-			mifPostInstr.Append("\tbool c_m0_bWrRspRdy[%d];\n",
-				wrGrpBankCnt);
-			mifPostInstr.NewLine();
-			mifPostInstr.Append("\tfor (unsigned i = 0; i < %du; i += 1) {\n", wrGrpBankCnt);
-			mifPostInstr.Append("\t\tc_m0_bWrRspRdy[i] = i_mifTo%sP0_wrRspRdy.read() && (i_mifTo%sP0_wrRspTid.read() & %s) == i;\n",
-				mod.m_modName.Uc().c_str(), mod.m_modName.Uc().c_str(), pWrGrpIdMask);
-			mifPostInstr.Append("\t\tc_wrGrpRspCntAddr[i] = c_m0_bWrRspRdy[i] ? c_m0_wrRspGrpId : %s;\n", wrRspGrpId);
-			mifPostInstr.Append("\t\tm_wrGrpRspCnt[i].read_addr(c_wrGrpRspCntAddr[i] >> %s);\n", pWrGrpShfAmt);
-			mifPostInstr.Append("\t\tbool bBypass = c_wrGrpRspCntAddr[i] == r_wrGrpRspCntAddr[i] && (r_wrGrpRspCntAddr[i] & %s) == i;\n",
-				pWrGrpIdMask);
-			mifPostInstr.NewLine();
-
-			if (mif.m_bMifRd && mif.m_bMifWr)
-				mifPostInstr.Append("\t\tbool c_t%d_bWrReqRdy = c_t%d_%sToMif_reqRdy%s && !c_t%d_bReadMem && (c_t%d_%sToMif_req.m_tid & %s) == i;\n",
-				mod.m_execStg, mod.m_execStg, mod.m_modName.Lc().c_str(), notReqBusy, mod.m_execStg, mod.m_execStg, mod.m_modName.Lc().c_str(), pWrGrpIdMask);
-			else
-				mifPostInstr.Append("\t\tbool c_t%d_bWrReqRdy = c_t%d_%sToMif_reqRdy%s && (c_t%d_%sToMif_req.m_tid & %s) == i;\n",
-				mod.m_execStg, mod.m_execStg, mod.m_modName.Lc().c_str(), notReqBusy, mod.m_execStg, mod.m_modName.Lc().c_str(), pWrGrpIdMask);
-
-			mifPostInstr.Append("\t\tsc_uint<%s_WR_RSP_CNT_W> c_wrGrpRspCntOut = r_wrGrpRspCnt[i];\n",
-				mod.m_modName.Upper().c_str());
-			mifPostInstr.NewLine();
-
-			if (mif.m_mifWr.m_bMultiWr && is_hc1) {
-				mifPostInstr.Append("\t\tif ((r_m1_bWrRspRdy[i] || c_t%d_bWrReqRdy) && r_wrRspGrpInitCnt[%s_WR_GRP_ID_W] == 1) {\n",
-					mod.m_execStg, mod.m_modName.Upper().c_str());
-
-				mifPostInstr.Append("\t\t\tif (c_t%d_bWrReqRdy)\n", mod.m_execStg);
-				mifPostInstr.Append("\t\t\t\tc_wrGrpRspCntOut += c_t%d_reqQwCnt;\n", mod.m_execStg);
-				mifPostInstr.Append("\t\t\tif (r_m1_bWrRspRdy[i])\n");
-				mifPostInstr.Append("\t\t\t\tc_wrGrpRspCntOut -= 1;\n");
-
-			} else if (mif.m_mifWr.m_bMultiWr && is_hc2) {
-				mifPostInstr.Append("\t\tif ((r_m1_bWrRspRdy[i] || c_t%d_bWrReqRdy) && r_wrRspGrpInitCnt[%s_WR_GRP_ID_W] == 1) {\n",
-					mod.m_execStg, mod.m_modName.Upper().c_str());
-
-				mifPostInstr.Append("\t\t\tif (c_t%d_bWrReqRdy)\n", mod.m_execStg);
-				mifPostInstr.Append("\t\t\t\tc_wrGrpRspCntOut += (c_t%d_reqQwCnt == 8 && c_t%d_%sToMif_req.m_host) ? (ht_uint4)1 : c_t%d_reqQwCnt;\n",
-					mod.m_execStg, mod.m_execStg, mod.m_modName.Lc().c_str(), mod.m_execStg);
-				//c_t%d_reqQwCnt;\n", mod.m_execStg);
-				mifPostInstr.Append("\t\t\tif (r_m1_bWrRspRdy[i])\n");
-				mifPostInstr.Append("\t\t\t\tc_wrGrpRspCntOut -= 1;\n");
-
-			} else {
-				mifPostInstr.Append("\t\tif (r_m1_bWrRspRdy[i] != c_t%d_bWrReqRdy && r_wrRspGrpInitCnt[%s_WR_GRP_ID_W] == 1) {\n",
-					mod.m_execStg, mod.m_modName.Upper().c_str());
-				mifPostInstr.Append("\t\t\tc_wrGrpRspCntOut += r_m1_bWrRspRdy[i] ? (sc_uint<%s_WR_RSP_CNT_W>)-1 : (sc_uint<%s_WR_RSP_CNT_W>)+1;\n",
-					mod.m_modName.Upper().c_str(), mod.m_modName.Upper().c_str());
-			}
-
-			mifPostInstr.Append("\t\t\tm_wrGrpRspCnt[i].write_addr(r_wrGrpRspCntAddr[i] >> %s);\n", pWrGrpShfAmt);
-			mifPostInstr.Append("\t\t\tm_wrGrpRspCnt[i].write_mem(c_wrGrpRspCntOut);\n");
-			mifPostInstr.Append("\t\t}\n");
-			mifPostInstr.NewLine();
-			mifPostInstr.Append("\t\tc_wrGrpRspCnt[i] = bBypass ? c_wrGrpRspCntOut : m_wrGrpRspCnt[i].read_mem();\n");
-			mifPostInstr.Append("\t}\n");
-			mifPostInstr.NewLine();
-
-			mifPostInstr.Append("\tsc_uint<%s_WR_RSP_CNT_W> c_t%d_wrGrpRspCnt = c_wrGrpRspCnt[%s & %s];\n",
-				mod.m_modName.Upper().c_str(), mod.m_execStg-1, wrRspGrpId, pWrGrpIdMask);
-		}
-
-		if (mif.m_mifWr.m_bMultiWr)
-			mifPostInstr.Append("\tbool c_t%d_wrGrpRspCntMax = c_t%d_wrGrpRspCnt >= ((1ul << %s_WR_RSP_CNT_W)-8);\n",
-				mod.m_execStg-1, mod.m_execStg-1, mod.m_modName.Upper().c_str());
-		else
-			mifPostInstr.Append("\tbool c_t%d_wrGrpRspCntMax = c_t%d_wrGrpRspCnt == ((1ul << %s_WR_RSP_CNT_W)-1);\n",
-				mod.m_execStg-1, mod.m_execStg-1, mod.m_modName.Upper().c_str());
-
-		mifPostInstr.Append("\tbool c_t%d_wrGrpRspCntZero = c_t%d_wrGrpRspCnt == 0;\n",
-			mod.m_execStg-1, mod.m_execStg-1);
 		mifPostInstr.NewLine();
 
-		if (mif.m_mifWr.m_rspGrpIdW > 2) {
-			mifPostInstr.Append("\tbool c_t%d_bWriteRspBusy = i_mifTo%sP0_wrRspRdy.read() && ((c_m0_wrRspGrpId & %s) == (%s & %s));\n",
-				mod.m_execStg-1, mod.m_modName.Uc().c_str(), pWrGrpIdMask, wrRspGrpId, pWrGrpIdMask);
-			mifPostInstr.NewLine();
+		mifPostInstr.Append("\t\t\tc_t%d_memReq.m_qwRem = r_t%d_memReq.m_qwRem - 1;\n",
+			mod.m_execStg, mod.m_execStg + 1);
+		mifPostInstr.NewLine();
+
+		bool bNeedElemQwIdx = maxElemQwCnt > 1;
+		bool bNeedVIdx1 = vIdxWList.size() > 0 && vIdxWList[0] > 0;
+		bool bNeedVIdx2 = vIdxWList.size() > 1 && vIdxWList[1] > 0;
+		bool bNeedElemQwCntM1 = bNeedElemQwIdx && (bNeedVIdx1 || bNeedVIdx2);
+		bool bNeedVIdx2CntM1 = bNeedVIdx2 && bNeedVIdx1;
+
+		if (bNeedElemQwIdx) {
+			string tabs;
+			if (bNeedElemQwCntM1) {
+				mifPostInstr.Append("\t\t\tif (r_t%d_memReq.m_elemQwIdx < r_t%d_memReq.m_elemQwCntM1) {\n",
+					mod.m_execStg + 1, mod.m_execStg + 1);
+				tabs = "\t";
+			}
+			mifPostInstr.Append("%s\t\t\tc_t%d_memReq.m_elemQwIdx = r_t%d_memReq.m_elemQwIdx + 1u;\n",
+				tabs.c_str(), mod.m_execStg, mod.m_execStg + 1);
+
+			if (bNeedElemQwCntM1)
+				mifPostInstr.Append("\t\t\t}");
 		}
 
-		if (mif.m_mifWr.m_bMultiWr) {
+		if (bNeedVIdx2) {
+			if (bNeedElemQwIdx)
+				mifPostInstr.Append(" else ");
+			else
+				mifPostInstr.Append("\t\t\t");
 
-			mifPostInstr.Append("\tbool c_t%d_bWriteReq = c_t%d_%sToMif_reqRdy && c_t%d_%sToMif_req.m_type == MEM_REQ_WR;\n",
-				mod.m_execStg+1, mod.m_execStg+1, mod.m_modName.Lc().c_str(), mod.m_execStg+1, mod.m_modName.Lc().c_str());
-
-			mifPostInstr.NewLine();
-
-			mifPostInstr.Append("\t// Read data for memory write\n");
-
-			for (size_t i = 0; i < mif.m_mifWr.m_wrSrcList.size(); i += 1) {
-				CMifWrSrc &mifWrSrc = mif.m_mifWr.m_wrSrcList[i];
-
-				if (mifWrSrc.m_pIntGbl && (mifWrSrc.m_varAddr0W > 0 || mifWrSrc.m_varAddr1W > 0))
-					mifPostInstr.Append("\tht_uint%d c_%sMifRdAddr = 0;\n",
-					mifWrSrc.m_pIntGbl->m_addr0W.AsInt() + mifWrSrc.m_pIntGbl->m_addr1W.AsInt() + mifWrSrc.m_pIntGbl->m_addr2W.AsInt(),
-					mifWrSrc.m_pIntGbl->m_gblName.c_str());
+			string tabs;
+			if (bNeedVIdx2CntM1) {
+				mifPostInstr.Append("if (r_t%d_memReq.m_vIdx2 < r_t%d_memReq.m_vIdx2CntM1) {\n",
+					mod.m_execStg + 1, mod.m_execStg + 1);
+				tabs = "\t";
+			} else if (bNeedElemQwIdx) {
+				mifPostInstr.Append("{\n");
+				mifPostInstr.Append("\t\t\t\tc_t%d_memReq.m_elemQwIdx = 0;\n",
+					mod.m_execStg);
+				tabs = "\t";
 			}
 
-			mifPostInstr.Append("\tif (c_t%d_bWriteReq) {\n", mod.m_execStg+1);
-			mifPostInstr.Append("\t\tsc_uint<%s_MIF_SRC_IDX_W> c_t%d_mifSrcIdx = (c_t%d_%sToMif_req.m_tid >> (%s_MIF_SRC_IDX_SHF + 1 + %s))\n",
-				mod.m_modName.Upper().c_str(), mod.m_execStg+1, mod.m_execStg+1,
-				mod.m_modName.Lc().c_str(), mod.m_modName.Upper().c_str(), wrRspGrpIdW.c_str());
-			mifPostInstr.Append("\t\t\t& %s_MIF_SRC_IDX_MSK;\n", mod.m_modName.Upper().c_str());
+			mifPostInstr.Append("%s\t\t\tc_t%d_memReq.m_vIdx2 = r_t%d_memReq.m_vIdx2 + 1u;\n",
+				tabs.c_str(), mod.m_execStg, mod.m_execStg + 1);
+
+			if (bNeedVIdx2CntM1 || bNeedElemQwIdx) {
+				if (bNeedVIdx1)
+					mifPostInstr.Append("\t\t\t}");
+				else
+					mifPostInstr.Append("\t\t\t}\n");
+			}
+		}
+
+		if (bNeedVIdx1) {
+			string tabs;
+			if (bNeedElemQwCntM1 || bNeedVIdx2CntM1) {
+				mifPostInstr.Append(" else {\n");
+				tabs = "\t";
+			}
+
+			if (bNeedElemQwIdx) {
+				mifPostInstr.Append("%s\t\t\tc_t%d_memReq.m_elemQwIdx = 0;\n",
+					tabs.c_str(), mod.m_execStg);
+			}
+
+			if (bNeedVIdx2) {
+				mifPostInstr.Append("%s\t\t\tc_t%d_memReq.m_vIdx2 = 0;\n",
+					tabs.c_str(), mod.m_execStg);
+			}
+
+			mifPostInstr.Append("%s\t\t\tc_t%d_memReq.m_vIdx1 = r_t%d_memReq.m_vIdx1 + 1u;\n",
+				tabs.c_str(), mod.m_execStg, mod.m_execStg + 1);
+
+			if (bNeedElemQwIdx || bNeedVIdx2CntM1)
+				mifPostInstr.Append("\t\t\t}\n");
+		}
+
+		mifPostInstr.NewLine();
+
+		mifPostInstr.Append("\t\t\tc_t%d_%sToMif_req.m_addr = r_t%d_%sToMif_req.m_addr + ((ht_uint4)1 << r_t%d_%sToMif_req.m_size);\n",
+			mod.m_execStg, mod.m_modName.Lc().c_str(),
+			mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
+			mod.m_execStg + 1, mod.m_modName.Lc().c_str());
+		mifPostInstr.NewLine();
+
+		if (bMultiQwMif) {
+			mifPostInstr.Append("\t\t\tif (r_t%d_memReq.m_reqQwRem > 0) {\n", mod.m_execStg + 1);
+			mifPostInstr.Append("\t\t\t\tc_t%d_memReq.m_reqQwRem = r_t%d_memReq.m_reqQwRem - 1;\n",
+				mod.m_execStg, mod.m_execStg + 1);
+
+			mifPostInstr.Append("\t\t\t} else if (bMultiQwReq) {\n");
+
+			mifPostInstr.Append("\t\t\t\tc_t%d_memReq.m_reqQwRem = qwLst - qwFst;\n", mod.m_execStg);
+
+			mifPostInstr.Append("\t\t\t} else {\n");
+			mifPostInstr.Append("\t\t\t\tc_t%d_memReq.m_reqQwRem = 0;\n", mod.m_execStg);
+			mifPostInstr.Append("\t\t\t}\n");
+		}
+
+		mifPostInstr.Append("\t\t}\n");
+		mifPostInstr.NewLine();
+
+		if (mif.m_bMifRd && bNeedRdRspInfo) {
+
+			string reqQwRemEqZ;
+			if (bMultiQwMif) reqQwRemEqZ = VA(" && r_t%d_memReq.m_reqQwRem == 0", mod.m_execStg + 1);
+
+			mifPostInstr.Append("\t\tif (r_t%d_memReq.m_rdReq%s) {\n",
+				mod.m_execStg + 1, reqQwRemEqZ.c_str());
+			mifPostInstr.Append("\t\t\tsc_uint<%s_RD_RSP_CNT_W> c_rdRspId = 0;\n",
+				mod.m_modName.Upper().c_str());
 			mifPostInstr.NewLine();
 
-			mifPostInstr.Append("\t\tswitch (c_t%d_mifSrcIdx) {\n", mod.m_execStg+1);
+			mifPostInstr.Append("\t\t\tif (r_rdRspIdInit[%s_RD_RSP_CNT_W]) {\n",
+				mod.m_modName.Upper().c_str());
+			mifPostInstr.Append("\t\t\t\tc_rdRspId = m_rdRspIdPool.front();\n");
+			mifPostInstr.Append("\t\t\t\tm_rdRspIdPool.pop();\n");
+			mifPostInstr.Append("\t\t\t} else {\n");
+			mifPostInstr.Append("\t\t\t\tc_rdRspId = r_rdRspIdInit(%s_RD_RSP_CNT_W - 1, 0);\n",
+				mod.m_modName.Upper().c_str());
+			mifPostInstr.Append("\t\t\t\tc_rdRspIdInit = r_rdRspIdInit + 1;\n");
+			mifPostInstr.Append("\t\t\t}\n");
+			mifPostInstr.Append("\t\t\tCRdRspInfo c_t%d_rdRspInfo = r_t%d_rdRspInfo;\n",
+				mod.m_execStg + 1,
+				mod.m_execStg + 1);
+			if (bMultiQwRdMif) {
+				mifPostInstr.Append("\t\t\tc_t%d_rdRspInfo.m_multiQwReq = bMultiQwReq;\n",
+					mod.m_execStg + 1);
+				mifPostInstr.NewLine();
 
-			bool bSharedBram = false;
-			bool bGlobalVarP3 = false;
-			bool bGlobalVarP4 = false;
-			for (size_t i = 0; i < mif.m_mifWr.m_wrSrcList.size(); i += 1) {
-				CMifWrSrc &mifWrSrc = mif.m_mifWr.m_wrSrcList[i];
+				mifPostInstr.Append("\t\t\tc_t%d_rdRspInfo.m_qwFst = qwFst;\n", mod.m_execStg + 1);
+				mifPostInstr.Append("\t\t\tc_t%d_rdRspInfo.m_qwLst = qwLst;\n", mod.m_execStg + 1);
+			}
+			mifPostInstr.NewLine();
 
-				mifPostInstr.Append("\t\tcase %d:\n", (int)i+1);
-				mifPostInstr.Append("\t\t\t{\n");
-
-				char buf[64];
-
-				if (mifWrSrc.m_varAddr0W > 0) {
-					mifPostInstr.Append("\t\t\t\tsc_uint<%s_MIF_SRC_%s_VAR_ADDR0_W> c_t%d_varAddr0 = (c_t%d_%sToMif_req.m_tid\n",
-						mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-						mod.m_execStg+1,
-						mod.m_execStg+1, mod.m_modName.Lc().c_str());
-					mifPostInstr.Append("\t\t\t\t\t>> (%s_MIF_SRC_%s_VAR_ADDR0_SHF + 1 + %s)) & %s_MIF_SRC_%s_VAR_ADDR0_MSK;\n",
-						mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-						wrRspGrpIdW.c_str(),
-						mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str());
+			bool bNeedCntM1 = false;
+			for (int idx = 0; idx < (int)vIdxWList.size(); idx += 1) {
+				if (vIdxWList[idx] > 0) {
+					mifPostInstr.Append("\t\t\tc_t%d_rdRspInfo.m_vIdx%d = r_t%d_memReq.m_vIdx%d;\n",
+						mod.m_execStg + 1, idx + 1,
+						mod.m_execStg + 1, idx + 1);
+					if (bNeedCntM1) {
+						mifPostInstr.Append("\t\t\tc_t%d_rdRspInfo.m_vIdx%dCntM1 = r_t%d_memReq.m_vIdx%dCntM1;\n",
+							mod.m_execStg + 1, idx + 1,
+							mod.m_execStg + 1, idx + 1);
+					}
+					bNeedCntM1 = true;
 				}
+			}
 
-				if (mifWrSrc.m_varAddr1W > 0) {
-					mifPostInstr.Append("\t\t\t\tsc_uint<%s_MIF_SRC_%s_VAR_ADDR1_W> c_t%d_varAddr1 = (c_t%d_%sToMif_req.m_tid\n",
-						mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-						mod.m_execStg+1,
-						mod.m_execStg+1, mod.m_modName.Lc().c_str());
-					mifPostInstr.Append("\t\t\t\t\t>> (%s_MIF_SRC_%s_VAR_ADDR1_SHF + 1 + %s)) & %s_MIF_SRC_%s_VAR_ADDR1_MSK;\n",
-						mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-						wrRspGrpIdW.c_str(),
-						mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str());
+			if (maxQwCnt > 1) {
+				if (maxElemQwCnt > 1) {
+					mifPostInstr.Append("\t\t\tc_t%d_rdRspInfo.m_elemQwIdx = r_t%d_memReq.m_elemQwIdx;\n",
+						mod.m_execStg + 1,
+						mod.m_execStg + 1);
+					if (bNeedCntM1) {
+						mifPostInstr.Append("\t\t\tc_t%d_rdRspInfo.m_elemQwCntM1 = r_t%d_memReq.m_elemQwCntM1;\n",
+							mod.m_execStg + 1,
+							mod.m_execStg + 1);
+					}
 				}
+			}
+		}
 
-				if (mifWrSrc.m_varAddr2W > 0) {
-					mifPostInstr.Append("\t\t\t\tsc_uint<%s_MIF_SRC_%s_VAR_ADDR2_W> c_t%d_varAddr2 = (c_t%d_%sToMif_req.m_tid\n",
-						mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-						mod.m_execStg+1,
-						mod.m_execStg+1, mod.m_modName.Lc().c_str());
-					mifPostInstr.Append("\t\t\t\t\t>> (%s_MIF_SRC_%s_VAR_ADDR2_SHF + 1 + %s)) & %s_MIF_SRC_%s_VAR_ADDR2_MSK;\n",
-						mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-						wrRspGrpIdW.c_str(),
-						mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str());
+		if (mif.m_bMifRd) {
+			mifPostInstr.NewLine();
+
+			mifPostInstr.Append("\t\t\tc_t%d_%sToMif_req.m_tid = c_rdRspId;\n",
+				mod.m_execStg + 1, mod.m_modName.Lc().c_str());
+			mifPostInstr.NewLine();
+
+			mifPostInstr.Append("\t\t\tm_rdRspInfo.write_addr(c_rdRspId);\n");
+			mifPostInstr.Append("\t\t\tm_rdRspInfo.write_mem(c_t%d_rdRspInfo);\n",
+				mod.m_execStg + 1);
+
+			mifPostInstr.Append("\t\t}\n");
+			if (bMultiQwMif)
+				mifPostInstr.NewLine();
+		}
+
+		if (bMultiQwMif) {
+			mifPostInstr.Append("\t\tht_uint3 tidQwCntM1 = (r_t%d_memReq.m_reqQwRem > 0 || bMultiQwReq) ? lineQwCntM1 : (ht_uint3)0;\n", mod.m_execStg + 1);
+			mifPostInstr.Append("\t\tif (r_t%d_memReq.m_reqQwRem == 0)\n", mod.m_execStg + 1);
+			mifPostInstr.Append("\t\t\tc_t%d_%sToMif_req.m_tid |= tidQwCntM1 << 29;\n",
+				mod.m_execStg + 1, mod.m_modName.Lc().c_str());
+			mifPostInstr.Append("\t\telse\n");
+			mifPostInstr.Append("\t\t\tc_t%d_%sToMif_req.m_tid = r_t%d_%sToMif_req.m_tid;\n",
+				mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
+				mod.m_execStg + 2, mod.m_modName.Lc().c_str());
+
+			if (mif.m_bMifRd) {
+				if (mif.m_bMifWr) {
+					mifPostInstr.Append("\t\tc_t%d_%sToMif_req.m_addr &= (bMultiQwReq && r_t%d_memReq.m_rdReq) ? ~0x3fLL : ~0x0LL;\n",
+						mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
+						mod.m_execStg + 1);
+				} else {
+					mifPostInstr.Append("\t\tc_t%d_%sToMif_req.m_addr &= bMultiQwReq ? ~0x3fLL : ~0x0LL;\n",
+						mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
+						mod.m_execStg + 1);
 				}
+			}
+		}
+		mifPostInstr.Append("\t}\n");
+		mifPostInstr.NewLine();
+	}
 
+	if (mif.m_bMifWr) {
+		if (mif.m_mifReqStgCnt >= 1) {
+			// generate ram as register read code
+
+			string tabs;
+			if (bMultiQwReq) {
+				mifPostInstr.Append("\tif (!r_memReqHold) {\n");
+				tabs += "\t";
+			} else {
+				mifPostInstr.Append("\tc_t%d_%sToMif_req.m_data = 0;\n",
+					mod.m_execStg + 1, mod.m_modName.Lc().c_str());
+			}
+
+			if (mif.m_mifWr.m_wrSrcList.size() > 0)
+				mifPostInstr.Append("%s\tswitch (r_t%d_memReq.m_wrSrc) {\n", tabs.c_str(), mod.m_execStg + 1);
+
+			for (size_t wrSrcIdx = 0; wrSrcIdx < mif.m_mifWr.m_wrSrcList.size(); wrSrcIdx += 1) {
+				CMifWrSrc & wrSrc = mif.m_mifWr.m_wrSrcList[wrSrcIdx];
+
+				string varName;
 				string varIdx;
-				string fldIdx;
-				if (mifWrSrc.m_pIntGbl == 0 || (mifWrSrc.m_pIntGbl->m_addr0W.AsInt() == 0 && mifWrSrc.m_pIntGbl->m_addr1W.AsInt() == 0)) {
-					if (mifWrSrc.m_varDimen1 > 0) {
-						sprintf(buf, "[INT(c_t%d_varIdx1)]", mod.m_execStg+1);
-						varIdx = buf;
-						mifPostInstr.Append("\t\t\t\tsc_uint<%s_MIF_SRC_%s_VAR_IDX1_W> c_t%d_varIdx1 = (c_t%d_%sToMif_req.m_tid\n",
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-							mod.m_execStg+1,
-							mod.m_execStg+1, mod.m_modName.Lc().c_str());
-						mifPostInstr.Append("\t\t\t\t\t>> (%s_MIF_SRC_%s_VAR_IDX1_SHF + 1 + %s)) & %s_MIF_SRC_%s_VAR_IDX1_MSK;\n",
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-							wrRspGrpIdW.c_str(),
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str());
-					}
+				ERamType ramType = eRegRam;
+				string addrVar;
+				string tempVar;
+				bool bPrivGblAndNoAddr = false;
 
-					if (mifWrSrc.m_varDimen2 > 0) {
-						sprintf(buf, "[INT(c_t%d_varIdx2)]", mod.m_execStg+1);
-						varIdx += buf;
-						mifPostInstr.Append("\t\t\t\tsc_uint<%s_MIF_SRC_%s_VAR_IDX2_W> c_t%d_varIdx2 = (c_t%d_%sToMif_req.m_tid\n",
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-							mod.m_execStg+1,
-							mod.m_execStg+1, mod.m_modName.Lc().c_str());
-						mifPostInstr.Append("\t\t\t\t\t>> (%s_MIF_SRC_%s_VAR_IDX2_SHF + 1 + %s)) & %s_MIF_SRC_%s_VAR_IDX2_MSK;\n",
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-							wrRspGrpIdW.c_str(),
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str());
-					}
+				if (wrSrc.m_pGblVar) {
+					bPrivGblAndNoAddr = wrSrc.m_pGblVar->m_bPrivGbl && wrSrc.m_pGblVar->m_addrW == mod.m_threads.m_htIdW.AsInt();
 
-					if (mifWrSrc.m_fldDimen1 > 0) {
-						sprintf(buf, "[INT(c_t%d_fldIdx1)]", mod.m_execStg+1);
-						fldIdx = buf;
-						mifPostInstr.Append("\t\t\t\tsc_uint<%s_MIF_SRC_%s_FLD_IDX1_W> c_t%d_fldIdx1 = (c_t%d_%sToMif_req.m_tid\n",
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-							mod.m_execStg+1,
-							mod.m_execStg+1, mod.m_modName.Lc().c_str());
-						mifPostInstr.Append("\t\t\t\t\t>> (%s_MIF_SRC_%s_FLD_IDX1_SHF + 1 + %s)) & %s_MIF_SRC_%s_FLD_IDX1_MSK;\n",
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-							wrRspGrpIdW.c_str(),
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str());
-					}
-
-					if (mifWrSrc.m_fldDimen2 > 0) {
-						sprintf(buf, "[INT(c_t%d_fldIdx2)]", mod.m_execStg+1);
-						fldIdx += buf;
-						mifPostInstr.Append("\t\t\t\tsc_uint<%s_MIF_SRC_%s_FLD_IDX2_W> c_t%d_fldIdx2 = (c_t%d_%sToMif_req.m_tid\n",
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-							mod.m_execStg+1,
-							mod.m_execStg+1, mod.m_modName.Lc().c_str());
-						mifPostInstr.Append("\t\t\t\t\t>> (%s_MIF_SRC_%s_FLD_IDX2_SHF + 1 + %s)) & %s_MIF_SRC_%s_FLD_IDX2_MSK;\n",
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-							wrRspGrpIdW.c_str(),
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str());
-					}
-				}
-				mifPostInstr.NewLine();
-
-				if (mifWrSrc.m_srcIdx == "varAddr1")
-					mifPostInstr.Append("\t\t\t\tc_t%d_varAddr1 += r_t%d_reqQwIdx;\n", mod.m_execStg+1, mod.m_execStg+1);
-				else if (mifWrSrc.m_srcIdx == "varAddr2")
-					mifPostInstr.Append("\t\t\t\tc_t%d_varAddr2 += r_t%d_reqQwIdx;\n", mod.m_execStg+1, mod.m_execStg+1);
-
-				else if (mifWrSrc.m_pIntGbl == 0 || (mifWrSrc.m_pIntGbl->m_addr0W.AsInt() == 0 && mifWrSrc.m_pIntGbl->m_addr1W.AsInt() == 0)) {
-					if (mifWrSrc.m_srcIdx == "varIdx1")
-						mifPostInstr.Append("\t\t\t\tc_t%d_varIdx1 += r_t%d_reqQwIdx;\n", mod.m_execStg+1, mod.m_execStg+1);
-					else if (mifWrSrc.m_srcIdx == "varIdx2")
-						mifPostInstr.Append("\t\t\t\tc_t%d_varIdx2 += r_t%d_reqQwIdx;\n", mod.m_execStg+1, mod.m_execStg+1);
-					else if (mifWrSrc.m_srcIdx == "fldIdx1")
-						mifPostInstr.Append("\t\t\t\tc_t%d_fldIdx1 += r_t%d_reqQwIdx;\n", mod.m_execStg+1, mod.m_execStg+1);
-					else if (mifWrSrc.m_srcIdx == "fldIdx2")
-						mifPostInstr.Append("\t\t\t\tc_t%d_fldIdx2 += r_t%d_reqQwIdx;\n", mod.m_execStg+1, mod.m_execStg+1);
-				}
-				mifPostInstr.NewLine();
-
-				if (mifWrSrc.m_pSharedVar) {
-					HtlAssert(mifWrSrc.m_bMultiWr);
-					mifReqStgCnt = max(mifReqStgCnt, 1);
-					char dotField[128];
-					if (mifWrSrc.m_field.size() > 0)
-						sprintf(dotField, ".%s", mifWrSrc.m_field.c_str());
-					else
-						dotField[0] = '\0';
-
-					if (mifWrSrc.m_pSharedVar->m_queueW.AsInt() > 0) {
-
-						mifPostInstr.Append("\t\t\t\tc_t%d_%sToMif_req.m_data = m_%s%s.front()%s%s;\n",
-							mod.m_execStg+1, mod.m_modName.Lc().c_str(), mifWrSrc.m_var.c_str(), varIdx.c_str(), dotField, fldIdx.c_str());
-						mifPostInstr.Append("\t\t\t\tm_%s%s.pop();\n",
-							mifWrSrc.m_var.c_str(), varIdx.c_str());
-
-					} else if (mifWrSrc.m_varAddr1W == 0) {
-						mifPostInstr.Append("\t\t\t\tc_t%d_%sToMif_req.m_data = r_%s%s%s%s;\n",
-							mod.m_execStg+1, mod.m_modName.Lc().c_str(), mifWrSrc.m_var.c_str(), varIdx.c_str(), dotField, fldIdx.c_str());
-
-					} else if (mifWrSrc.m_pSharedVar->m_ramType == eDistRam) {
-						if (mifWrSrc.m_varAddr2W == 0)
-							mifPostInstr.Append("\t\t\t\tm_%s%s.read_addr(c_t%d_varAddr1);\n",
-							mifWrSrc.m_var.c_str(), varIdx.c_str(), mod.m_execStg+1);
-						else
-							mifPostInstr.Append("\t\t\t\tm_%s%s.read_addr(c_t%d_varAddr1, c_t%d_varAddr2);\n",
-							mifWrSrc.m_var.c_str(), varIdx.c_str(), mod.m_execStg+1, mod.m_execStg+1);
-
-						mifPostInstr.Append("\t\t\t\tc_t%d_%sToMif_req.m_data = m_%s%s.read_mem()%s%s;\n",
-							mod.m_execStg+1, mod.m_modName.Lc().c_str(), mifWrSrc.m_var.c_str(), varIdx.c_str(), dotField, fldIdx.c_str());
+					if (bPrivGblAndNoAddr) {
+						varName = VA("r_t%d_memReq.m_wrData.m_%s",
+							mod.m_execStg + 1, wrSrc.m_pGblVar->m_type.c_str());
 					} else {
-						// block ram
-						bSharedBram = true;
-
-						HtlAssert(mifWrSrc.m_bMultiWr);
-						mifReqStgCnt = max(mifReqStgCnt, 2);
-
-						if (mifWrSrc.m_srcIdx != "varAddr1" && mifWrSrc.m_srcIdx != "varAddr2") {
-							if (mifWrSrc.m_varAddr1W > 0)
-								reqQwIdxStgCnt = max(reqQwIdxStgCnt, 2);
-							else
-								reqQwIdxStgCnt = max(reqQwIdxStgCnt, 1);
-						}
-
-						if (mifWrSrc.m_varAddr2W == 0)
-							mifPostInstr.Append("\t\t\t\tm_%s%s.read_addr(c_t%d_varAddr1);\n",
-							mifWrSrc.m_var.c_str(), varIdx.c_str(), mod.m_execStg+1);
-						else
-							mifPostInstr.Append("\t\t\t\tm_%s%s.read_addr(c_t%d_varAddr1, c_t%d_varAddr2);\n",
-							mifWrSrc.m_var.c_str(), varIdx.c_str(), mod.m_execStg+1, mod.m_execStg+1);
+						ramType = wrSrc.m_pGblVar->m_ramType;
+						varName = VA("%s%s%s", ramType == eRegRam ? "r_" : "", wrSrc.m_pGblVar->m_gblName.c_str(), ramType == eRegRam ? "" : "Mr");
+						addrVar = VA("%sMr", wrSrc.m_pGblVar->m_gblName.c_str());
 					}
-				} else if (mifWrSrc.m_pIntGbl) {
-					HtlAssert(mifWrSrc.m_bMultiWr);
-					mifReqStgCnt = max(mifReqStgCnt, 1);
-
-					if (mifWrSrc.m_pIntGbl->m_addr0W.AsInt() > 0 || mifWrSrc.m_pIntGbl->m_addr1W.AsInt() > 0) {
-
-						// determine when ram read data is valid (in 2 or 3 clocks)
-						int fieldIdx = mifWrSrc.m_pField->m_gblFieldIdx;
-						CField &field = mifWrSrc.m_pIntGbl->m_allFieldList[fieldIdx];
-
-						if (field.m_readerList[0].m_pRamPort->m_bMifRead && field.m_ramType == eDistRam
-							&& (field.m_readerList.size() == 1 || field.m_readerList[1].m_pRamPort == 0 || mod.m_clkRate == eClk2x))
-						{
-							// internal gbl var, 1x ram access
-							bGlobalVarP3 = true;
-							mifWrSrc.m_bGblVarP3 = true;
-							mifReqStgCnt = max(mifReqStgCnt, 3);
-						} else {
-							bGlobalVarP4 = true;
-							mifWrSrc.m_bGblVarP4 = true;
-							mifReqStgCnt = max(mifReqStgCnt, 4);
-						}
-
-						if (mifWrSrc.m_srcIdx != "varAddr1" && mifWrSrc.m_srcIdx != "varAddr2") {
-							if (mifWrSrc.m_varAddr0W > 0 || mifWrSrc.m_varAddr1W > 0)
-								reqQwIdxStgCnt = max(reqQwIdxStgCnt, mod.m_clkRate == eClk2x ? 3 : 4);
-						}
-
-						if (mifWrSrc.m_varAddr0W > 0) {
-							if (mifWrSrc.m_varAddr2W > 0)
-								mifPostInstr.Append("\t\t\t\tc_%sMifRdAddr = (c_t%d_varAddr0, c_t%d_varAddr1, c_t%d_varAddr2);\n",
-									mifWrSrc.m_pIntGbl->m_gblName.c_str(),
-									mod.m_execStg+1, mod.m_execStg+1, mod.m_execStg+1);
-							else if (mifWrSrc.m_varAddr1W > 0)
-								mifPostInstr.Append("\t\t\t\tc_%sMifRdAddr = (c_t%d_varAddr0, c_t%d_varAddr1);\n",
-									mifWrSrc.m_pIntGbl->m_gblName.c_str(),
-									mod.m_execStg+1, mod.m_execStg+1);
-							else
-								mifPostInstr.Append("\t\t\t\tc_%sMifRdAddr = c_t%d_varAddr0;\n",
-									mifWrSrc.m_pIntGbl->m_gblName.c_str(),
-									mod.m_execStg+1);
-						} else {
-							if (mifWrSrc.m_varAddr2W > 0)
-								mifPostInstr.Append("\t\t\t\tc_%sMifRdAddr = (c_t%d_varAddr1, c_t%d_varAddr2);\n",
-									mifWrSrc.m_pIntGbl->m_gblName.c_str(),
-									mod.m_execStg+1, mod.m_execStg+1);
-							else if (mifWrSrc.m_varAddr1W > 0)
-								mifPostInstr.Append("\t\t\t\tc_%sMifRdAddr = c_t%d_varAddr1;\n",
-									mifWrSrc.m_pIntGbl->m_gblName.c_str(),
-									mod.m_execStg+1);
-						}
-					} else {
-
-						char dotField[128];
-						if (mifWrSrc.m_field.size() > 0)
-							sprintf(dotField, ".m_%s", mifWrSrc.m_field.c_str());
-						else
-							dotField[0] = '\0';
-
-						if (mifWrSrc.m_pIntGbl->m_gblPortList[0].m_bSrcRead) {
-							// if read on port[0] then must need 2x read port
-							mifPostInstr.Append("\t\t\t\tc_t%d_%sToMif_req.m_data = r_%sMifRdData_2x%s.read()%s%s;\n",
-								mod.m_execStg+1, mod.m_modName.Lc().c_str(),
-								mifWrSrc.m_var.c_str(), varIdx.c_str(), dotField, fldIdx.c_str());
-						} else {
-							mifPostInstr.Append("\t\t\t\tc_t%d_%sToMif_req.m_data = r_%sMifRdData%s%s%s;\n",
-								mod.m_execStg+1, mod.m_modName.Lc().c_str(),
-								mifWrSrc.m_var.c_str(), varIdx.c_str(), dotField, fldIdx.c_str());
-						}
-					}
+				} else if (wrSrc.m_pSharedVar) {
+					ramType = wrSrc.m_pSharedVar->m_ramType;
+					varName = VA("%s%s", ramType == eRegRam ? "r_" : "", wrSrc.m_pSharedVar->m_name.c_str());
+					addrVar = VA("%s", wrSrc.m_pSharedVar->m_name.c_str());
+				} else if (wrSrc.m_pPrivVar) {
+					varName = VA("r_t%d_memReq.m_wrData.m_%s",
+						mod.m_execStg + 1, wrSrc.m_pSrcType->m_typeName.c_str());
+				} else if (wrSrc.m_pType != 0) {
+					varName = VA("r_t%d_memReq.m_wrData.m_%s",
+						mod.m_execStg + 1, wrSrc.m_pType->m_typeName.c_str());
 				} else
 					HtlAssert(0);
 
-				mifPostInstr.Append("\t\t\t}\n");
+
+				if ((wrSrc.m_pPrivVar || wrSrc.m_pType != 0) && mif.m_mifReqStgCnt == 2) continue;
+
+				mifPostInstr.Append("%s\tcase %d:\n", tabs.c_str(), wrSrcIdx);
+				tabs += "\t";
+
+				tempVar = addrVar;
+
+				if (!(wrSrc.m_pPrivVar || wrSrc.m_pGblVar && wrSrc.m_pGblVar->m_bPrivGbl &&
+					wrSrc.m_pGblVar->m_addrW == mod.m_threads.m_htIdW.AsInt()))
+				{
+					for (int fldIdx = 0; fldIdx < (int)wrSrc.m_fieldRefList.size(); fldIdx += 1) {
+						CFieldRef & fieldRef = wrSrc.m_fieldRefList[fldIdx];
+
+						if (fldIdx > 0) {
+							varName += '.';
+							varName += fieldRef.m_fieldName;
+						}
+
+						for (int dimIdx = 0; dimIdx < (int)fieldRef.m_refDimenList.size(); dimIdx += 1) {
+							CRefDimen & refDimen = fieldRef.m_refDimenList[dimIdx];
+
+							string idxStr;
+							if (refDimen.m_value >= 0)
+								idxStr = VA("[%d]", refDimen.m_value);
+
+							else if (refDimen.m_size == 1)
+								idxStr = "[0]";
+
+							else if (refDimen.m_isIdx) {
+								idxStr = VA("[INT(r_t%d_memReq.m_vIdx%d(%d, 0))]",
+									mod.m_execStg + 1, dimIdx + 1, FindLg2(refDimen.m_size - 1) - 1);
+							} else {
+								idxStr = VA("[INT(r_t%d_memReq.m_s%d_f%dIdx%d)]",
+									mod.m_execStg + 1, wrSrcIdx, fldIdx + 1, dimIdx + 1);
+							}
+
+							varName += idxStr;
+
+							if (fldIdx == 0)
+								addrVar += idxStr;
+						}
+					}
+				}
+
+				if ((ramType == eRegRam || wrSrc.m_pType != 0) && mif.m_mifReqStgCnt == 1) {
+					int elemWidth = wrSrc.m_pSrcType->m_clangBitWidth;
+					int reqSize = wrSrc.m_pSrcType->m_clangMinAlign == 1 ? wrSrc.m_pSrcType->m_clangBitWidth : wrSrc.m_pSrcType->m_clangMinAlign;
+					int elemQwCnt = (elemWidth + reqSize - 1) / reqSize;
+
+					if (elemQwCnt > 1) {
+						mifPostInstr.Append("%s\tswitch (r_t%d_memReq.m_elemQwIdx) {\n", tabs.c_str(),
+							mod.m_execStg + 1);
+					}
+
+					for (int qwIdx = 0; qwIdx < elemQwCnt; qwIdx += 1) {
+
+						if (elemQwCnt > 1) {
+							mifPostInstr.Append("%s\tcase %d:\n", tabs.c_str(), qwIdx);
+							tabs += "\t";
+						}
+
+						for (CStructElemIter iter(this, wrSrc.m_pSrcType); !iter.end(); iter++) {
+							if (iter.IsStructOrUnion()) continue;
+
+							int pos = iter.GetHeirFieldPos();
+							int width = iter.GetWidth();
+
+							if (pos < qwIdx * reqSize || pos >= (qwIdx + 1) * reqSize) continue;
+
+							if (width < 64) {
+								mifPostInstr.Append("%s\tc_t%d_%sToMif_req.m_data |= (uint64_t)((%s%s & ((1LL << %d) - 1)) << %d);\n", tabs.c_str(),
+									mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
+									varName.c_str(), iter.GetHeirFieldName().c_str(),
+									width, pos % reqSize);
+							} else {
+								mifPostInstr.Append("%s\tc_t%d_%sToMif_req.m_data |= %s%s;\n", tabs.c_str(),
+									mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
+									varName.c_str(), iter.GetHeirFieldName().c_str());
+							}
+						}
+
+						if (elemQwCnt > 1) {
+							mifPostInstr.Append("%s\tbreak;\n", tabs.c_str());
+							tabs.erase(0, 1);
+						}
+					}
+
+					if (elemQwCnt > 1) {
+						mifPostInstr.Append("%s\tdefault:\n", tabs.c_str());
+						mifPostInstr.Append("%s\t\tbreak;\n", tabs.c_str());
+						mifPostInstr.Append("%s\t}\n", tabs.c_str());
+					}
+				} else if (ramType == eRegRam) {
+					mifPostInstr.Append("%s\tc_t%d_memReq.m_wrData.m_%s = r_%s%s;\n", tabs.c_str(),
+						mod.m_execStg + 1, wrSrc.m_pSrcType->m_typeName.c_str(),
+						addrVar.c_str(), varIdx.c_str());
+				} else {
+
+					if (wrSrc.m_varAddr2W <= 0) {
+						mifPostInstr.Append("%s\tm_%s%s.read_addr(r_t%d_memReq.m_vIdx1(%d, 0));\n", tabs.c_str(),
+							addrVar.c_str(), varIdx.c_str(),
+							mod.m_execStg + 1, wrSrc.m_varAddr1W - 1);
+					} else {
+						mifPostInstr.Append("%s\tm_%s%s.read_addr(c_t%d_memReq.m_vIdx1(%d, 0), c_t%d_memReq.m_vIdx2(%d, 0));\n", tabs.c_str(),
+							addrVar.c_str(), varIdx.c_str(),
+							mod.m_execStg + 1, wrSrc.m_varAddr1W - 1,
+							mod.m_execStg + 1, wrSrc.m_varAddr2W - 1);
+					}
+
+					if (ramType == eDistRam) {
+						mifPostInstr.Append("%s\tc_t%d_memReq.m_wrData.m_%s = m_%s%s.read_mem();\n", tabs.c_str(),
+							mod.m_execStg + 1, wrSrc.m_pSrcType->m_typeName.c_str(),
+							addrVar.c_str(), varIdx.c_str());
+					}
+				}
+
+				mifPostInstr.Append("%s\tbreak;\n", tabs.c_str());
+				tabs.erase(0, 1);
+			}
+
+			mifPostInstr.Append("%s\tdefault:\n", tabs.c_str());
+			mifPostInstr.Append("%s\t\tbreak;\n", tabs.c_str());
+			mifPostInstr.Append("%s\t}\n", tabs.c_str());
+			tabs.erase(0, 1);
+
+			if (bMultiQwReq)
+				mifPostInstr.Append("\t}\n");
+
+			mifPostInstr.NewLine();
+		}
+	}
+
+	if (mif.m_mifReqStgCnt == 2) {
+		mifPostInstr.Append("\tbool c_t%d_%sToMif_reqRdy = !c_memReqHold && (r_t%d_%sToMif_reqRdy || r_memReqHold);\n",
+			mod.m_execStg + 2, mod.m_modName.Lc().c_str(),
+			mod.m_execStg + 2, mod.m_modName.Lc().c_str());
+		mifPostInstr.Append("\tCMemRdWrReqIntf c_t%d_%sToMif_req = r_memReqHold ? r_t%d_%sToMif_req : r_t%d_%sToMif_req;\n",
+			mod.m_execStg + 2, mod.m_modName.Lc().c_str(),
+			mod.m_execStg + 3, mod.m_modName.Lc().c_str(),
+			mod.m_execStg + 2, mod.m_modName.Lc().c_str());
+		mifPostInstr.NewLine();
+	}
+
+	if (mif.m_bMifWr) {
+		if (mif.m_mifReqStgCnt == 2) {
+			// generate write data code
+			mifPostInstr.Append("\tif (!r_memReqHold) {\n");
+
+			mifPostInstr.Append("\t\tc_t%d_%sToMif_req.m_data = 0;\n",
+				mod.m_execStg + 2, mod.m_modName.Lc().c_str());
+
+			mifPostInstr.Append("\t\tswitch (r_t%d_memReq.m_wrSrc) {\n",
+				mod.m_execStg + 2);
+
+			for (size_t wrSrcTypeIdx = 0; wrSrcTypeIdx < wrSrcTypeList.size(); wrSrcTypeIdx += 1) {
+				CType * pWrSrcType = wrSrcTypeList[wrSrcTypeIdx];
+
+				for (size_t wrSrcIdx = 0; wrSrcIdx < mif.m_mifWr.m_wrSrcList.size(); wrSrcIdx += 1) {
+					CMifWrSrc & wrSrc = mif.m_mifWr.m_wrSrcList[wrSrcIdx];
+
+					if (wrSrc.m_pSrcType != pWrSrcType) continue;
+
+					mifPostInstr.Append("\t\tcase %d:\n", wrSrcIdx);
+				}
+
+				int elemWidth = pWrSrcType->m_clangBitWidth;
+				int reqSize = pWrSrcType->m_clangMinAlign == 1 ? pWrSrcType->m_clangBitWidth : pWrSrcType->m_clangMinAlign;
+				int elemQwCnt = (elemWidth + reqSize - 1) / reqSize;
+				string tabs;
+
+				if (elemQwCnt > 1) {
+					mifPostInstr.Append("\t\t\tswitch (r_t%d_memReq.m_elemQwIdx) {\n",
+						mod.m_execStg + 2);
+					tabs = "\t";
+				}
+
+				for (int qwIdx = 0; qwIdx < elemQwCnt; qwIdx += 1) {
+
+					if (elemQwCnt > 1)
+						mifPostInstr.Append("\t\t\tcase %d:\n", qwIdx);
+
+					for (CStructElemIter iter(this, pWrSrcType); !iter.end(); iter++) {
+						if (iter.IsStructOrUnion()) continue;
+
+						int pos = iter.GetHeirFieldPos();
+						int width = iter.GetWidth();
+
+						if (pos < qwIdx * reqSize || pos >= (qwIdx + 1) * reqSize) continue;
+
+						if (width < 64) {
+							mifPostInstr.Append("\t\t\t%sc_t%d_%sToMif_req.m_data |= (uint64_t)((r_t%d_memReq.m_wrData.m_%s%s & ((1LL << %d) - 1)) << %d);\n",
+								tabs.c_str(),
+								mod.m_execStg + 2, mod.m_modName.Lc().c_str(),
+								mod.m_execStg + 2, pWrSrcType->m_typeName.c_str(), iter.GetHeirFieldName().c_str(),
+								width, pos % reqSize);
+						} else {
+							mifPostInstr.Append("\t\t\t%sc_t%d_%sToMif_req.m_data |= r_t%d_memReq.m_wrData.m_%s%s;\n",
+								tabs.c_str(),
+								mod.m_execStg + 2, mod.m_modName.Lc().c_str(),
+								mod.m_execStg + 2, pWrSrcType->m_typeName.c_str(), iter.GetHeirFieldName().c_str());
+						}
+					}
+
+					if (elemQwCnt > 1)
+						mifPostInstr.Append("\t\t\t\tbreak;\n");
+				}
+
+				if (elemQwCnt > 1) {
+					mifPostInstr.Append("\t\t\tdefault:\n");
+					mifPostInstr.Append("\t\t\t\tbreak;\n");
+					mifPostInstr.Append("\t\t\t}\n");
+				}
+
 				mifPostInstr.Append("\t\t\tbreak;\n");
 			}
 
@@ -5255,719 +4099,1614 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 			mifPostInstr.Append("\t\t}\n");
 			mifPostInstr.Append("\t}\n");
 			mifPostInstr.NewLine();
-
-			if (bSharedBram || bGlobalVarP3 || bGlobalVarP4) {
-				mifReg.Append("\tr_t%d_bWriteReq = !c_reset1x && c_t%d_bWriteReq;\n",
-					mod.m_execStg+2, mod.m_execStg+1);
-				m_mifDecl.Append("\tbool r_t%d_bWriteReq;\n", mod.m_execStg+2);
-				mifPostInstr.Append("\tbool c_t%d_bWriteReq = r_t%d_bWriteReq;\n",
-					mod.m_execStg+2, mod.m_execStg+2);
-			}
-
-			if (bSharedBram) {
-				mifPostInstr.Append("\tif (c_t%d_bWriteReq) {\n", mod.m_execStg+2);
-				mifPostInstr.Append("\t\t// shared block ram access\n");
-				mifPostInstr.Append("\t\tsc_uint<%s_MIF_SRC_IDX_W> c_t%d_mifSrcIdx = (c_t%d_%sToMif_req.m_tid >> (%s_MIF_SRC_IDX_SHF + 1 + %s))\n",
-					mod.m_modName.Upper().c_str(), mod.m_execStg+2, mod.m_execStg+2,
-					mod.m_modName.Lc().c_str(), mod.m_modName.Upper().c_str(), wrRspGrpIdW.c_str());
-				mifPostInstr.Append("\t\t\t& %s_MIF_SRC_IDX_MSK;\n", mod.m_modName.Upper().c_str());
-				mifPostInstr.NewLine();
-
-				mifPostInstr.Append("\t\tswitch (c_t%d_mifSrcIdx) {\n", mod.m_execStg+2);
-
-				for (size_t i = 0; i < mif.m_mifWr.m_wrSrcList.size(); i += 1) {
-					CMifWrSrc &mifWrSrc = mif.m_mifWr.m_wrSrcList[i];
-
-					if (mifWrSrc.m_pSharedVar == 0 || mifWrSrc.m_pSharedVar->m_ramType != eBlockRam)
-						continue;
-
-					mifPostInstr.Append("\t\tcase %d:\n", (int)i+1);
-					mifPostInstr.Append("\t\t\t{\n");
-
-					char buf[64];
-
-					string varIdx;
-					if (mifWrSrc.m_varDimen1 > 0) {
-						sprintf(buf, "[INT(c_t%d_varIdx1)]", mod.m_execStg+2);
-						varIdx = buf;
-						mifPostInstr.Append("\t\t\t\tsc_uint<%s_MIF_SRC_%s_VAR_IDX1_W> c_t%d_varIdx1 = (c_t%d_%sToMif_req.m_tid\n",
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-							mod.m_execStg+2,
-							mod.m_execStg+2, mod.m_modName.Lc().c_str());
-						mifPostInstr.Append("\t\t\t\t\t>> (%s_MIF_SRC_%s_VAR_IDX1_SHF + 1 + %s)) & %s_MIF_SRC_%s_VAR_IDX1_MSK;\n",
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-							wrRspGrpIdW.c_str(),
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str());
-					}
-
-					if (mifWrSrc.m_varDimen2 > 0) {
-						sprintf(buf, "[INT(c_t%d_varIdx2)]", mod.m_execStg+2);
-						varIdx += buf;
-						mifPostInstr.Append("\t\t\t\tsc_uint<%s_MIF_SRC_%s_VAR_IDX2_W> c_t%d_varIdx2 = (c_t%d_%sToMif_req.m_tid\n",
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-							mod.m_execStg+2,
-							mod.m_execStg+2, mod.m_modName.Lc().c_str());
-						mifPostInstr.Append("\t\t\t\t\t>> (%s_MIF_SRC_%s_VAR_IDX2_SHF + 1 + %s)) & %s_MIF_SRC_%s_VAR_IDX2_MSK;\n",
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-							wrRspGrpIdW.c_str(),
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str());
-					}
-
-					string fldIdx;
-					if (mifWrSrc.m_fldDimen1 > 0) {
-						sprintf(buf, "[INT(c_t%d_fldIdx1)]", mod.m_execStg+2);
-						fldIdx = buf;
-						mifPostInstr.Append("\t\t\t\tsc_uint<%s_MIF_SRC_%s_FLD_IDX1_W> c_t%d_fldIdx1 = (c_t%d_%sToMif_req.m_tid\n",
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-							mod.m_execStg+2,
-							mod.m_execStg+2, mod.m_modName.Lc().c_str());
-						mifPostInstr.Append("\t\t\t\t\t>> (%s_MIF_SRC_%s_FLD_IDX1_SHF + 1 + %s)) & %s_MIF_SRC_%s_FLD_IDX1_MSK;\n",
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-							wrRspGrpIdW.c_str(),
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str());
-					}
-
-					if (mifWrSrc.m_fldDimen2 > 0) {
-						sprintf(buf, "[INT(c_t%d_fldIdx2)]", mod.m_execStg+2);
-						fldIdx += buf;
-						mifPostInstr.Append("\t\t\t\tsc_uint<%s_MIF_SRC_%s_FLD_IDX2_W> c_t%d_fldIdx2 = (c_t%d_%sToMif_req.m_tid\n",
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-							mod.m_execStg+2,
-							mod.m_execStg+2, mod.m_modName.Lc().c_str());
-						mifPostInstr.Append("\t\t\t\t\t>> (%s_MIF_SRC_%s_FLD_IDX2_SHF + 1 + %s)) & %s_MIF_SRC_%s_FLD_IDX2_MSK;\n",
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-							wrRspGrpIdW.c_str(),
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str());
-					}
-					mifPostInstr.NewLine();
-
-					if (mifWrSrc.m_srcIdx == "varIdx1")
-						mifPostInstr.Append("\t\t\t\tc_t%d_varIdx1 += r_t%d_reqQwIdx;\n", mod.m_execStg+2, mod.m_execStg+2);
-					else if (mifWrSrc.m_srcIdx == "varIdx2")
-						mifPostInstr.Append("\t\t\t\tc_t%d_varIdx2 += r_t%d_reqQwIdx;\n", mod.m_execStg+2, mod.m_execStg+2);
-					else if (mifWrSrc.m_srcIdx == "fldIdx1")
-						mifPostInstr.Append("\t\t\t\tc_t%d_fldIdx1 += r_t%d_reqQwIdx;\n", mod.m_execStg+2, mod.m_execStg+2);
-					else if (mifWrSrc.m_srcIdx == "fldIdx2")
-						mifPostInstr.Append("\t\t\t\tc_t%d_fldIdx2 += r_t%d_reqQwIdx;\n", mod.m_execStg+2, mod.m_execStg+2);
-					mifPostInstr.NewLine();
-
-					if (mifWrSrc.m_pSharedVar) {
-						char dotField[128];
-						if (mifWrSrc.m_field.size() > 0)
-							sprintf(dotField, ".m_%s", mifWrSrc.m_field.c_str());
-						else
-							dotField[0] = '\0';
-
-						mifPostInstr.Append("\t\t\t\tc_t%d_%sToMif_req.m_data = m_%s%s.read_mem()%s%s;\n",
-							mod.m_execStg+2, mod.m_modName.Lc().c_str(), mifWrSrc.m_var.c_str(), varIdx.c_str(), dotField, fldIdx.c_str());
-					} else
-						HtlAssert(0);
-
-					mifPostInstr.Append("\t\t\t}\n");
-					mifPostInstr.Append("\t\t\tbreak;\n");
-				}
-
-				mifPostInstr.Append("\t\tdefault:\n");
-				mifPostInstr.Append("\t\t\tbreak;\n");
-				mifPostInstr.Append("\t\t}\n");
-				mifPostInstr.Append("\t}\n");
-				mifPostInstr.NewLine();
-			}
-
-			if (bGlobalVarP3 || bGlobalVarP4) {
-				mifReg.Append("\tr_t%d_bWriteReq = !c_reset1x && c_t%d_bWriteReq;\n",
-					mod.m_execStg+3, mod.m_execStg+2);
-				m_mifDecl.Append("\tbool r_t%d_bWriteReq;\n", mod.m_execStg+3);
-				mifPostInstr.Append("\tbool c_t%d_bWriteReq = r_t%d_bWriteReq;\n",
-					mod.m_execStg+3, mod.m_execStg+3);
-			}
-
-			if (bGlobalVarP3) {
-				int mifWrStg = mod.m_execStg+3;
-				mifPostInstr.Append("\tif (c_t%d_bWriteReq) {\n", mifWrStg);
-				mifPostInstr.Append("\t\t// global variable access\n");
-				mifPostInstr.Append("\t\tsc_uint<%s_MIF_SRC_IDX_W> c_t%d_mifSrcIdx = (c_t%d_%sToMif_req.m_tid >> (%s_MIF_SRC_IDX_SHF + 1 + %s))\n",
-					mod.m_modName.Upper().c_str(), mifWrStg, mifWrStg,
-					mod.m_modName.Lc().c_str(), mod.m_modName.Upper().c_str(), wrRspGrpIdW.c_str());
-				mifPostInstr.Append("\t\t\t& %s_MIF_SRC_IDX_MSK;\n", mod.m_modName.Upper().c_str());
-				mifPostInstr.NewLine();
-
-				mifPostInstr.Append("\t\tswitch (c_t%d_mifSrcIdx) {\n", mifWrStg);
-
-				for (size_t i = 0; i < mif.m_mifWr.m_wrSrcList.size(); i += 1) {
-					CMifWrSrc &mifWrSrc = mif.m_mifWr.m_wrSrcList[i];
-
-					if (!mifWrSrc.m_bGblVarP3)
-						continue;
-
-					mifPostInstr.Append("\t\tcase %d:\n", (int)i+1);
-					mifPostInstr.Append("\t\t\t{\n");
-
-					char buf[64];
-
-					string varIdx;
-					if (mifWrSrc.m_varDimen1 > 0) {
-						sprintf(buf, "[INT(c_t%d_varIdx1)]", mifWrStg);
-						varIdx = buf;
-						mifPostInstr.Append("\t\t\t\tsc_uint<%s_MIF_SRC_%s_VAR_IDX1_W> c_t%d_varIdx1 = (c_t%d_%sToMif_req.m_tid\n",
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-							mifWrStg,
-							mifWrStg, mod.m_modName.Lc().c_str());
-						mifPostInstr.Append("\t\t\t\t\t>> (%s_MIF_SRC_%s_VAR_IDX1_SHF + 1 + %s)) & %s_MIF_SRC_%s_VAR_IDX1_MSK;\n",
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-							wrRspGrpIdW.c_str(),
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str());
-					}
-
-					if (mifWrSrc.m_varDimen2 > 0) {
-						sprintf(buf, "[INT(c_t%d_varIdx2)]", mifWrStg);
-						varIdx += buf;
-						mifPostInstr.Append("\t\t\t\tsc_uint<%s_MIF_SRC_%s_VAR_IDX2_W> c_t%d_varIdx2 = (c_t%d_%sToMif_req.m_tid\n",
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-							mifWrStg,
-							mifWrStg, mod.m_modName.Lc().c_str());
-						mifPostInstr.Append("\t\t\t\t\t>> (%s_MIF_SRC_%s_VAR_IDX2_SHF + 1 + %s)) & %s_MIF_SRC_%s_VAR_IDX2_MSK;\n",
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-							wrRspGrpIdW.c_str(),
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str());
-					}
-
-					string fldIdx;
-					if (mifWrSrc.m_fldDimen1 > 0) {
-						sprintf(buf, "[INT(c_t%d_fldIdx1)]", mifWrStg);
-						fldIdx = buf;
-						mifPostInstr.Append("\t\t\t\tsc_uint<%s_MIF_SRC_%s_FLD_IDX1_W> c_t%d_fldIdx1 = (c_t%d_%sToMif_req.m_tid\n",
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-							mifWrStg,
-							mifWrStg, mod.m_modName.Lc().c_str());
-						mifPostInstr.Append("\t\t\t\t\t>> (%s_MIF_SRC_%s_FLD_IDX1_SHF + 1 + %s)) & %s_MIF_SRC_%s_FLD_IDX1_MSK;\n",
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-							wrRspGrpIdW.c_str(),
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str());
-					}
-
-					if (mifWrSrc.m_fldDimen2 > 0) {
-						sprintf(buf, "[INT(c_t%d_fldIdx2)]", mifWrStg);
-						fldIdx += buf;
-						mifPostInstr.Append("\t\t\t\tsc_uint<%s_MIF_SRC_%s_FLD_IDX2_W> c_t%d_fldIdx2 = (c_t%d_%sToMif_req.m_tid\n",
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-							mifWrStg,
-							mifWrStg, mod.m_modName.Lc().c_str());
-						mifPostInstr.Append("\t\t\t\t\t>> (%s_MIF_SRC_%s_FLD_IDX2_SHF + 1 + %s)) & %s_MIF_SRC_%s_FLD_IDX2_MSK;\n",
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-							wrRspGrpIdW.c_str(),
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str());
-					}
-					mifPostInstr.NewLine();
-
-					if (mifWrSrc.m_srcIdx == "varIdx1")
-						mifPostInstr.Append("\t\t\t\tc_t%d_varIdx1 += r_t%d_reqQwIdx;\n", mifWrStg, mifWrStg);
-					else if (mifWrSrc.m_srcIdx == "varIdx2")
-						mifPostInstr.Append("\t\t\t\tc_t%d_varIdx2 += r_t%d_reqQwIdx;\n", mifWrStg, mifWrStg);
-					else if (mifWrSrc.m_srcIdx == "fldIdx1")
-						mifPostInstr.Append("\t\t\t\tc_t%d_fldIdx1 += r_t%d_reqQwIdx;\n", mifWrStg, mifWrStg);
-					else if (mifWrSrc.m_srcIdx == "fldIdx2")
-						mifPostInstr.Append("\t\t\t\tc_t%d_fldIdx2 += r_t%d_reqQwIdx;\n", mifWrStg, mifWrStg);
-					mifPostInstr.NewLine();
-
-					char dotField[128];
-					if (mifWrSrc.m_field.size() > 0)
-						sprintf(dotField, ".m_%s", mifWrSrc.m_field.c_str());
-					else
-						dotField[0] = '\0';
-
-					if (mifWrSrc.m_pIntGbl->m_gblPortList[0].m_bSrcRead) {
-						// if read on port[0] then must need 2x read port
-						mifPostInstr.Append("\t\t\t\tc_t%d_%sToMif_req.m_data = r_%sMifRdData_2x%s.read()%s%s;\n",
-							mifWrStg, mod.m_modName.Lc().c_str(),
-							mifWrSrc.m_var.c_str(), varIdx.c_str(), dotField, fldIdx.c_str());
-					} else {
-						mifPostInstr.Append("\t\t\t\tc_t%d_%sToMif_req.m_data = r_%sMifRdData%s%s%s;\n",
-							mifWrStg, mod.m_modName.Lc().c_str(),
-							mifWrSrc.m_var.c_str(), varIdx.c_str(), dotField, fldIdx.c_str());
-					}
-
-					mifPostInstr.Append("\t\t\t}\n");
-					mifPostInstr.Append("\t\t\tbreak;\n");
-				}
-
-				mifPostInstr.Append("\t\tdefault:\n");
-				mifPostInstr.Append("\t\t\tbreak;\n");
-				mifPostInstr.Append("\t\t}\n");
-				mifPostInstr.Append("\t}\n");
-				mifPostInstr.NewLine();
-			}
-
-			if (bGlobalVarP4) {
-				mifReg.Append("\tr_t%d_bWriteReq = !c_reset1x && c_t%d_bWriteReq;\n",
-					mod.m_execStg+4, mod.m_execStg+3);
-				m_mifDecl.Append("\tbool r_t%d_bWriteReq;\n", mod.m_execStg+4);
-				mifPostInstr.Append("\tbool c_t%d_bWriteReq = r_t%d_bWriteReq;\n",
-					mod.m_execStg+4, mod.m_execStg+4);
-			}
-
-			if (bGlobalVarP4) {
-				int mifWrStg = mod.m_execStg+4;
-				mifPostInstr.Append("\tif (c_t%d_bWriteReq) {\n", mifWrStg);
-				mifPostInstr.Append("\t\t// global variable access\n");
-				mifPostInstr.Append("\t\tsc_uint<%s_MIF_SRC_IDX_W> c_t%d_mifSrcIdx = (c_t%d_%sToMif_req.m_tid >> (%s_MIF_SRC_IDX_SHF + 1 + %s))\n",
-					mod.m_modName.Upper().c_str(), mifWrStg, mifWrStg,
-					mod.m_modName.Lc().c_str(), mod.m_modName.Upper().c_str(), wrRspGrpIdW.c_str());
-				mifPostInstr.Append("\t\t\t& %s_MIF_SRC_IDX_MSK;\n", mod.m_modName.Upper().c_str());
-				mifPostInstr.NewLine();
-
-				mifPostInstr.Append("\t\tswitch (c_t%d_mifSrcIdx) {\n", mifWrStg);
-
-				for (size_t i = 0; i < mif.m_mifWr.m_wrSrcList.size(); i += 1) {
-					CMifWrSrc &mifWrSrc = mif.m_mifWr.m_wrSrcList[i];
-
-					if (!mifWrSrc.m_bGblVarP4)
-						continue;
-
-					mifPostInstr.Append("\t\tcase %d:\n", (int)i+1);
-					mifPostInstr.Append("\t\t\t{\n");
-
-					char buf[64];
-
-					string varIdx;
-					if (mifWrSrc.m_varDimen1 > 0) {
-						sprintf(buf, "[INT(c_t%d_varIdx1)]", mifWrStg);
-						varIdx = buf;
-						mifPostInstr.Append("\t\t\t\tsc_uint<%s_MIF_SRC_%s_VAR_IDX1_W> c_t%d_varIdx1 = (c_t%d_%sToMif_req.m_tid\n",
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-							mifWrStg,
-							mifWrStg, mod.m_modName.Lc().c_str());
-						mifPostInstr.Append("\t\t\t\t\t>> (%s_MIF_SRC_%s_VAR_IDX1_SHF + 1 + %s)) & %s_MIF_SRC_%s_VAR_IDX1_MSK;\n",
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(), 
-							wrRspGrpIdW.c_str(),
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str());
-					}
-
-					if (mifWrSrc.m_varDimen2 > 0) {
-						sprintf(buf, "[INT(c_t%d_varIdx2)]", mifWrStg);
-						varIdx += buf;
-						mifPostInstr.Append("\t\t\t\tsc_uint<%s_MIF_SRC_%s_VAR_IDX2_W> c_t%d_varIdx2 = (c_t%d_%sToMif_req.m_tid\n",
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-							mifWrStg,
-							mifWrStg, mod.m_modName.Lc().c_str());
-						mifPostInstr.Append("\t\t\t\t\t>> (%s_MIF_SRC_%s_VAR_IDX2_SHF + 1 + %s)) & %s_MIF_SRC_%s_VAR_IDX2_MSK;\n",
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(), 
-							wrRspGrpIdW.c_str(),
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str());
-					}
-
-					string fldIdx;
-					if (mifWrSrc.m_fldDimen1 > 0) {
-						sprintf(buf, "[INT(c_t%d_fldIdx1)]", mifWrStg);
-						fldIdx = buf;
-						mifPostInstr.Append("\t\t\t\tsc_uint<%s_MIF_SRC_%s_FLD_IDX1_W> c_t%d_fldIdx1 = (c_t%d_%sToMif_req.m_tid\n",
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-							mifWrStg,
-							mifWrStg, mod.m_modName.Lc().c_str());
-						mifPostInstr.Append("\t\t\t\t\t>> (%s_MIF_SRC_%s_FLD_IDX1_SHF + 1 + %s)) & %s_MIF_SRC_%s_FLD_IDX1_MSK;\n",
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-							wrRspGrpIdW.c_str(),
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str());
-					}
-
-					if (mifWrSrc.m_fldDimen2 > 0) {
-						sprintf(buf, "[INT(c_t%d_fldIdx2)]", mifWrStg);
-						fldIdx += buf;
-						mifPostInstr.Append("\t\t\t\tsc_uint<%s_MIF_SRC_%s_FLD_IDX2_W> c_t%d_fldIdx2 = (c_t%d_%sToMif_req.m_tid\n",
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-							mifWrStg,
-							mifWrStg, mod.m_modName.Lc().c_str());
-						mifPostInstr.Append("\t\t\t\t\t>> (%s_MIF_SRC_%s_FLD_IDX2_SHF + 1 + %s)) & %s_MIF_SRC_%s_FLD_IDX2_MSK;\n",
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str(),
-							wrRspGrpIdW.c_str(),
-							mod.m_modName.Upper().c_str(), mifWrSrc.m_name.Upper().c_str());
-					}
-					mifPostInstr.NewLine();
-
-					if (mifWrSrc.m_srcIdx == "varIdx1")
-						mifPostInstr.Append("\t\t\t\tc_t%d_varIdx1 += r_t%d_reqQwIdx;\n", mifWrStg, mifWrStg);
-					else if (mifWrSrc.m_srcIdx == "varIdx2")
-						mifPostInstr.Append("\t\t\t\tc_t%d_varIdx2 += r_t%d_reqQwIdx;\n", mifWrStg, mifWrStg);
-					else if (mifWrSrc.m_srcIdx == "fldIdx1")
-						mifPostInstr.Append("\t\t\t\tc_t%d_fldIdx1 += r_t%d_reqQwIdx;\n", mifWrStg, mifWrStg);
-					else if (mifWrSrc.m_srcIdx == "fldIdx2")
-						mifPostInstr.Append("\t\t\t\tc_t%d_fldIdx2 += r_t%d_reqQwIdx;\n", mifWrStg, mifWrStg);
-					mifPostInstr.NewLine();
-
-					char dotField[128];
-					if (mifWrSrc.m_field.size() > 0)
-						sprintf(dotField, ".m_%s", mifWrSrc.m_field.c_str());
-					else
-						dotField[0] = '\0';
-
-					if (mifWrSrc.m_pIntGbl->m_gblPortList[0].m_bSrcRead) {
-						// if read on port[0] then must need 2x read port
-						mifPostInstr.Append("\t\t\t\tc_t%d_%sToMif_req.m_data = r_%sMifRdData_2x%s.read()%s%s;\n",
-							mifWrStg, mod.m_modName.Lc().c_str(),
-							mifWrSrc.m_var.c_str(), varIdx.c_str(), dotField, fldIdx.c_str());
-					} else {
-						mifPostInstr.Append("\t\t\t\tc_t%d_%sToMif_req.m_data = r_%sMifRdData%s%s%s;\n",
-							mifWrStg, mod.m_modName.Lc().c_str(),
-							mifWrSrc.m_var.c_str(), varIdx.c_str(), dotField, fldIdx.c_str());
-					}
-
-					mifPostInstr.Append("\t\t\t}\n");
-					mifPostInstr.Append("\t\t\tbreak;\n");
-				}
-
-				mifPostInstr.Append("\t\tdefault:\n");
-				mifPostInstr.Append("\t\t\tbreak;\n");
-				mifPostInstr.Append("\t\t}\n");
-				mifPostInstr.Append("\t}\n");
-				mifPostInstr.NewLine();
-			}
 		}
 	}
 
-	if (bNeed_reqQwIdx) {
-		mifPostInstr.Append("\tsc_uint<MIF_TID_QWCNT_W> c_t%d_reqQwIdx = r_t%d_reqQwIdx;\n",
-			mod.m_execStg, mod.m_execStg+1);
-		mifPostInstr.Append("\tif (c_t%d_%sToMif_reqRdy && ", mod.m_execStg+1, mod.m_modName.Lc().c_str());
-		if (is_wx)
-			mifPostInstr.Append("c_t%d_%sToMif_req.m_type == MEM_REQ_WR && ", mod.m_execStg+1, mod.m_modName.Lc().c_str());
-		if (bNeed_reqQwSplit)
-			mifPostInstr.Append("c_t%d_reqQwSplit && ", mod.m_execStg+1);
-		mifPostInstr.Append("r_t%d_reqQwIdx < c_t%d_reqQwCnt-1)\n", mod.m_execStg+1, mod.m_execStg+1);
-		mifPostInstr.Append("\t\tc_t%d_reqQwIdx += 1;\n", mod.m_execStg);
-		mifPostInstr.Append("\telse\n");
-		mifPostInstr.Append("\t\tc_t%d_reqQwIdx = 0;\n", mod.m_execStg);
-		mifPostInstr.NewLine();
+	mifPostInstr.Append("\tht_uint%d c_%sToMif_reqAvlCnt = r_%sToMif_reqAvlCnt;\n",
+		mif.m_queueW + 1,
+		mod.m_modName.Lc().c_str(),
+		mod.m_modName.Lc().c_str());
+	mifPostInstr.Append("\tbool c_%sToMif_reqAvlCntBusy = r_%sToMif_reqAvlCntBusy;\n",
+		mod.m_modName.Lc().c_str(),
+		mod.m_modName.Lc().c_str());
+	mifPostInstr.Append("\tif (r_t%d_%sToMif_reqRdy != i_mifTo%sP0_reqAvl) {\n",
+		mod.m_execStg + 1 + mod.m_mif.m_mifReqStgCnt, mod.m_modName.Lc().c_str(),
+		mod.m_modName.Uc().c_str());
 
-		for (int i = 1; i < reqQwIdxStgCnt; i += 1)
-			mifPostInstr.Append("\tsc_uint<MIF_TID_QWCNT_W> c_t%d_reqQwIdx = r_t%d_reqQwIdx;\n",
-			mod.m_execStg+i, mod.m_execStg+i);
-		mifPostInstr.NewLine();
+	if (mif.m_queueW > 0) {
+		mifPostInstr.Append("\t\tc_%sToMif_reqAvlCnt = r_%sToMif_reqAvlCnt + (r_t%d_%sToMif_reqRdy ? -1 : 1);\n",
+			mod.m_modName.Lc().c_str(),
+			mod.m_modName.Lc().c_str(),
+			mod.m_execStg + 1 + mod.m_mif.m_mifReqStgCnt, mod.m_modName.Lc().c_str());
+		mifPostInstr.Append("\t\tc_%sToMif_reqAvlCntBusy = r_%sToMif_reqAvlCnt < %d;\n",
+			mod.m_modName.Lc().c_str(),
+			mod.m_modName.Lc().c_str(),
+			bMultiQwMif ? 11 : 4);
+	} else {
+		mifPostInstr.Append("\t\tc_%sToMif_reqAvlCnt = r_%sToMif_reqAvlCnt + 1ul;\n",
+			mod.m_modName.Lc().c_str(),
+			mod.m_modName.Lc().c_str());
 	}
+	mifPostInstr.Append("\t}\n");
+	mifPostInstr.NewLine();
 
-	if (mif.m_mifWr.m_bReqPause) {
-		mifPostInstr.Append("\tbool c_bWrpRsm = c_t%d_bWrpRsm && c_t%d_%sToMif_reqRdy && ",
-			mod.m_execStg+1, mod.m_execStg+1, mod.m_modName.Lc().c_str());
-		mifPostInstr.Append("c_t%d_%sToMif_req.m_type == MEM_REQ_WR && ", mod.m_execStg+1, mod.m_modName.Lc().c_str());
-		mifPostInstr.Append("r_t%d_reqQwIdx == c_t%d_reqQwCnt-1;\n", mod.m_execStg+1, mod.m_execStg+1);
+	if (mif.m_bMifRd) {
+		mifPostInstr.Append("\tbool c_m0_rdRspRdy = i_mifTo%sP0_rdRspRdy.read();\n",
+			mod.m_modName.Uc().c_str());
+		mifPostInstr.Append("\tbool c_m1_rdRspRdy = r_m1_rdRspRdy;\n");
+		mifPostInstr.Append("\tCMemRdRspIntf c_m1_rdRsp = r_m1_rdRsp;\n");
+		mifPostInstr.NewLine();
 
-		if (mod.m_threads.m_htIdW.AsInt() > 0) {
-			mifPostInstr.Append("\tsc_uint<%s_HTID_W> c_wrpRsmCnt = r_wrpRsmCnt;\n", mod.m_modName.Upper().c_str());
-			mifPostInstr.Append("\tc_wrpRsmCnt += c_bWrpRsm ? 1u : 0u;\n");
-			mifPostInstr.NewLine();
-
-			mifPostInstr.Append("\tif ((c_bWrpRsm || r_wrpRsmCnt > 0) && !r_t%d_htCmdRdy) {\n",
-				mod.m_execStg+1);
-			mifPostInstr.Append("\t\tm_htCmdQue.push(m_wrpRsmQue.front());\n");
-			mifPostInstr.Append("\t\tm_wrpRsmQue.pop();\n");
-			mifPostInstr.Append("\t\tc_wrpRsmCnt -= 1u;\n");
-			mifPostInstr.Append("\t}\n");
-			mifPostInstr.NewLine();
-		} else {
-			mifPostInstr.Append("\tif (c_bWrpRsm)\n");
-			mifPostInstr.Append("\t\tc_htCmdValid = true;\n");
-			mifPostInstr.NewLine();
-		}
-
-		if (mod.m_threads.m_htIdW.AsInt() > 0) {
-			m_mifRamDecl.Append("\tht_dist_que<CHtCmd, %s_HTID_W> m_wrpRsmQue;\n",
+		if (bNeedRdRspInfo) {
+			mifPostInstr.Append("\tsc_uint<%s_RD_RSP_CNT_W> c_m0_rdRspId = i_mifTo%sP0_rdRsp.read().m_tid & ((1 << %s_RD_RSP_CNT_W) - 1);\n",
+				mod.m_modName.Upper().c_str(),
+				mod.m_modName.Uc().c_str(),
 				mod.m_modName.Upper().c_str());
-			mifRamClock.Append("\tm_wrpRsmQue.clock(r_reset1x);\n");
-		}
-	}
-
-	if (mifRsmCnt > 1 && mod.m_threads.m_htIdW.AsInt() > 0) {
-		mifPostInstr.Append("\t// Resume memory response thread\n");
-
-		if (mif.m_bMifRd && mif.m_mifRd.m_bPause) {
-			if (mod.m_threads.m_htIdW.AsInt() == 0) {
-				mifPostInstr.Append("\tif (r_bRdGrpRsmRdy) {\n");
-				mifPostInstr.Append("\t\tc_t0_rsmHtRdy = true;\n");
-				mifPostInstr.Append("\t\tc_t0_rsmHtInstr = r_rdMemRspHtInstr;\n");
-				mifPostInstr.Append("\t\tc_bRdGrpRsmRdy = false;\n");
-			} else {
-				m_mifRamDecl.Append("\tht_dist_que<CHtRsm, %s_HTID_W> m_mif_rdRsmQue;\n",
-					mod.m_modName.Upper().c_str());
-				mifRamClock.Append("\tm_mif_rdRsmQue.clock(r_reset1x);\n");
-
-				mifPostInstr.Append("\tif (!c_t0_rsmHtRdy && !m_mif_rdRsmQue.empty()) {\n");
-				mifPostInstr.Append("\t\tc_t0_rsmHtRdy = true;\n");
-				mifPostInstr.Append("\t\tc_t0_rsmHtId = m_mif_rdRsmQue.front().m_htId;\n");
-				mifPostInstr.Append("\t\tc_t0_rsmHtInstr = m_mif_rdRsmQue.front().m_htInstr;\n");
-				mifPostInstr.Append("\t\tm_mif_rdRsmQue.pop();\n");
+			mifPostInstr.Append("\tm_rdRspInfo.read_addr(c_m0_rdRspId);\n");
+			if (bMultiQwReq)
+				mifPostInstr.Append("\tCRdRspInfo c_m1_rdRspInfo = r_m2_rdRspInfo;\n");
+			else {
+				mifPostInstr.Append("\tCRdRspInfo c_m1_rdRspInfo = m_rdRspInfo.read_mem();\n");
 			}
-			mifPostInstr.Append("\t}\n");
+			if (rdRspGrpIdW > 0 && rdDstNgvRamList.size() > 0)
+				mifPostInstr.Append("\tCRdRspInfo c_m2_rdRspInfo = r_m2_rdRspInfo;\n");
+			mifPostInstr.NewLine();
+		}
+		
+		if (bMultiQwReq) {
+			mifPostInstr.Append("\tht_uint3 c_m1_rdRspQwIdx = r_m2_rdRspQwIdx;\n");
+			mifPostInstr.NewLine();
 		}
 
-		if (mif.m_bMifWr && mif.m_mifWr.m_bPause) {
-			if (mod.m_threads.m_htIdW.AsInt() == 0) {
-				mifPostInstr.Append("\tif (r_bWrGrpRsmRdy) {\n");
-				mifPostInstr.Append("\t\tc_t0_rsmHtRdy = true;\n");
-				mifPostInstr.Append("\t\tc_t0_rsmHtInstr = r_wrMemRspHtInstr;\n");
-				mifPostInstr.Append("\t\tc_bWrGrpRsmRdy = false;\n");
-			} else {
-				m_mifRamDecl.Append("\tht_dist_que<CHtRsm, %s_HTID_W> m_mif_wrRsmQue;\n",
-					mod.m_modName.Upper().c_str());
-				mifRamClock.Append("\tm_mif_wrRsmQue.clock(r_reset1x);\n");
+		if (bMultiQwRdMif) {
+			mifPostInstr.Append("\tbool c_m2_bWrData = !r_m2_rdRspInfo.m_multiQwReq ||\n");
+			mifPostInstr.Append("\t\tr_m2_rdRspInfo.m_qwFst <= r_m2_rdRspQwIdx && r_m2_rdRspQwIdx <= r_m2_rdRspInfo.m_qwLst;\n");
+			mifPostInstr.NewLine();
+		}
 
-				mifPostInstr.Append("\tif (!c_t0_rsmHtRdy && !m_mif_wrRsmQue.empty()) {\n");
-				mifPostInstr.Append("\t\tc_t0_rsmHtRdy = true;\n");
-				mifPostInstr.Append("\t\tc_t0_rsmHtId = m_mif_wrRsmQue.front().m_htId;\n");
-				mifPostInstr.Append("\t\tc_t0_rsmHtInstr = m_mif_wrRsmQue.front().m_htInstr;\n");
-				mifPostInstr.Append("\t\tm_mif_wrRsmQue.pop();\n");
+		mifPostInstr.Append("\t// write read response to ram\n");
+		mifPostInstr.Append("\tif (r_m2_rdRspRdy) {\n");
+
+		if (bNeedRdRspInfo) {
+			string tabs;
+			if (bMultiQwReq) {
+				mifPostInstr.Append("\t\tif (r_m2_rdRspQwIdx == 0) {\n");
+				tabs = "\t";
 			}
-			mifPostInstr.Append("\t}\n");
+			mifPostInstr.Append("\t\t%ssc_uint<%s_RD_RSP_CNT_W> c_m2_rdRspId = r_m2_rdRsp.m_tid & ((1 << %s_RD_RSP_CNT_W) - 1);\n",
+				tabs.c_str(),
+				mod.m_modName.Upper().c_str(),
+				mod.m_modName.Upper().c_str());
+			mifPostInstr.Append("\t\t%sm_rdRspIdPool.push(c_m2_rdRspId);\n", tabs.c_str());
+			if (bMultiQwReq)
+				mifPostInstr.Append("\t\t}\n");
+			mifPostInstr.NewLine();
 		}
-	}
 
-	mifPostInstr.NewLine();
-	mifPostInstr.NewLine();
+		if (bMultiQwRdMif) {
+			mifPostInstr.Append("\t\tif (r_m2_rdRspInfo.m_multiQwReq) {\n");
+			mifPostInstr.Append("\t\t\tc_m1_rdRspQwIdx += 1u;\n");
+			mifPostInstr.NewLine();
 
-	if (mif.m_mifRd.m_bMultiRd || mif.m_mifWr.m_bMultiWr) {
-		if (bNeed_reqBusy) {
-			m_mifDecl.Append("\tbool r_t%d_reqBusy;\n", mod.m_execStg);
-			mifPostInstr.Append("\tbool c_t%d_reqBusy = c_t%d_%sToMif_reqRdy && c_t%d_reqQwIdx > 0;\n\n",
-				mod.m_execStg-1, mod.m_execStg, mod.m_modName.Lc().c_str(), mod.m_execStg);
-			mifReg.Append("\tr_t%d_reqBusy = c_t%d_reqBusy;\n",
-				mod.m_execStg, mod.m_execStg-1);
+			string tabs;
+			if (bMultiQwMif) {
+				mifPostInstr.Append("\t\t\tif (r_m2_rdRspQwIdx >= r_m2_rdRspInfo.m_qwFst) {\n");
+				tabs += "\t";
+			}
+
+			bool bNeedElemQwIdx = maxElemQwCnt > 1;
+			bool bNeedVIdx1 = vIdxWList.size() > 0 && vIdxWList[0] > 0;
+			bool bNeedVIdx2 = vIdxWList.size() > 1 && vIdxWList[1] > 0;
+			bool bNeedElemQwCntM1 = bNeedElemQwIdx && (bNeedVIdx1 || bNeedVIdx2);
+			bool bNeedVIdx2CntM1 = bNeedVIdx2 && bNeedVIdx1;
+
+			if (bNeedElemQwIdx) {
+				if (bNeedElemQwCntM1) {
+					mifPostInstr.Append("%s\t\t\tif (r_m2_rdRspInfo.m_elemQwIdx < r_m2_rdRspInfo.m_elemQwCntM1) {\n\t", tabs.c_str());
+				}
+				mifPostInstr.Append("%s\t\t\tc_m1_rdRspInfo.m_elemQwIdx = r_m2_rdRspInfo.m_elemQwIdx + 1u;\n", tabs.c_str());
+
+				if (bNeedElemQwCntM1)
+					mifPostInstr.Append("%s\t\t\t}", tabs.c_str());
+			}
+
+			if (bNeedVIdx2) {
+				if (bNeedElemQwIdx)
+					mifPostInstr.Append(" else ");
+				else
+					mifPostInstr.Append("%s\t\t\t", tabs.c_str());
+
+				if (bNeedVIdx2CntM1) {
+					mifPostInstr.Append("if (r_m2_rdRspInfo.m_vIdx2 < r_m2_rdRspInfo.m_vIdx2CntM1) {\n\t");
+				} else if (bNeedElemQwIdx) {
+					mifPostInstr.Append("{\n");
+					mifPostInstr.Append("%s\t\t\t\tc_m1_rdRspInfo.m_elemQwIdx = 0;\n\t", tabs.c_str());
+				}
+				mifPostInstr.Append("%s\t\t\tc_m1_rdRspInfo.m_vIdx2 = r_m2_rdRspInfo.m_vIdx2 + 1u;\n", tabs.c_str());
+
+				if (bNeedVIdx2CntM1 || bNeedElemQwIdx) {
+					if (bNeedVIdx1)
+						mifPostInstr.Append("%s\t\t\t}", tabs.c_str());
+					else
+						mifPostInstr.Append("%s\t\t\t}\n", tabs.c_str());
+				}
+			}
+
+			if (bNeedVIdx1) {
+				if (bNeedElemQwCntM1 || bNeedVIdx2CntM1)
+					mifPostInstr.Append(" else {\n\t");
+				else
+					mifPostInstr.Append("%s\t\t\t", tabs.c_str());
+
+				if (bNeedElemQwIdx)
+					mifPostInstr.Append("%s\t\t\tc_m1_rdRspInfo.m_elemQwIdx = 0;\n\t", tabs.c_str());
+
+				if (bNeedVIdx2)
+					mifPostInstr.Append("%s\t\t\tc_m1_rdRspInfo.m_vIdx2 = 0;\n\t", tabs.c_str());
+
+				mifPostInstr.Append("%s\t\t\tc_m1_rdRspInfo.m_vIdx1 = r_m2_rdRspInfo.m_vIdx1 + 1u;\n", tabs.c_str());
+
+				if (bNeedElemQwCntM1 || bNeedVIdx2CntM1)
+					mifPostInstr.Append("%s\t\t\t}\n", tabs.c_str());
+			}
+
+			if (bMultiQwMif)
+				mifPostInstr.Append("\t\t\t}\n");
+
+			mifPostInstr.Append("\t\t}\n");
+			mifPostInstr.NewLine();
 		}
-	}
 
-	if (mif.m_bMifRd && mif.m_mifRd.m_rspGrpIdW > 2) {
-		mifPostInstr.Append("\tsc_uint<%s_RD_GRP_ID_W+1> c_rdRspGrpInitCnt = r_rdRspGrpInitCnt;\n",
-			mod.m_modName.Upper().c_str());
-		mifPostInstr.Append("\tif (r_rdRspGrpInitCnt < (1 << %s_RD_GRP_ID_W)) {\n",
-			mod.m_modName.Upper().c_str());
-		mifPostInstr.Append("\t\tm_rdGrpRspCnt[r_rdRspGrpInitCnt & %s].write_addr((sc_uint<%s_RD_GRP_ID_W-%s>)(r_rdRspGrpInitCnt >> %s));\n",
-			pRdGrpIdMask, mod.m_modName.Upper().c_str(), pRdGrpShfAmt, pRdGrpShfAmt);
-		mifPostInstr.Append("\t\tm_rdGrpRspCnt[r_rdRspGrpInitCnt & %s].write_mem(0);\n", pRdGrpIdMask);
+		mifPostInstr.Append("\t\tht_uint64 c_m2_rdRspData = r_m2_rdRsp.m_data;\n");
 		mifPostInstr.NewLine();
-		if (mif.m_mifRd.m_bPause) {
-			mifPostInstr.Append("\t\tm_rdGrpRsmWait[r_rdRspGrpInitCnt & %s].write_addr((sc_uint<%s_RD_GRP_ID_W-%s>)(r_rdRspGrpInitCnt >> %s));\n",
-				pRdGrpIdMask, mod.m_modName.Upper().c_str(), pRdGrpShfAmt, pRdGrpShfAmt);
-			mifPostInstr.Append("\t\tm_rdGrpRsmWait[r_rdRspGrpInitCnt & %s].write_mem(false);\n", pRdGrpIdMask);
-			mifPostInstr.NewLine();
-		}
-		if (mif.m_mifRd.m_bPoll && mif.m_mifRd.m_rspGrpId.size() > 0) {
-			mifPostInstr.Append("\t\tm_rdGrpRspCntZero[r_rdRspGrpInitCnt & %s].write_addr((sc_uint<%s_RD_GRP_ID_W-%s>)(r_rdRspGrpInitCnt >> %s));\n",
-				pRdGrpIdMask, mod.m_modName.Upper().c_str(), pRdGrpShfAmt, pRdGrpShfAmt);
-			mifPostInstr.Append("\t\tm_rdGrpRspCntZero[r_rdRspGrpInitCnt & %s].write_mem(true);\n", pRdGrpIdMask);
-			mifPostInstr.NewLine();
-		}
-		mifPostInstr.Append("\t\tc_rdRspGrpInitCnt = r_rdRspGrpInitCnt + 1u;\n");
-		mifPostInstr.Append("\t}\n");
-		mifPostInstr.Append("\tif (r_reset1x) c_rdRspGrpInitCnt = 0;\n");
-	}
 
-	if (mif.m_bMifWr && mif.m_mifWr.m_rspGrpIdW > 2) {
-		mifPostInstr.Append("\tsc_uint<%s_WR_GRP_ID_W+1> c_wrRspGrpInitCnt = r_wrRspGrpInitCnt;\n",
-			mod.m_modName.Upper().c_str());
-		mifPostInstr.Append("\tif (r_wrRspGrpInitCnt < (1 << %s_WR_GRP_ID_W)) {\n",
-			mod.m_modName.Upper().c_str());
-		mifPostInstr.Append("\t\tm_wrGrpRspCnt[r_wrRspGrpInitCnt & %s].write_addr((sc_uint<%s_WR_GRP_ID_W-%s>)(r_wrRspGrpInitCnt >> %s));\n",
-			pWrGrpIdMask, mod.m_modName.Upper().c_str(), pWrGrpShfAmt, pWrGrpShfAmt);
-		mifPostInstr.Append("\t\tm_wrGrpRspCnt[r_wrRspGrpInitCnt & %s].write_mem(0);\n", pWrGrpIdMask);
+		string tabs;
+		if (bMultiQwRdMif) {
+			mifPostInstr.Append("\t\tif (c_m2_bWrData) {\n", tabs.c_str());
+			tabs += "\t";
+		}
+
+		if (mif.m_mifRd.m_rdDstList.size() > 1) {
+			mifPostInstr.Append("%s\t\tswitch (r_m2_rdRspInfo.m_dst) {\n", tabs.c_str());
+			tabs += "\t";
+		}
+
+		for (int rdDstIdx = 0; rdDstIdx < (int)mif.m_mifRd.m_rdDstList.size(); rdDstIdx += 1) {
+			CMifRdDst &rdDst = mif.m_mifRd.m_rdDstList[rdDstIdx];
+
+			if (mif.m_mifRd.m_rdDstList.size() > 1) {
+				tabs.erase(0, 1);
+				mifPostInstr.Append("%s\t\tcase %d:\n", tabs.c_str(), rdDstIdx);
+				tabs += "\t";
+			}
+
+			if (rdDst.m_infoW.size() > 0) {
+				// function call
+
+				//if (rdDst.m_infoW.AsInt() > 0) {
+				//	mifPostInstr.Append("%ssc_uint<%s_MIF_DST_%s_INFO_W> c_m1_rdRsp_info = (c_m1_rdRsp_dst\n", pTabs,
+				//		mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str());
+				//	mifPostInstr.Append("%s\t>> %s_MIF_DST_%s_INFO_SHF) & %s_MIF_DST_%s_INFO_MSK;\n", pTabs,
+				//		mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str(),
+				//		mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str());
+				//}
+				//mifPostInstr.NewLine();
+
+				//if (mifRdDst.m_bMultiRd && !is_wx) {
+				//	mifPostInstr.Append("%ssc_uint<%s_MIF_DST_%s_RSP_IDX_W> c_m1_rspIdx = (c_m1_rdRsp_dst\n", pTabs,
+				//		mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str());
+				//	mifPostInstr.Append("%s\t>> %s_MIF_DST_%s_RSP_IDX_SHF) & %s_MIF_DST_%s_RSP_IDX_MSK;\n", pTabs,
+				//		mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str(),
+				//		mod.m_modName.Upper().c_str(), mifRdDst.m_name.Upper().c_str());
+
+				//	//if (bNeed_rdRspQwIdx)
+				//	//	mifPostInstr.Append("%sc_m1_rspIdx += c_m1_rdRspQwIdx;\n", pTabs);
+				//	mifPostInstr.NewLine();
+				//}
+
+				//if (is_wx && mifRdDst.m_bMultiRd)
+				//	mifPostInstr.Append("%sif (c_m1_varWrEn)\n\t", pTabs);
+
+				mifPostInstr.Append("\t\t%sReadMemResp_%s(", tabs.c_str(), rdDst.m_name.c_str());
+				m_mifFuncDecl.Append("\tvoid ReadMemResp_%s(", rdDst.m_name.c_str());
+
+				//if (mifRdDst.m_bMultiRd) {
+				//	if (is_wx)
+				//		mifPostInstr.Append("c_m1_rdRspQwIdx - c_m1_rdRspQwFirst, ");
+				//	else
+				//		mifPostInstr.Append("c_m1_rspIdx, ");
+				//	m_mifFuncDecl.Append("ht_uint3 rspIdx, ");
+				//}
+
+				if (mif.m_mifRd.m_rspGrpIdW > 0) {
+					mifPostInstr.Append("r_m2_rdRspInfo.m_grpId, ");
+					m_mifFuncDecl.Append("sc_uint<%s_RD_GRP_ID_W> rdRspGrpId, ", mod.m_modName.Upper().c_str());
+				}
+
+				if (rdDst.m_infoW.AsInt() > 0) {
+					mifPostInstr.Append("r_m2_rdRspInfo.m_d%d_info, ", rdDstIdx);
+					m_mifFuncDecl.Append("sc_uint<%s> rdRsp_info, ", rdDst.m_infoW.c_str());
+				}
+
+				mifPostInstr.Append("c_m2_rdRspData);\n");
+				m_mifFuncDecl.Append("ht_uint64 rdRspData);\n");
+
+			} else {
+
+				CType * pDstType = 0;
+				string baseVar;
+
+				bool bMemVar = false;
+				bool bQueVar = false;
+				if (rdDst.m_pGblVar) {
+					pDstType = rdDst.m_pDstType;
+					baseVar = VA("c_m2_%sMwData", rdDst.m_pGblVar->m_gblName.c_str());
+				} else if (rdDst.m_pSharedVar) {
+					pDstType = rdDst.m_pSharedVar->m_pType;
+					if (rdDst.m_pSharedVar->m_addr1W.AsInt() > 0) {
+						baseVar = VA("m_%s", rdDst.m_pSharedVar->m_name.c_str());
+						bMemVar = true;
+					} else if (rdDst.m_pSharedVar->m_queueW.AsInt() > 0) {
+						baseVar = VA("m_%s", rdDst.m_pSharedVar->m_name.c_str());
+						bQueVar = true;
+					} else {
+						baseVar = VA("c_%s", rdDst.m_pSharedVar->m_name.c_str());
+					}
+				} else if (rdDst.m_pPrivVar) {
+					pDstType = rdDst.m_pPrivVar->m_pType;
+					baseVar = VA("c_htPriv.m_%s", rdDst.m_pPrivVar->m_name.c_str());
+				} else
+					HtlAssert(0);
+
+				string addrVar;
+				for (int fldIdx = 0; fldIdx < (int)rdDst.m_fieldRefList.size(); fldIdx += 1) {
+					CFieldRef & fieldRef = rdDst.m_fieldRefList[fldIdx];
+
+					if (fldIdx > 0) {
+						baseVar += '.';
+						baseVar += fieldRef.m_fieldName;
+					}
+
+					for (int dimIdx = 0; dimIdx < (int)fieldRef.m_refDimenList.size(); dimIdx += 1) {
+						CRefDimen & refDimen = fieldRef.m_refDimenList[dimIdx];
+
+						if (refDimen.m_value >= 0)
+							baseVar += VA("[%d]", refDimen.m_value);
+
+						else if (refDimen.m_size == 1)
+							baseVar += "[0]";
+
+						else if (refDimen.m_isIdx) {
+							baseVar += VA("[INT(r_m2_rdRspInfo.m_vIdx%d & 0x%x)]",
+								dimIdx + 1, (1 << FindLg2(refDimen.m_size - 1)) - 1);
+						} else {
+							baseVar += VA("[INT(r_m2_rdRspInfo.m_d%d_f%dIdx%d)]",
+								rdDstIdx, fldIdx + 1, dimIdx + 1);
+						}
+					}
+
+					if (fldIdx == 0)
+						addrVar = baseVar;
+				}
+
+				if (rdDst.m_varAddr1W > 0) {
+
+					if (rdDst.m_varAddr1W > 0 && !rdDst.m_varAddr1IsHtId) {
+						if (rdDst.m_varAddr1IsIdx) {
+							mifPostInstr.Append("\t\t%s%s.write_addr(r_m2_rdRspInfo.m_vIdx1 & 0x%x",
+								tabs.c_str(),
+								addrVar.c_str(),
+								(1 << rdDst.m_varAddr1W) - 1);
+						} else {
+							mifPostInstr.Append("\t\t%s%s.write_addr(r_m2_rdRspInfo.m_d%d_f1Addr1",
+								tabs.c_str(),
+								addrVar.c_str(),
+								rdDstIdx);
+						}
+					} else if (rdDst.m_varAddr2W > 0 && !rdDst.m_varAddr2IsHtId) {
+						mifPostInstr.Append("\t\t%s%s.write_addr(",
+							tabs.c_str(),
+							addrVar.c_str());
+					}
+
+					if (rdDst.m_varAddr1W > 0 && !rdDst.m_varAddr1IsHtId && rdDst.m_varAddr2W > 0 && !rdDst.m_varAddr2IsHtId)
+						mifPostInstr.Append(", ");
+
+					if (rdDst.m_varAddr2W > 0 && !rdDst.m_varAddr2IsHtId) {
+						if (rdDst.m_varAddr2IsIdx)
+							mifPostInstr.Append("r_m2_rdRspInfo.m_vIdx2 & 0x%x",
+							(1 << rdDst.m_varAddr2W) - 1);
+						else
+							mifPostInstr.Append("r_m2_rdRspInfo.m_d%d_f1Addr2", rdDstIdx);
+					}
+
+					if (rdDst.m_varAddr1W > 0 && !rdDst.m_varAddr1IsHtId || rdDst.m_varAddr2W > 0 && !rdDst.m_varAddr2IsHtId)
+						mifPostInstr.Append(");\n");
+				}
+
+				int reqSize = rdDst.m_pRdType ? (rdDst.m_pRdType->m_clangMinAlign == 1 ? rdDst.m_pRdType->m_clangBitWidth : rdDst.m_pRdType->m_clangMinAlign)
+					: (pDstType->m_clangMinAlign == 1 ? pDstType->m_clangBitWidth : pDstType->m_clangMinAlign);
+
+				if (rdDst.m_pRdType == 0 && pDstType->m_clangBitWidth > reqSize) {
+					mifPostInstr.Append("%s\t\tswitch (r_m2_rdRspInfo.m_elemQwIdx & 0x%x) {\n",
+						tabs.c_str(), (1 << FindLg2((pDstType->m_clangBitWidth + reqSize - 1) / reqSize - 1)) - 1);
+					tabs += "\t";
+				}
+
+				for (int bitPos = 0; bitPos < pDstType->m_clangBitWidth; bitPos += reqSize) {
+					if (rdDst.m_pRdType == 0 && pDstType->m_clangBitWidth > reqSize) {
+						tabs.erase(0, 1);
+						mifPostInstr.Append("%s\t\tcase %d:\n", tabs.c_str(), bitPos / reqSize);
+						tabs += "\t";
+					}
+
+					for (CStructElemIter iter(this, pDstType); !iter.end(); iter++) {
+
+						int pos = iter.GetHeirFieldPos();
+						int width = iter.GetWidth();
+						bool bIsSigned = iter.IsSigned();
+						int minAlign = iter.GetMinAlign();
+
+						if (pos < bitPos || pos >= (bitPos + reqSize)) continue;
+
+						int rdTypeWidth = rdDst.m_pRdType ? rdDst.m_pRdType->m_clangBitWidth : 64;
+						int dstTypeWidth = width;
+
+						string typeCast;
+						if (rdTypeWidth < dstTypeWidth)
+						//if (rdDst.m_pRdType)
+							typeCast = rdDst.m_pRdType->m_typeName;
+						else if (width < 64 || bIsSigned) {
+							if (minAlign != width) {
+								if (bIsSigned)
+									typeCast = VA("ht_int%d", width);
+								else
+									typeCast = VA("ht_uint%d", width);
+							} else 
+								typeCast = iter.GetType()->m_typeName;
+						}
+
+						if (width < 64) {
+							if (bMemVar) {
+								mifPostInstr.Append("\t\t%s%s%s.write_mem((%s)(c_m2_rdRspData >> %d));\n",
+									tabs.c_str(),
+									baseVar.c_str(),
+									iter.GetHeirFieldName().c_str(),
+									typeCast.c_str(),
+									pos % reqSize);
+							} else {
+								mifPostInstr.Append("\t\t%s%s%s = (%s)(c_m2_rdRspData >> %d);\n",
+									tabs.c_str(),
+									baseVar.c_str(),
+									iter.GetHeirFieldName().c_str(),
+									typeCast.c_str(),
+									pos % reqSize);
+							}
+						} else {
+							if (bMemVar) {
+								mifPostInstr.Append("\t\t%s%s%s.write_mem(c_m2_rdRspData);\n",
+									tabs.c_str(),
+									baseVar.c_str(),
+									iter.GetHeirFieldName().c_str());
+							} else if (bQueVar) {
+								mifPostInstr.Append("\t\t%s%s%s.push(c_m2_rdRspData);\n",
+									tabs.c_str(),
+									baseVar.c_str(),
+									iter.GetHeirFieldName().c_str());
+							} else if (typeCast.size() == 0) {
+								mifPostInstr.Append("\t\t%s%s%s = c_m2_rdRspData;\n",
+									tabs.c_str(),
+									baseVar.c_str(),
+									iter.GetHeirFieldName().c_str());
+							} else {
+								mifPostInstr.Append("%s\t\t%s%s = (%s)c_m2_rdRspData;\n",
+									tabs.c_str(),
+									baseVar.c_str(),
+									iter.GetHeirFieldName().c_str(),
+									typeCast.c_str());
+							}
+						}
+					}
+
+					if (rdDst.m_pRdType == 0 && pDstType->m_clangBitWidth > reqSize) {
+						mifPostInstr.Append("%s\t\tbreak;\n", tabs.c_str());
+					}
+				}
+
+				if (rdDst.m_pRdType == 0 && pDstType->m_clangBitWidth > reqSize) {
+					tabs.erase(0, 1);
+					mifPostInstr.Append("%s\t\tdefault:\n", tabs.c_str());
+					mifPostInstr.Append("%s\t\t\tht_assert(0);\n", tabs.c_str());
+					mifPostInstr.Append("%s\t\t}\n", tabs.c_str());
+				}
+			}
+
+			if (mif.m_mifRd.m_rdDstList.size() > 1) {
+				mifPostInstr.Append("%s\t\tbreak;\n", tabs.c_str());
+			}
+		}
+
+		if (mif.m_mifRd.m_rdDstList.size() > 1) {
+			tabs.erase(0, 1);
+			mifPostInstr.Append("%s\t\tdefault:\n", tabs.c_str());
+			mifPostInstr.Append("%s\t\t\tht_assert(0);\n", tabs.c_str());
+			mifPostInstr.Append("%s\t\t}\n", tabs.c_str());
+		}
+
+		if (bMultiQwRdMif) {
+			tabs.erase(0, 1);
+			mifPostInstr.Append("%s\t\t}\n", tabs.c_str());
+		}
+
+		mifPostInstr.Append("\t}\n");
 		mifPostInstr.NewLine();
-		if (mif.m_mifWr.m_bPause) {
-			mifPostInstr.Append("\t\tm_wrGrpRsmWait[r_wrRspGrpInitCnt & %s].write_addr((sc_uint<%s_WR_GRP_ID_W-%s>)(r_wrRspGrpInitCnt >> %s));\n",
-				pWrGrpIdMask, mod.m_modName.Upper().c_str(), pWrGrpShfAmt, pWrGrpShfAmt);
-			mifPostInstr.Append("\t\tm_wrGrpRsmWait[r_wrRspGrpInitCnt & %s].write_mem(false);\n", pWrGrpIdMask);
+
+		if (bNeedRdRspInfo && bMultiQwReq) {
+			mifPostInstr.Append("\tif (c_m1_rdRspQwIdx == 0)\n");
+			mifPostInstr.Append("\t\tc_m1_rdRspInfo = m_rdRspInfo.read_mem();\n");
 			mifPostInstr.NewLine();
 		}
-		mifPostInstr.Append("\t\tc_wrRspGrpInitCnt = r_wrRspGrpInitCnt + 1u;\n");
-		mifPostInstr.Append("\t}\n");
-		mifPostInstr.Append("\tif (r_reset1x) c_wrRspGrpInitCnt = 0;\n");
-	}
-
-	if (bNeed_reqQwIdx)
-	{
-		m_mifDecl.Append("\tht_uint4 r_t%d_reqQwCnt;\n", mod.m_execStg+1);
-		m_mifDecl.Append("\tht_uint4 r_t%d_reqQwCnt;\n", mod.m_execStg+2);
-
-		mifReg.Append("\tr_t%d_reqQwCnt = r_reset1x ? (ht_uint4)0 : c_t%d_reqQwCnt;\n",
-			mod.m_execStg+1, mod.m_execStg);
-		mifReg.Append("\tr_t%d_reqQwCnt = r_reset1x ? (ht_uint4)0 : c_t%d_reqQwCnt;\n",
-			mod.m_execStg+2, mod.m_execStg+1);
-	}
-
-	if (bNeed_reqQwSplit)
-	{
-		m_mifDecl.Append("\tbool r_t%d_reqQwSplit;\n", mod.m_execStg+1);
-		m_mifDecl.Append("\tbool r_t%d_reqQwSplit;\n", mod.m_execStg+2);
-
-		mifReg.Append("\tr_t%d_reqQwSplit = c_t%d_reqQwSplit;\n",
-			mod.m_execStg+1, mod.m_execStg);
-		mifReg.Append("\tr_t%d_reqQwSplit = c_t%d_reqQwSplit;\n",
-			mod.m_execStg+2, mod.m_execStg+1);
-	}
-
-	if (bNeed_reqQwIdx)
-	{
-		for (int i = 0; i < reqQwIdxStgCnt; i += 1)
-			m_mifDecl.Append("\tht_uint3 r_t%d_reqQwIdx;\n", mod.m_execStg+1+i);
-
-		mifReg.Append("\tr_t%d_reqQwIdx = r_reset1x ? (ht_uint3)0 : c_t%d_reqQwIdx;\n",
-			mod.m_execStg+1, mod.m_execStg);
-
-		for (int i = 1; i < reqQwIdxStgCnt; i += 1)
-			mifReg.Append("\tr_t%d_reqQwIdx = c_t%d_reqQwIdx;\n", mod.m_execStg+1+i, mod.m_execStg+i);
-	}
-
-	for (int i = 0; i < mifReqStgCnt; i += 1) {
-		mifPreInstr.Append("\tbool c_t%d_%sToMif_reqRdy = r_t%d_%sToMif_reqRdy;\n",
-			mod.m_execStg+1+i, mod.m_modName.Lc().c_str(),
-			mod.m_execStg+1+i, mod.m_modName.Lc().c_str());
-		mifPreInstr.Append("\tCMemRdWrReqIntf c_t%d_%sToMif_req = r_t%d_%sToMif_req;\n",
-			mod.m_execStg+1+i, mod.m_modName.Lc().c_str(),
-			mod.m_execStg+1+i, mod.m_modName.Lc().c_str());
-		mifPreInstr.Append("\n");
-	}
-
-	for (int i = 0; i < mifReqStgCnt+1; i += 1) {
-		m_mifDecl.Append("\tbool r_t%d_%sToMif_reqRdy;\n",
-			mod.m_execStg+1+i, mod.m_modName.Lc().c_str());
-		mifReg.Append("\tr_t%d_%sToMif_reqRdy = !r_reset1x && c_t%d_%sToMif_reqRdy;\n",
-			mod.m_execStg+1+i, mod.m_modName.Lc().c_str(),
-			mod.m_execStg+i, mod.m_modName.Lc().c_str());
-		m_mifDecl.Append("\tCMemRdWrReqIntf r_t%d_%sToMif_req;\n",
-			mod.m_execStg+1+i, mod.m_modName.Lc().c_str());
-		mifReg.Append("\tr_t%d_%sToMif_req = c_t%d_%sToMif_req;\n",
-			mod.m_execStg+1+i, mod.m_modName.Lc().c_str(),
-			mod.m_execStg+i, mod.m_modName.Lc().c_str());
-	}
-
-	mifReg.Append("\tr_%sToMif_reqAvlCnt = r_reset1x ? (ht_uint%d)%ld : c_%sToMif_reqAvlCnt;\n",
-		mod.m_modName.Lc().c_str(),
-		mif.m_queueW+1, 1ul << mif.m_queueW,
-		mod.m_modName.Lc().c_str());
-	mifReg.Append("\tr_%sToMif_reqAvlCntBusy = !r_reset1x && c_%sToMif_reqAvlCntBusy;\n",
-		mod.m_modName.Lc().c_str(),
-		mod.m_modName.Lc().c_str());
-	mifReg.NewLine();
-
-	if (mif.m_mifWr.m_bReqPause)
-	{
-		if (mod.m_threads.m_htIdW.AsInt() > 0)
-			m_mifDecl.Append("\tsc_uint<%s_HTID_W> r_wrpRsmCnt;\n", mod.m_modName.Upper().c_str());
-		m_mifDecl.Append("\tbool r_t%d_bWrpRsm;\n", mod.m_execStg+1);
-		m_mifDecl.Append("\tbool r_t%d_bWrpRsm;\n", mod.m_execStg+2);
-
-		if (mod.m_threads.m_htIdW.AsInt() > 0)
-			mifReg.Append("\tr_wrpRsmCnt = r_reset1x ? (sc_uint<%s_HTID_W>)0 : c_wrpRsmCnt;\n", mod.m_modName.Upper().c_str());
-		mifReg.Append("\tr_t%d_bWrpRsm = !r_reset1x && c_t%d_bWrpRsm;\n",
-			mod.m_execStg+1, mod.m_execStg);
-		mifReg.Append("\tr_t%d_bWrpRsm = !r_reset1x && c_t%d_bWrpRsm;\n",
-			mod.m_execStg+2, mod.m_execStg+1);
-		mifReg.NewLine();
 	}
 
 	if (mif.m_bMifRd) {
-		if (mif.m_mifRd.m_rspGrpIdW > 2) {
-			mifReg.Append("\tr_rdRspGrpInitCnt = c_rdRspGrpInitCnt;\n");
-			mifReg.Append("\tr_t%d_bReadRspBusy = c_t%d_bReadRspBusy;\n", mod.m_execStg, mod.m_execStg-1);
+
+		string rdReqRdy;
+		if (bMultiQwReq) {
+			rdReqRdy = VA("r_t%d_memReq.m_rdReq && !r_memReqHold", mod.m_execStg + 1);
+		} else {
+			rdReqRdy = VA("r_t%d_memReq.m_rdReq", mod.m_execStg + 1);
 		}
-		mifReg.Append("\tr_t%d_rdRspBusyCntMax = c_t%d_rdRspBusyCntMax;\n", mod.m_execStg, mod.m_execStg-1);
-		if (mif.m_mifRd.m_bPause)
-			mifReg.Append("\tr_t%d_rdRspPauseCntZero = c_t%d_rdRspPauseCntZero;\n", mod.m_execStg, mod.m_execStg-1);
+
+		string rdRspRdy;
+		string rdRspRdyWithParan;
+		string rdRspGrpId;
+		if (rdDstNgvRamList.size() == 0) {
+			rdRspGrpId = "r_m2_rdRspInfo.m_grpId";
+
+			if (bMultiQwRdMif) {
+				rdRspRdy = "r_m2_rdRspRdy && c_m2_bWrData";
+				rdRspRdyWithParan = "(" + rdRspRdy + ")";
+			} else {
+				rdRspRdy = "r_m2_rdRspRdy";
+				rdRspRdyWithParan = rdRspRdy;
+			}
+
+		} else {
+
+			rdRspGrpId = "r_rdCompGrpId";
+
+			rdRspRdy = "r_rdCompRdy";
+			rdRspRdyWithParan = rdRspRdy;
+			}
+
+		if (rdRspGrpIdW == 0) {
+
+			mifPostInstr.Append("\tif ((%s) != %s)\n", rdReqRdy.c_str(), rdRspRdyWithParan.c_str());
+
+			mifPostInstr.Append("\t\tc_rdGrpState.m_cnt = r_rdGrpState.m_cnt + (%s ? -1 : 1);\n", rdRspRdyWithParan.c_str());
+
+		} else if (rdRspGrpIdW <= 2) {
+
+			mifPostInstr.Append("\tfor (int grpId = 0; grpId < (1 << %s_RD_GRP_ID_W); grpId += 1) {\n",
+				mod.m_modName.Upper().c_str());
+			mifPostInstr.Append("\t\tif ((%s && r_t%d_rdRspInfo.m_grpId == grpId) != (%s && %s == grpId))\n",
+				rdReqRdy.c_str(),
+				mod.m_execStg + 1,
+				rdRspRdyWithParan.c_str(), rdRspGrpId.c_str());
+
+			mifPostInstr.Append("\t\t\tc_rdGrpState[grpId].m_cnt = r_rdGrpState[grpId].m_cnt + ((%s && %s == grpId) ? -1 : 1);\n", rdRspRdyWithParan.c_str(), rdRspGrpId.c_str());
+
+			mifPostInstr.Append("\t}\n");
+			mifPostInstr.NewLine();
+
+			mifPostInstr.Append("\tif ((%s) != %s)\n", rdReqRdy.c_str(), rdRspRdyWithParan.c_str());
+
+			mifPostInstr.Append("\t\tc_rdGrpBusyCnt = r_rdGrpBusyCnt + (%s ? -1 : 1);\n", rdRspRdyWithParan.c_str());
+
+		} else {
+
+			mifPostInstr.Append("\tsc_uint<%s_RD_GRP_ID_W> c_t%d_rdGrpId = r_t%d_rdRspInfo.m_grpId;\n",
+				mod.m_modName.Upper().c_str(), mod.m_execStg + 1, mod.m_execStg + 1);
+			mifPostInstr.Append("\tm_rdGrpReqState0.read_addr(c_t%d_rdGrpId);\n", mod.m_execStg + 1);
+			mifPostInstr.Append("\tm_rdGrpRspState1.read_addr(c_t%d_rdGrpId);\n", mod.m_execStg + 1);
+			mifPostInstr.Append("\tm_rdGrpReqState0.write_addr(c_t%d_rdGrpId);\n", mod.m_execStg + 1);
+			if (mif.m_mifRd.m_bPause)
+				mifPostInstr.Append("\tm_rdGrpReqState1.write_addr(c_t%d_rdGrpId);\n", mod.m_execStg + 1);
+			mifPostInstr.NewLine();
+
+			mifPostInstr.Append("\tCRdGrpReqState c_t%d_rdGrpReqState = m_rdGrpReqState0.read_mem();\n", mod.m_execStg + 1);
+			mifPostInstr.Append("\tCRdGrpReqState c_t%d_rdGrpReqStateWr = c_t%d_rdGrpReqState;\n", mod.m_execStg + 1, mod.m_execStg + 1);
+			mifPostInstr.Append("\tCRdGrpRspState c_t%d_rdGrpRspState = m_rdGrpRspState1.read_mem();\n", mod.m_execStg + 1);
+			mifPostInstr.NewLine();
+
+			mifPostInstr.Append("\tif (%s) {\n", rdReqRdy.c_str(), rdRspRdy.c_str());
+
+			mifPostInstr.Append("\t\tc_rdGrpBusyCnt = r_rdGrpBusyCnt + 1;\n");
+			mifPostInstr.Append("\t\tc_t%d_rdGrpReqStateWr.m_cnt = c_t%d_rdGrpReqState.m_cnt + 1;\n",
+				mod.m_execStg + 1,
+				mod.m_execStg + 1);
+			mifPostInstr.Append("\t}\n");
+		}
+		mifPostInstr.NewLine();
+
 		if (mif.m_mifRd.m_bPoll) {
-			if (mif.m_mifRd.m_rspGrpId.size() == 0)
-				mifReg.Append("\tr_t%d_rdRspPollCntZero = c_t%d_rdRspPollCntZero;\n", mod.m_execStg, mod.m_execStg-1);
+			mifPostInstr.Append("\tif (r_t%d_memReq.m_rdPoll%s) {\n", mod.m_execStg + 1, andNot_memReqHold.c_str());
+
+			if (rdRspGrpIdW == 0) {
+				mifPostInstr.Append("\t\tif (r_rdGrpState.m_cnt == 0 && !r_t%d_memReq.m_rdReq) {\n", mod.m_execStg + 1);
+			} else if (rdRspGrpIdW <= 2) {
+				mifPostInstr.Append("\t\tif (r_rdGrpState[r_t%d_rdRspInfo.m_grpId].m_cnt == 0 && !r_t%d_memReq.m_rdReq) {\n",
+					mod.m_execStg + 1, mod.m_execStg + 1);
+			} else {
+				mifPostInstr.Append("\t\tif (c_t%d_rdGrpReqStateWr.m_cnt == c_t%d_rdGrpRspState.m_cnt && !r_t%d_memReq.m_rdReq) {\n",
+					mod.m_execStg + 1, mod.m_execStg + 1, mod.m_execStg + 1);
+			}
+
+			if (mod.m_rsmSrcCnt > 1 && mod.m_threads.m_htIdW.AsInt() > 0) {
+				bNeedMifContQue = true;
+				mifPostInstr.Append("\t\t\tCHtCmd mifCont;\n");
+				mifPostInstr.Append("\t\t\tmifCont.m_htId = r_t%d_memReq.m_rsmHtId;\n", mod.m_execStg + 1);
+				mifPostInstr.Append("\t\t\tmifCont.m_htInstr = r_t%d_memReq.m_rsmInstr;\n", mod.m_execStg + 1);
+				mifPostInstr.Append("\t\t\tm_mifContQue.push(mifCont);\n");
+			} else {
+				mifPostInstr.Append("\t\t\tc_t0_rsmHtRdy = true;\n");
+				if (mod.m_threads.m_htIdW.AsInt() > 0)
+					mifPostInstr.Append("\t\t\tc_t0_rsmHtId = r_t%d_memReq.m_rsmHtId;\n", mod.m_execStg + 1);
+				mifPostInstr.Append("\t\t\tc_t0_rsmHtInstr = r_t%d_memReq.m_rsmInstr;\n", mod.m_execStg + 1);
+			}
+
+			mifPostInstr.Append("\t\t} else {\n");
+
+			if (mod.m_threads.m_htIdW.AsInt() > 2) {
+				bNeedMifPollQue = true;
+				mifPostInstr.Append("\t\t\tCHtCmd mifCont;\n");
+				mifPostInstr.Append("\t\t\tmifCont.m_htId = r_t%d_memReq.m_rsmHtId;\n", mod.m_execStg + 1);
+				mifPostInstr.Append("\t\t\tmifCont.m_htInstr = r_t%d_memReq.m_pollInstr;\n", mod.m_execStg + 1);
+				mifPostInstr.Append("\t\t\tm_mifPollQue.push(mifCont);\n");
+
+			} else if (mod.m_rsmSrcCnt > 1 && mod.m_threads.m_htIdW.AsInt() > 0) {
+				bNeedMifContQue = true;
+				mifPostInstr.Append("\t\t\tCHtCmd mifCont;\n");
+				mifPostInstr.Append("\t\t\tmifCont.m_htId = r_t%d_memReq.m_rsmHtId;\n", mod.m_execStg + 1);
+				mifPostInstr.Append("\t\t\tmifCont.m_htInstr = r_t%d_memReq.m_pollInstr;\n", mod.m_execStg + 1);
+				mifPostInstr.Append("\t\t\tm_mifContQue.push(mifCont);\n");
+			} else {
+				mifPostInstr.Append("\t\t\tc_t0_rsmHtRdy = true;\n");
+				if (mod.m_threads.m_htIdW.AsInt() > 0)
+					mifPostInstr.Append("\t\t\tc_t0_rsmHtId = r_t%d_memReq.m_rsmHtId;\n", mod.m_execStg + 1);
+				mifPostInstr.Append("\t\t\tc_t0_rsmHtInstr = r_t%d_memReq.m_pollInstr;\n", mod.m_execStg + 1);
+			}
+
+			mifPostInstr.Append("\t\t}\n");
+			mifPostInstr.Append("\t}\n");
+			mifPostInstr.NewLine();
 		}
-		if (mif.m_mifRd.m_rspCntW.AsInt() > 0) {
-			m_mifCtorInit.Append("\t\tr_m1_rdRspRdy = false;\n");
 
-			mifReg.Append("\tr_m1_rdRspRdy = !r_reset1x && c_m0_rdRspRdy;\n");
-			if (mif.m_mifRd.m_bPoll)
-				mifReg.Append("\tr_m2_rdRspRdy = c_m1_rdRspRdy;\n");
-			if (mif.m_mifRd.m_bPause && mif.m_mifRd.m_bPoll || mif.m_mifRd.m_bPoll && mif.m_mifRd.m_rspGrpIdW == 0)
-				mifReg.Append("\tr_m3_rdRspRdy = c_m2_rdRspRdy;\n");
-			if (mif.m_mifRd.m_rspGrpIdW > 0)
-				mifReg.Append("\tr_m1_rdRspGrpId = c_m0_rdRspGrpId;\n");
-			if (mif.m_mifRd.m_rspGrpIdW > 0 && mif.m_mifRd.m_bPoll)
-				mifReg.Append("\tr_m2_rdRspGrpId = c_m1_rdRspGrpId;\n");
-			if (mif.m_mifRd.m_rspGrpIdW > 0 && (mif.m_mifRd.m_bPause && mif.m_mifRd.m_bPoll || mif.m_mifRd.m_bPoll && mif.m_mifRd.m_rspGrpIdW == 0))
-				mifReg.Append("\tr_m3_rdRspGrpId = c_m2_rdRspGrpId;\n");
-			mifReg.Append("\tr_m1_rdRsp = i_mifTo%sP0_rdRsp;\n",
-				mod.m_modName.Uc().c_str());
-			mifReg.NewLine();
-		}
+		if (mif.m_mifRd.m_bPause) {
+			if (rdRspGrpIdW == 0) {
 
-		if (mif.m_mifRd.m_maxRsmDly > 0 && mif.m_mifRd.m_bPause) {
-			if (mod.m_threads.m_htIdW.AsInt() > 0) {
+				mifPostInstr.Append("\tif (r_t%d_memReq.m_rdPause%s) {\n", mod.m_execStg + 1, andNot_memReqHold.c_str());
+				mifPostInstr.Append("\t\tif (r_rdGrpState.m_cnt == 0 && !r_t%d_memReq.m_rdReq) {\n", mod.m_execStg + 1);
 
-				for (int i = mif.m_mifRd.m_maxRsmDly-1; i > 0; i -= 1) {
-					mifReg.Append("\tr_rdRspRsmValid[%d] = r_rdRspRsmValid[%d];\n", i, i-1);
-					mifReg.Append("\tr_rdRspRsm[%d] = r_rdRspRsm[%d];\n", i, i-1);
+				if (mod.m_threads.m_htIdW.AsInt() == 0) {
+					mifPostInstr.Append("\t\t\tc_t0_rsmHtRdy = true;\n");
+					mifPostInstr.Append("\t\t\tc_t0_rsmHtInstr = r_t%d_memReq.m_rsmInstr;\n",
+						mod.m_execStg + 1);
+
+				} else {
+					bNeedMifContQue = true;
+					mifPostInstr.Append("\t\t\tCHtCmd mifCont;\n");
+					mifPostInstr.Append("\t\t\tmifCont.m_htId = r_t%d_memReq.m_rsmHtId;\n", mod.m_execStg + 1);
+					mifPostInstr.Append("\t\t\tmifCont.m_htInstr = r_t%d_memReq.m_rsmInstr;\n", mod.m_execStg + 1);
+					mifPostInstr.Append("\t\t\tm_mifContQue.push(mifCont);\n");
 				}
-				mifReg.Append("\tr_rdRspRsmValid[0] = c_rdRspRsmValid;\n");
-				mifReg.Append("\tr_rdRspRsm[0] = c_rdRspRsm;\n");
+
+				mifPostInstr.Append("\t\t} else {\n");
+				mifPostInstr.Append("\t\t\tc_rdGrpState.m_pause = true;\n",
+					mod.m_execStg + 1, mod.m_execStg + 1);
+
+				if (!bRdRspGrpIdIsHtId && mod.m_threads.m_htIdW.AsInt() > 0) {
+					mifPostInstr.Append("\t\t\tc_rdGrpState.m_rsmHtId = r_t%d_memReq.m_rsmHtId;\n",
+						mod.m_execStg + 1);
+				}
+				mifPostInstr.Append("\t\t\tc_rdGrpState.m_rsmInstr = r_t%d_memReq.m_rsmInstr;\n",
+					mod.m_execStg + 1);
+				mifPostInstr.Append("\t\t}\n");
+				mifPostInstr.Append("\t}\n");
+				mifPostInstr.NewLine();
+
+			} else if (rdRspGrpIdW <= 2) {
+
+				mifPostInstr.Append("\tif (r_t%d_memReq.m_rdPause%s) {\n", mod.m_execStg + 1, andNot_memReqHold.c_str());
+				mifPostInstr.Append("\t\tif (r_rdGrpState[r_t%d_rdRspInfo.m_grpId].m_cnt == 0 && !r_t%d_memReq.m_rdReq) {\n",
+					mod.m_execStg + 1, mod.m_execStg + 1);
+
+				if (mod.m_threads.m_htIdW.AsInt() == 0) {
+					mifPostInstr.Append("\t\t\tc_t0_rsmHtRdy = true;\n");
+					mifPostInstr.Append("\t\t\tc_t0_rsmHtInstr = r_t%d_memReq.m_rsmInstr;\n",
+						mod.m_execStg + 1);
+
+				} else {
+					bNeedMifContQue = true;
+					mifPostInstr.Append("\t\t\tCHtCmd mifCont;\n");
+					mifPostInstr.Append("\t\t\tmifCont.m_htId = r_t%d_memReq.m_rsmHtId;\n", mod.m_execStg + 1);
+					mifPostInstr.Append("\t\t\tmifCont.m_htInstr = r_t%d_memReq.m_rsmInstr;\n", mod.m_execStg + 1);
+					mifPostInstr.Append("\t\t\tm_mifContQue.push(mifCont);\n");
+				}
+
+				mifPostInstr.Append("\t\t} else {\n");
+				mifPostInstr.Append("\t\t\tc_rdGrpState[r_t%d_rdRspInfo.m_grpId].m_pause = true;\n",
+					mod.m_execStg + 1);
+
+				if (!bRdRspGrpIdIsHtId && mod.m_threads.m_htIdW.AsInt() > 0) {
+					mifPostInstr.Append("\t\t\tc_rdGrpState[r_t%d_rdRspInfo.m_grpId].m_rsmHtId = r_t%d_memReq.m_rsmHtId;\n",
+						mod.m_execStg + 1, mod.m_execStg + 1);
+				}
+				mifPostInstr.Append("\t\t\tc_rdGrpState[r_t%d_rdRspInfo.m_grpId].m_rsmInstr = r_t%d_memReq.m_rsmInstr;\n",
+					mod.m_execStg + 1, mod.m_execStg + 1);
+				mifPostInstr.Append("\t\t}\n");
+				mifPostInstr.Append("\t}\n");
+				mifPostInstr.NewLine();
 
 			} else {
-				for (int i = mif.m_mifRd.m_maxRsmDly-1; i > 0; i -= 1) {
-					mifReg.Append("\tr_rdRspRsmRdy[%d] = r_rdRspRsmRdy[%d];\n", i, i-1);
-					mifReg.Append("\tr_rdRspRsmInstr[%d] = r_rdRspRsmInstr[%d];\n", i, i-1);
+
+				mifPostInstr.Append("\tif (r_t%d_memReq.m_rdPause%s) {\n", mod.m_execStg + 1, andNot_memReqHold.c_str());
+				mifPostInstr.Append("\t\tif (c_t%d_rdGrpReqStateWr.m_cnt == c_t%d_rdGrpRspState.m_cnt && !r_t%d_memReq.m_rdReq) {\n",
+					mod.m_execStg + 1, mod.m_execStg + 1, mod.m_execStg + 1);
+
+				if (mod.m_threads.m_htIdW.AsInt() == 0) {
+					mifPostInstr.Append("\t\t\tc_t0_rsmHtRdy = true;\n");
+					mifPostInstr.Append("\t\t\tc_t0_rsmHtInstr = r_t%d_memReq.m_rsmInstr;\n",
+						mod.m_execStg + 1);
+
+				} else {
+					bNeedMifContQue = true;
+					mifPostInstr.Append("\t\t\tCHtCmd mifCont;\n");
+					mifPostInstr.Append("\t\t\tmifCont.m_htId = r_t%d_memReq.m_rsmHtId;\n", mod.m_execStg + 1);
+					mifPostInstr.Append("\t\t\tmifCont.m_htInstr = r_t%d_memReq.m_rsmInstr;\n", mod.m_execStg + 1);
+					mifPostInstr.Append("\t\t\tm_mifContQue.push(mifCont);\n");
 				}
-				mifReg.Append("\tr_rdRspRsmRdy[0] = c_rdRspRsmRdy;\n");
-				mifReg.Append("\tr_rdRspRsmInstr[0] = c_rdRspRsmInstr;\n");
+
+				mifPostInstr.Append("\t\t} else {\n");
+				mifPostInstr.Append("\t\t\tc_t%d_rdGrpReqStateWr.m_pause = c_t%d_rdGrpRspState.m_pause ^ 1;\n",
+					mod.m_execStg + 1, mod.m_execStg + 1);
+
+				if (!bRdRspGrpIdIsHtId && mod.m_threads.m_htIdW.AsInt() > 0) {
+					mifPostInstr.Append("\t\t\tc_t%d_rdGrpReqStateWr.m_rsmHtId = r_t%d_memReq.m_rsmHtId;\n",
+						mod.m_execStg + 1, mod.m_execStg + 1);
+				}
+				mifPostInstr.Append("\t\t\tc_t%d_rdGrpReqStateWr.m_rsmInstr = r_t%d_memReq.m_rsmInstr;\n",
+					mod.m_execStg + 1, mod.m_execStg + 1);
+				mifPostInstr.Append("\t\t}\n");
+				mifPostInstr.Append("\t}\n");
+				mifPostInstr.NewLine();
 			}
 		}
 
-		if (mif.m_mifRd.m_rspGrpIdW > 2) {
-			for (int bankIdx = 0; bankIdx < rdGrpBankCnt; bankIdx += 1)
-				mifReg.Append("\tr_rdGrpRspCnt[%d] = r_reset1x ? (sc_uint<%s_RD_RSP_CNT_W>)0 : c_rdGrpRspCnt[%d];\n", bankIdx, mod.m_modName.Upper().c_str(), bankIdx);
+		if (rdRspGrpIdW > 2) {
+			mifPostInstr.Append("\tm_rdGrpReqState0.write_mem(c_t%d_rdGrpReqStateWr);\n",
+				mod.m_execStg + 1);
+			if (mif.m_mifRd.m_bPause) {
+				mifPostInstr.Append("\tm_rdGrpReqState1.write_mem(c_t%d_rdGrpReqStateWr);\n",
+					mod.m_execStg + 1);
+			}
+			mifPostInstr.NewLine();
 
-			if (mif.m_mifRd.m_bPoll && !mif.m_mifRd.m_bPause)
-				mifReg.Append("\tr_m1_rdRspGrpId = c_m0_rdRspGrpId;\n");
+			if (MIF_CHK_STATE) {
+				GenModDecl(eVcdAll, m_mifDecl, vcdModName, "CRdGrpReqState ht_noload", "x_rdGrpReqState");
 
-			for (int bankIdx = 0; bankIdx < rdGrpBankCnt; bankIdx += 1) {
-				mifReg.Append("\tr_m%d_bRdRspRdy[%d] = c_m%d_bRdRspRdy[%d];\n",
-					mif.m_mifRd.m_bPoll ? 3 : 1, bankIdx,
-					mif.m_mifRd.m_bPoll ? 2 : 0, bankIdx);
+				mifPostInstr.Append("\tif (c_t%d_rdGrpId == %s_CHK_GRP_ID)\n", mod.m_execStg + 1, mod.m_modName.Upper().c_str());
+				mifPostInstr.Append("\t\tx_rdGrpReqState = c_t%d_rdGrpReqStateWr;\n", mod.m_execStg + 1);
+				mifPostInstr.NewLine();
+			}
+		}
+
+		if (rdRspGrpIdW > 2) {
+
+			if (mif.m_mifRd.m_bPause)
+				mifPostInstr.Append("\tm_rdGrpReqState1.read_addr(%s);\n", rdRspGrpId.c_str());
+			mifPostInstr.Append("\tm_rdGrpRspState0.read_addr(%s);\n", rdRspGrpId.c_str());
+			mifPostInstr.Append("\tm_rdGrpRspState0.write_addr(%s);\n", rdRspGrpId.c_str());
+			mifPostInstr.Append("\tm_rdGrpRspState1.write_addr(%s);\n", rdRspGrpId.c_str());
+			mifPostInstr.NewLine();
+
+			mifPostInstr.Append("\tCRdGrpRspState c_m2_rdGrpRspState = m_rdGrpRspState0.read_mem();\n",
+				mod.m_modName.Upper().c_str());
+			mifPostInstr.Append("\tCRdGrpRspState c_m2_rdGrpRspStateWr = c_m2_rdGrpRspState;\n",
+				mod.m_modName.Upper().c_str());
+			if (mif.m_mifRd.m_bPause) {
+				mifPostInstr.Append("\tCRdGrpReqState c_m2_rdGrpReqState = m_rdGrpReqState1.read_mem();\n",
+					mod.m_modName.Upper().c_str());
+			}
+			mifPostInstr.NewLine();
+		}
+
+		if (mif.m_mifRd.m_bPause) {
+			if (rdRspGrpIdW == 0) {
+
+				mifPostInstr.Append("\tif (%s) {\n", rdRspRdy.c_str());
+				mifPostInstr.NewLine();
+
+				mifPostInstr.Append("\t\tht_assert(%s || r_rdGrpState.m_cnt != 0);\n",
+					reset.c_str());
+				mifPostInstr.NewLine();
+
+				mifPostInstr.Append("\t\tbool c_rdGrpCollision = r_t%d_memReq.m_rdPause && !r_t%d_memReq.m_rdReq%s;\n",
+					mod.m_execStg + 1, mod.m_execStg + 1, andNot_memReqHold.c_str());
+				mifPostInstr.Append("\t\tbool c_rdGrpResume = r_rdGrpState.m_pause || c_rdGrpCollision;\n");
+				mifPostInstr.NewLine();
+
+				mifPostInstr.Append("\t\tif (c_rdGrpState.m_cnt == 0 && c_rdGrpResume) {\n");
+				mifPostInstr.Append("\t\t\t// last read response arrived, resume thread\n");
+				mifPostInstr.NewLine();
+
+				if (mif.m_mifRd.m_bPause)
+					mifPostInstr.Append("\t\t\tc_rdGrpState.m_pause = false;\n");
+				mifPostInstr.NewLine();
+
+				if (mod.m_threads.m_htIdW.AsInt() == 0) {
+					mifPostInstr.Append("\t\t\tc_t0_rsmHtRdy = true;\n");
+					mifPostInstr.Append("\t\t\tc_t0_rsmHtInstr = r_rdGrpState.m_rsmInstr;\n");
+
+				} else {
+
+					bNeedMifRdRsmQue = true;
+					mifPostInstr.Append("\t\t\tCHtCmd rdRsm;\n");
+					mifPostInstr.Append("\t\t\trdRsm.m_htId = r_rdGrpState.m_rsmHtId;\n");
+					mifPostInstr.Append("\t\t\trdRsm.m_htInstr = r_rdGrpState.m_rsmInstr;\n");
+					mifPostInstr.Append("\t\t\tm_mifRdRsmQue.push(rdRsm);\n");
+				}
+
+				mifPostInstr.Append("\t\t}\n");
+				mifPostInstr.Append("\t}\n");
+				mifPostInstr.NewLine();
+
+			} else if (rdRspGrpIdW <= 2) {
+
+				mifPostInstr.Append("\tif (%s) {\n", rdRspRdy.c_str());
+				mifPostInstr.NewLine();
+
+				mifPostInstr.Append("\t\tht_assert(%s || r_rdGrpState[%s].m_cnt != 0);\n",
+					reset.c_str(), rdRspGrpId.c_str());
+				mifPostInstr.NewLine();
+
+				mifPostInstr.Append("\t\tbool c_rdGrpCollision = r_t%d_memReq.m_rdPause && !r_t%d_memReq.m_rdReq%s && r_t%d_memReq.m_rdGrpId == %s;\n",
+					mod.m_execStg + 1, mod.m_execStg + 1, andNot_memReqHold.c_str(), mod.m_execStg + 1, rdRspGrpId.c_str());
+				mifPostInstr.Append("\t\tbool c_rdGrpResume = r_rdGrpState[%s].m_pause || c_rdGrpCollision;\n",
+					rdRspGrpId.c_str());
+				mifPostInstr.NewLine();
+
+				mifPostInstr.Append("\t\tif (c_rdGrpState[%s].m_cnt == 0 && c_rdGrpResume) {\n", rdRspGrpId.c_str());
+				mifPostInstr.Append("\t\t\t// last read response arrived, resume thread\n");
+				mifPostInstr.NewLine();
+
+				if (mif.m_mifRd.m_bPause)
+					mifPostInstr.Append("\t\t\tc_rdGrpState[%s].m_pause = false;\n", rdRspGrpId.c_str());
+				mifPostInstr.NewLine();
+
+				if (mod.m_threads.m_htIdW.AsInt() == 0) {
+					mifPostInstr.Append("\t\t\tc_t0_rsmHtRdy = true;\n");
+					mifPostInstr.Append("\t\t\tc_t0_rsmHtInstr = r_rdGrpState[%s].m_rsmInstr;\n", rdRspGrpId.c_str());
+
+				} else {
+
+					bNeedMifRdRsmQue = true;
+					mifPostInstr.Append("\t\t\tCHtCmd rdRsm;\n");
+
+					if (bRdRspGrpIdIsHtId) {
+						mifPostInstr.Append("\t\t\trdRsm.m_htId = %s;\n", rdRspGrpId.c_str());
+					} else {
+						if (mod.m_threads.m_htIdW.AsInt() > 0)
+							mifPostInstr.Append("\t\t\trdRsm.m_htId = r_rdGrpState[%s].m_rsmHtId;\n", rdRspGrpId.c_str());
+					}
+
+					mifPostInstr.Append("\t\t\trdRsm.m_htInstr = r_rdGrpState[%s].m_rsmInstr;\n", rdRspGrpId.c_str());
+					mifPostInstr.Append("\t\t\tm_mifRdRsmQue.push(rdRsm);\n");
+				}
+
+				mifPostInstr.Append("\t\t}\n");
+				mifPostInstr.Append("\t}\n");
+				mifPostInstr.NewLine();
+
+			} else {
+
+				mifPostInstr.Append("\tif (%s) {\n", rdRspRdy.c_str());
+				mifPostInstr.NewLine();
+
+				mifPostInstr.Append("\t\tht_assert(r_reset1x || c_m2_rdGrpRspStateWr.m_cnt != c_m2_rdGrpReqState.m_cnt);\n");
+				mifPostInstr.NewLine();
+
+				mifPostInstr.Append("\t\tc_m2_rdGrpRspStateWr.m_cnt = c_m2_rdGrpRspState.m_cnt + 1;\n");
+				mifPostInstr.Append("\t\tc_rdGrpBusyCnt = c_rdGrpBusyCnt - 1;\n");
+				mifPostInstr.NewLine();
+
+				mifPostInstr.Append("\t\tbool c_m2_bRdGrpRspCntZero = c_m2_rdGrpRspStateWr.m_cnt == c_m2_rdGrpReqState.m_cnt;\n");
+				mifPostInstr.NewLine();
+
+				mifPostInstr.NewLine();
+
+				mifPostInstr.Append("\t\tbool c_rdGrpCollision = r_t%d_memReq.m_rdPause && !r_t%d_memReq.m_rdReq%s && r_t%d_memReq.m_rdGrpId == %s;\n",
+					mod.m_execStg + 1, mod.m_execStg + 1, andNot_memReqHold.c_str(), mod.m_execStg + 1, rdRspGrpId.c_str());
+				mifPostInstr.Append("\t\tbool c_rdGrpResume = c_m2_rdGrpRspState.m_pause != c_m2_rdGrpReqState.m_pause ||\n");
+				mifPostInstr.Append("\t\t\tc_rdGrpCollision;\n");
+				mifPostInstr.NewLine();
+
+				mifPostInstr.Append("\t\tif (c_m2_bRdGrpRspCntZero && c_rdGrpResume) {\n");
+				mifPostInstr.Append("\t\t\t// last read response arrived, resume thread\n");
+				mifPostInstr.NewLine();
+
+				mifPostInstr.Append("\t\t\tc_m2_rdGrpRspStateWr.m_pause = c_m2_rdGrpReqState.m_pause ^ (c_rdGrpCollision ? 1u : 0u);\n");
+				mifPostInstr.NewLine();
+
+				if (mod.m_threads.m_htIdW.AsInt() == 0) {
+					mifPostInstr.Append("\t\t\tc_t0_rsmHtRdy = true;\n");
+					mifPostInstr.Append("\t\t\tc_t0_rsmHtInstr = c_m2_rdGrpReqState.m_rsmInstr;\n");
+
+				} else {
+
+					bNeedMifRdRsmQue = true;
+					mifPostInstr.Append("\t\t\tCHtCmd rdRsm;\n");
+
+					if (bRdRspGrpIdIsHtId) {
+						mifPostInstr.Append("\t\t\trdRsm.m_htId = %s;\n", rdRspGrpId.c_str());
+					} else {
+						if (mod.m_threads.m_htIdW.AsInt() > 0)
+							mifPostInstr.Append("\t\t\trdRsm.m_htId = c_m2_rdGrpReqState.m_rsmHtId;\n");
+					}
+
+					mifPostInstr.Append("\t\t\trdRsm.m_htInstr = c_m2_rdGrpReqState.m_rsmInstr;\n");
+					mifPostInstr.Append("\t\t\tm_mifRdRsmQue.push(rdRsm);\n");
+				}
+				mifPostInstr.Append("\t\t}\n");
+				mifPostInstr.Append("\t}\n");
+				mifPostInstr.NewLine();
+			}
+		}
+
+		if (!mif.m_mifRd.m_bPause && rdRspGrpIdW > 2) {
+
+			mifPostInstr.Append("\tif (%s) {\n", rdRspRdy.c_str());
+			mifPostInstr.NewLine();
+
+			mifPostInstr.Append("\t\tc_m2_rdGrpRspStateWr.m_cnt = c_m2_rdGrpRspState.m_cnt + 1;\n");
+			mifPostInstr.Append("\t\tc_rdGrpBusyCnt = c_rdGrpBusyCnt - 1;\n");
+			mifPostInstr.Append("\t}\n");
+			mifPostInstr.NewLine();
+		}
+
+		if (rdRspGrpIdW > 2) {
+
+			mifPostInstr.Append("\tm_rdGrpRspState0.write_mem(c_m2_rdGrpRspStateWr);\n");
+			mifPostInstr.Append("\tm_rdGrpRspState1.write_mem(c_m2_rdGrpRspStateWr);\n");
+			mifPostInstr.NewLine();
+
+			if (MIF_CHK_STATE) {
+				GenModDecl(eVcdAll, m_mifDecl, vcdModName, "CRdGrpRspState ht_noload", "x_rdGrpRspState");
+
+				mifPostInstr.Append("\tif (r_m2_rdRspInfo.m_grpId == %s_CHK_GRP_ID)\n", mod.m_modName.Upper().c_str());
+				mifPostInstr.Append("\t\tx_rdGrpRspState = c_m2_rdGrpRspStateWr;\n");
+				mifPostInstr.NewLine();
+			}
+		}
+	}
+
+	if (mif.m_bMifRd) {
+		if (rdDstNgvRamList.size() > 0) {
+			string gblVarList;
+			for (size_t rdDstIdx = 0; rdDstIdx < mif.m_mifRd.m_rdDstList.size(); rdDstIdx += 1) {
+				CMifRdDst &rdDst = mif.m_mifRd.m_rdDstList[rdDstIdx];
+
+				if (rdDst.m_pGblVar == 0) continue;
+
+				gblVarList += VA(" && r_m2_rdRspInfo.m_dst != %d", (int)rdDstIdx);
 			}
 
-			for (int bankIdx = 0; bankIdx < rdGrpBankCnt; bankIdx += 1)
-				mifReg.Append("\tr_rdGrpRspCntAddr[%d] = c_rdGrpRspCntAddr[%d];\n", bankIdx, bankIdx);
+			string rdRspRdy;
+			if (bMultiQwRdMif) {
+				rdRspRdy = "r_m2_rdRspRdy && c_m2_bWrData";
+			} else {
+				rdRspRdy = "r_m2_rdRspRdy";
+			}
+
+			if (rdRspGrpIdW > 0) {
+				if (bRdDstNonNgv) {
+					mifPostInstr.Append("\tbool c_rdCompRdy = %s%s;\n",
+						rdRspRdy.c_str(), gblVarList.c_str());
+					mifPostInstr.Append("\tht_uint%d c_rdCompGrpId = r_m2_rdRspInfo.m_grpId;\n",
+						mif.m_mifRd.m_rspGrpW.AsInt(),
+						rdDstNgvRamList[0]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str());
+					mifPostInstr.NewLine();
+				} else if (rdDstRdyCnt == 1) {
+
+					string varIdx = rdDstNgvRamList[0]->m_dimenList.size() > 0 ? "[0]" : "";
+
+					string phase;
+					if (mod.m_clkRate == eClk2x && !rdDstNgvRamList[0]->m_pNgvInfo->m_bNgvWrCompClk2x)
+						phase = " & r_phase";
+
+					mifPostInstr.Append("\tbool c_rdCompRdy = i_%sTo%s_mwCompRdy%s.read()%s;\n",
+						rdDstNgvRamList[0]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), varIdx.c_str(), phase.c_str());
+					mifPostInstr.Append("\tht_uint%d c_rdCompGrpId = i_%sTo%s_mwCompGrpId%s;\n",
+						mif.m_mifRd.m_rspGrpW.AsInt(),
+						rdDstNgvRamList[0]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), varIdx.c_str());
+					mifPostInstr.NewLine();
+				} else {
+					mifPostInstr.Append("\tbool c_rdCompRdy = false;\n");
+					mifPostInstr.Append("\tht_uint%d c_rdCompGrpId = 0;\n", mif.m_mifRd.m_rspGrpW.AsInt());
+					mifPostInstr.NewLine();
+				}
+			} else {
+				if (bRdDstNonNgv) {
+					mifPostInstr.Append("\tbool c_rdCompRdy = %s%s;\n", rdRspRdy.c_str(), gblVarList.c_str());
+				} else if (rdDstRdyCnt == 1) {
+
+					string varIdx = rdDstNgvRamList[0]->m_dimenList.size() > 0 ? "[0]" : "";
+
+					string phase;
+					if (mod.m_clkRate == eClk2x && !rdDstNgvRamList[0]->m_pNgvInfo->m_bNgvWrCompClk2x)
+						phase = " & r_phase";
+
+					mifPostInstr.Append("\tbool c_rdCompRdy = i_%sTo%s_mwCompRdy%s.read()%s;\n",
+						rdDstNgvRamList[0]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), varIdx.c_str(), phase.c_str());
+				} else {
+					mifPostInstr.Append("\tbool c_rdCompRdy = false;\n");
+				}
+
+				if (rdDstRdyCnt > 1) {
+					for (size_t i = 0; i < rdDstNgvRamList.size(); i += 1) {
+						vector<int> refList(rdDstNgvRamList[i]->m_dimenList.size());
+						do {
+							string dimIdx = IndexStr(refList);
+
+							mifPostInstr.Append("\tc_%sTo%s_mwCompCnt%s = r_%sTo%s_mwCompCnt%s;\n",
+								rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
+								rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+
+						} while (DimenIter(rdDstNgvRamList[i]->m_dimenList, refList));
+					}
+				}
+				mifPostInstr.NewLine();
+			}
+		}
+
+		if (rdRspGrpIdW > 2) {
+
+			mifPostInstr.Append("\tsc_uint<%s_RD_GRP_ID_W + 1> c_rdRspGrpInitCnt = r_rdRspGrpInitCnt;\n",
+				mod.m_modName.Upper().c_str());
+			mifPostInstr.Append("\tif (r_rdRspGrpInitCnt < (1 << %s_RD_GRP_ID_W)) {\n",
+				mod.m_modName.Upper().c_str());
+			mifPostInstr.NewLine();
+
+			mifPostInstr.Append("\t\tCRdGrpReqState rdGrpReqState = 0;\n");
+			mifPostInstr.Append("\t\tm_rdGrpReqState0.write_mem(rdGrpReqState);\n");
+			if (mif.m_mifRd.m_bPause)
+				mifPostInstr.Append("\t\tm_rdGrpReqState1.write_mem(rdGrpReqState);\n");
+			mifPostInstr.NewLine();
+
+			mifPostInstr.Append("\t\tCRdGrpRspState rdGrpRspState = 0;\n");
+			mifPostInstr.Append("\t\tm_rdGrpRspState0.write_mem(rdGrpRspState);\n");
+			mifPostInstr.Append("\t\tm_rdGrpRspState1.write_mem(rdGrpRspState);\n");
+			mifPostInstr.NewLine();
+
+			mifPostInstr.Append("\t\tc_rdRspGrpInitCnt = r_rdRspGrpInitCnt + 1u;\n");
+			mifPostInstr.NewLine();
+
+			mifPostInstr.Append("\t\tc_t%d_rdRspInfo.m_grpId = c_rdRspGrpInitCnt & ((1 << %s_RD_GRP_ID_W) - 1);\n",
+				mod.m_execStg, mod.m_modName.Upper().c_str());
+			mifReset.Append("\t\tc_t%d_rdRspInfo.m_grpId = 0;\n", mod.m_execStg);
+
+			if (bRdDstNonNgv) {
+
+				mifPostInstr.Append("\t\tc_m1_rdRspInfo.m_grpId = c_rdRspGrpInitCnt & ((1 << %s_RD_GRP_ID_W) - 1);\n",
+					mod.m_modName.Upper().c_str());
+
+				mifReset.Append("\t\tc_m1_rdRspInfo.m_grpId = 0;\n");
+			} else {
+				mifPostInstr.Append("\t\tc_rdCompGrpId = c_rdRspGrpInitCnt & ((1 << %s_RD_GRP_ID_W) - 1);\n",
+					mod.m_modName.Upper().c_str());
+
+				mifReset.Append("\t\tc_rdCompGrpId = 0;\n");
+			}
+
+			mifPostInstr.Append("\t}\n");
+			mifPostInstr.NewLine();
+		}
+
+		if (rdDstRdyCnt > 1) {
+			for (size_t i = 0; i < rdDstNgvRamList.size(); i += 1) {
+				vector<int> refList(rdDstNgvRamList[i]->m_dimenList.size());
+				do {
+					string dimIdx = IndexStr(refList);
+
+					if (rdRspGrpIdW > 0) {
+						mifPostInstr.Append("\tif (!c_rdCompRdy && !m_%sTo%s_mwCompQue%s.empty()) {\n",
+							rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+					} else {
+						mifPostInstr.Append("\tif (!c_rdCompRdy && r_%sTo%s_mwCompCnt%s > 0) {\n",
+							rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+					}
+					mifPostInstr.Append("\t\tc_rdCompRdy = true;\n");
+					if (rdRspGrpIdW > 0) {
+						mifPostInstr.Append("\t\tc_rdCompGrpId = m_%sTo%s_mwCompQue%s.front();\n",
+							rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+						mifPostInstr.Append("\t\tm_%sTo%s_mwCompQue%s.pop();\n",
+							rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+					} else {
+						mifPostInstr.Append("\t\tc_%sTo%s_mwCompCnt%s -= 1u;\n",
+							rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+					}
+					mifPostInstr.Append("\t}\n");
+
+				} while (DimenIter(rdDstNgvRamList[i]->m_dimenList, refList));
+			}
+			mifPostInstr.NewLine();
+
+			for (size_t i = 0; i < rdDstNgvRamList.size(); i += 1) {
+				vector<int> refList(rdDstNgvRamList[i]->m_dimenList.size());
+				do {
+					string dimIdx = IndexStr(refList);
+
+					mifPostInstr.Append("\tif (i_%sTo%s_mwCompRdy%s)\n",
+						rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+					if (rdRspGrpIdW > 0) {
+						mifPostInstr.Append("\t\tm_%sTo%s_mwCompQue%s.push(i_%sTo%s_mwCompGrpId%s);\n",
+							rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
+							rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+					} else {
+						mifPostInstr.Append("\t\tc_%sTo%s_mwCompCnt%s += 1u;\n",
+							rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+					}
+				} while (DimenIter(rdDstNgvRamList[i]->m_dimenList, refList));
+			}
+			mifPostInstr.NewLine();
 		}
 	}
 
 	if (mif.m_bMifWr) {
-		if (mif.m_mifWr.m_rspGrpIdW > 2) {
-			mifReg.Append("\tr_wrRspGrpInitCnt = c_wrRspGrpInitCnt;\n");
-			mifReg.Append("\tr_t%d_bWriteRspBusy = c_t%d_bWriteRspBusy;\n", mod.m_execStg, mod.m_execStg-1);
+
+		mifPostInstr.Append("\tbool c_m0_wrRspRdy = i_mifTo%sP0_wrRspRdy.read();\n",
+			mod.m_modName.Uc().c_str());
+
+		if (wrRspGrpIdW > 0) {
+			mifPostInstr.Append("\tsc_uint<%s_WR_GRP_ID_W> c_m0_wrGrpId;\n", mod.m_modName.Upper().c_str());
+			mifPostInstr.Append("\tc_m0_wrGrpId = i_mifTo%sP0_wrRspTid.read() & ((1 << %s_WR_GRP_ID_W) - 1);\n",
+				mod.m_modName.Uc().c_str(),
+				mod.m_modName.Upper().c_str());
 		}
-		mifReg.Append("\tr_t%d_wrGrpRspCntMax = c_t%d_wrGrpRspCntMax;\n", mod.m_execStg, mod.m_execStg-1);
-		mifReg.Append("\tr_t%d_wrGrpRspCntZero = c_t%d_wrGrpRspCntZero;\n", mod.m_execStg, mod.m_execStg-1);
+		mifPostInstr.NewLine();
 
-		if (mif.m_mifWr.m_rspCntW.AsInt() > 0 && mif.m_mifWr.m_bPause) {
-			m_mifCtorInit.Append("\t\tr_m1_wrRspRdy = false;\n");
+		string wrReqRdy;
+		if (bMultiQwReq) {
 
-			mifReg.Append("\tr_m1_wrRspRdy = !r_reset1x && c_m0_wrRspRdy;\n",
-				mod.m_modName.Uc().c_str());
-			if (mif.m_mifWr.m_rspGrpIdW > 0)
-				mifReg.Append("\tr_m1_wrRspTid = i_mifTo%sP0_wrRspTid;\n",
-				mod.m_modName.Uc().c_str());
-			mifReg.NewLine();
+			string wrGrpInc;
+			if (mif.m_bMifWr && bMultiQwMif)
+				wrGrpInc = VA("r_t%d_memReq.m_reqQwRem == 0 && ", mod.m_execStg + 1);
+
+			wrReqRdy = VA("r_t%d_memReq.m_wrReq && %s!r_memReqHold",
+				mod.m_execStg + 1, wrGrpInc.c_str());
+		} else {
+			wrReqRdy = VA("r_t%d_memReq.m_wrReq", mod.m_execStg + 1);
 		}
 
-		if (mif.m_mifWr.m_rspGrpIdW > 2) {
-			for (int bankIdx = 0; bankIdx < wrGrpBankCnt; bankIdx += 1)
-				mifReg.Append("\tr_wrGrpRspCnt[%d] = r_reset1x ? (sc_uint<%s_WR_RSP_CNT_W>)0 : c_wrGrpRspCnt[%d];\n", bankIdx, mod.m_modName.Upper().c_str(), bankIdx);
+		string wrRspRdy = "r_m1_wrRspRdy";
+		string wrRspGrpId = "r_m1_wrGrpId";
 
-			for (int bankIdx = 0; bankIdx < wrGrpBankCnt; bankIdx += 1)
-				mifReg.Append("\tr_m1_bWrRspRdy[%d] = c_m0_bWrRspRdy[%d];\n", bankIdx, bankIdx);
+		if (wrRspGrpIdW == 0) {
 
-			for (int bankIdx = 0; bankIdx < wrGrpBankCnt; bankIdx += 1)
-				mifReg.Append("\tr_wrGrpRspCntAddr[%d] = c_wrGrpRspCntAddr[%d];\n", bankIdx, bankIdx);
+			mifPostInstr.Append("\tif ((%s) != %s)\n", wrReqRdy.c_str(), wrRspRdy.c_str());
+
+			mifPostInstr.Append("\t\tc_wrGrpState.m_cnt = r_wrGrpState.m_cnt + (%s ? -1 : 1);\n", wrRspRdy.c_str());
+
+		} else if (wrRspGrpIdW <= 2) {
+
+			mifPostInstr.Append("\tfor (int grpId = 0; grpId < (1 << %s_WR_GRP_ID_W); grpId += 1) {\n",
+				mod.m_modName.Upper().c_str());
+			mifPostInstr.Append("\t\tif ((%s && r_t%d_memReq.m_wrGrpId == grpId) != (%s && %s == grpId))\n",
+				wrReqRdy.c_str(),
+				mod.m_execStg + 1,
+				wrRspRdy.c_str(), wrRspGrpId.c_str());
+
+			mifPostInstr.Append("\t\t\tc_wrGrpState[grpId].m_cnt = r_wrGrpState[grpId].m_cnt + ((%s && %s == grpId) ? -1 : 1);\n", wrRspRdy.c_str(), wrRspGrpId.c_str());
+
+			mifPostInstr.Append("\t}\n");
+
+			mifPostInstr.Append("\tif ((%s) != %s)\n", wrReqRdy.c_str(), wrRspRdy.c_str());
+
+			mifPostInstr.Append("\t\tc_wrGrpBusyCnt = r_wrGrpBusyCnt + (%s ? -1 : 1);\n", wrRspRdy.c_str());
+
+		} else {
+
+			mifPostInstr.Append("\tsc_uint<%s_WR_GRP_ID_W> c_t%d_wrGrpId = r_t%d_memReq.m_wrGrpId;\n",
+				mod.m_modName.Upper().c_str(), mod.m_execStg + 1, mod.m_execStg + 1);
+			mifPostInstr.Append("\tm_wrGrpReqState0.read_addr(c_t%d_wrGrpId);\n", mod.m_execStg + 1);
+			mifPostInstr.Append("\tm_wrGrpRspState1.read_addr(c_t%d_wrGrpId);\n", mod.m_execStg + 1);
+			mifPostInstr.Append("\tm_wrGrpReqState0.write_addr(c_t%d_wrGrpId);\n", mod.m_execStg + 1);
+			if (mif.m_mifWr.m_bPause)
+				mifPostInstr.Append("\tm_wrGrpReqState1.write_addr(c_t%d_wrGrpId);\n", mod.m_execStg + 1);
+			mifPostInstr.NewLine();
+
+			mifPostInstr.Append("\tCWrGrpReqState c_t%d_wrGrpReqState = m_wrGrpReqState0.read_mem();\n", mod.m_execStg + 1);
+			mifPostInstr.Append("\tCWrGrpReqState c_t%d_wrGrpReqStateWr = c_t%d_wrGrpReqState;\n", mod.m_execStg + 1, mod.m_execStg + 1);
+			mifPostInstr.Append("\tCWrGrpRspState c_t%d_wrGrpRspState = m_wrGrpRspState1.read_mem();\n", mod.m_execStg + 1);
+			mifPostInstr.NewLine();
+
+			mifPostInstr.Append("\tif (%s) {\n", wrReqRdy.c_str());
+
+			mifPostInstr.Append("\t\tc_wrGrpBusyCnt = r_wrGrpBusyCnt + 1;\n");
+			mifPostInstr.Append("\t\tc_t%d_wrGrpReqStateWr.m_cnt = c_t%d_wrGrpReqState.m_cnt + 1;\n",
+				mod.m_execStg + 1,
+				mod.m_execStg + 1);
+			mifPostInstr.Append("\t}\n");
 		}
+		mifPostInstr.NewLine();
+
+		if (mif.m_mifWr.m_bPoll) {
+			mifPostInstr.Append("\tif (r_t%d_memReq.m_wrPoll%s) {\n", mod.m_execStg + 1, andNot_memReqHold.c_str());
+
+			if (wrRspGrpIdW == 0) {
+				mifPostInstr.Append("\t\tif (r_wrGrpState.m_cnt == 0 && !r_t%d_memReq.m_wrReq) {\n", mod.m_execStg + 1);
+			} else if (wrRspGrpIdW <= 2) {
+				mifPostInstr.Append("\t\tif (r_wrGrpState[r_t%d_memReq.m_wrGrpId].m_cnt == 0 && !r_t%d_memReq.m_wrReq) {\n",
+					mod.m_execStg + 1, mod.m_execStg + 1);
+			} else {
+				mifPostInstr.Append("\t\tif (c_t%d_wrGrpReqStateWr.m_cnt == c_t%d_wrGrpRspState.m_cnt && !r_t%d_memReq.m_wrReq) {\n",
+					mod.m_execStg + 1, mod.m_execStg + 1, mod.m_execStg + 1);
+			}
+
+			if (mod.m_rsmSrcCnt > 1 && mod.m_threads.m_htIdW.AsInt() > 0) {
+				bNeedMifContQue = true;
+				mifPostInstr.Append("\t\t\tCHtCmd mifCont;\n");
+				mifPostInstr.Append("\t\t\tmifCont.m_htId = r_t%d_memReq.m_rsmHtId;\n", mod.m_execStg + 1);
+				mifPostInstr.Append("\t\t\tmifCont.m_htInstr = r_t%d_memReq.m_rsmInstr;\n", mod.m_execStg + 1);
+				mifPostInstr.Append("\t\t\tm_mifContQue.push(mifCont);\n");
+			} else {
+				mifPostInstr.Append("\t\t\tc_t0_rsmHtRdy = true;\n");
+				if (mod.m_threads.m_htIdW.AsInt() > 0)
+					mifPostInstr.Append("\t\t\tc_t0_rsmHtId = r_t%d_memReq.m_rsmHtId;\n", mod.m_execStg + 1);
+				mifPostInstr.Append("\t\t\tc_t0_rsmHtInstr = r_t%d_memReq.m_rsmInstr;\n", mod.m_execStg + 1);
+			}
+
+			mifPostInstr.Append("\t\t} else {\n");
+
+			if (mod.m_threads.m_htIdW.AsInt() > 2) {
+				bNeedMifPollQue = true;
+				mifPostInstr.Append("\t\t\tCHtCmd mifCont;\n");
+				mifPostInstr.Append("\t\t\tmifCont.m_htId = r_t%d_memReq.m_rsmHtId;\n", mod.m_execStg + 1);
+				mifPostInstr.Append("\t\t\tmifCont.m_htInstr = r_t%d_memReq.m_pollInstr;\n", mod.m_execStg + 1);
+				mifPostInstr.Append("\t\t\tm_mifPollQue.push(mifCont);\n");
+
+			} else if (mod.m_rsmSrcCnt > 1 && mod.m_threads.m_htIdW.AsInt() > 0) {
+				bNeedMifContQue = true;
+				mifPostInstr.Append("\t\t\tCHtCmd mifCont;\n");
+				mifPostInstr.Append("\t\t\tmifCont.m_htId = r_t%d_memReq.m_rsmHtId;\n", mod.m_execStg + 1);
+				mifPostInstr.Append("\t\t\tmifCont.m_htInstr = r_t%d_memReq.m_pollInstr;\n", mod.m_execStg + 1);
+				mifPostInstr.Append("\t\t\tm_mifContQue.push(mifCont);\n");
+
+			} else {
+				mifPostInstr.Append("\t\t\tc_t0_rsmHtRdy = true;\n");
+				if (mod.m_threads.m_htIdW.AsInt() > 0)
+					mifPostInstr.Append("\t\t\tc_t0_rsmHtId = r_t%d_memReq.m_rsmHtId;\n", mod.m_execStg + 1);
+				mifPostInstr.Append("\t\t\tc_t0_rsmHtInstr = r_t%d_memReq.m_pollInstr;\n", mod.m_execStg + 1);
+			}
+
+			mifPostInstr.Append("\t\t}\n");
+			mifPostInstr.Append("\t}\n");
+			mifPostInstr.NewLine();
+		}
+
+		if (mif.m_mifWr.m_bPause) {
+			if (wrRspGrpIdW == 0) {
+
+				mifPostInstr.Append("\tif (r_t%d_memReq.m_wrPause%s) {\n", mod.m_execStg + 1, andNot_memReqHold.c_str());
+				mifPostInstr.Append("\t\tif (r_wrGrpState.m_cnt == 0 && !r_t%d_memReq.m_wrReq) {\n", mod.m_execStg + 1);
+
+				if (mod.m_rsmSrcCnt == 1 || mod.m_threads.m_htIdW.AsInt() == 0) {
+					mifPostInstr.Append("\t\t\tc_t0_rsmHtRdy = true;\n");
+					mifPostInstr.Append("\t\t\tc_t0_rsmHtInstr = r_t%d_memReq.m_rsmInstr;\n",
+						mod.m_execStg + 1);
+				} else {
+					bNeedMifContQue = true;
+					mifPostInstr.Append("\t\t\tCHtCmd wrCont;\n");
+					mifPostInstr.Append("\t\t\twrCont.m_htId = r_t%d_memReq.m_rsmHtId;\n", mod.m_execStg + 1);
+					mifPostInstr.Append("\t\t\twrCont.m_htInstr = r_t%d_memReq.m_rsmInstr;\n", mod.m_execStg + 1);
+					mifPostInstr.Append("\t\t\tm_mifContQue.push(wrCont);\n");
+				}
+
+				mifPostInstr.Append("\t\t} else {\n");
+				mifPostInstr.Append("\t\t\tc_wrGrpState.m_pause = true;\n");
+
+				if (!bWrRspGrpIdIsHtId && mod.m_threads.m_htIdW.AsInt() > 0) {
+					mifPostInstr.Append("\t\t\tc_wrGrpState.m_rsmHtId = r_t%d_memReq.m_rsmHtId;\n",
+						mod.m_execStg + 1);
+				}
+				mifPostInstr.Append("\t\t\tc_wrGrpState.m_rsmInstr = r_t%d_memReq.m_rsmInstr;\n",
+					mod.m_execStg + 1);
+				mifPostInstr.Append("\t\t}\n");
+				mifPostInstr.Append("\t}\n");
+				mifPostInstr.NewLine();
+
+			} else if (wrRspGrpIdW <= 2) {
+
+				mifPostInstr.Append("\tif (r_t%d_memReq.m_wrPause%s) {\n", mod.m_execStg + 1, andNot_memReqHold.c_str());
+				mifPostInstr.Append("\t\tif (r_wrGrpState[r_t%d_memReq.m_wrGrpId].m_cnt == 0 && !r_t%d_memReq.m_wrReq) {\n",
+					mod.m_execStg + 1, mod.m_execStg + 1);
+
+				if (mod.m_rsmSrcCnt == 1 || mod.m_threads.m_htIdW.AsInt() == 0) {
+					mifPostInstr.Append("\t\t\tc_t0_rsmHtRdy = true;\n");
+					mifPostInstr.Append("\t\t\tc_t0_rsmHtInstr = r_t%d_memReq.m_rsmInstr;\n",
+						mod.m_execStg + 1);
+				} else {
+					bNeedMifContQue = true;
+					mifPostInstr.Append("\t\t\tCHtCmd wrCont;\n");
+					mifPostInstr.Append("\t\t\twrCont.m_htId = r_t%d_memReq.m_rsmHtId;\n", mod.m_execStg + 1);
+					mifPostInstr.Append("\t\t\twrCont.m_htInstr = r_t%d_memReq.m_rsmInstr;\n", mod.m_execStg + 1);
+					mifPostInstr.Append("\t\t\tm_mifContQue.push(wrCont);\n");
+				}
+
+				mifPostInstr.Append("\t\t} else {\n");
+				mifPostInstr.Append("\t\t\tc_wrGrpState[r_t%d_memReq.m_wrGrpId].m_pause = true;\n",
+					mod.m_execStg + 1);
+
+				if (!bWrRspGrpIdIsHtId && mod.m_threads.m_htIdW.AsInt() > 0) {
+					mifPostInstr.Append("\t\t\tc_wrGrpState[r_t%d_memReq.m_wrGrpId].m_rsmHtId = r_t%d_memReq.m_rsmHtId;\n",
+						mod.m_execStg + 1, mod.m_execStg + 1);
+				}
+				mifPostInstr.Append("\t\t\tc_wrGrpState[r_t%d_memReq.m_wrGrpId].m_rsmInstr = r_t%d_memReq.m_rsmInstr;\n",
+					mod.m_execStg + 1, mod.m_execStg + 1);
+				mifPostInstr.Append("\t\t}\n");
+				mifPostInstr.Append("\t}\n");
+				mifPostInstr.NewLine();
+
+			} else {
+
+				mifPostInstr.Append("\tif (r_t%d_memReq.m_wrPause%s) {\n", mod.m_execStg + 1, andNot_memReqHold.c_str());
+				mifPostInstr.Append("\t\tif (c_t%d_wrGrpReqStateWr.m_cnt == c_t%d_wrGrpRspState.m_cnt && !r_t%d_memReq.m_wrReq) {\n",
+					mod.m_execStg + 1, mod.m_execStg + 1, mod.m_execStg + 1);
+
+				if (mod.m_rsmSrcCnt == 1 || mod.m_threads.m_htIdW.AsInt() == 0) {
+					mifPostInstr.Append("\t\t\tc_t0_rsmHtRdy = true;\n");
+					mifPostInstr.Append("\t\t\tc_t0_rsmHtInstr = r_t%d_memReq.m_rsmInstr;\n",
+						mod.m_execStg + 1);
+				} else {
+					bNeedMifContQue = true;
+					mifPostInstr.Append("\t\t\tCHtCmd wrCont;\n");
+					mifPostInstr.Append("\t\t\twrCont.m_htId = r_t%d_memReq.m_rsmHtId;\n", mod.m_execStg + 1);
+					mifPostInstr.Append("\t\t\twrCont.m_htInstr = r_t%d_memReq.m_rsmInstr;\n", mod.m_execStg + 1);
+					mifPostInstr.Append("\t\t\tm_mifContQue.push(wrCont);\n");
+				}
+
+				mifPostInstr.Append("\t\t} else {\n");
+				mifPostInstr.Append("\t\t\tc_t%d_wrGrpReqStateWr.m_pause = c_t%d_wrGrpRspState.m_pause ^ 1;\n",
+					mod.m_execStg + 1, mod.m_execStg + 1);
+
+				if (!bWrRspGrpIdIsHtId && mod.m_threads.m_htIdW.AsInt() > 0) {
+					mifPostInstr.Append("\t\t\tc_t%d_wrGrpReqStateWr.m_rsmHtId = r_t%d_memReq.m_rsmHtId;\n",
+						mod.m_execStg + 1, mod.m_execStg + 1);
+				}
+				mifPostInstr.Append("\t\t\tc_t%d_wrGrpReqStateWr.m_rsmInstr = r_t%d_memReq.m_rsmInstr;\n",
+					mod.m_execStg + 1, mod.m_execStg + 1);
+				mifPostInstr.Append("\t\t}\n");
+				mifPostInstr.Append("\t}\n");
+				mifPostInstr.NewLine();
+			}
+		}
+
+		if (mif.m_mifWr.m_bReqPause) {
+			string andNot_memReqHold;
+			if (bMultiQwReq)
+				andNot_memReqHold = VA(" && !c_t%d_memReqHold", mod.m_execStg + 1);
+			mifPostInstr.Append("\tif (r_t%d_memReq.m_reqPause%s) {\n", mod.m_execStg + 1, andNot_memReqHold.c_str());
+
+			if (mod.m_rsmSrcCnt == 1 || mod.m_threads.m_htIdW.AsInt() == 0) {
+				mifPostInstr.Append("\t\tc_t0_rsmHtRdy = true;\n");
+				mifPostInstr.Append("\t\tc_t0_rsmHtInstr = r_t%d_memReq.m_rsmInstr;\n",
+					mod.m_execStg + 1);
+			} else {
+				bNeedMifContQue = true;
+				mifPostInstr.Append("\t\tCHtCmd reqCont;\n");
+				mifPostInstr.Append("\t\treqCont.m_htId = r_t%d_memReq.m_rsmHtId;\n", mod.m_execStg + 1);
+				mifPostInstr.Append("\t\treqCont.m_htInstr = r_t%d_memReq.m_rsmInstr;\n", mod.m_execStg + 1);
+				mifPostInstr.Append("\t\tm_mifContQue.push(reqCont);\n");
+			}
+
+			mifPostInstr.Append("\t}\n");
+			mifPostInstr.NewLine();
+		}
+
+		if (wrRspGrpIdW > 2) {
+			mifPostInstr.Append("\tm_wrGrpReqState0.write_mem(c_t%d_wrGrpReqStateWr);\n",
+				mod.m_execStg + 1);
+			if (mif.m_mifWr.m_bPause) {
+				mifPostInstr.Append("\tm_wrGrpReqState1.write_mem(c_t%d_wrGrpReqStateWr);\n",
+					mod.m_execStg + 1);
+			}
+			mifPostInstr.NewLine();
+
+			if (MIF_CHK_STATE) {
+				GenModDecl(eVcdAll, m_mifDecl, vcdModName, "CWrGrpReqState ht_noload", "x_wrGrpReqState");
+
+				mifPostInstr.Append("\tif (r_t%d_memReq.m_wrGrpId == %s_CHK_GRP_ID)\n", mod.m_execStg + 1, mod.m_modName.Upper().c_str());
+				mifPostInstr.Append("\t\tx_wrGrpReqState = c_t%d_wrGrpReqStateWr;\n", mod.m_execStg + 1);
+				mifPostInstr.NewLine();
+			}
+
+			if (mif.m_mifWr.m_bPause)
+				mifPostInstr.Append("\tm_wrGrpReqState1.read_addr(r_m1_wrGrpId);\n");
+			mifPostInstr.Append("\tm_wrGrpRspState0.read_addr(r_m1_wrGrpId);\n");
+			mifPostInstr.Append("\tm_wrGrpRspState0.write_addr(r_m1_wrGrpId);\n");
+			mifPostInstr.Append("\tm_wrGrpRspState1.write_addr(r_m1_wrGrpId);\n");
+			mifPostInstr.NewLine();
+
+			mifPostInstr.Append("\tCWrGrpRspState c_m1_wrGrpRspState = m_wrGrpRspState0.read_mem();\n",
+				mod.m_modName.Upper().c_str());
+			mifPostInstr.Append("\tCWrGrpRspState c_m1_wrGrpRspStateWr = c_m1_wrGrpRspState;\n",
+				mod.m_modName.Upper().c_str());
+			if (mif.m_mifWr.m_bPause) {
+				mifPostInstr.Append("\tCWrGrpReqState c_m1_wrGrpReqState = m_wrGrpReqState1.read_mem();\n",
+					mod.m_modName.Upper().c_str());
+			}
+			mifPostInstr.NewLine();
+		}
+
+		if (mif.m_mifWr.m_bPause) {
+			if (wrRspGrpIdW == 0) {
+
+				mifPostInstr.Append("\tif (r_m1_wrRspRdy) {\n");
+				mifPostInstr.NewLine();
+
+				mifPostInstr.Append("\t\tht_assert(%s || r_wrGrpState.m_cnt != 0);\n",
+					reset.c_str());
+				mifPostInstr.NewLine();
+
+				mifPostInstr.Append("\t\tbool c_wrGrpCollision = r_t%d_memReq.m_wrPause && !r_t%d_memReq.m_wrReq%s;\n",
+					mod.m_execStg + 1, mod.m_execStg + 1, andNot_memReqHold.c_str());
+				mifPostInstr.Append("\t\tbool c_wrGrpResume = r_wrGrpState.m_pause || c_wrGrpCollision;\n");
+				mifPostInstr.NewLine();
+
+				mifPostInstr.Append("\t\tif (c_wrGrpState.m_cnt == 0 && c_wrGrpResume) {\n");
+				mifPostInstr.Append("\t\t\t// last write response arrived, resume thread\n");
+				mifPostInstr.NewLine();
+
+				mifPostInstr.Append("\t\t\tc_wrGrpState.m_pause = false;\n");
+				mifPostInstr.NewLine();
+
+				if (mod.m_threads.m_htIdW.AsInt() == 0) {
+					mifPostInstr.Append("\t\t\tc_t0_rsmHtRdy = true;\n");
+					mifPostInstr.Append("\t\t\tc_t0_rsmHtInstr = r_wrGrpState.m_rsmInstr;\n");
+
+				} else {
+					bNeedMifWrRsmQue = true;
+
+					mifPostInstr.Append("\t\t\tCHtCmd wrRsm;\n");
+
+					if (bWrRspGrpIdIsHtId) {
+						mifPostInstr.Append("\t\t\twrRsm.m_htId = r_m1_wrGrpId;\n");
+					} else {
+						if (mod.m_threads.m_htIdW.AsInt() > 0)
+							mifPostInstr.Append("\t\t\twrRsm.m_htId = r_wrGrpState.m_rsmHtId;\n");
+					}
+
+					mifPostInstr.Append("\t\t\twrRsm.m_htInstr = r_wrGrpState.m_rsmInstr;\n");
+					mifPostInstr.Append("\t\t\tm_mifWrRsmQue.push(wrRsm);\n");
+				}
+
+				mifPostInstr.Append("\t\t}\n");
+				mifPostInstr.Append("\t}\n");
+				mifPostInstr.NewLine();
+
+			} else if (wrRspGrpIdW <= 2) {
+
+				mifPostInstr.Append("\tif (r_m1_wrRspRdy) {\n");
+				mifPostInstr.NewLine();
+
+				mifPostInstr.Append("\t\tht_assert(%s || r_wrGrpState[r_m1_wrGrpId].m_cnt != 0);\n",
+					reset.c_str());
+				mifPostInstr.NewLine();
+
+				mifPostInstr.Append("\t\tbool c_wrGrpCollision = r_t%d_memReq.m_wrPause && !r_t%d_memReq.m_wrReq%s && r_t%d_memReq.m_wrGrpId == r_m1_wrGrpId;\n",
+					mod.m_execStg + 1, mod.m_execStg + 1, andNot_memReqHold.c_str(), mod.m_execStg + 1);
+				mifPostInstr.Append("\t\tbool c_wrGrpResume = r_wrGrpState[r_m1_wrGrpId].m_pause || c_wrGrpCollision;\n");
+				mifPostInstr.NewLine();
+
+				mifPostInstr.Append("\t\tif (c_wrGrpState[r_m1_wrGrpId].m_cnt == 0 && c_wrGrpResume) {\n");
+				mifPostInstr.Append("\t\t\t// last read response arrived, resume thread\n");
+				mifPostInstr.NewLine();
+
+				if (mif.m_mifWr.m_bPause)
+					mifPostInstr.Append("\t\t\tc_wrGrpState[r_m1_wrGrpId].m_pause = false;\n");
+				mifPostInstr.NewLine();
+
+				if (mod.m_threads.m_htIdW.AsInt() == 0) {
+					mifPostInstr.Append("\t\t\tc_t0_rsmHtRdy = true;\n");
+					mifPostInstr.Append("\t\t\tc_t0_rsmHtInstr = r_wrGrpState[r_m1_wrGrpId].m_rsmInstr;\n");
+
+				} else {
+					bNeedMifWrRsmQue = true;
+
+					mifPostInstr.Append("\t\t\tCHtCmd wrRsm;\n");
+
+					if (bWrRspGrpIdIsHtId) {
+						mifPostInstr.Append("\t\t\twrRsm.m_htId = r_m1_wrGrpId;\n");
+					} else {
+						if (mod.m_threads.m_htIdW.AsInt() > 0)
+							mifPostInstr.Append("\t\t\twrRsm.m_htId = r_wrGrpState[r_m1_wrGrpId].m_rsmHtId;\n");
+					}
+
+					mifPostInstr.Append("\t\t\twrRsm.m_htInstr = r_wrGrpState[r_m1_wrGrpId].m_rsmInstr;\n");
+					mifPostInstr.Append("\t\t\tm_mifWrRsmQue.push(wrRsm);\n");
+				}
+
+				mifPostInstr.Append("\t\t}\n");
+				mifPostInstr.Append("\t}\n");
+				mifPostInstr.NewLine();
+
+			} else {
+
+				mifPostInstr.Append("\tif (r_m1_wrRspRdy) {\n");
+				mifPostInstr.NewLine();
+
+				mifPostInstr.Append("\t\tht_assert(%s || c_m1_wrGrpRspStateWr.m_cnt != c_m1_wrGrpReqState.m_cnt);\n",
+					reset.c_str());
+				mifPostInstr.NewLine();
+
+				mifPostInstr.Append("\t\tc_m1_wrGrpRspStateWr.m_cnt = c_m1_wrGrpRspState.m_cnt + 1;\n");
+				mifPostInstr.Append("\t\tc_wrGrpBusyCnt = c_wrGrpBusyCnt - 1;\n");
+				mifPostInstr.NewLine();
+
+				mifPostInstr.Append("\t\tbool c_m1_bWrGrpRspCntZero = c_m1_wrGrpRspStateWr.m_cnt == c_m1_wrGrpReqState.m_cnt;\n");
+				mifPostInstr.NewLine();
+
+				mifPostInstr.Append("\t\tbool c_wrGrpCollision = r_t%d_memReq.m_wrPause && !r_t%d_memReq.m_wrReq%s && r_t%d_memReq.m_wrGrpId == r_m1_wrGrpId;\n",
+					mod.m_execStg + 1, mod.m_execStg + 1, andNot_memReqHold.c_str(), mod.m_execStg + 1);
+				mifPostInstr.Append("\t\tbool c_wrGrpResume = c_m1_wrGrpRspState.m_pause != c_m1_wrGrpReqState.m_pause ||\n");
+				mifPostInstr.Append("\t\t\tc_wrGrpCollision;\n");
+				mifPostInstr.NewLine();
+
+				mifPostInstr.Append("\t\tif (c_m1_bWrGrpRspCntZero && c_wrGrpResume) {\n");
+				mifPostInstr.Append("\t\t\t// last write response arrived, resume thread\n");
+				mifPostInstr.NewLine();
+
+				mifPostInstr.Append("\t\t\tc_m1_wrGrpRspStateWr.m_pause = c_m1_wrGrpReqState.m_pause ^ (c_wrGrpCollision ? 1u : 0u);\n");
+				mifPostInstr.NewLine();
+
+				bNeedMifWrRsmQue = true;
+				mifPostInstr.Append("\t\t\tCHtCmd wrRsm;\n");
+
+				if (bWrRspGrpIdIsHtId) {
+					if (mod.m_threads.m_htIdW.AsInt() > 0)
+						mifPostInstr.Append("\t\t\twrRsm.m_htId = %s;\n", wrRspGrpId.c_str());
+				} else {
+					mifPostInstr.Append("\t\t\twrRsm.m_htId = c_m1_wrGrpReqState.m_rsmHtId;\n",
+						mod.m_execStg);
+				}
+
+				mifPostInstr.Append("\t\t\twrRsm.m_htInstr = c_m1_wrGrpReqState.m_rsmInstr;\n",
+					mod.m_execStg);
+
+				mifPostInstr.Append("\t\t\tm_mifWrRsmQue.push(wrRsm);\n");
+
+				mifPostInstr.Append("\t\t}\n");
+				mifPostInstr.Append("\t}\n");
+				mifPostInstr.NewLine();
+			}
+		}
+
+		if (!mif.m_mifWr.m_bPause && wrRspGrpIdW > 2) {
+
+			mifPostInstr.Append("\tif (r_m1_wrRspRdy) {\n");
+			mifPostInstr.NewLine();
+
+			mifPostInstr.Append("\t\tc_m1_wrGrpRspStateWr.m_cnt = c_m1_wrGrpRspState.m_cnt + 1;\n");
+			mifPostInstr.Append("\t\tc_wrGrpBusyCnt = c_wrGrpBusyCnt - 1;\n");
+
+			mifPostInstr.Append("\t}\n");
+			mifPostInstr.NewLine();
+		}
+
+		if (wrRspGrpIdW > 2) {
+
+			mifPostInstr.Append("\tm_wrGrpRspState0.write_mem(c_m1_wrGrpRspStateWr);\n");
+			mifPostInstr.Append("\tm_wrGrpRspState1.write_mem(c_m1_wrGrpRspStateWr);\n");
+			mifPostInstr.NewLine();
+
+			if (MIF_CHK_STATE) {
+				GenModDecl(eVcdAll, m_mifDecl, vcdModName, "CWrGrpRspState ht_noload", "x_wrGrpRspState");
+
+				mifPostInstr.Append("\tif (r_m1_wrGrpId == %s_CHK_GRP_ID)\n", mod.m_modName.Upper().c_str());
+				mifPostInstr.Append("\t\tx_wrGrpRspState = c_m1_wrGrpRspStateWr;\n");
+				mifPostInstr.NewLine();
+			}
+
+			mifPostInstr.Append("\tsc_uint<%s_WR_GRP_ID_W + 1> c_wrRspGrpInitCnt = r_wrRspGrpInitCnt;\n",
+				mod.m_modName.Upper().c_str());
+			mifPostInstr.Append("\tif (r_wrRspGrpInitCnt < (1 << %s_WR_GRP_ID_W)) {\n",
+				mod.m_modName.Upper().c_str());
+			mifPostInstr.NewLine();
+
+			mifPostInstr.Append("\t\tCWrGrpReqState wrGrpReqState = 0;\n");
+			mifPostInstr.Append("\t\tm_wrGrpReqState0.write_mem(wrGrpReqState);\n");
+			if (mif.m_mifWr.m_bPause)
+				mifPostInstr.Append("\t\tm_wrGrpReqState1.write_mem(wrGrpReqState);\n");
+			mifPostInstr.NewLine();
+
+			mifPostInstr.Append("\t\tCWrGrpRspState wrGrpRspState = 0;\n");
+			mifPostInstr.Append("\t\tm_wrGrpRspState0.write_mem(wrGrpRspState);\n");
+			mifPostInstr.Append("\t\tm_wrGrpRspState1.write_mem(wrGrpRspState);\n");
+			mifPostInstr.NewLine();
+
+			mifPostInstr.Append("\t\tc_wrRspGrpInitCnt = r_wrRspGrpInitCnt + 1u;\n");
+			mifPostInstr.NewLine();
+
+			mifPostInstr.Append("\t\tc_t%d_memReq.m_wrGrpId = c_wrRspGrpInitCnt & ((1 << %s_WR_GRP_ID_W) - 1);\n",
+				mod.m_execStg, mod.m_modName.Upper().c_str());
+			mifReset.Append("\t\tc_t%d_memReq.m_wrGrpId = 0;\n", mod.m_execStg);
+
+			mifPostInstr.Append("\t\tc_m0_wrGrpId = c_wrRspGrpInitCnt & ((1 << %s_WR_GRP_ID_W) - 1);\n",
+				mod.m_modName.Upper().c_str());
+			mifReset.Append("\t\tc_m0_wrGrpId = 0;\n");
+
+			mifPostInstr.Append("\t}\n");
+			mifPostInstr.NewLine();
+		}
+	}
+
+	if (bNeedMifPollQue) {
+		m_mifDecl.Append("\tht_dist_que<CHtCmd, %s_HTID_W> m_mifPollQue;\n", mod.m_modName.Upper().c_str());
+
+		mifReg.Append("\tm_mifPollQue.clock(%s);\n", reset.c_str());
+	}
+
+	if (bNeedMifContQue) {
+		m_mifDecl.Append("\tht_dist_que<CHtCmd, %s_HTID_W> m_mifContQue;\n", mod.m_modName.Upper().c_str());
+
+		mifReg.Append("\tm_mifContQue.clock(%s);\n", reset.c_str());
+
+		mifPostInstr.Append("\tif (!c_t0_rsmHtRdy && !m_mifContQue.empty()) {\n");
+		mifPostInstr.Append("\t\tc_t0_rsmHtRdy = true;\n");
+		mifPostInstr.Append("\t\tc_t0_rsmHtId = m_mifContQue.front().m_htId;\n");
+		mifPostInstr.Append("\t\tc_t0_rsmHtInstr = m_mifContQue.front().m_htInstr;\n");
+		mifPostInstr.Append("\t\tm_mifContQue.pop();\n");
+		mifPostInstr.Append("\t}\n");
+		mifPostInstr.NewLine();
+	}
+
+	if (bNeedMifRdRsmQue) {
+		m_mifDecl.Append("\tht_dist_que<CHtCmd, %s_HTID_W> m_mifRdRsmQue;\n", mod.m_modName.Upper().c_str());
+
+		mifReg.Append("\tm_mifRdRsmQue.clock(%s);\n", reset.c_str());
+
+		mifPostInstr.Append("\tif (!c_t0_rsmHtRdy && !m_mifRdRsmQue.empty()) {\n");
+		mifPostInstr.Append("\t\tc_t0_rsmHtRdy = true;\n");
+		mifPostInstr.Append("\t\tc_t0_rsmHtId = m_mifRdRsmQue.front().m_htId;\n");
+		mifPostInstr.Append("\t\tc_t0_rsmHtInstr = m_mifRdRsmQue.front().m_htInstr;\n");
+		mifPostInstr.Append("\t\tm_mifRdRsmQue.pop();\n");
+		mifPostInstr.Append("\t}\n");
+		mifPostInstr.NewLine();
+	}
+
+	if (bNeedMifWrRsmQue) {
+		m_mifDecl.Append("\tht_dist_que<CHtCmd, %s_HTID_W> m_mifWrRsmQue;\n", mod.m_modName.Upper().c_str());
+
+		mifReg.Append("\tm_mifWrRsmQue.clock(%s);\n", reset.c_str());
+
+		mifPostInstr.Append("\tif (!c_t0_rsmHtRdy && !m_mifWrRsmQue.empty()) {\n");
+		mifPostInstr.Append("\t\tc_t0_rsmHtRdy = true;\n");
+		mifPostInstr.Append("\t\tc_t0_rsmHtId = m_mifWrRsmQue.front().m_htId;\n");
+		mifPostInstr.Append("\t\tc_t0_rsmHtInstr = m_mifWrRsmQue.front().m_htInstr;\n");
+		mifPostInstr.Append("\t\tm_mifWrRsmQue.pop();\n");
+		mifPostInstr.Append("\t}\n");
+		mifPostInstr.NewLine();
 	}
 
 	mifReg.NewLine();
 
+	// outputs
 	mifOut.Append("\to_%sP0ToMif_reqRdy = r_t%d_%sToMif_reqRdy;\n",
-		mod.m_modName.Lc().c_str(), mod.m_execStg + 1 + mifReqStgCnt, mod.m_modName.Lc().c_str());
+		mod.m_modName.Lc().c_str(), mod.m_execStg + 1 + mif.m_mifReqStgCnt, mod.m_modName.Lc().c_str());
 	mifOut.Append("\to_%sP0ToMif_req = r_t%d_%sToMif_req;\n",
-		mod.m_modName.Lc().c_str(), mod.m_execStg + 1 + mifReqStgCnt, mod.m_modName.Lc().c_str());
-
-	mifPostInstr.Append("\n\n");
-	m_mifRamDecl.NewLine();
-	mifRamClock.NewLine();
+		mod.m_modName.Lc().c_str(), mod.m_execStg + 1 + mif.m_mifReqStgCnt, mod.m_modName.Lc().c_str());
+	if (mif.m_bMifRd) {
+		mifOut.Append("\to_%sP0ToMif_rdRspFull = r_%sToMif_rdRspFull;\n",
+			mod.m_modName.Lc().c_str(), mod.m_modName.Lc().c_str());
+	}
 }

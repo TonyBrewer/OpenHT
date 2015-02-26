@@ -1,5 +1,13 @@
 // tst Module capabilities
 
+struct CData {
+	uint64_t data;
+};
+
+struct CByte {
+	uint8_t data;
+};
+
 dsnInfo.AddModule(name=tst, htIdW=0);
 
 tst.AddInst(name=TST_READ);
@@ -24,10 +32,13 @@ tst.AddPrivate()
 	;
 
 tst.AddReadMem()
-	.AddDst(var=gvar, field=data);
+	.AddDst(var=gvar[].data);
 
-tst.AddGlobal(var=gvar, addr1W=2, addr1=gvarAddr, addr2W=2, addr2=gvarAddr, dimen1=1)
-	.AddField(type=uint64_t, name=data, read=true);
+tst.AddGlobal()
+	.AddVar(type=CData, name=gvar, addr1=gvarAddr, addr2=gvarAddr, dimen1=1, read=true, write=false)
+	;
+//tst.AddGlobal(var=gvar, addr1W=2, addr1=gvarAddr, addr2W=2, addr2=gvarAddr, dimen1=1)
+//	.AddField(type=uint64_t, name=data, read=true);
 
 tst.AddCall(func=tst2)
 	;
@@ -58,11 +69,15 @@ tst2.AddPrivate()
 	.AddVar(type=ht_uint9, name=err)
 	;
 
-tst2.AddGlobal(var=gvar, addr1W=2, addr1=gvarAddr, addr2W=2, addr2=gvarAddr, dimen1=1, extern=true)
-	.AddField(type=uint64_t, name=data, read=true);
+tst2.AddGlobal()
+	.AddVar(type=CData, name=gvar, addr1=gvarAddr, addr2=gvarAddr, dimen1=1, read=true, write=false)
+	;
+
+//tst2.AddGlobal(var=gvar, addr1W=2, addr1=gvarAddr, addr2W=2, addr2=gvarAddr, dimen1=1, extern=true)
+//	.AddField(type=uint64_t, name=data, read=true);
 
 tst2.AddReadMem()
-	.AddDst(var=gvar, field=data);
+	.AddDst(var=gvar[].data);
 
 
 // tst3
@@ -86,11 +101,10 @@ tst3.AddPrivate()
 	.AddVar(type=ht_uint48, name=memAddr)
 	;
 
-tst3.AddGlobal(var=gvar3, addr1W=TST3_HTID_W, addr1=htId)
-	.AddField(type=uint8_t, name=data, read=true, write=true);
+tst3.AddGlobal()
+	.AddVar(type=CByte, name=gvar3, addr1=htId, read=true, write=true)
+	.AddVar(type=CByte, name=gvar31, addr1=htId, read=true, write=false)
+	;
 
-tst3.AddGlobal(var=gvar31, addr1W=TST3_HTID_W, addr1=htId)
-	.AddField(type=uint8_t, name=data, read=true, write=false);
-
-tst3.AddReadMem(queueW=5, rspCntW=3, maxBw=false)
-	.AddDst(var=gvar31, field=data);
+tst3.AddReadMem()
+	.AddDst(var=gvar31.data);

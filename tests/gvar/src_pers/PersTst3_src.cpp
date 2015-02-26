@@ -12,7 +12,7 @@ void CPersTst3::PersTst3()
 					break;
 				}
 
-				GW_gvar3_data(PR_htId, 0x35);
+				GW_gvar3.data = 0x35;
 
 				ReadMem_gvar31(P_memAddr, PR_htId);
 
@@ -26,12 +26,12 @@ void CPersTst3::PersTst3()
 				break;
 			}
 
-			ht_uint8 rdData = GR_gvar3_data();
+			ht_uint8 rdData = GR_gvar3.data;
 
 			if (rdData != 0x35)
 				HtAssert(0, 0);
 
-			rdData = GR_gvar31_data();
+			rdData = GR_gvar31.data;
 
 			if (rdData != 0x34)
 				HtAssert(0, 0);

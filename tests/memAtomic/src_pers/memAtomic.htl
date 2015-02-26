@@ -1,10 +1,11 @@
-// -cl "C:\Ht\tests\memAtomic\src_pers\memAtomic.htl"
+// -cl $(HtToolsPath)/tests/memAtomic/src_pers/memAtomic.htl
+-wd $(HtToolsPath)/tests/memAtomic/msvs12/
+
 -cp hc-2ex
 -mt
 -ac 1
 -uc 1
 -un Au
 -df 150
--wd "C:\Ht\tests\memAtomic\msvs12\"
-"C:\Ht\tests\memAtomic\src_pers\memAtomic.htd"
+../src_pers/memAtomic.htd
 ../ht/sysc

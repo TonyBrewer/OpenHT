@@ -17,7 +17,7 @@ CPersAdd::PersAdd()
 
 			// Memory read request - Operand 1
 			MemAddr_t memRdAddr = SR_op1Addr + (P1_vecIdx << 3);
-			ReadMem_op1Mem(memRdAddr, PR1_htId);
+			ReadMem_op1Mem(memRdAddr, PR1_htId, 1);
 			HtContinue(ADD_LD2);
 		}
 		break;
@@ -29,7 +29,7 @@ CPersAdd::PersAdd()
 
 			// Memory read request - Operand 2
 			MemAddr_t memRdAddr = SR_op2Addr + (P1_vecIdx << 3);
-			ReadMem_op2Mem(memRdAddr, PR1_htId);
+			ReadMem_op2Mem(memRdAddr, PR1_htId, 1);
 			ReadMemPause(ADD_ADD);
 		}
 		break;
@@ -65,6 +65,11 @@ CPersAdd::PersAdd()
 				HtRetry();
 				break;
 			}
+
+#ifndef _HTV
+			static bool flags[128] = { false };
+			flags[PR1_htId] = true;
+#endif
 
 			// Return Result from private variable 'res'
 			SendReturn_add(P1_res);

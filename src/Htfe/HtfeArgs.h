@@ -26,7 +26,6 @@ public:
 	void SetIsScCode() { m_bScCode = true; }
 
 private:
-	void SetMethodSupport(bool bMethod) { m_bMethodSupport = bMethod; }
 	void SetTemplateSupport(bool bTemplate) { m_bTemplateSupport = bTemplate; }
     void SetIsTkDumpEnabled() { m_bIsTkDumpEnabled = true; }
     void SetWritePreProcessedInput() { m_bWritePreProcessedInput = true; }
@@ -45,7 +44,6 @@ public:
     bool IsScMain() { return m_bScMain; }
     bool IsScCode() { return m_bScCode; }
 
-	bool IsMethodSupport() { return m_bMethodSupport; }
 	bool IsTemplateSupport() { return m_bTemplateSupport; }
     bool IsTkDumpEnabled() { return m_bIsTkDumpEnabled; }
     bool IsWritePreProcessedInput() { return m_bWritePreProcessedInput; }
@@ -65,7 +63,6 @@ private:
     bool			m_bIsLvxEnabled;	// local variable X initialization else 0
 	bool			m_bIsTkDumpEnabled;
     bool            m_bWritePreProcessedInput;
-	bool			m_bMethodSupport;
 	bool			m_bTemplateSupport;
     bool            m_bHtQueCntSynKeep;
 };

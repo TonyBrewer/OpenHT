@@ -48,35 +48,46 @@ void CPersInc::PersInc()
 				MemAddr_t memRdAddr = SR_arrayAddr + (P_loopCnt << 3);
 
 				// Issue read request to memory
-#if INC_HTID_W == 0
+#if INC_RSP_GRP_W == 0
+#	if INC_HTID_W == 0
 				ReadMem_arrayMem(memRdAddr);
-#else
+#	else
 				ReadMem_arrayMem(memRdAddr, PR_htId);
+#	endif
+#else
+#	if INC_HTID_W == 0
+				ReadMem_arrayMem(P_rspGrpVar, memRdAddr);
+#	else
+				ReadMem_arrayMem(P_rspGrpVar, memRdAddr, PR_htId);
+#	endif
 #endif
-
 				// Set address for reading memory response data
 				P_arrayMemRdPtr = PR_htId;
 
 #if INC_RD_POLL==1
 				HtContinue(INC_READ_POLL);
 #else
+#	if INC_RSP_GRP_W == 0
 				ReadMemPause(INC_WRITE);
+#	else
+				ReadMemPause(PR_rspGrpVar, INC_WRITE);
+#	endif
 #endif
 			}
+			break;
 		}
-		break;
 #if INC_RD_POLL==1
 		case INC_READ_POLL:
-  #if INC_RSP_GRP_W == 0
-			if (ReadMemBusy() || ReadMemPoll()) {
-  #else
-			if (ReadMemBusy() || ReadMemPoll(PR_rspGrpVar)) {
-#endif
+			if (ReadMemBusy()) {
 				HtRetry();
 				break;
 			}
 
-			HtContinue(INC_WRITE);
+#	if INC_RSP_GRP_W == 0
+			ReadMemPoll(INC_WRITE);
+#	else
+			ReadMemPoll(PR_rspGrpVar, INC_WRITE);
+#	endif
 			break;
 #endif
 		case INC_WRITE:
@@ -87,8 +98,12 @@ void CPersInc::PersInc()
 			}
 
 			// Increment memory data
-			uint64_t memWrData = GR_arrayMem_data() + 1;
-
+#if INC_HTID_W == 0
+			uint64_t memWrData = SR_arrayMem + 1;
+#else
+			SR_arrayMem.read_addr(PR_htId);
+			uint64_t memWrData = SR_arrayMem.read_mem() + 1;
+#endif
 			// Calculate memory write address
 			MemAddr_t memWrAddr = SR_arrayAddr + (P_loopCnt << 3);
 
@@ -107,12 +122,12 @@ void CPersInc::PersInc()
 		break;
 #if INC_WR_POLL==1
 		case INC_WRITE_POLL:
-			if (WriteMemBusy() || WriteMemPoll()) {
+			if (WriteMemBusy()) {
 				HtRetry();
 				break;
 			}
 
-			HtContinue(INC_READ);
+			WriteMemPoll(INC_READ);
 			break;
 #endif
 		default:
@@ -124,20 +139,21 @@ void CPersInc::PersInc()
 #if INC_HTID_W == 0 && INC_RSP_GRP_W == 0
 void CPersInc::ReadMemResp_arrayMem(sc_uint<64> rdRspData)
 {
-	GW_arrayMem_data(0, rdRspData);
+	S_arrayMem = rdRspData;
 }
 #elif INC_HTID_W == 0 && INC_RSP_GRP_W != 0
 void CPersInc::ReadMemResp_arrayMem(sc_uint<INC_RD_GRP_ID_W> ht_noload rdRspGrpId, sc_uint<64> rdRspData)
 {
-	GW_arrayMem_data(0, rdRspData);
+	S_arrayMem = rdRspData;
 }
 #else
-void CPersInc::ReadMemResp_arrayMem(sc_uint<INC_RD_GRP_ID_W> rdRspGrpId, sc_uint<INC_MIF_DST_ARRAYMEM_INFO_W> rdRspInfo, sc_uint<64> rdRspData)
+void CPersInc::ReadMemResp_arrayMem(sc_uint<INC_RD_GRP_ID_W> rdRspGrpId, sc_uint<INC_HTID_W> rdRspInfo, sc_uint<64> rdRspData)
 {
 	assert(rdRspGrpId == rdRspInfo);
 
 	HtId_t wrAddr = (rdRspGrpId | rdRspInfo) & ((1u << INC_HTID_W)-1);
 
-	GW_arrayMem_data(wrAddr, rdRspData);
+	S_arrayMem.write_addr(wrAddr);
+	S_arrayMem.write_mem(rdRspData);
 }
 #endif

@@ -49,7 +49,7 @@ CPersInc0::PersInc0()
 			}
 
 			// Increment memory data
-			uint64_t memWrData = GR_arrayMem0_data() + 1;
+			uint64_t memWrData = GR_arrayMem0.data + 1;
 
 			// Calculate memory write address
 			MemAddr_t memWrAddr = SR_arrayAddr + ((P_loopBase + P_loopIdx) << 3);

@@ -1,10 +1,11 @@
-// -cl "C:\Ht\tests\gvar\src_pers\gvar.htl"
+// -cl $(HtToolsPath)/tests/gvar/src_pers/gvar.htl
+-wd $(HtToolsPath)/tests/gvar/msvs12/		// working directory
+
 -cp hc-2
 -mt				// enable memory tracing
 -uc 1			// unit count
 -un Au			// unit name
 -df 150			// default frequence
 
--wd "C:\Ht\tests\gvar\msvs12\"		// working directory
-"C:\Ht\tests\gvar\src_pers\gvar.htd"	    // design file location
+../src_pers/gvar.htd	    // design file location
 ../ht/sysc							// location for output files

@@ -1,13 +1,25 @@
 #include "Ht.h"
 #include "PersRdSub.h"
 
+#ifndef _HTV
+int entryMask = 0;
+#endif
+
 void CPersRdSub::PersRdSub()
 {
 	if (PR_htValid) {
 		switch (PR_htInst) {
 		case WS_READ:
 			{
-				if (ReadMemBusy()) {
+#ifndef _HTV
+				entryMask |= 1 << PR_htId;
+#endif
+				if (
+#ifndef _HTV
+					entryMask != ((1ull << (1 << WS_HTID_W))-1) ||
+#endif
+
+					ReadMemBusy()) {
 					HtRetry();
 					break;
 				}

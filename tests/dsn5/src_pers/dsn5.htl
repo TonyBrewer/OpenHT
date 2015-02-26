@@ -1,8 +1,12 @@
--cp hc-2
+// -cl $(HtToolsPath)/tests/dsn5/src_pers/dsn5.htl
+-wd $(HtToolsPath)/tests/dsn5/msvs12/
+
+//-cp hc-2
+-cp wx-690
 -it
 -uc 1
 -un Su
 -df 150
--wd "C:\Ht\tests\dsn5\msvs12\"
-"C:\Ht\tests\dsn5\src_pers\dsn5.htd"
+-vcd_all
+../src_pers/dsn5.htd
 ../ht/sysc

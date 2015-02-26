@@ -1,0 +1,12 @@
+// -cl $(HtToolsPath)/tests/bug_2005/src_pers/vadd.htl
+-wd $(HtToolsPath)/tests/bug_2005/msvs12/
+
+-cp hc-2
+-uc 1
+-un Au
+-df 150
+-pn bug_2005
+-it
+-if ../src_pers/vadd.hti
+../src_pers/vadd.htd
+../ht/sysc

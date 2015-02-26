@@ -35,7 +35,8 @@ public:
 	void loadHtiFile(string fileName);
 
 	int getUnitTypeCnt() { return 1; }
-	string getUnitName(int unitTypeIdx) {
+	string getUnitName(int unitTypeIdx)
+	{
 		return g_appArgs.GetUnitName();
 	}
 
@@ -48,30 +49,36 @@ public:
 
 public:
 
+	enum EParamType { ePrmInteger, ePrmIdent, ePrmIntRange, ePrmBoolean, ePrmTypeStr, ePrmIntList, ePrmString, ePrmParamStr, ePrmIdentRef, ePrmIntSet, ePrmUnknown };
+
 	struct CParamList {
 		const char *m_pName;
 		void *		m_pValue;
 		bool		m_bRequired;
-		EToken		m_token;
+		EParamType	m_paramType;
 		int			m_deprecatedPair;
 		bool		m_bPresent;
 	};
 
 	class HtiList {
 	public:
-		bool isInList(string name) {
+		bool isInList(string name)
+		{
 			return index(name) >= 0;
 		}
-		void insert(string name) {
+		void insert(string name)
+		{
 			m_list.push_back(name);
 		}
-		int index(string name) {
+		int index(string name)
+		{
 			for (size_t i = 0; i < m_list.size(); i += 1)
 				if (m_list[i] == name)
 					return (int)i;
 			return -1;
 		}
-		void clear() {
+		void clear()
+		{
 			m_list.clear();
 		};
 	private:
@@ -79,10 +86,12 @@ public:
 	};
 
 	struct CModInstParams {
-		CModInstParams(string unitName, string modPath, vector<int> &memPortList, int instId, int replCnt) 
+		CModInstParams(string unitName, string modPath, vector<int> &memPortList, int instId, int replCnt)
 			: m_unitName(unitName), m_modPath(modPath), m_memPortList(memPortList), m_instId(instId),
 			m_replCnt(replCnt), m_lineInfo(CPreProcess::m_lineInfo)
-		{ m_wasUsed = false; }
+		{
+			m_wasUsed = false;
+		}
 
 		string m_unitName;
 		string m_modPath;
@@ -109,10 +118,12 @@ public:
 	};
 
 	struct CMsgIntfConn {
-		CMsgIntfConn( string &outUnit, string &outPath, string &inUnit, string &inPath, bool aeNext, bool aePrev ) :
+		CMsgIntfConn(string &outUnit, string &outPath, string &inUnit, string &inPath, bool aeNext, bool aePrev) :
 			m_outUnit(outUnit), m_outPath(outPath), m_inUnit(inUnit), m_inPath(inPath),
 			m_aeNext(aeNext), m_aePrev(aePrev), m_outMsgIntf(false, outUnit, outPath),
-			m_inMsgIntf(true, inUnit, inPath), m_lineInfo(CPreProcess::m_lineInfo) {}
+			m_inMsgIntf(true, inUnit, inPath), m_lineInfo(CPreProcess::m_lineInfo)
+		{
+		}
 
 		string m_outUnit;
 		string m_outPath;
@@ -134,10 +145,10 @@ private:
 	vector<int> ExpandIntSet(string intSet) { return vector<int>(); }
 
 	// routines to load an hti file
-	void AddUnitInst( int ae, int au, string name ){}
-	void AddUnitParams( string unit, string entry, string memPortCnt ){}
-	void AddModInstParams( string unit, string modPath, vector<int> &memPort, string modInst, string replCnt );
-	void AddMsgIntfConn( string &outUnit, string &outPath, string &inUnit, string &inPath, bool aeNext, bool aePrev );
+	void AddUnitInst(int ae, int au, string name) {}
+	void AddUnitParams(string unit, string entry, string memPortCnt) {}
+	void AddModInstParams(string unit, string modPath, vector<int> &memPort, string modInst, string replCnt);
+	void AddMsgIntfConn(string &outUnit, string &outPath, string &inUnit, string &inPath, bool aeNext, bool aePrev);
 
 	void SkipTo(EToken skipTk);
 

@@ -1,0 +1,12 @@
+// -cl $(HtToolsPath)/apps/g500/lib_pers/src_pers/g500.htl
+-wd $(HtToolsPath)/apps/g500/lib_pers/msvs12/
+
+-cp wx-690
+-ac 1
+-uc 1
+-df 150
+-I ../src
+-I ../src_pers
+-ml 0.6
+../src_pers/g500.htd
+../ht/sysc

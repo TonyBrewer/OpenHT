@@ -1,10 +1,12 @@
-// -cl "C:\Ht\tests\ex_vadd\src_pers\vadd.htl"
+// -cl $(HtToolsPath)/tests/ex_vadd/src_pers/vadd.htl
+-wd $(HtToolsPath)/tests/ex_vadd/msvs12/
+
 -cp hc-2
 -uc 1
 -un Au
 -df 150
 -it
--wd "C:\Ht\tests\ex_vadd\msvs12\"
--if "C:\Ht\tests\ex_vadd\src_pers\vadd.hti"
-"C:\Ht\tests\ex_vadd\src_pers\vadd.htd"
+-vcd_all
+-if ../src_pers/vadd.hti
+../src_pers/vadd.htd
 ../ht/sysc

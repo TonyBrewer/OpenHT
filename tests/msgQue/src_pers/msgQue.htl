@@ -1,5 +1,6 @@
-// -cl "C:\Ht\tests\msgQue\src_pers\msgQue.htl"
--wd "C:\Ht\tests\msgQue\msvs12\"
+// -cl $(HtToolsPath)\tests\msgQue\src_pers\msgQue.htl
+-wd $(HtToolsPath)\tests\msgQue\msvs12\
+
 -cp wx-690
 -ac 1
 -uc 1
@@ -7,5 +8,5 @@
 -I ../src_pers
 -D_HTL
 -D_WIN32
-"../src_pers/msgQue.htd"
+../src_pers/msgQue.htd
 ../ht/sysc

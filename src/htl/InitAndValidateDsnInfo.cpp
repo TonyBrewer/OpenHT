@@ -14,16 +14,9 @@
 
 void CDsnInfo::InitializeAndValidate()
 {
-	AutoDeclType("ht_uint1", true);
-	AutoDeclType("ht_uint2", true);
-	AutoDeclType("ht_uint3", true);
-	AutoDeclType("ht_uint4", true);
-	AutoDeclType("ht_uint7", true);
-	AutoDeclType("ht_uint56", true);
+	InitAndValidateTypes();
 
 	InitNativeCTypes();
-
-	ValidateUsedTypes();
 
 	// Cxr sets module used flag
 	InitAndValidateModCxr();
@@ -34,10 +27,14 @@ void CDsnInfo::InitializeAndValidate()
 	// Initialize addr1W from addr1 and addr2W from addr2
 	InitAddrWFromAddrName();
 
+	InitPrivateAsGlobal();
+
+	InitBramUsage();
+
 	InitAndValidateModMif();
 	InitAndValidateModNgv();
 	InitAndValidateModIpl();
-	InitAndValidateModRam();
+	//InitAndValidateModRam();
 	InitAndValidateModIhm();
 	InitAndValidateModOhm();
 	InitAndValidateModIhd();
@@ -62,8 +59,8 @@ void CDsnInfo::ValidateDesignInfo()
 		typeDef.m_width.InitValue(typeDef.m_lineInfo, false, 0);
 	}
 
-	for (size_t structIdx = 0; structIdx < m_structList.size(); structIdx += 1) {
-		CStruct & struc = m_structList[structIdx];
+	for (size_t structIdx = 0; structIdx < m_recordList.size(); structIdx += 1) {
+		CRecord & struc = m_recordList[structIdx];
 
 		InitFieldDimenValues(struc.m_fieldList);
 	}
@@ -87,95 +84,52 @@ void CDsnInfo::ValidateDesignInfo()
 			mod.m_threads.m_htIdW.InitValue(mod.m_threads.m_lineInfo);
 
 			for (size_t prIdx = 0; prIdx < mod.m_threads.m_htPriv.m_fieldList.size(); prIdx += 1) {
-				CField & priv = mod.m_threads.m_htPriv.m_fieldList[prIdx];
+				CField * pPriv = mod.m_threads.m_htPriv.m_fieldList[prIdx];
 
-				priv.m_addr1W.InitValue(priv.m_lineInfo, false, 0);
-				priv.m_addr2W.InitValue(priv.m_lineInfo, false, 0);
-				priv.DimenListInit(priv.m_lineInfo);
-
-				priv.InitDimen();
+				pPriv->m_addr1W.InitValue(pPriv->m_lineInfo, false, 0);
+				pPriv->m_addr2W.InitValue(pPriv->m_lineInfo, false, 0);
+				pPriv->InitDimen(pPriv->m_lineInfo);
 			}
 		}
 
 		for (size_t shIdx = 0; shIdx < mod.m_shared.m_fieldList.size(); shIdx += 1) {
-			CField & shared = mod.m_shared.m_fieldList[shIdx];
+			CField * pShared = mod.m_shared.m_fieldList[shIdx];
 
-			shared.m_queueW.InitValue(shared.m_lineInfo, false, 0);
-			shared.DimenListInit(shared.m_lineInfo);
-			shared.m_rdSelW.InitValue(shared.m_lineInfo, false, 0);
-			shared.m_wrSelW.InitValue(shared.m_lineInfo, false, 0);
-			shared.m_addr1W.InitValue(shared.m_lineInfo, false, 0);
-			shared.m_addr2W.InitValue(shared.m_lineInfo, false, 0);
+			pShared->m_queueW.InitValue(pShared->m_lineInfo, false, 0);
+			pShared->m_rdSelW.InitValue(pShared->m_lineInfo, false, 0);
+			pShared->m_wrSelW.InitValue(pShared->m_lineInfo, false, 0);
+			pShared->m_addr1W.InitValue(pShared->m_lineInfo, false, 0);
+			pShared->m_addr2W.InitValue(pShared->m_lineInfo, false, 0);
 
-			shared.InitDimen();
+			pShared->InitDimen(pShared->m_lineInfo);
 		}
 
 		for (size_t stgIdx = 0; stgIdx < mod.m_stage.m_fieldList.size(); stgIdx += 1) {
-			CField &field = mod.m_stage.m_fieldList[stgIdx];
+			CField * pField = mod.m_stage.m_fieldList[stgIdx];
 
-			field.m_rngLow.InitValue(field.m_lineInfo);
-			field.m_rngHigh.InitValue(field.m_lineInfo);
+			pField->m_rngLow.InitValue(pField->m_lineInfo);
+			pField->m_rngHigh.InitValue(pField->m_lineInfo);
 
-			field.DimenListInit(field.m_lineInfo);
-			field.InitDimen();
+			pField->InitDimen(pField->m_lineInfo);
 		}
 
-		for (size_t gvIdx = 0; gvIdx < mod.m_globalVarList.size(); gvIdx += 1) {
-			CRam & gv = *mod.m_globalVarList[gvIdx];
+		for (size_t gvIdx = 0; gvIdx < mod.m_ngvList.size(); gvIdx += 1) {
+			CRam * pNgv = mod.m_ngvList[gvIdx];
 
-			gv.m_addr1W.InitValue(gv.m_lineInfo, false, 0);
-			gv.m_addr2W.InitValue(gv.m_lineInfo, false, 0);
-			gv.DimenListInit(gv.m_lineInfo);
-			gv.m_rdStg.InitValue(gv.m_lineInfo, false, 1);
-			gv.m_wrStg.InitValue(gv.m_lineInfo, false, 1);
+			pNgv->m_addr0W.InitValue(pNgv->m_lineInfo, false, 0);
+			pNgv->m_addr1W.InitValue(pNgv->m_lineInfo, false, 0);
+			pNgv->m_addr2W.InitValue(pNgv->m_lineInfo, false, 0);
+			pNgv->m_rdStg.InitValue(pNgv->m_lineInfo, false, 1);
+			pNgv->m_wrStg.InitValue(pNgv->m_lineInfo, false, 1);
 
-			gv.InitDimen();
+			pNgv->InitDimen(pNgv->m_lineInfo);
 
-			for (size_t fldIdx = 0; fldIdx < gv.m_fieldList.size(); fldIdx += 1) {
-				CField & field = gv.m_fieldList[fldIdx];
+			pNgv->m_addrW = pNgv->m_addr1W.AsInt() + pNgv->m_addr2W.AsInt();
 
-				field.DimenListInit(field.m_lineInfo);
-				field.InitDimen();
-			}
-		}
+			for (size_t fldIdx = 0; fldIdx < pNgv->m_fieldList.size(); fldIdx += 1) {
+				CField * pField = pNgv->m_fieldList[fldIdx];
 
-		for (size_t gblIdx = 0; gblIdx < mod.m_intGblList.size(); gblIdx += 1) {
-			CRam & intRam = *mod.m_intGblList[gblIdx];
-
-			intRam.m_addr0W.InitValue(intRam.m_lineInfo, false, 0);
-			intRam.m_addr1W.InitValue(intRam.m_lineInfo, false, 0);
-			intRam.m_addr2W.InitValue(intRam.m_lineInfo, false, 0);
-			intRam.DimenListInit(intRam.m_lineInfo);
-			intRam.m_rdStg.InitValue(intRam.m_lineInfo, false, 1);
-			intRam.m_wrStg.InitValue(intRam.m_lineInfo, false, 1);
-
-			intRam.InitDimen();
-
-			for (size_t fldIdx = 0; fldIdx < intRam.m_fieldList.size(); fldIdx += 1) {
-				CField & field = intRam.m_fieldList[fldIdx];
-
-				field.DimenListInit(field.m_lineInfo);
-				field.InitDimen();
-			}
-		}
-
-		for (size_t gblIdx = 0; gblIdx < mod.m_extRamList.size(); gblIdx += 1) {
-			CRam & extRam = mod.m_extRamList[gblIdx];
-
-			extRam.m_addr0W.InitValue(extRam.m_lineInfo, false, 0);
-			extRam.m_addr1W.InitValue(extRam.m_lineInfo, false, 0);
-			extRam.m_addr2W.InitValue(extRam.m_lineInfo, false, 0);
-			extRam.DimenListInit(extRam.m_lineInfo);
-			extRam.m_rdStg.InitValue(extRam.m_lineInfo, false, 1);
-			extRam.m_wrStg.InitValue(extRam.m_lineInfo, false, 1);
-
-			extRam.InitDimen();
-
-			for (size_t fldIdx = 0; fldIdx < extRam.m_fieldList.size(); fldIdx += 1) {
-				CField & field = extRam.m_fieldList[fldIdx];
-
-				field.DimenListInit(field.m_lineInfo);
-				field.InitDimen();
+				pField->InitDimen(pField->m_lineInfo);
 			}
 		}
 
@@ -187,9 +141,9 @@ void CDsnInfo::ValidateDesignInfo()
 			int defValue = max(6, 9 - mod.m_threads.m_htIdW.AsInt());
 			mifWr.m_rspCntW.InitValue(mifWr.m_lineInfo, false, defValue);
 
-			if (mifWr.m_rspCntW.AsInt() < 1 || mifWr.m_rspCntW.AsInt() > 9)
+			if (mifWr.m_rspCntW.AsInt() < 2 || mifWr.m_rspCntW.AsInt() > 9)
 				ParseMsg(Error, mifWr.m_lineInfo, "rspCntW out of range, value %d, allowed range 1-9",
-					mifWr.m_rspCntW.AsInt());
+				mifWr.m_rspCntW.AsInt());
 		}
 
 		if (mod.m_mif.m_bMifRd) {
@@ -199,9 +153,9 @@ void CDsnInfo::ValidateDesignInfo()
 			int defValue = max(6, 9 - mod.m_threads.m_htIdW.AsInt());
 			mifRd.m_rspCntW.InitValue(mifRd.m_lineInfo, false, defValue);
 
-			if (mifRd.m_rspCntW.AsInt() < 1 || mifRd.m_rspCntW.AsInt() > 9)
+			if (mifRd.m_rspCntW.AsInt() < 2 || mifRd.m_rspCntW.AsInt() > 9)
 				ParseMsg(Error, mifRd.m_lineInfo, "rspCntW out of range, value %d, allowed range 1-9",
-					mifRd.m_rspCntW.AsInt());
+				mifRd.m_rspCntW.AsInt());
 
 			for (size_t rdDstIdx = 0; rdDstIdx < mifRd.m_rdDstList.size(); rdDstIdx += 1) {
 				CMifRdDst &mifRdDst = mifRd.m_rdDstList[rdDstIdx];
@@ -238,157 +192,255 @@ void CDsnInfo::InitAddrWFromAddrName()
 		if (!mod.m_bIsUsed) continue;
 
 		// check new global variables for specification of an addrName but not an addrW
-		for (size_t ramIdx = 0; ramIdx < mod.m_globalVarList.size(); ramIdx += 1) {
-			CRam &gv = *mod.m_globalVarList[ramIdx];
+		for (size_t ramIdx = 0; ramIdx < mod.m_ngvList.size(); ramIdx += 1) {
+			CRam * pNgv = mod.m_ngvList[ramIdx];
 
-			if (gv.m_addr1Name.size() > 0) {
+			if (pNgv->m_addr1Name.size() > 0) {
 				int addr1W;
 				bool bHtId = true;
 				bool bPrivate = true;
 				bool bShared = true;
 				bool bStage = true;
 
-				if (FindVariableWidth(gv.m_lineInfo, mod, gv.m_addr1Name, bHtId, bPrivate, bShared, bStage, addr1W)) {
-					if (gv.m_addr1W.size() == 0) {
-						gv.m_addr1W = CHtString(VA("%d", addr1W));
-						gv.m_addr1W.SetValue(addr1W);
-					}
-					else if (gv.m_addr1W.AsInt() != addr1W)
-						ParseMsg(Error, gv.m_lineInfo, "addr1Name (%d) and addr1W (%d) have inconsistent widths",
-							addr1W, gv.m_addr1W.AsInt());
-				}
+				if (FindVariableWidth(pNgv->m_lineInfo, mod, pNgv->m_addr1Name, bHtId, bPrivate, bShared, bStage, addr1W)) {
+					if (pNgv->m_addr1W.size() == 0) {
+						pNgv->m_addr1W = CHtString(VA("%d", addr1W));
+						pNgv->m_addr1W.SetValue(addr1W);
+						pNgv->m_addrW = pNgv->m_addr0W.AsInt() + pNgv->m_addr1W.AsInt() + pNgv->m_addr2W.AsInt();
+					} else if (pNgv->m_addr1W.AsInt() != addr1W)
+						ParseMsg(Error, pNgv->m_lineInfo, "addr1Name (%d) and addr1W (%d) have inconsistent widths",
+						addr1W, pNgv->m_addr1W.AsInt());
+				} else
+					ParseMsg(Error, pNgv->m_lineInfo, "%s was not declared", pNgv->m_addr1Name.c_str());
 			}
 
-			if (gv.m_addr2Name.size() > 0) {
+			if (pNgv->m_addr2Name.size() > 0) {
 				int addr2W;
 				bool bHtId = true;
 				bool bPrivate = true;
 				bool bShared = true;
 				bool bStage = true;
 
-				if (FindVariableWidth(gv.m_lineInfo, mod, gv.m_addr2Name, bHtId, bPrivate, bShared, bStage, addr2W)) {
-					if (gv.m_addr2W.size() == 0) {
-						gv.m_addr2W = CHtString(VA("%d", addr2W));
-						gv.m_addr2W.SetValue(addr2W);
+				if (FindVariableWidth(pNgv->m_lineInfo, mod, pNgv->m_addr2Name, bHtId, bPrivate, bShared, bStage, addr2W)) {
+					if (pNgv->m_addr2W.size() == 0) {
+						pNgv->m_addr2W = CHtString(VA("%d", addr2W));
+						pNgv->m_addr2W.SetValue(addr2W);
+						pNgv->m_addrW = pNgv->m_addr0W.AsInt() + pNgv->m_addr1W.AsInt() + pNgv->m_addr2W.AsInt();
+					} else if (pNgv->m_addr2W.AsInt() != addr2W) {
+						ParseMsg(Error, pNgv->m_lineInfo, "addr2Name (%d) and addr2W (%d) have inconsistent widths",
+							addr2W, pNgv->m_addr2W.AsInt());
 					}
-					else if (gv.m_addr2W.AsInt() != addr2W) {
-						ParseMsg(Error, gv.m_lineInfo, "addr2Name (%d) and addr2W (%d) have inconsistent widths",
-							addr2W, gv.m_addr2W.AsInt());
-					}
-				}
-			}
-		}
-
-		// check internal global variables for specification of an addrName but not an addrW
-		for (size_t ramIdx = 0; ramIdx < mod.m_intGblList.size(); ramIdx += 1) {
-			CRam &intGbl = *mod.m_intGblList[ramIdx];
-
-			if (intGbl.m_addr1W.size() == 0 && intGbl.m_addr1Name.size() > 0) {
-				int addr1W;
-				bool bHtId = true;
-				bool bPrivate = true;
-				bool bShared = true;
-				bool bStage = true;
-
-				if (FindVariableWidth(intGbl.m_lineInfo, mod, intGbl.m_addr1Name, bHtId, bPrivate, bShared, bStage, addr1W)) {
-					intGbl.m_addr1W = CHtString(VA("%d", addr1W));
-					intGbl.m_addr1W.SetValue(addr1W);
-				}
-			}
-
-			if (intGbl.m_addr2W.size() == 0 && intGbl.m_addr2Name.size() > 0) {
-				int addr2W;
-				bool bHtId = true;
-				bool bPrivate = true;
-				bool bShared = true;
-				bool bStage = true;
-
-				if (FindVariableWidth(intGbl.m_lineInfo, mod, intGbl.m_addr2Name, bHtId, bPrivate, bShared, bStage, addr2W)) {
-					intGbl.m_addr2W = CHtString(VA("%d", addr2W));
-					intGbl.m_addr2W.SetValue(addr2W);
-				}
-			}
-		}
-
-		// check external global variables for specification of an addrName but not an addrW
-		for (size_t ramIdx = 0; ramIdx < mod.m_extRamList.size(); ramIdx += 1) {
-			CRam &extRam = mod.m_extRamList[ramIdx];
-
-			if (extRam.m_addr1W.size() == 0 && extRam.m_addr1Name.size() > 0) {
-				int addr1W;
-				bool bHtId = true;
-				bool bPrivate = true;
-				bool bShared = false;
-				bool bStage = true;
-
-				if (FindVariableWidth(extRam.m_lineInfo, mod, extRam.m_addr1Name, bHtId, bPrivate, bShared, bStage, addr1W)) {
-					extRam.m_addr1W = CHtString(VA("%d", addr1W));
-					extRam.m_addr1W.SetValue(addr1W);
-				}
-			}
-
-			if (extRam.m_addr2W.size() == 0 && extRam.m_addr2Name.size() > 0) {
-				int addr2W;
-				bool bHtId = true;
-				bool bPrivate = true;
-				bool bShared = false;
-				bool bStage = true;
-
-				if (FindVariableWidth(extRam.m_lineInfo, mod, extRam.m_addr2Name, bHtId, bPrivate, bShared, bStage, addr2W)) {
-					extRam.m_addr2W = CHtString(VA("%d", addr2W));
-					extRam.m_addr2W.SetValue(addr2W);
-				}
+				} else
+					ParseMsg(Error, pNgv->m_lineInfo, "%s was not declared", pNgv->m_addr2Name.c_str());
 			}
 		}
 
 		// check private variables for specification of an addrName but not an addrW
 		for (size_t prIdx = 0; prIdx < mod.m_threads.m_htPriv.m_fieldList.size(); prIdx += 1) {
-			CField & priv = mod.m_threads.m_htPriv.m_fieldList[prIdx];
+			CField * pPriv = mod.m_threads.m_htPriv.m_fieldList[prIdx];
 
-			if (priv.m_addr1W.size() == 0 && priv.m_addr1Name.size() > 0) {
+			if (pPriv->m_addr1W.size() == 0 && pPriv->m_addr1Name.size() > 0) {
 				int addr1W;
 				bool bHtId = true;
 				bool bPrivate = true;
 				bool bShared = true;
 				bool bStage = true;
 
-				if (FindVariableWidth(priv.m_lineInfo, mod, priv.m_addr1Name, bHtId, bPrivate, bShared, bStage, addr1W)) {
-					priv.m_addr1W = CHtString(VA("%d", addr1W));
-					priv.m_addr1W.SetValue(addr1W);
-				}
+				if (FindVariableWidth(pPriv->m_lineInfo, mod, pPriv->m_addr1Name, bHtId, bPrivate, bShared, bStage, addr1W)) {
+					pPriv->m_addr1W = CHtString(VA("%d", addr1W));
+					pPriv->m_addr1W.SetValue(addr1W);
+				} else
+					ParseMsg(Error, pPriv->m_lineInfo, "%s was not declared", pPriv->m_addr1Name.c_str());
 			}
 
-			if (priv.m_addr2W.size() == 0 && priv.m_addr2Name.size() > 0) {
+			if (pPriv->m_addr2W.size() == 0 && pPriv->m_addr2Name.size() > 0) {
 				int addr2W;
 				bool bHtId = false;
 				bool bPrivate = true;
 				bool bShared = true;
 				bool bStage = true;
 
-				if (FindVariableWidth(priv.m_lineInfo, mod, priv.m_addr2Name, bHtId, bPrivate, bShared, bStage, addr2W)) {
-					priv.m_addr2W = CHtString(VA("%d", addr2W));
-					priv.m_addr2W.SetValue(addr2W);
+				if (FindVariableWidth(pPriv->m_lineInfo, mod, pPriv->m_addr2Name, bHtId, bPrivate, bShared, bStage, addr2W)) {
+					pPriv->m_addr2W = CHtString(VA("%d", addr2W));
+					pPriv->m_addr2W.SetValue(addr2W);
+				} else
+					ParseMsg(Error, pPriv->m_lineInfo, "%s was not declared", pPriv->m_addr2Name.c_str());
+			}
+		}
+	}
+}
+
+void CDsnInfo::InitPrivateAsGlobal()
+{
+	for (size_t modIdx = 0; modIdx < m_modList.size(); modIdx += 1) {
+		CModule &mod = *m_modList[modIdx];
+
+		if (!mod.m_bIsUsed) continue;
+
+		// Move private variables with depth to global
+		for (size_t prIdx = 0; prIdx < mod.m_threads.m_htPriv.m_fieldList.size(); prIdx += 1) {
+			CField * pPriv = mod.m_threads.m_htPriv.m_fieldList[prIdx];
+
+			if (pPriv->m_addr1W.AsInt() == 0) continue;
+
+			// create a global variable
+			string rdStg = "1";
+			string wrStg = mod.m_stage.m_execStg.AsStr();
+			string nullStr;
+
+			bool bRead = true;
+			bool bWrite = true;
+			bool bMaxIw = true;
+			bool bMaxMw = true;
+
+			string ramName = mod.m_modName.AsStr() + "__" + pPriv->m_name;
+
+			mod.m_ngvList.push_back(new CRam(pPriv->m_type, ramName, pPriv->m_dimenList,
+				pPriv->m_addr1Name, pPriv->m_addr2Name,
+				pPriv->m_addr1W.AsStr(), pPriv->m_addr2W.AsStr(), rdStg, wrStg, bMaxIw,
+				bMaxMw, pPriv->m_ramType, bRead, bWrite));
+
+			CRam * pNgv = mod.m_ngvList.back();
+
+			pNgv->m_bPrivGbl = true;
+			pNgv->m_privName = pPriv->m_name;
+			pNgv->m_pType = pPriv->m_pType;
+			pNgv->m_addr0W.InitValue(pNgv->m_lineInfo, false, mod.m_threads.m_htIdW.AsInt());
+			pNgv->m_addr1W.InitValue(pNgv->m_lineInfo, false, 0);
+			pNgv->m_addr2W.InitValue(pNgv->m_lineInfo, false, 0);
+			pNgv->m_rdStg.InitValue(pNgv->m_lineInfo, false, 1);
+			pNgv->m_wrStg.InitValue(pNgv->m_lineInfo, false, 1);
+			pNgv->InitDimen(pPriv->m_lineInfo);
+			pNgv->m_addrW = pNgv->m_addr0W.AsInt() + pNgv->m_addr1W.AsInt() + pNgv->m_addr2W.AsInt();
+			pNgv->m_wrStg.SetValue(mod.m_stage.m_privWrStg.AsInt());
+
+			// now delete from private list
+			mod.m_threads.m_htPriv.m_fieldList.erase(mod.m_threads.m_htPriv.m_fieldList.begin() + prIdx);
+			prIdx -= 1;
+		}
+
+		// now check mif rdDst and wrSrc list
+		for (size_t dstIdx = 0; dstIdx < mod.m_mif.m_mifRd.m_rdDstList.size(); dstIdx += 1) {
+			CMifRdDst & rdDst = mod.m_mif.m_mifRd.m_rdDstList[dstIdx];
+
+			char const * pStr = rdDst.m_var.c_str();
+			while (isalnum(*pStr) || *pStr == '_') pStr += 1;
+			string rdDstVar = string(rdDst.m_var.c_str(), pStr - rdDst.m_var.c_str());
+
+			for (size_t prIdx = 0; prIdx < mod.m_threads.m_htPriv.m_fieldList.size(); prIdx += 1) {
+				CField * pPriv = mod.m_threads.m_htPriv.m_fieldList[prIdx];
+
+				if (rdDstVar == pPriv->m_name) {
+
+					if (pPriv->m_addr1W.AsInt() == 0 && mod.m_threads.m_htIdW.AsInt() == 0) continue;
+
+					// create a global variable
+					string rdStg = "1";
+					string wrStg = mod.m_stage.m_execStg.AsStr();
+					string nullStr;
+
+					bool bRead = true;
+					bool bWrite = true;
+					bool bMaxIw = true;
+					bool bMaxMw = true;
+
+					string ramName = mod.m_modName.AsStr() + "__" + pPriv->m_name;
+
+					mod.m_ngvList.push_back(new CRam(pPriv->m_type, ramName, pPriv->m_dimenList,
+						pPriv->m_addr1Name, pPriv->m_addr2Name,
+						pPriv->m_addr1W.AsStr(), pPriv->m_addr2W.AsStr(), rdStg, wrStg, bMaxIw,
+						bMaxMw, pPriv->m_ramType, bRead, bWrite));
+
+					CRam * pNgv = mod.m_ngvList.back();
+
+					pNgv->m_bPrivGbl = true;
+					pNgv->m_privName = pPriv->m_name;
+					pNgv->m_pType = pPriv->m_pType;
+					pNgv->m_addr0W.InitValue(pNgv->m_lineInfo, false, mod.m_threads.m_htIdW.AsInt());
+					pNgv->m_addr1W.InitValue(pNgv->m_lineInfo, false, 0);
+					pNgv->m_addr2W.InitValue(pNgv->m_lineInfo, false, 0);
+					pNgv->m_rdStg.InitValue(pNgv->m_lineInfo, false, 1);
+					pNgv->m_wrStg.InitValue(pNgv->m_lineInfo, false, 1);
+					pNgv->InitDimen(pPriv->m_lineInfo);
+					pNgv->m_addrW = pNgv->m_addr0W.AsInt() + pNgv->m_addr1W.AsInt() + pNgv->m_addr2W.AsInt();
+					pNgv->m_wrStg.SetValue(mod.m_stage.m_privWrStg.AsInt());
+
+					// now delete from private list
+					mod.m_threads.m_htPriv.m_fieldList.erase(mod.m_threads.m_htPriv.m_fieldList.begin() + prIdx);
+					prIdx -= 1;
+				}
+			}
+		}
+
+		for (size_t wrSrcIdx = 0; wrSrcIdx < mod.m_mif.m_mifWr.m_wrSrcList.size(); wrSrcIdx += 1) {
+			CMifWrSrc & wrSrc = mod.m_mif.m_mifWr.m_wrSrcList[wrSrcIdx];
+
+			char const * pStr = wrSrc.m_var.c_str();
+			while (isalnum(*pStr) || *pStr == '_') pStr += 1;
+			string wrSrcVar = string(wrSrc.m_var.c_str(), pStr - wrSrc.m_var.c_str());
+
+			for (size_t prIdx = 0; prIdx < mod.m_threads.m_htPriv.m_fieldList.size(); prIdx += 1) {
+				CField * pPriv = mod.m_threads.m_htPriv.m_fieldList[prIdx];
+
+				if (wrSrcVar == pPriv->m_name) {
+
+					if (pPriv->m_addr1W.AsInt() == 0) continue;
+
+					// create a global variable
+					string rdStg = "1";
+					string wrStg = mod.m_stage.m_execStg.AsStr();
+					string nullStr;
+
+					bool bRead = true;
+					bool bWrite = true;
+					bool bMaxIw = true;
+					bool bMaxMw = true;
+
+					string ramName = mod.m_modName.AsStr() + "__" + pPriv->m_name;
+
+					mod.m_ngvList.push_back(new CRam(pPriv->m_type, ramName, pPriv->m_dimenList,
+						pPriv->m_addr1Name, pPriv->m_addr2Name,
+						pPriv->m_addr1W.AsStr(), pPriv->m_addr2W.AsStr(), rdStg, wrStg, bMaxIw,
+						bMaxMw, pPriv->m_ramType, bRead, bWrite));
+
+					CRam * pNgv = mod.m_ngvList.back();
+
+					pNgv->m_bPrivGbl = true;
+					pNgv->m_privName = pPriv->m_name;
+					pNgv->m_pType = pPriv->m_pType;
+					pNgv->m_addr0W.InitValue(pNgv->m_lineInfo, false, mod.m_threads.m_htIdW.AsInt());
+					pNgv->m_addr1W.InitValue(pNgv->m_lineInfo, false, 0);
+					pNgv->m_addr2W.InitValue(pNgv->m_lineInfo, false, 0);
+					pNgv->m_rdStg.InitValue(pNgv->m_lineInfo, false, 1);
+					pNgv->m_wrStg.InitValue(pNgv->m_lineInfo, false, 1);
+					pNgv->InitDimen(pPriv->m_lineInfo);
+					pNgv->m_addrW = pNgv->m_addr0W.AsInt() + pNgv->m_addr1W.AsInt() + pNgv->m_addr2W.AsInt();
+					pNgv->m_wrStg.SetValue(mod.m_stage.m_privWrStg.AsInt());
+
+					// now delete from private list
+					mod.m_threads.m_htPriv.m_fieldList.erase(mod.m_threads.m_htPriv.m_fieldList.begin() + prIdx);
+					prIdx -= 1;
 				}
 			}
 		}
 	}
 }
 
-void CDsnInfo::InitFieldDimenValues(vector<CField> &fieldList)
+void CDsnInfo::InitFieldDimenValues(vector<CField *> &fieldList)
 {
 	for (size_t fldIdx = 0; fldIdx < fieldList.size(); fldIdx += 1) {
-		CField & field = fieldList[fldIdx];
+		CField * pField = fieldList[fldIdx];
 
-		if (field.m_type == "union" || field.m_type == "struct")
-			InitFieldDimenValues(field.m_pStruct->m_fieldList);
-		else {
-			field.DimenListInit(field.m_lineInfo);
-			field.InitDimen();
+		if (pField->m_pType->IsRecord()) {
+			CRecord * pRecord = pField->m_pType->AsRecord();
+			InitFieldDimenValues(pRecord->m_fieldList);
+		} else {
+			pField->InitDimen(pField->m_lineInfo);
 		}
 	}
 }
 
-bool BramTargetListCmp( const CBramTarget & elem1, const CBramTarget & elem2 )
+bool BramTargetListCmp(const CBramTarget & elem1, const CBramTarget & elem2)
 {
 	return elem1.m_slicePerBramRatio > elem2.m_slicePerBramRatio;
 }
@@ -427,47 +479,46 @@ void CDsnInfo::InitBramUsage()
 			m_bramTargetList.push_back(target);
 		}
 
-		for (size_t gblIdx = 0; gblIdx < mod.m_intGblList.size(); gblIdx += 1) {
-			CRam & intRam = *mod.m_intGblList[gblIdx];
+		for (size_t ngvIdx = 0; ngvIdx < mod.m_ngvList.size(); ngvIdx += 1) {
+			CRam * pRam = mod.m_ngvList[ngvIdx];
 
-			for (size_t fldIdx = 0; fldIdx < intRam.m_fieldList.size(); fldIdx += 1) {
-				CField & field = intRam.m_allFieldList[fldIdx];
+			CBramTarget target;
+			target.m_name = pRam->m_gblName;
+			target.m_pRamType = &pRam->m_ramType;
+			target.m_depth = 1 << (pRam->m_addr1W.AsInt() + pRam->m_addr2W.AsInt());
+			target.m_width = pRam->m_pType->m_clangBitWidth;
+			target.m_copies = (int)mod.m_modInstList.size();
+			target.m_copies *= pRam->m_elemCnt;
+			target.m_copies *= (pRam->m_bReadForInstrRead ? 1 : 0) + (pRam->m_bReadForMifWrite ? 1 : 0);
+			target.m_brams = FindBramCnt(target.m_depth, target.m_width);
+			target.m_slicePerBramRatio = FindSlicePerBramRatio(target.m_depth, target.m_width) / target.m_brams;
+			target.m_varType = "Global";
+			target.m_modName = mod.m_modName.AsStr();
 
-				CBramTarget target;
-				target.m_name = string(intRam.m_gblName.c_str()) + "." + field.m_name;
-				target.m_pRamType = &field.m_ramType;
-				target.m_depth = 1 << (intRam.m_addr0W.AsInt() + intRam.m_addr1W.AsInt() + intRam.m_addr2W.AsInt());
-				target.m_width = FindTypeWidth(field);
-				target.m_width *= field.m_elemCnt;
-				target.m_copies = (int)mod.m_modInstList.size();
-				target.m_copies *= intRam.m_elemCnt;
-				target.m_copies *= (int)(field.m_readerList.size() + 1) / 2;
-				target.m_brams = FindBramCnt(target.m_depth, target.m_width);
-				target.m_slicePerBramRatio = FindSlicePerBramRatio(target.m_depth, target.m_width) / target.m_brams;
-				target.m_varType = "Global";
-				target.m_modName = mod.m_modName.AsStr();
-
-				m_bramTargetList.push_back(target);
-			}
+			m_bramTargetList.push_back(target);
 		}
 
 		for (size_t shIdx = 0; shIdx < mod.m_shared.m_fieldList.size(); shIdx += 1) {
-			CField &shared = mod.m_shared.m_fieldList[shIdx];
+			CField * pShared = mod.m_shared.m_fieldList[shIdx];
 
-			if (shared.m_addr1W.AsInt() == 0 && shared.m_queueW.AsInt() == 0)
-				continue;
+			//if (pShared->m_queueW.AsInt() == 0)
+			//	continue;
 
 			CBramTarget target;
-			target.m_name = shared.m_name;
-			target.m_pRamType = &shared.m_ramType;
-			if (shared.m_addr1W.AsInt() > 0)
-				target.m_depth = 1 << (shared.m_addr1W.AsInt() + shared.m_addr2W.AsInt());
+			target.m_name = pShared->m_name;
+			target.m_pRamType = &pShared->m_ramType;
+
+			if (pShared->m_addr1W.AsInt() == 0)
+				target.m_depth = 0;
+			if (pShared->m_addr1W.AsInt() > 0)
+				target.m_depth = 1 << (pShared->m_addr1W.AsInt() + pShared->m_addr2W.AsInt());
 			else
-				target.m_depth = 1 << shared.m_queueW.AsInt();
-			target.m_width = FindTypeWidth(shared);
-			target.m_width *= shared.m_elemCnt;
+				target.m_depth = 1 << pShared->m_queueW.AsInt();
+
+			target.m_width = FindTypeWidth(pShared);
+			target.m_width *= pShared->m_elemCnt;
 			target.m_copies = (int)mod.m_modInstList.size();
-			target.m_copies *= shared.m_elemCnt;
+			target.m_copies *= pShared->m_elemCnt;
 			target.m_brams = FindBramCnt(target.m_depth, target.m_width);
 			target.m_slicePerBramRatio = FindSlicePerBramRatio(target.m_depth, target.m_width) / target.m_brams;
 			target.m_varType = "Shared";
@@ -478,7 +529,7 @@ void CDsnInfo::InitBramUsage()
 	}
 
 	// sort vector based on slicePerBramRatio
-	sort( m_bramTargetList.begin(), m_bramTargetList.end(), BramTargetListCmp );
+	sort(m_bramTargetList.begin(), m_bramTargetList.end(), BramTargetListCmp);
 
 	// Now decide which rams to implement with block rams
 	int brams18KbAvailCnt = g_appArgs.GetMax18KbBramPerUnit();
@@ -486,6 +537,9 @@ void CDsnInfo::InitBramUsage()
 	// first check if depth is too great for distributed rams
 	for (size_t targetIdx = 0; targetIdx < m_bramTargetList.size(); targetIdx += 1) {
 		CBramTarget & target = m_bramTargetList[targetIdx];
+
+		if (target.m_depth == 1)
+			*target.m_pRamType = eRegRam;
 
 		if (target.m_varType == "Shared")
 			continue;
@@ -500,10 +554,14 @@ void CDsnInfo::InitBramUsage()
 	for (size_t targetIdx = 0; targetIdx < m_bramTargetList.size(); targetIdx += 1) {
 		CBramTarget & target = m_bramTargetList[targetIdx];
 
-		if (target.m_varType != "Shared" && target.m_slicePerBramRatio > g_appArgs.GetMinLutToBramRatio() && target.m_brams * target.m_copies <= brams18KbAvailCnt) {
+		if (*target.m_pRamType != eAutoRam) continue;
+		if (target.m_varType == "Shared") continue;
+
+		if (target.m_slicePerBramRatio > g_appArgs.GetMinLutToBramRatio() && target.m_brams * target.m_copies <= brams18KbAvailCnt) {
 			*target.m_pRamType = eBlockRam;
 			brams18KbAvailCnt -= target.m_brams * target.m_copies;
-		}
+		} else
+			*target.m_pRamType = eDistRam;
 	}
 }
 
@@ -512,10 +570,10 @@ float CDsnInfo::FindSlicePerBramRatio(int depth, int width)
 	float ratio;
 	if (depth <= 64)
 		// 3 bits per slice
-		ratio = width/3.0f;
+		ratio = width / 3.0f;
 	else
 		// 1 bit per slice
-		ratio = (float)((depth+127)/128 * width);
+		ratio = (float)((depth + 127) / 128 * width);
 
 	return ratio;
 }
@@ -524,13 +582,13 @@ int CDsnInfo::FindBramCnt(int depth, int width)
 {
 	int brams;
 	if (width <= 1)
-		brams = (depth + 16*1024-1)/(16*1024);
+		brams = (depth + 16 * 1024 - 1) / (16 * 1024);
 	else if (width <= 2)
-		brams = (depth + 8*1024-1)/(8*1024);
+		brams = (depth + 8 * 1024 - 1) / (8 * 1024);
 	else if (width <= 4)
-		brams = (depth + 4*1024-1)/(4*1024);
+		brams = (depth + 4 * 1024 - 1) / (4 * 1024);
 	else if (width <= 9)
-		brams = (depth + 2*1024-1)/(2*1024);
+		brams = (depth + 2 * 1024 - 1) / (2 * 1024);
 	else if (width <= 18)
 		brams = (depth + 1024 - 1) / 1024;
 	else
@@ -550,10 +608,10 @@ bool CDsnInfo::FindStructName(string const &structType, string &structName)
 	}
 
 	// not found as typedef, check user structs
-	for (size_t i = 0; i < m_structList.size(); i += 1) {
-		CStruct & struct_ = m_structList[i];
+	for (size_t i = 0; i < m_recordList.size(); i += 1) {
+		CRecord & record = m_recordList[i];
 
-		if (struct_.m_structName != structType) continue;
+		if (record.m_typeName != structType) continue;
 
 		// found it, now determine with of struct/union
 		structName = structType;
@@ -563,43 +621,24 @@ bool CDsnInfo::FindStructName(string const &structType, string &structName)
 	return false;
 }
 
-bool CDsnInfo::FindIntType(string typeName, int &width, bool &bSigned)
-{
-	// first check if typeName was defined as a typedef
-	for (size_t i = 0; i < m_typedefList.size(); i += 1) {
-		CTypeDef & typeDef = m_typedefList[i];
-
-		if (typeDef.m_name == typeName)
-			return FindIntType(typeDef.m_type, width, bSigned);
-	}
-
-	if (FindCIntType(typeName, width, bSigned))
-		return true;
-
-	if (FindHtIntType(typeName, width, bSigned))
-		return true;
-
-	return false;
-}
-
 struct CCIntTypes {
 	const char * m_pName;
 	int m_width;
 	bool m_bSigned;
 } cIntTypes[] = {
-	{ "char", 8, true },
-	{ "short", 16, true },
-	{ "int", 32, true },
-	{ "bool", 1, false },
-	{ "uint8_t", 8, false },
-	{ "uint16_t", 16, false },
-	{ "uint32_t", 32, false },
-	{ "uint64_t", 64, false },
-	{ "int8_t", 8, true },
-	{ "int16_t", 16, true },
-	{ "int32_t", 32, true },
-	{ "int64_t", 64, true },
-	{ 0, 0, false }
+		{ "char", 8, true },
+		{ "short", 16, true },
+		{ "int", 32, true },
+		{ "bool", 1, false },
+		{ "uint8_t", 8, false },
+		{ "uint16_t", 16, false },
+		{ "uint32_t", 32, false },
+		{ "uint64_t", 64, false },
+		{ "int8_t", 8, true },
+		{ "int16_t", 16, true },
+		{ "int32_t", 32, true },
+		{ "int64_t", 64, true },
+		{ 0, 0, false }
 };
 
 bool CDsnInfo::FindCIntType(string name, int & width, bool & bSigned)
@@ -614,40 +653,14 @@ bool CDsnInfo::FindCIntType(string name, int & width, bool & bSigned)
 	return false;
 }
 
-bool CDsnInfo::FindHtIntType(string typeName, int & width, bool & bSigned)
+int CDsnInfo::FindTypeWidth(CField const * pField, int * pMinAlign, bool bHostType)
 {
-	// first check if typeName was defined as a typedef
-	for (size_t i = 0; i < m_typedefList.size(); i += 1) {
-		CTypeDef & typeDef = m_typedefList[i];
-
-		if (typeDef.m_name == typeName)
-			return FindHtIntType(typeDef.m_type, width, bSigned);
-	}
-
-	if (sscanf(typeName.c_str(), "sc_int<%d>", &width) == 1) {
-		bSigned = true;
-		return true;
-	} else if (sscanf(typeName.c_str(), "ht_int%d", &width) == 1) {
-		bSigned = true;
-		return true;
-	} else if (sscanf(typeName.c_str(), "ht_uint%d", &width) == 1) {
-		bSigned = false;
-		return true;
-	} else if (sscanf(typeName.c_str(), "ht_uint%d", &width) == 1) {
-		bSigned = false;
-		return true;
-	} else
-		return false;
+	return FindTypeWidth(pField->m_name, pField->m_type, pField->m_fieldWidth, pField->m_lineInfo, pMinAlign, bHostType);
 }
 
-int CDsnInfo::FindTypeWidth(CField const & field, int * pMinAlign, bool bHostType)
+int CDsnInfo::FindHostTypeWidth(CField const * pField, int * pMinAlign)
 {
-	return FindTypeWidth(field.m_name, field.m_type, field.m_bitWidth, field.m_lineInfo, pMinAlign, bHostType);
-}
-
-int CDsnInfo::FindHostTypeWidth(CField const & field, int * pMinAlign)
-{
-	return FindTypeWidth(field.m_name, field.m_hostType, field.m_bitWidth, field.m_lineInfo, pMinAlign, true);
+	return FindTypeWidth(pField->m_name, pField->m_hostType, pField->m_fieldWidth, pField->m_lineInfo, pMinAlign, true);
 }
 
 int CDsnInfo::FindTypeWidth(string const &varName, string const &typeName, CHtString const &bitWidth, CLineInfo const &lineInfo, int * pMinAlign, bool bHostType)
@@ -655,7 +668,7 @@ int CDsnInfo::FindTypeWidth(string const &varName, string const &typeName, CHtSt
 	// first remove trailing astricks
 	bool bPointer = false;
 	int i;
-	for (i = (int)typeName.size()-1; i >= 0; i -= 1) {
+	for (i = (int)typeName.size() - 1; i >= 0; i -= 1) {
 		if (typeName[i] == '*')
 			bPointer = true;
 		else if (typeName[i] != ' ')
@@ -665,7 +678,7 @@ int CDsnInfo::FindTypeWidth(string const &varName, string const &typeName, CHtSt
 	if (!bHostType && bPointer)
 		ParseMsg(Error, lineInfo, "use of pointer types is not supported");
 
-	string baseName = typeName.substr(0, i+1);
+	string baseName = typeName.substr(0, i + 1);
 
 	int minAlign;
 
@@ -682,17 +695,17 @@ int CDsnInfo::FindTypeWidth(string const &varName, string const &typeName, CHtSt
 	}
 
 	// not found as typedef, check user structs
-	for (size_t i = 0; i < m_structList.size(); i += 1) {
-		CStruct & struct_ = m_structList[i];
+	for (size_t i = 0; i < m_recordList.size(); i += 1) {
+		CRecord & record = m_recordList[i];
 
-		if (struct_.m_structName != baseName) continue;
+		if (record.m_typeName != baseName) continue;
 
-		// found it, now determine with of struct/union
+		// found it, now determine width of struct/union
 
 		HtlAssert(bitWidth.size() == 0);
-		int width = FindStructWidth(struct_, &minAlign, bHostType);
+		int width = bPointer ? 64 : FindStructWidth(record, &minAlign, bHostType);
 		if (pMinAlign) *pMinAlign = minAlign;
-		return width == 0 ? 0 : (bPointer ? 64 : width);
+		return width;
 	}
 
 	// not found as typedef, must be a basic type
@@ -720,27 +733,39 @@ int CDsnInfo::FindTypeWidth(string const &varName, string const &typeName, CHtSt
 	}
 
 	int scTypeLen = 0;
-	if (typeName.substr(0, scTypeLen=6) == "sc_int" ||
-		typeName.substr(0, scTypeLen=7) == "sc_uint" ||
-		typeName.substr(0, scTypeLen=9) == "sc_bigint" ||
-		typeName.substr(0, scTypeLen=10) == "sc_biguint")
-	{
+	if (typeName.substr(0, scTypeLen = 6) == "sc_int" ||
+		typeName.substr(0, scTypeLen = 7) == "sc_uint" ||
+		typeName.substr(0, scTypeLen = 9) == "sc_bigint" ||
+		typeName.substr(0, scTypeLen = 10) == "sc_biguint") {
 		// evaluate width
-		char buf[256];
-		char * pBuf = buf;
-		char const * pStr = typeName.c_str()+scTypeLen+1;
-		while (*pStr != '>' && *pStr != '\0')
-			*pBuf++ = *pStr++;
-		*pBuf = '\0';
+		char const * pStr = typeName.c_str() + scTypeLen + 1;
+
+		bool bErr;
+		string param = ParseTemplateParam(lineInfo, pStr, bErr);
+		if (bErr) return 0;
 
 		int width;
 		bool bIsSigned;
-		if (!m_defineTable.FindStringValue(lineInfo, string(buf), width, bIsSigned)) {
+		if (!m_defineTable.FindStringValue(lineInfo, param, width, bIsSigned)) {
 			ParseMsg(Error, lineInfo, "unable to determine width, '%s'", typeName.c_str());
 			return 0;
 		}
 
 		HtlAssert(bitWidth.size() == 0);
+		return width;
+	}
+
+	int htTypeLen = 0;
+	if (typeName.substr(0, htTypeLen = 6) == "ht_int" ||
+		typeName.substr(0, htTypeLen = 7) == "ht_uint") {
+
+		char * pEnd;
+		int width = strtol(typeName.c_str() + htTypeLen, &pEnd, 10);
+		if (pEnd == typeName.c_str() + htTypeLen) {
+			ParseMsg(Error, lineInfo, "unable to determine width, '%s'", typeName.c_str());
+			return 0;
+		}
+
 		return width;
 	}
 
@@ -753,30 +778,30 @@ bool CDsnInfo::FindFieldInStruct(CLineInfo const &lineInfo, string const &type,
 	string const &fldName, bool bIndexCheck, bool &bCStyle, CField const * &pBaseField, CField const * &pLastField)
 {
 	size_t stIdx;
-	for (stIdx = 0; stIdx < m_structList.size(); stIdx += 1) {
-		CStruct & strut = m_structList[stIdx];
+	for (stIdx = 0; stIdx < m_recordList.size(); stIdx += 1) {
+		CRecord & strut = m_recordList[stIdx];
 
-		if (strut.m_structName == type)
+		if (strut.m_typeName == type)
 			break;
 	}
-	if (stIdx == m_structList.size()) {
+	if (stIdx == m_recordList.size()) {
 		ParseMsg(Error, lineInfo, "did not find type in design struct/unions, '%s'", type.c_str());
 		return false;
 	}
-	CStruct & strut = m_structList[stIdx];
+	CRecord & strut = m_recordList[stIdx];
 
 	bCStyle = strut.m_bCStyle;
 
 	return IsInFieldList(lineInfo, fldName, strut.m_fieldList, strut.m_bCStyle, bIndexCheck, pBaseField, pLastField, 0);
 }
 
-bool CDsnInfo::IsInFieldList(CLineInfo const &lineInfo, string const &fldName, vector<CField> const &fieldList,
+bool CDsnInfo::IsInFieldList(CLineInfo const &lineInfo, string const &fldName, vector<CField *> const &fieldList,
 	bool bCStyle, bool bIndexCheck, CField const * &pBaseField, CField const * &pLastField, string * pFullName)
 {
 	string identRef = fldName.substr(0, fldName.find_first_of('.'));
 	string postName;
 	if (identRef.size() < fldName.size())
-		postName = fldName.substr(identRef.size()+1);
+		postName = fldName.substr(identRef.size() + 1);
 
 	char const *pStr = identRef.c_str();
 	int spaceCnt = 0;
@@ -789,29 +814,29 @@ bool CDsnInfo::IsInFieldList(CLineInfo const &lineInfo, string const &fldName, v
 	string name = identRef.substr(spaceCnt, identCnt);
 
 	for (size_t fldIdx = 0; fldIdx < fieldList.size(); fldIdx += 1) {
-		CField const & field = fieldList[fldIdx];
+		CField const * pField = fieldList[fldIdx];
 
-		if (field.m_type == "union" || field.m_type == "struct") {	// CStyle anonamous struct/union
+		if (pField->m_pType->IsRecord()) {	// CStyle anonamous struct/union
 			size_t entryLen = pFullName ? pFullName->size() : 0;
 
-			if (IsInFieldList(lineInfo, fldName, field.m_pStruct->m_fieldList, field.m_pStruct->m_bCStyle, true, pBaseField, pLastField, pFullName))
-			{
-				pBaseField = &field;
+			CRecord * pRecord = pField->m_pType->AsRecord();
+			if (IsInFieldList(lineInfo, fldName, pRecord->m_fieldList, pRecord->m_bCStyle, true, pBaseField, pLastField, pFullName)) {
+				pBaseField = pField;
 				return true;
 			}
 
 			if (pFullName)
 				pFullName->erase(entryLen);
 
-		} else if (field.m_name == "") {	// AddStruct/AddUnion anonamous struct/union
+		} else if (pField->m_name == "") {	// AddStruct/AddUnion anonamous struct/union
 			bool bCStyle;
-			if (FindFieldInStruct(lineInfo, field.m_type, fldName, true, bCStyle, pBaseField, pLastField)) {
-				pBaseField = &field;
+			if (FindFieldInStruct(lineInfo, pField->m_type, fldName, true, bCStyle, pBaseField, pLastField)) {
+				pBaseField = pField;
 				return true;
 			}
 
 		} else {
-			if (field.m_name != name)
+			if (pField->m_name != name)
 				continue;
 
 			if (pFullName) {
@@ -829,48 +854,47 @@ bool CDsnInfo::IsInFieldList(CLineInfo const &lineInfo, string const &fldName, v
 			while (*pStr == '[') {
 				pStr += 1;
 				indexCnt += 1;
-				if (bIndexCheck && field.m_dimenList.size() < indexCnt)
+				if (bIndexCheck && pField->m_dimenList.size() < indexCnt)
 					ParseMsg(Error, lineInfo, "unexpected variable/field index, %s", identRef.c_str());
 
 				bool bSigned;
 				int indexValue;
 				m_defineTable.FindStringValue(lineInfo, pStr, indexValue, bSigned);
 
-				if (*(pStr-1) != ']') {
+				if (*(pStr - 1) != ']') {
 					ParseMsg(Error, lineInfo, "variable/field index format error, %s", identRef.c_str());
 					return false;
 				}
 
-				if (bIndexCheck && indexCnt <= field.m_dimenList.size() && indexValue >= field.m_dimenList[indexCnt-1].AsInt())
+				if (bIndexCheck && indexCnt <= pField->m_dimenList.size() && indexValue >= pField->m_dimenList[indexCnt - 1].AsInt())
 					ParseMsg(Error, lineInfo, "variable/field index value out of range, %s", identRef.c_str());
 
 				while (isspace(*pStr)) pStr += 1;
 			}
 
-			if (bIndexCheck && indexCnt != field.m_dimenList.size())
+			if (bIndexCheck && indexCnt != pField->m_dimenList.size())
 				ParseMsg(Error, lineInfo, "variable/field has missing index, %s", identRef.c_str());
 
 			if (postName.size() == 0) {
-				pBaseField = &field;
-				pLastField = &field;
+				pBaseField = pField;
+				pLastField = pField;
 				return true;
 			}
 
 			size_t stIdx;
-			for (stIdx = 0; stIdx < m_structList.size(); stIdx += 1) {
-				CStruct & strut = m_structList[stIdx];
+			for (stIdx = 0; stIdx < m_recordList.size(); stIdx += 1) {
+				CRecord & strut = m_recordList[stIdx];
 
-				if (strut.m_structName == field.m_type)
+				if (strut.m_typeName == pField->m_type)
 					break;
 			}
 
-			if (stIdx == m_structList.size())
+			if (stIdx == m_recordList.size())
 				return false;
 
-			if (IsInFieldList(lineInfo, postName, m_structList[stIdx].m_fieldList, m_structList[stIdx].m_bCStyle, true,
-				pBaseField, pLastField, pFullName))
-			{
-				pBaseField = &field;
+			if (IsInFieldList(lineInfo, postName, m_recordList[stIdx].m_fieldList, m_recordList[stIdx].m_bCStyle, true,
+				pBaseField, pLastField, pFullName)) {
+				pBaseField = pField;
 				return true;
 			}
 		}
@@ -879,46 +903,46 @@ bool CDsnInfo::IsInFieldList(CLineInfo const &lineInfo, string const &fldName, v
 	return false;
 }
 
-int CDsnInfo::FindStructWidth(CStruct & struct_, int * pMinAlign, bool bHostType)
+int CDsnInfo::FindStructWidth(CRecord & record, int * pMinAlign, bool bHostType)
 {
-	if (struct_.m_bUnion) {
+	int width = 0;
+	if (record.m_bUnion) {
 		// find maximum field width
-		int width = 0;
 		int minAlign = 1;
 		*pMinAlign = 1;
-		for (size_t fldIdx = 0; fldIdx < struct_.m_fieldList.size(); fldIdx += 1) {
-			CField & field = struct_.m_fieldList[fldIdx];
+		for (size_t fldIdx = 0; fldIdx < record.m_fieldList.size(); fldIdx += 1) {
+			CField * pField = record.m_fieldList[fldIdx];
 
 			int fldWidth;
-			if (field.m_type == "struct" || field.m_type == "union")
-				fldWidth = FindStructWidth(*field.m_pStruct, &minAlign, bHostType);
+			if (pField->m_pType->IsRecord())
+				fldWidth = FindStructWidth(*pField->m_pType->AsRecord(), &minAlign, bHostType);
 			else
-				fldWidth = FindTypeWidth(field, &minAlign, bHostType) * field.m_elemCnt;
+				fldWidth = FindTypeWidth(pField, &minAlign, bHostType) * pField->m_elemCnt;
 
 			if (*pMinAlign) *pMinAlign = max(*pMinAlign, minAlign);
 			width = fldWidth > width ? fldWidth : width;
 		}
-		return width;
-
 	} else {
 		// struct find sum of field widths
-		return FindFieldListWidth(struct_.m_structName, struct_.m_lineInfo, struct_.m_fieldList, pMinAlign, bHostType);
+		width = FindFieldListWidth(record.m_typeName, record.m_lineInfo, record.m_fieldList, pMinAlign, bHostType);
 	}
+	assert(width == record.m_packedBitWidth);
+	return width;
 }
 
-int CDsnInfo::FindFieldListWidth(string structName, CLineInfo &lineInfo, vector<CField> &fieldList, int * pMinAlign, bool bHostType)
+int CDsnInfo::FindFieldListWidth(string structName, CLineInfo &lineInfo, vector<CField *> &fieldList, int * pMinAlign, bool bHostType)
 {
 	int minAlign = 1;
 	int width = 0;
 
 	for (size_t fldIdx = 0; fldIdx < fieldList.size(); fldIdx += 1) {
-		CField & field = fieldList[fldIdx];
+		CField * pField = fieldList[fldIdx];
 
 		int fieldWidth;
-		if (field.m_type == "struct" || field.m_type == "union")
-			fieldWidth = FindStructWidth(*field.m_pStruct, &minAlign, bHostType);
+		if (pField->m_pType->IsRecord())
+			fieldWidth = FindStructWidth(*pField->m_pType->AsRecord(), &minAlign, bHostType);
 		else
-			fieldWidth = FindTypeWidth(field, &minAlign, bHostType) * field.m_elemCnt;
+			fieldWidth = FindTypeWidth(pField, &minAlign, bHostType) * pField->m_elemCnt;
 
 		if (bHostType) {
 			int rem = width % minAlign;
@@ -956,9 +980,9 @@ void CDsnInfo::InitNativeCTypes()
 	m_nativeCTypeList.push_back(CBasicType("int", 32, true));
 	m_nativeCTypeList.push_back(CBasicType("signed int", 32, true));
 	m_nativeCTypeList.push_back(CBasicType("unsigned int", 32, false));
-	m_nativeCTypeList.push_back(CBasicType("long", sizeof(long)*8, true));
-	m_nativeCTypeList.push_back(CBasicType("signed long", sizeof(long)*8, true));
-	m_nativeCTypeList.push_back(CBasicType("unsigned long", sizeof(long)*8, false));
+	m_nativeCTypeList.push_back(CBasicType("long", sizeof(long) * 8, true));
+	m_nativeCTypeList.push_back(CBasicType("signed long", sizeof(long) * 8, true));
+	m_nativeCTypeList.push_back(CBasicType("unsigned long", sizeof(long) * 8, false));
 	m_nativeCTypeList.push_back(CBasicType("long long", 64, true));
 	m_nativeCTypeList.push_back(CBasicType("signed long long", 64, true));
 	m_nativeCTypeList.push_back(CBasicType("unsigned long long", 64, false));
@@ -974,57 +998,521 @@ void CDsnInfo::InitNativeCTypes()
 	m_nativeCTypeList.push_back(CBasicType("int64_t", 64, true));
 }
 
-void CDsnInfo::ValidateFieldListTypes(CStruct & record)
+// Scan all declared variables, validate and initialize used types
+void CDsnInfo::InitAndValidateTypes()
 {
-	for (size_t fldIdx = 0; fldIdx < record.m_fieldList.size(); fldIdx += 1) {
-		CField & field = record.m_fieldList[fldIdx];
+	// scan declared struct/unions
+	for (size_t idx = 0; idx < m_recordList.size(); idx += 1) {
+		CRecord & record = m_recordList[idx];
 
-		if (field.m_type == "union" || field.m_type == "struct")
-			ValidateFieldListTypes( *field.m_pStruct );
-
-		else if (!IsTypeNameValid( field.m_type ))
-			ParseMsg(Error, field.m_lineInfo, "undeclared type, '%s'", field.m_type.c_str());
-
-		if (field.m_bitWidth.size() > 0) {
-			field.m_bitWidth.InitValue(field.m_lineInfo, false);
-
-			int builtinWidth;
-			bool bBuiltinSigned;
-			HtlAssert(HtdFile::FindBuiltinType(field.m_type, builtinWidth, bBuiltinSigned));
-
-			if (field.m_bitWidth.AsInt() > builtinWidth)
-				ParseMsg(Error, field.m_lineInfo, "bit field width too large for field type");
-
-			//field.m_type = VA("%s%d", bBuiltinSigned ? "ht_int" : "ht_uint", field.m_bitWidth.AsInt());
-		}
-	}
-
-}
-
-void CDsnInfo::ValidateUsedTypes()
-{
-	// Validate types in user structs/unions
-	for (size_t idx = 0; idx < m_structList.size(); idx += 1) {
-		ValidateFieldListTypes( m_structList[idx] );
+		InitAndValidateRecord(&record);
 	}
 
 	// Validate types in modules
 	for (size_t modIdx = 0; modIdx < m_modList.size(); modIdx += 1) {
 		CModule &mod = *m_modList[modIdx];
 
-		// Validate htShared variables
-		for (size_t fldIdx = 0; fldIdx < mod.m_shared.m_fieldList.size(); fldIdx += 1) {
-			CField & field = mod.m_shared.m_fieldList[fldIdx];
+		// new global variables
+		for (size_t mgvIdx = 0; mgvIdx < mod.m_ngvList.size(); mgvIdx += 1) {
+			CRam * pNgv = mod.m_ngvList[mgvIdx];
 
-			if (!IsTypeNameValid( field.m_type, &mod ))
-				ParseMsg(Error, field.m_lineInfo, "undeclared type, '%s'", field.m_type.c_str());
+			pNgv->m_pType = FindType(pNgv->m_type, pNgv->m_lineInfo);
+		}
+
+		// shared variables
+		for (size_t shIdx = 0; shIdx < mod.m_shared.m_fieldList.size(); shIdx += 1) {
+			CField * pShared = mod.m_shared.m_fieldList[shIdx];
+
+			pShared->m_pType = FindType(pShared->m_type, pShared->m_lineInfo);
+		}
+
+		// private variables
+		for (size_t prIdx = 0; prIdx < mod.m_threads.m_htPriv.m_fieldList.size(); prIdx += 1) {
+			CField * pPriv = mod.m_threads.m_htPriv.m_fieldList[prIdx];
+
+			pPriv->m_pType = FindType(pPriv->m_type, pPriv->m_lineInfo);
 		}
 	}
 }
 
+CType * CDsnInfo::FindType(string const & typeName, CLineInfo const & lineInfo)
+{
+	CType * pType = 0;
+
+	if (!(pType = FindRecord(typeName)) && !(pType = FindClangType(typeName)) && !(pType = FindHtIntType(typeName, lineInfo)))
+		ParseMsg(Error, lineInfo, "undeclared type, '%s'", typeName.c_str());
+
+	return pType;
+}
+
+void CDsnInfo::InitAndValidateRecord(CRecord * pRecord)
+{
+	// check if already initialized
+	if (pRecord->m_clangBitWidth >= 0)
+		return;
+
+	int clangBitPos = 0;
+	int clangBitWidth = 0;
+	int clangMinAlign = 8;
+	int prevTypeWidth = 0;
+	int packedBitWidth = 0;
+
+	for (size_t fldIdx = 0; fldIdx < pRecord->m_fieldList.size(); fldIdx += 1) {
+		CField * pField = pRecord->m_fieldList[fldIdx];
+
+		CType * pType;
+		int fieldWidth;
+
+		if (pField->m_pType->IsRecord()) {
+			// unnamed struct/union
+			InitAndValidateRecord(pField->m_pType->AsRecord());
+			pType = pField->m_pType;
+		} else {
+			if (!(pType = FindType(pField->m_type, pField->m_lineInfo)))
+				continue;
+
+			assert(pField->m_pType == pType);
+
+			if (pType->m_eType == eRecord)
+				InitAndValidateRecord(pType->AsRecord());
+		}
+
+		pField->InitDimen(pField->m_lineInfo);
+
+		if (pField->m_fieldWidth.size() > 0) {
+			// field bit width specified
+			pField->m_fieldWidth.InitValue(pField->m_lineInfo);
+
+			fieldWidth = pField->m_fieldWidth.AsInt();
+			prevTypeWidth = pType->m_clangBitWidth;
+
+			if (prevTypeWidth != pType->m_clangBitWidth || clangBitPos + fieldWidth > clangBitWidth) {
+
+				if (clangBitWidth % pType->m_clangMinAlign > 0)
+					clangBitPos = clangBitWidth = clangBitWidth + pType->m_clangMinAlign - clangBitWidth % pType->m_clangMinAlign;
+
+				if (pRecord->m_bUnion)
+					clangBitWidth = max(clangBitWidth, pType->m_clangBitWidth * (int)pField->m_elemCnt);
+				else
+					clangBitWidth += pType->m_clangBitWidth * pField->m_elemCnt;
+			}
+		} else {
+			fieldWidth = pType->m_clangBitWidth;
+			prevTypeWidth = 0;
+
+			if (clangBitWidth % pType->m_clangMinAlign > 0)
+				clangBitPos = clangBitWidth = clangBitWidth + pType->m_clangMinAlign - clangBitWidth % pType->m_clangMinAlign;
+
+			if (pRecord->m_bUnion)
+				clangBitWidth = max(clangBitWidth, pType->m_clangBitWidth * (int)pField->m_elemCnt);
+			else
+				clangBitWidth += pType->m_clangBitWidth * pField->m_elemCnt;
+		}
+
+		if (pRecord->m_bUnion)
+			packedBitWidth = max(packedBitWidth, pType->m_clangBitWidth * (int)pField->m_elemCnt);
+		else
+			packedBitWidth += pType->m_clangBitWidth * pField->m_elemCnt;
+
+		pField->m_clangBitPos = clangBitPos;
+		if (!pRecord->m_bUnion)
+			clangBitPos += fieldWidth * pField->m_elemCnt;
+
+		clangMinAlign = max(clangMinAlign, pType->m_clangMinAlign);
+	}
+
+	if (clangBitWidth % clangMinAlign > 0)
+		clangBitWidth = clangBitWidth + clangMinAlign - clangBitWidth % clangMinAlign;
+
+	pRecord->m_clangBitWidth = clangBitWidth;
+	pRecord->m_clangMinAlign = clangMinAlign;
+	pRecord->m_packedBitWidth = packedBitWidth;
+}
+
+// Check if type name is valid C language integer, if so return stdint type
+CHtInt g_void(eUnsigned, "void", 0, 0);
+CHtInt g_bool(eSigned, "bool", 1, 8);
+CHtInt g_uint8(eUnsigned, "uint8_t", 8, 8);
+CHtInt g_uint16(eUnsigned, "uint16_t", 16, 16);
+CHtInt g_uint32(eUnsigned, "uint32_t", 32, 32);
+CHtInt g_uint64(eUnsigned, "uint64_t", 64, 64);
+CHtInt g_int8(eSigned, "int8_t", 8, 8);
+CHtInt g_int16(eSigned, "int16_t", 16, 16);
+CHtInt g_int32(eSigned, "int32_t", 32, 32);
+CHtInt g_int64(eSigned, "int64_t", 64, 64);
+
+CType * CDsnInfo::FindClangType(string typeName)
+{
+	CTypeDef * pTypeDef;
+	do {
+		pTypeDef = FindTypeDef(typeName);
+		if (pTypeDef) typeName = pTypeDef->m_type;
+	} while (pTypeDef);
+
+	bool bAllowHostPtr = false;
+	vector<string> typeVec;
+
+	// parse typeName into individual symbols
+	char const * pType = typeName.c_str();
+	for (;;) {
+		while (*pType == ' ' || *pType == '\t') pType += 1;
+		if (*pType == '\0') break;
+		char const * pStart = pType++;
+		if (*pStart != '*')
+			while (*pType != ' ' && *pType != '\t' && *pType != '\0' && *pType != '*') pType += 1;
+		typeVec.push_back(string(pStart, pType - pStart));
+	}
+
+	bool bHostVar = false;
+	bool bNative = false;
+	bool bPtr = false;
+
+#define C_BOOL 0x0001
+#define C_CHAR 0x0002
+#define C_SHORT 0x0004
+#define C_INT 0x0008
+#define C_LONG 0x0010
+#define C_LONG_LONG 0x0020
+#define C_UNSIGNED 0x0040
+#define C_VOID 0x0080
+#define C_UINT8 0x0100
+#define C_UINT16 0x0200
+#define C_UINT32 0x0400
+#define C_UINT64 0x0800
+#define C_SINT8 0x1000
+#define C_SINT16 0x2000
+#define C_SINT32 0x4000
+#define C_SINT64 0x8000
+
+	uint16_t typeMask = 0;
+
+	for (size_t i = 0; i < typeVec.size(); i += 1) {
+		string &type = typeVec[i];
+
+		if (type == "bool") {
+			typeMask |= C_BOOL;
+			if (bNative || bPtr || bHostVar) return 0;
+			bNative = true;
+			continue;
+		}
+
+		if (type == "char") {
+			typeMask |= C_CHAR;
+			if (bNative || bPtr || bHostVar) return 0;
+			bNative = true;
+			continue;
+		}
+
+		if (type == "short") {
+			typeMask |= C_SHORT;
+			if (bNative || bPtr || bHostVar) return 0;
+			bNative = true;
+			continue;
+		}
+
+		if (type == "int") {
+			typeMask |= C_INT;
+			if (bNative || bPtr || bHostVar) return 0;
+			bNative = true;
+			continue;
+		}
+
+		if (type == "uint8_t") {
+			typeMask |= C_UINT8;
+			if (bNative || bPtr || bHostVar) return 0;
+			bNative = true;
+			continue;
+		}
+
+		if (type == "uint16_t") {
+			typeMask |= C_UINT16;
+			if (bNative || bPtr || bHostVar) return 0;
+			bNative = true;
+			continue;
+		}
+
+		if (type == "uint32_t") {
+			typeMask |= C_UINT32;
+			if (bNative || bPtr || bHostVar) return 0;
+			bNative = true;
+			continue;
+		}
+
+		if (type == "uint64_t") {
+			typeMask |= C_UINT64;
+			if (bNative || bPtr || bHostVar) return 0;
+			bNative = true;
+			continue;
+		}
+
+		if (type == "int8_t") {
+			typeMask |= C_SINT8;
+			if (bNative || bPtr || bHostVar) return 0;
+			bNative = true;
+			continue;
+		}
+
+		if (type == "int16_t") {
+			typeMask |= C_SINT16;
+			if (bNative || bPtr || bHostVar) return 0;
+			bNative = true;
+			continue;
+		}
+
+		if (type == "int32_t") {
+			typeMask |= C_SINT32;
+			if (bNative || bPtr || bHostVar) return 0;
+			bNative = true;
+			continue;
+		}
+
+		if (type == "int64_t") {
+			typeMask |= C_SINT64;
+			if (bNative || bPtr || bHostVar) return 0;
+			bNative = true;
+			continue;
+		}
+
+		if (type == "long") {
+			if (bNative || bPtr || bHostVar) return 0;
+			bNative = true;
+			if (typeVec.size() > i + 1 && typeVec[i + 1] == "long") {
+				i += 1;
+				typeMask |= C_LONG_LONG;
+			} else
+				typeMask |= C_LONG;
+			continue;
+		}
+
+		if (type == "unsigned") {
+			typeMask |= C_UNSIGNED;
+			if (bPtr || bHostVar) return 0;
+			continue;
+		}
+
+		if (type == "*") {
+			if (!bAllowHostPtr) return 0;
+			bPtr = true;
+			continue;
+		}
+
+		// pointer to void is allow for host parameters
+		if (type == "void") {
+			if (bNative || bPtr || bHostVar) return 0;
+			bHostVar = true;
+			typeMask |= C_VOID;
+			continue;
+		}
+
+		return 0;
+	}
+
+	// type is valid
+	switch (typeMask) {
+	case C_VOID: return &g_void;
+	case C_BOOL: return &g_bool;
+	case C_CHAR: return &g_int8;
+	case C_SHORT: return &g_int16;
+	case C_INT: return &g_int32;
+	case C_LONG: return &g_int64;
+	case C_LONG_LONG: return &g_int64;
+
+		//case C_UNSIGNED | C_BOOL: return g_pBool;
+	case C_UNSIGNED | C_CHAR: return &g_uint8;
+	case C_UNSIGNED | C_SHORT: return &g_uint16;
+	case C_UNSIGNED | C_INT: return &g_uint32;
+	case C_UNSIGNED | C_LONG: return &g_uint64;
+	case C_UNSIGNED | C_LONG_LONG: return &g_uint64;
+
+	case C_UINT8: return &g_uint8;
+	case C_UINT16: return &g_uint16;
+	case C_UINT32: return &g_uint32;
+	case C_UINT64: return &g_uint64;
+	case C_SINT8: return &g_int8;
+	case C_SINT16: return &g_int16;
+	case C_SINT32: return &g_int32;
+	case C_SINT64: return &g_int64;
+
+	default:
+		HtlAssert(0);
+	}
+
+	return 0;// bNative || bAllowHostPtr && bHostVar && bPtr;
+}
+
+CType * CDsnInfo::FindHtIntType(string typeName, CLineInfo const & lineInfo)
+{
+	CTypeDef * pTypeDef;
+	do {
+		pTypeDef = FindTypeDef(typeName);
+		if (pTypeDef) typeName = pTypeDef->m_type;
+	} while (pTypeDef);
+
+	bool bScUint = false;
+	bool bScInt = false;
+	bool bHtUint = false;
+	bool bHtInt = false;
+	bool bScBigUint = false;
+	bool bScBigInt = false;
+	int width = 0;
+
+	char const * pStr = typeName.c_str();
+	if (strncmp(pStr, "sc_uint", 7) == 0) {
+		bScUint = true;
+		pStr += 7;
+	} else if (strncmp(pStr, "sc_int", 6) == 0) {
+		bScInt = true;
+		pStr += 6;
+	} else if (strncmp(pStr, "ht_uint", 7) == 0) {
+		bHtUint = true;
+		pStr += 7;
+	} else if (strncmp(pStr, "ht_int", 6) == 0) {
+		bHtInt = true;
+		pStr += 6;
+	} else if (strncmp(pStr, "sc_biguint", 10) == 0) {
+		bScBigUint = true;
+		pStr += 10;
+	} else if (strncmp(pStr, "sc_bigint", 9) == 0) {
+		bScBigInt = true;
+		pStr += 9;
+	} else
+		return 0;
+
+	if (bScUint || bScInt || bScBigUint || bScBigInt) {
+		// find template parameter
+		while (*pStr == ' ' || *pStr == '\t') pStr += 1;
+
+		if (*pStr++ != '<') {
+			ParseMsg(Error, lineInfo, "unrecognized type");
+			return 0;
+		}
+
+		// find next '>' not within parens
+		bool bErr;
+		CHtString param = ParseTemplateParam(lineInfo, pStr, bErr);
+		if (bErr) return 0;
+
+		pStr += 1;
+		while (*pStr == ' ' || *pStr == '\t') pStr += 1;
+
+		if (*pStr != '\0') {
+			ParseMsg(Error, lineInfo, "unrecognized type");
+			return 0;
+		}
+
+		param.InitValue(lineInfo);
+		width = param.AsInt();
+
+		if (width <= 0)
+			return 0;
+
+	} else if (bHtUint || bHtInt) {
+		char * pEnd;
+		width = strtol(pStr, &pEnd, 10);
+
+		if (pEnd == pStr) {
+			ParseMsg(Error, lineInfo, "unrecognized type");
+			return 0;
+		}
+
+		pStr = pEnd;
+		while (*pStr == ' ' || *pStr == '\t') pStr += 1;
+
+		if (*pStr != '\0') {
+			ParseMsg(Error, lineInfo, "unrecognized type");
+			return 0;
+		}
+	}
+
+	ESign sign = (bHtInt || bScInt || bScBigInt) ? eSigned : eUnsigned;
+
+	if (bScBigUint || bScBigInt)
+		return FindScBigIntType(sign, width);
+	else
+		return FindHtIntType(sign, width);
+}
+
+CType * CDsnInfo::FindHtIntType(ESign sign, int width)
+{
+	for (size_t i = 0; i < m_htIntList.size(); i += 1) {
+		CHtInt * pHtInt = m_htIntList[i];
+
+		if (pHtInt->m_clangBitWidth == width && pHtInt->m_eSign == sign)
+			return pHtInt;
+	}
+
+	string typeStr = sign == eSigned ? VA("ht_int%d", width) : VA("ht_uint%d", width);
+	CHtInt * pHtInt = new CHtInt(sign, typeStr, width, 1);
+	m_htIntList.push_back(pHtInt);
+
+	return pHtInt;
+}
+
+CType * CDsnInfo::FindScBigIntType(ESign sign, int width)
+{
+	for (size_t i = 0; i < m_scBigIntList.size(); i += 1) {
+		CHtInt * pHtInt = m_scBigIntList[i];
+
+		if (pHtInt->m_clangBitWidth == width && pHtInt->m_eSign == sign)
+			return pHtInt;
+	}
+
+	string typeStr = sign == eSigned ? VA("sc_bigint<%d>", width) : VA("sc_biguint<%d>", width);
+	CHtInt * pHtInt = new CHtInt(sign, typeStr, width, 1);
+	m_scBigIntList.push_back(pHtInt);
+
+	return pHtInt;
+}
+
+int CDsnInfo::FindClangWidthAndMinAlign(CField * pField, int & minAlign)
+{
+
+	return 0;
+}
+
+string CDsnInfo::ParseTemplateParam(CLineInfo const & lineInfo, char const * &pStr, bool & bErr)
+{
+	// find next '>' not within parens
+	bErr = false;
+	char const * pStart = pStr;
+	int parenCnt = 0;
+	while (parenCnt > 0 || !(*pStr == '>' && pStr[1] != '>')) {
+		if (*pStr == '\0') {
+			ParseMsg(Error, lineInfo, "unrecognized type");
+			bErr = true;
+			return string();
+		}
+
+		if (*pStr == '(')
+			parenCnt += 1;
+		else if (*pStr == ')') {
+			if (parenCnt == 0) {
+				ParseMsg(Error, lineInfo, "unrecognized type");
+				bErr = true;
+				return string();
+			}
+			parenCnt -= 1;
+		}
+		pStr += 1;
+	}
+
+	if (parenCnt != 0) {
+		CPreProcess::ParseMsg(Error, "template argument has unbalanced parenthesis");
+		bErr = true;
+		return string();
+	}
+
+	if (*pStr != '>') {
+		CPreProcess::ParseMsg(Error, "expected template argument '< >'");
+		bErr = true;
+		return string();
+	}
+	return string(pStart, pStr - pStart);
+}
+
 void CDsnInfo::ReportRamFieldUsage()
 {
-	if (! m_bramTargetList.size()) return;
+	if (!m_bramTargetList.size()) return;
 
 	FILE * fp = g_appArgs.GetDsnRpt().GetFp();
 
@@ -1067,7 +1555,7 @@ void CDsnInfo::ReportRamFieldUsage()
 
 	for (size_t targetIdx = 0; targetIdx < m_bramTargetList.size(); targetIdx += 1) {
 		CBramTarget & target = m_bramTargetList[targetIdx];
-		int num_luts = target.m_width * (int)((target.m_depth+31)/32);
+		int num_luts = target.m_width * (int)((target.m_depth + 31) / 32);
 
 		fprintf(fp, "%s      <tr>\n", ws);
 		fprintf(fp, "%s        <td>%-17s</td><td>%-17s</td><td>%-16s</td><td>%2d</td><td>%2d</td><td>%2d</td><td>%2d</td><td>%2d</td><td>%2d</td><td>%2d</td><td>%6.2f</td><td>%s</td>\n",
@@ -1081,70 +1569,6 @@ void CDsnInfo::ReportRamFieldUsage()
 	}
 
 	fprintf(fp, "%s    </dd></dl></table>\n", ws);
-
-	bool bHasGRams = false;
-	for (size_t modIdx = 0; modIdx < m_modList.size(); modIdx += 1) {
-		CModule * pMod = m_modList[modIdx];
-
-		if (!pMod->m_bIsUsed || !pMod->m_intGblList.size()) continue;
-		bHasGRams = true;
-	}
-
-	if (bHasGRams) {
-		fprintf(fp, "%s    <br/>\n", ws);
-		fprintf(fp, "%s    <dt><b>Global RAMs</b></dt>\n", ws);
-	}
-
-	for (size_t modIdx = 0; modIdx < m_modList.size(); modIdx += 1) {
-		CModule &mod = *m_modList[modIdx];
-
-		if (!mod.m_bIsUsed || !mod.m_intGblList.size()) continue;
-
-		fprintf(fp, "%s    <br/>\n", ws);
-		fprintf(fp, "%s      <dd>Module: %s</dd>\n", ws, mod.m_modName.Uc().c_str());
-
-		for (size_t intRamIdx = 0; intRamIdx < mod.m_intGblList.size(); intRamIdx += 1) {
-			CRam &intRam = *mod.m_intGblList[intRamIdx];
-
-			fprintf(fp, "%s        <dd><dl><dd>Internal Ram: %s</dd>\n", ws, intRam.m_gblName.Uc().c_str());
-
-			for (size_t fldIdx = 0; fldIdx < intRam.m_allFieldList.size(); fldIdx += 1) {
-				CField &field = intRam.m_allFieldList[fldIdx];
-
-				fprintf(fp, "%s          <dd><dl><dd>Field %d: %s, %s</dd>\n", ws,
-					(int)fldIdx, field.m_name.c_str(), field.m_ramType == eDistRam ? "DistRam" : "BlockRam");
-
-				fprintf(fp, "%s            <dd><dl><dd>Readers:", ws);
-				char *pFirst = "";
-				for (size_t rdIdx = 0; rdIdx < field.m_readerList.size(); rdIdx += 1, pFirst = ",") {
-					char const *pModStr;
-					if (field.m_readerList[rdIdx].m_pRamPort == 0)
-						pModStr = "---";
-					else if (field.m_readerList[rdIdx].m_pRamPort->m_bIntIntf)
-						pModStr =  mod.m_modName.Uc().c_str();
-					else
-						pModStr = field.m_readerList[rdIdx].m_pRamPort->m_pRam->m_pExtRamMod->m_modName.Uc().c_str();
-
-					fprintf(fp, "%s %s", pFirst, pModStr);
-				}
-				fprintf(fp, "</dd>\n");
-				fprintf(fp, "%s            </dl></dd>\n", ws);
-
-				fprintf(fp, "%s            <dd><dl><dd>Writers:", ws);
-				pFirst = "";
-				for (size_t wrIdx = 0; wrIdx < field.m_writerList.size(); wrIdx += 1, pFirst = ",") {
-					char const *pModStr = field.m_writerList[wrIdx].m_pRamPort->m_bIntIntf ? mod.m_modName.Uc().c_str()
-						: field.m_writerList[wrIdx].m_pRamPort->m_pRam->m_pExtRamMod->m_modName.Uc().c_str();
-
-					fprintf(fp, "%s %s", pFirst, pModStr);
-				}
-				fprintf(fp, "</dd>\n");
-				fprintf(fp, "%s            </dl></dd>\n", ws);
-				fprintf(fp, "%s          </dl></dd>\n", ws);
-				fprintf(fp, "%s        </dl></dd>\n", ws);
-			}
-		}
-	}
 
 	fprintf(fp, "%s  </dl>\n", ws);
 }
@@ -1214,7 +1638,7 @@ void CDsnInfo::DrawModuleCmdRelationships()
 					label += cxrIntf.m_funcName.c_str();
 					label += "\"";
 					label += cxrIntf.IsCall() ? " color=red" :
-						 cxrIntf.IsXfer() ? " color=deeppink" : " color=green";
+						cxrIntf.IsXfer() ? " color=deeppink" : " color=green";
 					label += "]";
 
 					if (cxrIntf.m_cxrDir == CxrOut) {
@@ -1292,5 +1716,5 @@ void CDsnInfo::DrawModuleCmdRelationships()
 	}
 
 	fs << "}\n\n";
-        fs.close();
+	fs.close();
 }

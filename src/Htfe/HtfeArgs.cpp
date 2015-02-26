@@ -32,7 +32,6 @@ CHtfeArgs::CHtfeArgs()
     m_bIsStDumpEnabled = false;
     m_bIsLvxEnabled = false;
     m_bWritePreProcessedInput = false;
-	m_bMethodSupport = false;
 	m_bTemplateSupport = false;
     m_bHtQueCntSynKeep = false;
 }
@@ -57,11 +56,11 @@ void CHtfeArgs::Parse(int & argPos, char *argv[])
 {
 	if (strncmp(argv[argPos], "-D", 2) == 0) {
         m_preDefinedNames.push_back(argv[argPos]+2);
-    } else if (strncmp(argv[argPos], "-template", 9) == 0) {
-        SetTemplateSupport(true);
-    } else if (strncmp(argv[argPos], "-method", 7) == 0) {
-        SetMethodSupport(true);
-    } else if (strncmp(argv[argPos], "-TkDump", 7) == 0) {
+	} else if (strncmp(argv[argPos], "-template", 9) == 0) {
+		SetTemplateSupport(true);
+	} else if (strncmp(argv[argPos], "-method", 7) == 0) {
+		;
+	} else if (strncmp(argv[argPos], "-TkDump", 7) == 0) {
         SetIsTkDumpEnabled();
     } else if (strncmp(argv[argPos], "-StDump", 7) == 0) {
         SetIsStDumpEnabled();

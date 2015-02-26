@@ -26,7 +26,8 @@ CPersInc::PersInc()
 				SendReturn_htmain(P_loopCnt);
 			} else {
 				// Calculate memory read address
-				sc_uint<MEM_ADDR_W> memRdAddr = (sc_uint<MEM_ADDR_W>)(SR_arrayAddr + (P_loopCnt << 3));
+				sc_uint<MEM_ADDR_W> memRdAddr = (sc_uint<MEM_ADDR_W>)(SR_arrayAddr +
+					((P_loopCnt * 2) << 3));
 
 				// Issue read request to memory
 				ReadMem_sharedData(memRdAddr);
@@ -46,7 +47,8 @@ CPersInc::PersInc()
 			uint64_t memWrData = S_sharedData + S_sharedInc;
 
 			// Calculate memory write address
-			sc_uint<MEM_ADDR_W> memWrAddr = (sc_uint<MEM_ADDR_W>)(SR_arrayAddr + (P_loopCnt << 3));
+			sc_uint<MEM_ADDR_W> memWrAddr = (sc_uint<MEM_ADDR_W>)(SR_arrayAddr +
+				((P_loopCnt * 2 + 1) << 3));
 
 			// Issue write memory request
 			WriteMem(memWrAddr, memWrData);
@@ -70,10 +72,11 @@ CPersInc::PersInc()
 				SendReturn_htmain(P_loopCnt);
 			} else {
 				// Calculate memory read address
-				sc_uint<MEM_ADDR_W> memRdAddr = (sc_uint<MEM_ADDR_W>)(SR_arrayAddr + (P_loopCnt << 3));
+				sc_uint<MEM_ADDR_W> memRdAddr = (sc_uint<MEM_ADDR_W>)(SR_arrayAddr +
+					((P_loopCnt * 2) << 3));
 
 				// Issue read request to memory
-				ReadMem_sharedArray1(memRdAddr, 1);
+				ReadMem_sharedArray1(memRdAddr, 1, 1);
 
 				ReadMemPause(INC_WRITE2);
 			}
@@ -90,7 +93,8 @@ CPersInc::PersInc()
 			uint64_t memWrData = S_sharedArray1[1] + S_sharedInc;
 
 			// Calculate memory write address
-			sc_uint<MEM_ADDR_W> memWrAddr = (sc_uint<MEM_ADDR_W>)(SR_arrayAddr + (P_loopCnt << 3));
+			sc_uint<MEM_ADDR_W> memWrAddr = (sc_uint<MEM_ADDR_W>)(SR_arrayAddr +
+				((P_loopCnt * 2 + 1) << 3));
 
 			// Issue write memory request
 			WriteMem(memWrAddr, memWrData);
@@ -114,10 +118,11 @@ CPersInc::PersInc()
 				SendReturn_htmain(P_loopCnt);
 			} else {
 				// Calculate memory read address
-				sc_uint<MEM_ADDR_W> memRdAddr = (sc_uint<MEM_ADDR_W>)(SR_arrayAddr + (P_loopCnt << 3));
+				sc_uint<MEM_ADDR_W> memRdAddr = (sc_uint<MEM_ADDR_W>)(SR_arrayAddr +
+					((P_loopCnt * 2) << 3));
 
 				// Issue read request to memory
-				ReadMem_sharedArray2(memRdAddr, 1, 2);
+				ReadMem_sharedArray2(memRdAddr, 1, 2, 1);
 
 				ReadMemPause(INC_WRITE3);
 			}
@@ -134,7 +139,8 @@ CPersInc::PersInc()
 			uint64_t memWrData = S_sharedArray2[1][2] + S_sharedInc;
 
 			// Calculate memory write address
-			sc_uint<MEM_ADDR_W> memWrAddr = (sc_uint<MEM_ADDR_W>)(SR_arrayAddr + (P_loopCnt << 3));
+			sc_uint<MEM_ADDR_W> memWrAddr = (sc_uint<MEM_ADDR_W>)(SR_arrayAddr +
+				((P_loopCnt * 2 + 1) << 3));
 
 			// Issue write memory request
 			WriteMem(memWrAddr, memWrData);
@@ -158,10 +164,11 @@ CPersInc::PersInc()
 				SendReturn_htmain(P_loopCnt);
 			} else {
 				// Calculate memory read address
-				sc_uint<MEM_ADDR_W> memRdAddr = (sc_uint<MEM_ADDR_W>)(SR_arrayAddr + (P_loopCnt << 3));
+				sc_uint<MEM_ADDR_W> memRdAddr = (sc_uint<MEM_ADDR_W>)(SR_arrayAddr +
+					((P_loopCnt * 2) << 3));
 
 				// Issue read request to memory
-				ReadMem_sharedArray3(memRdAddr, 9, 1, 2);
+				ReadMem_sharedArray3(memRdAddr, 9, 1, 2, 1);
 
 				ReadMemPause(INC_WRITE4);
 			}
@@ -182,7 +189,8 @@ CPersInc::PersInc()
 			uint64_t memWrData = S_sharedArray3[INT(idx1)][INT(idx2)].read_mem() + S_sharedInc;
 
 			// Calculate memory write address
-			sc_uint<MEM_ADDR_W> memWrAddr = (sc_uint<MEM_ADDR_W>)(SR_arrayAddr + (P_loopCnt << 3));
+			sc_uint<MEM_ADDR_W> memWrAddr = (sc_uint<MEM_ADDR_W>)(SR_arrayAddr +
+				((P_loopCnt * 2 + 1) << 3));
 
 			// Issue write memory request
 			WriteMem(memWrAddr, memWrData);
@@ -190,54 +198,7 @@ CPersInc::PersInc()
 			// Increment loop count
 			P_loopCnt = P_loopCnt + 1;
 
-			WriteMemPause(INC_READ5);
-		}
-		break;
-		case INC_READ5:
-		{
-			if (ReadMemBusy() || SendReturnBusy_htmain()) {
-				HtRetry();
-				break;
-			}
-
-			// Check if end of loop
-			if (P_loopCnt == P_elemCnt) {
-				// Return to host interface
-				SendReturn_htmain(P_loopCnt);
-			} else {
-				// Calculate memory read address
-				sc_uint<MEM_ADDR_W> memRdAddr = (sc_uint<MEM_ADDR_W>)(SR_arrayAddr + (P_loopCnt << 3));
-
-				// Issue read request to memory
-				ReadMem_sharedQueue1(memRdAddr, P_loopCnt & 3);
-
-				ReadMemPause(INC_WRITE5);
-			}
-		}
-		break;
-		case INC_WRITE5:
-		{
-			if (WriteMemBusy()) {
-				HtRetry();
-				break;
-			}
-
-			// Increment memory data
-			sc_uint<2> idx1 = P_loopCnt & 3;
-
-			uint64_t memWrData = S_sharedQueue1[INT(idx1)].front() + S_sharedInc;
-			S_sharedQueue1[INT(idx1)].pop();
-
-			// Calculate memory write address
-			sc_uint<MEM_ADDR_W> memWrAddr = (sc_uint<MEM_ADDR_W>)(SR_arrayAddr + (P_loopCnt << 3));
-
-			// Issue write memory request
-			WriteMem(memWrAddr, memWrData);
-
-			// Increment loop count
-			P_loopCnt = P_loopCnt + 1;
-
-			WriteMemPause(INC_READ5);
+			WriteMemPause(INC_READ);
 		}
 		break;
 		case INC_RESET:

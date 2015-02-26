@@ -1,9 +1,11 @@
-// -cl "C:\Ht\tests\ex_matrix_mult_bbox_r2\src_pers\matrix_mult.htl
+// -cl $(HtToolsPath)/tests/ex_matrix_mult_bbox_r2/src_pers/matrix_mult.htl
+-wd $(HtToolsPath)/tests/ex_matrix_mult_bbox_r2/msvs12/
+
 -cp hc-2
 -uc 1
 -un Au
 -df 150
+//-vcd_all
 -pn matrix_mult_bbox_r2
--wd "C:\Ht\tests\ex_matrix_mult_bbox_r2\msvs12\"
 ../src_pers/matrix_mult.htd
 ../ht/sysc

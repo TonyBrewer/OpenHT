@@ -33,12 +33,12 @@ CPersInc6::PersInc6()
 			Inc6Ptr_t arrayMemWrPtr = (PR_htId << 7) | P_loopIdx;
 
 			// Issue read request to memory
-			ReadMem_arrayMem6(memRdAddr, arrayMemWrPtr);
+			ReadMem_arrayMem6(PR_rdGrpId, memRdAddr, arrayMemWrPtr);
 
 			bool bLast = P_loopIdx == P_elemCnt - 1;
 			if (bLast) {
 				P_loopIdx = 0;
-				ReadMemPause(INC6_WRITE);
+				ReadMemPause(PR_rdGrpId, INC6_WRITE);
 			} else {
 				P_loopIdx += 1;
 				HtContinue(INC6_READ);
@@ -58,7 +58,7 @@ CPersInc6::PersInc6()
 			}
 
 			// Increment memory data
-			uint64_t memWrData = GR_arrayMem6_data() + 1;
+			uint64_t memWrData = GR_arrayMem6.data + 1;
 
 			// Calculate memory write address
 			MemAddr_t memWrAddr = SR_arrayAddr + ((P_loopBase + P_loopIdx) << 3);

@@ -1,5 +1,6 @@
-// -cl "C:\Ht\tests\bug_1989\src_pers\vadd.htl"
--wd "C:\Ht\tests\bug_1989\msvs12"
+// -cl $(HtToolsPath)/tests/bug_1989/src_pers/vadd.htl
+-wd $(HtToolsPath)/tests/bug_1989/msvs12
+
 -cp hc-2ex
 -uc 1
 -un Au

@@ -134,7 +134,7 @@ void CPersTst::PersTst()
 				break;
 			}
 
-			if (GR_gvar_data(0) != 0xdeadbeef00001234ULL) {
+			if (GR_gvar[0].data != 0xdeadbeef00001234ULL) {
 				HtAssert(0, 0);
 				P_err += 1;
 			}

@@ -1,9 +1,11 @@
-// -cl "C:\Ht\tests\dsn12\src_pers\dsn12.htl"
+// -cl $(HtToolsPath)/tests/dsn12/src_pers/dsn12.htl
+-wd $(HtToolsPath)/tests/dsn12/msvs12/
+
 -cp hc-2
 -uc 1
 -un Su
 -df 150
+-vcd_all
 -D_WIN32
--wd "C:\Ht\tests\dsn12\msvs12\"
-"C:\Ht\tests\dsn12\src_pers\dsn12.htd"
+../src_pers/dsn12.htd
 ../ht/sysc

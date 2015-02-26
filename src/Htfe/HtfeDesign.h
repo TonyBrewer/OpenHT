@@ -149,6 +149,10 @@ private:
     CHtfeStatement *ParseIdentifierStatement(CHtfeIdent *pHier, bool bAssignmentAllowed, bool bStaticAllowed);
     CHtfeStatement *ParseIfStatement(CHtfeIdent *pHier);
 	void ParseForStatement();
+	void SkipStatement();
+	void SkipIfStatement();
+	void SkipSwitchStatement();
+	void SkipForStatement();
     CHtfeStatement *ParseSwitchStatement(CHtfeIdent *pHier);
 	void TransformCaseStatementListToRemoveBreaks(CHtfeStatement *pCaseHead);
 	void TransformCaseIfStatementList(CHtfeStatement **ppList, CHtfeStatement *pPostList);
@@ -169,9 +173,9 @@ private:
 	void ParseVarArrayDecl(CHtfeIdent *pIdent);
 	CHtfeIdent * ParseVarArrayRef(CHtfeIdent *pIdent);
 	CHtfeIdent * CreateUniquePortTemplateType(string portName, CHtfeIdent * pBaseType, bool bIsConst);
-	CHtfeIdent * ParseTypeDecl(CHtfeIdent const * pHier, CHtfeTypeAttrib & typeAttrib, bool bRequired=true);
+	CHtfeIdent * ParseTypeDecl(CHtfeIdent * pHier, CHtfeTypeAttrib & typeAttrib, bool bRequired=true);
 	bool ParseHtPrimClkList(CHtfeTypeAttrib & typeAttrib);
-    CHtfeIdent *ParseTypeDecl(const CHtfeIdent *pHier, bool bRequired=true);
+    CHtfeIdent *ParseTypeDecl(CHtfeIdent *pHier, bool bRequired=true);
 	CHtfeIdent *ParseHtQueueDecl(CHtfeIdent *pHier);
 	CHtfeIdent *ParseHtDistRamDecl(CHtfeIdent *pHier);
 	CHtfeIdent *ParseHtBlockRamDecl(CHtfeIdent *pHier);
@@ -180,7 +184,8 @@ private:
 	int ParseStructDecl(CHtfeIdent *pHier, int startBitPos=0);
     void RecordStructMethod(CHtfeIdent *pStruct);
 	void ParseStructMethod(CHtfeIdent *pHier);
-	CHtfeIdent *CreateUniqueTemplateType(const CHtfeIdent *pType, int width);
+	CHtfeIdent *CreateUniqueScIntType(CHtfeIdent *pType, int width);
+	CHtfeIdent *CreateUniqueScBigIntType(CHtfeIdent *pType, int width);
 	bool ParseConstExpr(CConstValue &value);
 	void ParseEvalConstExpr(EToken tk, vector<CConstValue> &operandStack, vector<EToken> &operatorStack);
     void ParseEnumDecl(CHtfeIdent *pHier);
@@ -214,6 +219,7 @@ private:
 	void			HtMemoryWriteVarInit(CHtfeIdent *pHier, CHtfeIdent *pIdent, string & cQueName, string & refDimStr, string & declDimStr,
 						vector<CHtfeOperand *> indexList);
 	void			HandleOverloadedAssignment(CHtfeIdent *pHier, CHtfeStatement *pStatement);
+	void			HandleUserDefinedConversion(CHtfeIdent *pHier, CHtfeStatement *pStatement);
 	void			HandleRegisterAssignment(CHtfeIdent *pHier, CHtfeStatement *pStatement);
 	void			HandleSimpleIncDecStatement(CHtfeStatement *pStatement);
     void            HandleIntegerConstantPropagation(CHtfeOperand * pExpr);
@@ -259,16 +265,39 @@ private:
     void PushExpressionWidth(CHtfeOperand *pExpr, int width, bool bForceBoolean=false);
 	void InsertCompareOperator(CHtfeOperand *pExpr);
 
+public:
+	static CHtfeIdent *m_pVoidType;
+	static CHtfeIdent *m_pBoolType;
+	static CHtfeIdent *m_pScUintType;
+	static CHtfeIdent *m_pScIntType;
+	static CHtfeIdent *m_pScBigUintType;
+	static CHtfeIdent *m_pScBigIntType;
+	static CHtfeIdent *m_pBigIntBaseType;
+	static CHtfeIdent *m_pScStateType;
+    static CHtfeIdent *m_pCharType;
+	static CHtfeIdent *m_pUCharType;
+	static CHtfeIdent *m_pShortType;
+	static CHtfeIdent *m_pUShortType;
+	static CHtfeIdent *m_pIntType;
+	static CHtfeIdent *m_pUIntType;
+	static CHtfeIdent *m_pLongType;
+	static CHtfeIdent *m_pULongType;
+	static CHtfeIdent *m_pInt8Type;
+	static CHtfeIdent *m_pUInt8Type;
+	static CHtfeIdent *m_pInt16Type;
+	static CHtfeIdent *m_pUInt16Type;
+	static CHtfeIdent *m_pInt32Type;
+	static CHtfeIdent *m_pUInt32Type;
+	static CHtfeIdent *m_pInt64Type;
+	static CHtfeIdent *m_pUInt64Type;
+	static CHtfeIdent *m_pFloatType;
+	static CHtfeIdent *m_pDoubleType;
+	static CHtfeIdent *m_pRangeType;
+
 private:
     CTokenList m_scStart;
     int m_parseSwitchCount;
 	int m_parseReturnCount;
-    CHtfeIdent *m_pVoidType;
-    CHtfeIdent *m_pBoolType;
-    CHtfeIdent *m_pScUintType;
-    CHtfeIdent *m_pScIntType;
-    CHtfeIdent *m_pScBigUintType;
-    CHtfeIdent *m_pScStateType;
     string m_operatorParenString;
     string m_rangeString;
     string m_readString;
@@ -287,17 +316,6 @@ private:
     string m_longString;
     string m_floatString;
     string m_doubleString;
-    CHtfeIdent *m_pCharType;
-    CHtfeIdent *m_pUCharType;
-    CHtfeIdent *m_pShortType;
-    CHtfeIdent *m_pUShortType;
-    CHtfeIdent *m_pIntType;
-    CHtfeIdent *m_pUIntType;
-    CHtfeIdent *m_pInt64Type;
-    CHtfeIdent *m_pUInt64Type;
-    CHtfeIdent *m_pFloatType;
-    CHtfeIdent *m_pDoubleType;
-    CHtfeIdent *m_pRangeType;
     bool m_bCaseExpr;
 
     vector<ESeqState> m_seqStateStack;

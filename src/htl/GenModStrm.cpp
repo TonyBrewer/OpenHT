@@ -23,10 +23,10 @@ void CDsnInfo::InitAndValidateModStrm()
 		for (size_t streamIdx = 0; streamIdx < mod.m_streamList.size(); streamIdx += 1) {
 			CStream * pStrm = mod.m_streamList[streamIdx];
 
-			pStrm->m_strmBw.InitValue( pStrm->m_lineInfo, false, 10 );
-			pStrm->m_elemCntW.InitValue( pStrm->m_lineInfo, false, 12 );
-			pStrm->m_strmCnt.InitValue( pStrm->m_lineInfo, false, 1 );
-			pStrm->m_reserve.InitValue( pStrm->m_lineInfo, false, 0 );
+			pStrm->m_strmBw.InitValue(pStrm->m_lineInfo, false, 10);
+			pStrm->m_elemCntW.InitValue(pStrm->m_lineInfo, false, 12);
+			pStrm->m_strmCnt.InitValue(pStrm->m_lineInfo, false, 1);
+			pStrm->m_reserve.InitValue(pStrm->m_lineInfo, false, 0);
 			pStrm->m_rspGrpW.InitValue(pStrm->m_lineInfo, false, mod.m_threads.m_htIdW.AsInt());
 
 			if (pStrm->m_strmCnt.AsInt() < 1 || pStrm->m_strmCnt.AsInt() > 64) {
@@ -34,7 +34,7 @@ void CDsnInfo::InitAndValidateModStrm()
 				continue;
 			}
 
-			pStrm->m_strmCntW = FindLg2(pStrm->m_strmCnt.AsInt()-1);
+			pStrm->m_strmCntW = FindLg2(pStrm->m_strmCnt.AsInt() - 1);
 
 			if (pStrm->m_strmBw.AsInt() == 0 || pStrm->m_strmBw.AsInt() > 10) {
 				ParseMsg(Error, pStrm->m_lineInfo, "unsupported value for strmBw (%d) must be 1-10", pStrm->m_strmBw.AsInt());
@@ -43,13 +43,13 @@ void CDsnInfo::InitAndValidateModStrm()
 
 			string varName;
 			CHtString bitWidth;
-			pStrm->m_elemBitW = FindTypeWidth( varName, pStrm->m_type.AsStr(), bitWidth, pStrm->m_lineInfo );
+			pStrm->m_elemBitW = FindTypeWidth(varName, pStrm->m_pType->m_typeName, bitWidth, pStrm->m_lineInfo);
 			if (pStrm->m_elemBitW != 8 && pStrm->m_elemBitW != 16 && pStrm->m_elemBitW != 32 && pStrm->m_elemBitW != 64)
 				ParseMsg(Error, pStrm->m_lineInfo, "unsupported type width for stream (%d) must be 8, 16, 32 or 64", pStrm->m_elemBitW);
 
 			if (pStrm->m_memPort.size() > 1 && (int)pStrm->m_memPort.size() != pStrm->m_strmCnt.AsInt())
 				ParseMsg(Error, pStrm->m_lineInfo, "number of specifed memory ports (%d) does not match strmCnt (%d)",
-					(int)pStrm->m_memPort.size(), pStrm->m_strmCnt.AsInt());
+				(int)pStrm->m_memPort.size(), pStrm->m_strmCnt.AsInt());
 
 			if ((int)pStrm->m_memPort.size() != pStrm->m_strmCnt.AsInt())
 				pStrm->m_memPort.resize(pStrm->m_strmCnt.AsInt(), pStrm->m_memPort[0]);
@@ -58,7 +58,7 @@ void CDsnInfo::InitAndValidateModStrm()
 
 			for (int i = 0; i < pStrm->m_strmCnt.AsInt(); i += 1) {
 				int memPortIdx = pStrm->m_memPort[i];
-				CModMemPort * pModMemPort = mod.m_memPortList[ memPortIdx ];
+				CModMemPort * pModMemPort = mod.m_memPortList[memPortIdx];
 
 				if (pStrm->m_bRead)
 					pModMemPort->m_rdStrmCnt += 1;
@@ -94,26 +94,26 @@ void CDsnInfo::InitAndValidateModStrm()
 			if (pStrm->m_bRead) {
 				switch (pStrm->m_elemBitW) {
 				case 8:
-					pStrm->m_bufFull = pStrm->m_strmBw.AsInt() == 10 ? (1<<9)-79 : ((1<<8)-79 - (9-pStrm->m_strmBw.AsInt()) * 19);
+					pStrm->m_bufFull = pStrm->m_strmBw.AsInt() == 10 ? (1 << 9) - 79 : ((1 << 8) - 79 - (9 - pStrm->m_strmBw.AsInt()) * 19);
 					pStrm->m_bufPtrW = FindLg2(pStrm->m_bufFull + 64 + 7) + 1;
 					break;
 				case 16:
-					pStrm->m_bufFull = pStrm->m_strmBw.AsInt() == 10 ? (1<<9)-39 : ((1<<8)-39 - (9-pStrm->m_strmBw.AsInt()) * 24);
+					pStrm->m_bufFull = pStrm->m_strmBw.AsInt() == 10 ? (1 << 9) - 39 : ((1 << 8) - 39 - (9 - pStrm->m_strmBw.AsInt()) * 24);
 					pStrm->m_bufPtrW = FindLg2(pStrm->m_bufFull + 32 + 3) + 1;
 					break;
 				case 32:
-					pStrm->m_bufFull = pStrm->m_strmBw.AsInt() == 10 ? (1<<9)-19 : ((1<<8)-19 - (9-pStrm->m_strmBw.AsInt()) * 26);
+					pStrm->m_bufFull = pStrm->m_strmBw.AsInt() == 10 ? (1 << 9) - 19 : ((1 << 8) - 19 - (9 - pStrm->m_strmBw.AsInt()) * 26);
 					pStrm->m_bufPtrW = FindLg2(pStrm->m_bufFull + 16 + 1) + 1;
 					break;
 				case 64:
-					pStrm->m_bufFull = pStrm->m_strmBw.AsInt() == 10 ? (1<<9)-10 : ((1<<8)-10 - (9-pStrm->m_strmBw.AsInt()) * 27);
+					pStrm->m_bufFull = pStrm->m_strmBw.AsInt() == 10 ? (1 << 9) - 10 : ((1 << 8) - 10 - (9 - pStrm->m_strmBw.AsInt()) * 27);
 					pStrm->m_bufPtrW = FindLg2(pStrm->m_bufFull + 8) + 1;
 					break;
 				default:
 					assert(0);
 				}
 			} else
-				pStrm->m_bufPtrW = FindLg2((1 << (4 + 3-pStrm->m_elemByteW)) - 1) + 1;
+				pStrm->m_bufPtrW = FindLg2((1 << (4 + 3 - pStrm->m_elemByteW)) - 1) + 1;
 
 			if (!pStrm->m_bRead)
 				mod.m_rsmSrcCnt += pStrm->m_strmCnt.AsInt();
@@ -152,8 +152,8 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 	if (mod.m_streamList.size() == 0)
 		return;
 
-	bool bIsHc2 = g_appArgs.GetCoproc() == hc2 || g_appArgs.GetCoproc() == hc2ex;
-	bool bIsWx = g_appArgs.GetCoproc() == wx690 || g_appArgs.GetCoproc() == wx2k;
+	bool bIsHc2 = g_appArgs.GetCoprocInfo().GetCoproc() == hc2 || g_appArgs.GetCoprocInfo().GetCoproc() == hc2ex;
+	bool bIsWx = g_appArgs.GetCoprocInfo().GetCoproc() == wx690 || g_appArgs.GetCoprocInfo().GetCoproc() == wx2k;
 
 	CHtCode & strmPreInstr = mod.m_clkRate == eClk2x ? m_strmPreInstr2x : m_strmPreInstr1x;
 	CHtCode & strmPostInstr = mod.m_clkRate == eClk2x ? m_strmPostInstr2x : m_strmPostInstr1x;
@@ -171,7 +171,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 
 		m_strmIoDecl.Append("\t// Stream Interface\n");
 		GenModDecl(eVcdUser, m_strmIoDecl, vcdModName, "sc_out<bool>", VA("o_%sP%dToMif_reqRdy", mod.m_modName.Lc().c_str(), memPortIdx));
-		m_strmIoDecl.Append("\tsc_out<CMemRdWrReqIntf> o_%sP%dToMif_req;\n", 
+		m_strmIoDecl.Append("\tsc_out<CMemRdWrReqIntf> o_%sP%dToMif_req;\n",
 			mod.m_modName.Lc().c_str(), memPortIdx);
 
 		m_strmIoDecl.Append("\tsc_in<bool> i_mifTo%sP%d_reqAvl;\n", mod.m_modName.Uc().c_str(), memPortIdx);
@@ -180,7 +180,11 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 		if (modMemPort.m_bRead) {
 			GenModDecl(eVcdUser, m_strmIoDecl, vcdModName, "sc_in<bool>", VA("i_mifTo%sP%d_rdRspRdy", mod.m_modName.Uc().c_str(), memPortIdx));
 			GenModDecl(eVcdUser, m_strmIoDecl, vcdModName, "sc_in<CMemRdRspIntf>", VA("i_mifTo%sP%d_rdRsp", mod.m_modName.Uc().c_str(), memPortIdx));
+			GenModDecl(eVcdUser, m_strmIoDecl, vcdModName, "sc_out<bool>", VA("o_%sP%dToMif_rdRspFull", mod.m_modName.Lc().c_str(), memPortIdx));
 			m_strmIoDecl.Append("\n");
+
+			strmOut.Append("\to_%sP%dToMif_rdRspFull = false;\n",
+				mod.m_modName.Lc().c_str(), memPortIdx);
 		}
 
 		if (modMemPort.m_bWrite) {
@@ -264,7 +268,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 		}
 
 		strmOut.Append("\to_%sP%dToMif_reqRdy = r_t%d_%sP%dToMif_reqRdy;\n",
-			mod.m_modName.Lc().c_str(), memPortIdx, 
+			mod.m_modName.Lc().c_str(), memPortIdx,
 			(mod.m_clkRate == eClk1x || !modMemPort.m_bWrite) ? 3 : 5, mod.m_modName.Lc().c_str(), memPortIdx);
 
 		GenModDecl(eVcdAll, m_strmRegDecl, vcdModName, "ht_uint6", VA("r_%sP%dToMif_reqAvlCnt", mod.m_modName.Lc().c_str(), memPortIdx));
@@ -275,9 +279,9 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 			mod.m_modName.Lc().c_str(), memPortIdx, mod.m_modName.Lc().c_str(), memPortIdx);
 		m_strmAvlCntChk.Append("\t\tassert(r_%sP%dToMif_reqAvlCnt == 32);\n", mod.m_modName.Lc().c_str(), memPortIdx);
 
-		GenModDecl(eVcdAll, m_strmRegDecl, vcdModName, "bool", VA("r_%sP%dToMif_reqAvlCntBusy", 
+		GenModDecl(eVcdAll, m_strmRegDecl, vcdModName, "bool", VA("r_%sP%dToMif_reqAvlCntBusy",
 			mod.m_modName.Lc().c_str(), memPortIdx));
-		m_strmRegDecl.Append("\tbool c_%sP%dToMif_reqAvlCntBusy;\n", 
+		m_strmRegDecl.Append("\tbool c_%sP%dToMif_reqAvlCntBusy;\n",
 			mod.m_modName.Lc().c_str(), memPortIdx);
 		strmPreInstr.Append("\tc_%sP%dToMif_reqAvlCntBusy = r_%sP%dToMif_reqAvlCntBusy;\n",
 			mod.m_modName.Lc().c_str(), memPortIdx, mod.m_modName.Lc().c_str(), memPortIdx);
@@ -286,12 +290,12 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 
 		if (modMemPort.m_bRead) {
 			GenModDecl(eVcdAll, m_strmRegDecl, vcdModName, "bool", VA("r_mifTo%sP%d_rdRspRdy", mod.m_modName.Uc().c_str(), memPortIdx));
-			strmReg.Append("\tr_mifTo%sP%d_rdRspRdy = i_mifTo%sP%d_rdRspRdy;\n", 
+			strmReg.Append("\tr_mifTo%sP%d_rdRspRdy = i_mifTo%sP%d_rdRspRdy;\n",
 				mod.m_modName.Uc().c_str(), memPortIdx, mod.m_modName.Uc().c_str(), memPortIdx);
 			m_strmCtorInit.Append("\t\tr_mifTo%sP%d_rdRspRdy = false;\n", mod.m_modName.Uc().c_str(), memPortIdx);
 
 			GenModDecl(eVcdAll, m_strmRegDecl, vcdModName, "CMemRdRspIntf", VA("r_mifTo%sP%d_rdRsp", mod.m_modName.Uc().c_str(), memPortIdx));
-			strmReg.Append("\tr_mifTo%sP%d_rdRsp = i_mifTo%sP%d_rdRsp;\n", 
+			strmReg.Append("\tr_mifTo%sP%d_rdRsp = i_mifTo%sP%d_rdRsp;\n",
 				mod.m_modName.Uc().c_str(), memPortIdx, mod.m_modName.Uc().c_str(), memPortIdx);
 		}
 		strmReg.Append("\n");
@@ -314,20 +318,20 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 
 				string selName;
 				if (mod.m_clkRate == eClk2x)
-					 selName = VA(" && !r_%sP%dToMif_bReqSel", mod.m_modName.Lc().c_str(), pStrm->m_memPort[i]);
+					selName = VA(" && !r_%sP%dToMif_bReqSel", mod.m_modName.Lc().c_str(), pStrm->m_memPort[i]);
 
 				strmPostInstr.Append("\t\tc_rdStrm%s_bufElemCnt%s = (r_rdStrm%s_reqWrPtr%s - r_rdStrm%s_rspRdPtr%s) & 0x%x;\n",
-					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), (1 << (bufPtrW-1))-1 );
+					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), (1 << (bufPtrW - 1)) - 1);
 
 				strmPostInstr.Append("\t\tc_rdStrm%s_bRspBufFull%s = c_rdStrm%s_bufElemCnt%s > %d;\n",
 					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), pStrm->m_bufFull);
 
 				if (pStrm->m_bClose)
 					strmPostInstr.Append("\t\tc_rdStrm%s_bReqRdy%s = r_rdStrm%s_bOpenReq%s && !c_rdStrm%s_bRspBufFull%s && r_rdStrm%s_reqCnt%s > 0%s;\n",
-						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), selName.c_str());
+					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), selName.c_str());
 				else
 					strmPostInstr.Append("\t\tc_rdStrm%s_bReqRdy%s = r_rdStrm%s_bOpenReq%s && !c_rdStrm%s_bRspBufFull%s%s;\n",
-						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), selName.c_str());
+					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), selName.c_str());
 
 				strmPostInstr.Append("\t}\n");
 				strmPostInstr.Append("\n");
@@ -340,7 +344,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 
 				string selName;
 				if (mod.m_clkRate == eClk2x)
-					 selName = VA(" && !r_%sP%dToMif_bReqSel", mod.m_modName.Lc().c_str(), pStrm->m_memPort[i]);
+					selName = VA(" && !r_%sP%dToMif_bReqSel", mod.m_modName.Lc().c_str(), pStrm->m_memPort[i]);
 
 				string strmRspGrpIdStr = pStrm->m_rspGrpW.AsInt() == 0 ? "" : VA("[r_wrStrm%s_rspGrpId%s]", strmName.c_str(), strmIdxStr.c_str());
 
@@ -353,10 +357,10 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 
 				if (pStrm->m_bClose)
 					strmPostInstr.Append("\t\t\t(r_t3_wrStrm%s_reqQwRem%s > 0 || r_wrStrm%s_bufRdElemCnt%s >= %d || r_wrStrm%s_bClosingBufRd%s);\n",
-						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), pStrm->m_qwElemCnt*8, strmName.c_str(), strmIdxStr.c_str());
+					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), pStrm->m_qwElemCnt * 8, strmName.c_str(), strmIdxStr.c_str());
 				else
 					strmPostInstr.Append("\t\t\t(r_t3_wrStrm%s_reqQwRem%s > 0 || r_wrStrm%s_bufRdElemCnt%s >= %d || r_wrStrm%s_bufRdRem%s <= r_wrStrm%s_bufRdElemCnt%s);\n",
-						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), pStrm->m_qwElemCnt*8, strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
+					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), pStrm->m_qwElemCnt * 8, strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 
 				strmPostInstr.Append("\t}\n");
 				strmPostInstr.Append("\n");
@@ -380,7 +384,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 
 			if (mod.m_clkRate == eClk2x)
 				strmPostInstr.Append("\tc_%sP%dToMif_bReqSel = c_t1_%sStrm%s_bReqSel%s;\n",
-					mod.m_modName.Lc().c_str(), memPortIdx, memPortStrm.m_bRead ? "rd" : "wr", strmName.c_str(), strmIdxStr.c_str());
+				mod.m_modName.Lc().c_str(), memPortIdx, memPortStrm.m_bRead ? "rd" : "wr", strmName.c_str(), strmIdxStr.c_str());
 
 		} else {
 			for (size_t arbRrId = 0; arbRrId < pModMemPort->m_strmList.size(); arbRrId += 1) {
@@ -393,7 +397,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 				strmPostInstr.Append("\tc_t1_%sStrm%s_bReqSel%s = c_%sStrm%s_bReqRdy%s && ((r_%sP%dToMif_reqRr & 0x%llx) != 0 || !(\n",
 					memPortStrm.m_bRead ? "rd" : "wr", strmName.c_str(), strmIdxStr.c_str(),
 					memPortStrm.m_bRead ? "rd" : "wr", strmName.c_str(), strmIdxStr.c_str(),
-					mod.m_modName.Lc().c_str(), memPortIdx, 1ull<<arbRrId);
+					mod.m_modName.Lc().c_str(), memPortIdx, 1ull << arbRrId);
 
 				for (size_t j = 1; j < pModMemPort->m_strmList.size(); j += 1) {
 					int k = (arbRrId + j) % pModMemPort->m_strmList.size();
@@ -403,14 +407,14 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 					string strmName = memPortStrm2.m_pStrm->m_name.size() == 0 ? "" : "_" + memPortStrm2.m_pStrm->m_name.AsStr();
 					string strmIdxStr = memPortStrm2.m_pStrm->m_strmCnt.size() == 0 ? "" : VA("[%d]", memPortStrm2.m_strmIdx);
 
-					uint32_t mask1 = (1ul << pModMemPort->m_strmList.size())-1;
-					uint32_t mask2 = ((1ul << j)-1) << (arbRrId+1);
+					uint32_t mask1 = (1ul << pModMemPort->m_strmList.size()) - 1;
+					uint32_t mask2 = ((1ul << j) - 1) << (arbRrId + 1);
 					uint32_t mask3 = (mask2 & mask1) | (mask2 >> pModMemPort->m_strmList.size());
 
 					strmPostInstr.Append("\t\t(c_%sStrm%s_bReqRdy%s && (r_%sP%dToMif_reqRr & 0x%x) != 0)%s\n",
 						memPortStrm2.m_bRead ? "rd" : "wr", strmName.c_str(), strmIdxStr.c_str(),
 						mod.m_modName.Lc().c_str(), memPortIdx,
-						mask3, j == pModMemPort->m_strmList.size()-1 ? "));" : " ||");
+						mask3, j == pModMemPort->m_strmList.size() - 1 ? "));" : " ||");
 				}
 			}
 			if (mod.m_clkRate == eClk2x) {
@@ -473,7 +477,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 			m_strmFuncDecl.Append("\tvoid ReadStreamOpen%s(", strmName.c_str());
 			m_strmFuncDef.Append("void CPers%s::ReadStreamOpen%s(",
 				mod.m_modName.Uc().c_str(), strmName.c_str());
-		
+
 			if (pStrm->m_strmCnt.size() > 0) {
 				g_appArgs.GetDsnRpt().AddText("ht_uint%d strmId, ", pStrm->m_strmCntW);
 				m_strmFuncDecl.Append("ht_uint%d strmId, ", pStrm->m_strmCntW);
@@ -488,10 +492,10 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 			m_strmFuncDecl.Append(", ht_uint%d elemCnt", pStrm->m_elemCntW.AsInt());
 			m_strmFuncDef.Append(", ht_uint%d elemCnt", pStrm->m_elemCntW.AsInt());
 
-			if (pStrm->m_tag.size() > 0) {
-				g_appArgs.GetDsnRpt().AddText(", %s tag", pStrm->m_tag.c_str());
-				m_strmFuncDecl.Append(", %s tag", pStrm->m_tag.c_str());
-				m_strmFuncDef.Append(", %s tag", pStrm->m_tag.c_str());
+			if (pStrm->m_pTag != 0) {
+				g_appArgs.GetDsnRpt().AddText(", %s tag", pStrm->m_pTag->m_typeName.c_str());
+				m_strmFuncDecl.Append(", %s tag", pStrm->m_pTag->m_typeName.c_str());
+				m_strmFuncDef.Append(", %s tag", pStrm->m_pTag->m_typeName.c_str());
 			}
 
 			g_appArgs.GetDsnRpt().AddText("t)\n");
@@ -502,15 +506,15 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 
 			if (pStrm->m_strmCnt.size() > 0)
 				m_strmFuncDef.Append("\tassert_msg(strmId < %d, \"Runtime check failed in CPers%s::ReadStreamOpen%s()"
-					" - strmId out of range\");\n", 
-					strmCnt,
-					mod.m_modName.Uc().c_str(), strmName.c_str());
+				" - strmId out of range\");\n",
+				strmCnt,
+				mod.m_modName.Uc().c_str(), strmName.c_str());
 
 			m_strmFuncDef.Append("\tassert_msg((addr & 0x%x) == 0, \"Runtime check failed in CPers%s::ReadStreamOpen%s()"
-				" - address not aligned to element boundary (0x%x)\");\n", 
-				(1<<pStrm->m_elemByteW)-1,
+				" - address not aligned to element boundary (0x%x)\");\n",
+				(1 << pStrm->m_elemByteW) - 1,
 				mod.m_modName.Uc().c_str(), strmName.c_str(),
-				1<<pStrm->m_elemByteW);
+				1 << pStrm->m_elemByteW);
 
 			m_strmFuncDef.Append("\tassert_msg(c_rdStrm%s_bOpenAvail%s, \"Runtime check failed in CPers%s::ReadStreamOpen%s()"
 				" - expected ReadStreamBusy%s() to have been called and not busy\");\n",
@@ -524,7 +528,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 
 			if (pStrm->m_elemByteW < 3) {
 				m_strmFuncDef.Append("\tc_rdStrm%s_reqWrPtr%s(%d,0) = addr(2,%d);\n",
-					strmName.c_str(), strmIdStr.c_str(), 2-pStrm->m_elemByteW,
+					strmName.c_str(), strmIdStr.c_str(), 2 - pStrm->m_elemByteW,
 					pStrm->m_elemByteW);
 				m_strmFuncDef.Append("\n");
 			}
@@ -533,7 +537,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 			m_strmFuncDef.Append("\topenRsp.m_rdPtr = c_rdStrm%s_reqWrPtr%s;\n", strmName.c_str(), strmIdStr.c_str());
 			if (!pStrm->m_bClose)
 				m_strmFuncDef.Append("\topenRsp.m_cnt = elemCnt;\n");
-			if (pStrm->m_tag.size() > 0)
+			if (pStrm->m_pTag != 0)
 				m_strmFuncDef.Append("\topenRsp.m_tag = tag;\n");
 
 			m_strmFuncDef.Append("\n");
@@ -548,7 +552,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 			m_strmFuncDecl.Append("\tvoid WriteStreamOpen%s(", strmName.c_str());
 			m_strmFuncDef.Append("void CPers%s::WriteStreamOpen%s(",
 				mod.m_modName.Uc().c_str(), strmName.c_str());
-		
+
 			if (pStrm->m_strmCnt.size() > 0) {
 				g_appArgs.GetDsnRpt().AddText("ht_uint%d strmId, ", pStrm->m_strmCntW);
 				m_strmFuncDecl.Append("ht_uint%d strmId, ", pStrm->m_strmCntW);
@@ -579,18 +583,18 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 
 			if (pStrm->m_strmCnt.size() > 0)
 				m_strmFuncDef.Append("\tassert_msg(strmId < %d, \"Runtime check failed in CPers%s::WriteStreamOpen%s()"
-					" - strmId out of range\");\n", 
-					strmCnt,
-					mod.m_modName.Uc().c_str(), strmName.c_str());
+				" - strmId out of range\");\n",
+				strmCnt,
+				mod.m_modName.Uc().c_str(), strmName.c_str());
 
 			m_strmFuncDef.Append("\tassert_msg((addr & 0x%x) == 0, \"Runtime check failed in CPers%s::WriteStreamOpen%s()"
-				" - address not aligned to element boundary (0x%x)\");\n", 
-				(1<<pStrm->m_elemByteW)-1,
+				" - address not aligned to element boundary (0x%x)\");\n",
+				(1 << pStrm->m_elemByteW) - 1,
 				mod.m_modName.Uc().c_str(), strmName.c_str(),
-				1<<pStrm->m_elemByteW);
+				1 << pStrm->m_elemByteW);
 
 			m_strmFuncDef.Append("\tassert_msg(c_wrStrm%s_bOpenAvail%s, \"Runtime check failed in CPers%s::WriteStreamOpen%s()"
-				" - expected WriteStreamBusy%s() to have been called and not busy\");\n", 
+				" - expected WriteStreamBusy%s() to have been called and not busy\");\n",
 				strmName.c_str(), strmIdStr.c_str(), mod.m_modName.Uc().c_str(), strmName.c_str(), strmName.c_str());
 
 			char * pTab = "";
@@ -602,12 +606,12 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 			m_strmFuncDef.Append("%s\tc_wrStrm%s_bOpenBufWr%s = true;\n", pTab, strmName.c_str(), strmIdStr.c_str());
 			if (pStrm->m_elemByteW < 3) {
 				m_strmFuncDef.Append("%s\tif (r_wrStrm%s_bufWrPtr%s(%d,0) != 0)\n", pTab,
-					strmName.c_str(), strmIdStr.c_str(), 3-pStrm->m_elemByteW-1);
+					strmName.c_str(), strmIdStr.c_str(), 3 - pStrm->m_elemByteW - 1);
 				m_strmFuncDef.Append("%s\t\tc_wrStrm%s_bufWrPtr%s(%d,%d) = r_wrStrm%s_bufWrPtr%s(%d,%d) + 1;\n", pTab,
-					strmName.c_str(), strmIdStr.c_str(), bufPtrW-1, 3-pStrm->m_elemByteW,
-					strmName.c_str(), strmIdStr.c_str(), bufPtrW-1, 3-pStrm->m_elemByteW);
+					strmName.c_str(), strmIdStr.c_str(), bufPtrW - 1, 3 - pStrm->m_elemByteW,
+					strmName.c_str(), strmIdStr.c_str(), bufPtrW - 1, 3 - pStrm->m_elemByteW);
 				m_strmFuncDef.Append("%s\tc_wrStrm%s_bufWrPtr%s(%d,0) = addr(2,%d);\n", pTab,
-					strmName.c_str(), strmIdStr.c_str(), 2-pStrm->m_elemByteW, pStrm->m_elemByteW);
+					strmName.c_str(), strmIdStr.c_str(), 2 - pStrm->m_elemByteW, pStrm->m_elemByteW);
 			}
 			if (!pStrm->m_bClose) {
 				m_strmFuncDef.Append("\t}\n");
@@ -650,7 +654,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 				m_strmFuncDecl.Append("\tvoid ReadStreamClose%s(", strmName.c_str());
 				m_strmFuncDef.Append("void CPers%s::ReadStreamClose%s(",
 					mod.m_modName.Uc().c_str(), strmName.c_str());
-		
+
 				if (pStrm->m_strmCnt.size() > 0) {
 					g_appArgs.GetDsnRpt().AddText("ht_uint%d strmId", pStrm->m_strmCntW);
 					m_strmFuncDecl.Append("ht_uint%d strmId", pStrm->m_strmCntW);
@@ -665,9 +669,9 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 
 				if (pStrm->m_strmCnt.size() > 0)
 					m_strmFuncDef.Append("\tassert_msg(strmId < %d, \"Runtime check failed in CPers%s::ReadStreamClose%s()"
-						" - strmId out of range\");\n", 
-						strmCnt,
-						mod.m_modName.Uc().c_str(), strmName.c_str());
+					" - strmId out of range\");\n",
+					strmCnt,
+					mod.m_modName.Uc().c_str(), strmName.c_str());
 
 				m_strmFuncDef.Append("\tc_rdStrm%s_bClosingRsp%s = true;\n", strmName.c_str(), strmIdStr.c_str());
 				m_strmFuncDef.Append("\tc_rdStrm%s_bClose%s = true;\n", strmName.c_str(), strmIdStr.c_str());
@@ -682,7 +686,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 				m_strmFuncDecl.Append("\tvoid WriteStreamClose%s(", strmName.c_str());
 				m_strmFuncDef.Append("void CPers%s::WriteStreamClose%s(",
 					mod.m_modName.Uc().c_str(), strmName.c_str());
-		
+
 				if (pStrm->m_strmCnt.size() > 0) {
 					g_appArgs.GetDsnRpt().AddText("ht_uint%d strmId", pStrm->m_strmCntW);
 					m_strmFuncDecl.Append("ht_uint%d strmId", pStrm->m_strmCntW);
@@ -697,9 +701,9 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 
 				if (pStrm->m_strmCnt.size() > 0)
 					m_strmFuncDef.Append("\tassert_msg(strmId < %d, \"Runtime check failed in CPers%s::WriteStreamClose%s()"
-						" - strmId out of range\");\n", 
-						strmCnt,
-						mod.m_modName.Uc().c_str(), strmName.c_str());
+					" - strmId out of range\");\n",
+					strmCnt,
+					mod.m_modName.Uc().c_str(), strmName.c_str());
 
 				if (pStrm->m_reserve.AsInt() > 0) {
 					m_strmFuncDef.Append("\tc_wrStrm%s_strmWrEn%s = true;\n", strmName.c_str(), strmIdStr.c_str());
@@ -721,7 +725,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 			m_strmFuncDecl.Append("\tvoid WriteStreamPause%s(", strmName.c_str());
 			m_strmFuncDef.Append("void CPers%s::WriteStreamPause%s(",
 				mod.m_modName.Uc().c_str(), strmName.c_str());
-		
+
 			if (pStrm->m_rspGrpW.size() > 0 && pStrm->m_rspGrpW.AsInt() > 0) {
 				g_appArgs.GetDsnRpt().AddText("ht_uint%d rspGrpId, ", pStrm->m_rspGrpW.AsInt());
 				m_strmFuncDecl.Append("ht_uint%d rspGrpId, ", pStrm->m_rspGrpW.AsInt());
@@ -744,7 +748,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 			m_strmFuncDef.Append("\tassert_msg(c_t%d_htCtrl == HT_INVALID, \"Runtime check failed in CPers%s::WriteStreamPause%s()"
 				" - an Ht control routine was already called\");\n", mod.m_execStg, mod.m_modName.Uc().c_str(), strmName.c_str());
 			m_strmFuncDef.Append("\tassert_msg(!r_wrStrm%s_bPaused%s, \"Runtime check failed in CPers%s::WriteStreamPause%s()"
-				" - pause already active\");\n", 
+				" - pause already active\");\n",
 				strmName.c_str(), rspGrpIdx.c_str(),
 				mod.m_modName.Uc().c_str(), strmName.c_str());
 			m_strmFuncDef.Append("\tc_t%d_htCtrl = HT_PAUSE;\n", mod.m_execStg);
@@ -788,7 +792,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 			m_strmFuncDecl.Append("\tbool ReadStreamReady%s(", strmName.c_str());
 			m_strmFuncDef.Append("bool CPers%s::ReadStreamReady%s(",
 				mod.m_modName.Uc().c_str(), strmName.c_str());
-		
+
 			if (pStrm->m_strmCnt.size() > 0) {
 				g_appArgs.GetDsnRpt().AddText("ht_uint%d strmId", pStrm->m_strmCntW);
 				m_strmFuncDecl.Append("ht_uint%d strmId", pStrm->m_strmCntW);
@@ -803,9 +807,9 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 
 			if (pStrm->m_strmCnt.size() > 0)
 				m_strmFuncDef.Append("\tassert_msg(strmId < %d, \"Runtime check failed in CPers%s::ReadStreamReady%s()"
-					" - strmId out of range\");\n", 
-					strmCnt,
-					mod.m_modName.Uc().c_str(), strmName.c_str());
+				" - strmId out of range\");\n",
+				strmCnt,
+				mod.m_modName.Uc().c_str(), strmName.c_str());
 
 			if (pStrm->m_strmCnt.size() == 0)
 				m_strmFuncDef.Append("\treturn r_rdStrm%s_bValid;\n", strmName.c_str());
@@ -820,7 +824,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 			m_strmFuncDecl.Append("\tbool WriteStreamReady%s(", strmName.c_str());
 			m_strmFuncDef.Append("bool CPers%s::WriteStreamReady%s(",
 				mod.m_modName.Uc().c_str(), strmName.c_str());
-		
+
 			if (pStrm->m_strmCnt.size() > 0) {
 				g_appArgs.GetDsnRpt().AddText("ht_uint%d strmId", pStrm->m_strmCntW);
 				m_strmFuncDecl.Append("ht_uint%d strmId", pStrm->m_strmCntW);
@@ -835,9 +839,9 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 
 			if (pStrm->m_strmCnt.size() > 0)
 				m_strmFuncDef.Append("\tassert_msg(strmId < %d, \"Runtime check failed in CPers%s::WriteStreamReady%s()"
-					" - strmId out of range\");\n", 
-					strmCnt,
-					mod.m_modName.Uc().c_str(), strmName.c_str());
+				" - strmId out of range\");\n",
+				strmCnt,
+				mod.m_modName.Uc().c_str(), strmName.c_str());
 
 			if (pStrm->m_reserve.AsInt() == 0) {
 				if (pStrm->m_strmCnt.size() == 0)
@@ -861,7 +865,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 				m_strmFuncDecl.Append("\tbool ReadStreamReadyMask%s(", strmName.c_str());
 				m_strmFuncDef.Append("bool CPers%s::ReadStreamReadyMask%s(",
 					mod.m_modName.Uc().c_str(), strmName.c_str());
-		
+
 				g_appArgs.GetDsnRpt().AddText("ht_uint%d strmMask", pStrm->m_strmCnt.AsInt());
 				m_strmFuncDecl.Append("ht_uint%d strmMask", pStrm->m_strmCnt.AsInt());
 				m_strmFuncDef.Append("ht_uint%d strmMask", pStrm->m_strmCnt.AsInt());
@@ -888,7 +892,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 				m_strmFuncDecl.Append("\tbool WriteStreamReadyMask%s(", strmName.c_str());
 				m_strmFuncDef.Append("bool CPers%s::WriteStreamReadyMask%s(",
 					mod.m_modName.Uc().c_str(), strmName.c_str());
-		
+
 				g_appArgs.GetDsnRpt().AddText("ht_uint%d strmMask", pStrm->m_strmCnt.AsInt());
 				m_strmFuncDecl.Append("ht_uint%d strmMask", pStrm->m_strmCnt.AsInt());
 				m_strmFuncDef.Append("ht_uint%d strmMask", pStrm->m_strmCnt.AsInt());
@@ -902,7 +906,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 				if (pStrm->m_reserve.AsInt() == 0) {
 					string preLine = "\treturn ";
 					for (int i = 0; i < pStrm->m_strmCnt.AsInt(); i += 1) {
-						m_strmFuncDef.Append("%s(!strmMask[%d] || r_wrStrm%s_bOpenBufWr[%d] && !r_wrStrm%s_bBufFull[%d])", 
+						m_strmFuncDef.Append("%s(!strmMask[%d] || r_wrStrm%s_bOpenBufWr[%d] && !r_wrStrm%s_bBufFull[%d])",
 							preLine.c_str(), i, strmName.c_str(), i, strmName.c_str(), i);
 						preLine = " &&\n\t\t";
 					}
@@ -910,7 +914,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 				} else {
 					string preLine = "\treturn ";
 					for (int i = 0; i < pStrm->m_strmCnt.AsInt(); i += 1) {
-						m_strmFuncDef.Append("%s(!strmMask[%d] || !r_wrStrm%s_bPipeQueFull[%d])", 
+						m_strmFuncDef.Append("%s(!strmMask[%d] || !r_wrStrm%s_bPipeQueFull[%d])",
 							preLine.c_str(), i, strmName.c_str(), i);
 						preLine = " &&\n\t\t";
 					}
@@ -927,7 +931,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 			m_strmFuncDecl.Append("\tbool ReadStreamLast%s(", strmName.c_str());
 			m_strmFuncDef.Append("bool CPers%s::ReadStreamLast%s(",
 				mod.m_modName.Uc().c_str(), strmName.c_str());
-		
+
 			if (pStrm->m_strmCnt.size() > 0) {
 				g_appArgs.GetDsnRpt().AddText("ht_uint%d strmId", pStrm->m_strmCntW);
 				m_strmFuncDecl.Append("ht_uint%d strmId", pStrm->m_strmCntW);
@@ -942,9 +946,9 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 
 			if (pStrm->m_strmCnt.size() > 0)
 				m_strmFuncDef.Append("\tassert_msg(strmId < %d, \"Runtime check failed in CPers%s::ReadStreamLast%s()"
-					" - strmId out of range\");\n", 
-					strmCnt,
-					mod.m_modName.Uc().c_str(), strmName.c_str());
+				" - strmId out of range\");\n",
+				strmCnt,
+				mod.m_modName.Uc().c_str(), strmName.c_str());
 
 			if (pStrm->m_strmCnt.size() == 0)
 				m_strmFuncDef.Append("\treturn r_rdStrm%s_bLast;\n", strmName.c_str());
@@ -961,7 +965,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 			m_strmFuncDecl.Append("\tbool ReadStreamBusy%s(", strmName.c_str());
 			m_strmFuncDef.Append("bool CPers%s::ReadStreamBusy%s(",
 				mod.m_modName.Uc().c_str(), strmName.c_str());
-		
+
 			if (pStrm->m_strmCnt.size() > 0) {
 				g_appArgs.GetDsnRpt().AddText("ht_uint%d strmId", pStrm->m_strmCntW);
 				m_strmFuncDecl.Append("ht_uint%d strmId", pStrm->m_strmCntW);
@@ -976,9 +980,9 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 
 			if (pStrm->m_strmCnt.size() > 0)
 				m_strmFuncDef.Append("\tassert_msg(strmId < %d, \"Runtime check failed in CPers%s::ReadStreamBusy%s()"
-					" - strmId out of range\");\n", 
-					strmCnt,
-					mod.m_modName.Uc().c_str(), strmName.c_str());
+				" - strmId out of range\");\n",
+				strmCnt,
+				mod.m_modName.Uc().c_str(), strmName.c_str());
 
 			if (pStrm->m_strmCnt.size() == 0) {
 				m_strmFuncDef.Append("\tc_rdStrm%s_bOpenAvail = !r_rdStrm%s_bOpenBusy;\n", strmName.c_str(), strmName.c_str());
@@ -996,7 +1000,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 			m_strmFuncDecl.Append("\tbool WriteStreamBusy%s(", strmName.c_str());
 			m_strmFuncDef.Append("bool CPers%s::WriteStreamBusy%s(",
 				mod.m_modName.Uc().c_str(), strmName.c_str());
-		
+
 			if (pStrm->m_strmCnt.size() > 0) {
 				g_appArgs.GetDsnRpt().AddText("ht_uint%d strmId", pStrm->m_strmCntW);
 				m_strmFuncDecl.Append("ht_uint%d strmId", pStrm->m_strmCntW);
@@ -1011,9 +1015,9 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 
 			if (pStrm->m_strmCnt.size() > 0)
 				m_strmFuncDef.Append("\tassert_msg(strmId < %d, \"Runtime check failed in CPers%s::WriteStreamBusy%s()"
-					" - strmId out of range\");\n", 
-					strmCnt,
-					mod.m_modName.Uc().c_str(), strmName.c_str());
+				" - strmId out of range\");\n",
+				strmCnt,
+				mod.m_modName.Uc().c_str(), strmName.c_str());
 
 			if (pStrm->m_strmCnt.size() == 0) {
 				m_strmFuncDef.Append("\tc_wrStrm%s_bOpenAvail = !r_wrStrm%s_bOpenBusy;\n", strmName.c_str(), strmName.c_str());
@@ -1033,7 +1037,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 				m_strmFuncDecl.Append("\tbool ReadStreamBusyMask%s(", strmName.c_str());
 				m_strmFuncDef.Append("bool CPers%s::ReadStreamBusyMask%s(",
 					mod.m_modName.Uc().c_str(), strmName.c_str());
-		
+
 				g_appArgs.GetDsnRpt().AddText("ht_uint%d strmMask", pStrm->m_strmCnt.AsInt());
 				m_strmFuncDecl.Append("ht_uint%d strmMask", pStrm->m_strmCnt.AsInt());
 				m_strmFuncDef.Append("ht_uint%d strmMask", pStrm->m_strmCnt.AsInt());
@@ -1046,7 +1050,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 
 				for (int i = 0; i < pStrm->m_strmCnt.AsInt(); i += 1)
 					m_strmFuncDef.Append("\tc_rdStrm%s_bOpenAvail[%d] |= strmMask[%d] && !r_rdStrm%s_bOpenBusy[%d];\n",
-						strmName.c_str(), i, i, strmName.c_str(), i);
+					strmName.c_str(), i, i, strmName.c_str(), i);
 
 				string preLine = "\treturn ";
 				for (int i = 0; i < pStrm->m_strmCnt.AsInt(); i += 1) {
@@ -1064,7 +1068,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 				m_strmFuncDecl.Append("\tbool WriteStreamBusyMask%s(", strmName.c_str());
 				m_strmFuncDef.Append("bool CPers%s::WriteStreamBusyMask%s(",
 					mod.m_modName.Uc().c_str(), strmName.c_str());
-		
+
 				g_appArgs.GetDsnRpt().AddText("ht_uint%d strmMask", pStrm->m_strmCnt.AsInt());
 				m_strmFuncDecl.Append("ht_uint%d strmMask", pStrm->m_strmCnt.AsInt());
 				m_strmFuncDef.Append("ht_uint%d strmMask", pStrm->m_strmCnt.AsInt());
@@ -1077,7 +1081,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 
 				for (int i = 0; i < pStrm->m_strmCnt.AsInt(); i += 1)
 					m_strmFuncDef.Append("\tc_wrStrm%s_bOpenAvail[%d] |= strmMask[%d] && !r_wrStrm%s_bOpenBusy[%d];\n",
-						strmName.c_str(), i, i, strmName.c_str(), i);
+					strmName.c_str(), i, i, strmName.c_str(), i);
 
 				string preLine = "\treturn ";
 				for (int i = 0; i < pStrm->m_strmCnt.AsInt(); i += 1) {
@@ -1093,11 +1097,11 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 		}
 
 		if (pStrm->m_bRead) {
-			g_appArgs.GetDsnRpt().AddItem("%s ReadStreamPeek%s(", pStrm->m_type.c_str(), strmName.c_str());
-			m_strmFuncDecl.Append("\t%s ReadStreamPeek%s(", pStrm->m_type.c_str(), strmName.c_str());
+			g_appArgs.GetDsnRpt().AddItem("%s ReadStreamPeek%s(", pStrm->m_pType->m_typeName.c_str(), strmName.c_str());
+			m_strmFuncDecl.Append("\t%s ReadStreamPeek%s(", pStrm->m_pType->m_typeName.c_str(), strmName.c_str());
 			m_strmFuncDef.Append("%s CPers%s::ReadStreamPeek%s(",
-				pStrm->m_type.c_str(), mod.m_modName.Uc().c_str(), strmName.c_str());
-		
+				pStrm->m_pType->m_typeName.c_str(), mod.m_modName.Uc().c_str(), strmName.c_str());
+
 			if (pStrm->m_strmCnt.size() > 0) {
 				g_appArgs.GetDsnRpt().AddText("ht_uint%d strmId", pStrm->m_strmCntW);
 				m_strmFuncDecl.Append("ht_uint%d strmId", pStrm->m_strmCntW);
@@ -1112,9 +1116,9 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 
 			if (pStrm->m_strmCnt.size() > 0)
 				m_strmFuncDef.Append("\tassert_msg(strmId < %d, \"Runtime check failed in CPers%s::ReadStreamPeek%s()"
-					" - strmId out of range\");\n", 
-					strmCnt,
-					mod.m_modName.Uc().c_str(), strmName.c_str());
+				" - strmId out of range\");\n",
+				strmCnt,
+				mod.m_modName.Uc().c_str(), strmName.c_str());
 
 			m_strmFuncDef.Append("\treturn r_rdStrm%s_data%s;\n", strmName.c_str(), strmIdStr.c_str());
 			m_strmFuncDef.Append("}\n");
@@ -1122,11 +1126,11 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 		}
 
 		if (pStrm->m_bRead) {
-			g_appArgs.GetDsnRpt().AddItem("%s ReadStream%s(", pStrm->m_type.c_str(), strmName.c_str());
-			m_strmFuncDecl.Append("\t%s ReadStream%s(", pStrm->m_type.c_str(), strmName.c_str());
+			g_appArgs.GetDsnRpt().AddItem("%s ReadStream%s(", pStrm->m_pType->m_typeName.c_str(), strmName.c_str());
+			m_strmFuncDecl.Append("\t%s ReadStream%s(", pStrm->m_pType->m_typeName.c_str(), strmName.c_str());
 			m_strmFuncDef.Append("%s CPers%s::ReadStream%s(",
-				pStrm->m_type.c_str(), mod.m_modName.Uc().c_str(), strmName.c_str());
-		
+				pStrm->m_pType->m_typeName.c_str(), mod.m_modName.Uc().c_str(), strmName.c_str());
+
 			if (pStrm->m_strmCnt.size() > 0) {
 				g_appArgs.GetDsnRpt().AddText("ht_uint%d strmId", pStrm->m_strmCntW);
 				m_strmFuncDecl.Append("ht_uint%d strmId", pStrm->m_strmCntW);
@@ -1141,9 +1145,9 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 
 			if (pStrm->m_strmCnt.size() > 0)
 				m_strmFuncDef.Append("\tassert_msg(strmId < %d, \"Runtime check failed in CPers%s::ReadStream%s()"
-					" - strmId out of range\");\n", 
-					strmCnt,
-					mod.m_modName.Uc().c_str(), strmName.c_str());
+				" - strmId out of range\");\n",
+				strmCnt,
+				mod.m_modName.Uc().c_str(), strmName.c_str());
 
 			m_strmFuncDef.Append("\tc_rdStrm%s_bValid%s = false;\n", strmName.c_str(), strmIdStr.c_str());
 			m_strmFuncDef.Append("\treturn r_rdStrm%s_data%s;\n", strmName.c_str(), strmIdStr.c_str());
@@ -1151,12 +1155,12 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 			m_strmFuncDef.Append("\n");
 		}
 
-		if (pStrm->m_bRead && pStrm->m_tag.size() > 0) {
-			g_appArgs.GetDsnRpt().AddItem("%s ReadStreamTag%s(", pStrm->m_tag.c_str(), strmName.c_str());
-			m_strmFuncDecl.Append("\t%s ReadStreamTag%s(", pStrm->m_tag.c_str(), strmName.c_str());
+		if (pStrm->m_bRead && pStrm->m_pTag != 0) {
+			g_appArgs.GetDsnRpt().AddItem("%s ReadStreamTag%s(", pStrm->m_pTag->m_typeName.c_str(), strmName.c_str());
+			m_strmFuncDecl.Append("\t%s ReadStreamTag%s(", pStrm->m_pTag->m_typeName.c_str(), strmName.c_str());
 			m_strmFuncDef.Append("%s CPers%s::ReadStreamTag%s(",
-				pStrm->m_tag.c_str(), mod.m_modName.Uc().c_str(), strmName.c_str());
-		
+				pStrm->m_pTag->m_typeName.c_str(), mod.m_modName.Uc().c_str(), strmName.c_str());
+
 			if (pStrm->m_strmCnt.size() > 0) {
 				g_appArgs.GetDsnRpt().AddText("ht_uint%d strmId", pStrm->m_strmCntW);
 				m_strmFuncDecl.Append("ht_uint%d strmId", pStrm->m_strmCntW);
@@ -1171,9 +1175,9 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 
 			if (pStrm->m_strmCnt.size() > 0)
 				m_strmFuncDef.Append("\tassert_msg(strmId < %d, \"Runtime check failed in CPers%s::ReadStreamTag%s()"
-					" - strmId out of range\");\n", 
-					strmCnt,
-					mod.m_modName.Uc().c_str(), strmName.c_str());
+				" - strmId out of range\");\n",
+				strmCnt,
+				mod.m_modName.Uc().c_str(), strmName.c_str());
 
 			m_strmFuncDef.Append("\treturn r_rdStrm%s_tag%s;\n", strmName.c_str(), strmIdStr.c_str());
 			m_strmFuncDef.Append("}\n");
@@ -1185,24 +1189,24 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 			m_strmFuncDecl.Append("\tvoid WriteStream%s(", strmName.c_str());
 			m_strmFuncDef.Append("void CPers%s::WriteStream%s(",
 				mod.m_modName.Uc().c_str(), strmName.c_str());
-		
+
 			if (pStrm->m_strmCnt.size() > 0) {
 				g_appArgs.GetDsnRpt().AddText("ht_uint%d strmId, ", pStrm->m_strmCntW);
 				m_strmFuncDecl.Append("ht_uint%d strmId, ", pStrm->m_strmCntW);
 				m_strmFuncDef.Append("ht_uint%d strmId, ", pStrm->m_strmCntW);
 			}
 
-			g_appArgs.GetDsnRpt().AddText("%s data)\n", pStrm->m_type.c_str());
-			m_strmFuncDecl.Append("%s data);\n", pStrm->m_type.c_str());
-			m_strmFuncDef.Append("%s data)\n", pStrm->m_type.c_str());
+			g_appArgs.GetDsnRpt().AddText("%s data)\n", pStrm->m_pType->m_typeName.c_str());
+			m_strmFuncDecl.Append("%s data);\n", pStrm->m_pType->m_typeName.c_str());
+			m_strmFuncDef.Append("%s data)\n", pStrm->m_pType->m_typeName.c_str());
 
 			m_strmFuncDef.Append("{\n");
 
 			if (pStrm->m_strmCnt.size() > 0)
 				m_strmFuncDef.Append("\tassert_msg(strmId < %d, \"Runtime check failed in CPers%s::WriteStream%s()"
-					" - strmId out of range\");\n", 
-					strmCnt,
-					mod.m_modName.Uc().c_str(), strmName.c_str());
+				" - strmId out of range\");\n",
+				strmCnt,
+				mod.m_modName.Uc().c_str(), strmName.c_str());
 
 			if (pStrm->m_reserve.AsInt() == 0)
 				m_strmFuncDef.Append("\tassert(r_wrStrm%s_bOpenBufWr%s);\n", strmName.c_str(), strmIdStr.c_str());
@@ -1223,7 +1227,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 					m_strmFuncDef.Append("\tc_wrStrm%s_bufWrData%s = data;\n", strmName.c_str(), strmIdStr.c_str());
 
 					if (!pStrm->m_bClose) {
-						m_strmFuncDef.Append("\tc_wrStrm%s_bufWrRem%s = r_wrStrm%s_bufWrRem%s - 1;\n", 
+						m_strmFuncDef.Append("\tc_wrStrm%s_bufWrRem%s = r_wrStrm%s_bufWrRem%s - 1;\n",
 							strmName.c_str(), strmIdStr.c_str(), strmName.c_str(), strmIdStr.c_str());
 
 						m_strmFuncDef.Append("\n");
@@ -1250,7 +1254,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 			m_strmRegDecl.Append("\t\t\tm_toggle = 0;\n");
 			m_strmRegDecl.Append("\t\t}\n");
 			m_strmRegDecl.Append("#\t\tendif\n");
-			m_strmRegDecl.Append("\t\t%s m_data;\n", pStrm->m_type.c_str());
+			m_strmRegDecl.Append("\t\t%s m_data;\n", pStrm->m_pType->m_typeName.c_str());
 			m_strmRegDecl.Append("\t\tht_uint1 m_toggle;\n");
 			m_strmRegDecl.Append("\t};\n");
 			m_strmRegDecl.Append("\n");
@@ -1271,8 +1275,8 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 			m_strmRegDecl.Append("\t\tht_uint%d m_rdPtr;\n", bufPtrW);
 			if (!pStrm->m_bClose)
 				m_strmRegDecl.Append("\t\tht_uint%d m_cnt;\n", elemCntW);
-			if (pStrm->m_tag.size() > 0)
-				m_strmRegDecl.Append("\t\t%s m_tag;\n", pStrm->m_tag.c_str());
+			if (pStrm->m_pTag != 0)
+				m_strmRegDecl.Append("\t\t%s m_tag;\n", pStrm->m_pTag->m_typeName.c_str());
 			m_strmRegDecl.Append("\t};\n");
 			m_strmRegDecl.Append("\n");
 
@@ -1311,7 +1315,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 					strmPreInstr.Append("\tc_rdStrm%s_addr = r_rdStrm%s_addr;\n", strmName.c_str(), strmName.c_str());
 				else
 					strmPreInstr.Append("\tc_rdStrm%s_addr = r_rdStrm%s_addr + (r_rdStrm%s_sumCy << 24);\n",
-						strmName.c_str(), strmName.c_str(), strmName.c_str());
+					strmName.c_str(), strmName.c_str(), strmName.c_str());
 
 				strmReg.Append("\tr_rdStrm%s_addr = c_rdStrm%s_addr;\n", strmName.c_str(), strmName.c_str());
 			} else for (int i = 0; i < pStrm->m_strmCnt.AsInt(); i += 1) {
@@ -1319,8 +1323,8 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 				if (mod.m_clkRate == eClk1x)
 					strmPreInstr.Append("\tc_rdStrm%s_addr[%d] = r_rdStrm%s_addr[%d];\n", strmName.c_str(), i, strmName.c_str(), i);
 				else
-					strmPreInstr.Append("\tc_rdStrm%s_addr[%d] = r_rdStrm%s_addr[%d] + (r_rdStrm%s_sumCy[%d] << 24);\n", 
-						strmName.c_str(), i, strmName.c_str(), i, strmName.c_str(), i);
+					strmPreInstr.Append("\tc_rdStrm%s_addr[%d] = r_rdStrm%s_addr[%d] + (r_rdStrm%s_sumCy[%d] << 24);\n",
+					strmName.c_str(), i, strmName.c_str(), i, strmName.c_str(), i);
 
 				strmReg.Append("\tr_rdStrm%s_addr[%d] = c_rdStrm%s_addr[%d];\n", strmName.c_str(), i, strmName.c_str(), i);
 			}
@@ -1474,9 +1478,9 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 				}
 			}
 
-			if (pStrm->m_tag.size() > 0) {
-				GenModDecl(eVcdAll, m_strmRegDecl, vcdModName, pStrm->m_tag, VA("r_rdStrm%s_tag", strmName.c_str()), strmIdVec);
-				m_strmRegDecl.Append("\t%s c_rdStrm%s_tag%s;\n", pStrm->m_tag.c_str(), strmName.c_str(), strmIdDecl.c_str());
+			if (pStrm->m_pTag != 0) {
+				GenModDecl(eVcdAll, m_strmRegDecl, vcdModName, pStrm->m_pTag->m_typeName, VA("r_rdStrm%s_tag", strmName.c_str()), strmIdVec);
+				m_strmRegDecl.Append("\t%s c_rdStrm%s_tag%s;\n", pStrm->m_pTag->m_typeName.c_str(), strmName.c_str(), strmIdDecl.c_str());
 				if (pStrm->m_strmCnt.size() == 0) {
 					strmPreInstr.Append("\tc_rdStrm%s_tag = r_rdStrm%s_tag;\n", strmName.c_str(), strmName.c_str());
 					strmReg.Append("\tr_rdStrm%s_tag = c_rdStrm%s_tag;\n", strmName.c_str(), strmName.c_str());
@@ -1485,8 +1489,8 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 					strmReg.Append("\tr_rdStrm%s_tag[%d] = c_rdStrm%s_tag[%d];\n", strmName.c_str(), i, strmName.c_str(), i);
 				}
 
-				GenModDecl(eVcdAll, m_strmRegDecl, vcdModName, pStrm->m_tag, VA("r_rdStrm%s_rspTag", strmName.c_str()), strmIdVec);
-				m_strmRegDecl.Append("\t%s c_rdStrm%s_rspTag%s;\n", pStrm->m_tag.c_str(), strmName.c_str(), strmIdDecl.c_str());
+				GenModDecl(eVcdAll, m_strmRegDecl, vcdModName, pStrm->m_pTag->m_typeName, VA("r_rdStrm%s_rspTag", strmName.c_str()), strmIdVec);
+				m_strmRegDecl.Append("\t%s c_rdStrm%s_rspTag%s;\n", pStrm->m_pTag->m_typeName.c_str(), strmName.c_str(), strmIdDecl.c_str());
 				if (pStrm->m_strmCnt.size() == 0) {
 					strmPreInstr.Append("\tc_rdStrm%s_rspTag = r_rdStrm%s_rspTag;\n", strmName.c_str(), strmName.c_str());
 					strmReg.Append("\tr_rdStrm%s_rspTag = c_rdStrm%s_rspTag;\n", strmName.c_str(), strmName.c_str());
@@ -1540,8 +1544,8 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 				strmReg.Append("\tr_rdStrm%s_bPreValid[%d] = !r_reset1x && c_rdStrm%s_bPreValid[%d];\n", strmName.c_str(), i, strmName.c_str(), i);
 			}
 
-			GenModDecl(eVcdAll, m_strmRegDecl, vcdModName, pStrm->m_type.AsStr(), VA("r_rdStrm%s_preData", strmName.c_str()), strmIdVec);
-			m_strmRegDecl.Append("\t%s c_rdStrm%s_preData%s;\n", pStrm->m_type.c_str(), strmName.c_str(), strmIdDecl.c_str());
+			GenModDecl(eVcdAll, m_strmRegDecl, vcdModName, pStrm->m_pType->m_typeName, VA("r_rdStrm%s_preData", strmName.c_str()), strmIdVec);
+			m_strmRegDecl.Append("\t%s c_rdStrm%s_preData%s;\n", pStrm->m_pType->m_typeName.c_str(), strmName.c_str(), strmIdDecl.c_str());
 			if (pStrm->m_strmCnt.size() == 0) {
 				strmPreInstr.Append("\tc_rdStrm%s_preData = r_rdStrm%s_preData;\n", strmName.c_str(), strmName.c_str());
 				strmReg.Append("\tr_rdStrm%s_preData = c_rdStrm%s_preData;\n", strmName.c_str(), strmName.c_str());
@@ -1574,8 +1578,8 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 				strmReg.Append("\tr_rdStrm%s_bValid[%d] = !r_reset1x && c_rdStrm%s_bValid[%d];\n", strmName.c_str(), i, strmName.c_str(), i);
 			}
 
-			GenModDecl(eVcdAll, m_strmRegDecl, vcdModName, pStrm->m_type.AsStr(), VA("r_rdStrm%s_data", strmName.c_str()), strmIdVec);
-			m_strmRegDecl.Append("\t%s c_rdStrm%s_data%s;\n", pStrm->m_type.c_str(), strmName.c_str(), strmIdDecl.c_str());
+			GenModDecl(eVcdAll, m_strmRegDecl, vcdModName, pStrm->m_pType->m_typeName, VA("r_rdStrm%s_data", strmName.c_str()), strmIdVec);
+			m_strmRegDecl.Append("\t%s c_rdStrm%s_data%s;\n", pStrm->m_pType->m_typeName.c_str(), strmName.c_str(), strmIdDecl.c_str());
 			if (pStrm->m_strmCnt.size() == 0) {
 				strmPreInstr.Append("\tc_rdStrm%s_data = r_rdStrm%s_data;\n", strmName.c_str(), strmName.c_str());
 				strmReg.Append("\tr_rdStrm%s_data = c_rdStrm%s_data;\n", strmName.c_str(), strmName.c_str());
@@ -1616,9 +1620,9 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 				strmReg.Append("\tr_rdStrm%s_nextRspRdPtr[%d] = c_rdStrm%s_nextRspRdPtr[%d];\n", strmName.c_str(), i, strmName.c_str(), i);
 			}
 
-			if (pStrm->m_tag.size() > 0) {
-				GenModDecl(eVcdAll, m_strmRegDecl, vcdModName, pStrm->m_tag, VA("r_rdStrm%s_openTag", strmName.c_str()), strmIdVec);
-				m_strmRegDecl.Append("\t%s c_rdStrm%s_openTag%s;\n", pStrm->m_tag.c_str(), strmName.c_str(), strmIdDecl.c_str());
+			if (pStrm->m_pTag != 0) {
+				GenModDecl(eVcdAll, m_strmRegDecl, vcdModName, pStrm->m_pTag->m_typeName, VA("r_rdStrm%s_openTag", strmName.c_str()), strmIdVec);
+				m_strmRegDecl.Append("\t%s c_rdStrm%s_openTag%s;\n", pStrm->m_pTag->m_typeName.c_str(), strmName.c_str(), strmIdDecl.c_str());
 				if (pStrm->m_strmCnt.size() == 0) {
 					strmPreInstr.Append("\tc_rdStrm%s_openTag = r_rdStrm%s_openTag;\n", strmName.c_str(), strmName.c_str());
 					strmReg.Append("\tr_rdStrm%s_openTag = c_rdStrm%s_openTag;\n", strmName.c_str(), strmName.c_str());
@@ -1690,15 +1694,15 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 				m_strmRegDecl.Append("\tht_uint4 c_rdStrm%s_reqQwCnt%s;\n", strmName.c_str(), strmIdDecl.c_str());
 
 			if (mod.m_clkRate == eClk2x) {
-				GenModDecl(eVcdAll, m_strmRegDecl, vcdModName, VA("ht_uint%d", 4+(3-pStrm->m_elemByteW)), VA("r_rdStrm%s_reqElemCnt", strmName.c_str()), strmIdVec);
-				m_strmRegDecl.Append("\tht_uint%d c_rdStrm%s_reqElemCnt%s;\n", 4+(3-pStrm->m_elemByteW), strmName.c_str(), strmIdDecl.c_str());
+				GenModDecl(eVcdAll, m_strmRegDecl, vcdModName, VA("ht_uint%d", 4 + (3 - pStrm->m_elemByteW)), VA("r_rdStrm%s_reqElemCnt", strmName.c_str()), strmIdVec);
+				m_strmRegDecl.Append("\tht_uint%d c_rdStrm%s_reqElemCnt%s;\n", 4 + (3 - pStrm->m_elemByteW), strmName.c_str(), strmIdDecl.c_str());
 				if (pStrm->m_strmCnt.size() == 0) {
 					strmReg.Append("\tr_rdStrm%s_reqElemCnt = c_rdStrm%s_reqElemCnt;\n", strmName.c_str(), strmName.c_str());
 				} else for (int i = 0; i < pStrm->m_strmCnt.AsInt(); i += 1) {
 					strmReg.Append("\tr_rdStrm%s_reqElemCnt[%d] = c_rdStrm%s_reqElemCnt[%d];\n", strmName.c_str(), i, strmName.c_str(), i);
 				}
 			} else
-				m_strmRegDecl.Append("\tht_uint%d c_rdStrm%s_reqElemCnt%s;\n", 4+(3-pStrm->m_elemByteW), strmName.c_str(), strmIdDecl.c_str());
+				m_strmRegDecl.Append("\tht_uint%d c_rdStrm%s_reqElemCnt%s;\n", 4 + (3 - pStrm->m_elemByteW), strmName.c_str(), strmIdDecl.c_str());
 
 			GenModDecl(eVcdAll, m_strmRegDecl, vcdModName, VA("CRdStrm%s_buf", strmName.c_str()), VA("r_rdStrm%s_buf", strmName.c_str()), strmIdVec);
 			m_strmRegDecl.Append("\tCRdStrm%s_buf c_rdStrm%s_buf%s;\n", strmName.c_str(), strmName.c_str(), strmIdDecl.c_str());
@@ -1713,8 +1717,8 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 			if (pStrm->m_elemByteW == 3)
 				m_strmRegDecl.Append("\tht_block_ram<CRdStrm%s_buf, 9> m_rdStrm%s_buf%s;\n", strmName.c_str(), strmName.c_str(), strmIdDecl.c_str());
 			else
-				m_strmRegDecl.Append("\tht_mwr_block_ram<CRdStrm%s_buf, %d, %d> m_rdStrm%s_buf%s;\n", 
-					strmName.c_str(), 3-pStrm->m_elemByteW, pStrm->m_bufPtrW-(3-pStrm->m_elemByteW)-1, strmName.c_str(), strmIdDecl.c_str());
+				m_strmRegDecl.Append("\tht_mwr_block_ram<CRdStrm%s_buf, %d, %d> m_rdStrm%s_buf%s;\n",
+				strmName.c_str(), 3 - pStrm->m_elemByteW, pStrm->m_bufPtrW - (3 - pStrm->m_elemByteW) - 1, strmName.c_str(), strmIdDecl.c_str());
 
 			for (int i = 0; i < pStrm->m_strmCnt.AsInt(); i += 1) {
 				string strmIdx = pStrm->m_strmCnt.size() == 0 ? "" : VA("[%d]", i);
@@ -1740,24 +1744,24 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 				strmIdxStr = "[idx]";
 			}
 
-			strmPostInstr.Append("\t\tif (!r_rdStrm%s_bNextRsp%s && !m_rdStrm%s_nextRspQue%s.empty()) {\n", 
+			strmPostInstr.Append("\t\tif (!r_rdStrm%s_bNextRsp%s && !m_rdStrm%s_nextRspQue%s.empty()) {\n",
 				strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 			strmPostInstr.Append("\t\t\tc_rdStrm%s_bNextRsp%s = true;\n", strmName.c_str(), strmIdxStr.c_str());
-			strmPostInstr.Append("\t\t\tc_rdStrm%s_nextRspRdPtr%s = m_rdStrm%s_nextRspQue%s.front().m_rdPtr;\n", 
+			strmPostInstr.Append("\t\t\tc_rdStrm%s_nextRspRdPtr%s = m_rdStrm%s_nextRspQue%s.front().m_rdPtr;\n",
 				strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
-			if (pStrm->m_tag.size() > 0)
-				strmPostInstr.Append("\t\t\tc_rdStrm%s_openTag%s = m_rdStrm%s_nextRspQue%s.front().m_tag;\n", 
-					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
+			if (pStrm->m_pTag != 0)
+				strmPostInstr.Append("\t\t\tc_rdStrm%s_openTag%s = m_rdStrm%s_nextRspQue%s.front().m_tag;\n",
+				strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 			if (!pStrm->m_bClose)
-				strmPostInstr.Append("\t\t\tc_rdStrm%s_openRspCnt%s = m_rdStrm%s_nextRspQue%s.front().m_cnt;\n", 
-					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
+				strmPostInstr.Append("\t\t\tc_rdStrm%s_openRspCnt%s = m_rdStrm%s_nextRspQue%s.front().m_cnt;\n",
+				strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 			strmPostInstr.Append("\t\t\tm_rdStrm%s_nextRspQue%s.pop();\n", strmName.c_str(), strmIdxStr.c_str());
 			strmPostInstr.Append("\t\t}\n");
 			strmPostInstr.Append("\n");
 
 			if (pStrm->m_bClose) {
 				strmPostInstr.Append("\t\tif (r_rdStrm%s_bClose%s%s)\n", strmName.c_str(), mod.m_clkRate == eClk1x ? "" : "2", strmIdxStr.c_str());
-				strmPostInstr.Append("\t\t\tc_rdStrm%s_closingWrPtr%s = r_rdStrm%s_reqWrPtr%s;\n", 
+				strmPostInstr.Append("\t\t\tc_rdStrm%s_closingWrPtr%s = r_rdStrm%s_reqWrPtr%s;\n",
 					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 				strmPostInstr.Append("\n");
 			}
@@ -1767,8 +1771,8 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 			strmPostInstr.Append("\t\t\tc_rdStrm%s_buf%s = m_rdStrm%s_buf%s.read_mem();\n",
 				strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 			strmPostInstr.Append("\t\t\tc_rdStrm%s_bCollision%s = r_rdStrm%s_rspWrRdy%s && r_rdStrm%s_rspRdPtr%s(%d,%d) == r_rdStrm%s_rspWrPtr%s(%d,%d);\n",
-				strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), 
-				strmName.c_str(), strmIdxStr.c_str(), bufPtrW-2, 3-pStrm->m_elemByteW, strmName.c_str(), strmIdxStr.c_str(), bufPtrW-2, 3-pStrm->m_elemByteW);
+				strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(),
+				strmName.c_str(), strmIdxStr.c_str(), bufPtrW - 2, 3 - pStrm->m_elemByteW, strmName.c_str(), strmIdxStr.c_str(), bufPtrW - 2, 3 - pStrm->m_elemByteW);
 			strmPostInstr.Append("\t\t\tc_rdStrm%s_rspRdPtr2%s = r_rdStrm%s_rspRdPtr%s;\n",
 				strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 			strmPostInstr.Append("\t\t}\n");
@@ -1789,9 +1793,9 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 			strmPostInstr.Append("\t\t\t\tc_rdStrm%s_bNextRsp%s = false;\n",
 				strmName.c_str(), strmIdxStr.c_str());
 
-			if (pStrm->m_tag.size() > 0)
+			if (pStrm->m_pTag != 0)
 				strmPostInstr.Append("\t\t\t\tc_rdStrm%s_rspTag%s = r_rdStrm%s_openTag%s;\n",
-					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
+				strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 
 			if (pStrm->m_bClose)
 				strmPostInstr.Append("\t\t\t\tc_rdStrm%s_bOpenRsp%s = true;\n", strmName.c_str(), strmIdxStr.c_str());
@@ -1821,9 +1825,9 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 			strmPostInstr.Append("\t\t\t\t\tc_rdStrm%s_bNextRsp%s = false;\n",
 				strmName.c_str(), strmIdxStr.c_str());
 
-			if (pStrm->m_tag.size() > 0)
+			if (pStrm->m_pTag != 0)
 				strmPostInstr.Append("\t\t\t\t\tc_rdStrm%s_rspTag%s = r_rdStrm%s_openTag%s;\n",
-					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
+				strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 
 			if (pStrm->m_bClose)
 				strmPostInstr.Append("\t\t\t\t\tc_rdStrm%s_bOpenRsp%s = true;\n", strmName.c_str(), strmIdxStr.c_str());
@@ -1836,15 +1840,15 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 
 			strmPostInstr.Append("\t\t\t\t}\n");
 			strmPostInstr.Append("\t\t\t} else if (r_rdStrm%s_buf%s.m_toggle != r_rdStrm%s_rspRdPtr2%s(%d,%d) && !r_rdStrm%s_bCollision%s) {\n",
-				strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), bufPtrW-1, bufPtrW-1, strmName.c_str(), strmIdxStr.c_str());
+				strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), bufPtrW - 1, bufPtrW - 1, strmName.c_str(), strmIdxStr.c_str());
 
 			if (pStrm->m_bClose) {
-				strmPostInstr.Append("\t\t\t\tif (!r_rdStrm%s_bPreValid%s || !r_rdStrm%s_bValid%s || r_rdStrm%s_bClosingRsp%s) {\n", 
+				strmPostInstr.Append("\t\t\t\tif (!r_rdStrm%s_bPreValid%s || !r_rdStrm%s_bValid%s || r_rdStrm%s_bClosingRsp%s) {\n",
 					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 				strmPostInstr.Append("\t\t\t\t\tc_rdStrm%s_bRspValid%s = !r_rdStrm%s_bClosingRsp%s;\n",
 					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 			} else {
-				strmPostInstr.Append("\t\t\t\tif (!r_rdStrm%s_bPreValid%s || !r_rdStrm%s_bValid%s) {\n", 
+				strmPostInstr.Append("\t\t\t\tif (!r_rdStrm%s_bPreValid%s || !r_rdStrm%s_bValid%s) {\n",
 					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 				strmPostInstr.Append("\t\t\t\t\tc_rdStrm%s_bRspValid%s = true;\n", strmName.c_str(), strmIdxStr.c_str());
 			}
@@ -1852,9 +1856,9 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 			if (!pStrm->m_bClose) {
 				strmPostInstr.Append("\t\t\t\t\tc_rdStrm%s_bRspLast%s = r_rdStrm%s_rspCnt%s == 1;\n",
 					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
-				strmPostInstr.Append("\t\t\t\t\tc_rdStrm%s_bOpenRsp%s = r_rdStrm%s_rspCnt%s != 1;\n", 
+				strmPostInstr.Append("\t\t\t\t\tc_rdStrm%s_bOpenRsp%s = r_rdStrm%s_rspCnt%s != 1;\n",
 					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
-				strmPostInstr.Append("\t\t\t\t\tc_rdStrm%s_rspCnt%s = r_rdStrm%s_rspCnt%s - 1;\n", 
+				strmPostInstr.Append("\t\t\t\t\tc_rdStrm%s_rspCnt%s = r_rdStrm%s_rspCnt%s - 1;\n",
 					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 			}
 			strmPostInstr.Append("\t\t\t\t\tc_rdStrm%s_rspRdPtrSel%s = 3;\n", strmName.c_str(), strmIdxStr.c_str());
@@ -1872,14 +1876,14 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 			if (pStrm->m_bClose) {
 				if (mod.m_clkRate == eClk1x)
 					strmPostInstr.Append("\t\t\tif (!r_rdStrm%s_bClose%s && r_rdStrm%s_bClosingRsp%s &&\n",
-						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
+					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 				else
 					strmPostInstr.Append("\t\t\tif (!r_rdStrm%s_bClose%s && !r_rdStrm%s_bClose2%s && r_rdStrm%s_bClosingRsp%s &&\n",
-						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
+					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 
 				strmPostInstr.Append("\t\t\t\tr_rdStrm%s_rspRdPtr2%s(%d,%d) == r_rdStrm%s_closingWrPtr%s(%d,%d))\n",
-					strmName.c_str(), strmIdxStr.c_str(), bufPtrW-2, 3-pStrm->m_elemByteW, 
-					strmName.c_str(), strmIdxStr.c_str(), bufPtrW-2, 3-pStrm->m_elemByteW);
+					strmName.c_str(), strmIdxStr.c_str(), bufPtrW - 2, 3 - pStrm->m_elemByteW,
+					strmName.c_str(), strmIdxStr.c_str(), bufPtrW - 2, 3 - pStrm->m_elemByteW);
 				strmPostInstr.Append("\t\t\t{\n");
 				strmPostInstr.Append("\t\t\t\tc_rdStrm%s_bOpenRsp%s = false;\n", strmName.c_str(), strmIdxStr.c_str());
 				strmPostInstr.Append("\t\t\t\tc_rdStrm%s_bClosingRsp%s = false;\n", strmName.c_str(), strmIdxStr.c_str());
@@ -1892,35 +1896,35 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 			strmPostInstr.Append("\t\t\tbreak;\n");
 			strmPostInstr.Append("\t\t}\n");
 			strmPostInstr.Append("\n");
-				
+
 			strmPostInstr.Append("\t\tif (!r_rdStrm%s_bPreValid%s || !r_rdStrm%s_bValid%s) {\n",
 				strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 			strmPostInstr.Append("\t\t\tc_rdStrm%s_preData%s = r_rdStrm%s_buf%s.m_data;\n",
 				strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 			if (!pStrm->m_bClose)
 				strmPostInstr.Append("\t\t\tc_rdStrm%s_bPreLast%s = c_rdStrm%s_bRspLast%s;\n",
-					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
+				strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 
 			strmPostInstr.Append("\t\t}\n");
 			strmPostInstr.Append("\n");
 
 			strmPostInstr.Append("\t\tif (!c_rdStrm%s_bValid%s) {\n", strmName.c_str(), strmIdxStr.c_str());
-			strmPostInstr.Append("\t\t\tc_rdStrm%s_data%s = r_rdStrm%s_bPreValid%s ? r_rdStrm%s_preData%s : r_rdStrm%s_buf%s.m_data;\n", 
+			strmPostInstr.Append("\t\t\tc_rdStrm%s_data%s = r_rdStrm%s_bPreValid%s ? r_rdStrm%s_preData%s : r_rdStrm%s_buf%s.m_data;\n",
 				strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(),
 				strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 			if (!pStrm->m_bClose)
-				strmPostInstr.Append("\t\t\tc_rdStrm%s_bLast%s = r_rdStrm%s_bPreValid%s ? r_rdStrm%s_bPreLast%s : c_rdStrm%s_bRspLast%s;\n", 
-					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(),
-					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
+				strmPostInstr.Append("\t\t\tc_rdStrm%s_bLast%s = r_rdStrm%s_bPreValid%s ? r_rdStrm%s_bPreLast%s : c_rdStrm%s_bRspLast%s;\n",
+				strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(),
+				strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 
-			if (pStrm->m_tag.size() > 0) {
+			if (pStrm->m_pTag != 0) {
 				strmPostInstr.Append("\n");
 				if (!pStrm->m_bClose)
 					strmPostInstr.Append("\t\t\tif (!r_rdStrm%s_bOpenRsp%s && (!r_rdStrm%s_bValid%s || r_rdStrm%s_bLast%s))\n",
-						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
+					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 				else
 					strmPostInstr.Append("\t\t\tif (!r_rdStrm%s_bOpenRsp%s)\n",
-						strmName.c_str(), strmIdxStr.c_str());
+					strmName.c_str(), strmIdxStr.c_str());
 				strmPostInstr.Append("\t\t\t\tc_rdStrm%s_tag%s = r_rdStrm%s_openTag%s;\n",
 					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 				if (!pStrm->m_bClose)
@@ -1942,12 +1946,12 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 
 			if (!pStrm->m_bClose)
 				strmPostInstr.Append("\t\tc_rdStrm%s_bValid%s = c_rdStrm%s_bValid%s || c_rdStrm%s_bRspValid%s || r_rdStrm%s_bPreValid%s;\n",
-					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(),
-					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
+				strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(),
+				strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 			else
 				strmPostInstr.Append("\t\tc_rdStrm%s_bValid%s = !c_rdStrm%s_bClosingRsp%s && (c_rdStrm%s_bValid%s || c_rdStrm%s_bRspValid%s || r_rdStrm%s_bPreValid%s);\n",
-					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(),
-					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
+				strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(),
+				strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 
 			strmPostInstr.Append("\n");
 
@@ -1977,14 +1981,14 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 			strmPostInstr.Append("\n");
 
 			if (pStrm->m_elemByteW == 3)
-				strmPostInstr.Append("\t\tm_rdStrm%s_buf%s.read_addr(c_rdStrm%s_rspRdPtr%s(%d,%d));\n", 
-					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), bufPtrW-2, 3-pStrm->m_elemByteW);
+				strmPostInstr.Append("\t\tm_rdStrm%s_buf%s.read_addr(c_rdStrm%s_rspRdPtr%s(%d,%d));\n",
+				strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), bufPtrW - 2, 3 - pStrm->m_elemByteW);
 			else
-				strmPostInstr.Append("\t\tm_rdStrm%s_buf%s.read_addr(c_rdStrm%s_rspRdPtr%s(%d,0), c_rdStrm%s_rspRdPtr%s(%d,%d));\n", 
-					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), 3-pStrm->m_elemByteW-1, strmName.c_str(), strmIdxStr.c_str(), bufPtrW-2, 3-pStrm->m_elemByteW);
+				strmPostInstr.Append("\t\tm_rdStrm%s_buf%s.read_addr(c_rdStrm%s_rspRdPtr%s(%d,0), c_rdStrm%s_rspRdPtr%s(%d,%d));\n",
+				strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), 3 - pStrm->m_elemByteW - 1, strmName.c_str(), strmIdxStr.c_str(), bufPtrW - 2, 3 - pStrm->m_elemByteW);
 			strmPostInstr.Append("\n");
 
-			strmPostInstr.Append("\t\tif (r_rdStrm%s_bufInitPtr(%d,%d) == 0) {\n", strmName.c_str(), bufPtrW-1, bufPtrW-1);
+			strmPostInstr.Append("\t\tif (r_rdStrm%s_bufInitPtr(%d,%d) == 0) {\n", strmName.c_str(), bufPtrW - 1, bufPtrW - 1);
 			strmPostInstr.Append("\n");
 
 			strmPostInstr.Append("\t\t\tCRdStrm%s_buf rdStrm%s_rspData;\n", strmName.c_str(), strmName.c_str());
@@ -1992,8 +1996,8 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 			strmPostInstr.Append("\t\t\trdStrm%s_rspData.m_toggle = 0;\n", strmName.c_str());
 			strmPostInstr.Append("\n");
 
-			strmPostInstr.Append("\t\t\tm_rdStrm%s_buf%s.write_addr( r_rdStrm%s_bufInitPtr(%d,%d) );\n", 
-				strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), bufPtrW-2, 3-pStrm->m_elemByteW);
+			strmPostInstr.Append("\t\t\tm_rdStrm%s_buf%s.write_addr( r_rdStrm%s_bufInitPtr(%d,%d) );\n",
+				strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), bufPtrW - 2, 3 - pStrm->m_elemByteW);
 			for (int idx = 0; idx < qwElemCnt; idx += 1) {
 				if (pStrm->m_elemByteW == 3)
 					strmPostInstr.Append("\t\t\tm_rdStrm%s_buf%s.write_mem(rdStrm%s_rspData);\n", strmName.c_str(), strmIdxStr.c_str(), strmName.c_str());
@@ -2006,11 +2010,11 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 
 			if (mod.m_clkRate == eClk1x)
 				strmPostInstr.Append("\t\tc_rdStrm%s_bOpenBusy%s = c_rdStrm%s_bOpenReq%s || m_rdStrm%s_nextRspQue%s.full() || r_rdStrm%s_bufInitPtr(%d,%d) != 1;\n",
-					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), bufPtrW-1, bufPtrW-1);
+				strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), bufPtrW - 1, bufPtrW - 1);
 			else
 				strmPostInstr.Append("\t\tc_rdStrm%s_bOpenBusy%s = c_rdStrm%s_bOpenReq%s || r_rdStrm%s_bOpenReq%s || m_rdStrm%s_nextRspQue%s.full() || r_rdStrm%s_bufInitPtr(%d,%d) != 1;\n",
-					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), 
-					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), bufPtrW-1, bufPtrW-1);
+				strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(),
+				strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), bufPtrW - 1, bufPtrW - 1);
 
 			strmPostInstr.Append("\t}\n");
 			strmPostInstr.Append("\n");
@@ -2022,10 +2026,10 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 			if (bMultiQwReq) {
 				strmPostInstr.Append("\t\t\tuint32_t m_fstQwIdx : 3;\n");
 				strmPostInstr.Append("\t\t\tuint32_t m_lstQwIdx : 3;\n");
-				strmPostInstr.Append("\t\t\tuint32_t m_pad1 : %d;\n", 19-bufPtrW);
+				strmPostInstr.Append("\t\t\tuint32_t m_pad1 : %d;\n", 19 - bufPtrW);
 				strmPostInstr.Append("\t\t\tuint32_t m_reqQwCntM1 : 3;\n");
 			} else {
-				strmPostInstr.Append("\t\t\tuint32_t m_pad1 : %d;\n", 25-bufPtrW);
+				strmPostInstr.Append("\t\t\tuint32_t m_pad1 : %d;\n", 25 - bufPtrW);
 				strmPostInstr.Append("\t\t\tuint32_t m_reqQwCntM1 : 3;\n");
 			}
 			strmPostInstr.Append("\t\t};\n");
@@ -2052,36 +2056,36 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 
 				if (bMultiQwReq)
 					strmPostInstr.Append("\t\tc_rdStrm%s_reqElemCnt%s = %du - ((r_rdStrm%s_addr%s >> %d) & 0x%x);\n",
-						strmName.c_str(), strmIdxStr.c_str(), qwElemCnt * 8,
-						strmName.c_str(), strmIdxStr.c_str(), pStrm->m_elemByteW, qwElemCnt * 8 - 1);
+					strmName.c_str(), strmIdxStr.c_str(), qwElemCnt * 8,
+					strmName.c_str(), strmIdxStr.c_str(), pStrm->m_elemByteW, qwElemCnt * 8 - 1);
 				else
 					strmPostInstr.Append("\t\tc_rdStrm%s_reqElemCnt%s = %du - ((r_rdStrm%s_addr%s >> %d) & 0x%x);\n",
-						strmName.c_str(), strmIdxStr.c_str(), qwElemCnt,
-						strmName.c_str(), strmIdxStr.c_str(), pStrm->m_elemByteW, qwElemCnt - 1);
+					strmName.c_str(), strmIdxStr.c_str(), qwElemCnt,
+					strmName.c_str(), strmIdxStr.c_str(), pStrm->m_elemByteW, qwElemCnt - 1);
 
 				strmPostInstr.Append("\t\tif (c_rdStrm%s_reqElemCnt%s >= r_rdStrm%s_reqCnt%s) {\n",
 					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 				strmPostInstr.Append("\t\t\tc_rdStrm%s_reqElemCnt%s = r_rdStrm%s_reqCnt%s & 0x%x;\n",
-					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), (1 << (4+3-pStrm->m_elemByteW))-1);
+					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), (1 << (4 + 3 - pStrm->m_elemByteW)) - 1);
 				if (!pStrm->m_bClose)
 					strmPostInstr.Append("\t\t\tc_rdStrm%s_bReqCntZ%s = true;\n", strmName.c_str(), strmIdxStr.c_str());
 				strmPostInstr.Append("\t\t}\n");
 
-				strmPostInstr.Append("\t\tc_rdStrm%s_reqQwCnt%s = ((r_rdStrm%s_addr%s & 7) + (c_rdStrm%s_reqElemCnt%s << %d) + 7) >> 3;\n", 
+				strmPostInstr.Append("\t\tc_rdStrm%s_reqQwCnt%s = ((r_rdStrm%s_addr%s & 7) + (c_rdStrm%s_reqElemCnt%s << %d) + 7) >> 3;\n",
 					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(),
 					pStrm->m_elemByteW);
 				strmPostInstr.Append("\n");
 
 				if (mod.m_clkRate == eClk1x)
 					strmPostInstr.Append("\t\tif (c_t1_rdStrm%s_bReqSel%s && !r_%sP%dToMif_reqAvlCntBusy) {\n",
-						strmName.c_str(), strmIdxStr.c_str(), mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx]);
+					strmName.c_str(), strmIdxStr.c_str(), mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx]);
 				else
 					strmPostInstr.Append("\t\tif (r_t2_rdStrm%s_bReqSel%s && !r_%sP%dToMif_reqAvlCntBusy) {\n",
-						strmName.c_str(), strmIdxStr.c_str(), mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx]);
+					strmName.c_str(), strmIdxStr.c_str(), mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx]);
 				strmPostInstr.Append("\n");
 
 				if (!pStrm->m_bClose) {
-					strmPostInstr.Append("\t\t\tif (%c_rdStrm%s_bReqCntZ%s)\n", 
+					strmPostInstr.Append("\t\t\tif (%c_rdStrm%s_bReqCntZ%s)\n",
 						mod.m_clkRate == eClk2x ? 'r' : 'c', strmName.c_str(), strmIdxStr.c_str());
 					strmPostInstr.Append("\t\t\t\tc_rdStrm%s_bOpenReq%s = false;\n", strmName.c_str(), strmIdxStr.c_str());
 					strmPostInstr.Append("\n");
@@ -2097,7 +2101,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 						mod.m_clkRate == eClk2x ? 'r' : 'c', strmName.c_str(), strmIdxStr.c_str());
 					strmPostInstr.Append("\t\t\trdTid.m_reqQwCntM1 = %c_rdStrm%s_reqQwCnt%s == 1 ? 0 : 7;\n",
 						mod.m_clkRate == eClk2x ? 'r' : 'c', strmName.c_str(), strmIdxStr.c_str());
-					strmPostInstr.Append("\t\t\trdTid.m_rspBufWrPtr = r_rdStrm%s_reqWrPtr%s - (rdTid.m_fstQwIdx << %d);\n", strmName.c_str(), strmIdxStr.c_str(), 3-pStrm->m_elemByteW);
+					strmPostInstr.Append("\t\t\trdTid.m_rspBufWrPtr = r_rdStrm%s_reqWrPtr%s - (rdTid.m_fstQwIdx << %d);\n", strmName.c_str(), strmIdxStr.c_str(), 3 - pStrm->m_elemByteW);
 				} else {
 					strmPostInstr.Append("\t\t\trdTid.m_reqQwCntM1 = (%c_rdStrm%s_reqQwCnt%s - 1) & 7;\n",
 						mod.m_clkRate == eClk2x ? 'r' : 'c', strmName.c_str(), strmIdxStr.c_str());
@@ -2107,17 +2111,17 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 				strmPostInstr.Append("\n");
 
 				strmPostInstr.Append("\t\t\tc_t2_%sP%dToMif_reqRdy = true;\n", mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx]);
-				strmPostInstr.Append("\t\t\tc_t2_%sP%dToMif_req.m_host = %s;\n", 
+				strmPostInstr.Append("\t\t\tc_t2_%sP%dToMif_req.m_host = %s;\n",
 					mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx], pStrm->m_memSrc.AsStr() == "host" ? "true" : "false");
 				strmPostInstr.Append("\t\t\tc_t2_%sP%dToMif_req.m_type = MEM_REQ_RD;\n", mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx]);
 
 				if (bMultiQwReq)
 					strmPostInstr.Append("\t\t\tc_t2_%sP%dToMif_req.m_addr = r_rdStrm%s_addr%s & (%c_rdStrm%s_reqQwCnt%s == 1 ? ~0x7ULL : ~0x3fULL);\n",
-						mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx], strmName.c_str(), strmIdxStr.c_str(),
-						mod.m_clkRate == eClk2x ? 'r' : 'c', strmName.c_str(), strmIdxStr.c_str());
+					mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx], strmName.c_str(), strmIdxStr.c_str(),
+					mod.m_clkRate == eClk2x ? 'r' : 'c', strmName.c_str(), strmIdxStr.c_str());
 				else
 					strmPostInstr.Append("\t\t\tc_t2_%sP%dToMif_req.m_addr = r_rdStrm%s_addr%s & ~0x7ULL;\n",
-						mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx], strmName.c_str(), strmIdxStr.c_str());
+					mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx], strmName.c_str(), strmIdxStr.c_str());
 				strmPostInstr.Append("\t\t\tc_t2_%sP%dToMif_req.m_size = MEM_REQ_U64;\n", mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx]);
 				strmPostInstr.Append("\t\t\tc_t2_%sP%dToMif_req.m_tid = rdTid.m_tid;\n", mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx]);
 				strmPostInstr.Append("#\t\t\tifndef _HTV\n");
@@ -2136,18 +2140,18 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 
 				strmPostInstr.Append("#\t\t\tendif\n");
 				strmPostInstr.Append("\n");
-				strmPostInstr.Append("\t\t\tc_rdStrm%s_reqWrPtr%s(%d,%d) = r_rdStrm%s_reqWrPtr%s(%d,%d) + %c_rdStrm%s_reqQwCnt%s;\n", 
-					strmName.c_str(), strmIdxStr.c_str(), bufPtrW-1, 3-pStrm->m_elemByteW, strmName.c_str(), strmIdxStr.c_str(), bufPtrW-1, 3-pStrm->m_elemByteW,
+				strmPostInstr.Append("\t\t\tc_rdStrm%s_reqWrPtr%s(%d,%d) = r_rdStrm%s_reqWrPtr%s(%d,%d) + %c_rdStrm%s_reqQwCnt%s;\n",
+					strmName.c_str(), strmIdxStr.c_str(), bufPtrW - 1, 3 - pStrm->m_elemByteW, strmName.c_str(), strmIdxStr.c_str(), bufPtrW - 1, 3 - pStrm->m_elemByteW,
 					mod.m_clkRate == eClk2x ? 'r' : 'c', strmName.c_str(), strmIdxStr.c_str());
 
-				if (3-pStrm->m_elemByteW - 1 >= 0)
-					strmPostInstr.Append("\t\t\tc_rdStrm%s_reqWrPtr%s(%d,0) = 0;\n", 
-						strmName.c_str(), strmIdxStr.c_str(), 3-pStrm->m_elemByteW-1);
+				if (3 - pStrm->m_elemByteW - 1 >= 0)
+					strmPostInstr.Append("\t\t\tc_rdStrm%s_reqWrPtr%s(%d,0) = 0;\n",
+					strmName.c_str(), strmIdxStr.c_str(), 3 - pStrm->m_elemByteW - 1);
 
 				if (mod.m_clkRate == eClk1x)
 					strmPostInstr.Append("\t\t\tc_rdStrm%s_addr%s = r_rdStrm%s_addr%s + (%c_rdStrm%s_reqElemCnt%s << %d);\n",
-						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(),
-						mod.m_clkRate == eClk2x ? 'r' : 'c', strmName.c_str(), strmIdxStr.c_str(), pStrm->m_elemByteW);
+					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(),
+					mod.m_clkRate == eClk2x ? 'r' : 'c', strmName.c_str(), strmIdxStr.c_str(), pStrm->m_elemByteW);
 				else {
 					strmPostInstr.Append("\t\t\tht_uint25 lowSum = r_rdStrm%s_addr%s(23,0) + (%c_rdStrm%s_reqElemCnt%s << %d);\n",
 						strmName.c_str(), strmIdxStr.c_str(),
@@ -2160,13 +2164,13 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 
 				strmPostInstr.Append("\t\t\tc_rdStrm%s_reqCnt%s = r_rdStrm%s_reqCnt%s - (ht_uint%d)%c_rdStrm%s_reqElemCnt%s;\n",
 					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), pStrm->m_elemCntW.AsInt(),
-						mod.m_clkRate == eClk2x ? 'r' : 'c', strmName.c_str(), strmIdxStr.c_str());
+					mod.m_clkRate == eClk2x ? 'r' : 'c', strmName.c_str(), strmIdxStr.c_str());
 
 				if (mod.m_memPortList[pStrm->m_memPort[strmIdx]]->m_strmList.size() > 1) {
 					strmPostInstr.Append("\n");
 					strmPostInstr.Append("\t\t\tc_%sP%dToMif_reqRr = 0x%x;\n",
 						mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx],
-						1<<((pStrm->m_arbRr[strmIdx]+1) % mod.m_memPortList[pStrm->m_memPort[strmIdx]]->m_strmList.size()));
+						1 << ((pStrm->m_arbRr[strmIdx] + 1) % mod.m_memPortList[pStrm->m_memPort[strmIdx]]->m_strmList.size()));
 				}
 				strmPostInstr.Append("\t\t}\n");
 				strmPostInstr.Append("\t}\n");
@@ -2191,7 +2195,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 				m_strmRegDecl.Append("\t\t\tm_bClose = false;\n");
 				m_strmRegDecl.Append("\t\t}\n");
 				m_strmRegDecl.Append("#\t\tendif\n");
-				m_strmRegDecl.Append("\t\t%s m_data;\n", pStrm->m_type.c_str());
+				m_strmRegDecl.Append("\t\t%s m_data;\n", pStrm->m_pType->m_typeName.c_str());
 				m_strmRegDecl.Append("\t\tbool m_bData;\n");
 				m_strmRegDecl.Append("\t\tbool m_bClose;\n");
 				m_strmRegDecl.Append("\t};\n");
@@ -2203,18 +2207,18 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 			if (pStrm->m_strmCnt.size() == 0) {
 				if (pStrm->m_bClose)
 					strmPreInstr.Append("\tc_wrStrm%s_bOpenBusy = r_wrStrm%s_bOpenBusy && (r_wrStrm%s_bOpenBufWr || r_wrStrm%s_bOpenBufRd || r_wrStrm%s_bClosingBufRd);\n",
-						strmName.c_str(), strmName.c_str(), strmName.c_str(), strmName.c_str(), strmName.c_str());
+					strmName.c_str(), strmName.c_str(), strmName.c_str(), strmName.c_str(), strmName.c_str());
 				else
 					strmPreInstr.Append("\tc_wrStrm%s_bOpenBusy = r_wrStrm%s_bOpenBusy && (r_wrStrm%s_bOpenBufWr || r_wrStrm%s_bOpenBufRd);\n",
-						strmName.c_str(), strmName.c_str(), strmName.c_str(), strmName.c_str());
+					strmName.c_str(), strmName.c_str(), strmName.c_str(), strmName.c_str());
 				strmReg.Append("\tr_wrStrm%s_bOpenBusy = !r_reset1x && c_wrStrm%s_bOpenBusy;\n", strmName.c_str(), strmName.c_str());
 			} else for (int i = 0; i < pStrm->m_strmCnt.AsInt(); i += 1) {
 				if (pStrm->m_bClose)
 					strmPreInstr.Append("\tc_wrStrm%s_bOpenBusy[%d] = r_wrStrm%s_bOpenBusy[%d] && (r_wrStrm%s_bOpenBufWr[%d] || r_wrStrm%s_bOpenBufRd[%d] || r_wrStrm%s_bClosingBufRd[%d]);\n",
-						strmName.c_str(), i, strmName.c_str(), i, strmName.c_str(), i, strmName.c_str(), i, strmName.c_str(), i);
+					strmName.c_str(), i, strmName.c_str(), i, strmName.c_str(), i, strmName.c_str(), i, strmName.c_str(), i);
 				else
 					strmPreInstr.Append("\tc_wrStrm%s_bOpenBusy[%d] = r_wrStrm%s_bOpenBusy[%d] && (r_wrStrm%s_bOpenBufWr[%d] || r_wrStrm%s_bOpenBufRd[%d]);\n",
-						strmName.c_str(), i, strmName.c_str(), i, strmName.c_str(), i, strmName.c_str(), i);
+					strmName.c_str(), i, strmName.c_str(), i, strmName.c_str(), i, strmName.c_str(), i);
 				strmReg.Append("\tr_wrStrm%s_bOpenBusy[%d] = !r_reset1x && c_wrStrm%s_bOpenBusy[%d];\n", strmName.c_str(), i, strmName.c_str(), i);
 			}
 
@@ -2317,7 +2321,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 					strmPreInstr.Append("\tc_wrStrm%s_bufRdAddr = r_wrStrm%s_bufRdAddr;\n", strmName.c_str(), strmName.c_str());
 				else
 					strmPreInstr.Append("\tc_wrStrm%s_bufRdAddr = r_wrStrm%s_bufRdAddr + (r_wrStrm%s_sumCy << 24);\n",
-						strmName.c_str(), strmName.c_str(), strmName.c_str());
+					strmName.c_str(), strmName.c_str(), strmName.c_str());
 
 				strmReg.Append("\tr_wrStrm%s_bufRdAddr = c_wrStrm%s_bufRdAddr;\n", strmName.c_str(), strmName.c_str());
 			} else for (int i = 0; i < pStrm->m_strmCnt.AsInt(); i += 1) {
@@ -2325,8 +2329,8 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 				if (mod.m_clkRate == eClk1x)
 					strmPreInstr.Append("\tc_wrStrm%s_bufRdAddr[%d] = r_wrStrm%s_bufRdAddr[%d];\n", strmName.c_str(), i, strmName.c_str(), i);
 				else
-					strmPreInstr.Append("\tc_wrStrm%s_bufRdAddr[%d] = r_wrStrm%s_bufRdAddr[%d] + (r_wrStrm%s_sumCy[%d] << 24);\n", 
-						strmName.c_str(), i, strmName.c_str(), i, strmName.c_str(), i);
+					strmPreInstr.Append("\tc_wrStrm%s_bufRdAddr[%d] = r_wrStrm%s_bufRdAddr[%d] + (r_wrStrm%s_sumCy[%d] << 24);\n",
+					strmName.c_str(), i, strmName.c_str(), i, strmName.c_str(), i);
 
 				strmReg.Append("\tr_wrStrm%s_bufRdAddr[%d] = c_wrStrm%s_bufRdAddr[%d];\n", strmName.c_str(), i, strmName.c_str(), i);
 			}
@@ -2373,8 +2377,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 				if (pStrm->m_strmCnt.size() == 0) {
 					strmPreInstr.Append("\tc_wrStrm%s_openRspGrpId = r_wrStrm%s_openRspGrpId;\n", strmName.c_str(), strmName.c_str());
 					strmReg.Append("\tr_wrStrm%s_openRspGrpId = c_wrStrm%s_openRspGrpId;\n", strmName.c_str(), strmName.c_str());
-				}
-				else for (int i = 0; i < pStrm->m_strmCnt.AsInt(); i += 1) {
+				} else for (int i = 0; i < pStrm->m_strmCnt.AsInt(); i += 1) {
 					strmPreInstr.Append("\tc_wrStrm%s_openRspGrpId[%d] = r_wrStrm%s_openRspGrpId[%d];\n", strmName.c_str(), i, strmName.c_str(), i);
 					strmReg.Append("\tr_wrStrm%s_openRspGrpId[%d] = c_wrStrm%s_openRspGrpId[%d];\n", strmName.c_str(), i, strmName.c_str(), i);
 				}
@@ -2384,8 +2387,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 				if (pStrm->m_strmCnt.size() == 0) {
 					strmPreInstr.Append("\tc_wrStrm%s_rspGrpId = r_wrStrm%s_rspGrpId;\n", strmName.c_str(), strmName.c_str());
 					strmReg.Append("\tr_wrStrm%s_rspGrpId = c_wrStrm%s_rspGrpId;\n", strmName.c_str(), strmName.c_str());
-				}
-				else for (int i = 0; i < pStrm->m_strmCnt.AsInt(); i += 1) {
+				} else for (int i = 0; i < pStrm->m_strmCnt.AsInt(); i += 1) {
 					strmPreInstr.Append("\tc_wrStrm%s_rspGrpId[%d] = r_wrStrm%s_rspGrpId[%d];\n", strmName.c_str(), i, strmName.c_str(), i);
 					strmReg.Append("\tr_wrStrm%s_rspGrpId[%d] = c_wrStrm%s_rspGrpId[%d];\n", strmName.c_str(), i, strmName.c_str(), i);
 				}
@@ -2398,8 +2400,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 					if (pStrm->m_strmCnt.size() == 0) {
 						strmPreInstr.Append("\tc_wrStrm%s_bClose = false;\n", strmName.c_str());
 						strmReg.Append("\tr_wrStrm%s_bClose = c_wrStrm%s_bClose;\n", strmName.c_str(), strmName.c_str());
-					}
-					else for (int i = 0; i < pStrm->m_strmCnt.AsInt(); i += 1) {
+					} else for (int i = 0; i < pStrm->m_strmCnt.AsInt(); i += 1) {
 						strmPreInstr.Append("\tc_wrStrm%s_bClose[%d] = false;\n", strmName.c_str(), i);
 						strmReg.Append("\tr_wrStrm%s_bClose[%d] = c_wrStrm%s_bClose[%d];\n", strmName.c_str(), i, strmName.c_str(), i);
 					}
@@ -2410,7 +2411,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 				if (pStrm->m_strmCnt.size() == 0) {
 					if (pStrm->m_reserve.AsInt() == 0)
 						strmPreInstr.Append("\tc_wrStrm%s_bClosingBufRd = r_wrStrm%s_bClosingBufRd || r_wrStrm%s_bClose && (r_wrStrm%s_bufWrEn || r_wrStrm%s_bufRdElemCnt > 0);\n",
-							strmName.c_str(), strmName.c_str(), strmName.c_str(), strmName.c_str(), strmName.c_str());
+						strmName.c_str(), strmName.c_str(), strmName.c_str(), strmName.c_str(), strmName.c_str());
 					else
 						strmPreInstr.Append("\tc_wrStrm%s_bClosingBufRd = r_wrStrm%s_bClosingBufRd;\n", strmName.c_str(), strmName.c_str());
 
@@ -2418,7 +2419,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 				} else for (int i = 0; i < pStrm->m_strmCnt.AsInt(); i += 1) {
 					if (pStrm->m_reserve.AsInt() == 0)
 						strmPreInstr.Append("\tc_wrStrm%s_bClosingBufRd[%d] = r_wrStrm%s_bClosingBufRd[%d] || r_wrStrm%s_bClose[%d] && (r_wrStrm%s_bufWrEn[%d] || r_wrStrm%s_bufRdElemCnt[%d] > 0);\n",
-							strmName.c_str(), i, strmName.c_str(), i, strmName.c_str(), i, strmName.c_str(), i, strmName.c_str(), i);
+						strmName.c_str(), i, strmName.c_str(), i, strmName.c_str(), i, strmName.c_str(), i, strmName.c_str(), i);
 					else
 						strmPreInstr.Append("\tc_wrStrm%s_bClosingBufRd[%d] = r_wrStrm%s_bClosingBufRd[%d];\n", strmName.c_str(), i, strmName.c_str(), i);
 					strmReg.Append("\tr_wrStrm%s_bClosingBufRd[%d] = !r_reset1x && c_wrStrm%s_bClosingBufRd[%d];\n", strmName.c_str(), i, strmName.c_str(), i);
@@ -2499,8 +2500,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 			if (pStrm->m_rspGrpW.AsInt() == 0) {
 				strmPreInstr.Append("\tc_wrStrm%s_rspGrpCnt = r_wrStrm%s_rspGrpCnt;\n", strmName.c_str(), strmName.c_str());
 				strmReg.Append("\tr_wrStrm%s_rspGrpCnt = r_reset1x ? (ht_uint%d)0 : c_wrStrm%s_rspGrpCnt;\n", strmName.c_str(), grpRspCntW, strmName.c_str());
-			}
-			else for (int i = 0; i < strmRspGrpCnt; i += 1) {
+			} else for (int i = 0; i < strmRspGrpCnt; i += 1) {
 				strmPreInstr.Append("\tc_wrStrm%s_rspGrpCnt[%d] = r_wrStrm%s_rspGrpCnt[%d];\n", strmName.c_str(), i, strmName.c_str(), i);
 				strmReg.Append("\tr_wrStrm%s_rspGrpCnt[%d] = r_reset1x ? (ht_uint%d)0 : c_wrStrm%s_rspGrpCnt[%d];\n", strmName.c_str(), i, grpRspCntW, strmName.c_str(), i);
 			}
@@ -2550,8 +2550,8 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 						strmReg.Append("\tr_wrStrm%s_strmWrData[%d] = c_wrStrm%s_strmWrData[%d];\n", strmName.c_str(), i, strmName.c_str(), i);
 					}
 				} else {
-					GenModDecl(eVcdAll, m_strmRegDecl, vcdModName, pStrm->m_type.AsStr(), VA("r_wrStrm%s_strmWrData", strmName.c_str()), strmIdVec);
-					m_strmRegDecl.Append("\t%s c_wrStrm%s_strmWrData%s;\n", pStrm->m_type.c_str(), strmName.c_str(), strmIdDecl.c_str());
+					GenModDecl(eVcdAll, m_strmRegDecl, vcdModName, pStrm->m_pType->m_typeName, VA("r_wrStrm%s_strmWrData", strmName.c_str()), strmIdVec);
+					m_strmRegDecl.Append("\t%s c_wrStrm%s_strmWrData%s;\n", pStrm->m_pType->m_typeName.c_str(), strmName.c_str(), strmIdDecl.c_str());
 					if (pStrm->m_strmCnt.size() == 0) {
 						strmPreInstr.Append("\tc_wrStrm%s_strmWrData = 0;\n", strmName.c_str());
 						strmReg.Append("\tr_wrStrm%s_strmWrData = c_wrStrm%s_strmWrData;\n", strmName.c_str(), strmName.c_str());
@@ -2561,8 +2561,8 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 					}
 				}
 			} else {
-				GenModDecl(eVcdAll, m_strmRegDecl, vcdModName, pStrm->m_type.AsStr(), VA("r_wrStrm%s_bufWrData", strmName.c_str()), strmIdVec);
-				m_strmRegDecl.Append("\t%s c_wrStrm%s_bufWrData%s;\n", pStrm->m_type.c_str(), strmName.c_str(), strmIdDecl.c_str());
+				GenModDecl(eVcdAll, m_strmRegDecl, vcdModName, pStrm->m_pType->m_typeName, VA("r_wrStrm%s_bufWrData", strmName.c_str()), strmIdVec);
+				m_strmRegDecl.Append("\t%s c_wrStrm%s_bufWrData%s;\n", pStrm->m_pType->m_typeName.c_str(), strmName.c_str(), strmIdDecl.c_str());
 				if (pStrm->m_strmCnt.size() == 0) {
 					strmPreInstr.Append("\tc_wrStrm%s_bufWrData = 0;\n", strmName.c_str());
 					strmReg.Append("\tr_wrStrm%s_bufWrData = c_wrStrm%s_bufWrData;\n", strmName.c_str(), strmName.c_str());
@@ -2596,8 +2596,8 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 						strmReg.Append("\tr_wrStrm%s_pipeQueFront[%d] = c_wrStrm%s_pipeQueFront[%d];\n", strmName.c_str(), i, strmName.c_str(), i);
 					}
 				} else {
-					GenModDecl(eVcdAll, m_strmRegDecl, vcdModName, pStrm->m_type.c_str(), VA("r_wrStrm%s_pipeQueFront", strmName.c_str()), strmIdVec);
-					m_strmRegDecl.Append("\t%s c_wrStrm%s_pipeQueFront%s;\n", pStrm->m_type.c_str(), strmName.c_str(), strmIdDecl.c_str());
+					GenModDecl(eVcdAll, m_strmRegDecl, vcdModName, pStrm->m_pType->m_typeName.c_str(), VA("r_wrStrm%s_pipeQueFront", strmName.c_str()), strmIdVec);
+					m_strmRegDecl.Append("\t%s c_wrStrm%s_pipeQueFront%s;\n", pStrm->m_pType->m_typeName.c_str(), strmName.c_str(), strmIdDecl.c_str());
 					if (pStrm->m_strmCnt.size() == 0) {
 						strmPreInstr.Append("\tc_wrStrm%s_pipeQueFront = r_wrStrm%s_pipeQueFront;\n", strmName.c_str(), strmName.c_str());
 						strmReg.Append("\tr_wrStrm%s_pipeQueFront = c_wrStrm%s_pipeQueFront;\n", strmName.c_str(), strmName.c_str());
@@ -2815,8 +2815,8 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 				elemCntDimen.SetValue(qwElemCnt);
 				strmBufIdVec.push_back(elemCntDimen);
 
-				GenModDecl(eVcdAll, m_strmRegDecl, vcdModName, pStrm->m_type.c_str(), VA("r_t4_wrStrm%s_buf", strmName.c_str()), strmBufIdVec);
-				m_strmRegDecl.Append("\t%s c_t3_wrStrm%s_buf%s[%d];\n", pStrm->m_type.c_str(), strmName.c_str(), strmIdDecl.c_str(), qwElemCnt);
+				GenModDecl(eVcdAll, m_strmRegDecl, vcdModName, pStrm->m_pType->m_typeName.c_str(), VA("r_t4_wrStrm%s_buf", strmName.c_str()), strmBufIdVec);
+				m_strmRegDecl.Append("\t%s c_t3_wrStrm%s_buf%s[%d];\n", pStrm->m_pType->m_typeName.c_str(), strmName.c_str(), strmIdDecl.c_str(), qwElemCnt);
 				for (int i = 0; i < qwElemCnt; i += 1) {
 					string elemIdxStr = qwElemCnt == 1 ? "" : VA("%d", i);
 					if (pStrm->m_strmCnt.size() == 0) {
@@ -2830,10 +2830,10 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 			}
 
 			if (pStrm->m_elemByteW == 3)
-				m_strmRegDecl.Append("\tht_block_ram<%s, %d> m_wrStrm%s_buf%s;\n", pStrm->m_type.c_str(), bufPtrW-1, strmName.c_str(), strmIdDecl.c_str());
+				m_strmRegDecl.Append("\tht_block_ram<%s, %d> m_wrStrm%s_buf%s;\n", pStrm->m_pType->m_typeName.c_str(), bufPtrW - 1, strmName.c_str(), strmIdDecl.c_str());
 			else
-				m_strmRegDecl.Append("\tht_mrd_block_ram<%s, %d, %d> m_wrStrm%s_buf%s;\n", 
-					pStrm->m_type.c_str(), 3-pStrm->m_elemByteW, bufPtrW - (3-pStrm->m_elemByteW) - 1, strmName.c_str(), strmIdDecl.c_str());
+				m_strmRegDecl.Append("\tht_mrd_block_ram<%s, %d, %d> m_wrStrm%s_buf%s;\n",
+				pStrm->m_pType->m_typeName.c_str(), 3 - pStrm->m_elemByteW, bufPtrW - (3 - pStrm->m_elemByteW) - 1, strmName.c_str(), strmIdDecl.c_str());
 
 			for (int i = 0; i < pStrm->m_strmCnt.AsInt(); i += 1) {
 				string strmIdx = pStrm->m_strmCnt.size() == 0 ? "" : VA("[%d]", i);
@@ -2841,19 +2841,19 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 				strmReg.Append("\tm_wrStrm%s_buf%s.clock();\n", strmName.c_str(), strmIdx.c_str());
 			}
 			if (mod.m_threads.m_htIdW.AsInt() > 0 && mod.m_rsmSrcCnt > 1) {
-				m_strmRegDecl.Append("\tht_dist_que<CHtRsm, %s_HTID_W> m_wrStrm%s_rsmQue;\n", mod.m_modName.Upper().c_str(), strmName.c_str());
+				m_strmRegDecl.Append("\tht_dist_que<CHtCmd, %s_HTID_W> m_wrStrm%s_rsmQue;\n", mod.m_modName.Upper().c_str(), strmName.c_str());
 				strmReg.Append("\tm_wrStrm%s_rsmQue.clock(c_reset1x);\n", strmName.c_str());
 			}
 
 			if (pStrm->m_reserve.AsInt() > 0) {
 				if (pStrm->m_bClose)
-					m_strmRegDecl.Append("\tht_dist_que<CWrStrm%s_pipeQue, %d> m_wrStrm%s_pipeQue%s;\n", 
-						strmName.c_str(), FindLg2(pStrm->m_reserve.AsInt()+6),
-						strmName.c_str(), strmIdDecl.c_str());
+					m_strmRegDecl.Append("\tht_dist_que<CWrStrm%s_pipeQue, %d> m_wrStrm%s_pipeQue%s;\n",
+					strmName.c_str(), FindLg2(pStrm->m_reserve.AsInt() + 6),
+					strmName.c_str(), strmIdDecl.c_str());
 				else
-					m_strmRegDecl.Append("\tht_dist_que<%s, %d> m_wrStrm%s_pipeQue%s;\n", 
-						pStrm->m_type.c_str(), FindLg2(pStrm->m_reserve.AsInt()+6),
-						strmName.c_str(), strmIdDecl.c_str());
+					m_strmRegDecl.Append("\tht_dist_que<%s, %d> m_wrStrm%s_pipeQue%s;\n",
+					pStrm->m_pType->m_typeName.c_str(), FindLg2(pStrm->m_reserve.AsInt() + 6),
+					strmName.c_str(), strmIdDecl.c_str());
 
 				for (int i = 0; i < pStrm->m_strmCnt.AsInt(); i += 1) {
 					string strmIdx = pStrm->m_strmCnt.size() == 0 ? "" : VA("[%d]", i);
@@ -2899,7 +2899,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 				strmPostInstr.Append("\n");
 
 				strmPostInstr.Append("\t\tc_wrStrm%s_bRspGrpCntFull[rspGrpId] = r_wrStrm%s_rspGrpCnt[rspGrpId] > %d;\n",
-					strmName.c_str(), strmName.c_str(), (1<<(((bIsHc2 || bIsWx) ? 7 : 10)+pStrm->m_strmCntW)) - (2 << pStrm->m_strmCntW) - 3);
+					strmName.c_str(), strmName.c_str(), (1 << (((bIsHc2 || bIsWx) ? 7 : 10) + pStrm->m_strmCntW)) - (2 << pStrm->m_strmCntW) - 3);
 				strmPostInstr.Append("\t}\n");
 			} else {
 				strmPostInstr.Append("\tbool c_wrStrm%s_bRspGrpRsm = r_wrStrm%s_bPaused && r_wrStrm%s_rspGrpCnt == 0;\n",
@@ -2926,7 +2926,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 			strmPostInstr.Append("\tif (c_wrStrm%s_bRspGrpRsm) {\n", strmName.c_str());
 			if (mod.m_threads.m_htIdW.AsInt() > 0) {
 				if (mod.m_rsmSrcCnt > 1) {
-					strmPostInstr.Append("\t\tCHtRsm rsm;\n");
+					strmPostInstr.Append("\t\tCHtCmd rsm;\n");
 					if (pStrm->m_rspGrpW.size() == 0)
 						strmPostInstr.Append("\t\trsm.m_htId = %s;\n", rsmRspGrpName.c_str());
 					else {
@@ -3003,7 +3003,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 					strmPostInstr.Append("\tfor (int idx = 0; idx < %d; idx += 1) { // wrStrm%s\n", pStrm->m_strmCnt.AsInt(), strmName.c_str());
 					strmIdxStr = "[idx]";
 				}
-				
+
 				if (pStrm->m_reserve.AsInt() == 0) {
 					strmPostInstr.Append("\t\tif (r_wrStrm%s_bufWrEn%s) {\n", strmName.c_str(), strmIdxStr.c_str());
 				} else {
@@ -3022,33 +3022,33 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 
 				if (pStrm->m_elemByteW == 3)
 					strmPostInstr.Append("\t\t\tm_wrStrm%s_buf%s.write_addr(r_wrStrm%s_bufWrPtr%s(%d,%d));\n",
-						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), bufPtrW-2, 3-pStrm->m_elemByteW);
+					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), bufPtrW - 2, 3 - pStrm->m_elemByteW);
 				else
 					strmPostInstr.Append("\t\t\tm_wrStrm%s_buf%s.write_addr(r_wrStrm%s_bufWrPtr%s(%d,0), r_wrStrm%s_bufWrPtr%s(%d,%d));\n",
-						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), 2-pStrm->m_elemByteW, 
-						strmName.c_str(), strmIdxStr.c_str(), bufPtrW-2, 3-pStrm->m_elemByteW);
+					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), 2 - pStrm->m_elemByteW,
+					strmName.c_str(), strmIdxStr.c_str(), bufPtrW - 2, 3 - pStrm->m_elemByteW);
 
 				string tabs;
 				if (pStrm->m_reserve.AsInt() == 0) {
-					strmPostInstr.Append("\t\t\tm_wrStrm%s_buf%s.write_mem(r_wrStrm%s_bufWrData%s);\n", 
+					strmPostInstr.Append("\t\t\tm_wrStrm%s_buf%s.write_mem(r_wrStrm%s_bufWrData%s);\n",
 						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 				} else {
 					if (pStrm->m_bClose) {
 						tabs = "\t";
-						strmPostInstr.Append("\t\t\tif (r_wrStrm%s_pipeQueFront%s.m_bData) {\n", 
+						strmPostInstr.Append("\t\t\tif (r_wrStrm%s_pipeQueFront%s.m_bData) {\n",
 							strmName.c_str(), strmIdxStr.c_str());
 						strmPostInstr.Append("\t\t\t\tm_wrStrm%s_buf%s.write_mem(r_wrStrm%s_pipeQueFront%s.m_data);\n",
 							strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 					} else {
-						strmPostInstr.Append("\t\t\tm_wrStrm%s_buf%s.write_mem(r_wrStrm%s_pipeQueFront%s);\n", 
+						strmPostInstr.Append("\t\t\tm_wrStrm%s_buf%s.write_mem(r_wrStrm%s_pipeQueFront%s);\n",
 							strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 					}
 				}
 
 				strmPostInstr.Append("%s\t\t\tc_wrStrm%s_bufWrPtr%s = r_wrStrm%s_bufWrPtr%s + 1;\n", tabs.c_str(),
 					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
-				strmPostInstr.Append("%s\t\t\tif (r_wrStrm%s_bOpenBufRd%s)\n",  tabs.c_str(),strmName.c_str(), strmIdxStr.c_str());
-				strmPostInstr.Append("%s\t\t\t\tc_wrStrm%s_bufWrElemCnt%s = r_wrStrm%s_bufWrElemCnt%s + 1;\n", tabs.c_str(), 
+				strmPostInstr.Append("%s\t\t\tif (r_wrStrm%s_bOpenBufRd%s)\n", tabs.c_str(), strmName.c_str(), strmIdxStr.c_str());
+				strmPostInstr.Append("%s\t\t\t\tc_wrStrm%s_bufWrElemCnt%s = r_wrStrm%s_bufWrElemCnt%s + 1;\n", tabs.c_str(),
 					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 				strmPostInstr.Append("%s\t\t\telse\n", tabs.c_str());
 				strmPostInstr.Append("%s\t\t\t\tc_wrStrm%s_bufRdElemCnt%s = r_wrStrm%s_bufRdElemCnt%s + 1;\n", tabs.c_str(),
@@ -3065,7 +3065,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 							strmName.c_str(), strmIdxStr.c_str());
 						strmPostInstr.Append("\t\t\t}\n");
 					} else {
-						strmPostInstr.Append("\t\t\tc_wrStrm%s_bufWrRem%s = r_wrStrm%s_bufWrRem%s - 1;\n", 
+						strmPostInstr.Append("\t\t\tc_wrStrm%s_bufWrRem%s = r_wrStrm%s_bufWrRem%s - 1;\n",
 							strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 						strmPostInstr.Append("\n");
 
@@ -3086,7 +3086,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 					strmPostInstr.Append("\t\t\tif (!m_wrStrm%s_pipeQue%s.empty())\n",
 						strmName.c_str(), strmIdxStr.c_str());
-					strmPostInstr.Append("\t\t\t\tm_wrStrm%s_pipeQue%s.pop();\n", 
+					strmPostInstr.Append("\t\t\t\tm_wrStrm%s_pipeQue%s.pop();\n",
 						strmName.c_str(), strmIdxStr.c_str());
 				}
 				strmPostInstr.Append("\t\t}\n");
@@ -3097,13 +3097,13 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 
 				strmPostInstr.Append("\t\t\tc_wrStrm%s_bufRdAddr%s = r_wrStrm%s_openAddr%s;\n", strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 				if (pStrm->m_elemByteW < 3) {
-					strmPostInstr.Append("\t\t\tif (r_wrStrm%s_bufRdPtr%s(%d,0) != 0)\n", 
-						strmName.c_str(), strmIdxStr.c_str(), 3-pStrm->m_elemByteW-1);
+					strmPostInstr.Append("\t\t\tif (r_wrStrm%s_bufRdPtr%s(%d,0) != 0)\n",
+						strmName.c_str(), strmIdxStr.c_str(), 3 - pStrm->m_elemByteW - 1);
 					strmPostInstr.Append("\t\t\t\tc_wrStrm%s_bufRdPtr%s(%d,%d) = r_wrStrm%s_bufRdPtr%s(%d,%d) + 1;\n",
-						strmName.c_str(), strmIdxStr.c_str(), bufPtrW-1, 3-pStrm->m_elemByteW,
-						strmName.c_str(), strmIdxStr.c_str(), bufPtrW-1, 3-pStrm->m_elemByteW);
+						strmName.c_str(), strmIdxStr.c_str(), bufPtrW - 1, 3 - pStrm->m_elemByteW,
+						strmName.c_str(), strmIdxStr.c_str(), bufPtrW - 1, 3 - pStrm->m_elemByteW);
 					strmPostInstr.Append("\t\t\tc_wrStrm%s_bufRdPtr%s(%d,0) = r_wrStrm%s_openAddr%s(2,%d);\n",
-						strmName.c_str(), strmIdxStr.c_str(), 2-pStrm->m_elemByteW,
+						strmName.c_str(), strmIdxStr.c_str(), 2 - pStrm->m_elemByteW,
 						strmName.c_str(), strmIdxStr.c_str(), pStrm->m_elemByteW);
 				}
 				if (!pStrm->m_bClose)
@@ -3112,7 +3112,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 				strmPostInstr.Append("\t\t\tc_wrStrm%s_bufWrElemCnt%s = 0;\n", strmName.c_str(), strmIdxStr.c_str());
 				if (pStrm->m_rspGrpW.AsInt() > 0)
 					strmPostInstr.Append("\t\t\tc_wrStrm%s_rspGrpId%s = r_wrStrm%s_openRspGrpId%s;\n",
-						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
+					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 				strmPostInstr.Append("\n");
 
 				strmPostInstr.Append("\t\t\tc_wrStrm%s_bOpenBufRd%s = false;\n", strmName.c_str(), strmIdxStr.c_str());
@@ -3129,42 +3129,42 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 
 				if (bMultiQwReq)
 					strmPostInstr.Append("\t\tc_t1_wrStrm%s_bReqQwRem%s = r_t3_wrStrm%s_reqQwRem%s > 0;\n",
-						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
+					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 
 				if (pStrm->m_elemByteW == 0) {
 					strmPostInstr.Append("\t\tc_t1_wrStrm%s_bReqUint8%s = r_wrStrm%s_bufRdAddr%s[0] != 0 && r_wrStrm%s_bufRdElemCnt%s >= %d ||\n",
-						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), 1<<(0-pStrm->m_elemByteW));
-					
+						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), 1 << (0 - pStrm->m_elemByteW));
+
 					if (pStrm->m_bClose)
 						strmPostInstr.Append("\t\t\tr_wrStrm%s_bClosingBufRd%s && r_wrStrm%s_bufRdElemCnt%s == 1;\n",
-							strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
+						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 					else
 						strmPostInstr.Append("\t\t\tr_wrStrm%s_bufRdRem%s <= r_wrStrm%s_bufRdElemCnt%s && r_wrStrm%s_bufRdElemCnt%s == 1;\n",
-							strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
+						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 				}
 
 				if (pStrm->m_elemByteW <= 1) {
 					strmPostInstr.Append("\t\tc_t1_wrStrm%s_bReqUint16%s = r_wrStrm%s_bufRdAddr%s[1] != 0 && r_wrStrm%s_bufRdElemCnt%s >= %d ||\n",
-						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), 1<<(1-pStrm->m_elemByteW));
-					
+						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), 1 << (1 - pStrm->m_elemByteW));
+
 					if (pStrm->m_bClose)
 						strmPostInstr.Append("\t\t\tr_wrStrm%s_bClosingBufRd%s && r_wrStrm%s_bufRdElemCnt%s <= %d;\n",
-							strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), (1<<(2-pStrm->m_elemByteW))-1);
+						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), (1 << (2 - pStrm->m_elemByteW)) - 1);
 					else
 						strmPostInstr.Append("\t\t\tr_wrStrm%s_bufRdRem%s <= r_wrStrm%s_bufRdElemCnt%s && r_wrStrm%s_bufRdElemCnt%s <= %d;\n",
-							strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), (1<<(2-pStrm->m_elemByteW))-1);
+						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), (1 << (2 - pStrm->m_elemByteW)) - 1);
 				}
 
 				if (pStrm->m_elemByteW <= 2) {
 					strmPostInstr.Append("\t\tc_t1_wrStrm%s_bReqUint32%s = r_wrStrm%s_bufRdAddr%s[2] != 0 && r_wrStrm%s_bufRdElemCnt%s >= %d ||\n",
-						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), 1<<(2-pStrm->m_elemByteW));
-					
+						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), 1 << (2 - pStrm->m_elemByteW));
+
 					if (pStrm->m_bClose)
 						strmPostInstr.Append("\t\t\tr_wrStrm%s_bClosingBufRd%s && r_wrStrm%s_bufRdElemCnt%s <= %d;\n",
-							strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), qwElemCnt-1);
+						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), qwElemCnt - 1);
 					else
 						strmPostInstr.Append("\t\t\tr_wrStrm%s_bufRdRem%s <= r_wrStrm%s_bufRdElemCnt%s && r_wrStrm%s_bufRdElemCnt%s <= %d;\n",
-							strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), qwElemCnt-1);
+						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), qwElemCnt - 1);
 				}
 
 				strmPostInstr.Append("\t}\n");
@@ -3200,15 +3200,15 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 					strmPostInstr.Append("\t\t\tc_t2_wrStrm%s_reqSel%s = %d;\n", strmName.c_str(), strmIdxStr.c_str(), reqSelIdx++);
 					strmPostInstr.Append("\n");
 
-					strmPostInstr.Append("\t\t\tc_t2_wrStrm%s_reqQwRem%s = r_t3_wrStrm%s_reqQwRem%s - 1;\n", 
+					strmPostInstr.Append("\t\t\tc_t2_wrStrm%s_reqQwRem%s = r_t3_wrStrm%s_reqQwRem%s - 1;\n",
 						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
-					strmPostInstr.Append("\t\t\tc_wrStrm%s_bufRdPtr%s = r_wrStrm%s_bufRdPtr%s + %d;\n", 
+					strmPostInstr.Append("\t\t\tc_wrStrm%s_bufRdPtr%s = r_wrStrm%s_bufRdPtr%s + %d;\n",
 						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), qwElemCnt);
 					strmPostInstr.Append("\n");
 
 					if (mod.m_clkRate == eClk1x)
 						strmPostInstr.Append("\t\t\tc_wrStrm%s_bufRdAddr%s = r_wrStrm%s_bufRdAddr%s + 8;\n",
-							strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
+						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 					else {
 						strmPostInstr.Append("\t\t\tht_uint25 lowSum = r_wrStrm%s_bufRdAddr%s(23,0) + 8;\n",
 							strmName.c_str(), strmIdxStr.c_str());
@@ -3219,12 +3219,12 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 					}
 
 					if (!pStrm->m_bClose)
-						strmPostInstr.Append("\t\t\tc_wrStrm%s_bufRdRem%s = r_wrStrm%s_bufRdRem%s - %d;\n", 
-							strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), qwElemCnt);
+						strmPostInstr.Append("\t\t\tc_wrStrm%s_bufRdRem%s = r_wrStrm%s_bufRdRem%s - %d;\n",
+						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), qwElemCnt);
 					strmPostInstr.Append("\n");
 
 					if (pStrm->m_bClose) {
-						strmPostInstr.Append("\t\t\tif (r_wrStrm%s_bClosingBufRd%s && c_wrStrm%s_bufRdElemCnt%s == %d) {\n", 
+						strmPostInstr.Append("\t\t\tif (r_wrStrm%s_bClosingBufRd%s && c_wrStrm%s_bufRdElemCnt%s == %d) {\n",
 							strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), qwElemCnt);
 						strmPostInstr.Append("\t\t\t\tc_wrStrm%s_bBufRd%s = false;\n", strmName.c_str(), strmIdxStr.c_str());
 						strmPostInstr.Append("\t\t\t\tc_wrStrm%s_bClosingBufRd%s = false;\n", strmName.c_str(), strmIdxStr.c_str());
@@ -3258,7 +3258,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 
 					if (mod.m_clkRate == eClk1x)
 						strmPostInstr.Append("\t\t\tc_wrStrm%s_bufRdAddr%s = r_wrStrm%s_bufRdAddr%s + 1;\n",
-							strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
+						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 					else {
 						strmPostInstr.Append("\t\t\tht_uint25 lowSum = r_wrStrm%s_bufRdAddr%s(23,0) + 1;\n",
 							strmName.c_str(), strmIdxStr.c_str());
@@ -3269,8 +3269,8 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 					}
 
 					if (!pStrm->m_bClose)
-						strmPostInstr.Append("\t\t\tc_wrStrm%s_bufRdRem%s = r_wrStrm%s_bufRdRem%s - 1;\n", 
-							strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
+						strmPostInstr.Append("\t\t\tc_wrStrm%s_bufRdRem%s = r_wrStrm%s_bufRdRem%s - 1;\n",
+						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 
 					strmPostInstr.Append("\t\t\tc_wrStrm%s_rspGrpCnt%s += 1u;\n", strmName.c_str(), strmRspGrpIdStr.c_str());
 					strmPostInstr.Append("\n");
@@ -3281,7 +3281,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 					strmPostInstr.Append("\n");
 
 					if (pStrm->m_bClose) {
-						strmPostInstr.Append("\t\t\tif (r_wrStrm%s_bClosingBufRd%s && c_wrStrm%s_bufRdElemCnt%s == 1) {\n", 
+						strmPostInstr.Append("\t\t\tif (r_wrStrm%s_bClosingBufRd%s && c_wrStrm%s_bufRdElemCnt%s == 1) {\n",
 							strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 						strmPostInstr.Append("\t\t\t\tc_wrStrm%s_bBufRd%s = false;\n", strmName.c_str(), strmIdxStr.c_str());
 						strmPostInstr.Append("\t\t\t\tc_wrStrm%s_bClosingBufRd%s = false;\n", strmName.c_str(), strmIdxStr.c_str());
@@ -3326,12 +3326,12 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 
 					strmPostInstr.Append("\t\t\tc_t2_wrStrm%s_reqQwRem%s = 0;\n", strmName.c_str(), strmIdxStr.c_str());
 					strmPostInstr.Append("\t\t\tc_wrStrm%s_bufRdPtr%s = r_wrStrm%s_bufRdPtr%s + %d;\n",
-						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), qwElemCnt/4);
+						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), qwElemCnt / 4);
 					strmPostInstr.Append("\n");
 
 					if (mod.m_clkRate == eClk1x)
 						strmPostInstr.Append("\t\t\tc_wrStrm%s_bufRdAddr%s = r_wrStrm%s_bufRdAddr%s + 2;\n",
-							strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
+						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 					else {
 						strmPostInstr.Append("\t\t\tht_uint25 lowSum = r_wrStrm%s_bufRdAddr%s(23,0) + 2;\n",
 							strmName.c_str(), strmIdxStr.c_str());
@@ -3342,8 +3342,8 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 					}
 
 					if (!pStrm->m_bClose)
-						strmPostInstr.Append("\t\t\tc_wrStrm%s_bufRdRem%s = r_wrStrm%s_bufRdRem%s - %d;\n", 
-							strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), qwElemCnt/4);
+						strmPostInstr.Append("\t\t\tc_wrStrm%s_bufRdRem%s = r_wrStrm%s_bufRdRem%s - %d;\n",
+						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), qwElemCnt / 4);
 					strmPostInstr.Append("\t\t\tc_wrStrm%s_rspGrpCnt%s += 1u;\n", strmName.c_str(), strmRspGrpIdStr.c_str());
 					strmPostInstr.Append("\n");
 
@@ -3353,16 +3353,16 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 					strmPostInstr.Append("\n");
 
 					if (pStrm->m_bClose) {
-						strmPostInstr.Append("\t\t\tif (r_wrStrm%s_bClosingBufRd%s && c_wrStrm%s_bufRdElemCnt%s == %d) {\n", 
-							strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), qwElemCnt/4);
+						strmPostInstr.Append("\t\t\tif (r_wrStrm%s_bClosingBufRd%s && c_wrStrm%s_bufRdElemCnt%s == %d) {\n",
+							strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), qwElemCnt / 4);
 						strmPostInstr.Append("\t\t\t\tc_wrStrm%s_bBufRd%s = false;\n", strmName.c_str(), strmIdxStr.c_str());
 						strmPostInstr.Append("\t\t\t\tc_wrStrm%s_bClosingBufRd%s = false;\n", strmName.c_str(), strmIdxStr.c_str());
 						strmPostInstr.Append("\t\t\t}\n");
 					} else {
-						strmPostInstr.Append("\t\t\tif (r_wrStrm%s_bufRdRem%s == %d)\n", strmName.c_str(), strmIdxStr.c_str(), qwElemCnt/4);
+						strmPostInstr.Append("\t\t\tif (r_wrStrm%s_bufRdRem%s == %d)\n", strmName.c_str(), strmIdxStr.c_str(), qwElemCnt / 4);
 						strmPostInstr.Append("\t\t\t\tc_wrStrm%s_bBufRd%s = false;\n", strmName.c_str(), strmIdxStr.c_str());
 					}
-					strmPostInstr.Append("\t\t\tc_wrStrm%s_bufRdElemCnt%s -= %d;\n", strmName.c_str(), strmIdxStr.c_str(), qwElemCnt/4);
+					strmPostInstr.Append("\t\t\tc_wrStrm%s_bufRdElemCnt%s -= %d;\n", strmName.c_str(), strmIdxStr.c_str(), qwElemCnt / 4);
 					strmPostInstr.Append("\n");
 
 					strmPostInstr.Append("#\t\t\tifndef _HTV\n");
@@ -3371,7 +3371,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 					strmPostInstr.Append("#\t\t\tendif\n");
 					strmPostInstr.Append("\n");
 
-					preLine ="\t\t} else ";
+					preLine = "\t\t} else ";
 				}
 
 				if (pStrm->m_elemByteW <= 2) {
@@ -3407,13 +3407,13 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 					strmPostInstr.Append("\n");
 
 					strmPostInstr.Append("\t\t\tc_t2_wrStrm%s_reqQwRem%s = 0;\n", strmName.c_str(), strmIdxStr.c_str());
-					strmPostInstr.Append("\t\t\tc_wrStrm%s_bufRdPtr%s = r_wrStrm%s_bufRdPtr%s + %d;\n", 
-						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), qwElemCnt/2);
+					strmPostInstr.Append("\t\t\tc_wrStrm%s_bufRdPtr%s = r_wrStrm%s_bufRdPtr%s + %d;\n",
+						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), qwElemCnt / 2);
 					strmPostInstr.Append("\n");
 
 					if (mod.m_clkRate == eClk1x)
 						strmPostInstr.Append("\t\t\tc_wrStrm%s_bufRdAddr%s = r_wrStrm%s_bufRdAddr%s + 4;\n",
-							strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
+						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 					else {
 						strmPostInstr.Append("\t\t\tht_uint25 lowSum = r_wrStrm%s_bufRdAddr%s(23,0) + 4;\n",
 							strmName.c_str(), strmIdxStr.c_str());
@@ -3424,8 +3424,8 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 					}
 
 					if (!pStrm->m_bClose)
-						strmPostInstr.Append("\t\t\tc_wrStrm%s_bufRdRem%s = r_wrStrm%s_bufRdRem%s - %d;\n", 
-							strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), qwElemCnt/2);
+						strmPostInstr.Append("\t\t\tc_wrStrm%s_bufRdRem%s = r_wrStrm%s_bufRdRem%s - %d;\n",
+						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), qwElemCnt / 2);
 					strmPostInstr.Append("\t\t\tc_wrStrm%s_rspGrpCnt%s += 1u;\n", strmName.c_str(), strmRspGrpIdStr.c_str());
 					strmPostInstr.Append("\n");
 
@@ -3435,16 +3435,16 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 					strmPostInstr.Append("\n");
 
 					if (pStrm->m_bClose) {
-						strmPostInstr.Append("\t\t\tif (r_wrStrm%s_bClosingBufRd%s && c_wrStrm%s_bufRdElemCnt%s == %d) {\n", 
-							strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), qwElemCnt/2);
+						strmPostInstr.Append("\t\t\tif (r_wrStrm%s_bClosingBufRd%s && c_wrStrm%s_bufRdElemCnt%s == %d) {\n",
+							strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), qwElemCnt / 2);
 						strmPostInstr.Append("\t\t\t\tc_wrStrm%s_bBufRd%s = false;\n", strmName.c_str(), strmIdxStr.c_str());
 						strmPostInstr.Append("\t\t\t\tc_wrStrm%s_bClosingBufRd%s = false;\n", strmName.c_str(), strmIdxStr.c_str());
 						strmPostInstr.Append("\t\t\t}\n");
 					} else {
-						strmPostInstr.Append("\t\t\tif (r_wrStrm%s_bufRdRem%s == %d)\n", strmName.c_str(), strmIdxStr.c_str(), qwElemCnt/2);
+						strmPostInstr.Append("\t\t\tif (r_wrStrm%s_bufRdRem%s == %d)\n", strmName.c_str(), strmIdxStr.c_str(), qwElemCnt / 2);
 						strmPostInstr.Append("\t\t\t\tc_wrStrm%s_bBufRd%s = false;\n", strmName.c_str(), strmIdxStr.c_str());
 					}
-					strmPostInstr.Append("\t\t\tc_wrStrm%s_bufRdElemCnt%s -= %d;\n", strmName.c_str(), strmIdxStr.c_str(), qwElemCnt/2);
+					strmPostInstr.Append("\t\t\tc_wrStrm%s_bufRdElemCnt%s -= %d;\n", strmName.c_str(), strmIdxStr.c_str(), qwElemCnt / 2);
 					strmPostInstr.Append("\n");
 
 					strmPostInstr.Append("#\t\t\tifndef _HTV\n");
@@ -3453,7 +3453,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 					strmPostInstr.Append("#\t\t\tendif\n");
 					strmPostInstr.Append("\n");
 
-					preLine ="\t\t} else ";
+					preLine = "\t\t} else ";
 				}
 
 				strmPostInstr.Append("%s{\n", preLine.c_str());
@@ -3464,14 +3464,13 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 				if (bIsWx) {
 					strmPostInstr.Append("\t\t\tht_uint4 reqQwCnt;\n");
 					strmPostInstr.Append("\t\t\tif (r_wrStrm%s_bufRdAddr%s(5,3) + r_wrStrm%s_bufRdElemCnt%s(%d,%d) >= 8)\n",
-						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), bufPtrW-1, 3-pStrm->m_elemByteW);
+						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), bufPtrW - 1, 3 - pStrm->m_elemByteW);
 					strmPostInstr.Append("\t\t\t\treqQwCnt = 8u - r_wrStrm%s_bufRdAddr%s(5,3);\n", strmName.c_str(), strmIdxStr.c_str());
 					strmPostInstr.Append("\t\t\telse\n");
 
-					strmPostInstr.Append("\t\t\t\treqQwCnt = r_wrStrm%s_bufRdElemCnt%s(%d,%d);\n", strmName.c_str(), strmIdxStr.c_str(), 3-pStrm->m_elemByteW+2, 3-pStrm->m_elemByteW);
+					strmPostInstr.Append("\t\t\t\treqQwCnt = r_wrStrm%s_bufRdElemCnt%s(%d,%d);\n", strmName.c_str(), strmIdxStr.c_str(), 3 - pStrm->m_elemByteW + 2, 3 - pStrm->m_elemByteW);
 					strmPostInstr.Append("\n");
-				}
-				else if (bIsHc2 && pStrm->m_memSrc == "host") {
+				} else if (bIsHc2 && pStrm->m_memSrc == "host") {
 					strmPostInstr.Append("\t\t\tht_uint4 reqQwCnt;\n");
 					strmPostInstr.Append("\t\t\tif (r_wrStrm%s_bufRdAddr%s(5,3) == 0 && r_wrStrm%s_bufRdElemCnt%s(%d,%d) >= 8)\n",
 						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), bufPtrW - 1, 3 - pStrm->m_elemByteW);
@@ -3480,8 +3479,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 
 					strmPostInstr.Append("\t\t\t\treqQwCnt = 1u;\n");
 					strmPostInstr.Append("\n");
-				}
-				else
+				} else
 					strmPostInstr.Append("\t\t\tht_uint4 reqQwCnt = 1;\n");
 
 				strmPostInstr.Append("\t\t\tc_t2_wrStrm%s_reqQwRem%s = (ht_uint3)(reqQwCnt - 1);\n", strmName.c_str(), strmIdxStr.c_str());
@@ -3491,7 +3489,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 
 				if (mod.m_clkRate == eClk1x)
 					strmPostInstr.Append("\t\t\tc_wrStrm%s_bufRdAddr%s = r_wrStrm%s_bufRdAddr%s + 8;\n",
-						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
+					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str());
 				else {
 					strmPostInstr.Append("\t\t\tht_uint25 lowSum = r_wrStrm%s_bufRdAddr%s(23,0) + 8;\n",
 						strmName.c_str(), strmIdxStr.c_str());
@@ -3502,8 +3500,8 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 				}
 
 				if (!pStrm->m_bClose)
-					strmPostInstr.Append("\t\t\tc_wrStrm%s_bufRdRem%s = r_wrStrm%s_bufRdRem%s - %d;\n", 
-						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), qwElemCnt);
+					strmPostInstr.Append("\t\t\tc_wrStrm%s_bufRdRem%s = r_wrStrm%s_bufRdRem%s - %d;\n",
+					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), qwElemCnt);
 				strmPostInstr.Append("\t\t\tc_wrStrm%s_rspGrpCnt%s += 1u;\n", strmName.c_str(), strmRspGrpIdStr.c_str());
 				strmPostInstr.Append("\n");
 
@@ -3513,7 +3511,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 				strmPostInstr.Append("\n");
 
 				if (pStrm->m_bClose) {
-					strmPostInstr.Append("\t\t\tif (r_wrStrm%s_bClosingBufRd%s && c_wrStrm%s_bufRdElemCnt%s == %d) {\n", 
+					strmPostInstr.Append("\t\t\tif (r_wrStrm%s_bClosingBufRd%s && c_wrStrm%s_bufRdElemCnt%s == %d) {\n",
 						strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), qwElemCnt);
 					strmPostInstr.Append("\t\t\t\tc_wrStrm%s_bBufRd%s = false;\n", strmName.c_str(), strmIdxStr.c_str());
 					strmPostInstr.Append("\t\t\t\tc_wrStrm%s_bClosingBufRd%s = false;\n", strmName.c_str(), strmIdxStr.c_str());
@@ -3538,10 +3536,10 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 
 				strmPostInstr.Append("\t\tc_t2_%sP%dToMif_reqRdy = true;\n", mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx]);
 				strmPostInstr.Append("\t\tc_t2_%sP%dToMif_req.m_tid = wrTid.m_tid;\n", mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx]);
-				strmPostInstr.Append("\t\tc_t2_%sP%dToMif_req.m_host = %s;\n", 
+				strmPostInstr.Append("\t\tc_t2_%sP%dToMif_req.m_host = %s;\n",
 					mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx], pStrm->m_memSrc.AsStr() == "host" ? "true" : "false");
 				strmPostInstr.Append("\t\tc_t2_%sP%dToMif_req.m_type = MEM_REQ_WR;\n", mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx]);
-				strmPostInstr.Append("\t\tc_t2_%sP%dToMif_req.m_addr = r_wrStrm%s_bufRdAddr%s;\n", 
+				strmPostInstr.Append("\t\tc_t2_%sP%dToMif_req.m_addr = r_wrStrm%s_bufRdAddr%s;\n",
 					mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx], strmName.c_str(), strmIdxStr.c_str());
 				strmPostInstr.Append("\n");
 
@@ -3559,15 +3557,15 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 						strmPostInstr.Append("\t\tif (c_t2_wrStrm%s_reqQwRem%s > 0)\n", strmName.c_str(), strmIdxStr.c_str());
 						strmPostInstr.Append("\t\t\tc_%sP%dToMif_reqRr = 0x%x;\n",
 							mod.m_modName.Lc().c_str(), memPortIdx,
-							1<<pStrm->m_arbRr[strmIdx]);
+							1 << pStrm->m_arbRr[strmIdx]);
 						strmPostInstr.Append("\t\telse\n");
 						strmPostInstr.Append("\t\t\tc_%sP%dToMif_reqRr = 0x%x;\n",
 							mod.m_modName.Lc().c_str(), memPortIdx,
-							1<<((pStrm->m_arbRr[strmIdx]+1) % mod.m_memPortList[memPortIdx]->m_strmList.size()));
+							1 << ((pStrm->m_arbRr[strmIdx] + 1) % mod.m_memPortList[memPortIdx]->m_strmList.size()));
 					} else
 						strmPostInstr.Append("\t\tc_%sP%dToMif_reqRr = 0x%x;\n",
-							mod.m_modName.Lc().c_str(), memPortIdx,
-							1<<((pStrm->m_arbRr[strmIdx]+1) % mod.m_memPortList[memPortIdx]->m_strmList.size()));
+						mod.m_modName.Lc().c_str(), memPortIdx,
+						1 << ((pStrm->m_arbRr[strmIdx] + 1) % mod.m_memPortList[memPortIdx]->m_strmList.size()));
 				}
 				strmPostInstr.Append("\t}\n");
 				strmPostInstr.Append("\n");
@@ -3580,7 +3578,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 				string c2_or_r3 = mod.m_clkRate == eClk1x ? "c_t2" : "r_t4";
 				strmPostInstr.Append("\t\tswitch (%s_wrStrm%s_reqSel%s) {\n", c2_or_r3.c_str(), strmName.c_str(), strmIdxStr.c_str());
 				strmPostInstr.Append("\t\tdefault:\n");
-				
+
 				reqSelIdx = 0;
 
 				int wrStrmMemPort = pStrm->m_memPort[strmIdx];
@@ -3593,22 +3591,22 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 					for (int idx = 0; idx < qwElemCnt; idx += 1) {
 						if (mod.m_clkRate == eClk1x) {
 							if (pStrm->m_elemByteW == 3)
-								strmPostInstr.Append("\t\t\tc_t%d_%sP%dToMif_req.m_data(%d,%d) = m_wrStrm%s_buf%s.read_mem();\n", 
-									wrStrmDataStg, mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx], 64/qwElemCnt*(idx+1)-1, 64/qwElemCnt*idx,
-									strmName.c_str(), strmIdxStr.c_str());
+								strmPostInstr.Append("\t\t\tc_t%d_%sP%dToMif_req.m_data(%d,%d) = m_wrStrm%s_buf%s.read_mem();\n",
+								wrStrmDataStg, mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx], 64 / qwElemCnt*(idx + 1) - 1, 64 / qwElemCnt*idx,
+								strmName.c_str(), strmIdxStr.c_str());
 							else
-								strmPostInstr.Append("\t\t\tc_t%d_%sP%dToMif_req.m_data(%d,%d) = m_wrStrm%s_buf%s.read_mem(%d);\n", 
-									wrStrmDataStg, mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx], 64/qwElemCnt*(idx+1)-1, 64/qwElemCnt*idx, 
-									strmName.c_str(), strmIdxStr.c_str(), idx);
+								strmPostInstr.Append("\t\t\tc_t%d_%sP%dToMif_req.m_data(%d,%d) = m_wrStrm%s_buf%s.read_mem(%d);\n",
+								wrStrmDataStg, mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx], 64 / qwElemCnt*(idx + 1) - 1, 64 / qwElemCnt*idx,
+								strmName.c_str(), strmIdxStr.c_str(), idx);
 						} else {
 							if (pStrm->m_elemByteW == 3)
-								strmPostInstr.Append("\t\t\tc_t%d_%sP%dToMif_req.m_data(%d,%d) = r_t4_wrStrm%s_buf%s[0];\n", 
-									wrStrmDataStg, mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx], 64/qwElemCnt*(idx+1)-1, 64/qwElemCnt*idx,
-									strmName.c_str(), strmIdxStr.c_str());
+								strmPostInstr.Append("\t\t\tc_t%d_%sP%dToMif_req.m_data(%d,%d) = r_t4_wrStrm%s_buf%s[0];\n",
+								wrStrmDataStg, mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx], 64 / qwElemCnt*(idx + 1) - 1, 64 / qwElemCnt*idx,
+								strmName.c_str(), strmIdxStr.c_str());
 							else
-								strmPostInstr.Append("\t\t\tc_t%d_%sP%dToMif_req.m_data(%d,%d) = r_t4_wrStrm%s_buf%s[%d];\n", 
-									wrStrmDataStg, mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx], 64/qwElemCnt*(idx+1)-1, 64/qwElemCnt*idx, 
-									strmName.c_str(), strmIdxStr.c_str(), idx);
+								strmPostInstr.Append("\t\t\tc_t%d_%sP%dToMif_req.m_data(%d,%d) = r_t4_wrStrm%s_buf%s[%d];\n",
+								wrStrmDataStg, mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx], 64 / qwElemCnt*(idx + 1) - 1, 64 / qwElemCnt*idx,
+								strmName.c_str(), strmIdxStr.c_str(), idx);
 						}
 					}
 					strmPostInstr.Append("\t\t\tbreak;\n");
@@ -3619,14 +3617,14 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 					strmPostInstr.Append("\t\t\tc_t%d_%sP%dToMif_req.m_size = MEM_REQ_U8;\n", wrStrmDataStg, mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx]);
 					for (int idx = 0; idx < qwElemCnt; idx += 1)
 						if (mod.m_clkRate == eClk1x) {
-							strmPostInstr.Append("\t\t\tc_t%d_%sP%dToMif_req.m_data(%d,%d) = m_wrStrm%s_buf%s.read_mem(%s_wrStrm%s_rdSel0%s);\n", 
-								wrStrmDataStg, mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx], 64/qwElemCnt*(idx+1)-1, 64/qwElemCnt*idx,
-								strmName.c_str(), strmIdxStr.c_str(), c2_or_r3.c_str(), strmName.c_str(), strmIdxStr.c_str());
+						strmPostInstr.Append("\t\t\tc_t%d_%sP%dToMif_req.m_data(%d,%d) = m_wrStrm%s_buf%s.read_mem(%s_wrStrm%s_rdSel0%s);\n",
+							wrStrmDataStg, mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx], 64 / qwElemCnt*(idx + 1) - 1, 64 / qwElemCnt*idx,
+							strmName.c_str(), strmIdxStr.c_str(), c2_or_r3.c_str(), strmName.c_str(), strmIdxStr.c_str());
 						} else {
-							strmPostInstr.Append("\t\t\tc_t%d_%sP%dToMif_req.m_data(%d,%d) = r_t4_wrStrm%s_buf%s[r_t4_wrStrm%s_rdSel0%s];\n", 
-								wrStrmDataStg, mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx], 64/qwElemCnt*(idx+1)-1, 64/qwElemCnt*idx,
-								strmName.c_str(), strmIdxStr.c_str(), 
-								strmName.c_str(), strmIdxStr.c_str());
+						strmPostInstr.Append("\t\t\tc_t%d_%sP%dToMif_req.m_data(%d,%d) = r_t4_wrStrm%s_buf%s[r_t4_wrStrm%s_rdSel0%s];\n",
+							wrStrmDataStg, mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx], 64 / qwElemCnt*(idx + 1) - 1, 64 / qwElemCnt*idx,
+							strmName.c_str(), strmIdxStr.c_str(),
+							strmName.c_str(), strmIdxStr.c_str());
 						}
 					strmPostInstr.Append("\t\t\tbreak;\n");
 				}
@@ -3636,15 +3634,15 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 					strmPostInstr.Append("\t\t\tc_t%d_%sP%dToMif_req.m_size = MEM_REQ_U16;\n", wrStrmDataStg, mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx]);
 					for (int idx = 0; idx < qwElemCnt; idx += 1)
 						if (mod.m_clkRate == eClk1x) {
-							strmPostInstr.Append("\t\t\tc_t%d_%sP%dToMif_req.m_data(%d,%d) = m_wrStrm%s_buf%s.read_mem(%s_wrStrm%s_rdSel%d%s);\n",
-								wrStrmDataStg, mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx], 64/qwElemCnt*(idx+1)-1, 64/qwElemCnt*idx, 
-								strmName.c_str(), strmIdxStr.c_str(), 
-								c2_or_r3.c_str(), strmName.c_str(), idx & ((1<<(1-pStrm->m_elemByteW))-1), strmIdxStr.c_str() );
+						strmPostInstr.Append("\t\t\tc_t%d_%sP%dToMif_req.m_data(%d,%d) = m_wrStrm%s_buf%s.read_mem(%s_wrStrm%s_rdSel%d%s);\n",
+							wrStrmDataStg, mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx], 64 / qwElemCnt*(idx + 1) - 1, 64 / qwElemCnt*idx,
+							strmName.c_str(), strmIdxStr.c_str(),
+							c2_or_r3.c_str(), strmName.c_str(), idx & ((1 << (1 - pStrm->m_elemByteW)) - 1), strmIdxStr.c_str());
 						} else {
-							strmPostInstr.Append("\t\t\tc_t%d_%sP%dToMif_req.m_data(%d,%d) = r_t4_wrStrm%s_buf%s[r_t4_wrStrm%s_rdSel%d%s];\n",
-								wrStrmDataStg, mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx], 64/qwElemCnt*(idx+1)-1, 64/qwElemCnt*idx, 
-								strmName.c_str(), strmIdxStr.c_str(), 
-								strmName.c_str(), idx & ((1<<(1-pStrm->m_elemByteW))-1), strmIdxStr.c_str() );
+						strmPostInstr.Append("\t\t\tc_t%d_%sP%dToMif_req.m_data(%d,%d) = r_t4_wrStrm%s_buf%s[r_t4_wrStrm%s_rdSel%d%s];\n",
+							wrStrmDataStg, mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx], 64 / qwElemCnt*(idx + 1) - 1, 64 / qwElemCnt*idx,
+							strmName.c_str(), strmIdxStr.c_str(),
+							strmName.c_str(), idx & ((1 << (1 - pStrm->m_elemByteW)) - 1), strmIdxStr.c_str());
 						}
 					strmPostInstr.Append("\t\t\tbreak;\n");
 				}
@@ -3654,15 +3652,15 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 					strmPostInstr.Append("\t\t\tc_t%d_%sP%dToMif_req.m_size = MEM_REQ_U32;\n", wrStrmDataStg, mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx]);
 					for (int idx = 0; idx < qwElemCnt; idx += 1)
 						if (mod.m_clkRate == eClk1x) {
-							strmPostInstr.Append("\t\t\tc_t%d_%sP%dToMif_req.m_data(%d,%d) = m_wrStrm%s_buf%s.read_mem(%s_wrStrm%s_rdSel%d%s);\n", 
-								wrStrmDataStg, mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx], 64/qwElemCnt*(idx+1)-1, 64/qwElemCnt*idx, 
-								strmName.c_str(), strmIdxStr.c_str(),
-								c2_or_r3.c_str(), strmName.c_str(), idx & ((1<<(2-pStrm->m_elemByteW))-1), strmIdxStr.c_str() );
+						strmPostInstr.Append("\t\t\tc_t%d_%sP%dToMif_req.m_data(%d,%d) = m_wrStrm%s_buf%s.read_mem(%s_wrStrm%s_rdSel%d%s);\n",
+							wrStrmDataStg, mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx], 64 / qwElemCnt*(idx + 1) - 1, 64 / qwElemCnt*idx,
+							strmName.c_str(), strmIdxStr.c_str(),
+							c2_or_r3.c_str(), strmName.c_str(), idx & ((1 << (2 - pStrm->m_elemByteW)) - 1), strmIdxStr.c_str());
 						} else {
-							strmPostInstr.Append("\t\t\tc_t%d_%sP%dToMif_req.m_data(%d,%d) = r_t4_wrStrm%s_buf%s[r_t4_wrStrm%s_rdSel%d%s];\n", 
-								wrStrmDataStg, mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx], 64/qwElemCnt*(idx+1)-1, 64/qwElemCnt*idx, 
-								strmName.c_str(), strmIdxStr.c_str(),
-								strmName.c_str(), idx & ((1<<(2-pStrm->m_elemByteW))-1), strmIdxStr.c_str() );
+						strmPostInstr.Append("\t\t\tc_t%d_%sP%dToMif_req.m_data(%d,%d) = r_t4_wrStrm%s_buf%s[r_t4_wrStrm%s_rdSel%d%s];\n",
+							wrStrmDataStg, mod.m_modName.Lc().c_str(), pStrm->m_memPort[strmIdx], 64 / qwElemCnt*(idx + 1) - 1, 64 / qwElemCnt*idx,
+							strmName.c_str(), strmIdxStr.c_str(),
+							strmName.c_str(), idx & ((1 << (2 - pStrm->m_elemByteW)) - 1), strmIdxStr.c_str());
 						}
 					strmPostInstr.Append("\t\t\tbreak;\n");
 				}
@@ -3681,14 +3679,14 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 					strmIdxStr = "[idx]";
 				}
 
-				strmPostInstr.Append("\t\tm_wrStrm%s_buf%s.read_addr( %c_wrStrm%s_bufRdPtr%s(%d,%d) );\n", 
-					strmName.c_str(), strmIdxStr.c_str(), clkCh, strmName.c_str(), strmIdxStr.c_str(), bufPtrW-2, 3-pStrm->m_elemByteW);
+				strmPostInstr.Append("\t\tm_wrStrm%s_buf%s.read_addr( %c_wrStrm%s_bufRdPtr%s(%d,%d) );\n",
+					strmName.c_str(), strmIdxStr.c_str(), clkCh, strmName.c_str(), strmIdxStr.c_str(), bufPtrW - 2, 3 - pStrm->m_elemByteW);
 
 				if (mod.m_clkRate == eClk1x)
-					strmPostInstr.Append("\t\tc_wrStrm%s_bCollision%s = %c_wrStrm%s_bufWrEn%s && c_wrStrm%s_bufRdPtr%s(%d,%d) == r_wrStrm%s_bufWrPtr%s(%d,%d);\n", 
-						strmName.c_str(), strmIdxStr.c_str(), 
-						pStrm->m_reserve.AsInt() == 0 ? 'r' : 'c', strmName.c_str(), strmIdxStr.c_str(),
-						strmName.c_str(), strmIdxStr.c_str(), bufPtrW-2, 3-pStrm->m_elemByteW, strmName.c_str(), strmIdxStr.c_str(), bufPtrW-2, 3-pStrm->m_elemByteW);
+					strmPostInstr.Append("\t\tc_wrStrm%s_bCollision%s = %c_wrStrm%s_bufWrEn%s && c_wrStrm%s_bufRdPtr%s(%d,%d) == r_wrStrm%s_bufWrPtr%s(%d,%d);\n",
+					strmName.c_str(), strmIdxStr.c_str(),
+					pStrm->m_reserve.AsInt() == 0 ? 'r' : 'c', strmName.c_str(), strmIdxStr.c_str(),
+					strmName.c_str(), strmIdxStr.c_str(), bufPtrW - 2, 3 - pStrm->m_elemByteW, strmName.c_str(), strmIdxStr.c_str(), bufPtrW - 2, 3 - pStrm->m_elemByteW);
 
 				int fullLimit = 0;
 				switch (pStrm->m_elemBitW) {
@@ -3701,7 +3699,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 					strmName.c_str(), strmIdxStr.c_str(),
 					clkCh, strmName.c_str(), strmIdxStr.c_str(),
 					clkCh, strmName.c_str(), strmIdxStr.c_str(),
-					(1 << (bufPtrW-1))-1, (1 << (bufPtrW-1))-1 - fullLimit);
+					(1 << (bufPtrW - 1)) - 1, (1 << (bufPtrW - 1)) - 1 - fullLimit);
 
 				strmPostInstr.Append("\t}\n");
 				strmPostInstr.Append("\n");
@@ -3743,7 +3741,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 					strmPostInstr.Append("\t\tCRdStrm%s_rdTid rdRspTid;\n", strmName.c_str());
 					strmPostInstr.Append("\t\trdRspTid.m_tid = i_mifTo%sP%d_rdRsp.read().m_tid;\n", mod.m_modName.Uc().c_str(), memPortIdx);
 					strmPostInstr.Append("\t\tc_rdStrm%s_rspWrPtr1%s = rdRspTid.m_rspBufWrPtr + (rdRspTid.m_rspQwIdx << %d);\n",
-						strmName.c_str(), strmIdStr.c_str(), 3-elemByteW);
+						strmName.c_str(), strmIdStr.c_str(), 3 - elemByteW);
 					strmPostInstr.Append("\t\tc_rdStrm%s_rspWrPtr%s = r_rdStrm%s_rspWrPtr1%s;\n",
 						strmName.c_str(), strmIdStr.c_str(), strmName.c_str(), strmIdStr.c_str());
 
@@ -3784,7 +3782,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 				strmPostInstr.Append("%s\t\trdRspTid.m_tid = r_mifTo%sP%d_rdRsp.m_tid;\n", tabs.c_str(), mod.m_modName.Uc().c_str(), memPortIdx);
 				if (mod.m_clkRate == eClk1x || !bMultiQwReq)
 					strmPostInstr.Append("%s\t\tc_rdStrm%s_rspWrPtr%s = rdRspTid.m_rspBufWrPtr + (rdRspTid.m_rspQwIdx << %d);\n",
-						tabs.c_str(), strmName.c_str(), strmIdStr.c_str(), 3-elemByteW);
+					tabs.c_str(), strmName.c_str(), strmIdStr.c_str(), 3 - elemByteW);
 				if (modMemPort.m_rdStrmCnt == 1)
 					strmPostInstr.Append("\t\tassert(rdRspTid.m_mifStrmId == %d);\n", mifStrmIdx);
 				strmPostInstr.Append("\n");
@@ -3795,14 +3793,14 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 				strmPostInstr.Append("%s\t\tCRdStrm%s_buf rdStrm%s_rspData[%d];\n", tabs.c_str(), strmName.c_str(), strmName.c_str(), qwElemCnt);
 				for (int idx = 0; idx < qwElemCnt; idx += 1) {
 					strmPostInstr.Append("%s\t\trdStrm%s_rspData[%d].m_data = rdRspData(%d,%d);\n",
-						tabs.c_str(), strmName.c_str(), idx, 64/qwElemCnt*(idx+1)-1, 64/qwElemCnt*idx);
-					strmPostInstr.Append("%s\t\trdStrm%s_rspData[%d].m_toggle = c_rdStrm%s_rspWrPtr%s(%d,%d) ^ 1;\n", 
-						tabs.c_str(), strmName.c_str(), idx, strmName.c_str(), strmIdStr.c_str(), bufPtrW-1, bufPtrW-1);
+						tabs.c_str(), strmName.c_str(), idx, 64 / qwElemCnt*(idx + 1) - 1, 64 / qwElemCnt*idx);
+					strmPostInstr.Append("%s\t\trdStrm%s_rspData[%d].m_toggle = c_rdStrm%s_rspWrPtr%s(%d,%d) ^ 1;\n",
+						tabs.c_str(), strmName.c_str(), idx, strmName.c_str(), strmIdStr.c_str(), bufPtrW - 1, bufPtrW - 1);
 				}
 				strmPostInstr.Append("\n");
 
-				strmPostInstr.Append("%s\t\tm_rdStrm%s_buf%s.write_addr( c_rdStrm%s_rspWrPtr%s(%d,%d) );\n", 
-					tabs.c_str(), strmName.c_str(), strmIdStr.c_str(), strmName.c_str(), strmIdStr.c_str(), bufPtrW-2, 3-elemByteW);
+				strmPostInstr.Append("%s\t\tm_rdStrm%s_buf%s.write_addr( c_rdStrm%s_rspWrPtr%s(%d,%d) );\n",
+					tabs.c_str(), strmName.c_str(), strmIdStr.c_str(), strmName.c_str(), strmIdStr.c_str(), bufPtrW - 2, 3 - elemByteW);
 
 				if (bMultiQwReq) {
 					strmPostInstr.Append("\n");
@@ -3815,10 +3813,10 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 				for (int idx = 0; idx < qwElemCnt; idx += 1) {
 					if (elemByteW == 3)
 						strmPostInstr.Append("%s\t\tm_rdStrm%s_buf%s.write_mem(rdStrm%s_rspData[%d]);\n",
-							tabs.c_str(), strmName.c_str(), strmIdStr.c_str(), strmName.c_str(), idx);
+						tabs.c_str(), strmName.c_str(), strmIdStr.c_str(), strmName.c_str(), idx);
 					else
-						strmPostInstr.Append("%s\t\tm_rdStrm%s_buf%s.write_mem(%d, rdStrm%s_rspData[%d]);\n", 
-							tabs.c_str(), strmName.c_str(), strmIdStr.c_str(), idx, strmName.c_str(), idx);
+						strmPostInstr.Append("%s\t\tm_rdStrm%s_buf%s.write_mem(%d, rdStrm%s_rspData[%d]);\n",
+						tabs.c_str(), strmName.c_str(), strmIdStr.c_str(), idx, strmName.c_str(), idx);
 				}
 
 				if (bMultiQwReq) {
@@ -3869,8 +3867,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 					if (rspGrpBits > 0) {
 						strmPostInstr.Append("\t\tht_uint%d rspGrpId = wrRspTid(%d, 4);\n", rspGrpBits, 4 + rspGrpBits - 1);
 						strmPostInstr.Append("\t\tc_wrStrm%s_rspGrpCnt[rspGrpId] -= 1u;\n", strmName.c_str());
-					}
-					else
+					} else
 						strmPostInstr.Append("\t\tc_wrStrm%s_rspGrpCnt -= 1u;\n", strmName.c_str());
 				} else {
 					strmPostInstr.Append("\t\tcase %d:\n", mifStrmIdx);

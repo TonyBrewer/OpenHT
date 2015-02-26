@@ -42,7 +42,7 @@ public:
 		tk_indirection, tk_addressOf, tk_exprBegin, tk_exprEnd, tk_minusGreater,
 		tk_operator, tk_const, tk_do, tk_while, tk_preInc, tk_postInc, tk_preDec, tk_postDec,
 		tk_try, tk_continue, tk_goto, tk_throw, tk_catch, tk_template, tk_namespace,
-		tk_delete, tk_toe,
+		tk_delete, tk_toe, tk_eor,
 		TK_TOKEN_CNT };
 
 	void OpenLine(const string &line) {
@@ -71,6 +71,7 @@ public:
     void RecordTokensPause();
     size_t RecordTokensResume();
     void RecordTokensErase(size_t pos);
+	void RemoveLastRecordedToken();
 	int GetTokenPlaybackLevel() { return m_tokenPlaybackLevel; }
     bool IsTokenPlayback() { return m_bTokenPlayback; }
     void FuncDeclPlayback();
@@ -237,6 +238,9 @@ private:
 	int						m_tokenPlaybackLevel;
 	vector<CTokenRecord>	m_tokenRecord;
 	CToken					m_playbackToken;
+
+	bool					m_bRemovedToken;
+	CToken					m_removedToken;
 
 	static CLineInfo		m_lineInfo;
 

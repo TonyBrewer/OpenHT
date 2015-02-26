@@ -1,4 +1,5 @@
-// -cl "C:\Ht\tests\bboxPipe\src_pers\bboxPipe.htl"
+// -cl $(HtToolsPath)\tests\bboxPipe\src_pers\bboxPipe.htl
+-wd $(HtToolsPath)\tests\bboxPipe\msvs12\		// working directory
 
 -cp hc-2
 -mt				// enable memory tracing
@@ -6,7 +7,7 @@
 -un Au			// unit name
 -df 150			// default frequence
 -I ../src_pers
+-vcd_all
 
--wd "C:\Ht\tests\bboxPipe\msvs12\"		// working directory
-"C:\Ht\tests\bboxPipe\src_pers\bboxPipe.htd"	// design file location
+../src_pers/bboxPipe.htd			// design file location
 ../ht/sysc							// location for output files

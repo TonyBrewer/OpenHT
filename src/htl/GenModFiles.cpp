@@ -33,7 +33,7 @@ CDsnInfo::GenerateModuleFiles(CModule &mod)
 		GenModBarStatements(mod);
 		GenModOhmStatements(mod);
 		GenModCxrStatements(mod, modInstIdx);
-		GenModRamStatements(modInst);
+		//GenModRamStatements(modInst);
 		GenModIhdStatements(mod);
 		GenModOhdStatements(mod);
 		GenModMifStatements(mod);
@@ -50,17 +50,18 @@ CDsnInfo::GenerateModuleFiles(CModule &mod)
 	}
 }
 
-bool CDsnInfo::NeedClk2x() {
+bool CDsnInfo::NeedClk2x()
+{
 	bool bNeed2xClk = !m_gblPreInstr2x.Empty() || !m_gblReg2x.Empty() || !m_gblPostInstr2x.Empty() || !m_gblOut2x.Empty()
 		|| !m_cxrT0Stage2x.Empty() || !m_cxrTsStage2x.Empty() || !m_cxrPostInstr2x.Empty() || !m_cxrReg2x.Empty() || !m_cxrOut2x.Empty()
-		|| !m_iplT0Stg2x.Empty() || !m_iplT1Stg2x.Empty() || !m_iplT2Stg2x.Empty() || !m_iplTsStg2x.Empty() 
+		|| !m_iplT0Stg2x.Empty() || !m_iplT1Stg2x.Empty() || !m_iplT2Stg2x.Empty() || !m_iplTsStg2x.Empty()
 		|| !m_iplPostInstr2x.Empty() || !m_iplReg2x.Empty() || !m_iplPostReg2x.Empty() || !m_iplOut2x.Empty()
 		|| !m_msgPreInstr2x.Empty() || !m_msgReg2x.Empty() || !m_msgPostInstr2x.Empty();
 
 	return bNeed2xClk;
 }
 
-void 
+void
 CDsnInfo::WritePersCppFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 {
 	CModInst & modInst = mod.m_modInstList[modInstIdx];
@@ -144,7 +145,14 @@ CDsnInfo::WritePersCppFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 	m_barPostInstr1x.Write(cppFile);
 	m_strmPostInstr1x.Write(cppFile);
 	m_stBufPostInstr1x.Write(cppFile);
-	m_iplClrShared1x.Write(cppFile);
+
+	if (!m_iplReset1x.Empty() || !m_mifReset1x.Empty()) {
+		fprintf(cppFile, "\tif (r_reset1x) {\n");
+		m_iplReset1x.Write(cppFile);
+		m_mifReset1x.Write(cppFile);
+		fprintf(cppFile, "\t}\n");
+		fprintf(cppFile, "\n");
+	}
 
 	fprintf(cppFile, "\t//////////////////////////////////////////////////////\n");
 	fprintf(cppFile, "\t// Register assignments\n");
@@ -177,7 +185,7 @@ CDsnInfo::WritePersCppFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 	int phaseCnt = CountPhaseResetFanout(modInst);
 	phaseCnt = modInst.m_pMod->m_phaseCnt;
 
-	char phaseStr[4] = { 'A'-1, '\0', '\0', '\0' };
+	char phaseStr[4] = { 'A' - 1, '\0', '\0', '\0' };
 
 	for (int i = 0; i < phaseCnt; i += 1) {
 		if (phaseStr[0] < 'Z')
@@ -222,7 +230,7 @@ CDsnInfo::WritePersCppFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 	fprintf(cppFile, "}\n");
 
 	//HtlAssert(mod.m_bNeed2xClk == bNeed2xClk);
-	
+
 	if (bNeedClk2x) {
 
 		fprintf(cppFile, "\n");
@@ -263,7 +271,14 @@ CDsnInfo::WritePersCppFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 		m_ihdPostInstr2x.Write(cppFile);
 		m_ohdPostInstr2x.Write(cppFile);
 		m_mifPostInstr2x.Write(cppFile);
-		m_iplClrShared2x.Write(cppFile);
+
+		if (!m_iplReset2x.Empty() || !m_mifReset2x.Empty()) {
+			fprintf(cppFile, "\tif (c_reset1x) {\n");
+			m_iplReset2x.Write(cppFile);
+			m_mifReset2x.Write(cppFile);
+			fprintf(cppFile, "\t}\n");
+			fprintf(cppFile, "\n");
+		}
 
 		fprintf(cppFile, "\t//////////////////////////////////////////////////////\n");
 		fprintf(cppFile, "\t// Register assignments\n");
@@ -344,7 +359,7 @@ CDsnInfo::WritePersCppFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 	cppFile.FileClose();
 }
 
-void 
+void
 CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 {
 	CModInst & modInst = mod.m_modInstList[modInstIdx];
@@ -398,18 +413,18 @@ CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 	m_iplDefines.Write(incFile);
 	m_gblDefines.Write(incFile);
 
-	fprintf(incFile, "SC_MODULE(CPers%s%s%s) {\n", unitNameUc.c_str(), mod.m_modName.Uc().c_str(), instIdStr.c_str());
-	fprintf(incFile, "\n");
+	fprintf(incFile, "SC_MODULE(CPers%s%s%s)\n", unitNameUc.c_str(), mod.m_modName.Uc().c_str(), instIdStr.c_str());
+	fprintf(incFile, "{\n");
 	fprintf(incFile, "\tht_attrib(keep_hierarchy, CPers%s%s%s, \"true\");\n",
 		unitNameUc.c_str(), mod.m_modName.Uc().c_str(), instIdStr.c_str());
 	fprintf(incFile, "\n");
 	fprintf(incFile, "\t//////////////////////////////////\n");
-	fprintf(incFile, "\t// Module %s typedefs\n",mod.m_modName.c_str());
+	fprintf(incFile, "\t// Module %s typedefs\n", mod.m_modName.c_str());
 
-	for(size_t i = 0; i < m_typedefList.size(); i += 1) {
+	for (size_t i = 0; i < m_typedefList.size(); i += 1) {
 		//	must be a module and match current module
-		if(m_typedefList[i].m_scope.compare("module") != 0
-				|| m_typedefList[i].m_modName.compare(mod.m_modName.c_str()) != 0) {
+		if (m_typedefList[i].m_scope.compare("module") != 0
+			|| m_typedefList[i].m_modName.compare(mod.m_modName.c_str()) != 0) {
 			continue;
 		}
 
@@ -424,12 +439,12 @@ CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 				continue;
 
 			if (width > 0) {
-				if (typeDef.m_type.substr(0,3) == "int")
+				if (typeDef.m_type.substr(0, 3) == "int")
 					fprintf(incFile, "\ttypedef %s<%s>\t\t%s;\n",
-						width > 64 ? "sc_bigint" : "sc_int", typeDef.m_width.c_str(), typeDef.m_name.c_str());
-				else if (typeDef.m_type.substr(0,4) == "uint")
+					width > 64 ? "sc_bigint" : "sc_int", typeDef.m_width.c_str(), typeDef.m_name.c_str());
+				else if (typeDef.m_type.substr(0, 4) == "uint")
 					fprintf(incFile, "\ttypedef %s<%s>\t\t%s;\n",
-						width > 64 ? "sc_biguint" : "sc_uint", typeDef.m_width.c_str(), typeDef.m_name.c_str());
+					width > 64 ? "sc_biguint" : "sc_uint", typeDef.m_width.c_str(), typeDef.m_name.c_str());
 				else
 					ParseMsg(Fatal, typeDef.m_lineInfo, "unexpected type '%s'", typeDef.m_type.c_str());
 			}
@@ -437,17 +452,17 @@ CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 	}
 	fprintf(incFile, "\n\n");
 	fprintf(incFile, "\t//////////////////////////////////\n");
-	fprintf(incFile, "\t// Module %s structs and unions\n",mod.m_modName.c_str());
+	fprintf(incFile, "\t// Module %s structs and unions\n", mod.m_modName.c_str());
 	CHtCode fStructUnion;
-	for (size_t structIdx = 0; structIdx < m_structList.size(); structIdx += 1) {
-		if (m_structList[structIdx].m_scope != eModule)
+	for (size_t structIdx = 0; structIdx < m_recordList.size(); structIdx += 1) {
+		if (m_recordList[structIdx].m_scope != eModule)
 			continue;	// module only
-		GenUserStructs(fStructUnion, m_structList[structIdx]);
+		GenUserStructs(fStructUnion, m_recordList[structIdx]);
 
-		string structName = VA("CPers%s::%s", mod.m_modName.Uc().c_str(), m_structList[structIdx].m_structName.c_str());
+		string structName = VA("CPers%s::%s", mod.m_modName.Uc().c_str(), m_recordList[structIdx].m_typeName.c_str());
 
 		GenUserStructBadData(m_iplBadDecl, true, structName,
-			m_structList[structIdx].m_fieldList, m_structList[structIdx].m_bCStyle, "");
+			m_recordList[structIdx].m_fieldList, m_recordList[structIdx].m_bCStyle, "");
 	}
 	fStructUnion.Write(incFile, "\t");
 	fprintf(incFile, "\n\n");
@@ -555,7 +570,7 @@ CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 	fprintf(incFile, "\tvoid Pers%s%s_1x();\n",
 		unitNameUc.c_str(), mod.m_modName.Uc().c_str());
 	if (bNeedClk2x)
-		fprintf(incFile, "\tvoid Pers%s%s_2x();\n", 
+		fprintf(incFile, "\tvoid Pers%s%s_2x();\n",
 		unitNameUc.c_str(), mod.m_modName.Uc().c_str());
 	if (mod.m_bContAssign)
 		fprintf(incFile, "\tvoid Pers%s%sCont();\n",
@@ -586,7 +601,7 @@ CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 		for (size_t funcIdx = 0; funcIdx < mod.m_funcList.size(); funcIdx += 1) {
 			CFunction &func = mod.m_funcList[funcIdx];
 
-			fprintf(incFile, "\t%s %s(", func.m_type.c_str(), func.m_name.c_str());
+			fprintf(incFile, "\t%s %s(", func.m_pType->m_typeName.c_str(), func.m_name.c_str());
 
 			if (func.m_paramList.size() == 0) {
 				fprintf(incFile, ");\n");
@@ -594,12 +609,12 @@ CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 			} else {
 				char * pSeparator = "\n";
 				for (size_t paramIdx = 0; paramIdx < func.m_paramList.size(); paramIdx += 1) {
-					CField & param = func.m_paramList[paramIdx];
+					CField * pParam = func.m_paramList[paramIdx];
 
-					bool bInput = param.m_dir == "input";
+					bool bInput = pParam->m_dir == "input";
 
-					fprintf(incFile, "%s\t\t%s %s& %s", pSeparator, param.m_type.c_str(),
-						bInput ? "const " : "", param.m_name.c_str());
+					fprintf(incFile, "%s\t\t%s %s& %s", pSeparator, pParam->m_pType->m_typeName.c_str(),
+						bInput ? "const " : "", pParam->m_name.c_str());
 					pSeparator = ",\n";
 				}
 				fprintf(incFile, "\n\t);\n\n");
@@ -613,217 +628,97 @@ CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 		bool bFirst = true;
 
 		for (size_t shIdx = 0; shIdx < mod.m_shared.m_fieldList.size(); shIdx += 1) {
-			CField &shared = mod.m_shared.m_fieldList[shIdx];
+			CField * pShared = mod.m_shared.m_fieldList[shIdx];
 
-			if (shared.m_queueW.AsInt() > 0) continue;
+			if (pShared->m_queueW.AsInt() > 0) continue;
 
 			if (bFirst) {
 				fprintf(incFile, "#\tifndef _HTV\n");
 				bFirst = false;
 			}
 
-			if (shared.m_reset == "false" || shared.m_reset == "" && !mod.m_bResetShared)
-				fprintf(incFile, "\tvoid RndInit_S_%s() {\n", shared.m_name.c_str());
-			else
-				fprintf(incFile, "\tvoid ZeroInit_S_%s() {\n", shared.m_name.c_str());
+			if (pShared->m_reset == "false" || pShared->m_reset == "" && !mod.m_bResetShared) {
+				fprintf(incFile, "\tvoid RndInit_S_%s()\n", pShared->m_name.c_str());
+				fprintf(incFile, "\t{\n");
+			} else {
+				fprintf(incFile, "\tvoid ZeroInit_S_%s()\n", pShared->m_name.c_str());
+				fprintf(incFile, "\t{\n");
+			}
 
 			string tabs = "\t\t";
 
-			if (shared.m_addr1W.AsInt() > 0) {
-				bool bIsSigned = m_defineTable.FindStringIsSigned(shared.m_addr1W.AsStr());
+			if (pShared->m_addr1W.AsInt() > 0) {
+				bool bIsSigned = m_defineTable.FindStringIsSigned(pShared->m_addr1W.AsStr());
 				fprintf(incFile, "\t\tfor (%s wrAddr1 = 0; wrAddr1 < (1 << (%s)); wrAddr1 += 1) {\n",
-					bIsSigned ? "int" : "unsigned", shared.m_addr1W.c_str());
+					bIsSigned ? "int" : "unsigned", pShared->m_addr1W.c_str());
 				tabs += "\t";
 
-				if (shared.m_addr2W.AsInt() > 0) {
-					bool bIsSigned = m_defineTable.FindStringIsSigned(shared.m_addr2W.AsStr());
+				if (pShared->m_addr2W.AsInt() > 0) {
+					bool bIsSigned = m_defineTable.FindStringIsSigned(pShared->m_addr2W.AsStr());
 					fprintf(incFile, "\t\t\tfor (%s wrAddr2 = 0; wrAddr2 < (1 << (%s)); wrAddr2 += 1) {\n",
-						bIsSigned ? "int" : "unsigned", shared.m_addr2W.c_str());
+						bIsSigned ? "int" : "unsigned", pShared->m_addr2W.c_str());
 					tabs += "\t";
 				}
 
 				string idxStr;
-				int idxCnt = (int)shared.m_dimenList.size();
+				int idxCnt = (int)pShared->m_dimenList.size();
 				for (int i = 0; i < idxCnt; i += 1) {
 					fprintf(incFile, "%sfor (int idx%d = 0; idx%d < %d; idx%d += 1) {\n", tabs.c_str(),
-						i+1, i+1, shared.m_dimenList[i].AsInt(), i+1);
-					idxStr += VA("[idx%d]", i+1);
+						i + 1, i + 1, pShared->m_dimenList[i].AsInt(), i + 1);
+					idxStr += VA("[idx%d]", i + 1);
 					tabs += "\t";
 				}
 
-				if (shared.m_rdSelW.AsInt() > 0 || shared.m_wrSelW.AsInt() > 0) {
+				if (pShared->m_rdSelW.AsInt() > 0 || pShared->m_wrSelW.AsInt() > 0) {
 					fprintf(incFile, "%sfor (int wrSel = 0; wrSel < %d; wrSel += 1) {\n", tabs.c_str(),
-						1 << (shared.m_rdSelW.AsInt() + shared.m_wrSelW.AsInt()));
+						1 << (pShared->m_rdSelW.AsInt() + pShared->m_wrSelW.AsInt()));
 					tabs += "\t";
 				}
-		
-				fprintf(incFile, "%s%s tmp;\n", tabs.c_str(), shared.m_type.c_str());
 
-				GenStructInit(incFile, tabs, "tmp", shared, idxCnt, false);
+				fprintf(incFile, "%s%s tmp;\n", tabs.c_str(), pShared->m_pType->m_typeName.c_str());
 
-				if (shared.m_rdSelW.AsInt() > 0 || shared.m_wrSelW.AsInt() > 0)
-					fprintf(incFile, "%sm_%s%s.write_mem_debug(wrSel, wrAddr1", tabs.c_str(), shared.m_name.c_str(), idxStr.c_str());
+				GenStructInit(incFile, tabs, "tmp", pShared, idxCnt, false);
+
+				if (pShared->m_rdSelW.AsInt() > 0 || pShared->m_wrSelW.AsInt() > 0)
+					fprintf(incFile, "%sm_%s%s.write_mem_debug(wrSel, wrAddr1", tabs.c_str(), pShared->m_name.c_str(), idxStr.c_str());
 				else
-					fprintf(incFile, "%sm_%s%s.write_mem_debug(wrAddr1", tabs.c_str(), shared.m_name.c_str(), idxStr.c_str());
-				if (shared.m_addr2W.AsInt() > 0)
+					fprintf(incFile, "%sm_%s%s.write_mem_debug(wrAddr1", tabs.c_str(), pShared->m_name.c_str(), idxStr.c_str());
+				if (pShared->m_addr2W.AsInt() > 0)
 					fprintf(incFile, ", wrAddr2");
 				fprintf(incFile, ") = tmp;\n");
 
-				if (shared.m_rdSelW.AsInt() > 0 || shared.m_wrSelW.AsInt() > 0) {
+				if (pShared->m_rdSelW.AsInt() > 0 || pShared->m_wrSelW.AsInt() > 0) {
 					tabs.erase(0, 1);
 					fprintf(incFile, "%s}\n", tabs.c_str());
 				}
 
-				for (size_t i = 0; i < shared.m_dimenList.size(); i += 1) {
+				for (size_t i = 0; i < pShared->m_dimenList.size(); i += 1) {
 					tabs.erase(0, 1);
 					fprintf(incFile, "%s}\n", tabs.c_str());
 				}
 
-				if (shared.m_addr2W.AsInt() > 0)
+				if (pShared->m_addr2W.AsInt() > 0)
 					fprintf(incFile, "\t\t\t}\n");
 
 				fprintf(incFile, "\t\t}\n");
 			} else {
 				string idxStr;
-				int idxCnt = (int)shared.m_dimenList.size();
+				int idxCnt = (int)pShared->m_dimenList.size();
 				for (int i = 0; i < idxCnt; i += 1) {
 					fprintf(incFile, "%sfor (int idx%d = 0; idx%d < %d; idx%d += 1) {\n", tabs.c_str(),
-						i+1, i+1, shared.m_dimenList[i].AsInt(), i+1);
-					idxStr += VA("[idx%d]", i+1);
+						i + 1, i + 1, pShared->m_dimenList[i].AsInt(), i + 1);
+					idxStr += VA("[idx%d]", i + 1);
 					tabs += "\t";
 				}
 
-				bool bZero = !(shared.m_reset == "false" || shared.m_reset == "" && !mod.m_bResetShared);
-				GenStructInit(incFile, tabs, VA("r_%s%s", shared.m_name.c_str(), idxStr.c_str()), shared, idxCnt, bZero);
+				bool bZero = !(pShared->m_reset == "false" || pShared->m_reset == "" && !mod.m_bResetShared);
+				GenStructInit(incFile, tabs, VA("r_%s%s", pShared->m_name.c_str(), idxStr.c_str()), pShared, idxCnt, bZero);
 
-				for (size_t i = 0; i < shared.m_dimenList.size(); i += 1) {
+				for (size_t i = 0; i < pShared->m_dimenList.size(); i += 1) {
 					tabs.erase(0, 1);
 					fprintf(incFile, "%s}\n", tabs.c_str());
 				}
 			}
-			fprintf(incFile, "\t}\n");
-		}
-
-		for (size_t ramIdx = 0; ramIdx < mod.m_intGblList.size(); ramIdx += 1) {
-			CRam &intRam = *mod.m_intGblList[ramIdx];
-
-			if (intRam.m_addr1W.AsInt() == 0) continue;
-
-			if (bFirst) {
-				fprintf(incFile, "#\tifndef _HTV\n");
-				bFirst = false;
-			}
-
-			fprintf(incFile, "\tvoid RndInit_G_%s() {\n", intRam.m_gblName.c_str());
-
-			for (size_t fldIdx = 0; fldIdx < intRam.m_allFieldList.size(); fldIdx += 1) {
-				CField &field = intRam.m_allFieldList[fldIdx];
-
-				for (size_t rdIdx = 0; rdIdx < field.m_readerList.size(); rdIdx += 2) {
-
-					char dupCh[3] = { '_', (char)('a' + (rdIdx/2)), '\0' };
-					const char *pDupStr = field.m_readerList.size() <= 2 ? "" : dupCh;
-
-					string tabs = "\t\t";
-
-					if (intRam.m_addr0W.AsInt() > 0) {
-						bool bIsSigned = m_defineTable.FindStringIsSigned(intRam.m_addr0W.AsStr());
-						fprintf(incFile, "%sfor (%s wrAddr0 = 0; wrAddr0 < (1 << (%s)); wrAddr0 += 1) {\n",
-							tabs.c_str(), bIsSigned ? "int" : "unsigned", intRam.m_addr0W.c_str());
-						tabs += "\t";
-					}
-
-					bool bIsSigned = m_defineTable.FindStringIsSigned(intRam.m_addr1W.AsStr());
-					fprintf(incFile, "%sfor (%s wrAddr1 = 0; wrAddr1 < (1 << (%s)); wrAddr1 += 1) {\n",
-						tabs.c_str(), bIsSigned ? "int" : "unsigned", intRam.m_addr1W.c_str());
-					tabs += "\t";
-
-					if (intRam.m_addr2W.AsInt() > 0) {
-						bool bIsSigned = m_defineTable.FindStringIsSigned(intRam.m_addr2W.AsStr());
-						fprintf(incFile, "%sfor (%s wrAddr2 = 0; wrAddr2 < (1 << (%s)); wrAddr2 += 1) {\n",
-							tabs.c_str(), bIsSigned ? "int" : "unsigned", intRam.m_addr2W.c_str());
-						tabs += "\t";
-					}
-
-					string ramIdxStr;
-					int idxCnt = 0;
-					for (size_t i = 0; i < intRam.m_dimenList.size(); i += 1) {
-						idxCnt += 1;
-						fprintf(incFile, "%sfor (int idx%d = 0; idx%d < %d; idx%d += 1) {\n", tabs.c_str(),
-							idxCnt, idxCnt, intRam.m_dimenList[i].AsInt(), idxCnt);
-						ramIdxStr += VA("[idx%d]", i+1);
-						tabs += "\t";
-					}
-
-					string fldIdxStr;
-					for (size_t i = 0; i < field.m_dimenList.size(); i += 1) {
-						idxCnt += 1;
-						fprintf(incFile, "%sfor (int idx%d = 0; idx%d < %d; idx%d += 1) {\n", tabs.c_str(),
-							idxCnt, idxCnt, field.m_dimenList[i].AsInt(), idxCnt);
-						fldIdxStr += VA("[idx%d]", idxCnt);
-						tabs += "\t";
-					}
-		
-					fprintf(incFile, "%s%s tmp;\n", tabs.c_str(), field.m_type.c_str());
-
-					GenStructInit(incFile, tabs, "tmp", field, idxCnt, false);
-
-					if (intRam.m_addr0W.AsInt() > 0) {
-
-						int addr0W = intRam.m_addr0W.AsInt();
-						int addr1W = intRam.m_addr1W.AsInt();
-						int addr2W = intRam.m_addr2W.AsInt();
-
-						fprintf(incFile, "%sht_uint%d wrAddr;\n", tabs.c_str(), addr0W + addr1W + addr2W);
-						fprintf(incFile, "%swrAddr(%d,%d) = wrAddr0;\n", tabs.c_str(), addr0W + addr1W + addr2W - 1, addr1W + addr2W);
-						if (addr1W > 0)
-							fprintf(incFile, "%swrAddr(%d,%d) = wrAddr1;\n", tabs.c_str(), addr1W + addr2W - 1, addr2W);
-						if (addr2W > 0)
-							fprintf(incFile, "%swrAddr(%d,0) = wrAddr2;\n", tabs.c_str(), addr2W - 1);
-
-						fprintf(incFile, "%sm_%s_%s%s%s%s.write_mem_debug(wrAddr) = tmp;\n",
-							tabs.c_str(), intRam.m_gblName.c_str(), field.m_name.c_str(), pDupStr, ramIdxStr.c_str(), fldIdxStr.c_str());
-
-					} else {
-						fprintf(incFile, "%sm_%s_%s%s%s%s.write_mem_debug(",
-							tabs.c_str(), intRam.m_gblName.c_str(), field.m_name.c_str(), pDupStr, ramIdxStr.c_str(), fldIdxStr.c_str());
-
-						if (intRam.m_addr0W.AsInt() > 0)
-							fprintf(incFile, "wrAddr0, ");
-
-						fprintf(incFile, "wrAddr1");
-
-						if (intRam.m_addr2W.AsInt() > 0)
-							fprintf(incFile, ", wrAddr2");
-
-						fprintf(incFile, ") = tmp;\n");
-					}
-
-					for (size_t i = 0; i < field.m_dimenList.size(); i += 1) {
-						tabs.erase(0, 1);
-						fprintf(incFile, "%s}\n", tabs.c_str());
-					}
-
-					for (size_t i = 0; i < intRam.m_dimenList.size(); i += 1) {
-						tabs.erase(0, 1);
-						fprintf(incFile, "%s}\n", tabs.c_str());
-					}
-
-					if (intRam.m_addr2W.AsInt() > 0) {
-						tabs.erase(0, 1);
-						fprintf(incFile, "%s}\n", tabs.c_str());
-					}
-
-					tabs.erase(0, 1);
-					fprintf(incFile, "%s}\n", tabs.c_str());
-
-					if (intRam.m_addr0W.AsInt() > 0) {
-						tabs.erase(0, 1);
-						fprintf(incFile, "%s}\n", tabs.c_str());
-					}
-				}
-			}
-
 			fprintf(incFile, "\t}\n");
 		}
 
@@ -837,12 +732,12 @@ CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 
 	if (g_appArgs.IsInstrTraceEnabled())
 		fprintf(incFile, "\tstatic char const * m_pHtCtrlNames[];\n");
-	
+
 	fprintf(incFile, "\tint m_htMonModId;\n");
 	fprintf(incFile, "#\tendif\n");
 
 	fprintf(incFile, "\n");
-	fprintf(incFile, "\tSC_CTOR(CPers%s%s%s)\n", 
+	fprintf(incFile, "\tSC_CTOR(CPers%s%s%s)\n",
 		unitNameUc.c_str(), mod.m_modName.Uc().c_str(), instIdStr.c_str());
 
 	fprintf(incFile, "#\t\tif !defined(_HTV)\n");
@@ -858,7 +753,7 @@ CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 
 	if (bNeedClk2x) {
 		fprintf(incFile, "\n");
-		fprintf(incFile, "\t\tSC_METHOD(Pers%s%s_2x);\n", 
+		fprintf(incFile, "\t\tSC_METHOD(Pers%s%s_2x);\n",
 			unitNameUc.c_str(), mod.m_modName.Uc().c_str());
 		fprintf(incFile, "\t\tsensitive << i_clock2x.pos();\n");
 	}
@@ -892,22 +787,22 @@ CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 		fprintf(incFile, "\t\t// Random variable initialization (-ri)\n");
 
 		for (size_t shIdx = 0; shIdx < mod.m_shared.m_fieldList.size(); shIdx += 1) {
-			CField &shared = mod.m_shared.m_fieldList[shIdx];
+			CField * pShared = mod.m_shared.m_fieldList[shIdx];
 
-			if (shared.m_queueW.AsInt() > 0) continue;
+			if (pShared->m_queueW.AsInt() > 0) continue;
 
-			bool bZero = !(shared.m_reset == "false" || shared.m_reset == "" && !mod.m_bResetShared);
+			bool bZero = !(pShared->m_reset == "false" || pShared->m_reset == "" && !mod.m_bResetShared);
 
-			fprintf(incFile, "\t\t%sInit_S_%s();\n", bZero ? "Zero" : "Rnd", shared.m_name.c_str());
+			fprintf(incFile, "\t\t%sInit_S_%s();\n", bZero ? "Zero" : "Rnd", pShared->m_name.c_str());
 		}
 
-		for (size_t ramIdx = 0; ramIdx < mod.m_intGblList.size(); ramIdx += 1) {
-			CRam &intRam = *mod.m_intGblList[ramIdx];
+		//for (size_t ramIdx = 0; ramIdx < mod.m_intGblList.size(); ramIdx += 1) {
+		//	CRam &intRam = *mod.m_intGblList[ramIdx];
 
-			if (intRam.m_addr1W.AsInt() == 0) continue;
+		//	if (intRam.m_addr1W.AsInt() == 0) continue;
 
-			fprintf(incFile, "\t\tRndInit_G_%s();\n", intRam.m_gblName.c_str());
-		}
+		//	fprintf(incFile, "\t\tRndInit_G_%s();\n", intRam.m_gblName.c_str());
+		//}
 
 		fprintf(incFile, "#\t\tendif\n");
 	}
@@ -919,7 +814,7 @@ CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 		pos = path.find_last_of("/");
 		if (pos < path.size()) path.erase(pos, path.size() - pos);
 		pos = path.find_first_of(":/");
-		if (pos < path.size()) path.erase(0, pos+2);
+		if (pos < path.size()) path.erase(0, pos + 2);
 		if (path.size()) path.append("/");
 	}
 
@@ -934,7 +829,8 @@ CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 	if (g_appArgs.IsVcdUserEnabled() || g_appArgs.IsVcdAllEnabled()) {
 		fprintf(incFile, "\n");
 		fprintf(incFile, "#\tifndef _HTV\n");
-		fprintf(incFile, "\tvoid start_of_simulation() {\n");
+		fprintf(incFile, "\tvoid start_of_simulation()\n");
+		fprintf(incFile, "\t{\n");
 
 		m_vcdSos.Write(incFile);
 
@@ -944,7 +840,8 @@ CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 
 	fprintf(incFile, "\n");
 	fprintf(incFile, "#\tifndef _HTV\n");
-	fprintf(incFile, "\tvoid end_of_simulation() {\n");
+	fprintf(incFile, "\tvoid end_of_simulation()\n");
+	fprintf(incFile, "\t{\n");
 
 	m_iplEosChecks.Write(incFile);
 	m_mifAvlCntChk.Write(incFile);
@@ -959,18 +856,19 @@ CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 	fprintf(incFile, "};\n");
 
 	m_iplBadDecl.Write(incFile);
+	m_mifBadDecl.Write(incFile);
 	m_strmBadDecl.Write(incFile);
 
 	incFile.FileClose();
 }
 
-string 
+string
 CDsnInfo::GenRamAddr(CModInst & modInst, CRam &ram, CHtCode *pCode, string accessSelW, string accessSelName, const char *pInStg, const char *pOutStg, bool bWrite, bool bNoSelectAssign)
 {
-    // construct address for ram access
-    //   simple case is when there is a single thread group
-    //   next case is multiple thread groups but only one has the private address variable
-    //   complex case is multiple groups each having a private variable with the address name
+	// construct address for ram access
+	//   simple case is when there is a single thread group
+	//   next case is multiple thread groups but only one has the private address variable
+	//   complex case is multiple groups each having a private variable with the address name
 
 	if (bWrite && ram.m_addr1Name.size() == 0)
 		return string("0");
@@ -986,17 +884,16 @@ CDsnInfo::GenRamAddr(CModInst & modInst, CRam &ram, CHtCode *pCode, string acces
 
 	string accessName1;
 	int cnt1 = 0;
-    if (ram.m_addr1W.size() > 0) {
+	if (ram.m_addr1W.size() > 0) {
 		if (ram.m_addr1Name == "htId") {
 			if (ram.m_addr1W.AsInt() > 0)
 				accessName1 = string(pInStg) + "_htId";
 		} else {
 			string fullName;
-			CField const * pBaseField, * pLastField;
+			CField const * pBaseField, *pLastField;
 			if (mod.m_bHasThreads) {
 				if (IsInFieldList(ram.m_lineInfo, ram.m_addr1Name, mod.m_threads.m_htPriv.m_fieldList, false, true,
-					pBaseField, pLastField, &fullName)) 
-				{
+					pBaseField, pLastField, &fullName)) {
 					cnt1 += 1;
 					accessName1 = string(pInStg) + "_htPriv." + fullName;//ram.m_addr1Name;
 				}
@@ -1015,84 +912,82 @@ CDsnInfo::GenRamAddr(CModInst & modInst, CRam &ram, CHtCode *pCode, string acces
 		}
 	}
 
-    string accessName;
+	string accessName;
 	string accessName2;
 	int cnt2 = 0;
-    if (ram.m_addr2W.size() > 0) {
-	    if (ram.m_addr2Name.size() == 0) {
-		    ParseMsg(Error, ram.m_lineInfo, "addr2 parameter is missing\n");
-            return "0";
-        } else if (ram.m_addr2Name == "htId") {
+	if (ram.m_addr2W.size() > 0) {
+		if (ram.m_addr2Name.size() == 0) {
+			ParseMsg(Error, ram.m_lineInfo, "addr2 parameter is missing\n");
+			return "0";
+		} else if (ram.m_addr2Name == "htId") {
 			if (ram.m_addr2W.AsInt() > 0)
 				accessName2 = string(pInStg) + "_htId";
 		} else {
-			CField const * pBaseField, * pLastField;
-	        if (mod.m_bHasThreads) {
+			CField const * pBaseField, *pLastField;
+			if (mod.m_bHasThreads) {
 				string fullName;
 				if (IsInFieldList(ram.m_lineInfo, ram.m_addr2Name, mod.m_threads.m_htPriv.m_fieldList, false, true,
-					pBaseField, pLastField, &fullName))
-				{
+					pBaseField, pLastField, &fullName)) {
 					cnt2 += 1;
 					accessName2 = string(pInStg) + "_htPriv." + fullName;
 				}
-	        }
+			}
 
 			if (IsInFieldList(ram.m_lineInfo, ram.m_addr2Name, mod.m_stage.m_fieldList, false, true,
-				pBaseField, pLastField, 0)) 
-			{
+				pBaseField, pLastField, 0)) {
 				cnt2 += 1;
 				accessName2 = "0";
 			}
 
-	        if (cnt2 == 0) {
-		        ParseMsg(Error, ram.m_lineInfo, "did not find addr2 name in private or stage variables, '%s'\n",
-			        ram.m_addr2Name.c_str());
-                accessName = "0";
-            }
+			if (cnt2 == 0) {
+				ParseMsg(Error, ram.m_lineInfo, "did not find addr2 name in private or stage variables, '%s'\n",
+					ram.m_addr2Name.c_str());
+				accessName = "0";
+			}
 
-            if (ram.m_addr1Name != "htId" && ram.m_addr2Name != "htId" && cnt1 != cnt2) {
-                ParseMsg(Error, ram.m_lineInfo, "both addresses of ram must be in each thread group\n");
-                accessName = "0";
-            }
-        }
+			if (ram.m_addr1Name != "htId" && ram.m_addr2Name != "htId" && cnt1 != cnt2) {
+				ParseMsg(Error, ram.m_lineInfo, "both addresses of ram must be in each thread group\n");
+				accessName = "0";
+			}
+		}
 	}
 
 	if (accessName0.size() > 0) {
 		if (accessName1.size() > 0 && accessName2.size() > 0)
-            accessName = "(" + accessName0 + ", " + accessName1 + ", " + accessName2 + ")";
+			accessName = "(" + accessName0 + ", " + accessName1 + ", " + accessName2 + ")";
 
-        else if (accessName1.size() > 0)
-            accessName = "(" + accessName0 + ", " + accessName1 + ")";
+		else if (accessName1.size() > 0)
+			accessName = "(" + accessName0 + ", " + accessName1 + ")";
 
-        else if (accessName2.size() > 0)
-            accessName = "(" + accessName0 + ", " + accessName2 + ")";
+		else if (accessName2.size() > 0)
+			accessName = "(" + accessName0 + ", " + accessName2 + ")";
 
 		else
 			accessName = accessName0;
 
 	} else {
-        if (accessName1 == "0")
+		if (accessName1 == "0")
 			accessName = accessName1;
 
 		else if (accessName1.size() > 0 && accessName2.size() > 0)
-            accessName = "(" + accessName1 + ", " + accessName2 + ")";
+			accessName = "(" + accessName1 + ", " + accessName2 + ")";
 
-        else if (accessName1.size() > 0)
-            accessName = accessName1;
+		else if (accessName1.size() > 0)
+			accessName = accessName1;
 
-        else if (accessName2.size() > 0)
-            accessName = accessName2;
+		else if (accessName2.size() > 0)
+			accessName = accessName2;
 	}
 
-    if (accessName.size() > 0) {
-        if (bNoSelectAssign) {
-            if (accessSelW.size() > 0)
+	if (accessName.size() > 0) {
+		if (bNoSelectAssign) {
+			if (accessSelW.size() > 0)
 				pCode->Append("\tsc_uint<%s> %s = %s;\n", accessSelW.c_str(), accessSelName.c_str(), accessName.c_str());
 			else
 				pCode->Append("\t%s = %s;\n", accessSelName.c_str(), accessName.c_str());
 		}
-        return accessName;
-    }
+		return accessName;
+	}
 
 	HtlAssert(0);
 
@@ -1101,60 +996,23 @@ CDsnInfo::GenRamAddr(CModInst & modInst, CRam &ram, CHtCode *pCode, string acces
 
 int CDsnInfo::CountPhaseResetFanout(CModInst &modInst)
 {
-	CModule &mod = *modInst.m_pMod;
+	//CModule &mod = *modInst.m_pMod;
 
 	int phaseCnt = 0;
-	for (size_t ramIdx = 0; ramIdx < mod.m_intGblList.size(); ramIdx += 1) {
-		CRam &intRam = *mod.m_intGblList[ramIdx];
-
-		if (intRam.m_addr1W.AsInt() == 0) continue;
-
-		for (size_t fldIdx = 0; fldIdx < intRam.m_allFieldList.size(); fldIdx += 1) {
-			CField &field = intRam.m_allFieldList[fldIdx];
-
-			for (size_t rdIdx = 0; rdIdx < field.m_readerList.size(); rdIdx += 2) {
-
-				if (rdIdx+1 < field.m_readerList.size() && field.m_readerList[rdIdx+1].m_pRamPort != 0
-					&& field.m_readerList[rdIdx].m_pRamPort != field.m_readerList[rdIdx+1].m_pRamPort) {
-
-					phaseCnt += 1;
-				}
-			}
-		}
-	}
-
-	for (size_t ramIdx = 0; ramIdx < mod.m_intGblList.size(); ramIdx += 1) {
-		CRam &intRam = *mod.m_intGblList[ramIdx];
-
-		if (intRam.m_addr1W.AsInt() == 0) continue;
-
-		for (size_t fldIdx = 0; fldIdx < intRam.m_allFieldList.size(); fldIdx += 1) {
-			CField &field = intRam.m_allFieldList[fldIdx];
-
-			for (size_t wrIdx = 0; wrIdx < field.m_writerList.size(); wrIdx += 2) {
-
-				if (wrIdx+1 < field.m_writerList.size() && field.m_writerList[wrIdx+1].m_pRamPort != 0
-					&& field.m_writerList[wrIdx].m_pRamPort != field.m_writerList[wrIdx+1].m_pRamPort) {
-
-					phaseCnt += 1;
-				}
-			}
-		}
-	}
 
 	return phaseCnt;
 }
 
-void CDsnInfo::GenRamWrEn(CHtCode &code, char const * pTabs, string intfName, CStruct &ram)
+void CDsnInfo::GenRamWrEn(CHtCode &code, char const * pTabs, string intfName, CRecord &ram)
 {
 	// mode: 0-all, 1-read, 2-write
 	code.Append("%s\tstruct %s {\n", pTabs, intfName.c_str());
 
 	for (size_t fieldIdx = 0; fieldIdx < ram.m_fieldList.size(); fieldIdx += 1) {
-		CField &field = ram.m_fieldList[fieldIdx];
+		CField * pField = ram.m_fieldList[fieldIdx];
 
-		if (field.m_bSrcWrite || field.m_bMifWrite) {
-			code.Append("%s\t\tbool\tm_%s%s;\n", pTabs, field.m_name.c_str(), field.m_dimenDecl.c_str());
+		if (pField->m_bSrcWrite || pField->m_bMifWrite) {
+			code.Append("%s\t\tbool\tm_%s%s;\n", pTabs, pField->m_name.c_str(), pField->m_dimenDecl.c_str());
 		}
 	}
 	code.Append("%s\t};\n", pTabs);
@@ -1177,8 +1035,8 @@ CDsnInfo::DimenIter(vector<CHtString> const &dimenList, vector<int> &refList)
 				break;
 			else {
 				refList[i] = 0;
-				if (i+1 < dimenList.size())
-					refList[i+1] += 1;
+				if (i + 1 < dimenList.size())
+					refList[i + 1] += 1;
 				else
 					bMore = false;
 			}
@@ -1214,17 +1072,17 @@ CDsnInfo::IndexStr(vector<int> &refList, int startPos, int endPos, bool bParamSt
 void
 CDsnInfo::GenPrimStateStatements(CModule &mod)
 {
-	if ( mod.m_primStateList.size() == 0)
+	if (mod.m_primStateList.size() == 0)
 		return;
 
 	m_psDecl.Append("\t// Statement for clocked primitives\n");
 
-	for(size_t i = 0; i < mod.m_primStateList.size(); i += 1) {
+	for (size_t i = 0; i < mod.m_primStateList.size(); i += 1) {
 
 		m_psInclude.Append("\n#include \"%s\"\n",
 			mod.m_primStateList[i].m_include.c_str());
 
-		m_psDecl.Append("\t%s %s;\n", 
+		m_psDecl.Append("\t%s %s;\n",
 			mod.m_primStateList[i].m_type.c_str(),
 			mod.m_primStateList[i].m_name.c_str());
 	}
@@ -1240,7 +1098,7 @@ CDsnInfo::GenModTDSUStatements(CModule &mod) // typedef/define/struct/union
 	for (size_t i = 0; i < m_defineTable.size(); i += 1) {
 		//	must be a module and match current module
 		if (m_defineTable[i].m_scope.compare("module") == 0
-				&& m_defineTable[i].m_modName.compare(mod.m_modName.c_str()) == 0) {
+			&& m_defineTable[i].m_modName.compare(mod.m_modName.c_str()) == 0) {
 
 			if (!bFound) {
 				bFound = true;

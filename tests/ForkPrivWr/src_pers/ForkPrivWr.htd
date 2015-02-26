@@ -4,7 +4,7 @@
 #pragma message "__SEED__ " __SEED__
 
 #ifdef _WIN32
-#define TEST 0x0
+#define TEST 0x1
 #else
 #define TEST __RANDOM__
 #endif
@@ -51,8 +51,15 @@ inc.AddCall(func=fork1, fork=true, dest=user);
 inc.AddCall(func=fork2, fork=true);
 inc.AddCall(func=call);
 
-inc.AddGlobal(var=arrayMem, addr1W=16, addr1=instCnt)
-	.AddField(type=uint64_t, name=data, read=true, write=true)
+struct CData {
+	uint64_t u64;
+};
+union CUnion {
+	CData data;
+};
+
+inc.AddGlobal()
+	.AddVar(type=CUnion, name=arrayMem, addr1=instCnt, read=true, write=true)
 	;
 
 //////////////////////////////////////////

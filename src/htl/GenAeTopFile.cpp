@@ -63,9 +63,9 @@ void CDsnInfo::GenerateAeTopFile()
 
 	fprintf(scFile, "\tCPers%sTop * pPers%sTop[HT_UNIT_CNT];\n", m_unitName.Uc().c_str(), m_unitName.Uc().c_str());
 	fprintf(scFile, "\t#if (AE_XBAR_STUB_CNT > 0)\n");
-    fprintf(scFile, "\tCPersXbarStub * pPersXbarStub[AE_XBAR_STUB_CNT];\n");
+	fprintf(scFile, "\tCPersXbarStub * pPersXbarStub[AE_XBAR_STUB_CNT];\n");
 	fprintf(scFile, "\t#endif\n");
-    fprintf(scFile, "\tCPersUnitCnt * pPersUnitCnt;\n");
+	fprintf(scFile, "\tCPersUnitCnt * pPersUnitCnt;\n");
 
 	if (pMicAeNext) {
 		fprintf(scFile, "\tCPersMonSb * pPersMonSb;\n");
@@ -85,7 +85,7 @@ void CDsnInfo::GenerateAeTopFile()
 
 	fprintf(scFile, "\n");
 
-    fprintf(scFile, "\tSC_CTOR(CPersAeTop) {\n");
+	fprintf(scFile, "\tSC_CTOR(CPersAeTop) {\n");
 	fprintf(scFile, "\n");
 
 	fprintf(scFile, "\t\tpPersUnitCnt = new CPersUnitCnt(\"PersUnitCnt\");\n");
@@ -203,9 +203,9 @@ void CDsnInfo::GenerateAeTopFile()
 
 							if (pMsgIntf->m_bInboundQueue)
 								fprintf(scFile, "\t\tpPers%sTop[%d]->i_aeTo%s_%sMsgFull%s(%s);\n",
-									m_unitName.Uc().c_str(), unitIdx,
-									modInstName.Uc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str(),
-									sigMsgFull.c_str());
+								m_unitName.Uc().c_str(), unitIdx,
+								modInstName.Uc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str(),
+								sigMsgFull.c_str());
 
 						} while (DimenIter(dimenList, portRefList));
 
@@ -216,7 +216,7 @@ void CDsnInfo::GenerateAeTopFile()
 					int msgInstIdx = unitIdx * msgInstSize;
 					int msgInstCnt = msgInstIdx + msgInstSize;
 
-					for ( ; msgInstIdx < msgInstCnt; msgInstIdx += 1) {
+					for (; msgInstIdx < msgInstCnt; msgInstIdx += 1) {
 						CMsgIntfConn * pConn = pMsgIntf->m_msgIntfInstList[msgInstIdx][0];
 
 						int inModInstIdx = max(0, pConn->m_inMsgIntf.m_replIdx);
@@ -228,14 +228,14 @@ void CDsnInfo::GenerateAeTopFile()
 						CMsgIntf * pInMsgIntf = pConn->m_inMsgIntf.m_pMsgIntf;
 						CMsgIntf * pOutMsgIntf = pConn->m_outMsgIntf.m_pMsgIntf;
 
-						int dimenIdx = pConn->m_inMsgIntf.m_msgIntfIdx.size()-1;
+						int dimenIdx = pConn->m_inMsgIntf.m_msgIntfIdx.size() - 1;
 						string portIdx;
 						if (pInMsgIntf->m_dimen.size() > 0)
 							portIdx += VA("[%d]", pConn->m_inMsgIntf.m_msgIntfIdx[dimenIdx--]);
 						if (pInMsgIntf->m_fanCnt.size() > 0)
 							portIdx += VA("[%d]", pConn->m_inMsgIntf.m_msgIntfIdx[dimenIdx--]);
 
-						dimenIdx = pConn->m_outMsgIntf.m_msgIntfIdx.size()-1;
+						dimenIdx = pConn->m_outMsgIntf.m_msgIntfIdx.size() - 1;
 						string signalIdx;
 						if (pOutMsgIntf->m_dimen.size() > 0)
 							signalIdx += VA("[%d]", pConn->m_outMsgIntf.m_msgIntfIdx[dimenIdx--]);
@@ -271,9 +271,9 @@ void CDsnInfo::GenerateAeTopFile()
 
 						if (pOutMsgIntf->m_bInboundQueue)
 							fprintf(scFile, "\t\tpPers%sTop[%d]->o_%sToAe_%sMsgFull%s(%s);\n",
-								m_unitName.Uc().c_str(), unitIdx,
-								inModInstName.Lc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str(),
-								sigMsgFull.c_str());
+							m_unitName.Uc().c_str(), unitIdx,
+							inModInstName.Lc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str(),
+							sigMsgFull.c_str());
 					}
 					fprintf(scFile, "\n");
 				}

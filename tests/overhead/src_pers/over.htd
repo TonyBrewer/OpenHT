@@ -1,4 +1,4 @@
-dsnInfo.AddModule(name=over, htIdW=0, pause=true);
+dsnInfo.AddModule(name=over, htIdW=2, pause=true);
 
 over.AddInstr(name=OVER_RD);
 over.AddInstr(name=OVER_WR);

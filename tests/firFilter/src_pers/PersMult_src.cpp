@@ -42,7 +42,7 @@ void CPersMult::PersMult() {
 			}
 
 			MemAddr_t memRdAddr = (ht_uint48)(SR_inAddrBase + ((PR1_rcvIdx - PR1_calcIdx) << 3));
-			ReadMem_op2Mem(memRdAddr, PR1_htId);
+			ReadMem_op2Mem(memRdAddr, PR1_htId, 1);
 			ReadMemPause(MULT_CALC);
 		}
 		break;

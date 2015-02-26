@@ -161,6 +161,7 @@ CHtfeLex::CHtfeLex()
 	m_bOpenLine = false;
 	m_bTokenRecording = false;
 	m_bTokenPlayback = false;
+	m_bRemovedToken = false;
 	m_tokenPlaybackLevel = -1;
 
 	m_tkDumpFp = 0;
@@ -187,9 +188,14 @@ CHtfeLex::GetNextToken()
 	char rCh = ' ';
 	EToken tk;
 	if (m_bTokenPlayback && !m_bOpenLine) {
+
+		bool bEndOfRecordedList = m_tokenRecord[m_tokenPlaybackLevel].m_playbackPos + 1 == (int)m_tokenRecord[m_tokenPlaybackLevel].m_tokenList.size();
+		if (m_bTokenPlayback && m_bTokenRecording && bEndOfRecordedList)
+			return m_token = tk_eor;
+
 		pCh = 'p';
 		m_tokenRecord[m_tokenPlaybackLevel].m_playbackPos += 1;
-		if (m_tokenRecord[m_tokenPlaybackLevel].m_playbackPos == (int)m_tokenRecord[m_tokenPlaybackLevel].m_tokenList.size()) {
+		if (bEndOfRecordedList) {
 			// end of recorded token list, increment control value and replay list
 			m_tokenRecord[m_tokenPlaybackLevel].m_value += m_tokenRecord[m_tokenPlaybackLevel].m_incValue;
 			if (m_tokenRecord[m_tokenPlaybackLevel].m_value < m_tokenRecord[m_tokenPlaybackLevel].m_exitValue)
@@ -201,7 +207,15 @@ CHtfeLex::GetNextToken()
 				m_tokenRecord.pop_back();
 				if (m_tokenRecord.size() == 0) {
 					m_bTokenPlayback = false;
-					return GetNextToken();
+
+					if (m_bRemovedToken) {
+						m_bRemovedToken = false;
+						m_token = m_removedToken.GetToken();
+						m_stringBuf = m_removedToken.GetString();
+						m_lineInfo = m_removedToken.GetLineInfo();
+						return GetToken();
+					} else
+						return GetNextToken();
 				}
 
 				GetNextToken();
@@ -253,10 +267,13 @@ CHtfeLex::GetNextToken()
 	}
 
 	if (m_tkDumpFp) {
+		static int tkCnt = 0;
+		//if (tkCnt == 13309)
+		//	bool stop = true;
 		if (tk == tk_identifier || tk == tk_num_int)
-			fprintf(m_tkDumpFp, "%c%c tk: %s %s\n", pCh, rCh, m_tokenTbl[tk].GetString().c_str(), GetString().c_str());
+			fprintf(m_tkDumpFp, "%d %c%c tk: %s %s\n", tkCnt++, pCh, rCh, m_tokenTbl[tk].GetString().c_str(), GetString().c_str());
 		else
-			fprintf(m_tkDumpFp, "%c%c tk: %s\n", pCh, rCh, m_tokenTbl[tk].GetString().c_str());
+			fprintf(m_tkDumpFp, "%d %c%c tk: %s\n", tkCnt++, pCh, rCh, m_tokenTbl[tk].GetString().c_str());
 	}
 
 	m_lineInfo = GetLineInfoInternal();
@@ -733,6 +750,20 @@ CHtfeLex::RecordTokensErase(size_t pos)
     m_bTokenRecording = false;
 }
 
+void CHtfeLex::RemoveLastRecordedToken()
+{
+	if (m_tokenRecord.size() == 1) {
+		m_bRemovedToken = true;
+		m_removedToken = m_tokenRecord.back().m_tokenList.back();
+	} else if (m_token != tk_eor)
+		m_tokenRecord[m_tokenPlaybackLevel].m_playbackPos -= 1;
+
+	if (m_token != tk_eor) {
+		size_t size = m_tokenRecord.back().m_tokenList.size();
+		m_tokenRecord.back().m_tokenList.erase(m_tokenRecord.back().m_tokenList.begin() + size - 1, m_tokenRecord.back().m_tokenList.end());
+	}
+}
+
 void
 CHtfeLex::FuncDeclPlayback()
 {
@@ -790,5 +821,11 @@ CHtfeLex::ForLoopExit()
 	m_bTokenRecording = false;
 	m_bTokenPlayback = false;
 
-	GetNextToken();
+	if (m_bRemovedToken) {
+		m_bRemovedToken = false;
+		m_token = m_removedToken.GetToken();
+		m_stringBuf = m_removedToken.GetString();
+		m_lineInfo = m_removedToken.GetLineInfo();
+	} else
+		GetNextToken();
 }

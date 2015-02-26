@@ -10,16 +10,16 @@ int main(int argc, char **argv)
 
 	pAuUnit->SendCall_htmain();
 
-	int32_t err;
-	while (!pAuUnit->RecvReturn_htmain(err))
+	uint64_t errMask;
+	while (!pAuUnit->RecvReturn_htmain(errMask))
 		usleep(1000);
 
 	delete pHtHif;
 
-	if (err)
-		printf("FAILED (err=%d)\n", err);
+	if (errMask != 0)
+		printf("FAILED (errMask=0x%llx)\n", (unsigned long long)errMask);
 	else
 		printf("PASSED\n");
 
-	return err;
+	return errMask != 0 ? 1 : 0;
 }

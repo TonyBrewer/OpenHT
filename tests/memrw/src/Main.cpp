@@ -6,6 +6,7 @@ using namespace Ht;
 #define TH_CNT 32
 #define TH_ELEM_CNT 128
 #define ELEM_CNT (TH_CNT * TH_ELEM_CNT)
+#define TEST_CNT 13
 
 uint64_t arr[ELEM_CNT];
 
@@ -31,7 +32,7 @@ int main(int argc, char **argv)
 	int callIdx = 0;
 	int rtnIdx = 0;
 	while (callIdx < TH_CNT || rtnIdx < TH_CNT) {
-		if (callIdx < TH_CNT && pSuUnit->SendCall_htmain(callIdx % 13, callIdx * TH_ELEM_CNT, TH_ELEM_CNT, callIdx)) {
+		if (callIdx < TH_CNT && pSuUnit->SendCall_htmain(callIdx % TEST_CNT, callIdx * TH_ELEM_CNT, TH_ELEM_CNT, callIdx)) {
 			callIdx += 1;
 		} else if (pSuUnit->RecvReturn_htmain(rtn_elemCnt, rtn_threadId)) {
 			rtnIdx += 1;

@@ -10,6 +10,10 @@ incRd.AddInst(name=INCRD_WRITE);
 typedef sc_uint<INCRD_HTID_W> HtId_t;
 typedef sc_uint<48> MemAddr_t;
 
+struct CData {
+	uint64_t data;
+};
+
 incRd.AddHostMsg(dir=in, name=SU_ARRAY_ADDR)
 	.AddDst(var=arrayAddr, dataLsb=0)
 	;
@@ -34,11 +38,11 @@ incRd.AddReturn(func=htmain)
 incRd.AddCall(func=incWr)
 	;
 
-incRd.AddReadMem(queueW=5, rspCntW=1, maxBw=true)
+incRd.AddReadMem()
 	.AddFunction(name=arrayMem, rspInfoW=INCRD_HTID_W, rsmDly=4);
 
-incRd.AddGlobal(var=arrayMem, addr1W=INCRD_HTID_W)
-	.AddField(type=uint64_t, name=data, read=false, write=true)
+incRd.AddGlobal()
+	.AddVar(type=CData, name=arrayMem, addr1W=INCRD_HTID_W, read=false, write=true)
 	;
 
 #define INCWR_HTID_W 5
@@ -70,8 +74,8 @@ incWr.AddEntry(func=incWr, inst=INCWR_WRITE)
 incWr.AddReturn(func=incWr)
 	;
 
-incWr.AddWriteMem(maxBw=true);
+incWr.AddWriteMem();
 
-incWr.AddGlobal(var=arrayMem, addr1W=INCWR_HTID_W, addr1=arrayMemRdPtr, extern=true)
-	.AddField(type=uint64_t, name=data, read=true, write=false)
+incWr.AddGlobal()
+	.AddVar(type=CData, name=arrayMem, addr1=arrayMemRdPtr, read=true, write=false)
 	;

@@ -862,23 +862,9 @@ void CHtfeDesign::ParseForStatement()
 	RecordTokens();
 
 	// get tokens for the next single statement (could be a compound statement)
-	if (GetNextToken() == tk_lbrace)
-		SkipTo(tk_rbrace);
-	else {
-		// skip over tokens to end of loop
-		//   may have a nested for loop with embedded semicolons
-		for (int lvl = 0;;) {
-			EToken tk = GetNextToken();
-			if (tk == tk_eof)
-				break;
-			if (tk == tk_lparen || tk == tk_lbrace)
-				lvl += 1;
-			if (tk == tk_rparen || tk == tk_rbrace)
-				lvl -= 1;
-			if ((tk == tk_semicolon || tk == tk_rbrace) && lvl == 0)
-				break;
-		}
-	}
+	GetNextToken();
+	SkipStatement();
+	RemoveLastRecordedToken();
 
 	if (initValue.GetSint64() < exitValue.GetSint64()) {
 		// playback the token list
@@ -888,6 +874,102 @@ void CHtfeDesign::ParseForStatement()
 		// exit loop
 		ForLoopExit();
 	}
+}
+
+
+void CHtfeDesign::SkipStatement()
+{
+	switch (GetToken()) {
+	case tk_if:
+		SkipIfStatement();
+		break;
+	case tk_for:
+		SkipForStatement();
+		break;
+	case tk_switch:
+		SkipSwitchStatement();
+		break;
+	case tk_lbrace:
+		SkipTo(tk_rbrace);
+		GetNextToken();
+		break;
+	case tk_do:
+	case tk_class:
+	case tk_struct:
+	case tk_union:
+	case tk_enum:
+	case tk_sc_signal:
+	case tk_identifier:
+	case tk_const:
+	case tk_static:
+	case tk_plusPlus:
+	case tk_minusMinus:
+	case tk_break:
+	case tk_return:
+		SkipTo(tk_semicolon);
+		GetNextToken();
+		break;
+	case tk_semicolon:
+		GetNextToken();
+		break;
+	case tk_template:
+		ParseMsg(PARSE_FATAL, "templates are not supported");
+		break;
+	case tk_namespace:
+		ParseMsg(PARSE_FATAL, "namespaces are not supported");
+		break;
+	case tk_while:
+		ParseMsg(PARSE_FATAL, "while statements are not supported");
+		break;
+	case tk_try:
+		ParseMsg(PARSE_FATAL, "try statements are not supported");
+		break;
+	case tk_catch:
+		ParseMsg(PARSE_FATAL, "catch statements are not supported");
+		break;
+	case tk_throw:
+		ParseMsg(PARSE_FATAL, "throw statements are not supported");
+		break;
+	case tk_continue:
+		ParseMsg(PARSE_FATAL, "continue statements are not supported");
+		break;
+	case tk_goto:
+		ParseMsg(PARSE_FATAL, "goto statements are not supported");
+		break;
+	default:
+		ParseMsg(PARSE_ERROR, "Unknown statement type");
+		SkipTo(tk_semicolon);
+		break;
+	}
+}
+
+void CHtfeDesign::SkipIfStatement()
+{
+	GetNextToken();
+	SkipTo(tk_rparen);
+	GetNextToken();
+	SkipStatement();
+
+	if (GetToken() == tk_else) {
+		GetNextToken();
+		SkipStatement();
+	}
+}
+
+void CHtfeDesign::SkipForStatement()
+{
+	GetNextToken();
+	SkipTo(tk_rparen);
+	GetNextToken();
+	SkipStatement();
+}
+
+void CHtfeDesign::SkipSwitchStatement()
+{
+	GetNextToken();
+	SkipTo(tk_rparen);
+	GetNextToken();
+	SkipStatement();
 }
 
 CHtfeStatement * CHtfeDesign::ParseIdentifierStatement(CHtfeIdent *pHier, bool bAssignmentAllowed, bool bStaticAllowed)
@@ -1029,6 +1111,8 @@ CHtfeStatement * CHtfeDesign::ParseIdentifierStatement(CHtfeIdent *pHier, bool b
 
 	HandleOverloadedAssignment(pHier, pStatement);
 
+	HandleUserDefinedConversion(pHier, pStatement);
+
 	HandleRegisterAssignment(pHier, pStatement);
 
 	HandleSimpleIncDecStatement(pStatement);
@@ -1065,7 +1149,7 @@ void CHtfeDesign::HandleOverloadedAssignment(CHtfeIdent *pHier, CHtfeStatement *
 
 	CHtfeOperand *pOp1 = pExpr->GetOperand1();
 
-	CHtfeIdent * pOp1Type = pOp1->GetMemberType();
+	CHtfeIdent * pOp1Type = pOp1->GetType();
 	if (!pOp1Type || !pOp1Type->IsStruct())
 		return;
 
@@ -1074,7 +1158,10 @@ void CHtfeDesign::HandleOverloadedAssignment(CHtfeIdent *pHier, CHtfeStatement *
 		return;
 
 	CHtfeOperand *pOp2 = pExpr->GetOperand2();
-	CHtfeIdent * pOp2Type = pOp2->GetMemberType();
+	CHtfeIdent * pOp2Type = pOp2->GetType();
+
+	if (pOp2->GetMember() && pOp2->GetMember()->IsPort())
+		pOp2Type = pOp2Type->GetType();
 
 	CHtfeIdent * pParamIdent = pFunc->GetParamIdent(0);
 	CHtfeIdent * pParamType = pParamIdent->GetType();
@@ -1095,6 +1182,13 @@ void CHtfeDesign::HandleOverloadedAssignment(CHtfeIdent *pHier, CHtfeStatement *
 	pTempOp2->SetParamList(argsList);
 
 	pExpr->SetOperator(tk_period);
+}
+
+void CHtfeDesign::HandleUserDefinedConversion(CHtfeIdent *pHier, CHtfeStatement * pStatement)
+{
+	// handle methods with "operator type() { ... }
+	// walk expression tree and replace leaf nodes with function call where appropriate
+
 }
 
 void CHtfeDesign::HandleRegisterAssignment(CHtfeIdent *pHier, CHtfeStatement * pStatement)
@@ -1176,15 +1270,17 @@ void CHtfeDesign::HandleSimpleIncDecStatement(CHtfeStatement *pStatement)
 	CHtfeOperand *pAddSub = pExpr;
 	pAddSub->SetOperator(tk == tk_preInc || tk == tk_postInc ? tk_plus : tk_minus);
 	pAddSub->SetOperand2(pOne);
+	pAddSub->SetType(pVar->GetType());
 
 	CHtfeOperand *pTmpVar = HandleNewOperand();
 	pTmpVar->InitAsIdentifier(pStatement->GetLineInfo(), pVar->GetMember());
-	pTmpVar->SetMemberType(pVar->GetMemberType());
+	pTmpVar->SetType(pVar->GetType());
 	pTmpVar->SetIndexList(pVar->GetIndexList());
 	*pTmpVar->GetSubFieldP() = pVar->GetSubField();
 
 	CHtfeOperand *pEqual = HandleNewOperand();
 	pEqual->InitAsOperator(pExpr->GetLineInfo(), tk_equal, pTmpVar, pAddSub);
+	pEqual->SetType(pVar->GetType());
 
 	// link replicated operands so common index equations can be handled
 	pVar->SetLinkedOp(pTmpVar);
@@ -2111,6 +2207,7 @@ CHtfeIdent * CHtfeDesign::CreateUniquePortTemplateType(string portName, CHtfeIde
 
 	if (pType->GetId() == CHtfeIdent::id_new) {
 		pType->SetId(CHtfeIdent::id_class);
+		pType->SetUserConvType(pBaseType);
 		pType->SetWidth(pBaseType->GetWidth());
 
 		// initialize builtin functions
@@ -2194,8 +2291,12 @@ int CHtfeDesign::ParseStructDecl(CHtfeIdent * pHier, int startBitPos)
 			bErrorMsg = true;
 		}
 
-		if (GetNextToken() == tk_public || GetNextToken() == tk_private)
-			GetNextToken();
+		if (GetNextToken() == tk_public || GetToken() == tk_private) {
+			if (GetNextToken() != tk_colon)
+				ParseMsg(PARSE_ERROR, "expected a :");
+			else
+				GetNextToken();
+		}
 
 		if (GetToken() != tk_identifier)
 			ParseMsg(PARSE_ERROR, "expected base class name");
@@ -2233,19 +2334,39 @@ int CHtfeDesign::ParseStructDecl(CHtfeIdent * pHier, int startBitPos)
 			GetNextToken();
 			continue;
 		case tk_tilda:
-			{
-				static bool bErrorMsg = false;
-				if (bErrorMsg == false) {
-					ParseMsg(PARSE_FATAL, "class destructors are not supported in this release");
-					bErrorMsg = true;
-				}
+		{
+			static bool bErrorMsg = false;
+			if (bErrorMsg == false) {
+				ParseMsg(PARSE_FATAL, "class destructors are not supported in this release");
+				bErrorMsg = true;
 			}
+
 			GetNextToken();
 			break;
+		}
+		case tk_operator:
+		{
+			GetNextToken();
+			pType = ParseTypeDecl(pHier);
+
+			if (GetToken() == tk_lparen) {
+				RecordStructMethod(pStruct);
+				break;
+			}
+
+			ParseMsg(PARSE_ERROR, "expected () after type");
+			SkipTo(tk_rbrace);
+			GetNextToken();
+
+			RecordTokensErase(recordStart);
+			break;
+		}
 		case tk_identifier:
 			{
 				pType = ParseTypeDecl(pHier);
-				if (!pType || pType->GetId() != CHtfeIdent::id_struct && pType->GetId() != CHtfeIdent::id_class) {
+				if (!pType || pType->GetId() != CHtfeIdent::id_struct && pType->GetId() != CHtfeIdent::id_class &&
+					pType->GetId() != CHtfeIdent::id_intType)
+				{
 					ParseMsg(PARSE_ERROR, "expected a type name");
 					SkipTo(tk_rbrace);
 					GetNextToken();
@@ -2553,52 +2674,73 @@ void CHtfeDesign::RecordStructMethod(CHtfeIdent *pStruct)
 
 void CHtfeDesign::ParseStructMethod(CHtfeIdent *pHier)
 {
-#ifndef WIN32
-	static bool bErrorMsg = false;
-	if (!g_pHtfeArgs->IsMethodSupport() && bErrorMsg == false) {
-		ParseMsg(PARSE_ERROR, "support for methods is a pre-release feature, enable with -method");
-		bErrorMsg = true;
-	}
-	if (g_pHtfeArgs->IsMethodSupport() && bErrorMsg == false) {
-		ParseMsg(PARSE_WARNING, "methods are a pre-release feature in this release");
-		bErrorMsg = true;
-	}
-#endif
-
-	CHtfeIdent * pType = ParseTypeDecl(pHier);
-	if (!pType || pType->GetId() != CHtfeIdent::id_struct && pType->GetId() != CHtfeIdent::id_class) {
-		ParseMsg(PARSE_ERROR, "expected a type name");
-		SkipTo(tk_rbrace);
-		GetNextToken();
-		return;
-	}
-
-	bool bIsReturnRef = false;
-	if (GetToken() == tk_ampersand) {
-		bIsReturnRef = true;
-		GetNextToken();
-	}
-
+	CHtfeIdent * pType;
 	string funcName;
+	bool bIsReturnRef = false;
+	bool bIsUserConversion = false;
+	bool bIsOverloadedOperator = false;
+	CHtfeLex::EToken overloadedOperator = tk_equal;
+
 	if (GetToken() == tk_operator) {
-		if (GetNextToken() != tk_equal) {
-			ParseMsg(PARSE_ERROR, "HTV only supports overloaded assignment operator");
+		GetNextToken();
+
+		pType = ParseTypeDecl(pHier);
+		if (!pType) {
+			ParseMsg(PARSE_ERROR, "expected a type name");
 			SkipTo(tk_rbrace);
 			GetNextToken();
 			return;
 		}
 
-		funcName = "operator=";
+		if (GetToken() == tk_ampersand) {
+			bIsReturnRef = true;
+			GetNextToken();
+		}
 
-	} else if (GetToken() != tk_identifier) {
+		funcName = "operator$" + pType->GetName();
 
-		ParseMsg(PARSE_ERROR, "expected function name");
-		SkipTo(tk_rbrace);
+		bIsUserConversion = true;
+
+	} else {
+
+		pType = ParseTypeDecl(pHier);
+		if (!pType || pType->GetId() != CHtfeIdent::id_struct && pType->GetId() != CHtfeIdent::id_class && pType->GetId() != CHtfeIdent::id_intType) {
+			ParseMsg(PARSE_ERROR, "expected a type name");
+			SkipTo(tk_rbrace);
+			GetNextToken();
+			return;
+		}
+
+		if (GetToken() == tk_ampersand) {
+			bIsReturnRef = true;
+			GetNextToken();
+		}
+
+		if (GetToken() == tk_operator) {
+			if (GetNextToken() != tk_equal) {
+				ParseMsg(PARSE_ERROR, "HTV only supports overloaded assignment operator");
+				SkipTo(tk_rbrace);
+				GetNextToken();
+				return;
+			}
+
+			funcName = "operator=";
+
+			bIsOverloadedOperator = true;
+			overloadedOperator = GetToken();
+
+		} else if (GetToken() != tk_identifier) {
+
+			ParseMsg(PARSE_ERROR, "expected function name");
+			SkipTo(tk_rbrace);
+			GetNextToken();
+			return;
+
+		} else
+			funcName = GetString();
+
 		GetNextToken();
-		return;
-
-	} else
-		funcName = GetString();
+	}
 
 	CHtfeIdent * pMember = pHier->InsertIdent(funcName);
 	pMember->SetId(CHtfeIdent::id_function);
@@ -2607,8 +2749,14 @@ void CHtfeDesign::ParseStructMethod(CHtfeIdent *pHier)
 	pMember->SetLineInfo(GetLineInfo());
 	pMember->AllocRefInfo();
 
+	if (bIsOverloadedOperator) {
+		pMember->SetIsOverloadedOperator(true);
+		pMember->SetOverloadedOperator(overloadedOperator);
+	} else if (bIsUserConversion)
+		pMember->SetIsUserConversion(true);
+
 	// Should enters with lparen token
-	if (GetNextToken() != tk_lparen) {
+	if (GetToken() != tk_lparen) {
 		ParseMsg(PARSE_ERROR, "expected (");
 		GetNextToken();
 		return;
@@ -2618,7 +2766,7 @@ void CHtfeDesign::ParseStructMethod(CHtfeIdent *pHier)
 }
 
 // Parse type without the returned flags
-CHtfeIdent * CHtfeDesign::ParseTypeDecl(const CHtfeIdent *pHier, bool bRequired)
+CHtfeIdent * CHtfeDesign::ParseTypeDecl(CHtfeIdent *pHier, bool bRequired)
 {
 	CHtfeTypeAttrib typeAttrib;
 	CHtfeIdent * pType = ParseTypeDecl(pHier, typeAttrib, bRequired);
@@ -2630,7 +2778,7 @@ CHtfeIdent * CHtfeDesign::ParseTypeDecl(const CHtfeIdent *pHier, bool bRequired)
 }
 
 // Parse type searching heirarchy of name spaces
-CHtfeIdent * CHtfeDesign::ParseTypeDecl(CHtfeIdent const * pHier, CHtfeTypeAttrib & typeAttrib, bool bRequired)
+CHtfeIdent * CHtfeDesign::ParseTypeDecl(CHtfeIdent * pHier, CHtfeTypeAttrib & typeAttrib, bool bRequired)
 {
 	CHtfeIdent *pType = 0;
 	unsigned int typeMask = 0;
@@ -2642,6 +2790,14 @@ CHtfeIdent * CHtfeDesign::ParseTypeDecl(CHtfeIdent const * pHier, CHtfeTypeAttri
 	const int DOUBLE = 0x40;
 	const int LONG = 0x80;
 	const int LONGLONG = 0x100;
+	const int INT8 = 0x200;
+	const int UINT8 = 0x400;
+	const int INT16 = 0x800;
+	const int UINT16 = 0x1000;
+	const int INT32 = 0x2000;
+	const int UINT32 = 0x4000;
+	const int INT64 = 0x8000;
+	const int UINT64 = 0x10000;
 
 	typeAttrib.m_bIsConst = false;
 	typeAttrib.m_bIsHtPrim = false;
@@ -2702,12 +2858,6 @@ CHtfeIdent * CHtfeDesign::ParseTypeDecl(CHtfeIdent const * pHier, CHtfeTypeAttri
 			continue;
 		}
 
-		if (GetString() == "__int64") {
-			typeMask |= LONGLONG;
-			GetNextToken();
-			continue;
-		}
-
 		if (GetString() == "float") {
 			static bool bErrorMsg = false;
 			if (bErrorMsg == false) {
@@ -2742,49 +2892,49 @@ CHtfeIdent * CHtfeDesign::ParseTypeDecl(CHtfeIdent const * pHier, CHtfeTypeAttri
 		}
 
 		if (GetString() == "int8_t") {
-			typeMask |= CHAR;
+			typeMask |= INT8;
 			GetNextToken();
 			continue;
 		}
 
 		if (GetString() == "uint8_t") {
-			typeMask |= UNSIGNED | CHAR;
+			typeMask |= UINT8;
 			GetNextToken();
 			continue;
 		}
 
 		if (GetString() == "int16_t") {
-			typeMask |= SHORT;
+			typeMask |= INT16;
 			GetNextToken();
 			continue;
 		}
 
 		if (GetString() == "uint16_t") {
-			typeMask |= UNSIGNED | SHORT;
+			typeMask |= UINT16;
 			GetNextToken();
 			continue;
 		}
 
 		if (GetString() == "int32_t") {
-			typeMask |= INT;
+			typeMask |= INT32;
 			GetNextToken();
 			continue;
 		}
 
 		if (GetString() == "uint32_t") {
-			typeMask |= UNSIGNED | INT;
+			typeMask |= UINT32;
 			GetNextToken();
 			continue;
 		}
 
 		if (GetString() == "int64_t") {
-			typeMask |= LONGLONG;
+			typeMask |= INT64;
 			GetNextToken();
 			continue;
 		}
 
 		if (GetString() == "uint64_t") {
-			typeMask |= UNSIGNED | LONGLONG;
+			typeMask |= UINT64;
 			GetNextToken();
 			continue;
 		}
@@ -2848,7 +2998,8 @@ CHtfeIdent * CHtfeDesign::ParseTypeDecl(CHtfeIdent const * pHier, CHtfeTypeAttri
 		if (pType && pType->IsTypeDef())
 			pType = pType->GetType();
 
-		if (pType && pType->GetId() != CHtfeIdent::id_struct && pType->GetId() != CHtfeIdent::id_class && pType->GetId() != CHtfeIdent::id_enumType)
+		if (pType && pType->GetId() != CHtfeIdent::id_struct && pType->GetId() != CHtfeIdent::id_class && 
+			pType->GetId() != CHtfeIdent::id_enumType && pType->GetId() != CHtfeIdent::id_intType)
 			pType = 0;
 
 		break;
@@ -2874,12 +3025,26 @@ CHtfeIdent * CHtfeDesign::ParseTypeDecl(CHtfeIdent const * pHier, CHtfeTypeAttri
 		case INT | UNSIGNED:
 			return m_pUIntType;
 		case LONG:
-			return m_pInt64Type;
-		case LONG | UNSIGNED:
-			return m_pUInt64Type;
 		case LONGLONG:
-			return m_pInt64Type;
+			return m_pLongType;
+		case LONG | UNSIGNED:
 		case LONGLONG | UNSIGNED:
+			return m_pULongType;
+		case INT8:
+			return m_pInt8Type;
+		case UINT8:
+			return m_pUInt8Type;
+		case INT16:
+			return m_pInt16Type;
+		case UINT16:
+			return m_pUInt16Type;
+		case INT32:
+			return m_pInt32Type;
+		case UINT32:
+			return m_pUInt32Type;
+		case INT64:
+			return m_pInt64Type;
+		case UINT64:
 			return m_pUInt64Type;
 		case FLOAT:
 			return m_pFloatType;
@@ -2937,7 +3102,9 @@ CHtfeIdent * CHtfeDesign::ParseTypeDecl(CHtfeIdent const * pHier, CHtfeTypeAttri
 	}
 
 	if (!pType || (pType->GetId() != CHtfeIdent::id_struct &&
-		pType->GetId() != CHtfeIdent::id_class && pType->GetId() != CHtfeIdent::id_enumType))
+		pType->GetId() != CHtfeIdent::id_class &&
+		pType->GetId() != CHtfeIdent::id_enumType &&
+		pType->GetId() != CHtfeIdent::id_intType))
 	{
 		if (bRequired) {
 			ParseMsg(PARSE_ERROR, "Expected a type name");
@@ -2946,7 +3113,7 @@ CHtfeIdent * CHtfeDesign::ParseTypeDecl(CHtfeIdent const * pHier, CHtfeTypeAttri
 		return 0;
 	}
 
-	if (pType == m_pScIntType || pType == m_pScUintType || pType == m_pScBigUintType) {
+	if (pType == m_pScIntType || pType == m_pScUintType || pType == m_pScBigUintType || pType == m_pScBigIntType) {
 
 		if (GetToken() != tk_less) {
 			ParseMsg(PARSE_ERROR, "Expected a < (%s<W>)", pType->GetName().c_str());
@@ -2970,16 +3137,18 @@ CHtfeIdent * CHtfeDesign::ParseTypeDecl(CHtfeIdent const * pHier, CHtfeTypeAttri
 		CHtfeIdent * pBaseType = pType;
 
 		// create unique name for this width
-		pType = CreateUniqueTemplateType(pType, (int)width.GetSint64());
-
 		if (pBaseType == m_pScIntType || pBaseType == m_pScUintType) {
+			pType = CreateUniqueScIntType(pType, (int)width.GetSint64());
+
 			if (width.GetSint64() > 64)
 				ParseMsg(PARSE_ERROR, "type width exceeds maximum value (64), %s", pType->GetName().c_str());
 			if (width.GetSint64() == 0)
 				ParseMsg(PARSE_ERROR, "type width of zero not valid, %s", pType->GetName().c_str());
-		} 
 
-		if (pBaseType == m_pScBigUintType) {
+		} else if (pBaseType == m_pScBigIntType || pBaseType == m_pScBigUintType) {
+
+			pType = CreateUniqueScBigIntType(pType, (int)width.GetSint64());
+
 			pType->SetWidth( (int)width.GetSint64() );
 			pType->SetOpWidth( (int)width.GetSint64() );
 		}
@@ -3118,7 +3287,7 @@ bool CHtfeDesign::ParseHtPrimClkList(CHtfeTypeAttrib & typeAttrib)
 		return false;
 }
 
-CHtfeIdent * CHtfeDesign::CreateUniqueTemplateType(const CHtfeIdent *pBaseType, int width)
+CHtfeIdent * CHtfeDesign::CreateUniqueScIntType(CHtfeIdent *pBaseType, int width)
 {
 	if (width == 0)
 		ParseMsg(PARSE_FATAL, "Invalid type width (0)");
@@ -3134,11 +3303,12 @@ CHtfeIdent * CHtfeDesign::CreateUniqueTemplateType(const CHtfeIdent *pBaseType, 
 		pType->SetOpWidth(pBaseType->GetOpWidth());
 		pType->SetIsParenOverloaded();
 		pType->SetIsSigned(pBaseType->IsSigned());
+		pType->SetUserConvType(pBaseType->GetUserConvType());
 
 		// initialize builtin functions
 		CHtfeIdent *pFunc = CHtfeDesign::NewIdent();
-		pFunc->SetName(m_operatorParenString);
 		pType->SetParenOperator(pFunc);
+		pFunc->SetName(m_operatorParenString);
 		pFunc->SetId(CHtfeIdent::id_function);
 		pFunc->SetType(pType);
 		CHtfeParam tmp1 = CHtfeParam(m_pIntType, true);
@@ -3146,46 +3316,192 @@ CHtfeIdent * CHtfeDesign::CreateUniqueTemplateType(const CHtfeIdent *pBaseType, 
 		CHtfeParam tmp2 = CHtfeParam(m_pIntType, true);
 		pFunc->AppendParam(tmp2);
 
-		pFunc = pType->InsertIdent(m_rangeString, false);
-		pFunc->SetId(CHtfeIdent::id_function);
-		pFunc->SetFuncId(CHtfeIdent::fid_range);
-		pFunc->SetType(pType);
-		CHtfeParam tmp3 = CHtfeParam(m_pIntType, true);
-		pFunc->AppendParam(tmp3);
-		CHtfeParam tmp4 = CHtfeParam(m_pIntType, true);
-		pFunc->AppendParam(tmp4);
-
-		pFunc = pType->InsertIdent(m_andReduceString, false);
-		pFunc->SetId(CHtfeIdent::id_function);
-		pFunc->SetFuncId(CHtfeIdent::fid_and_reduce);
-		pFunc->SetType(m_pBoolType);
-
-		pFunc = pType->InsertIdent(m_nandReduceString, false);
-		pFunc->SetId(CHtfeIdent::id_function);
-		pFunc->SetFuncId(CHtfeIdent::fid_nand_reduce);
-		pFunc->SetType(m_pBoolType);
-
-		pFunc = pType->InsertIdent(m_orReduceString, false);
-		pFunc->SetId(CHtfeIdent::id_function);
-		pFunc->SetFuncId(CHtfeIdent::fid_or_reduce);
-		pFunc->SetType(m_pBoolType);
-
-		pFunc = pType->InsertIdent(m_norReduceString, false);
-		pFunc->SetId(CHtfeIdent::id_function);
-		pFunc->SetFuncId(CHtfeIdent::fid_nor_reduce);
-		pFunc->SetType(m_pBoolType);
-
-		pFunc = pType->InsertIdent(m_xorReduceString, false);
-		pFunc->SetId(CHtfeIdent::id_function);
-		pFunc->SetFuncId(CHtfeIdent::fid_xor_reduce);
-		pFunc->SetType(m_pBoolType);
-
-		pFunc = pType->InsertIdent(m_xnorReduceString, false);
-		pFunc->SetId(CHtfeIdent::id_function);
-		pFunc->SetFuncId(CHtfeIdent::fid_xnor_reduce);
-		pFunc->SetType(m_pBoolType);
+		// builtin members
+		pType->AddBuiltinMember(m_rangeString, CHtfeIdent::fid_range, pType, m_pIntType, m_pIntType);
+		pType->AddBuiltinMember(m_andReduceString, CHtfeIdent::fid_and_reduce, m_pBoolType);
+		pType->AddBuiltinMember(m_nandReduceString, CHtfeIdent::fid_nand_reduce, m_pBoolType);
+		pType->AddBuiltinMember(m_orReduceString, CHtfeIdent::fid_or_reduce, m_pBoolType);
+		pType->AddBuiltinMember(m_norReduceString, CHtfeIdent::fid_nor_reduce, m_pBoolType);
+		pType->AddBuiltinMember(m_xorReduceString, CHtfeIdent::fid_xor_reduce, m_pBoolType);
+		pType->AddBuiltinMember(m_xnorReduceString, CHtfeIdent::fid_xnor_reduce, m_pBoolType);
 	} 
 	return pType;
+}
+
+CHtfeIdent * CHtfeDesign::CreateUniqueScBigIntType(CHtfeIdent *pBaseType, int width)
+{
+	if (width == 0)
+		ParseMsg(PARSE_FATAL, "Invalid type width (0)");
+
+	char widthName[16];
+	sprintf(widthName, "%d", width);
+	string typeName = pBaseType->GetName() + "<" + widthName + "> ";
+	CHtfeIdent * pType = m_pTopHier->InsertType(typeName);
+
+	if (pType->GetId() == CHtfeIdent::id_new) {
+		pType->SetId(CHtfeIdent::id_class);
+		pType->SetWidth(width);
+		pType->SetOpWidth(pBaseType->GetOpWidth());
+		pType->SetIsParenOverloaded();
+		pType->SetIsSigned(pBaseType->IsSigned());
+		pType->SetUserConvType(pBaseType->GetUserConvType());
+
+		// initialize builtin functions
+		CHtfeIdent *pFunc = CHtfeDesign::NewIdent();
+		pType->SetParenOperator(pFunc);
+		pFunc->SetName(m_operatorParenString);
+		pFunc->SetId(CHtfeIdent::id_function);
+		pFunc->SetType(pType);
+		CHtfeParam tmp1 = CHtfeParam(m_pIntType, true);
+		pFunc->AppendParam(tmp1);
+		CHtfeParam tmp2 = CHtfeParam(m_pIntType, true);
+		pFunc->AppendParam(tmp2);
+
+		// builtin members
+		pType->AddBuiltinMember(m_rangeString, CHtfeIdent::fid_range, pType, m_pIntType, m_pIntType);
+		pType->AddBuiltinMember(m_andReduceString, CHtfeIdent::fid_and_reduce, m_pBoolType);
+		pType->AddBuiltinMember(m_nandReduceString, CHtfeIdent::fid_nand_reduce, m_pBoolType);
+		pType->AddBuiltinMember(m_orReduceString, CHtfeIdent::fid_or_reduce, m_pBoolType);
+		pType->AddBuiltinMember(m_norReduceString, CHtfeIdent::fid_nor_reduce, m_pBoolType);
+		pType->AddBuiltinMember(m_xorReduceString, CHtfeIdent::fid_xor_reduce, m_pBoolType);
+		pType->AddBuiltinMember(m_xnorReduceString, CHtfeIdent::fid_xnor_reduce, m_pBoolType);
+
+		// constructor
+		pType->AddNullConstructor(m_pIntType);
+		pType->AddNullConstructor(m_pBigIntBaseType);
+
+		// user defined conversion members
+		pType->AddNullUserConversion(m_pBigIntBaseType);
+
+		// overloaded operator members - diadic
+		pType->AddNullConvOverloadedOperator(tk_equal, pType, m_pIntType);
+		pType->AddNullConvOverloadedOperator(tk_plusEqual, pType, m_pIntType);
+		pType->AddNullConvOverloadedOperator(tk_minusEqual, pType, m_pIntType);
+		pType->AddNullConvOverloadedOperator(tk_lessLessEqual, pType, m_pIntType);
+		pType->AddNullConvOverloadedOperator(tk_greaterGreaterEqual, pType, m_pIntType);
+		pType->AddNullConvOverloadedOperator(tk_vbarEqual, pType, m_pIntType);
+		pType->AddNullConvOverloadedOperator(tk_ampersandEqual, m_pIntType, m_pIntType);
+		pType->AddNullConvOverloadedOperator(tk_carotEqual, m_pIntType, m_pIntType);
+		pType->AddNullConvOverloadedOperator(tk_asteriskEqual, pType, m_pIntType);
+		pType->AddNullConvOverloadedOperator(tk_slashEqual, pType, m_pIntType);
+		pType->AddNullConvOverloadedOperator(tk_percentEqual, pType, m_pIntType);
+
+		pType->AddNullConvOverloadedOperator(tk_equal, pType, m_pBigIntBaseType);
+		pType->AddNullConvOverloadedOperator(tk_plusEqual, pType, m_pBigIntBaseType);
+		pType->AddNullConvOverloadedOperator(tk_minusEqual, pType, m_pBigIntBaseType);
+		pType->AddNullConvOverloadedOperator(tk_lessLessEqual, pType, m_pBigIntBaseType);
+		pType->AddNullConvOverloadedOperator(tk_greaterGreaterEqual, pType, m_pBigIntBaseType);
+		pType->AddNullConvOverloadedOperator(tk_vbarEqual, pType, m_pBigIntBaseType);
+		pType->AddNullConvOverloadedOperator(tk_ampersandEqual, m_pIntType, m_pBigIntBaseType);
+		pType->AddNullConvOverloadedOperator(tk_carotEqual, m_pIntType, m_pBigIntBaseType);
+		pType->AddNullConvOverloadedOperator(tk_asteriskEqual, pType, m_pBigIntBaseType);
+		pType->AddNullConvOverloadedOperator(tk_slashEqual, pType, m_pBigIntBaseType);
+		pType->AddNullConvOverloadedOperator(tk_percentEqual, pType, m_pBigIntBaseType);
+
+		pType->AddNullConvOverloadedOperator(tk_plus, pType, m_pIntType);
+		pType->AddNullConvOverloadedOperator(tk_minus, pType, m_pIntType);
+		pType->AddNullConvOverloadedOperator(tk_lessLess, pType, m_pIntType);
+		pType->AddNullConvOverloadedOperator(tk_greaterGreater, pType, m_pIntType);
+		pType->AddNullConvOverloadedOperator(tk_vbar, pType, m_pIntType);
+		pType->AddNullConvOverloadedOperator(tk_ampersand, m_pIntType, m_pIntType);
+		pType->AddNullConvOverloadedOperator(tk_carot, m_pIntType, m_pIntType);
+		pType->AddNullConvOverloadedOperator(tk_asterisk, pType, m_pIntType);
+		pType->AddNullConvOverloadedOperator(tk_slash, pType, m_pIntType);
+		pType->AddNullConvOverloadedOperator(tk_percent, pType, m_pIntType);
+
+		pType->AddNullConvOverloadedOperator(tk_plus, pType, m_pBigIntBaseType);
+		pType->AddNullConvOverloadedOperator(tk_minus, pType, m_pBigIntBaseType);
+		pType->AddNullConvOverloadedOperator(tk_lessLess, pType, m_pBigIntBaseType);
+		pType->AddNullConvOverloadedOperator(tk_greaterGreater, pType, m_pBigIntBaseType);
+		pType->AddNullConvOverloadedOperator(tk_vbar, pType, m_pBigIntBaseType);
+		pType->AddNullConvOverloadedOperator(tk_ampersand, m_pIntType, m_pBigIntBaseType);
+		pType->AddNullConvOverloadedOperator(tk_carot, m_pIntType, m_pBigIntBaseType);
+		pType->AddNullConvOverloadedOperator(tk_asterisk, pType, m_pBigIntBaseType);
+		pType->AddNullConvOverloadedOperator(tk_slash, pType, m_pBigIntBaseType);
+		pType->AddNullConvOverloadedOperator(tk_percent, pType, m_pBigIntBaseType);
+
+		pType->AddNullConvOverloadedOperator(tk_vbarVbar, m_pBoolType, m_pIntType);
+		pType->AddNullConvOverloadedOperator(tk_ampersandAmpersand, m_pBoolType, m_pIntType);
+		pType->AddNullConvOverloadedOperator(tk_equalEqual, m_pBoolType, m_pIntType);
+		pType->AddNullConvOverloadedOperator(tk_bangEqual, m_pBoolType, m_pIntType);
+		pType->AddNullConvOverloadedOperator(tk_less, m_pBoolType, m_pIntType);
+		pType->AddNullConvOverloadedOperator(tk_greater, m_pBoolType, m_pIntType);
+		pType->AddNullConvOverloadedOperator(tk_lessEqual, m_pBoolType, m_pIntType);
+		pType->AddNullConvOverloadedOperator(tk_greaterEqual, m_pBoolType, m_pIntType);
+
+		pType->AddNullConvOverloadedOperator(tk_vbarVbar, m_pBoolType, m_pBigIntBaseType);
+		pType->AddNullConvOverloadedOperator(tk_ampersandAmpersand, m_pBoolType, m_pBigIntBaseType);
+		pType->AddNullConvOverloadedOperator(tk_equalEqual, m_pBoolType, m_pBigIntBaseType);
+		pType->AddNullConvOverloadedOperator(tk_bangEqual, m_pBoolType, m_pBigIntBaseType);
+		pType->AddNullConvOverloadedOperator(tk_less, m_pBoolType, m_pBigIntBaseType);
+		pType->AddNullConvOverloadedOperator(tk_greater, m_pBoolType, m_pBigIntBaseType);
+		pType->AddNullConvOverloadedOperator(tk_lessEqual, m_pBoolType, m_pBigIntBaseType);
+		pType->AddNullConvOverloadedOperator(tk_greaterEqual, m_pBoolType, m_pBigIntBaseType);
+	}
+	return pType;
+}
+
+void CHtfeIdent::AddNullConstructor(CHtfeIdent * pParamType)
+{
+	CHtfeIdent * pFunc = InsertIdent("Constructor$", false, true);
+	pFunc->SetId(CHtfeIdent::id_function);
+	pFunc->SetType(CHtfeDesign::m_pVoidType);
+	pFunc->AppendParam(CHtfeParam(pParamType, true));
+	pFunc->SetIsConstructor(true);
+	pFunc->SetNullConvOperator(true);
+}
+
+void CHtfeIdent::AddBuiltinMember(string const & name, CHtfeIdent::EFuncId funcId, CHtfeIdent * pRtnType)
+{
+	CHtfeIdent * pFunc = InsertIdent(name, false);
+	pFunc->SetId(CHtfeIdent::id_function);
+	pFunc->SetFuncId(funcId);
+	pFunc->SetType(pRtnType);
+}
+
+void CHtfeIdent::AddBuiltinMember(string const & name, CHtfeIdent::EFuncId funcId, CHtfeIdent * pRtnType, CHtfeIdent * pParam1Type, CHtfeIdent * pParam2Type)
+{
+	CHtfeIdent * pFunc = InsertIdent(name, false);
+	pFunc->SetId(CHtfeIdent::id_function);
+	pFunc->SetFuncId(funcId);
+	pFunc->SetType(pRtnType);
+	pFunc->AppendParam(CHtfeParam(pParam1Type, true));
+	pFunc->AppendParam(CHtfeParam(pParam2Type, true));
+}
+
+void CHtfeIdent::AddNullUserConversion(CHtfeIdent * pConvType)
+{
+	string name = "operator$" + pConvType->GetName();
+	CHtfeIdent * pFunc = InsertIdent(name, false);
+	pFunc->SetId(CHtfeIdent::id_function);
+	pFunc->SetType(pConvType);
+	pFunc->SetIsUserConversion(true);
+	pFunc->SetNullConvOperator(true);
+}
+
+void CHtfeIdent::AddNullConvOverloadedOperator(CHtfeLex::EToken eToken, CHtfeIdent * pRtnType, CHtfeIdent * pParamType)
+{
+	string funcName = "operator" + CHtfeLex::GetTokenString(eToken);
+	CHtfeIdent * pFunc = InsertIdent(funcName, false, true);
+	pFunc->SetId(CHtfeIdent::id_function);
+	pFunc->SetType(pRtnType);
+	pFunc->AppendParam(CHtfeParam(pParamType, true));
+	pFunc->SetIsOverloadedOperator(true);
+	pFunc->SetOverloadedOperator(eToken);
+	pFunc->SetNullConvOperator(true);
+}
+
+void CHtfeIdent::AddNullConvOverloadedOperator(CHtfeLex::EToken eToken, CHtfeIdent * pRtnType, CHtfeIdent * pParam1Type, CHtfeIdent * pParam2Type)
+{
+	string funcName = "operator" + CHtfeLex::GetTokenString(eToken);
+	CHtfeIdent * pFunc = InsertIdent(funcName, false, true);
+	pFunc->SetId(CHtfeIdent::id_function);
+	pFunc->SetType(pRtnType);
+	pFunc->AppendParam(CHtfeParam(pParam1Type, true));
+	pFunc->AppendParam(CHtfeParam(pParam2Type, true));
+	pFunc->SetIsOverloadedOperator(true);
+	pFunc->SetOverloadedOperator(eToken);
+	pFunc->SetNullConvOperator(true);
 }
 
 void CHtfeDesign::ParseEnumDecl(CHtfeIdent *pHier)
@@ -3201,6 +3517,7 @@ void CHtfeDesign::ParseEnumDecl(CHtfeIdent *pHier)
 	pType->SetIsType();
 	pType->SetWidth(1);
 	pType->SetOpWidth(32);
+	pType->SetUserConvType(m_pIntType);
 
 	if (GetNextToken() == tk_semicolon)
 		return;
@@ -3876,6 +4193,14 @@ CHtfeStatement * CHtfeDesign::ParseVarDeclInitializer(CHtfeIdent * pHier, CHtfeI
 	return pStatementHead;
 }
 
+struct CConvPair {
+	CConvPair(CHtfeIdent * pMemberConv, CHtfeIdent * pOp1Conv, CHtfeIdent * pOp2Conv) : m_pMemberConv(pMemberConv), m_pOp1Conv(pOp1Conv), m_pOp2Conv(pOp2Conv) {}
+	CConvPair(CHtfeIdent * pOp1Conv, CHtfeIdent * pOp2Conv) : m_pOp1Conv(pOp1Conv), m_pOp2Conv(pOp2Conv) {}
+	CHtfeIdent * m_pMemberConv;
+	CHtfeIdent * m_pOp1Conv;
+	CHtfeIdent * m_pOp2Conv;
+};
+
 CHtfeStatement * CHtfeDesign::InsertVarDeclInitializer(CHtfeIdent * pHier, CHtfeIdent * pIdent, vector<int> &refList, CHtfeOperand * pExpr, char * pInitStr)
 {
 	string idxList;
@@ -3884,19 +4209,146 @@ CHtfeStatement * CHtfeDesign::InsertVarDeclInitializer(CHtfeIdent * pHier, CHtfe
 		sprintf(idxBuf, "[%d]", refList[i]);
 		idxList += idxBuf;
 	}
-	char lineBuf[256];
-	sprintf(lineBuf, "{ %s%s = %s; }", pIdent->GetName().c_str(), idxList.c_str(), pInitStr );
+
+	bool bRecord = pIdent->GetType()->GetId() == CHtfeIdent::id_struct;
+
+	char lineBuf[512];
+
+	if (!bRecord)
+		sprintf(lineBuf, "{ %s%s = %s; }", pIdent->GetName().c_str(), idxList.c_str(), pInitStr );
+	else {
+		sprintf(lineBuf, "{ %s%s = %s; %s%s = %s; }",
+			pIdent->GetName().c_str(), idxList.c_str(), pInitStr,
+			pIdent->GetName().c_str(), idxList.c_str(), pInitStr);
+	}
 
 	OpenLine(lineBuf);
 	GetNextToken();
 
 	CHtfeStatement * pStatement = ParseCompoundStatement(pHier);
 
-	if (pStatement && pExpr) {
-		delete pStatement->GetExpr()->GetOperand2();
-		pStatement->GetExpr()->SetOperand2( pExpr );
+	CHtfeStatement * pStatement2 = pStatement;
+	if (bRecord)
+		pStatement2 = pStatement2->GetNext();
 
-		HandleIntegerConstantPropagation(pStatement->GetExpr());
+	if (pStatement2 && pExpr) {
+		CHtfeOperand * pOp1 = pStatement2->GetExpr()->GetOperand1();
+		CHtfeOperand * pOp2 = pExpr;
+		// check for user conversions
+		// iterate through op2 options
+		CHtfeIdent * pOp1Type = pOp1->GetType();
+		CHtfeIdent * pOp2Type = pOp2->GetType();
+
+		// iterate through op1 options
+		int minConvCnt = 100;
+		vector<CConvPair> convList;
+
+		CHtfeOperatorIter op1Iter(pOp1Type);
+		for (op1Iter.Begin(); !op1Iter.End(); op1Iter++) {
+
+			if (op1Iter.IsUserConversion()) continue;
+			if (op1Iter.IsOverloadedOperator()) continue;
+
+			// iterate through op2 options
+			CHtfeOperatorIter op2Iter(pOp2Type);
+			for (op2Iter.Begin(); !op2Iter.End(); op2Iter++) {
+
+				if (op2Iter.IsConstructor()) continue;
+				if (op2Iter.IsOverloadedOperator()) continue;
+
+				// check if op1Conv and op2Conv work for operation
+				if (op1Iter.GetType()->GetId() == CHtfeIdent::id_intType && op2Iter.GetType()->GetId() == CHtfeIdent::id_intType ||
+					op1Iter.GetType() == op2Iter.GetType() ||
+					pOp2->IsConstValue() && pOp2->GetConstValue().IsZero())
+				{
+					int convCnt = op1Iter.GetConvCnt() + op2Iter.GetConvCnt();
+					if (convCnt > minConvCnt) continue;
+					if (convCnt < minConvCnt)
+						convList.clear();
+					convList.push_back(CConvPair(op1Iter.GetMethod(), op2Iter.GetMethod()));
+					minConvCnt = convCnt;
+				}
+			}
+		}
+
+		if (minConvCnt == 100)
+			ParseMsg(PARSE_ERROR, "Incompatible operands for expression");
+		else if (minConvCnt > 0) {
+			if (convList.size() == 1) {
+				// apply conversions to expression
+				if (convList[0].m_pOp2Conv) {
+					if (convList[0].m_pOp2Conv->IsNullConvOperator()) {
+						pOp2Type = convList[0].m_pOp2Conv->GetType();
+					} else {
+						CHtfeOperand *pConvMethodOp = HandleNewOperand();
+						pConvMethodOp->InitAsIdentifier(GetLineInfo(), convList[0].m_pOp2Conv);
+						pConvMethodOp->SetType(convList[0].m_pOp2Conv->GetType());
+
+						CHtfeOperand *pConvRslt = HandleNewOperand();
+						pConvRslt->InitAsOperator(GetLineInfo(), tk_period, pOp2, pConvMethodOp);
+						pConvRslt->SetType(convList[0].m_pOp2Conv->GetType());
+						pOp2 = pConvRslt;
+						pOp2Type = pOp2->GetType();
+					}
+				}
+
+				if (convList[0].m_pOp1Conv) {
+					if (convList[0].m_pOp1Conv->IsNullConvOperator()) {
+						pOp1Type = convList[0].m_pOp1Conv->GetType();
+					} else {
+						if (convList[0].m_pOp1Conv->IsConstructor()) {
+							CHtfeOperand *pConvMethodOp = HandleNewOperand();
+							pConvMethodOp->InitAsFunction(GetLineInfo(), convList[0].m_pOp1Conv);
+							pConvMethodOp->SetType(convList[0].m_pOp1Conv->GetType());
+
+							vector<CHtfeOperand *> paramList;
+							paramList.push_back(pOp2);
+							pConvMethodOp->SetParamList(paramList);
+
+							CHtfeOperand *pConvRslt = HandleNewOperand();
+							pConvRslt->InitAsOperator(GetLineInfo(), tk_period, pOp1, pConvMethodOp);
+							pConvRslt->SetType(convList[0].m_pOp1Conv->GetType());
+
+							pStatement2->SetExpr(pConvRslt);
+							HandleIntegerConstantPropagation(pStatement2->GetExpr());
+
+							return pStatement;
+						} else
+							Assert(0);
+					}
+				}
+
+			} else {
+				// ambiguous conversion solutions
+				ParseMsg(PARSE_ERROR, "ambiguous expression for operator =, possible solutions are:");
+
+				for (size_t i = 0; i < convList.size(); i += 1) {
+					string op1Conv;
+					if (convList[i].m_pOp1Conv == 0)
+						op1Conv = pOp1Type->GetName();
+					else if (convList[i].m_pOp1Conv->IsConstructor()) {
+						op1Conv = convList[i].m_pOp1Conv->GetParamType(0)->GetName() + "()";
+					} else
+						Assert(0);
+
+					string op2Conv;
+					if (convList[i].m_pOp2Conv == 0)
+						op2Conv = pOp2Type->GetName();
+					else if (convList[i].m_pOp2Conv->IsOverloadedOperator()) {
+						op2Conv = "operator " + CHtfeLex::GetTokenString(convList[i].m_pOp2Conv->GetOverloadedOperator()) + " (" +
+							convList[i].m_pOp2Conv->GetParamType(0)->GetName() + ")";
+					} else if (convList[i].m_pOp2Conv->IsUserConversion()) {
+						op2Conv = "operator " + convList[i].m_pOp2Conv->GetType()->GetName() + " ()";
+					} else
+						Assert(0);
+
+					ParseMsg(PARSE_INFO, "%s, %s", op1Conv.c_str(), op2Conv.c_str());
+				}
+			}
+		}
+
+		pStatement2->GetExpr()->SetOperand2(pOp2);
+		HandleIntegerConstantPropagation(pStatement2->GetExpr());
 	}
 
 	return pStatement;
@@ -4152,6 +4604,11 @@ void CHtfeDesign::ParseEvalConstExpr(EToken tk, vector<CConstValue> &operandStac
 	}
 }
 
+struct CFuncConv {
+	CHtfeIdent * m_pFunc;
+	vector<CHtfeIdent *> m_pArgConvList;
+};
+
 CHtfeOperand * CHtfeDesign::ParseExpression(CHtfeIdent *pHier,
 	bool bCommaAsSeparator, bool bFoldConstants, bool bAllowOpEqual)
 {
@@ -4175,7 +4632,7 @@ CHtfeOperand * CHtfeDesign::ParseExpression(CHtfeIdent *pHier,
 	operatorStack.push_back(tk_exprBegin);
 
 #ifdef WIN32
-	if (GetLineInfo().m_lineNum == 43)
+	if (GetLineInfo().m_lineNum == 37)
 		bool stop = true;
 #endif
 
@@ -4373,17 +4830,17 @@ CHtfeOperand * CHtfeDesign::ParseExpression(CHtfeIdent *pHier,
 
 				pOp1 = operandStack.back();
 
-				if (!pOp1->GetMemberType()) {
+				if (!pOp1->GetType()) {
 					ParseMsg(PARSE_ERROR, "expected a class or struct identifier");
 					SkipTo(tk_semicolon);
 					return pErrOp;
 				}
 
-				pIdent = pOp1->GetMemberType()->FindIdent(GetString());
+				pIdent = pOp1->GetType()->FindIdent(GetString());
 
 				if (pIdent && pIdent->GetId() == CHtfeIdent::id_variable) {
 					// struct field reference, determine field starting bit position and width
-					CHtfeIdent *pMemberType = pOp1->GetMemberType();
+					CHtfeIdent *pMemberType = pOp1->GetType();
 
 					if (pMemberType == 0 || !pMemberType->IsStruct()) {
 						ParseMsg(PARSE_ERROR, "expected struct identifier");
@@ -4443,7 +4900,7 @@ CHtfeOperand * CHtfeDesign::ParseExpression(CHtfeIdent *pHier,
 						pIdent = pElem;
 					}
 
-					pOp1->SetMemberType(pIdent->GetType());
+					pOp1->SetType(pIdent->GetType());
 
 					(*ppSubField) = new CScSubField(pOrigIdent, indexList, pOrigIdent->GetWidth());
 					ppSubField = &(*ppSubField)->m_pNext;
@@ -4536,7 +4993,7 @@ CHtfeOperand * CHtfeDesign::ParseExpression(CHtfeIdent *pHier,
 						pIdent = pElem;
 					}
 
-					pOp1->SetMemberType(pIdent->GetType());
+					pOp1->SetType(pIdent->GetType());
 
 					(*ppSubField) = new CScSubField(pOrigIdent, indexList, pOrigIdent->GetWidth());
 					ppSubField = &(*ppSubField)->m_pNext;
@@ -4556,12 +5013,12 @@ CHtfeOperand * CHtfeDesign::ParseExpression(CHtfeIdent *pHier,
 					HtfeOperandList_t indexList(1, pOp);
 					(*ppSubField) = new CScSubField(0, indexList, 1, true);
 					ppSubField = &(*ppSubField)->m_pNext;
+
+					pOp1->SetType(m_pUInt64Type);
 				}
 				continue;
 
 			case tk_lparen:
-				//if (GetLineInfo().m_lineNum == 108)
-				//	bool stop = true;
 
 				// function call
 				ParseEvaluateExpression(pHier, GetToken(), operandStack, operatorStack);
@@ -4614,7 +5071,7 @@ CHtfeOperand * CHtfeDesign::ParseExpression(CHtfeIdent *pHier,
 					pMemberType = 0;
 				} else {
 					pIdent = pOp1->GetMember();
-					pMemberType = pOp1->GetMemberType();
+					pMemberType = pOp1->GetType();
 				}
 
 				// adjust stack
@@ -4649,23 +5106,97 @@ CHtfeOperand * CHtfeDesign::ParseExpression(CHtfeIdent *pHier,
 					return pErrOp;
 				}
 
-				// check if parameters match arguments
+				// check if a function exists with matching parameters
 				if (pIdent->GetId() != CHtfeIdent::id_class) {
-					int minParamCnt = 0;
-					for (int paramId = 0; paramId < pIdent->GetParamCnt() && !pIdent->ParamHasDefaultValue(paramId); paramId += 1)
-						minParamCnt += 1;
 
-					if ((int)argsList.size() < minParamCnt || (int)argsList.size() > pIdent->GetParamCnt()) {
-						ParseMsg(PARSE_ERROR, "argument count error");
-						SkipTo(tk_semicolon);
-						return pErrOp;
+					vector<CFuncConv> convList;
+
+					int minConvCnt = 0x10000;
+					for (CHtfeIdent * pFunc = pIdent; pFunc; pFunc = pFunc->GetNextOverloadedFunc()) {
+
+						int minParamCnt = 0;
+						for (int paramId = 0; paramId < pFunc->GetParamCnt() && !pFunc->ParamHasDefaultValue(paramId); paramId += 1)
+							minParamCnt += 1;
+
+						if ((int)argsList.size() < minParamCnt || (int)argsList.size() > pFunc->GetParamCnt())
+							continue;
+
+						int convCnt = 0;
+						bool bNoMatch = false;
+
+						CFuncConv funcConv;
+						funcConv.m_pFunc = pFunc;
+
+						// now check argument for user defined conversions
+						for (size_t i = 0; i < argsList.size(); i += 1) {
+
+							CHtfeOperatorIter paramIter(pFunc->GetParamType(i));
+							CHtfeOperatorIter argIter(argsList[i]->GetType());
+
+							int matchCnt = 0;
+							for (argIter.Begin(); !argIter.End(); argIter++) {
+
+								if (argIter.IsOverloadedOperator()) continue;
+
+								// check if op1Conv and op2Conv work for operation
+								if (paramIter.GetType()->GetId() == CHtfeIdent::id_intType && argIter.GetType()->GetId() == CHtfeIdent::id_intType ||
+									paramIter.GetType() == argIter.GetType()) {
+
+									convCnt += argIter.GetConvCnt();
+									funcConv.m_pArgConvList.push_back(argIter.GetMethod());
+									matchCnt += 1;
+								}
+							}
+
+							if (matchCnt != 1) {
+								bNoMatch = true;
+								break;
+							}
+						}
+
+						if (bNoMatch) continue;
+						if (convCnt > minConvCnt) continue;
+
+						if (convCnt < minConvCnt)
+							convList.clear();
+
+						convList.push_back(funcConv);
+						minConvCnt = convCnt;
 					}
 
-					for (int paramId = (int)argsList.size(); paramId < pIdent->GetParamCnt(); paramId += 1) {
-						CHtfeOperand * pOp = HandleNewOperand();
-						pOp->InitAsConstant(GetLineInfo(), pIdent->GetParamDefaultValue(paramId));
+					if (minConvCnt == 0x10000) {
+						ParseMsg(PARSE_ERROR, "no function found that matches arguments");
+						SkipTo(tk_semicolon);
+						return pErrOp;
+					} else if (convList.size() > 1) {
+						ParseMsg(PARSE_ERROR, "multiple functions found that match arguments");
+						SkipTo(tk_semicolon);
+						return pErrOp;
+					} else {
+						// found a unique match, apply argument conversions
+						CHtfeIdent * pFunc = convList[0].m_pFunc;
 
-						argsList.push_back(pOp);
+						for (size_t i = 0; i < argsList.size(); i += 1) {
+
+							if (convList[0].m_pArgConvList[i] == 0) continue;
+
+							CHtfeOperand *pConvMethodOp = HandleNewOperand();
+							pConvMethodOp->InitAsIdentifier(GetLineInfo(), convList[0].m_pArgConvList[i]);
+							pConvMethodOp->SetType(convList[0].m_pArgConvList[i]->GetType());
+
+							CHtfeOperand *pConvRslt = HandleNewOperand();
+							pConvRslt->InitAsOperator(GetLineInfo(), tk_period, argsList[i], pConvMethodOp);
+							pConvRslt->SetType(convList[0].m_pArgConvList[i]->GetType());
+
+							argsList[i] = pConvRslt;
+						}
+
+						for (int paramId = (int)argsList.size(); paramId < pFunc->GetParamCnt(); paramId += 1) {
+							CHtfeOperand * pOp = HandleNewOperand();
+							pOp->InitAsConstant(GetLineInfo(), pIdent->GetParamDefaultValue(paramId));
+
+							argsList.push_back(pOp);
+						}
 					}
 				}
 
@@ -4700,7 +5231,7 @@ CHtfeOperand * CHtfeDesign::ParseExpression(CHtfeIdent *pHier,
 						//continue;
 
 						// pOp1 has var.read
-						operandStack.back()->SetMemberType(pOpObj->GetMemberType()->GetType());
+						operandStack.back()->SetType(pOpObj->GetType()->GetType());
 						operandStack.back()->SetMember(pOpObj->GetMember());
 
 						continue;
@@ -4711,7 +5242,7 @@ CHtfeOperand * CHtfeDesign::ParseExpression(CHtfeIdent *pHier,
 						if (!pHier->IsModule())
 							ParseMsg(PARSE_ERROR, "pos/neg functions are only allowed in sensitivity list of CTOR");
 
-						pOp1->SetMemberType(pOpObj->GetMemberType()->GetType());
+						pOp1->SetType(pOpObj->GetType()->GetType());
 						//pOp1->SetMember(pOp1->GetObject());
 						//pOp1->SetObject(0);
 						pOpObj->GetMember()->SetIsClock();
@@ -4917,6 +5448,7 @@ void CHtfeDesign::ParseEvaluateExpression(CHtfeIdent *pHier, EToken tk, vector<C
 
 				pRslt = HandleNewOperand();
 				pRslt->InitAsOperator(GetLineInfo(), (bIsBitIndexed && stackTk == tk_tilda) ? tk_bang : stackTk, pOp1);
+				pRslt->SetType(pOp1->GetType());
 
 				operandStack.push_back(pRslt);
 
@@ -4944,7 +5476,7 @@ void CHtfeDesign::ParseEvaluateExpression(CHtfeIdent *pHier, EToken tk, vector<C
 
 					CHtfeOperand *pTmpOp1 = HandleNewOperand();
 					pTmpOp1->InitAsIdentifier(GetLineInfo(), pOp1->GetMember());
-					pTmpOp1->SetMemberType(pOp1->GetMemberType());
+					pTmpOp1->SetType(pOp1->GetType());
 					pTmpOp1->SetIndexList(pOp1->GetIndexList());
 					*pTmpOp1->GetSubFieldP() = pOp1->GetSubField();
 
@@ -5009,8 +5541,166 @@ void CHtfeDesign::ParseEvaluateExpression(CHtfeIdent *pHier, EToken tk, vector<C
 						ParseMsg(PARSE_INFO, "(using other than simple variables / type casts in systemc produces unexpected results)");
 					}
 
+					CHtfeIdent * pRsltType = 0;
+
+					if (stackTk == tk_period) {
+						pRsltType = pOp2->GetType();
+					} else if (stackTk != tk_typeCast) {
+						CHtfeIdent * pOp1Type = pOp1->GetType();
+						CHtfeIdent * pOp2Type = pOp2->GetType();
+
+						Assert(pOp1Type);
+						Assert(pOp2Type);
+
+						if (GetLineInfo().m_lineNum == 85)
+							bool stop = true;
+
+						// iterate through op1 options
+						int minConvCnt = 100;
+						vector<CConvPair> convList;
+
+						CHtfeOperatorIter memberIter(pHier, true);
+						for (memberIter.Begin(); !memberIter.End(); memberIter++) {
+
+							if (memberIter.IsOverloadedOperator() && memberIter.GetOverloadedOperator() != stackTk) continue;
+							if (memberIter.IsOverloadedOperator() && memberIter.GetMethod()->GetParamCnt() != 2) continue;
+
+							CHtfeOperatorIter op1Iter(pOp1Type);
+							for (op1Iter.Begin(); !op1Iter.End(); op1Iter++) {
+
+								if (op1Iter.IsConstructor()) continue;
+								if (op1Iter.IsUserConversion() && stackTk == tk_equal) continue;
+								if (memberIter.IsOverloadedOperator() && op1Iter.IsOverloadedOperator()) continue;
+								if (op1Iter.IsOverloadedOperator() && op1Iter.GetOverloadedOperator() != stackTk) continue;
+
+								// iterate through op2 options
+								CHtfeOperatorIter op2Iter(pOp2Type);
+								for (op2Iter.Begin(); !op2Iter.End(); op2Iter++) {
+
+									if (op2Iter.IsConstructor()) continue;
+									if (op2Iter.IsOverloadedOperator()) continue;
+
+									// check if op1Conv and op2Conv work for operation
+									if (memberIter.GetMethod() == 0 && op1Iter.GetType()->GetId() == CHtfeIdent::id_intType && op2Iter.GetType()->GetId() == CHtfeIdent::id_intType ||
+										memberIter.GetMethod() == 0 && stackTk == tk_equal && op1Iter.GetType() == op2Iter.GetType() ||
+										memberIter.GetMethod() == 0 && op1Iter.IsOverloadedOperator() && op1Iter.GetType() == op2Iter.GetType() ||
+										memberIter.GetMethod() == 0 && stackTk == tk_equal && pOp2->IsConstValue() && pOp2->GetConstValue().IsZero() ||
+										memberIter.IsOverloadedOperator() &&
+										(memberIter.GetMethod()->GetParamType(0)->GetConvType()->GetId() == CHtfeIdent::id_intType &&
+										op1Iter.GetType()->GetId() == CHtfeIdent::id_intType || memberIter.GetMethod()->GetParamType(0)->GetConvType() == op1Iter.GetType()) &&
+										(memberIter.GetMethod()->GetParamType(1)->GetConvType()->GetId() == CHtfeIdent::id_intType &&
+										op2Iter.GetType()->GetId() == CHtfeIdent::id_intType || memberIter.GetMethod()->GetParamType(1)->GetConvType() == op2Iter.GetType()))
+									{
+										int convCnt = memberIter.GetConvCnt() + op1Iter.GetConvCnt() + op2Iter.GetConvCnt();
+										if (convCnt > minConvCnt) continue;
+										if (convCnt < minConvCnt)
+											convList.clear();
+										convList.push_back(CConvPair(memberIter.GetMethod(), op1Iter.GetMethod(), op2Iter.GetMethod()));
+										minConvCnt = convCnt;
+									}
+								}
+							}
+						}
+
+						if (minConvCnt == 100)
+							ParseMsg(PARSE_ERROR, "Incompatible operands for expression");
+						else if (minConvCnt > 0) {
+							if (convList.size() == 1) {
+								// apply conversions to expression
+								if (convList[0].m_pOp2Conv) {
+									if (convList[0].m_pOp2Conv->IsNullConvOperator()) {
+										pOp2Type = convList[0].m_pOp2Conv->GetType();
+									} else {
+										CHtfeOperand *pConvMethodOp = HandleNewOperand();
+										pConvMethodOp->InitAsIdentifier(GetLineInfo(), convList[0].m_pOp2Conv);
+										pConvMethodOp->SetType(convList[0].m_pOp2Conv->GetType());
+
+										CHtfeOperand *pConvRslt = HandleNewOperand();
+										pConvRslt->InitAsOperator(GetLineInfo(), tk_period, pOp2, pConvMethodOp);
+										pConvRslt->SetType(convList[0].m_pOp2Conv->GetType());
+										pOp2 = pConvRslt;
+										pOp2Type = pOp2->GetType();
+									}
+								}
+
+								if (convList[0].m_pOp1Conv) {
+									if (convList[0].m_pOp1Conv->IsNullConvOperator()) {
+										pOp1Type = convList[0].m_pOp1Conv->GetType();
+									} else {
+										if (convList[0].m_pOp1Conv->IsUserConversion()) {
+											CHtfeOperand *pConvMethodOp = HandleNewOperand();
+											pConvMethodOp->InitAsIdentifier(GetLineInfo(), convList[0].m_pOp1Conv);
+											pConvMethodOp->SetType(convList[0].m_pOp1Conv->GetType());
+
+											CHtfeOperand *pConvRslt = HandleNewOperand();
+											pConvRslt->InitAsOperator(GetLineInfo(), tk_period, pOp1, pConvMethodOp);
+											pConvRslt->SetType(convList[0].m_pOp1Conv->GetType());
+											pOp1 = pConvRslt;
+											pOp1Type = pOp1->GetType();
+										} else if (convList[0].m_pOp1Conv->IsOverloadedOperator()) {
+											CHtfeOperand *pConvMethodOp = HandleNewOperand();
+											pConvMethodOp->InitAsFunction(GetLineInfo(), convList[0].m_pOp1Conv);
+											pConvMethodOp->SetType(convList[0].m_pOp1Conv->GetType());
+
+											vector<CHtfeOperand *> paramList;
+											paramList.push_back(pOp2);
+											pConvMethodOp->SetParamList(paramList);
+
+											CHtfeOperand *pConvRslt = HandleNewOperand();
+											pConvRslt->InitAsOperator(GetLineInfo(), tk_period, pOp1, pConvMethodOp);
+											pConvRslt->SetType(convList[0].m_pOp1Conv->GetType());
+
+											operandStack.push_back(pConvRslt);
+											break;
+										} else
+											Assert(0);
+									}
+								}
+							} else {
+								// ambiguous conversion solutions
+								ParseMsg(PARSE_ERROR, "ambiguous expression for operator %s, possible solutions are:", 
+									CHtfeLex::GetTokenString(stackTk).c_str());
+
+								for (size_t i = 0; i < convList.size(); i += 1) {
+									string memberConv;
+									if (convList[i].m_pMemberConv) {
+										memberConv = VA("operator%s ( ", CHtfeLex::GetTokenString(convList[i].m_pMemberConv->GetOverloadedOperator()).c_str());
+										memberConv += VA(" %s, %s ), ", convList[i].m_pMemberConv->GetParamType(0)->GetName().c_str(),
+											convList[i].m_pMemberConv->GetParamType(1)->GetName().c_str());
+									}
+									string op1Conv;
+									if (convList[i].m_pOp1Conv == 0)
+										op1Conv = pOp1Type->GetName();
+									else if (convList[i].m_pOp1Conv->IsOverloadedOperator()) {
+										op1Conv = "operator" + CHtfeLex::GetTokenString(convList[i].m_pOp1Conv->GetOverloadedOperator()) + " (" +
+											convList[i].m_pOp1Conv->GetParamType(0)->GetName() + ")";
+									} else if (convList[i].m_pOp1Conv->IsUserConversion()) {
+										op1Conv = "operator " + convList[i].m_pOp1Conv->GetType()->GetName() + " ()";
+									} else
+										Assert(0);
+
+									string op2Conv;
+									if (convList[i].m_pOp2Conv == 0)
+										op2Conv = pOp2Type->GetName();
+									else if (convList[i].m_pOp2Conv->IsOverloadedOperator()) {
+										op2Conv = "operator " + CHtfeLex::GetTokenString(convList[i].m_pOp2Conv->GetOverloadedOperator()) + " (" +
+											convList[i].m_pOp2Conv->GetParamType(0)->GetName() + ")";
+									} else if (convList[i].m_pOp2Conv->IsUserConversion()) {
+										op2Conv = "operator " + convList[i].m_pOp2Conv->GetType()->GetName() + " ()";
+									} else
+										Assert(0);
+
+									ParseMsg(PARSE_INFO, "%s%s, %s", memberConv.c_str(), op1Conv.c_str(), op2Conv.c_str());
+								}
+							}
+						}
+
+						pRsltType = pOp1Type;
+					}
+
 					pRslt = HandleNewOperand();
 					pRslt->InitAsOperator(GetLineInfo(), stackTk, pOp1, pOp2);
+					pRslt->SetType(pRsltType);
 					operandStack.push_back(pRslt);
 
 					if (pOp1->GetMember() && pOp1->GetMember()->IsReference() &&
@@ -5040,8 +5730,16 @@ void CHtfeDesign::ParseEvaluateExpression(CHtfeIdent *pHier, EToken tk, vector<C
 				pOp1 = operandStack.back();
 				operandStack.pop_back();
 
+				CHtfeOperatorIter op2Iter(pOp2->GetType());
+				CHtfeOperatorIter op3Iter(pOp3->GetType());
+				if (!(op2Iter.GetType()->GetId() == CHtfeIdent::id_intType && op3Iter.GetType()->GetId() == CHtfeIdent::id_intType ||
+					op2Iter.GetType() == op3Iter.GetType())) {
+					ParseMsg(PARSE_ERROR, "Incompatible operands for expression");
+				}
+
 				pRslt = HandleNewOperand();
 				pRslt->InitAsOperator(GetLineInfo(), stackTk, pOp1, pOp2, pOp3);
+				pRslt->SetType(pOp2->GetType());
 				operandStack.push_back(pRslt);
 
 				if (pOp1->GetMember()->IsVariable())
@@ -5082,7 +5780,7 @@ void CHtfeDesign::CheckForUnsafeExpression(CHtfeOperand *pExpr, EToken prevTk, b
 			}
 		}
 
-		if (pIdent->IsVariable() || pIdent->IsFunction() && !bIsLeftOfEqual && pExpr->GetMemberType() != GetVoidType()) {
+		if (pIdent->IsVariable() || pIdent->IsFunction() && !bIsLeftOfEqual && pExpr->GetType() != GetVoidType()) {
 
 			if (prevTk == tk_tilda && pIdent->GetType() == m_pBoolType && prevErrorLineInfo != pExpr->GetLineInfo()) {
 				ParseMsg(PARSE_WARNING, pExpr->GetLineInfo(), "use of ~ operator with boolean operand is not recommended");
@@ -5252,7 +5950,9 @@ void CHtfeDesign::ParseParamListDecl(CHtfeIdent *pHier, CHtfeIdent *pFunction)
 			}
 
 			// verify same type and update name
-			if (pFunction->GetParamType(paramId) != pType || pFunction->GetParamIsConst(paramId) != (typeAttrib.m_bIsConst || !bIsReference) ||
+			if (pFunction->GetParamType(paramId) != pType  && !(pFunction->GetParamType(paramId)->GetId() == CHtfeIdent::id_intType && pType->GetId() == CHtfeIdent::id_intType &&
+				pFunction->GetParamType(paramId)->GetWidth() == pType->GetWidth() && pFunction->GetParamType(paramId)->IsSigned() == pType->IsSigned()) ||
+				pFunction->GetParamIsConst(paramId) != (typeAttrib.m_bIsConst || !bIsReference) ||
 				pFunction->GetParamIsRef(paramId) != bIsReference)
 				ParseMsg(PARSE_ERROR, "previously declared parameter type does not match parameter type, overloading not supported");
 
@@ -6018,6 +6718,8 @@ void CHtfeDesign::SkipTo(EToken token)
 				lvl -= 1;
 		}
 		if (token == tk_rbrace && tk == tk_lbrace)
+			lvl += 1;
+		if (token == tk_rparen && tk == tk_lparen)
 			lvl += 1;
 	}
 }

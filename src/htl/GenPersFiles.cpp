@@ -15,30 +15,30 @@ void CDsnInfo::GenPersFiles()
 	CreateDirectoryStructure();
 
 	// Generate common include file
-    if (!g_appArgs.IsModelOnly()) {
-	    GenerateCommonIncludeFile();
+	if (!g_appArgs.IsModelOnly()) {
+		GenerateCommonIncludeFile();
 
-	    GenerateHtiFiles();
-	    GenerateHtaFiles();
+		GenerateHtiFiles();
+		GenerateHtaFiles();
 
-	    for (size_t mifIdx = 0; mifIdx < m_mifInstList.size(); mifIdx += 1)
-		    GenerateMifFiles(m_mifInstList[mifIdx].m_mifId);
+		for (size_t mifIdx = 0; mifIdx < m_mifInstList.size(); mifIdx += 1)
+			GenerateMifFiles(m_mifInstList[mifIdx].m_mifId);
 
-	    for (size_t modIdx = 0; modIdx < m_modList.size(); modIdx += 1) {
-		    CModule &mod = *m_modList[modIdx];
+		for (size_t modIdx = 0; modIdx < m_modList.size(); modIdx += 1) {
+			CModule &mod = *m_modList[modIdx];
 
-		    if (!mod.m_bIsUsed || mod.m_bHostIntf) continue;
+			if (!mod.m_bIsUsed || mod.m_bHostIntf) continue;
 
-		    GenerateModuleFiles(mod);
-	    }
+			GenerateModuleFiles(mod);
+		}
 
 		GenerateNgvFiles();
 
-	    GenHtMon();
+		GenHtMon();
 
-	    GenerateAeTopFile();
-	    GenerateUnitTopFile();
-    }
+		GenerateAeTopFile();
+		GenerateUnitTopFile();
+	}
 
 	// needs to be after the module files are generated so the list of module files is available
 	GenerateHifFiles();
@@ -56,10 +56,10 @@ void CDsnInfo::CreateDirectoryStructure()
 		int pos = rightPath.find_first_of("/\\");
 		if (pos <= 0) {
 			bDone = true;
-			pos = rightPath.size()-1;
+			pos = rightPath.size() - 1;
 		}
-		leftPath += rightPath.substr(0, pos+1);
-		rightPath = rightPath.substr(pos+1);
+		leftPath += rightPath.substr(0, pos + 1);
+		rightPath = rightPath.substr(pos + 1);
 
 		// create directory
 		int err = _mkdir(leftPath.c_str());

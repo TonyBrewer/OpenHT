@@ -40,8 +40,8 @@ test.AddReturn(func=htmain)
 	.AddParam(hostType=bool, type=bool, name=passed)
 	;
 
-test.AddReadMem(queueW=4, rspCntW=4)
+test.AddReadMem()
 	.AddDst(name=sharedData_coproc, var=sharedData, atomic=setBit63)
 	;
 
-test.AddWriteMem(queueW=4, rspCntW=2);
+test.AddWriteMem();

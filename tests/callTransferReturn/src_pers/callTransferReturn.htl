@@ -1,5 +1,6 @@
-// -cl "C:\Ht\tests\callTransferReturn\src_pers\callTransferReturn.htl"
--wd "C:\Ht\tests\callTransferReturn\msvs12\"
+// -cl $(HtToolsPath)/tests/callTransferReturn/src_pers/callTransferReturn.htl
+-wd $(HtToolsPath)/tests/callTransferReturn/msvs12/
+
 -cp hc-2
 -mt
 -ac 1

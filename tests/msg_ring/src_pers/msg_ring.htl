@@ -1,5 +1,6 @@
-// -cl "C:\Ht\tests\msg_ring\src_pers\msg_ring.htl"
--wd "C:\Ht\tests\msg_ring\msvs12\"
+// -cl $(HtToolsPath)/tests/msg_ring/src_pers/msg_ring.htl
+-wd $(HtToolsPath)/tests/msg_ring/msvs12/
+
 -cp wx-690
 -ac 1
 -uc 2

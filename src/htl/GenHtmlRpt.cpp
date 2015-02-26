@@ -56,12 +56,12 @@ CGenHtmlRpt::CGenHtmlRpt(string htlPath, string fileName, int argc, char const *
 	fprintf(m_fp, "              <br/>\n");
 	fprintf(m_fp, "            <dt>Command Line:</dt>\n");
 	fprintf(m_fp, "              <dd>");
-	for (int i=0; i<argc; i++)
+	for (int i = 0; i<argc; i++)
 		fprintf(m_fp, " %s", argv[i]);
 	fprintf(m_fp, "</dd>\n");
 }
 
-void CGenHtmlRpt::AddLevel(const char *pFormat, ... )
+void CGenHtmlRpt::AddLevel(const char *pFormat, ...)
 {
 	if (this == 0 || m_fp == 0)
 		return;
@@ -71,7 +71,7 @@ void CGenHtmlRpt::AddLevel(const char *pFormat, ... )
 	HtlAssert(!m_bPendingText);
 
 	va_list args;
-	va_start( args, pFormat );
+	va_start(args, pFormat);
 
 	char buf1[1024];
 	vsprintf(buf1, pFormat, args);
@@ -100,9 +100,9 @@ void CGenHtmlRpt::AddLevel(const char *pFormat, ... )
 		m_bPendingIndent = false;
 	}
 
-	m_bPendingText = *(p2-1) != '\n';
+	m_bPendingText = *(p2 - 1) != '\n';
 	if (!m_bPendingText)
-		*(p2-1) = '\0';
+		*(p2 - 1) = '\0';
 
 	fprintf(m_fp, "%s<li>\n", m_indent.c_str());
 	fprintf(m_fp, "%s    %s", m_indent.c_str(), buf2);
@@ -118,7 +118,7 @@ void CGenHtmlRpt::AddLevel(const char *pFormat, ... )
 		fputs(m_pendingTextStr, m_fp);
 }
 
-void CGenHtmlRpt::AddItem(const char *pFormat, ... )
+void CGenHtmlRpt::AddItem(const char *pFormat, ...)
 {
 	if (this == 0 || m_fp == 0)
 		return;
@@ -126,7 +126,7 @@ void CGenHtmlRpt::AddItem(const char *pFormat, ... )
 	HtlAssert(!m_bPendingText);
 
 	va_list args;
-	va_start( args, pFormat );
+	va_start(args, pFormat);
 
 	char buf1[1024];
 	vsprintf(buf1, pFormat, args);
@@ -149,9 +149,9 @@ void CGenHtmlRpt::AddItem(const char *pFormat, ... )
 		m_bPendingIndent = false;
 	}
 
-	m_bPendingText = *(p2-1) != '\n';
+	m_bPendingText = *(p2 - 1) != '\n';
 	if (!m_bPendingText)
-		*(p2-1) = '\0';
+		*(p2 - 1) = '\0';
 
 	fprintf(m_fp, "%s<li>\n", m_indent.c_str());
 	fprintf(m_fp, "%s    <span>%s", m_indent.c_str(), buf2);
@@ -162,7 +162,7 @@ void CGenHtmlRpt::AddItem(const char *pFormat, ... )
 		fputs(m_pendingTextStr, m_fp);
 }
 
-void CGenHtmlRpt::AddText(const char *pFormat, ... )
+void CGenHtmlRpt::AddText(const char *pFormat, ...)
 {
 	if (this == 0 || m_fp == 0)
 		return;
@@ -170,7 +170,7 @@ void CGenHtmlRpt::AddText(const char *pFormat, ... )
 	HtlAssert(m_bPendingText);
 
 	va_list args;
-	va_start( args, pFormat );
+	va_start(args, pFormat);
 
 	char buf1[1024];
 	vsprintf(buf1, pFormat, args);
@@ -187,9 +187,9 @@ void CGenHtmlRpt::AddText(const char *pFormat, ... )
 	}
 	*p2 = '\0';
 
-	m_bPendingText = *(p2-1) != '\n';
+	m_bPendingText = *(p2 - 1) != '\n';
 	if (!m_bPendingText)
-		*(p2-1) = '\0';
+		*(p2 - 1) = '\0';
 
 	fprintf(m_fp, "%s", buf2);
 

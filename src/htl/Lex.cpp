@@ -10,13 +10,58 @@
 #include "CnyHt.h"
 #include "Lex.h"
 
+CLex::CTokenTbl *CLex::m_pTokenTbl;
+
+CLex::CLex()
+{
+	m_tokenTbl.resize(TK_TOKEN_CNT);
+	m_tokenTbl[eTkLParen].SetValue(0, "(");
+	m_tokenTbl[eTkPeriod].SetValue(1, ".");
+	m_tokenTbl[eTkUnaryPlus].SetValue(3, "+");
+	m_tokenTbl[eTkUnaryMinus].SetValue(3, "-");
+	m_tokenTbl[eTkTilda].SetValue(3, "~");
+	m_tokenTbl[eTkBang].SetValue(3, "!");
+	m_tokenTbl[eTkAsterisk].SetValue(4, "*");
+	m_tokenTbl[eTkSlash].SetValue(4, "/");
+	m_tokenTbl[eTkPercent].SetValue(4, "%");
+	m_tokenTbl[eTkPlus].SetValue(5, "+");
+	m_tokenTbl[eTkMinus].SetValue(5, "-");
+	m_tokenTbl[eTkLessLess].SetValue(6, "<<");
+	m_tokenTbl[eTkGreaterGreater].SetValue(6, ">>");
+	m_tokenTbl[eTkLess].SetValue(7, "<");
+	m_tokenTbl[eTkLessEqual].SetValue(7, "<=");
+	m_tokenTbl[eTkGreater].SetValue(7, ">");
+	m_tokenTbl[eTkGreaterEqual].SetValue(7, ">=");
+	m_tokenTbl[eTkEqualEqual].SetValue(8, "==");
+	m_tokenTbl[eTkBangEqual].SetValue(8, "!=");
+	m_tokenTbl[eTkAmpersand].SetValue(9, "&");
+	m_tokenTbl[eTkCarot].SetValue(10, "^");
+	m_tokenTbl[eTkVbar].SetValue(11, "|");
+	m_tokenTbl[eTkAmpersandAmpersand].SetValue(12, "&&");
+	m_tokenTbl[eTkVbarVbar].SetValue(13, "||");
+	m_tokenTbl[eTkQuestion].SetValue(14, "?");
+	m_tokenTbl[eTkEqual].SetValue(15, "=");
+	m_tokenTbl[eTkComma].SetValue(16, ",");
+	m_tokenTbl[eTkExprBegin].SetValue(17, "");
+	m_tokenTbl[eTkExprEnd].SetValue(18, "");
+	m_tokenTbl[eTkLBrace].SetValue(-1, "{");
+	m_tokenTbl[eTkRBrace].SetValue(-1, "}");
+	m_tokenTbl[eTkRParen].SetValue(-1, ")");
+	m_tokenTbl[eTkColon].SetValue(-1, ":");
+	m_tokenTbl[eTkSemi].SetValue(-1, ";");
+	m_tokenTbl[eTkLBrack].SetValue(-1, "[");
+	m_tokenTbl[eTkRBrack].SetValue(-1, "]");
+
+	m_pTokenTbl = &m_tokenTbl;
+}
+
 bool CLex::LexOpen(string fileName)
 {
 	static char nullLine = 0;
 	m_pLine = &nullLine;
 	m_tk = eTkUnknown;
 
-    bool bOpened = CPreProcess::Open(fileName);
+	bool bOpened = CPreProcess::Open(fileName);
 	if (bOpened)
 		GetNextTk();
 	return bOpened;
@@ -24,7 +69,7 @@ bool CLex::LexOpen(string fileName)
 
 void CLex::LexClose()
 {
-    CPreProcess::Close();
+	CPreProcess::Close();
 }
 
 bool CLex::GetNextLine()
@@ -199,10 +244,10 @@ string CLex::GetExprStr(char termCh)
 {
 	string paramStr;
 	char const * pPos = m_pLine;
-	char const * pEnd = pPos;
 	CLineInfo lineInfo = m_lineInfo;
 
 	while (isspace(*pPos)) pPos += 1;
+	char const * pEnd = pPos;
 
 	if (*pPos == '"') {
 		static bool bWarn = true;
@@ -215,13 +260,13 @@ string CLex::GetExprStr(char termCh)
 		pEnd = pPos;
 		for (;;) {
 			if (*pEnd == '"') {
-				paramStr += string(pPos, pEnd-pPos);
+				paramStr += string(pPos, pEnd - pPos);
 				m_pLine = pEnd + 1;
 				return paramStr;
 			}
 
 			if (*pEnd == '\0') {
-				paramStr += string(pPos, pEnd-pPos) + " ";
+				paramStr += string(pPos, pEnd - pPos) + " ";
 				if (!GetNextLine())
 					ParseMsg(Fatal, lineInfo, "found eof while parsing parameter");
 				pEnd = pPos = m_pLine;
@@ -233,21 +278,27 @@ string CLex::GetExprStr(char termCh)
 	} else {
 		int parenCnt = 0;
 		for (;;) {
-			if (*pEnd == termCh || parenCnt == 0 && *pEnd == ')') {
-				paramStr += string(pPos, pEnd-pPos);
+			if (*pEnd == '(')
+				parenCnt += 1;
+			else if (*pEnd == ')') {
+				if (parenCnt == 0) {
+					paramStr += string(pPos, pEnd - pPos);
+					m_pLine = pEnd;
+					return paramStr;
+				} else
+					parenCnt -= 1;
+			}
+
+			if (*pEnd == termCh && parenCnt == 0) {
+				paramStr += string(pPos, pEnd - pPos);
 				m_pLine = pEnd;
 				return paramStr;
 			}
 
-			if (*pEnd == '(')
-				parenCnt += 1;
-			else if (*pEnd == ')')
-				parenCnt -= 1;
-
 			if (*pEnd == '\0') {
-				paramStr += string(pPos, pEnd-pPos) + " ";
+				paramStr += string(pPos, pEnd - pPos) + " ";
 				if (!GetNextLine())
-					ParseMsg(Fatal, lineInfo, "found eof while parsing parameter");
+					ParseMsg(Fatal, lineInfo, "found eol while parsing parameter");
 				pEnd = pPos = m_pLine;
 				continue;
 			}
@@ -256,4 +307,3 @@ string CLex::GetExprStr(char termCh)
 		}
 	}
 }
-

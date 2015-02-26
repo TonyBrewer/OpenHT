@@ -1,9 +1,11 @@
-// -cl "C:\Ht\tests\firFilter\src_pers\firFilter.htl"
--wd "C:\Ht\tests\firFilter\msvs12\"
+// -cl $(HtToolsPath)/tests/firFilter/src_pers/firFilter.htl
+-wd $(HtToolsPath)/tests/firFilter/msvs12/
+
 -cp hc-2
 -uc 1
 -un Au
 -df 150
+//-vcd_all
 -pn firFilter
 ../src_pers/firFilter.htd
 ../ht/sysc

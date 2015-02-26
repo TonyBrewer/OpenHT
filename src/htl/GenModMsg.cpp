@@ -23,10 +23,10 @@ void CDsnInfo::InitAndValidateModMsg()
 		for (size_t outIdx = 0; outIdx < mod.m_msgIntfList.size(); outIdx += 1) {
 			CMsgIntf * pMsgIntf = mod.m_msgIntfList[outIdx];
 
-			pMsgIntf->m_dimen.InitValue( pMsgIntf->m_lineInfo, false, 0 );
-			pMsgIntf->m_fanCnt.InitValue( pMsgIntf->m_lineInfo, false, 0 );
-			pMsgIntf->m_queueW.InitValue( pMsgIntf->m_lineInfo, false, 0 );
-			pMsgIntf->m_reserve.InitValue( pMsgIntf->m_lineInfo, false, 0 );
+			pMsgIntf->m_dimen.InitValue(pMsgIntf->m_lineInfo, false, 0);
+			pMsgIntf->m_fanCnt.InitValue(pMsgIntf->m_lineInfo, false, 0);
+			pMsgIntf->m_queueW.InitValue(pMsgIntf->m_lineInfo, false, 0);
+			pMsgIntf->m_reserve.InitValue(pMsgIntf->m_lineInfo, false, 0);
 		}
 	}
 
@@ -40,11 +40,11 @@ void CDsnInfo::InitAndValidateModMsg()
 		for (size_t outIdx = 0; outIdx < mod.m_msgIntfList.size(); outIdx += 1) {
 			CMsgIntf * pOutMsgIntf = mod.m_msgIntfList[outIdx];
 
-			for (size_t structIdx = 0; structIdx < m_structList.size(); structIdx += 1) {
-				CStruct & struct_ = m_structList[structIdx];
+			for (size_t structIdx = 0; structIdx < m_recordList.size(); structIdx += 1) {
+				CRecord & record = m_recordList[structIdx];
 
-				if (struct_.m_structName == pOutMsgIntf->m_type)
-					struct_.m_bNeedIntf = true;
+				if (record.m_typeName == pOutMsgIntf->m_pType->m_typeName)
+					record.m_bNeedIntf = true;
 			}
 
 			if (pOutMsgIntf->m_dir != "out") continue;
@@ -78,7 +78,7 @@ void CDsnInfo::InitAndValidateModMsg()
 						(*pOutMsgIntf->m_pIntfList).push_back(pMsgIntf);
 					}
 
-					if (pMsgIntf->m_type != pOutMsgIntf->m_type) {
+					if (pMsgIntf->m_pType->m_typeName != pOutMsgIntf->m_pType->m_typeName) {
 						ParseMsg(Error, pMsgIntf->m_lineInfo, "message interface name=%s has inconsistent type specified\n", pOutMsgIntf->m_name.c_str());
 						ParseMsg(Info, pOutMsgIntf->m_lineInfo, "  previous message interface");
 					}
@@ -90,7 +90,7 @@ void CDsnInfo::InitAndValidateModMsg()
 
 					if (pMsgIntf->m_dir == "out") {
 						if (pMsgIntf != pOutMsgIntf) {
-							ParseMsg(Error, pMsgIntf->m_lineInfo, 
+							ParseMsg(Error, pMsgIntf->m_lineInfo,
 								"message interface name=%s has multiple modules with dir=out",
 								pMsgIntf->m_name.c_str());
 							ParseMsg(Info, pOutMsgIntf->m_lineInfo, "  previous message interface");
@@ -119,14 +119,13 @@ void CDsnInfo::InitAndValidateModMsg()
 								ParseMsg(Error, pMsgIntf->m_lineInfo, "queueW > 0 for multiple inbound message interfaces is not supported");
 							else if (totalReserve > (1 << pMsgIntf->m_queueW.AsInt()))
 								ParseMsg(Warning, pMsgIntf->m_lineInfo, "outbound reserved (%d) + internal reserved (6) exceeds queue size (%d)",
-									pOutMsgIntf->m_reserve.AsInt(), 1 << pMsgIntf->m_queueW.AsInt());
+								pOutMsgIntf->m_reserve.AsInt(), 1 << pMsgIntf->m_queueW.AsInt());
 
 							pOutMsgIntf->m_bInboundQueue = true;
 						}
 
-						if (pMsgIntf->m_srcFanout > 1 || pMsgIntf->m_srcReplCnt > 1 || 
-							pOutMsgIntf->m_srcFanout > 1 || pOutMsgIntf->m_srcReplCnt > 1)
-						{
+						if (pMsgIntf->m_srcFanout > 1 || pMsgIntf->m_srcReplCnt > 1 ||
+							pOutMsgIntf->m_srcFanout > 1 || pOutMsgIntf->m_srcReplCnt > 1) {
 							int srcFanout = pOutMsgIntf->m_srcFanout;
 							int srcReplCnt = pOutMsgIntf->m_srcReplCnt;
 
@@ -161,11 +160,11 @@ void CDsnInfo::InitAndValidateModMsg()
 							case SRC_FO | DST_FO | DST_RC:
 							case SRC_FO | SRC_RC:
 							case SRC_FO | SRC_RC | DST_FO:
-								ParseMsg(Error, pOutMsgIntf->m_lineInfo, 
+								ParseMsg(Error, pOutMsgIntf->m_lineInfo,
 									"message interface name=%s has unsupported replCnt/fanin, replCnt/fanout values\n", pOutMsgIntf->m_name.c_str());
-								ParseMsg(Info, pOutMsgIntf->m_lineInfo, "AddMsgIntf fanout=%d, module replication cnt=%d", 
+								ParseMsg(Info, pOutMsgIntf->m_lineInfo, "AddMsgIntf fanout=%d, module replication cnt=%d",
 									srcFanout, srcReplCnt);
-								ParseMsg(Info, pMsgIntf->m_lineInfo, "AddMsgIntf fanin=%d, module replication cnt=%d", 
+								ParseMsg(Info, pMsgIntf->m_lineInfo, "AddMsgIntf fanin=%d, module replication cnt=%d",
 									dstFanin, dstReplCnt);
 								break;
 							default:
@@ -177,9 +176,9 @@ void CDsnInfo::InitAndValidateModMsg()
 			}
 
 			if (!bFoundIn)
-				ParseMsg(Error, pOutMsgIntf->m_lineInfo, 
-					"message interface name=%s has a module with dir=out, but no modules with dir=in", 
-					pOutMsgIntf->m_name.c_str());
+				ParseMsg(Error, pOutMsgIntf->m_lineInfo,
+				"message interface name=%s has a module with dir=out, but no modules with dir=in",
+				pOutMsgIntf->m_name.c_str());
 		}
 	}
 
@@ -196,8 +195,8 @@ void CDsnInfo::InitAndValidateModMsg()
 
 			if (pMsgIntf->m_outModName.size() == 0)
 				ParseMsg(Error, pMsgIntf->m_lineInfo,
-					"message interface name=%s has a module with dir=in, but no modules with dir=out", 
-					pMsgIntf->m_name.c_str());
+				"message interface name=%s has a module with dir=in, but no modules with dir=out",
+				pMsgIntf->m_name.c_str());
 		}
 	}
 
@@ -297,7 +296,7 @@ void CDsnInfo::InitAndValidateModMsg()
 				static bool bErrorMsg = true;
 				if (bErrorMsg) {
 					bErrorMsg = false;
-					ParseMsg(Info, pMsgIntfConn->m_lineInfo, "  unit: %s path: %s", 
+					ParseMsg(Info, pMsgIntfConn->m_lineInfo, "  unit: %s path: %s",
 						pMsgIntfConn->m_outUnit.c_str(), pMsgIntfConn->m_outPath.c_str());
 					ParseMsg(Info, pMsgIntfConn->m_lineInfo, "List of outbound message interfaces");
 					for (size_t modIdx = 0; modIdx < m_modList.size(); modIdx += 1) {
@@ -318,18 +317,18 @@ void CDsnInfo::InitAndValidateModMsg()
 
 							string unitIdxStr;
 							if (g_appArgs.GetAeUnitCnt() > 1)
-								unitIdxStr = VA("[0-%d]", g_appArgs.GetAeUnitCnt()-1);
+								unitIdxStr = VA("[0-%d]", g_appArgs.GetAeUnitCnt() - 1);
 
 							int replCnt = pMod->m_modInstList[0].m_replCnt;
 							string replStr;
 							if (replCnt > 1)
-								replStr = VA("[0-%d]", replCnt-1);
+								replStr = VA("[0-%d]", replCnt - 1);
 
 							string msgIdxStr;
 							if (pMsgIntf->m_fanCnt.size() > 0)
-								msgIdxStr = pMsgIntf->m_fanCnt.AsInt() == 1 ? "[0]" : VA("[0-%d]", pMsgIntf->m_fanCnt.AsInt()-1);
+								msgIdxStr = pMsgIntf->m_fanCnt.AsInt() == 1 ? "[0]" : VA("[0-%d]", pMsgIntf->m_fanCnt.AsInt() - 1);
 							if (pMsgIntf->m_dimen.size() > 0)
-								msgIdxStr += pMsgIntf->m_dimen.AsInt() == 1 ? "[0]" : VA("[0-%d]", pMsgIntf->m_dimen.AsInt()-1);
+								msgIdxStr += pMsgIntf->m_dimen.AsInt() == 1 ? "[0]" : VA("[0-%d]", pMsgIntf->m_dimen.AsInt() - 1);
 
 							ParseMsg(Info, pMsgIntfConn->m_lineInfo, "  unit: %s%s path: %s%s/%s%s",
 								unitName.c_str(), unitIdxStr.c_str(),
@@ -344,7 +343,7 @@ void CDsnInfo::InitAndValidateModMsg()
 				static bool bErrorMsg = true;
 				if (bErrorMsg) {
 					bErrorMsg = false;
-					ParseMsg(Info, pMsgIntfConn->m_lineInfo, "  unit: %s path: %s", 
+					ParseMsg(Info, pMsgIntfConn->m_lineInfo, "  unit: %s path: %s",
 						pMsgIntfConn->m_inUnit.c_str(), pMsgIntfConn->m_inPath.c_str());
 					ParseMsg(Info, pMsgIntfConn->m_lineInfo, "List of outbound message interfaces");
 					for (size_t modIdx = 0; modIdx < m_modList.size(); modIdx += 1) {
@@ -365,18 +364,18 @@ void CDsnInfo::InitAndValidateModMsg()
 
 							string unitIdxStr;
 							if (g_appArgs.GetAeUnitCnt() > 1)
-								unitIdxStr = VA("[0-%d]", g_appArgs.GetAeUnitCnt()-1);
+								unitIdxStr = VA("[0-%d]", g_appArgs.GetAeUnitCnt() - 1);
 
 							int replCnt = pMod->m_modInstList[0].m_replCnt;
 							string replStr;
 							if (replCnt > 1)
-								replStr = VA("[0-%d]", replCnt-1);
+								replStr = VA("[0-%d]", replCnt - 1);
 
 							string msgIdxStr;
 							if (pMsgIntf->m_fanCnt.size() > 0)
-								msgIdxStr = pMsgIntf->m_fanCnt.AsInt() == 1 ? "[0]" : VA("[0-%d]", pMsgIntf->m_fanCnt.AsInt()-1);
+								msgIdxStr = pMsgIntf->m_fanCnt.AsInt() == 1 ? "[0]" : VA("[0-%d]", pMsgIntf->m_fanCnt.AsInt() - 1);
 							if (pMsgIntf->m_dimen.size() > 0)
-								msgIdxStr += pMsgIntf->m_dimen.AsInt() == 1 ? "[0]" : VA("[0-%d]", pMsgIntf->m_dimen.AsInt()-1);
+								msgIdxStr += pMsgIntf->m_dimen.AsInt() == 1 ? "[0]" : VA("[0-%d]", pMsgIntf->m_dimen.AsInt() - 1);
 
 							ParseMsg(Info, pMsgIntfConn->m_lineInfo, "  unit: %s%s path: %s%s/%s%s",
 								unitName.c_str(), unitIdxStr.c_str(),
@@ -408,7 +407,7 @@ void CDsnInfo::InitAndValidateModMsg()
 
 					if (pConn->m_inMsgIntf.m_pMsgIntf->m_queueW.AsInt() > 0 && msgConnList.size() > 1)
 						bError = true;
-						break;
+					break;
 				}
 			}
 
@@ -437,7 +436,7 @@ void CDsnInfo::InitAndValidateModMsg()
 			if (pMsgIntf->m_bAeConn) msgIntfInstCnt *= unitCnt;
 
 			for (int idx = 0; idx < msgIntfInstCnt; idx += 1) {
-				if (pMsgIntf->m_msgIntfInstList.size() > (size_t)idx && pMsgIntf->m_msgIntfInstList[idx].size() > 0) continue;
+				if (pMsgIntf->m_msgIntfInstList.size() >(size_t)idx && pMsgIntf->m_msgIntfInstList[idx].size() > 0) continue;
 
 				int msgDimenIdx = idx % msgDimenCnt;
 				int msgFanIdx = (idx / msgDimenCnt) % msgFanCnt;
@@ -456,7 +455,7 @@ void CDsnInfo::InitAndValidateModMsg()
 				msgPath += "/" + pMsgIntf->m_name;
 				if (pMsgIntf->m_fanCnt.size() > 0) msgPath += VA("[%d]", msgFanIdx);
 				if (pMsgIntf->m_dimen.size() > 0) msgPath += VA("[%d]", msgDimenIdx);
-				
+
 				ParseMsg(Error, pMsgIntf->m_lineInfo, "message interface not connected: unit %s, path %s", msgUnit.c_str(), msgPath.c_str());
 			}
 		}
@@ -541,10 +540,10 @@ void CDsnInfo::SetMsgIntfConnUsedFlags(bool bInBound, CMsgIntfConn * pConn, CMod
 
 	if (bInBound) {
 		pMsgIntf->m_outModName = pConn->m_outMsgIntf.m_pMod->m_modName;
-		if (pConn->m_type.size() > 0 && pConn->m_type != pMsgIntf->m_type)
-			ParseMsg(Error, pConn->m_lineInfo, "incompatible message types: %s and %s", pConn->m_type.c_str(), pMsgIntf->m_type.c_str());
+		if (pConn->m_type.size() > 0 && pConn->m_type != pMsgIntf->m_pType->m_typeName)
+			ParseMsg(Error, pConn->m_lineInfo, "incompatible message types: %s and %s", pConn->m_type.c_str(), pMsgIntf->m_pType->m_typeName.c_str());
 	} else {
-		pConn->m_type = pMsgIntf->m_type;
+		pConn->m_type = pMsgIntf->m_pType->m_typeName;
 	}
 }
 
@@ -581,14 +580,14 @@ void CDsnInfo::GenModMsgStatements(CModule &mod)
 			vector<CHtString> dimenList;
 			if (pMsgIntf->m_dimen.AsInt() > 0) {
 				intfDecl = VA("[%d]", pMsgIntf->m_dimen.AsInt());
-				intfParam = VA("ht_uint%d dimenIdx", FindLg2(pMsgIntf->m_dimen.AsInt()-1));
+				intfParam = VA("ht_uint%d dimenIdx", FindLg2(pMsgIntf->m_dimen.AsInt() - 1));
 				intfParamIdx = "[dimenIdx]";
 				dimenList.push_back(pMsgIntf->m_dimen);
 			}
 			if (pMsgIntf->m_fanCnt.AsInt() > 0) {
 				intfDecl += VA("[%d]", pMsgIntf->m_fanCnt.AsInt());
 				if (intfParam.size() > 0) intfParam += ", ";
-				intfParam += VA("ht_uint%d replIdx", FindLg2(pMsgIntf->m_fanCnt.AsInt()-1));
+				intfParam += VA("ht_uint%d replIdx", FindLg2(pMsgIntf->m_fanCnt.AsInt() - 1));
 				intfParamIdx += "[replIdx]";
 				dimenList.push_back(pMsgIntf->m_fanCnt);
 			}
@@ -596,11 +595,11 @@ void CDsnInfo::GenModMsgStatements(CModule &mod)
 			m_msgIoDecl.Append("\tsc_in<bool> i_%sToAu_%sMsgRdy%s;\n",
 				pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfDecl.c_str());
 			m_msgIoDecl.Append("\tsc_in<%s> i_%sToAu_%sMsg%s;\n",
-				pMsgIntf->m_type.c_str(), pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfDecl.c_str());
+				pMsgIntf->m_pType->m_typeName.c_str(), pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfDecl.c_str());
 
 			if (pMsgIntf->m_queueW.AsInt() > 0)
 				m_msgIoDecl.Append("\tsc_out<bool> o_auTo%s_%sMsgFull%s;\n",
-					pMsgIntf->m_outModName.Uc().c_str(), pMsgIntf->m_name.c_str(), intfDecl.c_str());
+				pMsgIntf->m_outModName.Uc().c_str(), pMsgIntf->m_name.c_str(), intfDecl.c_str());
 
 			m_msgIoDecl.Append("\n");
 
@@ -609,19 +608,19 @@ void CDsnInfo::GenModMsgStatements(CModule &mod)
 				m_msgRegDecl.Append("\tbool r_%sToAu_%sMsgInRdy%s;\n",
 					pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfDecl.c_str());
 				m_msgRegDecl.Append("\t%s r_%sToAu_%sMsgIn%s;\n",
-					pMsgIntf->m_type.c_str(), pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfDecl.c_str());
+					pMsgIntf->m_pType->m_typeName.c_str(), pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfDecl.c_str());
 
 			} else {
 				m_msgRegDecl.Append("\tht_%s_que<%s, %d> m_%sToAu_%sMsgQue%s;\n",
 					pMsgIntf->m_queueW.AsInt() > 6 ? "block" : "dist",
-					pMsgIntf->m_type.c_str(), pMsgIntf->m_queueW.AsInt(), 
+					pMsgIntf->m_pType->m_typeName.c_str(), pMsgIntf->m_queueW.AsInt(),
 					pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfDecl.c_str());
 				m_msgRegDecl.Append("\tbool r_auTo%s_%sMsgInFull%s;\n",
 					pMsgIntf->m_outModName.Uc().c_str(), pMsgIntf->m_name.c_str(), intfDecl.c_str());
 				m_msgRegDecl.Append("\tbool r_%sToAu_%sMsgRdy%s;\n",
 					pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfDecl.c_str());
 				m_msgRegDecl.Append("\t%s r_%sToAu_%sMsg%s;\n",
-					pMsgIntf->m_type.c_str(), 
+					pMsgIntf->m_pType->m_typeName.c_str(),
 					pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfDecl.c_str());
 				m_msgRegDecl.Append("\tbool c_%sToAu_%sMsgPop%s;\n",
 					pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfDecl.c_str());
@@ -630,17 +629,17 @@ void CDsnInfo::GenModMsgStatements(CModule &mod)
 			m_msgRegDecl.Append("\n");
 
 			if (pMsgIntf->m_queueW.AsInt() == 0) {
-				{
-					vector<int> refList(dimenList.size());
-					do {
-						string intfIdx = IndexStr(refList);
+					{
+						vector<int> refList(dimenList.size());
+						do {
+							string intfIdx = IndexStr(refList);
 
-						msgReg.Append("\tr_%sToAu_%sMsgInRdy%s = i_%sToAu_%sMsgRdy%s;\n",
-							pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str(),
-							pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str());
+							msgReg.Append("\tr_%sToAu_%sMsgInRdy%s = i_%sToAu_%sMsgRdy%s;\n",
+								pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str(),
+								pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str());
 
-					} while (DimenIter(dimenList, refList));
-				}
+						} while (DimenIter(dimenList, refList));
+					}
 
 				{
 					vector<int> refList(dimenList.size());
@@ -656,16 +655,16 @@ void CDsnInfo::GenModMsgStatements(CModule &mod)
 
 			} else {
 
-				{
-					vector<int> refList(dimenList.size());
-					do {
-						string intfIdx = IndexStr(refList);
+					{
+						vector<int> refList(dimenList.size());
+						do {
+							string intfIdx = IndexStr(refList);
 
-					msgPreInstr.Append("\tc_%sToAu_%sMsgPop%s = false;\n",
-						pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str());
+							msgPreInstr.Append("\tc_%sToAu_%sMsgPop%s = false;\n",
+								pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str());
 
-					} while (DimenIter(dimenList, refList));
-				}
+						} while (DimenIter(dimenList, refList));
+					}
 				msgPreInstr.Append("\n");
 
 				{
@@ -711,14 +710,14 @@ void CDsnInfo::GenModMsgStatements(CModule &mod)
 						msgPostInstr.Append("\tc_auTo%s_%sMsgFull%s = m_%sToAu_%sMsgQue%s.full(%d);\n",
 							pMsgIntf->m_outModName.Uc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str(),
 							pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str(),
-							maxReserved+6);
+							maxReserved + 6);
 
 					} while (DimenIter(dimenList, refList));
 				}
 
 				{
 					msgPostInstr.Append("\t%s c_%sToAu_%sMsg%s;\n",
-						pMsgIntf->m_type.c_str(),
+						pMsgIntf->m_pType->m_typeName.c_str(),
 						pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfDecl.c_str());
 
 					vector<int> refList(dimenList.size());
@@ -895,18 +894,18 @@ void CDsnInfo::GenModMsgStatements(CModule &mod)
 
 					if (pMsgIntf->m_queueW.AsInt() == 0)
 						msgPostReg.Append("\tc_RecvMsgBusy_%s%s = !r_%sToAu_%sMsgInRdy%s;\n",
-							pMsgIntf->m_name.c_str(), intfIdx.c_str(),
-							pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str());
+						pMsgIntf->m_name.c_str(), intfIdx.c_str(),
+						pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str());
 					else
 						msgPostReg.Append("\tc_RecvMsgBusy_%s%s = !r_%sToAu_%sMsgRdy%s;\n",
-							pMsgIntf->m_name.c_str(), intfIdx.c_str(),
-							pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str());
+						pMsgIntf->m_name.c_str(), intfIdx.c_str(),
+						pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str());
 
 				} while (DimenIter(dimenList, refList));
 			}
 
 			g_appArgs.GetDsnRpt().AddItem("bool RecvMsgBusy_%s(%s)\n",
-				pMsgIntf->m_name.c_str(), intfParam.c_str()); 
+				pMsgIntf->m_name.c_str(), intfParam.c_str());
 			m_msgFuncDecl.Append("\tbool RecvMsgBusy_%s(%s);\n",
 				pMsgIntf->m_name.c_str(), intfParam.c_str());
 			m_msgFuncDef.Append("bool CPers%s%s::RecvMsgBusy_%s(%s)\n",
@@ -934,7 +933,7 @@ void CDsnInfo::GenModMsgStatements(CModule &mod)
 			}
 
 			g_appArgs.GetDsnRpt().AddItem("bool RecvMsgReady_%s(%s)\n",
-				pMsgIntf->m_name.c_str(), intfParam.c_str()); 
+				pMsgIntf->m_name.c_str(), intfParam.c_str());
 			m_msgFuncDecl.Append("\tbool RecvMsgReady_%s(%s);\n",
 				pMsgIntf->m_name.c_str(), intfParam.c_str());
 			m_msgFuncDef.Append("bool CPers%s%s::RecvMsgReady_%s(%s)\n",
@@ -952,11 +951,11 @@ void CDsnInfo::GenModMsgStatements(CModule &mod)
 			m_msgFuncDef.Append("\n");
 
 			g_appArgs.GetDsnRpt().AddItem("%s PeekMsg_%s(%s)\n",
-				pMsgIntf->m_type.c_str(), pMsgIntf->m_name.c_str(), intfParam.c_str());
+				pMsgIntf->m_pType->m_typeName.c_str(), pMsgIntf->m_name.c_str(), intfParam.c_str());
 			m_msgFuncDecl.Append("\t%s PeekMsg_%s(%s);\n",
-				pMsgIntf->m_type.c_str(), pMsgIntf->m_name.c_str(), intfParam.c_str());
+				pMsgIntf->m_pType->m_typeName.c_str(), pMsgIntf->m_name.c_str(), intfParam.c_str());
 			m_msgFuncDef.Append("%s CPers%s%s::PeekMsg_%s(%s)\n",
-				pMsgIntf->m_type.c_str(), unitNameUc.c_str(), mod.m_modName.Uc().c_str(), pMsgIntf->m_name.c_str(), intfParam.c_str());
+				pMsgIntf->m_pType->m_typeName.c_str(), unitNameUc.c_str(), mod.m_modName.Uc().c_str(), pMsgIntf->m_name.c_str(), intfParam.c_str());
 			m_msgFuncDef.Append("{\n");
 
 			if (pMsgIntf->m_queueW.AsInt() == 0)
@@ -971,11 +970,11 @@ void CDsnInfo::GenModMsgStatements(CModule &mod)
 			m_msgFuncDef.Append("\n");
 
 			g_appArgs.GetDsnRpt().AddItem("%s RecvMsg_%s(%s)\n",
-				pMsgIntf->m_type.c_str(), pMsgIntf->m_name.c_str(), intfParam.c_str());
+				pMsgIntf->m_pType->m_typeName.c_str(), pMsgIntf->m_name.c_str(), intfParam.c_str());
 			m_msgFuncDecl.Append("\t%s RecvMsg_%s(%s);\n",
-				pMsgIntf->m_type.c_str(), pMsgIntf->m_name.c_str(), intfParam.c_str());
+				pMsgIntf->m_pType->m_typeName.c_str(), pMsgIntf->m_name.c_str(), intfParam.c_str());
 			m_msgFuncDef.Append("%s CPers%s%s::RecvMsg_%s(%s)\n",
-				pMsgIntf->m_type.c_str(), unitNameUc.c_str(), mod.m_modName.Uc().c_str(), pMsgIntf->m_name.c_str(), intfParam.c_str());
+				pMsgIntf->m_pType->m_typeName.c_str(), unitNameUc.c_str(), mod.m_modName.Uc().c_str(), pMsgIntf->m_name.c_str(), intfParam.c_str());
 			m_msgFuncDef.Append("{\n");
 
 			if (pMsgIntf->m_queueW.AsInt() == 0)
@@ -1010,7 +1009,7 @@ void CDsnInfo::GenModMsgStatements(CModule &mod)
 			if (!bOut) {
 				m_msgIoDecl.Append("\t// Outbound Message interfaces\n");
 				g_appArgs.GetDsnRpt().AddLevel("Outbound Message\n");
-				
+
 				bOut = true;
 			}
 
@@ -1021,42 +1020,42 @@ void CDsnInfo::GenModMsgStatements(CModule &mod)
 			vector<CHtString> dimenList;
 			if (pMsgIntf->m_dimen.AsInt() > 0) {
 				intfDecl = VA("[%d]", pMsgIntf->m_dimen.AsInt());
-				intfParam = VA("ht_uint%d dimenIdx", FindLg2(pMsgIntf->m_dimen.AsInt()-1));
-				intfParamNoload = VA("ht_noload ht_uint%d dimenIdx", FindLg2(pMsgIntf->m_dimen.AsInt()-1));
+				intfParam = VA("ht_uint%d dimenIdx", FindLg2(pMsgIntf->m_dimen.AsInt() - 1));
+				intfParamNoload = VA("ht_noload ht_uint%d dimenIdx", FindLg2(pMsgIntf->m_dimen.AsInt() - 1));
 				intfParamIdx = "[dimenIdx]";
 				dimenList.push_back(pMsgIntf->m_dimen);
 			}
 			if (pMsgIntf->m_fanCnt.AsInt() > 0) {
 				intfDecl += VA("[%d]", pMsgIntf->m_fanCnt.AsInt());
 				if (intfParam.size() > 0) intfParam += ", ";
-				intfParam += VA("ht_uint%d replIdx", FindLg2(pMsgIntf->m_fanCnt.AsInt()-1));
-				intfParamNoload += VA("ht_noload ht_uint%d replIdx", FindLg2(pMsgIntf->m_fanCnt.AsInt()-1));
+				intfParam += VA("ht_uint%d replIdx", FindLg2(pMsgIntf->m_fanCnt.AsInt() - 1));
+				intfParamNoload += VA("ht_noload ht_uint%d replIdx", FindLg2(pMsgIntf->m_fanCnt.AsInt() - 1));
 				intfParamIdx += "[replIdx]";
 				dimenList.push_back(pMsgIntf->m_fanCnt);
 			}
 
 			m_msgIoDecl.Append("\tsc_out<bool> o_%sToAu_%sMsgRdy%s;\n",
 				mod.m_modName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfDecl.c_str());
-			m_msgIoDecl.Append("\tsc_out<%s> o_%sToAu_%sMsg%s;\n", 
-				pMsgIntf->m_type.c_str(), mod.m_modName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfDecl.c_str());
+			m_msgIoDecl.Append("\tsc_out<%s> o_%sToAu_%sMsg%s;\n",
+				pMsgIntf->m_pType->m_typeName.c_str(), mod.m_modName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfDecl.c_str());
 
 			if (pMsgIntf->m_bInboundQueue)
 				m_msgIoDecl.Append("\tsc_in<bool> i_auTo%s_%sMsgFull%s;\n",
-					mod.m_modName.Uc().c_str(), pMsgIntf->m_name.c_str(), intfDecl.c_str());
+				mod.m_modName.Uc().c_str(), pMsgIntf->m_name.c_str(), intfDecl.c_str());
 			m_msgIoDecl.Append("\n");
 
 			m_msgRegDecl.Append("\tbool c_%sToAu_%sMsgOutRdy%s;\n",
 				mod.m_modName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfDecl.c_str());
 			m_msgRegDecl.Append("\tbool r_%sToAu_%sMsgOutRdy%s;\n",
 				mod.m_modName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfDecl.c_str());
-			m_msgRegDecl.Append("\t%s c_%sToAu_%sMsgOut%s;\n", 
-				pMsgIntf->m_type.c_str(), mod.m_modName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfDecl.c_str());
+			m_msgRegDecl.Append("\t%s c_%sToAu_%sMsgOut%s;\n",
+				pMsgIntf->m_pType->m_typeName.c_str(), mod.m_modName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfDecl.c_str());
 			m_msgRegDecl.Append("\t%s r_%sToAu_%sMsgOut%s;\n",
-				pMsgIntf->m_type.c_str(), mod.m_modName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfDecl.c_str());
+				pMsgIntf->m_pType->m_typeName.c_str(), mod.m_modName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfDecl.c_str());
 
 			if (pMsgIntf->m_bInboundQueue)
 				m_msgRegDecl.Append("\tbool r_auTo%s_%sMsgOutFull%s;\n",
-					mod.m_modName.Uc().c_str(), pMsgIntf->m_name.c_str(), intfDecl.c_str());
+				mod.m_modName.Uc().c_str(), pMsgIntf->m_name.c_str(), intfDecl.c_str());
 
 			m_msgRegDecl.Append("\n");
 
@@ -1065,8 +1064,8 @@ void CDsnInfo::GenModMsgStatements(CModule &mod)
 				do {
 					string intfIdx = IndexStr(refList);
 
-				msgPreInstr.Append("\tc_%sToAu_%sMsgOutRdy%s = false;\n", 
-					mod.m_modName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str());
+					msgPreInstr.Append("\tc_%sToAu_%sMsgOutRdy%s = false;\n",
+						mod.m_modName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str());
 
 				} while (DimenIter(dimenList, refList));
 			}
@@ -1076,8 +1075,8 @@ void CDsnInfo::GenModMsgStatements(CModule &mod)
 				do {
 					string intfIdx = IndexStr(refList);
 
-				msgPreInstr.Append("\tc_%sToAu_%sMsgOut%s = 0;\n",
-					mod.m_modName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str());
+					msgPreInstr.Append("\tc_%sToAu_%sMsgOut%s = 0;\n",
+						mod.m_modName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str());
 
 				} while (DimenIter(dimenList, refList));
 			}
@@ -1088,9 +1087,9 @@ void CDsnInfo::GenModMsgStatements(CModule &mod)
 				do {
 					string intfIdx = IndexStr(refList);
 
-				msgReg.Append("\tr_%sToAu_%sMsgOutRdy%s = c_%sToAu_%sMsgOutRdy%s;\n",
-					mod.m_modName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str(),
-					mod.m_modName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str());
+					msgReg.Append("\tr_%sToAu_%sMsgOutRdy%s = c_%sToAu_%sMsgOutRdy%s;\n",
+						mod.m_modName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str(),
+						mod.m_modName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str());
 
 				} while (DimenIter(dimenList, refList));
 			}
@@ -1100,9 +1099,9 @@ void CDsnInfo::GenModMsgStatements(CModule &mod)
 				do {
 					string intfIdx = IndexStr(refList);
 
-				msgReg.Append("\tr_%sToAu_%sMsgOut%s = c_%sToAu_%sMsgOut%s;\n",
-					mod.m_modName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str(),
-					mod.m_modName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str());
+					msgReg.Append("\tr_%sToAu_%sMsgOut%s = c_%sToAu_%sMsgOut%s;\n",
+						mod.m_modName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str(),
+						mod.m_modName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str());
 
 				} while (DimenIter(dimenList, refList));
 			}
@@ -1112,9 +1111,9 @@ void CDsnInfo::GenModMsgStatements(CModule &mod)
 				do {
 					string intfIdx = IndexStr(refList);
 
-				msgReg.Append("\tr_auTo%s_%sMsgOutFull%s = i_auTo%s_%sMsgFull%s;\n",
-					mod.m_modName.Uc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str(),
-					mod.m_modName.Uc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str());
+					msgReg.Append("\tr_auTo%s_%sMsgOutFull%s = i_auTo%s_%sMsgFull%s;\n",
+						mod.m_modName.Uc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str(),
+						mod.m_modName.Uc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str());
 
 				} while (DimenIter(dimenList, refList));
 			}
@@ -1125,9 +1124,9 @@ void CDsnInfo::GenModMsgStatements(CModule &mod)
 				do {
 					string intfIdx = IndexStr(refList);
 
-				msgOut.Append("\to_%sToAu_%sMsgRdy%s = r_%sToAu_%sMsgOutRdy%s;\n",
-					mod.m_modName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str(),
-					mod.m_modName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str());
+					msgOut.Append("\to_%sToAu_%sMsgRdy%s = r_%sToAu_%sMsgOutRdy%s;\n",
+						mod.m_modName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str(),
+						mod.m_modName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str());
 
 				} while (DimenIter(dimenList, refList));
 			}
@@ -1137,9 +1136,9 @@ void CDsnInfo::GenModMsgStatements(CModule &mod)
 				do {
 					string intfIdx = IndexStr(refList);
 
-				msgOut.Append("\to_%sToAu_%sMsg%s = r_%sToAu_%sMsgOut%s;\n",
-					mod.m_modName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str(),
-					mod.m_modName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str());
+					msgOut.Append("\to_%sToAu_%sMsg%s = r_%sToAu_%sMsgOut%s;\n",
+						mod.m_modName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str(),
+						mod.m_modName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str());
 
 				} while (DimenIter(dimenList, refList));
 			}
@@ -1168,7 +1167,7 @@ void CDsnInfo::GenModMsgStatements(CModule &mod)
 
 			if (pMsgIntf->m_bInboundQueue)
 				m_msgFuncDef.Append("\treturn r_auTo%s_%sMsgOutFull%s;\n",
-					mod.m_modName.Uc().c_str(), pMsgIntf->m_name.c_str(), intfParamIdx.c_str());
+				mod.m_modName.Uc().c_str(), pMsgIntf->m_name.c_str(), intfParamIdx.c_str());
 			else
 				m_msgFuncDef.Append("\treturn false;\n");
 
@@ -1198,7 +1197,7 @@ void CDsnInfo::GenModMsgStatements(CModule &mod)
 
 			if (pMsgIntf->m_bInboundQueue)
 				m_msgFuncDef.Append("\treturn r_auTo%s_%sMsgOutFull%s;\n",
-					mod.m_modName.Uc().c_str(), pMsgIntf->m_name.c_str(), intfParamIdx.c_str());
+				mod.m_modName.Uc().c_str(), pMsgIntf->m_name.c_str(), intfParamIdx.c_str());
 			else
 				m_msgFuncDef.Append("\treturn false;\n");
 
@@ -1207,14 +1206,14 @@ void CDsnInfo::GenModMsgStatements(CModule &mod)
 
 			if (intfParam.size() > 0) intfParam += ", ";
 
-			g_appArgs.GetDsnRpt().AddItem("void SendMsg_%s(%s%s msg)\n", 
-				pMsgIntf->m_name.c_str(), intfParam.c_str(), pMsgIntf->m_type.c_str());
+			g_appArgs.GetDsnRpt().AddItem("void SendMsg_%s(%s%s msg)\n",
+				pMsgIntf->m_name.c_str(), intfParam.c_str(), pMsgIntf->m_pType->m_typeName.c_str());
 			m_msgFuncDecl.Append("\tvoid SendMsg_%s(%s%s msg);\n",
-				pMsgIntf->m_name.c_str(), intfParam.c_str(), pMsgIntf->m_type.c_str());
+				pMsgIntf->m_name.c_str(), intfParam.c_str(), pMsgIntf->m_pType->m_typeName.c_str());
 			m_msgFuncDef.Append("void CPers%s%s::SendMsg_%s(%s%s msg)\n",
-				unitNameUc.c_str(), mod.m_modName.Uc().c_str(), pMsgIntf->m_name.c_str(), intfParam.c_str(), pMsgIntf->m_type.c_str());
+				unitNameUc.c_str(), mod.m_modName.Uc().c_str(), pMsgIntf->m_name.c_str(), intfParam.c_str(), pMsgIntf->m_pType->m_typeName.c_str());
 			m_msgFuncDef.Append("{\n");
-			m_msgFuncDef.Append("\tc_%sToAu_%sMsgOutRdy%s = true;\n", 
+			m_msgFuncDef.Append("\tc_%sToAu_%sMsgOutRdy%s = true;\n",
 				mod.m_modName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfParamIdx.c_str());
 			m_msgFuncDef.Append("\tc_%sToAu_%sMsgOut%s = msg;\n",
 				mod.m_modName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfParamIdx.c_str());
@@ -1234,7 +1233,7 @@ void CDsnInfo::GenAeNextMsgIntf(HtiFile::CMsgIntfConn * pMicAeNext)
 	bitWidth.SetValue(0);
 
 	int msgDwCnt = (FindTypeWidth(varName, pMicAeNext->m_type, bitWidth, pMicAeNext->m_lineInfo) + 31) / 32;
-	int msgDwCntW = FindLg2(msgDwCnt-1);
+	int msgDwCntW = FindLg2(msgDwCnt - 1);
 	{
 		////////////////////////////////////////////////////////////////
 		// Generate PersMonSb.h file
@@ -1290,7 +1289,8 @@ void CDsnInfo::GenAeNextMsgIntf(HtiFile::CMsgIntfConn * pMicAeNext)
 			fprintf(incFile, "\n");
 
 			fprintf(incFile, "#\tifndef _HTV\n");
-			fprintf(incFile, "\tvoid start_of_simulation() {\n");
+			fprintf(incFile, "\tvoid start_of_simulation()\n");
+			fprintf(incFile, "\t{\n");
 			fprintf(incFile, "\t\tsc_trace(Ht::g_vcdp, r_mon_valid, (std::string)name() + \".r_mon_valid\");\n");
 			if (msgDwCnt > 1) {
 				fprintf(incFile, "\t\tsc_trace(Ht::g_vcdp, r_mon_data, (std::string)name() + \".r_mon_data\");\n");
@@ -1340,7 +1340,7 @@ void CDsnInfo::GenAeNextMsgIntf(HtiFile::CMsgIntfConn * pMicAeNext)
 
 			fprintf(cppFile, "\tht_uint%d c_msgIdx = r_msgIdx;\n", msgDwCntW);
 			fprintf(cppFile, "\tif (!m_msg.empty() && !r_mon_stall) {\n");
-			fprintf(cppFile, "\t\tif (r_msgIdx == %d) {\n", msgDwCnt-1);
+			fprintf(cppFile, "\t\tif (r_msgIdx == %d) {\n", msgDwCnt - 1);
 			fprintf(cppFile, "\t\t\tc_msgIdx = 0;\n");
 			fprintf(cppFile, "\t\t\tm_msg.pop();\n");
 			fprintf(cppFile, "\t\t} else\n");
@@ -1353,16 +1353,16 @@ void CDsnInfo::GenAeNextMsgIntf(HtiFile::CMsgIntfConn * pMicAeNext)
 		}
 		fprintf(cppFile, "\n");
 
-		fprintf(cppFile, "\t%sUnion %sUnion;\n", pMicAeNext->m_type.c_str(), pMicAeNext->m_type.c_str()+1);
+		fprintf(cppFile, "\t%sUnion %sUnion;\n", pMicAeNext->m_type.c_str(), pMicAeNext->m_type.c_str() + 1);
 		if (msgDwCnt > 1)
-			fprintf(cppFile, "\t%sUnion.m_msg = m_msg.front();\n", pMicAeNext->m_type.c_str()+1);
+			fprintf(cppFile, "\t%sUnion.m_msg = m_msg.front();\n", pMicAeNext->m_type.c_str() + 1);
 		else
-			fprintf(cppFile, "\t%sUnion.m_msg = r_msg;\n", pMicAeNext->m_type.c_str()+1);
+			fprintf(cppFile, "\t%sUnion.m_msg = r_msg;\n", pMicAeNext->m_type.c_str() + 1);
 		fprintf(cppFile, "\n");
 
 		if (msgDwCnt > 1) {
 			fprintf(cppFile, "\tr_mon_valid = !m_msg.empty() && !r_mon_stall;\n");
-			fprintf(cppFile, "\tr_mon_data = %sUnion.m_data[r_msgIdx];\n", pMicAeNext->m_type.c_str()+1);
+			fprintf(cppFile, "\tr_mon_data = %sUnion.m_data[r_msgIdx];\n", pMicAeNext->m_type.c_str() + 1);
 			fprintf(cppFile, "\tr_mon_stall = i_mon_stall;\n");
 			fprintf(cppFile, "\tr_msgFull = m_msg.size() > 28;\n");
 			fprintf(cppFile, "\tr_msgIdx = r_reset1x ? (ht_uint%d)0 : c_msgIdx;\n", msgDwCntW);
@@ -1380,7 +1380,7 @@ void CDsnInfo::GenAeNextMsgIntf(HtiFile::CMsgIntfConn * pMicAeNext)
 		if (msgDwCnt > 1)
 			fprintf(cppFile, "\to_mon_data = r_mon_data;\n");
 		else
-			fprintf(cppFile, "\to_mon_data = %sUnion.m_data;\n", pMicAeNext->m_type.c_str()+1);
+			fprintf(cppFile, "\to_mon_data = %sUnion.m_data;\n", pMicAeNext->m_type.c_str() + 1);
 		fprintf(cppFile, "\to_msgFull = r_msgFull;\n");
 		fprintf(cppFile, "}\n");
 
@@ -1436,7 +1436,8 @@ void CDsnInfo::GenAeNextMsgIntf(HtiFile::CMsgIntfConn * pMicAeNext)
 			fprintf(incFile, "\n");
 
 			fprintf(incFile, "#\tifndef _HTV\n");
-			fprintf(incFile, "\tvoid start_of_simulation() {\n");
+			fprintf(incFile, "\tvoid start_of_simulation()\n");
+			fprintf(incFile, "\t{\n");
 			fprintf(incFile, "\t\tsc_trace(Ht::g_vcdp, r_msgFull, (std::string)name() + \".r_msgFull\");\n");
 			fprintf(incFile, "\t\tsc_trace(Ht::g_vcdp, r_msgRdy, (std::string)name() + \".r_msgRdy\");\n");
 			fprintf(incFile, "\t\tsc_trace(Ht::g_vcdp, r_msg, (std::string)name() + \".r_msg\");\n");
@@ -1475,12 +1476,12 @@ void CDsnInfo::GenAeNextMsgIntf(HtiFile::CMsgIntfConn * pMicAeNext)
 		fprintf(cppFile, "\t};\n");
 		fprintf(cppFile, "\n");
 
-		fprintf(cppFile, "\t%sUnion %sUnion;\n", pMicAeNext->m_type.c_str(), pMicAeNext->m_type.c_str()+1);
+		fprintf(cppFile, "\t%sUnion %sUnion;\n", pMicAeNext->m_type.c_str(), pMicAeNext->m_type.c_str() + 1);
 		if (msgDwCnt > 1) {
-			fprintf(cppFile, "\t%sUnion.m_msg = r_msg;\n", pMicAeNext->m_type.c_str()+1); 
-			fprintf(cppFile, "\t%sUnion.m_data[r_msgIdx] = i_mip_data;\n", pMicAeNext->m_type.c_str()+1);
-		} else 
-			fprintf(cppFile, "\t%sUnion.m_data = i_mip_data;\n", pMicAeNext->m_type.c_str()+1);
+			fprintf(cppFile, "\t%sUnion.m_msg = r_msg;\n", pMicAeNext->m_type.c_str() + 1);
+			fprintf(cppFile, "\t%sUnion.m_data[r_msgIdx] = i_mip_data;\n", pMicAeNext->m_type.c_str() + 1);
+		} else
+			fprintf(cppFile, "\t%sUnion.m_data = i_mip_data;\n", pMicAeNext->m_type.c_str() + 1);
 		fprintf(cppFile, "\n");
 
 		if (msgDwCnt > 1) {
@@ -1489,7 +1490,7 @@ void CDsnInfo::GenAeNextMsgIntf(HtiFile::CMsgIntfConn * pMicAeNext)
 			fprintf(cppFile, "\n");
 
 			fprintf(cppFile, "\tif (i_mip_valid.read()) {\n");
-			fprintf(cppFile, "\t\tif (r_msgIdx == %d) {\n", msgDwCnt-1);
+			fprintf(cppFile, "\t\tif (r_msgIdx == %d) {\n", msgDwCnt - 1);
 			fprintf(cppFile, "\t\t\tc_msgIdx = 0;\n");
 			fprintf(cppFile, "\t\t\tc_msgRdy = true;\n");
 			fprintf(cppFile, "\t\t} else\n");
@@ -1502,7 +1503,7 @@ void CDsnInfo::GenAeNextMsgIntf(HtiFile::CMsgIntfConn * pMicAeNext)
 			fprintf(cppFile, "\tr_msgRdy = i_mip_valid;\n");
 		}
 
-		fprintf(cppFile, "\tr_msg = %sUnion.m_msg;\n", pMicAeNext->m_type.c_str()+1);
+		fprintf(cppFile, "\tr_msg = %sUnion.m_msg;\n", pMicAeNext->m_type.c_str() + 1);
 		fprintf(cppFile, "\tr_msgFull = i_msgFull;\n");
 		if (msgDwCnt > 1) {
 			fprintf(cppFile, "\tr_msgIdx = r_reset1x ? (ht_uint%d)0 : c_msgIdx;\n", msgDwCntW);
@@ -1529,7 +1530,7 @@ void CDsnInfo::GenAePrevMsgIntf(HtiFile::CMsgIntfConn * pMicAePrev)
 	bitWidth.SetValue(0);
 
 	int msgDwCnt = (FindTypeWidth(varName, pMicAePrev->m_type, bitWidth, pMicAePrev->m_lineInfo) + 31) / 32;
-	int msgDwCntW = FindLg2(msgDwCnt-1);
+	int msgDwCntW = FindLg2(msgDwCnt - 1);
 	{
 		////////////////////////////////////////////////////////////////
 		// Generate PersMopSb.h file
@@ -1585,7 +1586,8 @@ void CDsnInfo::GenAePrevMsgIntf(HtiFile::CMsgIntfConn * pMicAePrev)
 			fprintf(incFile, "\n");
 
 			fprintf(incFile, "#\tifndef _HTV\n");
-			fprintf(incFile, "\tvoid start_of_simulation() {\n");
+			fprintf(incFile, "\tvoid start_of_simulation()\n");
+			fprintf(incFile, "\t{\n");
 			fprintf(incFile, "\t\tsc_trace(Ht::g_vcdp, r_mop_valid, (std::string)name() + \".r_mop_valid\");\n");
 			if (msgDwCnt > 1) {
 				fprintf(incFile, "\t\tsc_trace(Ht::g_vcdp, r_mop_data, (std::string)name() + \".r_mop_data\");\n");
@@ -1635,7 +1637,7 @@ void CDsnInfo::GenAePrevMsgIntf(HtiFile::CMsgIntfConn * pMicAePrev)
 
 			fprintf(cppFile, "\tht_uint%d c_msgIdx = r_msgIdx;\n", msgDwCntW);
 			fprintf(cppFile, "\tif (!m_msg.empty() && !r_mop_stall) {\n");
-			fprintf(cppFile, "\t\tif (r_msgIdx == %d) {\n", msgDwCnt-1);
+			fprintf(cppFile, "\t\tif (r_msgIdx == %d) {\n", msgDwCnt - 1);
 			fprintf(cppFile, "\t\t\tc_msgIdx = 0;\n");
 			fprintf(cppFile, "\t\t\tm_msg.pop();\n");
 			fprintf(cppFile, "\t\t} else\n");
@@ -1648,16 +1650,16 @@ void CDsnInfo::GenAePrevMsgIntf(HtiFile::CMsgIntfConn * pMicAePrev)
 		}
 		fprintf(cppFile, "\n");
 
-		fprintf(cppFile, "\t%sUnion %sUnion;\n", pMicAePrev->m_type.c_str(), pMicAePrev->m_type.c_str()+1);
+		fprintf(cppFile, "\t%sUnion %sUnion;\n", pMicAePrev->m_type.c_str(), pMicAePrev->m_type.c_str() + 1);
 		if (msgDwCnt > 1)
-			fprintf(cppFile, "\t%sUnion.m_msg = m_msg.front();\n", pMicAePrev->m_type.c_str()+1);
+			fprintf(cppFile, "\t%sUnion.m_msg = m_msg.front();\n", pMicAePrev->m_type.c_str() + 1);
 		else
-			fprintf(cppFile, "\t%sUnion.m_msg = r_msg;\n", pMicAePrev->m_type.c_str()+1);
+			fprintf(cppFile, "\t%sUnion.m_msg = r_msg;\n", pMicAePrev->m_type.c_str() + 1);
 		fprintf(cppFile, "\n");
 
 		if (msgDwCnt > 1) {
 			fprintf(cppFile, "\tr_mop_valid = !m_msg.empty() && !r_mop_stall;\n");
-			fprintf(cppFile, "\tr_mop_data = %sUnion.m_data[r_msgIdx];\n", pMicAePrev->m_type.c_str()+1);
+			fprintf(cppFile, "\tr_mop_data = %sUnion.m_data[r_msgIdx];\n", pMicAePrev->m_type.c_str() + 1);
 			fprintf(cppFile, "\tr_mop_stall = i_mop_stall;\n");
 			fprintf(cppFile, "\tr_msgFull = m_msg.size() > 28;\n");
 			fprintf(cppFile, "\tr_msgIdx = r_reset1x ? (ht_uint%d)0 : c_msgIdx;\n", msgDwCntW);
@@ -1675,7 +1677,7 @@ void CDsnInfo::GenAePrevMsgIntf(HtiFile::CMsgIntfConn * pMicAePrev)
 		if (msgDwCnt > 1)
 			fprintf(cppFile, "\to_mop_data = r_mop_data;\n");
 		else
-			fprintf(cppFile, "\to_mop_data = %sUnion.m_data;\n", pMicAePrev->m_type.c_str()+1);
+			fprintf(cppFile, "\to_mop_data = %sUnion.m_data;\n", pMicAePrev->m_type.c_str() + 1);
 		fprintf(cppFile, "\to_msgFull = r_msgFull;\n");
 		fprintf(cppFile, "}\n");
 
@@ -1731,7 +1733,8 @@ void CDsnInfo::GenAePrevMsgIntf(HtiFile::CMsgIntfConn * pMicAePrev)
 			fprintf(incFile, "\n");
 
 			fprintf(incFile, "#\tifndef _HTV\n");
-			fprintf(incFile, "\tvoid start_of_simulation() {\n");
+			fprintf(incFile, "\tvoid start_of_simulation()\n");
+			fprintf(incFile, "\t{\n");
 			fprintf(incFile, "\t\tsc_trace(Ht::g_vcdp, r_msgFull, (std::string)name() + \".r_msgFull\");\n");
 			fprintf(incFile, "\t\tsc_trace(Ht::g_vcdp, r_msgRdy, (std::string)name() + \".r_msgRdy\");\n");
 			fprintf(incFile, "\t\tsc_trace(Ht::g_vcdp, r_msg, (std::string)name() + \".r_msg\");\n");
@@ -1770,12 +1773,12 @@ void CDsnInfo::GenAePrevMsgIntf(HtiFile::CMsgIntfConn * pMicAePrev)
 		fprintf(cppFile, "\t};\n");
 		fprintf(cppFile, "\n");
 
-		fprintf(cppFile, "\t%sUnion %sUnion;\n", pMicAePrev->m_type.c_str(), pMicAePrev->m_type.c_str()+1);
+		fprintf(cppFile, "\t%sUnion %sUnion;\n", pMicAePrev->m_type.c_str(), pMicAePrev->m_type.c_str() + 1);
 		if (msgDwCnt > 1) {
-			fprintf(cppFile, "\t%sUnion.m_msg = r_msg;\n", pMicAePrev->m_type.c_str()+1); 
-			fprintf(cppFile, "\t%sUnion.m_data[r_msgIdx] = i_min_data;\n", pMicAePrev->m_type.c_str()+1);
-		} else 
-			fprintf(cppFile, "\t%sUnion.m_data = i_min_data;\n", pMicAePrev->m_type.c_str()+1);
+			fprintf(cppFile, "\t%sUnion.m_msg = r_msg;\n", pMicAePrev->m_type.c_str() + 1);
+			fprintf(cppFile, "\t%sUnion.m_data[r_msgIdx] = i_min_data;\n", pMicAePrev->m_type.c_str() + 1);
+		} else
+			fprintf(cppFile, "\t%sUnion.m_data = i_min_data;\n", pMicAePrev->m_type.c_str() + 1);
 		fprintf(cppFile, "\n");
 
 		if (msgDwCnt > 1) {
@@ -1784,7 +1787,7 @@ void CDsnInfo::GenAePrevMsgIntf(HtiFile::CMsgIntfConn * pMicAePrev)
 			fprintf(cppFile, "\n");
 
 			fprintf(cppFile, "\tif (i_min_valid.read()) {\n");
-			fprintf(cppFile, "\t\tif (r_msgIdx == %d) {\n", msgDwCnt-1);
+			fprintf(cppFile, "\t\tif (r_msgIdx == %d) {\n", msgDwCnt - 1);
 			fprintf(cppFile, "\t\t\tc_msgIdx = 0;\n");
 			fprintf(cppFile, "\t\t\tc_msgRdy = true;\n");
 			fprintf(cppFile, "\t\t} else\n");
@@ -1797,7 +1800,7 @@ void CDsnInfo::GenAePrevMsgIntf(HtiFile::CMsgIntfConn * pMicAePrev)
 			fprintf(cppFile, "\tr_msgRdy = i_min_valid;\n");
 		}
 
-		fprintf(cppFile, "\tr_msg = %sUnion.m_msg;\n", pMicAePrev->m_type.c_str()+1);
+		fprintf(cppFile, "\tr_msg = %sUnion.m_msg;\n", pMicAePrev->m_type.c_str() + 1);
 		fprintf(cppFile, "\tr_msgFull = i_msgFull;\n");
 		if (msgDwCnt > 1) {
 			fprintf(cppFile, "\tr_msgIdx = r_reset1x ? (ht_uint%d)0 : c_msgIdx;\n", msgDwCntW);

@@ -11,16 +11,27 @@
 #include "DsnInfo.h"
 #include "AppArgs.h"
 
+CCoprocInfo g_coprocInfo[] = {
+	CCoprocInfo(hc1, "hc1", "hc-1", 1, 1, 1, 1, false, 576),
+	CCoprocInfo(hc1ex, "hc1ex", "hc-1ex", 1, 1, 1, 1, false, 1440),
+	CCoprocInfo(hc2, "hc2", "hc-2", 8, 8, 1, 1, false, 576),
+	CCoprocInfo(hc2ex, "hc2ex", "hc-2ex", 8, 8, 1, 1, false, 1440),
+	CCoprocInfo(wx690, "wx690", "wx-690", 8, 8, 8, 8, true, 2940),
+	CCoprocInfo(wx2k, "wx2k", "wx-2000", 8, 8, 8, 8, true, 2584/4),
+	CCoprocInfo()
+};
+
 CAppArgs g_appArgs;
 
 void
-CAppArgs::Usage() {
+CAppArgs::Usage()
+{
 	printf("\nUsage: %s [options] <InputFile1> {,<InputFile2>, ...} <OutputFolder>\n", m_progName.c_str());
 	printf("\n");
 	printf("Version: %s-%s (%s)\n", VERSION, VCSREV, BLDDTE);
 	printf("Options:\n");
 	printf("  -help, -h        Prints this usage message\n");
-    printf("  -cp <name>       Coprocessor (i.e. hc-1, hc-1ex, hc-2, hc-2ex)\n");
+	printf("  -cp <name>       Coprocessor (i.e. hc-1, hc-1ex, hc-2, hc-2ex)\n");
 	printf("  -ac <num>        AE Count (default 1)\n");
 	printf("  -gr              Generate Reports\n");
 	printf("  -it              Enable Instruction Tracing\n");
@@ -45,12 +56,13 @@ CAppArgs::Usage() {
 	printf("  -pn <name>       Msvs project name\n");
 	printf("  -mf <mod>        Generate fixture for module name\n");
 #endif
-    printf("  -I <directory>   Directory to search for include files\n");
-    printf("  -D<defineName>=x Sets <defineName> to the value x for the preprocessor (default value is 1)\n");
+	printf("  -I <directory>   Directory to search for include files\n");
+	printf("  -D<defineName>=x Sets <defineName> to the value x for the preprocessor (default value is 1)\n");
 }
 
 void
-CAppArgs::ParseArgsFile(char const * pFileName) {
+CAppArgs::ParseArgsFile(char const * pFileName)
+{
 	// parse file of arguments
 	// copy file into a buffer and set \n and \r to space
 	// set argc and argv to point to arguments in buffer
@@ -80,7 +92,7 @@ CAppArgs::ParseArgsFile(char const * pFileName) {
 		exit(1);
 	}
 
-	char *fileBuf = new char [fileSize+1];
+	char *fileBuf = new char[fileSize + 1];
 
 	FILE *fp = fopen(pFileName, "rb");
 	if (fp == 0 || fread(fileBuf, fileSize, 1, fp) != 1) {
@@ -90,7 +102,7 @@ CAppArgs::ParseArgsFile(char const * pFileName) {
 	fileBuf[fileSize] = '\0';
 	fclose(fp);
 
-	char const ** argv = new char const * [1000];
+	char const ** argv = new char const *[1000];
 	int argc = 0;
 	argv[argc++] = m_progName.c_str();
 
@@ -140,33 +152,29 @@ void CAppArgs::SetHtCoproc(char const * pStr)
 {
 	if (*pStr == '?') {
 		if (m_bRndTest) {
-			int rndIdx = GetRtRndIdx(7);
-			m_coproc = (ECoproc)(rndIdx+1);
+			int rndIdx = GetRtRndIdx(6);
+			m_coprocId = rndIdx;
 			printf("   Rnd Coproc: %s\n", GetCoprocName());
 			return;
 		}
 		pStr += 1;
-	} else if (strcasecmp(pStr, "hc-1") == 0)
-        m_coproc = hc1;
-    else if (strcasecmp(pStr, "hc-1ex") == 0)
-        m_coproc = hc1ex;
-    else if (strcasecmp(pStr, "hc-2") == 0)
-        m_coproc = hc2;
-    else if (strcasecmp(pStr, "hc-2ex") == 0)
-        m_coproc = hc2ex;
-    else if (strcasecmp(pStr, "wx-690") == 0)
-        m_coproc = wx690;
-    else if (strcasecmp(pStr, "wx-2000") == 0)
-        m_coproc = wx2k;
-    else {
-        fprintf(stderr, "Unknown value for -cp\n");
-        Usage();
-        exit(1);
-    }
+	}
+	
+	for (int i = 0; g_coprocInfo[i].GetCoprocName() != 0; i += 1) {
+		if (strcasecmp(pStr, g_coprocInfo[i].GetCoprocName()) == 0) {
+			m_coprocId = i;
+			return;
+		}
+	}
+
+	fprintf(stderr, "Unknown value for -cp\n");
+	Usage();
+	exit(1);
 }
 
 void
-CAppArgs::Parse(int argc, char const **argv) {
+CAppArgs::Parse(int argc, char const **argv)
+{
 	m_argc = argc;
 	m_argv = argv;
 
@@ -188,13 +196,11 @@ CAppArgs::Parse(int argc, char const **argv) {
 	m_avgMemLatency[0] = 130;	// CP  : 110 min + ~20%
 	m_avgMemLatency[1] = 430;	// Host: 360 min + ~20%
 	m_bMemTrace = false;
-    m_coproc = hcx;
-    m_bModelOnly = false;
+	m_bModelOnly = false;
 	m_bForkPrivWr = true;
 	m_bRndTest = false;
 	m_bVariableReport = false;
 	m_pVarRptFp = 0;
-	m_bNewGlobalVar = false;
 	m_bModuleUnitNames = true;
 	m_bGlobalWriteHtid = true;
 	m_bGlobalReadParan = true;
@@ -206,7 +212,7 @@ CAppArgs::Parse(int argc, char const **argv) {
 
 	int argPos;
 	bool bClFlag = false;
-	for (argPos=1; argPos < argc; argPos++) {
+	for (argPos = 1; argPos < argc; argPos++) {
 		if (bClFlag) {
 			Usage();
 			exit(1);
@@ -216,8 +222,8 @@ CAppArgs::Parse(int argc, char const **argv) {
 				(strcmp(argv[argPos], "-help") == 0)) {
 				Usage();
 				exit(0);
-            } else if ((strcmp(argv[argPos], "-cp") == 0)) {
-                argPos += 1;
+			} else if ((strcmp(argv[argPos], "-cp") == 0)) {
+				argPos += 1;
 				SetHtCoproc(argv[argPos]);
 			} else if ((strcmp(argv[argPos], "-ac") == 0)) {
 				argPos += 1;
@@ -225,8 +231,6 @@ CAppArgs::Parse(int argc, char const **argv) {
 			} else if ((strcmp(argv[argPos], "-ar") == 0)) {
 				printf("Warning: -ar flag has been deprecated, ignored\n");
 				m_bDsnRpt = true;
-			} else if ((strcmp(argv[argPos], "-ngv") == 0)) {
-				m_bNewGlobalVar = true;
 			} else if ((strcmp(argv[argPos], "-mune") == 0)) {
 				printf("Warning: -mune flag has been deprecated, ignored\n");
 				m_bModuleUnitNames = true;
@@ -252,8 +256,8 @@ CAppArgs::Parse(int argc, char const **argv) {
 			} else if ((strcmp(argv[argPos], "-pm") == 0)) {
 				printf("Warning: -pm flag has been deprecated, ignored\n");
 				m_bPerfMon = true;
-            } else if ((strcmp(argv[argPos], "-mo") == 0)) {
-                m_bModelOnly = true;
+			} else if ((strcmp(argv[argPos], "-mo") == 0)) {
+				m_bModelOnly = true;
 			} else if ((strcmp(argv[argPos], "-ut") == 0)) {
 				printf("Warning: -ut flag has been deprecated, ignored\n");
 			} else if ((strcmp(argv[argPos], "-ri") == 0)) {
@@ -285,7 +289,7 @@ CAppArgs::Parse(int argc, char const **argv) {
 				argPos += 1;
 				m_aeUnitCnt = atoi(argv[argPos]);
 			} else if ((strcmp(argv[argPos], "-un") == 0)) {
-				if (argPos == argc-1) {
+				if (argPos == argc - 1) {
 					printf("expected parameter for -un command line flag\n");
 					Usage();
 					exit(1);
@@ -294,7 +298,7 @@ CAppArgs::Parse(int argc, char const **argv) {
 				m_unitName = argv[argPos];
 #ifdef _WIN32
 			} else if ((strcmp(argv[argPos], "-pn") == 0)) {
-				if (argPos == argc-1) {
+				if (argPos == argc - 1) {
 					printf("expected parameter for -pn command line flag\n");
 					Usage();
 					exit(1);
@@ -302,7 +306,7 @@ CAppArgs::Parse(int argc, char const **argv) {
 				argPos += 1;
 				m_projName = argv[argPos];
 			} else if ((strcmp(argv[argPos], "-mf") == 0)) {
-				if (argPos == argc-1) {
+				if (argPos == argc - 1) {
 					printf("expected parameter for -mf command line flag\n");
 					Usage();
 					exit(1);
@@ -312,7 +316,7 @@ CAppArgs::Parse(int argc, char const **argv) {
 
 #endif
 			} else if ((strcmp(argv[argPos], "-if") == 0)) {
-				if (argPos == argc-1) {
+				if (argPos == argc - 1) {
 					printf("expected parameter for -if command line flag\n");
 					Usage();
 					exit(1);
@@ -320,7 +324,7 @@ CAppArgs::Parse(int argc, char const **argv) {
 				argPos += 1;
 				m_instanceFile = argv[argPos];
 			} else if ((strcmp(argv[argPos], "-df") == 0)) {
-				if (argPos == argc-1) {
+				if (argPos == argc - 1) {
 					printf("expected parameter for -df command line flag\n");
 					Usage();
 					exit(1);
@@ -332,7 +336,7 @@ CAppArgs::Parse(int argc, char const **argv) {
 					exit(1);
 				}
 			} else if ((strcmp(argv[argPos], "-ub") == 0)) {
-				if (argPos == argc-1) {
+				if (argPos == argc - 1) {
 					printf("expected parameter for -ub command line flag\n");
 					Usage();
 					exit(1);
@@ -346,7 +350,7 @@ CAppArgs::Parse(int argc, char const **argv) {
 			} else if ((strcmp(argv[argPos], "-mt") == 0)) {
 				m_bMemTrace = true;
 			} else if ((strcmp(argv[argPos], "-ml") == 0)) {
-				if (argPos == argc-1) {
+				if (argPos == argc - 1) {
 					printf("expected parameter for -ml command line flag\n");
 					Usage();
 					exit(1);
@@ -365,7 +369,7 @@ CAppArgs::Parse(int argc, char const **argv) {
 				m_avgMemLatency[0] = (int)(m_avgMemLatency[0] * latScale);
 				m_avgMemLatency[1] = (int)(m_avgMemLatency[1] * latScale);
 			} else if ((strcmp(argv[argPos], "-lb") == 0)) {
-				if (argPos == argc-1) {
+				if (argPos == argc - 1) {
 					printf("expected parameter for -lb command line flag\n");
 					Usage();
 					exit(1);
@@ -377,7 +381,7 @@ CAppArgs::Parse(int argc, char const **argv) {
 					exit(1);
 				}
 			} else if ((strcmp(argv[argPos], "-tw") == 0)) {
-				if (argPos == argc-1) {
+				if (argPos == argc - 1) {
 					printf("expected parameter for -tw command line flag\n");
 					Usage();
 					exit(1);
@@ -389,7 +393,7 @@ CAppArgs::Parse(int argc, char const **argv) {
 					exit(1);
 				}
 			} else if ((strcmp(argv[argPos], "-en") == 0)) {
-				if (argPos == argc-1) {
+				if (argPos == argc - 1) {
 					printf("expected parameter for -en command line flag\n");
 					Usage();
 					exit(1);
@@ -397,7 +401,7 @@ CAppArgs::Parse(int argc, char const **argv) {
 				argPos += 1;
 				m_entryName = argv[argPos];
 			} else if ((strcmp(argv[argPos], "-iq") == 0)) {
-				if (argPos == argc-1) {
+				if (argPos == argc - 1) {
 					printf("expected parameter for -iq command line flag\n");
 					Usage();
 					exit(1);
@@ -405,7 +409,7 @@ CAppArgs::Parse(int argc, char const **argv) {
 				argPos += 1;
 				m_iqModName = argv[argPos];
 			} else if ((strcmp(argv[argPos], "-oq") == 0)) {
-				if (argPos == argc-1) {
+				if (argPos == argc - 1) {
 					printf("expected parameter for -oq command line flag\n");
 					Usage();
 					exit(1);
@@ -418,7 +422,7 @@ CAppArgs::Parse(int argc, char const **argv) {
 					Usage();
 					exit(1);
 				}
-				if (argPos == argc-1) {
+				if (argPos == argc - 1) {
 					printf("expected parameter for -cl command line flag\n");
 					Usage();
 					exit(1);
@@ -428,37 +432,41 @@ CAppArgs::Parse(int argc, char const **argv) {
 				m_htlName = argv[argPos];
 				int pos = m_htlName.find_last_of("/\\");
 				if (pos >= 0)
-					m_htlName = m_htlName.substr(pos+1);
+					m_htlName = m_htlName.substr(pos + 1);
 
 				ParseArgsFile(argv[argPos]);
 				bClFlag = true;
 
 #ifdef WIN32
 			} else if ((strcmp(argv[argPos], "-wd") == 0)) {
-				if (argPos == argc-1) {
+				if (argPos == argc - 1) {
 					printf("expected parameter for -wd command line flag\n");
 					Usage();
 					exit(1);
 				}
 				argPos += 1;
-				if (SetCurrentDirectory((char *)argv[argPos]) == 0) {
+
+				string wdPath = argv[argPos];
+				EnvVarExpansion(wdPath);
+
+				if (SetCurrentDirectory((char *)wdPath.c_str()) == 0) {
 					printf("Unable to set working directory (Error=%d)\n", GetLastError());
 					exit(1);
 				}
 #endif
-            } else if (strncmp(argv[argPos], "-D", 2) == 0) {
+			} else if (strncmp(argv[argPos], "-D", 2) == 0) {
 				// check if define has a value
-				char const *pArg = argv[argPos]+2;
+				char const *pArg = argv[argPos] + 2;
 				while (*pArg != '=' && *pArg != '\0') pArg++;
 				if (*pArg == '=')
-					m_preDefinedNames.push_back(pair<string,string>(string(argv[argPos]+2, pArg-(argv[argPos]+2)), string(pArg+1)));
+					m_preDefinedNames.push_back(pair<string, string>(string(argv[argPos] + 2, pArg - (argv[argPos] + 2)), string(pArg + 1)));
 				else
-					m_preDefinedNames.push_back(pair<string,string>(string(argv[argPos]+2), string()));
-            } else if (strcmp(argv[argPos], "-I") == 0) {
-                string path = argv[++argPos];
-                if (path.find_last_of("/\\") != path.size()-1)
-                    path += "/";
-                m_includeDirs.push_back(path);
+					m_preDefinedNames.push_back(pair<string, string>(string(argv[argPos] + 2), string()));
+			} else if (strcmp(argv[argPos], "-I") == 0) {
+				string path = argv[++argPos];
+				if (path.find_last_of("/\\") != path.size() - 1)
+					path += "/";
+				m_includeDirs.push_back(path);
 			} else {
 				printf("Unknown command line switch: %s\n", argv[argPos]);
 				Usage();
@@ -468,7 +476,7 @@ CAppArgs::Parse(int argc, char const **argv) {
 			break;
 	}
 
-	if (!bClFlag && (argc-argPos) < 2) {
+	if (!bClFlag && (argc - argPos) < 2) {
 		printf("expected an htd file\n");
 		Usage();
 		exit(1);
@@ -480,14 +488,14 @@ CAppArgs::Parse(int argc, char const **argv) {
 		exit(1);
 	}
 
-	for ( ; argPos < argc-1; argPos += 1)
+	for (; argPos < argc - 1; argPos += 1)
 		m_inputFileList.push_back(argv[argPos]);
 
 	if (!bClFlag)
 		m_outputFolder = argv[argPos];
 
 	if (m_projName.size() == 0) {
-        m_projName = m_htlName;
+		m_projName = m_htlName;
 		int pos = m_htlName.find_last_of(".");
 		if (pos >= 0)
 			m_projName = m_projName.substr(0, pos);
@@ -503,10 +511,10 @@ CAppArgs::Parse(int argc, char const **argv) {
 
 			while (fgets(buf, 128, fp)) {
 				if (strncmp(buf, "-cp ", 4) == 0) {
-					char *p = buf+4;
+					char *p = buf + 4;
 					while (*p != '\n' && *p != '\r' && *p != '\0') p += 1;
 					*p = '\0';
-					SetHtCoproc(buf+4);
+					SetHtCoproc(buf + 4);
 				} else if (strncmp(buf, "-rt", 3) == 0) {
 					m_bRndTest = true;
 
@@ -517,7 +525,7 @@ CAppArgs::Parse(int argc, char const **argv) {
 							printf("Previous failed seed found (%d)\n", seed);
 						fclose(fp);
 					}
-				
+
 					if (seed == -1) {
 						struct timeval st;
 						gettimeofday(&st, NULL);
@@ -538,9 +546,9 @@ CAppArgs::Parse(int argc, char const **argv) {
 		}
 	}
 #endif
-		//char buf[256];
-		//getcwd(buf, 256);
-		//printf("cwd = %s\n", buf);
+	//char buf[256];
+	//getcwd(buf, 256);
+	//printf("cwd = %s\n", buf);
 
 	// validate command line options
 	bool bError = false;
@@ -549,7 +557,7 @@ CAppArgs::Parse(int argc, char const **argv) {
 		bError = true;
 	}
 
-	if (m_coproc == hcx && !IsModelOnly()) {
+	if (m_coprocId < 0 && !IsModelOnly()) {
 		printf("Error - target coprocessor type not specified, use '-cp <target platform>'");
 		bError = true;
 		exit(1);
@@ -580,7 +588,7 @@ CAppArgs::Parse(int argc, char const **argv) {
 		}
 	}
 	if (!bFoundUnitCnt)
-		m_preDefinedNames.push_back(pair<string,string>("HT_UNIT_CNT", VA("%d", m_aeUnitCnt) ));
+		m_preDefinedNames.push_back(pair<string, string>("HT_UNIT_CNT", VA("%d", m_aeUnitCnt)));
 
 	if (m_max18KbBramPerUnit == -1)
 		m_max18KbBramPerUnit = (int)(GetBramsPerAE() * 0.5 / m_aeUnitCnt);
@@ -611,46 +619,6 @@ CAppArgs::Parse(int argc, char const **argv) {
 
 	if (bError)
 		exit(1);
-}
-
-char * CAppArgs::GetCoprocName()
-{
-	switch (m_coproc) {
-	case hc1: return "hc-1";
-	case hc2: return "hc-2";
-	case hc1ex: return "hc-1ex";
-	case hc2ex: return "hc-2ex";
-	case wx690: return "wx-690";
-	case wx2k: return "wx-2000";
-	default: return "unknown";
-	}
-}
-
-char const * CAppArgs::GetCoprocAsStr()
-{
-	switch (m_coproc) {
-	case hc1: return "hc1";
-	case hc2: return "hc2";
-	case hc1ex: return "hc1ex";
-	case hc2ex: return "hc2ex";
-	case wx690: return "wx690";
-	case wx2k: return "wx2k";
-	default: return "unknown";
-	}
-}
-
-int CAppArgs::GetBramsPerAE()
-{
-	// Number of RAMB18's
-	switch (m_coproc) {
-	case hc1: return 576;		// XC5VLX330
-	case hc2: return 576;
-	case hc1ex: return 1440;	// XC6VLX760
-	case hc2ex: return 1440;
-	case wx690: return 2940;	// XC7V690T
-	case wx2k: return 2584/4;	// XC7V2000T - four die
-	default: return 0;
-	}
 }
 
 void CAppArgs::ReadVcdFilterFile()
@@ -697,7 +665,7 @@ bool CAppArgs::Glob(const char * pName, const char * pFilter)
 			pFilter += 1;
 			pName += 1;
 		} else if (pFilter[0] == '*') {
-			if (Glob(pName, pFilter+1))
+			if (Glob(pName, pFilter + 1))
 				return true;
 			if (pName[0] == '\0')
 				return false;
@@ -710,6 +678,35 @@ bool CAppArgs::Glob(const char * pName, const char * pFilter)
 			pName += 1;
 		}
 	}
-	
+
 	return pFilter[0] == pName[0];
+}
+
+void CAppArgs::EnvVarExpansion(string & path)
+{
+	// search path for $( ), replace with environment variable value
+
+	for (int i = 0;; i += 1) {
+		if (path[i] == '\0') break;
+		if (path[i] != '$' || path[i + 1] != '(') continue;
+
+		int j;
+		for (j = i + 2; path[j] != '\0' && path[j] != ')'; j += 1);
+
+		if (path[i] == '\0') break;
+
+		// found macro to expand
+
+		string envName = string(path.c_str() + i + 2, j - i - 2);
+
+		char * pValue = getenv(envName.c_str());
+
+		if (pValue == 0) break;
+
+		string value = pValue;
+
+		path.replace(i, j - i + 1, value);
+
+		i += value.size() - 1;
+	}
 }

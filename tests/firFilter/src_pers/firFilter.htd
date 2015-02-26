@@ -135,8 +135,8 @@ mult.AddReturn(func=mult)
 	.AddParam(type=uint32_t, name=errRcv)
 	;
 
-mult.AddReadMem(queueW=1, rspCntW=1)
-	.AddDst(var=op1Mem)
+mult.AddReadMem()
+	.AddDst(var=op1Mem, elemCntW=0)
 	.AddDst(var=op2Mem)
 	;
 

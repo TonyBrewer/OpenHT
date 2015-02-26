@@ -1,6 +1,9 @@
+// -cl $(HtToolsPath)/tests/jacobi/src_pers/jacobi.htl
+-wd $(HtToolsPath)/tests/jacobi/msvs12/
+
 -cp hc-2
 -un Iu
 -df 150
--wd "C:\Ht\tests\jacobi\msvs12\"
-"C:\Ht\tests\jacobi\src_pers\jacobi.htd"
+//-vcd_all
+../src_pers/jacobi.htd
 ../ht/sysc

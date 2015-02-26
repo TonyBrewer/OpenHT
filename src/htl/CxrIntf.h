@@ -21,7 +21,7 @@ enum ECxrDir { CxrIn, CxrOut };
 
 struct CCxrIntf {
 	CCxrIntf(CHtString &funcName, CModule &srcMod, int srcInstIdx, CThreads *pSrcGroup, CModule &dstMod,
-			int dstInstIdx, CThreads *pDstGroup, ECxrType cxrType, ECxrDir cxrDir, int queueW, vector<CField> * pFieldList)
+		int dstInstIdx, CThreads *pDstGroup, ECxrType cxrType, ECxrDir cxrDir, int queueW, vector<CField *> * pFieldList)
 		: m_funcName(funcName), m_pSrcMod(&srcMod), m_srcInstIdx(srcInstIdx), m_pSrcGroup(pSrcGroup),
 		m_pDstMod(&dstMod), m_dstInstIdx(dstInstIdx), m_pDstGroup(pDstGroup),
 		m_cxrType(cxrType), m_cxrDir(cxrDir), m_queueW(queueW), m_pFieldList(pFieldList), m_bCxrIntfFields(true),
@@ -35,7 +35,8 @@ struct CCxrIntf {
 		m_dstReplId = 0;
 	}
 
-	const char * GetCxrTypeName() {
+	const char * GetCxrTypeName()
+	{
 		return m_cxrType == CxrCall ? "Call" : (m_cxrType == CxrTransfer ? "Xfer" : "Rtn");
 	}
 	int GetQueDepthW() { return m_queueW; }
@@ -43,7 +44,8 @@ struct CCxrIntf {
 	int GetPortReplCnt() { return m_cxrDir == CxrIn ? m_srcReplCnt : m_dstReplCnt; }
 	int GetPortReplId() { return m_cxrDir == CxrIn ? m_srcReplId : m_dstReplId; }
 
-	const char * GetDstToSrcLc() {
+	const char * GetDstToSrcLc()
+	{
 		if (m_dstToSrcLc.size() == 0)
 			m_dstToSrcLc = m_dstInstName.Lc() + "To" + m_srcInstName.Uc();
 		return m_dstToSrcLc.c_str();
@@ -61,8 +63,10 @@ struct CCxrIntf {
 	const char * GetPortNameDstToSrcLc();
 	const char * GetPortReplIndex();
 	const char * GetPortReplDecl();
+	vector<CHtString> & GetPortReplDimen();
 
-	const char * GetSrcToDstLc() {
+	const char * GetSrcToDstLc()
+	{
 		if (m_srcToDstLc.size() == 0)
 			m_srcToDstLc = m_srcInstName.Lc() + "To" + m_dstInstName.Uc();
 		return m_srcToDstLc.c_str();
@@ -70,7 +74,8 @@ struct CCxrIntf {
 
 	const char * GetSrcToDstUc();
 
-	const char * GetIntfName() {
+	const char * GetIntfName()
+	{
 		if (m_intfName.size() == 0)
 			m_intfName = m_funcName.Uc() + GetCxrTypeName();
 		return m_intfName.c_str();
@@ -90,8 +95,8 @@ struct CCxrIntf {
 	ECxrType			m_cxrType;
 	ECxrDir				m_cxrDir;
 	int					m_queueW;
-	vector<CField> *	m_pFieldList;
-	vector<CField>		m_fullFieldList;
+	vector<CField *> *	m_pFieldList;
+	vector<CField *>	m_fullFieldList;
 
 	string				m_entryInstr;
 	int					m_rtnSelId;
@@ -131,4 +136,5 @@ private:
 	string				m_portReplDecl;
 	string				m_portReplIndex;
 	string				m_intfName;
+	vector<CHtString>	m_portReplDimen;
 };

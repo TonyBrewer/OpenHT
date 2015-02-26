@@ -178,7 +178,7 @@ mult.AddReturn(func=mult)
 	.AddParam(type=uint64_t, name=result)
 	;
 
-mult.AddReadMem(queueW=1, rspCntW=1)
+mult.AddReadMem()
 	.AddDst(var=op1Mem)
 	.AddDst(var=op2Mem)
 	;

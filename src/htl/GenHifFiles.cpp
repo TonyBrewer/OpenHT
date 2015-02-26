@@ -21,33 +21,33 @@ void CDsnInfo::InitAndValidateHif()
 	CCxrReturn & cxrReturn = cxrCall.m_pairedReturnList[0].m_pMod->m_cxrReturnList[cxrCall.m_pairedReturnList[0].m_idx];
 
 	for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
-		CField & param = pCxrEntry->m_paramList[fldIdx];
+		CField * pParam = pCxrEntry->m_paramList[fldIdx];
 
 		// error messages are generated in FindTypeWidth routine
-		FindTypeWidth(param.m_name, param.m_hostType, param.m_bitWidth, pCxrEntry->m_lineInfo, 0, true);
+		FindTypeWidth(pParam->m_name, pParam->m_hostType, pParam->m_fieldWidth, pCxrEntry->m_lineInfo, 0, true);
 
-		if (param.m_hostType != param.m_type) {
+		if (pParam->m_hostType != pParam->m_type) {
 			string hostStructName, unitStructName;
-			bool bHostStruct = FindStructName(param.m_hostType, hostStructName);
-			bool bUnitStruct = FindStructName(param.m_type, unitStructName);
+			bool bHostStruct = FindStructName(pParam->m_hostType, hostStructName);
+			bool bUnitStruct = FindStructName(pParam->m_type, unitStructName);
 
 			if (bHostStruct != bUnitStruct || bHostStruct && hostStructName != unitStructName)
-				ParseMsg(Error, param.m_lineInfo, "incompatible types specified for parameters type and hostType");
+				ParseMsg(Error, pParam->m_lineInfo, "incompatible types specified for parameters type and hostType");
 		}
 	}
 
 	for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
-		CField & param = cxrReturn.m_paramList[fldIdx];
+		CField * pParam = cxrReturn.m_paramList[fldIdx];
 
-		FindTypeWidth(param.m_name, param.m_hostType, param.m_bitWidth, pCxrEntry->m_lineInfo, 0, true);
+		FindTypeWidth(pParam->m_name, pParam->m_hostType, pParam->m_fieldWidth, pCxrEntry->m_lineInfo, 0, true);
 
-		if (param.m_hostType != param.m_type) {
+		if (pParam->m_hostType != pParam->m_type) {
 			string hostStructName, unitStructName;
-			bool bHostStruct = FindStructName(param.m_hostType, hostStructName);
-			bool bUnitStruct = FindStructName(param.m_type, unitStructName);
+			bool bHostStruct = FindStructName(pParam->m_hostType, hostStructName);
+			bool bUnitStruct = FindStructName(pParam->m_type, unitStructName);
 
 			if (bHostStruct != bUnitStruct || bHostStruct && hostStructName != unitStructName)
-				ParseMsg(Error, param.m_lineInfo, "incompatible types specified for parameters type and hostType");
+				ParseMsg(Error, pParam->m_lineInfo, "incompatible types specified for parameters type and hostType");
 		}
 	}
 }
@@ -73,19 +73,19 @@ bool CDsnInfo::IsNativeCType(string &type, bool bAllowHostPtr)
 	bool bNative = false;
 	bool bPtr = false;
 
-	for (size_t i= 0; i < typeVec.size(); i += 1) {
+	for (size_t i = 0; i < typeVec.size(); i += 1) {
 		string &type = typeVec[i];
 		if (type == "bool" || type == "char" || type == "short" || type == "int" ||
 			type == "uint8_t" || type == "uint16_t" || type == "uint32_t" || type == "uint64_t" ||
 			type == "int8_t" || type == "int16_t" || type == "int32_t" || type == "int64_t") {
-				if (bNative || bPtr || bHostVar) return false;
-				bNative = true;
-				continue;
+			if (bNative || bPtr || bHostVar) return false;
+			bNative = true;
+			continue;
 		}
 		if (type == "long") {
 			if (bNative || bPtr || bHostVar) return false;
 			bNative = true;
-			if (typeVec.size() > i+1 && typeVec[i+1] == "long")
+			if (typeVec.size() > i + 1 && typeVec[i + 1] == "long")
 				i += 1;
 			continue;
 		}
@@ -109,17 +109,17 @@ bool CDsnInfo::IsNativeCType(string &type, bool bAllowHostPtr)
 
 		// non-native type, check if it is a host accessable structure
 		size_t structIdx;
-		for (structIdx = 0; structIdx < m_structList.size(); structIdx += 1) {
+		for (structIdx = 0; structIdx < m_recordList.size(); structIdx += 1) {
 
-			if (m_structList[structIdx].m_scope != eHost) continue;
+			if (m_recordList[structIdx].m_scope != eHost) continue;
 
-			if (type == m_structList[structIdx].m_structName) {
+			if (type == m_recordList[structIdx].m_typeName) {
 				if (bNative || bPtr || bHostVar) return false;
 				bHostVar = true;
 				break;
 			}
 		}
-		if (structIdx < m_structList.size())
+		if (structIdx < m_recordList.size())
 			continue;
 
 		return false;
@@ -143,10 +143,7 @@ void CDsnInfo::GenerateHifFiles()
 		bOutHostMsg |= mod.m_ohm.m_bOutHostMsg;
 	}
 
-	bool b64B = g_appArgs.GetCoproc() == hc2 ||
-		g_appArgs.GetCoproc() == hc2ex ||
-		g_appArgs.GetCoproc() == wx690 ||
-		g_appArgs.GetCoproc() == wx2k;
+	bool b64B = g_appArgs.GetCoprocInfo().GetMaxHostQwReadCnt() > 1;
 
 	CModule & hifMod = *m_modList[0];
 	bool bInHostData = false;
@@ -199,7 +196,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "#define OBK_IDLE\t\t0u\n");
 		fprintf(incFile, "#define OBK_POP\t\t1u\n");
 		fprintf(incFile, "#define OBK_WR8\t\t2u\n");
-		if (b64B) 
+		if (b64B)
 			fprintf(incFile, "#define OBK_WR64\t\t3u\n");
 		fprintf(incFile, "#define OBK_FLSH\t\t4u\n");
 		fprintf(incFile, "#define OBK_SEND\t\t5u\n");
@@ -255,6 +252,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\tsc_in<bool>\t\t\t\ti_mifToHifP0_rdRspRdy;\n");
 		fprintf(incFile, "\tsc_in<CMemRdRspIntf>\t\t\ti_mifToHifP0_rdRsp;\n");
+		fprintf(incFile, "\tsc_out<bool>\t\t\t\to_hifP0ToMif_rdRspFull;\n");
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\tsc_in<bool>\t\t\t\ti_mifToHifP0_wrRspRdy;\n");
 		fprintf(incFile, "\tsc_in<sc_uint<MIF_TID_W> >\t\ti_mifToHifP0_wrRspTid;\n");
@@ -400,9 +398,9 @@ void CDsnInfo::GenerateHifFiles()
 		}
 
 		bool bComment = true;
-		for(size_t i=0; i < m_defineTable.size(); i += 1) {
+		for (size_t i = 0; i < m_defineTable.size(); i += 1) {
 			//	must be a host
-			if(m_defineTable[i].m_scope.compare("host") == 0) {
+			if (m_defineTable[i].m_scope.compare("host") == 0) {
 				if (bComment) {
 					fprintf(incFile, "// Module generated defines/typedefs/structs/unions\n");
 					bComment = false;
@@ -413,9 +411,9 @@ void CDsnInfo::GenerateHifFiles()
 					m_defineTable[i].m_value.c_str());
 			}
 		}
-		for(size_t i=0; i < m_typedefList.size(); i += 1) {
+		for (size_t i = 0; i < m_typedefList.size(); i += 1) {
 			//	must be a host
-			if(m_typedefList[i].m_scope.compare("host") == 0) {
+			if (m_typedefList[i].m_scope.compare("host") == 0) {
 				if (bComment) {
 					fprintf(incFile, "// Module generated defines/typedefs/structs/unions\n");
 					bComment = false;
@@ -558,16 +556,16 @@ void CDsnInfo::GenerateHifFiles()
 		}
 		fprintf(incFile, "\n");
 
-		for (size_t structIdx = 0; structIdx < m_structList.size(); structIdx += 1) {
+		for (size_t structIdx = 0; structIdx < m_recordList.size(); structIdx += 1) {
 
-			if (m_structList[structIdx].m_scope != eHost) continue;
-			if (m_structList[structIdx].m_bInclude) continue;
+			if (m_recordList[structIdx].m_scope != eHost) continue;
+			if (m_recordList[structIdx].m_bInclude) continue;
 
-			GenUserStructs(incFile, m_structList[structIdx]);
+			GenUserStructs(incFile, m_recordList[structIdx]);
 
 			CHtCode htFile(incFile);
-			GenUserStructBadData(htFile, true, m_structList[structIdx].m_structName,
-				m_structList[structIdx].m_fieldList, m_structList[structIdx].m_bCStyle, "");
+			GenUserStructBadData(htFile, true, m_recordList[structIdx].m_typeName,
+				m_recordList[structIdx].m_fieldList, m_recordList[structIdx].m_bCStyle, "");
 		}
 		fprintf(incFile, "\n");
 
@@ -592,7 +590,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(cppFile, "\tchar const * CHt%sUnit::m_moduleNameList[] = {\n", m_unitName.Uc().c_str());
 		if (m_moduleFileList.size() > 0) {
 			for (size_t i = 0; i < m_moduleFileList.size(); i += 1)
-				fprintf(cppFile, "\t\t\"%s\"%s\n", m_moduleFileList[i].c_str(), i < m_moduleFileList.size()-1 ? "," : "");
+				fprintf(cppFile, "\t\t\"%s\"%s\n", m_moduleFileList[i].c_str(), i < m_moduleFileList.size() - 1 ? "," : "");
 		} else
 			fprintf(cppFile, "\t\t0\n");
 		fprintf(cppFile, "\t};\n");
@@ -708,7 +706,7 @@ void CDsnInfo::GenerateHifFiles()
 		CCxrEntry * pCxrEntry = cxrCall.m_pairedFunc.m_pMod->m_cxrEntryList[cxrCall.m_pairedFunc.m_idx];
 		CCxrReturn & cxrReturn = cxrCall.m_pairedReturnList[0].m_pMod->m_cxrReturnList[cxrCall.m_pairedReturnList[0].m_idx];
 
-	#ifndef OLD_UNIT_INTF
+#ifndef OLD_UNIT_INTF
 
 		fprintf(incFile, "#ifndef _HTV\n");
 		fprintf(incFile, "\n");
@@ -835,9 +833,9 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\t\tstruct CCallArgs_%s {\n", cxrCall.m_funcName.c_str());
 
 		for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
-			CField & param = pCxrEntry->m_paramList[fldIdx];
+			CField * pParam = pCxrEntry->m_paramList[fldIdx];
 
-			fprintf(incFile, "\t\t\t%s m_%s;\n", param.m_hostType.c_str(), param.m_name.c_str());
+			fprintf(incFile, "\t\t\t%s m_%s;\n", pParam->m_hostType.c_str(), pParam->m_name.c_str());
 		}
 
 		fprintf(incFile, "\t\t};\n");
@@ -847,12 +845,12 @@ void CDsnInfo::GenerateHifFiles()
 
 		int argQwCnt = 0;
 		for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
-			CField & param = pCxrEntry->m_paramList[fldIdx];
+			CField * pParam = pCxrEntry->m_paramList[fldIdx];
 
-			int fldQwCnt = (FindHostTypeWidth(param) + 63) / 64;
+			int fldQwCnt = (FindHostTypeWidth(pParam) + 63) / 64;
 			string declIdx = fldQwCnt == 1 ? "" : VA("[%d]", fldQwCnt);
 
-			fprintf(incFile, "\t\t\tuint64_t m_%s%s;\n", param.m_name.c_str(), declIdx.c_str());
+			fprintf(incFile, "\t\t\tuint64_t m_%s%s;\n", pParam->m_name.c_str(), declIdx.c_str());
 
 			argQwCnt += fldQwCnt;
 		}
@@ -869,28 +867,28 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\t\t\tCCallArgv_%s argv;\n", cxrCall.m_funcName.c_str());
 
 		for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
-			CField & param = pCxrEntry->m_paramList[fldIdx];
+			CField * pParam = pCxrEntry->m_paramList[fldIdx];
 
-			int fldQwCnt = (FindHostTypeWidth(param) + 63) / 64;
+			int fldQwCnt = (FindHostTypeWidth(pParam) + 63) / 64;
 
 			fprintf(incFile, "\n");
-			fprintf(incFile, "\t\t\tassert((sizeof(%s) + 7)/8 == %d);\n", param.m_hostType.c_str(), fldQwCnt);
+			fprintf(incFile, "\t\t\tassert((sizeof(%s) + 7)/8 == %d);\n", pParam->m_hostType.c_str(), fldQwCnt);
 			fprintf(incFile, "\t\t\targw[%d] = %d;\n", (int)fldIdx, fldQwCnt);
-			fprintf(incFile, "\t\t\tunion Args_%s {\n", param.m_name.c_str());
+			fprintf(incFile, "\t\t\tunion Args_%s {\n", pParam->m_name.c_str());
 			fprintf(incFile, "\t\t\t\tuint64_t m_data[%d];\n", fldQwCnt);
-			fprintf(incFile, "\t\t\t\t%s m_%s;\n", param.m_hostType.c_str(), param.m_name.c_str());
-			fprintf(incFile, "\t\t\t} args_%s;\n", param.m_name.c_str());
+			fprintf(incFile, "\t\t\t\t%s m_%s;\n", pParam->m_hostType.c_str(), pParam->m_name.c_str());
+			fprintf(incFile, "\t\t\t} args_%s;\n", pParam->m_name.c_str());
 
 			for (int fldQwIdx = 0; fldQwIdx < fldQwCnt; fldQwIdx += 1)
-				fprintf(incFile, "\t\t\targs_%s.m_data[%d] = 0;\n", param.m_name.c_str(), fldQwIdx);
+				fprintf(incFile, "\t\t\targs_%s.m_data[%d] = 0;\n", pParam->m_name.c_str(), fldQwIdx);
 
-			fprintf(incFile, "\t\t\targs_%s.m_%s = args.m_%s;\n", param.m_name.c_str(), param.m_name.c_str(), param.m_name.c_str());
+			fprintf(incFile, "\t\t\targs_%s.m_%s = args.m_%s;\n", pParam->m_name.c_str(), pParam->m_name.c_str(), pParam->m_name.c_str());
 
 			if (fldQwCnt == 1)
-				fprintf(incFile, "\t\t\targv.m_%s = args_%s.m_data[0];\n", param.m_name.c_str(), param.m_name.c_str());
+				fprintf(incFile, "\t\t\targv.m_%s = args_%s.m_data[0];\n", pParam->m_name.c_str(), pParam->m_name.c_str());
 			else
 				for (int fldQwIdx = 0; fldQwIdx < fldQwCnt; fldQwIdx += 1)
-					fprintf(incFile, "\t\t\targv.m_%s[%d] = args_%s.m_data[%d];\n", param.m_name.c_str(), fldQwIdx, param.m_name.c_str(), fldQwIdx);
+					fprintf(incFile, "\t\t\targv.m_%s[%d] = args_%s.m_data[%d];\n", pParam->m_name.c_str(), fldQwIdx, pParam->m_name.c_str(), fldQwIdx);
 		}
 
 		fprintf(incFile, "\n");
@@ -903,9 +901,9 @@ void CDsnInfo::GenerateHifFiles()
 		pSeparator = "";
 
 		for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
-			CField & param = pCxrEntry->m_paramList[fldIdx];
+			CField * pParam = pCxrEntry->m_paramList[fldIdx];
 
-			fprintf(incFile, "%s%s %s", pSeparator, param.m_hostType.c_str(), param.m_name.c_str());
+			fprintf(incFile, "%s%s %s", pSeparator, pParam->m_hostType.c_str(), pParam->m_name.c_str());
 
 			pSeparator = ", ";
 		}
@@ -917,28 +915,28 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\t\t\tCCallArgv_%s argv;\n", cxrCall.m_funcName.c_str());
 
 		for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
-			CField & param = pCxrEntry->m_paramList[fldIdx];
+			CField * pParam = pCxrEntry->m_paramList[fldIdx];
 
-			int fldQwCnt = (FindHostTypeWidth(param) + 63) / 64;
+			int fldQwCnt = (FindHostTypeWidth(pParam) + 63) / 64;
 
 			fprintf(incFile, "\n");
-			fprintf(incFile, "\t\t\tassert((sizeof(%s) + 7)/8 == %d);\n", param.m_hostType.c_str(), fldQwCnt);
+			fprintf(incFile, "\t\t\tassert((sizeof(%s) + 7)/8 == %d);\n", pParam->m_hostType.c_str(), fldQwCnt);
 			fprintf(incFile, "\t\t\targw[%d] = %d;\n", (int)fldIdx, fldQwCnt);
-			fprintf(incFile, "\t\t\tunion Argv_%s {\n", param.m_name.c_str());
+			fprintf(incFile, "\t\t\tunion Argv_%s {\n", pParam->m_name.c_str());
 			fprintf(incFile, "\t\t\t\tuint64_t m_data[%d];\n", fldQwCnt);
-			fprintf(incFile, "\t\t\t\t%s m_%s;\n", param.m_hostType.c_str(), param.m_name.c_str());
-			fprintf(incFile, "\t\t\t} argv_%s;\n", param.m_name.c_str());
+			fprintf(incFile, "\t\t\t\t%s m_%s;\n", pParam->m_hostType.c_str(), pParam->m_name.c_str());
+			fprintf(incFile, "\t\t\t} argv_%s;\n", pParam->m_name.c_str());
 
 			for (int fldQwIdx = 0; fldQwIdx < fldQwCnt; fldQwIdx += 1)
-				fprintf(incFile, "\t\t\targv_%s.m_data[%d] = 0;\n", param.m_name.c_str(), fldQwIdx);
+				fprintf(incFile, "\t\t\targv_%s.m_data[%d] = 0;\n", pParam->m_name.c_str(), fldQwIdx);
 
-			fprintf(incFile, "\t\t\targv_%s.m_%s = %s;\n", param.m_name.c_str(), param.m_name.c_str(), param.m_name.c_str());
+			fprintf(incFile, "\t\t\targv_%s.m_%s = %s;\n", pParam->m_name.c_str(), pParam->m_name.c_str(), pParam->m_name.c_str());
 
 			if (fldQwCnt == 1)
-				fprintf(incFile, "\t\t\targv.m_%s = argv_%s.m_data[0];\n", param.m_name.c_str(), param.m_name.c_str());
+				fprintf(incFile, "\t\t\targv.m_%s = argv_%s.m_data[0];\n", pParam->m_name.c_str(), pParam->m_name.c_str());
 			else
 				for (int fldQwIdx = 0; fldQwIdx < fldQwCnt; fldQwIdx += 1)
-					fprintf(incFile, "\t\t\targv.m_%s[%d] = argv_%s.m_data[%d];\n", param.m_name.c_str(), fldQwIdx, param.m_name.c_str(), fldQwIdx);
+					fprintf(incFile, "\t\t\targv.m_%s[%d] = argv_%s.m_data[%d];\n", pParam->m_name.c_str(), fldQwIdx, pParam->m_name.c_str(), fldQwIdx);
 		}
 
 		fprintf(incFile, "\n");
@@ -949,9 +947,9 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\t\tstruct CRtnArgs_%s {\n", cxrCall.m_funcName.c_str());
 
 		for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
-			CField & param = cxrReturn.m_paramList[fldIdx];
+			CField * pParam = cxrReturn.m_paramList[fldIdx];
 
-			fprintf(incFile, "\t\t\t%s m_%s;\n", param.m_hostType.c_str(), param.m_name.c_str());
+			fprintf(incFile, "\t\t\t%s m_%s;\n", pParam->m_hostType.c_str(), pParam->m_name.c_str());
 		}
 
 		fprintf(incFile, "\t\t};\n");
@@ -961,12 +959,12 @@ void CDsnInfo::GenerateHifFiles()
 
 		int rtnQwCnt = 0;
 		for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
-			CField & param = cxrReturn.m_paramList[fldIdx];
+			CField * pParam = cxrReturn.m_paramList[fldIdx];
 
-			int fldQwCnt = (FindHostTypeWidth(param) + 63) / 64;
+			int fldQwCnt = (FindHostTypeWidth(pParam) + 63) / 64;
 			string declIdx = fldQwCnt == 1 ? "" : VA("[%d]", fldQwCnt);
 
-			fprintf(incFile, "\t\t\tuint64_t m_%s%s;\n", param.m_name.c_str(), declIdx.c_str());
+			fprintf(incFile, "\t\t\tuint64_t m_%s%s;\n", pParam->m_name.c_str(), declIdx.c_str());
 
 			rtnQwCnt += fldQwCnt;
 		}
@@ -985,24 +983,24 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\t\t\t\treturn false;\n");
 
 		for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
-			CField & param = cxrReturn.m_paramList[fldIdx];
+			CField * pParam = cxrReturn.m_paramList[fldIdx];
 
-			int fldQwCnt = (FindHostTypeWidth(param) + 63) / 64;
+			int fldQwCnt = (FindHostTypeWidth(pParam) + 63) / 64;
 
 			fprintf(incFile, "\n");
-			fprintf(incFile, "\t\t\tassert((sizeof(%s) + 7)/8 == %d);\n", param.m_hostType.c_str(), fldQwCnt);
-			fprintf(incFile, "\t\t\tunion Args_%s {\n", param.m_name.c_str());
+			fprintf(incFile, "\t\t\tassert((sizeof(%s) + 7)/8 == %d);\n", pParam->m_hostType.c_str(), fldQwCnt);
+			fprintf(incFile, "\t\t\tunion Args_%s {\n", pParam->m_name.c_str());
 			fprintf(incFile, "\t\t\t\tuint64_t m_data[%d];\n", fldQwCnt);
-			fprintf(incFile, "\t\t\t\t%s m_%s;\n", param.m_hostType.c_str(), param.m_name.c_str());
-			fprintf(incFile, "\t\t\t} args_%s;\n", param.m_name.c_str());
+			fprintf(incFile, "\t\t\t\t%s m_%s;\n", pParam->m_hostType.c_str(), pParam->m_name.c_str());
+			fprintf(incFile, "\t\t\t} args_%s;\n", pParam->m_name.c_str());
 
 			if (fldQwCnt == 1)
-				fprintf(incFile, "\t\t\targs_%s.m_data[0] = argv.m_%s;\n", param.m_name.c_str(), param.m_name.c_str());
+				fprintf(incFile, "\t\t\targs_%s.m_data[0] = argv.m_%s;\n", pParam->m_name.c_str(), pParam->m_name.c_str());
 			else
 				for (int fldQwIdx = 0; fldQwIdx < fldQwCnt; fldQwIdx += 1)
-					fprintf(incFile, "\t\t\targs_%s.m_data[%d] = argv.m_%s[%d];\n", param.m_name.c_str(), fldQwIdx, param.m_name.c_str(), fldQwIdx);
+					fprintf(incFile, "\t\t\targs_%s.m_data[%d] = argv.m_%s[%d];\n", pParam->m_name.c_str(), fldQwIdx, pParam->m_name.c_str(), fldQwIdx);
 
-			fprintf(incFile, "\t\t\targs.m_%s = args_%s.m_%s;\n", param.m_name.c_str(), param.m_name.c_str(), param.m_name.c_str());
+			fprintf(incFile, "\t\t\targs.m_%s = args_%s.m_%s;\n", pParam->m_name.c_str(), pParam->m_name.c_str(), pParam->m_name.c_str());
 		}
 
 		fprintf(incFile, "\n");
@@ -1014,9 +1012,9 @@ void CDsnInfo::GenerateHifFiles()
 		pSeparator = "";
 
 		for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
-			CField & param = cxrReturn.m_paramList[fldIdx];
+			CField * pParam = cxrReturn.m_paramList[fldIdx];
 
-			fprintf(incFile, "%s%s &%s", pSeparator, param.m_hostType.c_str(), param.m_name.c_str());
+			fprintf(incFile, "%s%s &%s", pSeparator, pParam->m_hostType.c_str(), pParam->m_name.c_str());
 
 			pSeparator = ", ";
 		}
@@ -1030,24 +1028,24 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\t\t\t\treturn false;\n");
 
 		for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
-			CField & param = cxrReturn.m_paramList[fldIdx];
+			CField * pParam = cxrReturn.m_paramList[fldIdx];
 
-			int fldQwCnt = (FindHostTypeWidth(param) + 63) / 64;
+			int fldQwCnt = (FindHostTypeWidth(pParam) + 63) / 64;
 
 			fprintf(incFile, "\n");
-			fprintf(incFile, "\t\t\tassert((sizeof(%s) + 7)/8 == %d);\n", param.m_hostType.c_str(), fldQwCnt);
-			fprintf(incFile, "\t\t\tunion Argv_%s {\n", param.m_name.c_str());
+			fprintf(incFile, "\t\t\tassert((sizeof(%s) + 7)/8 == %d);\n", pParam->m_hostType.c_str(), fldQwCnt);
+			fprintf(incFile, "\t\t\tunion Argv_%s {\n", pParam->m_name.c_str());
 			fprintf(incFile, "\t\t\t\tuint64_t m_data[%d];\n", fldQwCnt);
-			fprintf(incFile, "\t\t\t\t%s m_%s;\n", param.m_hostType.c_str(), param.m_name.c_str());
-			fprintf(incFile, "\t\t\t} argv_%s;\n", param.m_name.c_str());
+			fprintf(incFile, "\t\t\t\t%s m_%s;\n", pParam->m_hostType.c_str(), pParam->m_name.c_str());
+			fprintf(incFile, "\t\t\t} argv_%s;\n", pParam->m_name.c_str());
 
 			if (fldQwCnt == 1)
-				fprintf(incFile, "\t\t\targv_%s.m_data[0] = argv.m_%s;\n", param.m_name.c_str(), param.m_name.c_str());
+				fprintf(incFile, "\t\t\targv_%s.m_data[0] = argv.m_%s;\n", pParam->m_name.c_str(), pParam->m_name.c_str());
 			else
 				for (int fldQwIdx = 0; fldQwIdx < fldQwCnt; fldQwIdx += 1)
-					fprintf(incFile, "\t\t\targv_%s.m_data[%d] = argv.m_%s[%d];\n", param.m_name.c_str(), fldQwIdx, param.m_name.c_str(), fldQwIdx);
+					fprintf(incFile, "\t\t\targv_%s.m_data[%d] = argv.m_%s[%d];\n", pParam->m_name.c_str(), fldQwIdx, pParam->m_name.c_str(), fldQwIdx);
 
-			fprintf(incFile, "\t\t\t%s = argv_%s.m_%s;\n", param.m_name.c_str(), param.m_name.c_str(), param.m_name.c_str());
+			fprintf(incFile, "\t\t\t%s = argv_%s.m_%s;\n", pParam->m_name.c_str(), pParam->m_name.c_str(), pParam->m_name.c_str());
 		}
 
 		fprintf(incFile, "\n");
@@ -1057,7 +1055,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\t};\n");
 		fprintf(incFile, "\n");
 
-	#else
+#else
 
 		fprintf(incFile, "#ifndef _HTV\n");
 		fprintf(incFile, "\n");
@@ -1143,9 +1141,9 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\tstruct CCallArgs_%s {\n", cxrCall.m_funcName.c_str());
 
 		for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
-			CField & param = pCxrEntry->m_paramList[fldIdx];
+			CField * pParam = pCxrEntry->m_paramList[fldIdx];
 
-			fprintf(incFile, "\t\t%s m_%s;\n", param.m_hostType.c_str(), param.m_name.c_str());
+			fprintf(incFile, "\t\t%s m_%s;\n", pParam->m_hostType.c_str(), pParam->m_name.c_str());
 		}
 
 		fprintf(incFile, "\t};\n");
@@ -1154,9 +1152,9 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\tstruct CCallArgv_%s {\n", cxrCall.m_funcName.c_str());
 
 		for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
-			CField & param = pCxrEntry->m_paramList[fldIdx];
+			CField * pParam = pCxrEntry->m_paramList[fldIdx];
 
-			fprintf(incFile, "\t\tuint64_t m_%s;\n", param.m_name.c_str());
+			fprintf(incFile, "\t\tuint64_t m_%s;\n", pParam->m_name.c_str());
 		}
 
 		fprintf(incFile, "\t};\n");
@@ -1171,9 +1169,9 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\n");
 
 		for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
-			CField & param = pCxrEntry->m_paramList[fldIdx];
+			CField * pParam = pCxrEntry->m_paramList[fldIdx];
 
-			fprintf(incFile, "\t\targv.m_%s = (uint64_t)args.m_%s;\n", param.m_name.c_str(), param.m_name.c_str());
+			fprintf(incFile, "\t\targv.m_%s = (uint64_t)args.m_%s;\n", pParam->m_name.c_str(), pParam->m_name.c_str());
 		}
 
 		fprintf(incFile, "\n");
@@ -1186,9 +1184,9 @@ void CDsnInfo::GenerateHifFiles()
 		pSeparator = "";
 
 		for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
-			CField & param = pCxrEntry->m_paramList[fldIdx];
+			CField * pParam = pCxrEntry->m_paramList[fldIdx];
 
-			fprintf(incFile, "%s%s %s", pSeparator, param.m_hostType.c_str(), param.m_name.c_str());
+			fprintf(incFile, "%s%s %s", pSeparator, pParam->m_hostType.c_str(), pParam->m_name.c_str());
 
 			pSeparator = ", ";
 		}
@@ -1200,9 +1198,9 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\n");
 
 		for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
-			CField & param = pCxrEntry->m_paramList[fldIdx];
+			CField * pParam = pCxrEntry->m_paramList[fldIdx];
 
-			fprintf(incFile, "\t\targv.m_%s = (uint64_t)%s;\n", param.m_name.c_str(), param.m_name.c_str());
+			fprintf(incFile, "\t\targv.m_%s = (uint64_t)%s;\n", pParam->m_name.c_str(), pParam->m_name.c_str());
 		}
 
 		fprintf(incFile, "\n");
@@ -1213,9 +1211,9 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\tstruct CRtnArgs_%s {\n", cxrCall.m_funcName.c_str());
 
 		for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
-			CField & param = cxrReturn.m_paramList[fldIdx];
+			CField * pParam = cxrReturn.m_paramList[fldIdx];
 
-			fprintf(incFile, "\t\t%s m_%s;\n", param.m_hostType.c_str(), param.m_name.c_str());
+			fprintf(incFile, "\t\t%s m_%s;\n", pParam->m_hostType.c_str(), pParam->m_name.c_str());
 		}
 
 		fprintf(incFile, "\t};\n");
@@ -1224,9 +1222,9 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\tstruct CRtnArgv_%s {\n", cxrCall.m_funcName.c_str());
 
 		for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
-			CField & param = cxrReturn.m_paramList[fldIdx];
+			CField * pParam = cxrReturn.m_paramList[fldIdx];
 
-			fprintf(incFile, "\t\tuint64_t m_%s;\n", param.m_name.c_str());
+			fprintf(incFile, "\t\tuint64_t m_%s;\n", pParam->m_name.c_str());
 		}
 
 		fprintf(incFile, "\t};\n");
@@ -1244,9 +1242,9 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\n");
 
 		for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
-			CField & param = cxrReturn.m_paramList[fldIdx];
+			CField * pParam = cxrReturn.m_paramList[fldIdx];
 
-			fprintf(incFile, "\t\targs.m_%s = (%s)argv.m_%s;\n", param.m_name.c_str(), param.m_hostType.c_str(), param.m_name.c_str());
+			fprintf(incFile, "\t\targs.m_%s = (%s)argv.m_%s;\n", pParam->m_name.c_str(), pParam->m_hostType.c_str(), pParam->m_name.c_str());
 		}
 
 		fprintf(incFile, "\n");
@@ -1258,9 +1256,9 @@ void CDsnInfo::GenerateHifFiles()
 		pSeparator = "";
 
 		for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
-			CField & param = cxrReturn.m_paramList[fldIdx];
+			CField * pParam = cxrReturn.m_paramList[fldIdx];
 
-			fprintf(incFile, "%s%s &%s", pSeparator, param.m_hostType.c_str(), param.m_name.c_str());
+			fprintf(incFile, "%s%s &%s", pSeparator, pParam->m_hostType.c_str(), pParam->m_name.c_str());
 
 			pSeparator = ", ";
 		}
@@ -1275,9 +1273,9 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\n");
 
 		for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
-			CField & param = cxrReturn.m_paramList[fldIdx];
+			CField * pParam = cxrReturn.m_paramList[fldIdx];
 
-			fprintf(incFile, "\t\t%s = (%s)argv.m_%s;\n", param.m_name.c_str(), param.m_hostType.c_str(), param.m_name.c_str());
+			fprintf(incFile, "\t\t%s = (%s)argv.m_%s;\n", pParam->m_name.c_str(), pParam->m_hostType.c_str(), pParam->m_name.c_str());
 		}
 
 		fprintf(incFile, "\n");
@@ -1289,7 +1287,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\tCHt%sUnit(CHtHifBase * pHtHif, int unitId) : CHtUnitBase(pHtHif, unitId) {}\n", m_unitName.Uc().c_str());
 		fprintf(incFile, "\tvirtual ~CHt%sUnit() {}\n", m_unitName.Uc().c_str());
 		fprintf(incFile, "\tvoid Callback(CHtUnitBase::ERecvType recvType);\n");
-		fprintf(incFile, "\tvoid (* m_pCbFuncPtr)(CHt%sUnit *, CHt%sUnit::ERecvType);\n", 
+		fprintf(incFile, "\tvoid (* m_pCbFuncPtr)(CHt%sUnit *, CHt%sUnit::ERecvType);\n",
 			m_unitName.Uc().c_str(), m_unitName.Uc().c_str());
 		fprintf(incFile, "};\n");
 		fprintf(incFile, "\n");
@@ -1365,9 +1363,9 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\twhile (GetHtDebug() > 0 && !m_bMonitorHaltSeen);\n");
 		fprintf(incFile, "}\n");
 		fprintf(incFile, "\n");
-	#endif
+#endif
 
-	#ifndef OLD_UNIT_INTF
+#ifndef OLD_UNIT_INTF
 
 		fprintf(incFile, "\t//////////////////////////////////////////////////////\n");
 		fprintf(incFile, "\t// HT_MODEL Interface\n");
@@ -1458,9 +1456,9 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\t\tstruct CCallArgs_%s {\n", cxrCall.m_funcName.c_str());
 
 		for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
-			CField & param = pCxrEntry->m_paramList[fldIdx];
+			CField * pParam = pCxrEntry->m_paramList[fldIdx];
 
-			fprintf(incFile, "\t\t\t%s m_%s;\n", param.m_hostType.c_str(), param.m_name.c_str());
+			fprintf(incFile, "\t\t\t%s m_%s;\n", pParam->m_hostType.c_str(), pParam->m_name.c_str());
 		}
 
 		fprintf(incFile, "\t\t};\n");
@@ -1469,9 +1467,9 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\t\tstruct CCallArgv_%s {\n", cxrCall.m_funcName.c_str());
 
 		for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
-			CField & param = pCxrEntry->m_paramList[fldIdx];
+			CField * pParam = pCxrEntry->m_paramList[fldIdx];
 
-			fprintf(incFile, "\t\t\tuint64_t m_%s;\n", param.m_name.c_str());
+			fprintf(incFile, "\t\t\tuint64_t m_%s;\n", pParam->m_name.c_str());
 		}
 
 		fprintf(incFile, "\t\t};\n");
@@ -1489,9 +1487,9 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\n");
 
 		for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
-			CField & param = pCxrEntry->m_paramList[fldIdx];
+			CField * pParam = pCxrEntry->m_paramList[fldIdx];
 
-			fprintf(incFile, "\t\t\targs.m_%s = (%s)argv.m_%s;\n", param.m_name.c_str(), param.m_hostType.c_str(), param.m_name.c_str());
+			fprintf(incFile, "\t\t\targs.m_%s = (%s)argv.m_%s;\n", pParam->m_name.c_str(), pParam->m_hostType.c_str(), pParam->m_name.c_str());
 		}
 
 		fprintf(incFile, "\n");
@@ -1504,9 +1502,9 @@ void CDsnInfo::GenerateHifFiles()
 		pSeparator = "";
 
 		for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
-			CField & param = pCxrEntry->m_paramList[fldIdx];
+			CField * pParam = pCxrEntry->m_paramList[fldIdx];
 
-			fprintf(incFile, "%s%s &%s", pSeparator, param.m_hostType.c_str(), param.m_name.c_str());
+			fprintf(incFile, "%s%s &%s", pSeparator, pParam->m_hostType.c_str(), pParam->m_name.c_str());
 
 			pSeparator = ", ";
 		}
@@ -1521,9 +1519,9 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\n");
 
 		for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
-			CField & param = pCxrEntry->m_paramList[fldIdx];
+			CField * pParam = pCxrEntry->m_paramList[fldIdx];
 
-			fprintf(incFile, "\t\t\t%s = (%s)argv.m_%s;\n", param.m_name.c_str(), param.m_hostType.c_str(), param.m_name.c_str());
+			fprintf(incFile, "\t\t\t%s = (%s)argv.m_%s;\n", pParam->m_name.c_str(), pParam->m_hostType.c_str(), pParam->m_name.c_str());
 		}
 
 		fprintf(incFile, "\n");
@@ -1534,9 +1532,9 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\t\tstruct CRtnArgs_%s {\n", cxrCall.m_funcName.c_str());
 
 		for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
-			CField & param = cxrReturn.m_paramList[fldIdx];
+			CField * pParam = cxrReturn.m_paramList[fldIdx];
 
-			fprintf(incFile, "\t\t\t%s m_%s;\n", param.m_hostType.c_str(), param.m_name.c_str());
+			fprintf(incFile, "\t\t\t%s m_%s;\n", pParam->m_hostType.c_str(), pParam->m_name.c_str());
 		}
 
 		fprintf(incFile, "\t\t};\n");
@@ -1545,9 +1543,9 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\t\tstruct CRtnArgv_%s {\n", cxrCall.m_funcName.c_str());
 
 		for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
-			CField & param = cxrReturn.m_paramList[fldIdx];
+			CField * pParam = cxrReturn.m_paramList[fldIdx];
 
-			fprintf(incFile, "\t\t\tuint64_t m_%s;\n", param.m_name.c_str());
+			fprintf(incFile, "\t\t\tuint64_t m_%s;\n", pParam->m_name.c_str());
 		}
 
 		fprintf(incFile, "\t\t};\n");
@@ -1562,9 +1560,9 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\n");
 
 		for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
-			CField & param = cxrReturn.m_paramList[fldIdx];
+			CField * pParam = cxrReturn.m_paramList[fldIdx];
 
-			fprintf(incFile, "\t\t\targv.m_%s = (uint64_t)args.m_%s;\n", param.m_name.c_str(), param.m_name.c_str());
+			fprintf(incFile, "\t\t\targv.m_%s = (uint64_t)args.m_%s;\n", pParam->m_name.c_str(), pParam->m_name.c_str());
 		}
 
 		fprintf(incFile, "\t\t\treturn CHtModelUnitBase::SendReturn(argc, (uint64_t *)&argv);\n");
@@ -1575,9 +1573,9 @@ void CDsnInfo::GenerateHifFiles()
 		pSeparator = "";
 
 		for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
-			CField & param = cxrReturn.m_paramList[fldIdx];
+			CField * pParam = cxrReturn.m_paramList[fldIdx];
 
-			fprintf(incFile, "%s%s %s", pSeparator, param.m_hostType.c_str(), param.m_name.c_str());
+			fprintf(incFile, "%s%s %s", pSeparator, pParam->m_hostType.c_str(), pParam->m_name.c_str());
 
 			pSeparator = ", ";
 		}
@@ -1589,9 +1587,9 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\n");
 
 		for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
-			CField & param = cxrReturn.m_paramList[fldIdx];
+			CField * pParam = cxrReturn.m_paramList[fldIdx];
 
-			fprintf(incFile, "\t\t\targv.m_%s = (uint64_t)%s;\n", param.m_name.c_str(), param.m_name.c_str());
+			fprintf(incFile, "\t\t\targv.m_%s = (uint64_t)%s;\n", pParam->m_name.c_str(), pParam->m_name.c_str());
 		}
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\t\t\treturn CHtModelUnitBase::SendReturn(argc, (uint64_t *)&argv);\n");
@@ -1608,7 +1606,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "} // namespace Ht\n");
 		fprintf(incFile, "#endif // _HTV\n");
 
-	#else
+#else
 		fprintf(incFile, "//////////////////////////////////////////////////////\n");
 		fprintf(incFile, "// HT_MODEL Interface\n");
 		fprintf(incFile, "#ifdef HT_MODEL\n");
@@ -1713,9 +1711,9 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\tstruct CCallArgs_%s {\n", cxrCall.m_funcName.c_str());
 
 		for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
-			CField & param = pCxrEntry->m_paramList[fldIdx];
+			CField * pParam = pCxrEntry->m_paramList[fldIdx];
 
-			fprintf(incFile, "\t\t%s m_%s;\n", param.m_hostType.c_str(), param.m_name.c_str());
+			fprintf(incFile, "\t\t%s m_%s;\n", pParam->m_hostType.c_str(), pParam->m_name.c_str());
 		}
 
 		fprintf(incFile, "\t};\n");
@@ -1724,9 +1722,9 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\tstruct CCallArgv_%s {\n", cxrCall.m_funcName.c_str());
 
 		for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
-			CField & param = pCxrEntry->m_paramList[fldIdx];
+			CField * pParam = pCxrEntry->m_paramList[fldIdx];
 
-			fprintf(incFile, "\t\tuint64_t m_%s;\n", param.m_name.c_str());
+			fprintf(incFile, "\t\tuint64_t m_%s;\n", pParam->m_name.c_str());
 		}
 
 		fprintf(incFile, "\t};\n");
@@ -1744,9 +1742,9 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\n");
 
 		for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
-			CField & param = pCxrEntry->m_paramList[fldIdx];
+			CField * pParam = pCxrEntry->m_paramList[fldIdx];
 
-			fprintf(incFile, "\t\targs.m_%s = (%s)argv.m_%s;\n", param.m_name.c_str(), param.m_hostType.c_str(), param.m_name.c_str());
+			fprintf(incFile, "\t\targs.m_%s = (%s)argv.m_%s;\n", pParam->m_name.c_str(), pParam->m_hostType.c_str(), pParam->m_name.c_str());
 		}
 
 		fprintf(incFile, "\n");
@@ -1759,9 +1757,9 @@ void CDsnInfo::GenerateHifFiles()
 		pSeparator = "";
 
 		for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
-			CField & param = pCxrEntry->m_paramList[fldIdx];
+			CField * pParam = pCxrEntry->m_paramList[fldIdx];
 
-			fprintf(incFile, "%s%s &%s", pSeparator, param.m_hostType.c_str(), param.m_name.c_str());
+			fprintf(incFile, "%s%s &%s", pSeparator, pParam->m_hostType.c_str(), pParam->m_name.c_str());
 
 			pSeparator = ", ";
 		}
@@ -1776,9 +1774,9 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\n");
 
 		for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
-			CField & param = pCxrEntry->m_paramList[fldIdx];
+			CField * pParam = pCxrEntry->m_paramList[fldIdx];
 
-			fprintf(incFile, "\t\t%s = (%s)argv.m_%s;\n", param.m_name.c_str(), param.m_hostType.c_str(), param.m_name.c_str());
+			fprintf(incFile, "\t\t%s = (%s)argv.m_%s;\n", pParam->m_name.c_str(), pParam->m_hostType.c_str(), pParam->m_name.c_str());
 		}
 
 		fprintf(incFile, "\n");
@@ -1789,9 +1787,9 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\tstruct CRtnArgs_%s {\n", cxrCall.m_funcName.c_str());
 
 		for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
-			CField & param = cxrReturn.m_paramList[fldIdx];
+			CField * pParam = cxrReturn.m_paramList[fldIdx];
 
-			fprintf(incFile, "\t\t%s m_%s;\n", param.m_hostType.c_str(), param.m_name.c_str());
+			fprintf(incFile, "\t\t%s m_%s;\n", pParam->m_hostType.c_str(), pParam->m_name.c_str());
 		}
 
 		fprintf(incFile, "\t};\n");
@@ -1800,9 +1798,9 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\tstruct CRtnArgv_%s {\n", cxrCall.m_funcName.c_str());
 
 		for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
-			CField & param = cxrReturn.m_paramList[fldIdx];
+			CField * pParam = cxrReturn.m_paramList[fldIdx];
 
-			fprintf(incFile, "\t\tuint64_t m_%s;\n", param.m_name.c_str());
+			fprintf(incFile, "\t\tuint64_t m_%s;\n", pParam->m_name.c_str());
 		}
 
 		fprintf(incFile, "\t};\n");
@@ -1817,9 +1815,9 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\n");
 
 		for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
-			CField & param = cxrReturn.m_paramList[fldIdx];
+			CField * pParam = cxrReturn.m_paramList[fldIdx];
 
-			fprintf(incFile, "\t\targv.m_%s = (uint64_t)args.m_%s;\n", param.m_name.c_str(), param.m_name.c_str());
+			fprintf(incFile, "\t\targv.m_%s = (uint64_t)args.m_%s;\n", pParam->m_name.c_str(), pParam->m_name.c_str());
 		}
 
 		fprintf(incFile, "\t\treturn SendReturnBase(argc, (uint64_t *)&argv);\n");
@@ -1830,9 +1828,9 @@ void CDsnInfo::GenerateHifFiles()
 		pSeparator = "";
 
 		for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
-			CField & param = cxrReturn.m_paramList[fldIdx];
+			CField * pParam = cxrReturn.m_paramList[fldIdx];
 
-			fprintf(incFile, "%s%s %s", pSeparator, param.m_hostType.c_str(), param.m_name.c_str());
+			fprintf(incFile, "%s%s %s", pSeparator, pParam->m_hostType.c_str(), pParam->m_name.c_str());
 
 			pSeparator = ", ";
 		}
@@ -1844,9 +1842,9 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\n");
 
 		for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
-			CField & param = cxrReturn.m_paramList[fldIdx];
+			CField * pParam = cxrReturn.m_paramList[fldIdx];
 
-			fprintf(incFile, "\t\targv.m_%s = (uint64_t)%s;\n", param.m_name.c_str(), param.m_name.c_str());
+			fprintf(incFile, "\t\targv.m_%s = (uint64_t)%s;\n", pParam->m_name.c_str(), pParam->m_name.c_str());
 		}
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\t\treturn SendReturnBase(argc, (uint64_t *)&argv);\n");
@@ -1878,7 +1876,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "#endif // HT_MODEL\n");
 		fprintf(incFile, "#endif\n");
 
-	#endif
+#endif
 
 		incFile.FileClose();
 	}
@@ -2878,19 +2876,19 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(cppFile, "\to_hifToDisp_busy = r_hifToDisp_busy;\n");
 		fprintf(cppFile, "\n");
 		fprintf(cppFile, "\to_hifToHti_ctlRdy = r_hifToHti_ctlRdy;\n");
-		fprintf(cppFile, "\to_hifToHti_ctl    = r_hifToHti_ctl;\n");
+		fprintf(cppFile, "\to_hifToHti_ctl = r_hifToHti_ctl;\n");
 		fprintf(cppFile, "\n");
 		fprintf(cppFile, "\to_hifToHti_datRdy = r_hifToHti_datRdy;\n");
-		fprintf(cppFile, "\to_hifToHti_dat    = r_hifToHti_dat;\n");
+		fprintf(cppFile, "\to_hifToHti_dat = r_hifToHti_dat;\n");
 		fprintf(cppFile, "\n");
 		fprintf(cppFile, "\to_hifToHti_ctlAvl = r_hifToHti_ctlAvl;\n");
 		fprintf(cppFile, "\to_hifToHti_datAvl = r_hifToHti_datAvl;\n");
 		fprintf(cppFile, "\n");
 		fprintf(cppFile, "\to_hifP0ToMif_reqRdy = r_hifToMif_reqRdy;\n");
-		fprintf(cppFile, "\to_hifP0ToMif_req    = r_hifToMif_req;\n");
+		fprintf(cppFile, "\to_hifP0ToMif_req = r_hifToMif_req;\n");
+		fprintf(cppFile, "\to_hifP0ToMif_rdRspFull = false;\n");
 		fprintf(cppFile, "}\n");
 
 		cppFile.FileClose();
 	}
 }
-

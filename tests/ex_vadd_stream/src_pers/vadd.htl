@@ -1,5 +1,6 @@
-// -cl "C:\Ht\tests\ex_vadd_stream\src_pers\vadd.htl"
--wd "C:\Ht\tests\ex_vadd_stream\msvs12"
+// -cl $(HtToolsPath)/tests/ex_vadd_stream/src_pers/vadd.htl
+-wd $(HtToolsPath)/tests/ex_vadd_stream/msvs12
+
 -cp wx-690
 -uc 1
 -un Au

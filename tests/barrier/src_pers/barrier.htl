@@ -1,5 +1,6 @@
-// -cl "C:\Ht\tests\barrier\src_pers\barrier.htl"
--wd "C:\Ht\tests\barrier\msvs12\"
+// -cl $(HtToolsPath)/tests/barrier/src_pers/barrier.htl
+-wd $(HtToolsPath)/tests/barrier/msvs12/
+
 -cp wx-690
 -mt
 -ac 1
