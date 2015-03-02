@@ -1,0 +1,77 @@
+.\"
+.\" Man page for levstrcmp
+.\"
+.TH levstrcmp 1 " " " Convey " " Levenshtein String Compare (LEVSTRCMP_VERSION)"
+.SH NAME
+levstrcmp \- Levenshtein String Compare program
+.SH USAGE
+.B
+
+
+levstrcmp  <input-file> [-recl ##] [-pad ##] [-bfilter 0|1] [-lws] [-seedauto] [-nlhs #lhs] [-edis ##] [-cut] [-xio | -o <output-file>] [-t threads]
+
+
+.br
+.B
+ <input-file> :
+Input file of names.  This must be provided.
+
+.br
+.B
+-recl ## :
+The input name record length.  Use 0 if input-file is in ascii.  If a Convey Hash File (chf) file is specified then the recl used to create the chf file is stored in the header information and should not be set on the command-line.  If an ascii names file is specified then the recl is assumed to be 0.
+
+.br
+.B
+-pad ## :
+The output name record length.  Default=recl## if specified, otherwise 256.  If pad## and recl## are both specified and pad## is less than recl## then pad## is set equal to recl##.
+
+.br
+.B
+-bfilter 0|1 :
+input file format is Convey Hash File (chf).  If set to 0, do not use Bloom filter to determine name pairs.  If set to 1 then use Bloom filter data to calculate name pairs.  Using Bloom filter data can be significantly faster.
+
+.br
+.B
+-lws :
+Skip leading white space in each name.  If a Convey Hash File (chf) file is specified then the lws setting used to create the chf file is stored in the header information and should not be set on the command-line.
+
+.br
+.B
+-seedauto :
+Change seed value for scrambling list of left-hand-side and right-hand-side names to be dynamic.
+
+.br
+.B
+-nlhs #lhs :
+The number of left-hand-sides to compute all right-hand-side names against.  The default is all names.  Can be used to lessen the running time when only interested in performance comparisons.
+
+.br
+.B
+-edis ## :
+The edit distance to use for all compares [range: 0-4].  If a Convey Hash File (chf) file is specified then the edit distance used to create the chf file is stored in the header information and should not be set on the command-line.
+
+.br
+.B
+-cut :
+Pre-trim strings as they are read in.  Without pre-trimming, each string has the same recl length which gets trimmed down in the Levenshtein edit distance function call, sometimes affecting the per-call timing.
+
+.br
+.B
+-xio | -o <output-file> :
+.br
+-xio - disables all output to remove any i/o time for performance comparisons.
+.br
+-o <output-file> - specify the output file name.  Use '-' for stdout.
+
+
+
+.br
+levstrcmp compares all strings in the input file to each other and outputs all name pairs that are wihin the edit distance specified using the Levenshtein algorithm.  If "-bfilter 1" is specified on the command-line the levstrcmp uses the Bloom filter data in the Convet Hash File (chf) to quickly determine if the name pairs are within the edit distance, otherwise the normal Levenshtein algorithm is used per name pair.
+
+
+
+
+.br
+Please contact support@conveycomputer.com with support questions.
+

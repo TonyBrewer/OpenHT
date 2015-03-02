@@ -1,0 +1,12 @@
+#!/bin/sh
+
+if [ ! -f words.inp ]; then
+    cp -p /usr/share/dict/words words.inp
+fi
+
+cnyleved words.inp
+#cnyleved words.inp -no-coproc
+
+levstrcmp words.chf -bfilter 1 -nlhs 1000 -cut -xio
+#levstrcmp words.chf -bfilter 0 -nlhs 1000 -cut -xio
+

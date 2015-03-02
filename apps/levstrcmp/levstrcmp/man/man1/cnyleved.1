@@ -1,0 +1,76 @@
+.\"
+.\" Man page for cnyleved
+.\"
+.TH cnyleved 1 " " " Convey " " Convey Levenshtein Edit Distance (CNYLEVED_VERSION)"
+.SH NAME
+cnyleved \- Convey Levenshtein Edit Distance program
+.SH USAGE
+.B
+
+
+cnyleved <input-file> [-edis ##] [-recl ##] [-xrec ##] [-lws] [-pairs] [-o <output-file>] [-t #threads] [-no-coproc] [-no-filter]
+
+
+.br
+.B
+ <input-file> :
+Input file of names.  This must be provided.
+
+.br
+.B
+-edis ## :
+The edit distance to use for all compares [range: 0-4].  Default=2.
+
+.br
+.B
+-recl ## :
+The input name record length.  Use 0 if input-file is in ascii.  Default=0.
+
+.br
+.B
+-xrec ## :
+The output name record length.  Default=recl## if specified, otherwise 20.  If xrec## and recl## are both specified and xrec## is less than recl## then xrec## is set equal to recl##.
+
+.br
+.B
+-lws :
+Skip leading white space in each name.  Default is to keep leading white space, if found.
+
+.br
+.B
+-pairs
+Output name pairs in ascii, instead of Convey Bloom filter format.
+
+.br
+.B
+-o <output-file> :
+Specify the output file name.  Use '-' for stdout.
+
+.br
+.B
+-t #threads :
+Number of threads to use.  Use < 0 or 'all' for all threads.  Default=all.
+
+.br
+.B
+-no-coproc :
+On Convey systems with a co-processor, do not use co-processor for string compares.  Note this will result in a significant performance penalty.
+
+.br
+.B
+-no-filter :
+Use traditional method on complete strings for all string compares.  On Convey systems with a co-processor, this will not use the co-processor for string compares.  Note this will result in a significant performance penalty.
+
+
+
+.br
+cnyleved compares all strings in the input file to each other and outputs all name pairs that are wihin the edit distance specified using the Levenshtein algorithm.  The default output is to create a Convey Hash File (chf) format of the form:
+
+   <name [xrec## bytes]><name hash [1 byte]><Bloom filter [16 bytes]>
+
+
+
+
+.br
+Please contact support@conveycomputer.com with support questions.
+

@@ -1,0 +1,320 @@
+// common defines / types
+//
+#define CTL_HTID_W 1
+#define READ_HTID_W 5
+#define MCH_HTID_W 4
+
+#define STR_RAM_ADDR_W 9
+#define LINE_STR_CNT_L_W 3
+#define LINE_STR_CNT_R_W 3
+#define LINE_STR_CNT_L (1 << LINE_STR_CNT_L_W)
+#define LINE_STR_CNT_R (1 << LINE_STR_CNT_R_W)
+#define MATCH_MASK_W (LINE_STR_CNT_L * LINE_STR_CNT_R)
+#define RAM_BLOCK_IDX_W 8
+#define RAM_BLOCK_SIZE_W (RAM_BLOCK_IDX_W + 1)
+#define RAM_BLOCK_SIZE (1 << RAM_BLOCK_IDX_W)
+#define BLK_STR_CNT_L (RAM_BLOCK_SIZE * LINE_STR_CNT_L)
+#define BLK_STR_CNT_R (RAM_BLOCK_SIZE * LINE_STR_CNT_R)
+#define BLK_IDX_L_W (RAM_BLOCK_IDX_W + LINE_STR_CNT_L_W)
+#define BLK_IDX_R_W (RAM_BLOCK_IDX_W + LINE_STR_CNT_R_W)
+#define BLK_SIZE_L_W (RAM_BLOCK_SIZE_W + LINE_STR_CNT_L_W)
+#define BLK_SIZE_R_W (RAM_BLOCK_SIZE_W + LINE_STR_CNT_R_W)
+#define BLK_SIZE_W BLK_SIZE_R_W
+#define SIZE_OF_STRING 16
+#define EDIT_DIST_W 3
+
+typedef ht_uint5 StrLen_t;
+typedef ht_uint4 MchAdjD_t;
+typedef uint16_t ConSize_t;
+typedef uint16_t ConId_t;
+typedef uint16_t ConIdx_t;
+typedef sc_uint<BLK_SIZE_W> BlkSize_t;
+typedef sc_uint<BLK_SIZE_L_W> BlkSizeL_t;
+typedef sc_uint<BLK_SIZE_R_W> BlkSizeR_t;
+typedef ht_uint1 RamBlk_t;
+typedef sc_uint<STR_RAM_ADDR_W> RamSize_t;
+typedef sc_uint<LINE_STR_CNT_L_W> LineStrIdxL_t;
+typedef sc_uint<LINE_STR_CNT_R_W> LineStrIdxR_t;
+typedef sc_uint<LINE_STR_CNT_L_W+1> LineStrCntL_t;
+typedef sc_uint<LINE_STR_CNT_R_W+1> LineStrCntR_t;
+typedef sc_uint<LINE_STR_CNT_L> LineStrMaskL_t;
+typedef sc_uint<LINE_STR_CNT_R> LineStrMaskR_t;
+typedef sc_uint<MATCH_MASK_W> MatchMask_t;
+typedef ht_uint48 MemAddr_t;
+typedef ht_uint6 EditD_t;
+typedef ht_uint1 RamIdx_t;
+typedef ht_uint1 SideIdx_t;
+typedef ht_uint4 LineStrSize_t;
+typedef ht_uint1 RamBlkIdx_t;
+
+struct CMatchId {
+	ConId_t m_conIdL;
+	ConIdx_t m_conIdxL;
+	ConId_t m_conIdR;
+	ConIdx_t m_conIdxR;
+};
+
+struct CLineMatch {
+	MatchMask_t m_matchMask;
+	CMatchId m_pair;
+};
+
+union CStrPair {
+	struct {
+		ConId_t m_conIdL;
+		ConIdx_t m_conIdxL;
+		ConId_t m_conIdR;
+		ConIdx_t m_conIdxR;
+	};
+	uint64_t m_data64;
+};
+	
+union CStrUnion {
+	struct {
+		uint64_t m_data0;
+		uint16_t m_data1;
+	};
+	uint8_t m_byte[10];
+};
+
+////////////////////////////////////////////////////
+// Control Module
+
+dsnInfo.AddModule(name=ctl, htIdW=CTL_HTID_W);
+ctl.AddInst(name=CTL_ENTRY);
+ctl.AddInst(name=CTL_BLK_L_LOOP);
+ctl.AddInst(name=CTL_BLK_R_LOOP);
+ctl.AddInst(name=CTL_RD_RTN);
+ctl.AddInst(name=CTL_RD_COMPLETE);
+ctl.AddInst(name=CTL_MCH_LOOP);
+ctl.AddInst(name=CTL_MCH_RTN);
+ctl.AddInst(name=CTL_MCH_COMPLETE);
+ctl.AddInst(name=CTL_WAIT_TIL_IDLE);
+ctl.AddInst(name=CTL_WAIT_RTN);
+
+ctl.AddPrivate()
+	.AddVar(type=StrLen_t, name=strLenL)
+	.AddVar(type=StrLen_t, name=strLenR)
+	.AddVar(type=MchAdjD_t, name=mchAdjD)
+	.AddVar(type=ConId_t, name=conIdL)
+	.AddVar(type=ConId_t, name=conIdR)
+	.AddVar(type=ConSize_t, name=conSizeL)
+	.AddVar(type=ConSize_t, name=conSizeR)
+	.AddVar(type=MemAddr_t, name=conBaseL)
+	.AddVar(type=MemAddr_t, name=conBaseR)
+	.AddVar(type=ht_uint36, name=rsltCnt)
+	.AddVar(type=ConIdx_t, name=conIdxL)
+	.AddVar(type=ConIdx_t, name=conIdxR)
+	.AddVar(type=BlkSizeL_t, name=blkSizeL)
+	.AddVar(type=BlkSizeR_t, name=blkSizeR)
+	.AddVar(type=BlkSizeR_t, name=blkIdxR)
+	.AddVar(type=LineStrSize_t, name=lineStrIdx)
+	;
+
+ctl.AddShared()
+	.AddVar(type=ht_uint6, name=threadActiveCnt)
+	;
+
+ctl.AddEntry(func=htmain, inst=CTL_ENTRY, host=true)
+	.AddParam(hostType=int, type=StrLen_t, name=strLenL)
+	.AddParam(hostType=int, type=StrLen_t, name=strLenR)
+	.AddParam(hostType=int, type=MchAdjD_t, name=mchAdjD)
+	.AddParam(hostType=uint16_t, type=ConId_t, name=conIdL)
+	.AddParam(hostType=uint16_t, type=ConId_t, name=conIdR)
+	.AddParam(hostType=uint16_t, type=ConSize_t, name=conSizeL)
+	.AddParam(hostType=uint16_t, type=ConSize_t, name=conSizeR)
+	.AddParam(hostType="void *", type=MemAddr_t, name=conBaseL)
+	.AddParam(hostType="void *", type=MemAddr_t, name=conBaseR)
+	;
+
+ctl.AddReturn(func=htmain)
+	.AddParam(hostType=uint64_t, type=ht_uint36, name=rsltCnt)
+	;
+
+ctl.AddCall(func=Read, fork=true);
+ctl.AddCall(func=MchBlkLx1R, fork=true, call=true);
+
+////////////////////////////////////////////////////
+// Memory Read Module
+
+dsnInfo.AddModule(name=read, htIdW=READ_HTID_W);
+read.AddInst(name=READ_ENTRY);
+read.AddInst(name=READ_BLK_LOOP0);
+read.AddInst(name=READ_BLK_LOOP1);
+read.AddInst(name=READ_RTN);
+
+
+read.AddPrivate()
+	.AddVar(type=MemAddr_t, name=blkBase)
+	.AddVar(type=BlkSize_t, name=blkSize)
+	.AddVar(type=LineStrSize_t, name=lineStrIdx)
+	.AddVar(type=SideIdx_t, name=sideIdx)
+	.AddVar(type=BlkSize_t, name=blkIdx)
+	.AddVar(type=RamBlkIdx_t, name=ramBlkIdx)
+	;
+
+read.AddShared()
+	.AddVar(type=MemAddr_t, name=strBaseAddr)
+	.AddVar(type=ht_uint6, name=threadActiveCnt)
+	;
+
+
+read.AddEntry(func=Read, inst=READ_ENTRY)
+	.AddParam(type=MemAddr_t, name=blkBase)
+	.AddParam(type=BlkSize_t, name=blkSize)
+	.AddParam(type=LineStrSize_t, name=lineStrIdx)
+	.AddParam(type=SideIdx_t, name=sideIdx)
+	.AddParam(type=RamBlkIdx_t, name=ramBlkIdx)
+	;
+
+read.AddReturn(func=Read)
+	;
+
+read.AddReadMem(queueW=5, rspCntW=6)
+	.AddDst(name=strSetL0, var=strSetL, field=data0)
+	.AddDst(name=strSetL1, var=strSetL, field=data1)
+	.AddDst(name=strSetR0, var=strSetR, field=data0)
+	.AddDst(name=strSetR1, var=strSetR, field=data1)
+	;
+
+read.AddGlobal(var=strSetL, addr1W=9, dimen1=LINE_STR_CNT_L)
+	.AddField(type=uint64_t, name=data0, read=false, write=false)
+	.AddField(type=uint16_t, name=data1, read=false, write=false)
+	;
+
+read.AddGlobal(var=strSetR, addr1W=9, dimen1=LINE_STR_CNT_R)
+	.AddField(type=uint64_t, name=data0, read=false, write=false)
+	.AddField(type=uint16_t, name=data1, read=false, write=false)
+	;
+
+////////////////////////////////////////////////////
+// Match Module
+
+dsnInfo.AddModule(name=mch, htIdW=MCH_HTID_W);
+
+#define SCORE_MAX (EDIT_DIST_W+1)
+#define STR_CMP_LEN 10
+typedef sc_biguint<STR_CMP_LEN * STR_CMP_LEN> CmpMatrix_t;
+#define SCORE_WIDTH (EDIT_DIST_W*2+1)
+#define SCORE0 0
+#define SCORE1 1
+#define SCORE2 3
+#define SCORE3 7
+#define SCORE4 15
+
+typedef ht_uint4 Score_t;
+
+struct ScoreStruct {
+	Score_t m_score[SCORE_WIDTH];
+};
+
+mch.AddInst(name=MCH_ENTRY);
+mch.AddInst(name=MCH_BLK_L_LOOP);
+mch.AddInst(name=MCH_WAIT_TIL_IDLE);
+
+mch.AddHostData(dir=out);
+
+mch.AddShared()
+	.AddVar(type=CLineMatch, name=lineMatchQue, queueW=5)
+	.AddVar(type=MatchMask_t, name=processedMask)
+	.AddVar(type=CLineMatch, name=lineMatch)
+	.AddVar(type=bool, name=findNextMatchBusy)
+	.AddVar(type=ht_uint36, name=rsltCnt)
+	.AddVar(type=bool, name=hifOutQuePush)
+	.AddVar(type=CStrPair, name=strPair)
+	;
+
+mch.AddPrivate()
+	.AddVar(type=StrLen_t, name=strLenL)
+	.AddVar(type=StrLen_t, name=strLenR)
+	.AddVar(type=MchAdjD_t, name=cmpAdjD)
+	.AddVar(type=ConId_t, name=conIdL)
+	.AddVar(type=ConId_t, name=conIdR)
+	.AddVar(type=ConIdx_t, name=conIdxL)
+	.AddVar(type=ConIdx_t, name=conIdxR)
+	.AddVar(type=RamSize_t, name=ramIdxR)
+	.AddVar(type=BlkSizeL_t, name=blkSizeL)
+	.AddVar(type=LineStrCntR_t, name=lineStrCntR)
+	.AddVar(type=RamBlk_t, name=ramBlkIdx)
+
+	.AddVar(type=RamSize_t, name=ramIdxL)
+	.AddVar(type=BlkSizeL_t, name=blkIdxL)
+	;
+
+mch.AddEntry(func=MchBlkLx1R, inst=MCH_ENTRY)
+	.AddParam(type=StrLen_t, name=strLenL)
+	.AddParam(type=StrLen_t, name=strLenR)
+	.AddParam(type=MchAdjD_t, name=cmpAdjD)
+	.AddParam(type=ConId_t, name=conIdL)
+	.AddParam(type=ConId_t, name=conIdR)
+	.AddParam(type=ConIdx_t, name=conIdxL)
+	.AddParam(type=ConIdx_t, name=conIdxR)
+	.AddParam(type=RamSize_t, name=ramIdxR)
+	.AddParam(type=BlkSizeL_t, name=blkSizeL)
+	.AddParam(type=LineStrCntR_t, name=lineStrCntR)
+	.AddParam(type=RamBlk_t, name=ramBlkIdx)
+	;
+
+mch.AddReturn(func=MchBlkLx1R)
+	.AddParam(type=ht_uint36, name=rsltCnt)
+	;
+
+mch.AddGlobal(var=strSetL, addr1W=9, addr1=ramIdxL, dimen1=LINE_STR_CNT_L, extern=true)
+	.AddField(type=uint64_t, name=data0, read=true, write=false)
+	.AddField(type=uint16_t, name=data1, read=true, write=false)
+	;
+
+mch.AddGlobal(var=strSetR, addr1W=9, addr1=ramIdxR, dimen1=LINE_STR_CNT_R, extern=true)
+	.AddField(type=uint64_t, name=data0, read=true, write=false)
+	.AddField(type=uint16_t, name=data1, read=true, write=false)
+	;
+
+mch.AddFunction(type=void, name=ByteCmpMatrix)
+	.AddParam(dir=output, type=CmpMatrix_t, name=c_cmpMatrix)
+	.AddParam(dir=input, type=CStrUnion, name=r_strL)
+	.AddParam(dir=input, type=CStrUnion, name=r_strR)
+	;
+
+mch.AddFunction(type=void, name=levenshteinBand)
+	.AddParam(dir=input, type=int, name=level)
+	.AddParam(dir=input, type=CmpMatrix_t, name=matchArray)
+	.AddParam(dir=input, type=ScoreStruct, name=lscore)
+	.AddParam(dir=output, type=ScoreStruct, name=nscore)
+	;
+mch.AddFunction(type=void, name=levenshtein2Band)
+	.AddParam(dir=input, type=int, name=level)
+	.AddParam(dir=input, type=bool, name=valid)
+	.AddParam(dir=input, type=CmpMatrix_t, name=matchArray)
+	.AddParam(dir=input, type=ScoreStruct, name=lscore)
+	.AddParam(dir=output, type=ScoreStruct, name=nscore)
+	;
+mch.AddFunction(type=void, name=FindNextMatch)
+	.AddParam(dir=output, type=bool, name=bZero)
+	.AddParam(dir=output, type=LineStrCntL_t, name=idxL)
+	.AddParam(dir=output, type=LineStrCntR_t, name=idxR)
+	.AddParam(dir=output, type=MatchMask_t, name=processedMask)
+	.AddParam(dir=input, type=MatchMask_t, name=r_processedMask)
+	.AddParam(dir=input, type=MatchMask_t, name=r_matchMask)
+	;
+mch.AddFunction(name=Tzc, type=void)
+	.AddParam(dir=output, type=ht_uint4, name=cnt)
+	.AddParam(dir=input, type=uint16_t, name=m0)
+	;
+
+mch.AddStage()
+	.AddVar(type=CStrUnion, name=strL, dimen1=2, dimen2=LINE_STR_CNT_L, range=1)
+	.AddVar(type=CStrUnion, name=strR, dimen1=2, dimen2=LINE_STR_CNT_R, range=1)
+	.AddVar(type=CmpMatrix_t, name=cmpMatrix, dimen1=LINE_STR_CNT_L, dimen2=LINE_STR_CNT_R, range=2-7)
+	.AddVar(type=Score_t, name=mchAdjD, range=1-7)
+	.AddVar(type=ht_uint6, name=strLenDiff, range=1-6)
+	.AddVar(type=bool, name=strLenDiffRange, dimen1=LINE_STR_CNT_L, dimen2=LINE_STR_CNT_R, range=6-7)
+	.AddVar(type=Score_t, name=strLenDiffA, dimen1=LINE_STR_CNT_L, dimen2=LINE_STR_CNT_R, range=6-7)
+	.AddVar(type=bool, name=cmpValid, range=1-8)
+	.AddVar(type=ScoreStruct, name=score, dimen1=LINE_STR_CNT_L, dimen2=LINE_STR_CNT_R, range=3-8)
+	.AddVar(type=CMatchId, name=matchId, range=1-8)
+	.AddVar(type=LineStrCntL_t, name=lineStrCntL, range=1-2)
+	.AddVar(type=LineStrMaskL_t, name=lineMaskL, range=2-7)
+	.AddVar(type=LineStrCntR_t, name=lineStrCntR, range=1-2, init=true)
+	.AddVar(type=LineStrMaskR_t, name=lineMaskR, range=2-7)
+	.AddVar(type=MatchMask_t, name=matchMask, range=7-8)
+	;
