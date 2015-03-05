@@ -46,5 +46,6 @@ clean:
 	@$(MAKE) -s -C $(LIB_DIR) clean
 	@$(MAKE) -s -C import clean
 
-distclean cleaner : clean
+cleaner distclean: clean
 	@$(MAKE) -s -C $(LIB_DIR) $@
+	@$(MAKE) -s -C import $@
