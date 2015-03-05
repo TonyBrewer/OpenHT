@@ -1,5 +1,0 @@
-CFLAGS = -g -O3 -std=c99
-LDLIBS = -lm -lrt
-
-BUILD_OPENMP = Yes
-CFLAGS_OPENMP = -fopenmp
