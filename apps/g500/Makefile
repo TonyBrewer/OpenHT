@@ -3,28 +3,31 @@ export CNY_PDK_REV      ?= latest
 export CNY_PDK_PLATFORM ?= hc-2ex
 
 LIB_DIR  = lib_pers
-DIR_G500 = graph500-2.1.4
+DIR_G500 = import/graph500
 EXE_G500 = $(DIR_G500)/convey-csr/convey-csr
 
 .PHONY: app
 app:
+	cd import > /dev/null && $(MAKE)
 	cd $(LIB_DIR) > /dev/null && $(MAKE) pdk_config
 	cd $(LIB_DIR) > /dev/null && $(MAKE) libapp
-	$(MAKE) -C $(DIR_G500) LIB_HT=../$(LIB_DIR)/libhtapp.a
+	$(MAKE) -C $(DIR_G500) LIB_HT=../../$(LIB_DIR)/libhtapp.a
 	cp -p $(EXE_G500) app
 
 sysc:
+	cd import > /dev/null && $(MAKE)
 	cd $(LIB_DIR) > /dev/null && $(MAKE) pdk_config
 	cd $(LIB_DIR) > /dev/null && $(MAKE) libsysc
 	$(MAKE) -C $(DIR_G500) \
-		DEFINE=-DNBFS_max=1 LIB_HT=../$(LIB_DIR)/libhtsysc.a
+		DEFINE=-DNBFS_max=1 LIB_HT=../../$(LIB_DIR)/libhtsysc.a
 	cp -p $(EXE_G500) app_sysc
 
 vsim: app_vsim
+	cd import > /dev/null && $(MAKE)
 	cd $(LIB_DIR) > /dev/null && $(MAKE) pdk_config
 	cd $(LIB_DIR) > /dev/null && $(MAKE) libvsim vfiles
 	$(MAKE) -C $(DIR_G500) \
-		DEFINE=-DNBFS_max=1 LIB_HT=../$(LIB_DIR)/libhtvsim.a
+		DEFINE=-DNBFS_max=1 LIB_HT=../../$(LIB_DIR)/libhtvsim.a
 	cp -p $(EXE_G500) app_vsim.exe
 
 app_vsim:
@@ -41,10 +44,7 @@ pers:
 clean:
 	rm -rf app app_sysc app_vsim app_vsim.exe HtMonRpt.txt
 	@$(MAKE) -s -C $(LIB_DIR) clean
-	@$(MAKE) -s -C $(DIR_G500) clean
+	@$(MAKE) -s -C import clean
 
-cleaner : clean
-	@$(MAKE) -s -C $(LIB_DIR) $@
-
-distclean: cleaner
+distclean cleaner : clean
 	@$(MAKE) -s -C $(LIB_DIR) $@
