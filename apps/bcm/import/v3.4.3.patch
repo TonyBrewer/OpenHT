@@ -173,7 +173,7 @@ diff -u cgminer-3.4.3.orig/Makefile.am cgminer-3.4.3/Makefile.am
 +
 +if HAS_OPENHT
 +cgminer_SOURCES += driver-openht.c driver-openht.h
-+cgminer_LDADD += ../lib_pers/libhtapp.a
++cgminer_LDADD += ../../lib_pers/libhtapp.a
 +cgminer_LDADD += /opt/convey/lib/cny_initruntime.o
 +cgminer_LDADD += -L /opt/convey/lib -lcny_utils -lPersSupport -ldl
 +#cgminer_LDADD += -L /opt/convey/lib -lwx_runtime -ldl
@@ -284,7 +284,7 @@ diff -u /dev/null cgminer-3.4.3/driver-openht.c
 +#include "hexdump.c"
 +#include "util.h"
 +
-+#include "../lib_pers/src/HtBcmLib.h"
++#include "../../lib_pers/src/HtBcmLib.h"
 +
 +struct device_drv openht_drv;
 +
