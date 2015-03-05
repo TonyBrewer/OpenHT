@@ -18,6 +18,7 @@ update_systemc: $(SYSTEMC_TAR)
 	    cp -rp systemc-$(SYSTEMC_VER)/include local_systemc && \
 	    cp -rp systemc-$(SYSTEMC_VER)/lib-* local_systemc
 	rm -rf local_systemc && mv $(SYSTEMC_BUILD)/local_systemc .
+	rm -rf $(SYSTEMC_BUILD)
 
 $(SYSTEMC_TAR):
 	@echo "Please download $@ into the import directory"
