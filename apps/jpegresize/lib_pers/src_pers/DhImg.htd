@@ -1,0 +1,71 @@
+#ifdef DHIMG_FIXTURE
+
+#include "JpegCommon.h"
+#include "PersStructs.h"
+
+dsnInfo.AddModule(name=dhImg, htIdW=0);
+
+dhImg.AddInst(name=DHIMG_ENTRY);
+dhImg.AddInst(name=DHIMG_HORZ);
+dhImg.AddInst(name=DHIMG_DEC_JOIN);
+dhImg.AddInst(name=DHIMG_HCTL_JOIN);
+dhImg.AddInst(name=DHIMG_HDM_JOIN);
+dhImg.AddInst(name=DHIMG_DEC_CONT);
+dhImg.AddInst(name=DHIMG_HCTL_CONT);
+dhImg.AddInst(name=DHIMG_HDM_CONT);
+dhImg.AddInst(name=DHIMG_RETURN);
+
+dhImg.AddPrivate()
+	.AddVar(type=uint8_t, name=jobId)
+	.AddVar(type=ht_uint48, name=pJobInfo)
+	.AddVar(type=ht_uint2, name=imageIdx)
+	.AddVar(type=ht_uint2, name=persMode)
+	;
+
+dhImg.AddShared()
+	.AddVar(type=ht_uint1, name=fileIdx)
+    ;
+
+dhImg.AddEntry(func=htmain, inst=DHIMG_ENTRY, host=true)
+	.AddParam(type=uint8_t, name=jobId)
+	.AddParam(hostType=uint64_t, type=ht_uint48, name=pJobInfo)
+	.AddParam(hostType=uint8_t, type=ht_uint2, name=persMode)
+	;
+
+dhImg.AddReturn(func=htmain)
+	.AddParam(type=uint8_t, name=jobId)
+	;
+
+dhImg.AddCall(func=dhInfo)
+	;
+
+dhImg.AddCall(func=hwrk, fork=true)
+	;
+
+dhImg.AddCall(func=dec, fork=true)
+	;
+
+	// horz write messages - mimics vertical resizer (drops messages)
+dhImg.AddCall(func=hdm, fork=true)
+	;
+
+////////////////////////////////////////
+
+dsnInfo.AddModule(name=hdm, htIdW=0);
+
+hdm.AddInst(name=HDM_ENTRY)
+	;
+
+hdm.AddEntry(func=hdm, inst=HDM_ENTRY)
+	;
+
+hdm.AddReturn(func=hdm)
+	;
+
+hdm.AddShared()
+	.AddVar(type=bool, name=bEndOfImage)
+	;
+
+hdm.AddMsgIntf(dir=in, name=hrm, type=HorzResizeMsg);
+
+#endif

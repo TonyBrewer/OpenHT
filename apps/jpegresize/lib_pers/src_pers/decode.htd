@@ -1,0 +1,484 @@
+#include "PersConfig.h"
+
+#ifdef DEC
+
+#include "JpegCommon.h"
+#include "PersStructs.h"
+
+////////////////////////////////////////
+typedef sc_uint<DPIPE_W> dpipe_id_t;
+typedef sc_uint<DPIPE_W+1> dpipe_cnt_t;
+
+
+dsnInfo.AddModule(name=dec, htIdW=0);
+
+dec.AddInst(name=DEC_START);
+dec.AddInst(name=DEC_LOOP);
+dec.AddInst(name=DEC_JOIN);
+dec.AddInst(name=DEC_RETURN);
+
+dec.AddPrivate()
+	.AddVar(type=dpipe_id_t, name=pid)
+	.AddVar(type=uint8_t, name=jobId)
+	.AddVar(type=ht_uint2, name=imageIdx)
+	.AddVar(type=McuRows_t, name=rstIdx)
+	.AddVar(type=ht_uint48, name=pInPtr)
+	.AddVar(type=McuCols_t, name=firstRstMcuCnt)
+	;
+
+dec.AddShared()
+	.AddVar(type=ht_uint2, name=compCnt)
+	.AddVar(type=McuRows_t, name=rstCnt)
+	.AddVar(type=McuCols_t, name=mcuColsRst)
+	.AddVar(type=ht_uint22, name=numBlk)
+	.AddVar(type=ht_uint48, name=pRstBase)
+	.AddVar(type=ht_uint3, name=callCnt)
+	.AddVar(type=dpipe_id_t, name=pidPool, queueW=DPIPE_W)
+	.AddVar(type=ht_uint4, name=pidPoolInitCnt)
+	;
+
+dec.AddGlobal(var=rstOff, addr1W=MCU_ROWS_W, addr1=rstIdx)
+        .AddField(type=ht_uint26, name=e, read=true, write=true)
+        .AddField(type=McuCols_t, name=m, read=true, write=true)
+        ;
+
+dec.AddEntry(func=dec, inst=DEC_START)
+	.AddParam(type=ht_uint2, name=imageIdx)
+	.AddParam(type=uint8_t, name=jobId)
+	;
+dec.AddReturn(func=dec)
+	;
+
+dec.AddMsgIntf(dir=in, name=jobInfo, type=JobInfoMsg);
+
+dec.AddCall(func=ihuf, fork=true)
+	;
+
+dec.AddFunction(type=void, name=RecvJobInfo);
+
+////////////////////////////////////////
+
+#ifdef IHUF2
+
+#define IHUF_MEM_CNT_W 1
+#define IHUF_MEM_CNT (1<<IHUF_MEM_CNT_W)
+typedef sc_uint<IHUF_MEM_CNT_W> IhufMemCnt_t;
+
+#define IHUF_MEM_LINES_W 5
+#define IHUF_MEM_LINES (1<<IHUF_MEM_LINES_W)
+#define IHUF_MEM_BUF_W (IHUF_MEM_LINES_W + 3)
+#define IHUF_MEM_BYTE_W (IHUF_MEM_BUF_W + 3)
+
+typedef sc_uint<IHUF_MEM_LINES_W> IhufMemLines_t;
+typedef sc_uint<IHUF_MEM_BYTE_W> IhufMemBytes_t;
+
+union IhufLookup {
+	struct {
+		uint32_t m_valueBits : 4;
+		uint32_t m_skipK : 4;
+		uint32_t m_huffBits : 4;
+		uint32_t m_peekBits : 4;
+		uint32_t m_bFastDec : 1;
+		uint32_t m_bValueZero : 1;
+	};
+	uint32_t m_u18 : 18;
+};
+
+dsnInfo.AddModule(name=ihuf2, htIdW=DPIPE_W, pause=true);
+
+ihuf2.AddInst(name=IHUF_ENTRY);
+ihuf2.AddInst(name=IHUF_READ);
+ihuf2.AddInst(name=IHUF_RD_WAIT);
+ihuf2.AddInst(name=IHUF_XFER);
+
+ihuf2.AddPrivate()
+	.AddVar(type=dpipe_id_t, name=pid)
+	.AddVar(type=uint8_t, name=jobId)
+	.AddVar(type=ht_uint2, name=imageIdx)
+	.AddVar(type=McuRows_t, name=rstIdx)
+	.AddVar(type=ht_uint48, name=pInPtr)
+	.AddVar(type=ht_uint48, name=pInPtrEnd)
+	.AddVar(type=ht_uint2, name=compCnt)
+	.AddVar(type=ht_uint22, name=numBlk)
+	.AddVar(type=McuCols_t, name=mcuCols)
+	.AddVar(type=McuCols_t, name=firstRstMcuCnt)
+	.AddVar(type=IhufMemCnt_t, name=bufSel)
+	.AddVar(type=IhufMemLines_t, name=cnt)
+	.AddVar(type=ht_uint2, name=blkRow)
+	.AddVar(type=ht_uint2, name=blkCol)
+	;
+
+ihuf2.AddShared()
+	.AddVar(type=uint64_t, name=memBuf, dimen1=DPIPE_CNT, addr1W=1, addr2W=IHUF_MEM_BUF_W, blockRam=true)
+	.AddVar(type=int16_t, name=huffCode, dimen1=DPIPE_CNT, addr1W=1+1, addr2W=8, blockRam=true)
+	.AddVar(type=ht_int18, name=maxCode, dimen1=DPIPE_CNT, addr1W=1+1, addr2W=5, blockRam=true)
+	.AddVar(type=int8_t, name=valOff, dimen1=DPIPE_CNT, addr1W=1+1, addr2W=5, blockRam=true)
+	.AddVar(type=IhufLookup, name=lookup, dimen1=DPIPE_CNT, addr1W=1+1, addr2W=8, blockRam=true)
+	.AddVar(type=ht_uint2, name=blkRowsPerMcu, dimen1=3, reset=false)
+	.AddVar(type=ht_uint2, name=blkColsPerMcu, dimen1=3, reset=false)
+	.AddVar(type=ht_uint1, name=dcDhtId, dimen1=3, reset=false)
+	.AddVar(type=ht_uint1, name=acDhtId, dimen1=3, reset=false)
+	.AddVar(type=ht_uint2, name=dcpDqtId, dimen1=3, reset=false)
+	.AddVar(type=dpipe_id_t, name=tdmResume)
+
+	.AddVar(type=bool, name=nextByteVal, dimen1=DPIPE_CNT)
+	.AddVar(type=uint8_t, name=nextByte, dimen1=DPIPE_CNT, reset=false)
+	.AddVar(type=dpipe_id_t, name=htId, dimen1=DPIPE_CNT)
+	.AddVar(type=bool, name=paused, dimen1=DPIPE_CNT)
+	.AddVar(type=uint8_t, name=jobId)
+	.AddVar(type=ht_uint2, name=imageIdx)
+	.AddVar(type=McuRows_t, name=rstIdx, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_uint22, name=numBlk, reset=false)
+	.AddVar(type=ht_uint22, name=blkCnt, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_uint2, name=compCnt)
+	.AddVar(type=bool, name=bufRdy, dimen1=DPIPE_CNT, dimen2=IHUF_MEM_CNT)
+	.AddVar(type=IhufMemCnt_t, name=bufSel, dimen1=DPIPE_CNT)
+	.AddVar(type=IhufMemBytes_t, name=bufRa, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_uint4, name=state, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_uint5, name=bitsLeft, dimen1=DPIPE_CNT, reset=false)
+	.AddVar(type=ht_uint4, name=valueBits, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_uint23, name=bitBuffer, dimen1=DPIPE_CNT, reset=false)
+	.AddVar(type=ht_uint4, name=saveSkipK, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_int16, name=dec1Buf, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_uint2, name=dec1Bytes, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_uint5, name=iterBits, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_int20, name=iterBuf, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_uint7, name=k, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_uint2, name=compIdx, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_uint1, name=mcuBlkCol, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_uint1, name=mcuBlkRow, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_int16, name=lastDcValue, dimen1=DPIPE_CNT, dimen2=3)
+	.AddVar(type=bool, name=bLastFF, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_uint8, name=huffCodeAddr, dimen1=DPIPE_CNT)
+	.AddVar(type=coefMsg, name=coefMsgQue, dimen1=DPIPE_CNT, queueW=9, blockRam=true)
+	.AddVar(type=McuCols_t, name=mcuCnt, dimen1=DPIPE_CNT)
+	.AddVar(type=McuCols_t, name=firstRstMcuCnt, dimen1=DPIPE_CNT)
+	.AddVar(type=bool, name=firstRst, dimen1=DPIPE_CNT)
+	.AddVar(type=McuCols_t, name=mcuCols)
+	;
+
+ihuf2.AddStage()
+	.AddVar(type=bool, name=coefMsgVal, dimen1=DPIPE_CNT, range=1-4)
+	.AddVar(type=coefMsg, name=coefMsg, dimen1=DPIPE_CNT, range=1-4)
+	.AddVar(type=bool, name=bClrDc, dimen1=DPIPE_CNT, range=1-4)
+	.AddVar(type=ht_int16, name=huffExtendValue, dimen1=DPIPE_CNT, range=1)
+	.AddVar(type=ht_uint4, name=huffExtendBits, dimen1=DPIPE_CNT, range=1-2)
+	.AddVar(type=ht_uint10, name=coefMsgQueSize, dimen1=DPIPE_CNT, range=1)
+	.AddVar(type=uint8_t, name=nextByte, dimen1=DPIPE_CNT, range=1)
+	.AddVar(type=ht_int16, name=huffExtendOp, dimen1=DPIPE_CNT, range=2-3)
+	.AddVar(type=ht_uint2, name=compIdx, dimen1=DPIPE_CNT, range=1-4)
+	;
+
+ihuf2.AddEntry(func=ihuf, inst=IHUF_ENTRY)
+	.AddParam(type=dpipe_id_t, name=pid)
+	.AddParam(type=uint8_t, name=jobId)
+	.AddParam(type=ht_uint2, name=imageIdx)
+	.AddParam(type=McuRows_t, name=rstIdx)
+	.AddParam(type=ht_uint48, name=pInPtr)
+	.AddParam(type=ht_uint48, name=pInPtrEnd)
+	.AddParam(type=ht_uint2, name=compCnt)
+	.AddParam(type=ht_uint22, name=numBlk)
+	.AddParam(type=McuCols_t, name=mcuCols)
+	.AddParam(type=McuCols_t, name=firstRstMcuCnt)
+	;
+ihuf2.AddTransfer(func=idct)
+	;
+
+ihuf2.AddMsgIntf(dir=in, name=jobInfo, type=JobInfoMsg);
+
+struct coefValue {
+	bool		val;
+	ht_uint6	k;
+	int16_t		coef;
+};
+struct coefMsg {
+	uint8_t		jobId;
+	ht_uint2	imageIdx;
+	McuRows_t	rstIdx;
+	ht_uint2	compIdx;
+	bool		done;
+	bool		clr;
+	bool		rdy;
+	ht_uint2	dqtId;
+	coefValue	coef;
+};
+ihuf2.AddMsgIntf(dir=out, name=coef, type=coefMsg, dimen=DPIPE_CNT);
+
+ihuf2.AddReadMem(rspCntW=6, maxBw=true)
+	.AddDst(name=memBuf, var=memBuf, dstIdx=varAddr2, multiRd=true, memSrc=host)
+	;
+
+ihuf2.AddFunction(type=void, name=RecvJobInfo);
+
+////////////////////////////////////////
+
+#else
+dsnInfo.AddModule(name=ihuf, htIdW=DPIPE_W, pause=true);
+
+ihuf.AddInst(name=IHUF_ENTRY);
+ihuf.AddInst(name=IHUF_READ);
+ihuf.AddInst(name=IHUF_RD_WAIT);
+ihuf.AddInst(name=IHUF_XFER);
+
+ihuf.AddPrivate()
+	.AddVar(type=dpipe_id_t, name=pid)
+	.AddVar(type=uint8_t, name=jobId)
+	.AddVar(type=ht_uint2, name=imageIdx)
+	.AddVar(type=McuRows_t, name=rstIdx)
+	.AddVar(type=ht_uint48, name=pInPtr)
+	.AddVar(type=ht_uint48, name=pInPtrEnd)
+	.AddVar(type=ht_uint2, name=compCnt)
+	.AddVar(type=ht_uint22, name=numBlk)
+	.AddVar(type=ht_uint1, name=bufSel)
+	.AddVar(type=ht_uint2, name=cnt)
+	.AddVar(type=ht_uint2, name=blkRow)
+	.AddVar(type=ht_uint2, name=blkCol)
+	;
+
+ihuf.AddShared()
+	.AddVar(type=dpipe_id_t, name=htId, dimen1=DPIPE_CNT)
+	.AddVar(type=bool, name=paused, dimen1=DPIPE_CNT)
+	.AddVar(type=uint8_t, name=jobId, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_uint2, name=imageIdx, dimen1=DPIPE_CNT)
+	.AddVar(type=McuRows_t, name=rstIdx, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_uint22, name=numBlk, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_uint2, name=blkRowsPerMcu, dimen1=3)
+	.AddVar(type=ht_uint2, name=blkColsPerMcu, dimen1=3)
+	.AddVar(type=ht_uint1, name=dcDhtId, dimen1=3)
+	.AddVar(type=ht_uint1, name=acDhtId, dimen1=3)
+	.AddVar(type=ht_uint2, name=dcpDqtId, dimen1=3)
+	.AddVar(type=int16_t, name=huffCode, dimen1=DPIPE_CNT, addr1W=1+1, addr2W=8, blockRam=true)
+	.AddVar(type=ht_int18, name=maxCode, dimen1=DPIPE_CNT, addr1W=1+1, addr2W=5, blockRam=true)
+	.AddVar(type=int8_t, name=valOff, dimen1=DPIPE_CNT, addr1W=1+1, addr2W=5, blockRam=true)
+	.AddVar(type=uint16_t, name=lookup, dimen1=DPIPE_CNT, addr1W=1+1, addr2W=8, blockRam=true)
+	.AddVar(type=uint64_t, name=memBuf, dimen1=DPIPE_CNT, addr1W=1, addr2W=5, blockRam=true)
+	.AddVar(type=ht_uint2, name=compCnt, dimen1=DPIPE_CNT)
+	.AddVar(type=bool, name=bufRdy, dimen1=DPIPE_CNT, dimen2=2)
+	.AddVar(type=ht_uint1, name=bufSel, dimen1=DPIPE_CNT)
+	.AddVar(type=uint8_t, name=bufRa, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_uint24, name=bitBuffer, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_uint5, name=bitValCnt, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_uint5, name=bitAvail, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_uint5, name=bitShift, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_uint4, name=state, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_uint3, name=return, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_int18, name=t, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_uint5, name=nb, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_uint8, name=huffIdx, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_uint1, name=bDc, dimen1=DPIPE_CNT)
+	.AddVar(type=bool, name=long, dimen1=DPIPE_CNT)
+	.AddVar(type=bool, name=lastFF, dimen1=DPIPE_CNT)
+	.AddVar(type=int16_t, name=s, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_uint7, name=k, dimen1=DPIPE_CNT)
+	.AddVar(type=bool, name=bitNeed, dimen1=DPIPE_CNT)
+	.AddVar(type=int16_t, name=lastDcValue, dimen1=DPIPE_CNT, dimen2=3)
+	.AddVar(type=ht_uint2, name=ci, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_uint1, name=dhtId, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_uint2, name=dqtId, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_uint2, name=blkRow, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_uint2, name=blkCol, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_uint22, name=blkCnt, dimen1=DPIPE_CNT)
+	.AddVar(type=bool, name=blkDone, dimen1=DPIPE_CNT)
+	.AddVar(type=bool, name=blkClr, dimen1=DPIPE_CNT)
+	.AddVar(type=bool, name=blkRdy, dimen1=DPIPE_CNT)
+	.AddVar(type=bool, name=blkVal, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_uint6, name=blkK, dimen1=DPIPE_CNT)
+	.AddVar(type=int16_t, name=blkDat, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_uint2, name=blkCi, dimen1=DPIPE_CNT)
+	.AddVar(type=coefMsg, name=coefMsgQue, dimen1=DPIPE_CNT, queueW=9, blockRam=true)
+	.AddVar(type=dpipe_id_t, name=tdmResume)
+	;
+
+ihuf.AddStage()
+	.AddVar(type=bool, name=coefMsgVal, dimen1=DPIPE_CNT, range=1)
+	.AddVar(type=coefMsg, name=coefMsg, dimen1=DPIPE_CNT, range=1)
+	.AddVar(type=ht_uint10, name=coefMsgQueSize, dimen1=DPIPE_CNT, range=1)
+	;
+
+ihuf.AddEntry(func=ihuf, inst=IHUF_ENTRY)
+	.AddParam(type=dpipe_id_t, name=pid)
+	.AddParam(type=uint8_t, name=jobId)
+	.AddParam(type=ht_uint2, name=imageIdx)
+	.AddParam(type=McuRows_t, name=rstIdx)
+	.AddParam(type=ht_uint48, name=pInPtr)
+	.AddParam(type=ht_uint48, name=pInPtrEnd)
+	.AddParam(type=ht_uint2, name=compCnt)
+	.AddParam(type=ht_uint22, name=numBlk)
+	;
+ihuf.AddTransfer(func=idct)
+	;
+
+ihuf.AddMsgIntf(dir=in, name=jobInfo, type=JobInfoMsg);
+
+struct coefValue {
+	bool		val;
+	ht_uint6	k;
+	int16_t		coef;
+};
+struct coefMsg {
+	uint8_t		jobId;
+	ht_uint2	imageIdx;
+	McuRows_t	rstIdx;
+	ht_uint2	compIdx;
+	bool		done;
+	bool		clr;
+	bool		rdy;
+	ht_uint2	dqtId;
+	coefValue	coef;
+};
+ihuf.AddMsgIntf(dir=out, name=coef, type=coefMsg, dimen=DPIPE_CNT);
+
+ihuf.AddReadMem(rspCntW=6, maxBw=true)
+	.AddDst(name=memBuf, var=memBuf, dstIdx=varAddr2, multiRd=true, memSrc=host)
+	;
+
+ihuf.AddFunction(type=void, name=RecvJobInfo);
+#endif
+
+////////////////////////////////////////
+
+dsnInfo.AddModule(name=idct, htIdW=DPIPE_W);
+
+idct.AddInst(name=IDCT_ACTIVE);
+
+idct.AddPrivate()
+	.AddVar(type=dpipe_id_t, name=pid)
+	.AddVar(type=McuRows_t, name=rstIdx)
+	;
+
+struct idctInfo {
+	uint8_t		jobId;
+	ht_uint2	imageIdx;
+	McuRows_t	rstIdx;
+	ht_uint2	compIdx;
+	ht_uint2	dqtId;
+	dpipe_id_t	dpipeId;
+};
+
+idct.AddShared()
+	.AddVar(type=int16_t, name=quantBuf, dimen1=8, addr1W=3, addr2W=2)
+	.AddVar(type=int16_t, name=coefBuf, dimen1=DPIPE_CNT, dimen2=8, addr1W=3, addr2W=1)
+	.AddVar(type=uint64_t, name=coefBufClr, dimen1=DPIPE_CNT, dimen2=2, reset=false)
+	.AddVar(type=idctInfo, name=coefBufInfo, dimen1=DPIPE_CNT, dimen2=2, reset=false)
+	.AddVar(type=bool, name=coefBufLast, dimen1=DPIPE_CNT, dimen2=2)
+	.AddVar(type=ht_uint1, name=coefBufWrIdx, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_uint2, name=coefBufCnt, dimen1=DPIPE_CNT)
+	.AddVar(type=bool, name=coefDone, dimen1=DPIPE_CNT)
+	.AddVar(type=dpipe_id_t, name=bufResSel)
+	.AddVar(type=dpipe_id_t, name=nextResSel)
+	.AddVar(type=ht_uint2, name=bufDqtId)
+	.AddVar(type=ht_uint1, name=bufActIdx, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_uint4, name=resActCnt, dimen1=DPIPE_CNT)
+	.AddVar(type=ht_uint2, name=rowState)
+	.AddVar(type=ht_uint3, name=wsCnt)
+	.AddVar(type=ht_uint2, name=rowWsSel)
+	.AddVar(type=ht_uint3, name=row)
+	.AddVar(type=int16_t, name=ws, addr1W=2, addr2W=3, dimen1=8, blockRam=true)
+	.AddVar(type=idctInfo, name=wsInfo, addr1W=2)
+	.AddVar(type=bool, name=wsLast, dimen1=4)
+	.AddVar(type=ht_uint1, name=colState)
+	
+	
+	.AddVar(type=ht_uint2, name=colWsSel)
+	.AddVar(type=ht_uint3, name=col)
+	.AddVar(type=JpegDecMsg, name=decMsgQue, queueW=5)
+	;
+
+idct.AddStage()
+	.AddVar(type=bool, name=rowVal, range=1-7)
+	.AddVar(type=ht_uint3, name=row, range=1-7)
+	.AddVar(type=ht_uint2, name=rowWsSel, range=1-6)
+	.AddVar(type=ht_int16, name=coefBlock, dimen1=8, range=1)
+	.AddVar(type=ht_int16, name=quantTbl, dimen1=8, range=1)
+	.AddVar(type=ht_int24, name=a0, range=2-3)
+	.AddVar(type=ht_int24, name=a1, range=2-3)
+	.AddVar(type=ht_int24, name=a2, range=2-3)
+	.AddVar(type=ht_int24, name=a3, range=2-3)
+	.AddVar(type=ht_int27, name=b,  range=3)
+	.AddVar(type=ht_int27, name=c0, range=4)
+	.AddVar(type=ht_int27, name=c1, range=4)
+	.AddVar(type=ht_int27, name=c2, range=4)
+	.AddVar(type=ht_int27, name=c3, range=4)
+	.AddVar(type=ht_int27, name=d0, range=5-6)
+	.AddVar(type=ht_int27, name=d1, range=5-6)
+	.AddVar(type=ht_int27, name=d2, range=5-6)
+	.AddVar(type=ht_int27, name=d3, range=5-6)
+	.AddVar(type=ht_int24, name=e0, range=2)
+	.AddVar(type=ht_int24, name=e1, range=2)
+	.AddVar(type=ht_int24, name=e2, range=2)
+	.AddVar(type=ht_int24, name=e3, range=2)
+	.AddVar(type=ht_int27, name=f0, range=3-4)
+	.AddVar(type=ht_int27, name=f1, range=3-4)
+	.AddVar(type=ht_int27, name=f2, range=3-4)
+	.AddVar(type=ht_int27, name=f3, range=3-4)
+	.AddVar(type=ht_int27, name=g0, range=3-5)
+	.AddVar(type=ht_int27, name=g1, range=3-5)
+	.AddVar(type=ht_int27, name=g2, range=3-5)
+	.AddVar(type=ht_int27, name=g3, range=3-5)
+	.AddVar(type=ht_int27, name=h,  range=4)
+	.AddVar(type=ht_int27, name=i0, range=5)
+	.AddVar(type=ht_int27, name=i1, range=5)
+	.AddVar(type=ht_int27, name=i2, range=5)
+	.AddVar(type=ht_int27, name=i3, range=5)
+	.AddVar(type=ht_int27, name=j0, range=6)
+	.AddVar(type=ht_int27, name=j1, range=6)
+	.AddVar(type=ht_int27, name=j2, range=6)
+	.AddVar(type=ht_int27, name=j3, range=6)
+
+	.AddVar(type=bool, name=colVal, range=1-5)
+	.AddVar(type=ht_uint3, name=col, range=1-5)
+	.AddVar(type=ht_uint2, name=colWsSel, range=1-5)
+	.AddVar(type=idctInfo, name=outColInfo, range=1-5)
+	.AddVar(type=bool, name=outColLast, range=1-5)
+	.AddVar(type=int16_t, name=ws, dimen1=8, range=1)
+	.AddVar(type=ht_int28, name=k,  range=2)
+	.AddVar(type=ht_int28, name=m0, range=2-3)
+	.AddVar(type=ht_int28, name=m1, range=2-3)
+	.AddVar(type=ht_int28, name=m2a, range=2)
+	.AddVar(type=ht_int28, name=m3a, range=2)
+	.AddVar(type=ht_int28, name=m2, range=3)
+	.AddVar(type=ht_int28, name=m3, range=3)
+	.AddVar(type=ht_int28, name=n0, range=4-5)
+	.AddVar(type=ht_int28, name=n1, range=4-5)
+	.AddVar(type=ht_int28, name=n2, range=4-5)
+	.AddVar(type=ht_int28, name=n3, range=4-5)
+	.AddVar(type=ht_int17, name=p0, range=2-3)
+	.AddVar(type=ht_int17, name=p1, range=2-3)
+	.AddVar(type=ht_int17, name=p2, range=2-3)
+	.AddVar(type=ht_int17, name=p3, range=2-3)
+	.AddVar(type=ht_int28, name=r0,  range=2-4)
+	.AddVar(type=ht_int28, name=r1,  range=2-4)
+	.AddVar(type=ht_int28, name=r2,  range=2-4)
+	.AddVar(type=ht_int28, name=r3,  range=2-4)
+	.AddVar(type=ht_int28, name=q,  range=3)
+	.AddVar(type=ht_int28, name=s1,  range=4)
+	.AddVar(type=ht_int28, name=s2,  range=4)
+	.AddVar(type=ht_int28, name=s3,  range=4)
+	.AddVar(type=ht_int28, name=s4,  range=4)
+	.AddVar(type=ht_int28, name=t0,  range=5)
+	.AddVar(type=ht_int28, name=t1,  range=5)
+	.AddVar(type=ht_int28, name=t2,  range=5)
+	.AddVar(type=ht_int28, name=t3,  range=5)
+
+	.AddVar(type=uint8_t, name=outCol, dimen1=8, range=5)
+	.AddVar(type=ht_uint6, name=decMsgQueSize, range=1)
+	;
+
+idct.AddEntry(func=idct, inst=IDCT_ACTIVE)
+	.AddParam(type=dpipe_id_t, name=pid)
+	.AddParam(type=McuRows_t, name=rstIdx)
+	;
+idct.AddReturn(func=ihuf)
+	.AddParam(type=dpipe_id_t, name=pid)
+	;
+
+idct.AddMsgIntf(dir=in, name=jobInfo, type=JobInfoMsg);
+
+idct.AddMsgIntf(dir=in, name=coef, type=coefMsg, dimen=DPIPE_CNT, queueW=5);
+
+idct.AddMsgIntf(dir=out, name=jdm, type=JpegDecMsg);
+
+idct.AddFunction(type=void, name=RecvCoef);
+idct.AddFunction(type=void, name=RecvJobInfo);
+
+#endif

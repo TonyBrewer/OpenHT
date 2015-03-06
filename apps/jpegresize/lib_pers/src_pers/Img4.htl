@@ -1,0 +1,27 @@
+// -cl "C:\Users\TBrewer\Documents\JpegScale_img4\src_pers\Img4.htl"
+-wd "C:\Users\TBrewer\Documents\JpegScale_img4\msvs10\"
+-cp wx-690
+-ac 1
+-uc 1
+-ri
+-mt
+-vr
+//-vcd
+-vcd_filter img4_perf.txt
+//-vcd_filter img4_ihuf_full.txt
+//-vcd_filter img4_vwrk_full.txt
+-I ../src
+-I ../src_pers
+-D_HTL
+-DIMG4
+-ml 1.0
+-pn JpegScale_pers_img4
+-if "../src_pers/Img4.hti"
+"../src_pers/Img4.htd"
+"../src_pers/DhInfo.htd"
+"../src_pers/decode.htd"
+"../src_pers/Horz.htd"
+"../src_pers/VeInfo.htd"
+"../src_pers/Vert.htd"
+"../src_pers/encode.htd" 
+../ht/sysc

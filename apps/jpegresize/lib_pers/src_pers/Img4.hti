@@ -1,0 +1,31 @@
+#if defined(IMG4)
+
+AddModInstParams(unit=Au, modPath="img4/dec", replCnt=DEC_REPL);
+AddModInstParams(unit=Au, modPath="img4/dec/ihuf2", replCnt=DEC_REPL);
+AddModInstParams(unit=Au, modPath="img4/dec/ihuf2/idct", replCnt=DEC_REPL);
+AddModInstParams(unit=Au, modPath="img4/hwrk", replCnt=HORZ_REPL);
+AddModInstParams(unit=Au, modPath="img4/vctl", replCnt=VERT_REPL);
+AddModInstParams(unit=Au, modPath="img4/vctl/vwrk", replCnt=VERT_REPL);
+AddModInstParams(unit=Au, modPath="img4/enc", replCnt=ENC_REPL);
+
+#ifdef IMG4_REPL4
+
+AddModInstParams(unit=Au, modPath="img4/dec/ihuf2[0]", memPort=1);
+AddModInstParams(unit=Au, modPath="img4/dec/ihuf2[1]", memPort=1);
+AddModInstParams(unit=Au, modPath="img4/dec/ihuf2[2]", memPort=2);
+AddModInstParams(unit=Au, modPath="img4/dec/ihuf2[3]", memPort=2);
+
+AddModInstParams(unit=Au, modPath="img4/hwrk[0]", memPort=3);
+AddModInstParams(unit=Au, modPath="img4/hwrk[1]", memPort=3);
+AddModInstParams(unit=Au, modPath="img4/hwrk[2]", memPort=4);
+AddModInstParams(unit=Au, modPath="img4/hwrk[3]", memPort=4);
+
+AddModInstParams(unit=Au, modPath="img4/vctl/vwrk[0]", memPort=5);
+AddModInstParams(unit=Au, modPath="img4/vctl/vwrk[1]", memPort=6);
+
+AddModInstParams(unit=Au, modPath="img4/enc[0]", memPort=7);
+AddModInstParams(unit=Au, modPath="img4/enc[1]", memPort=7);
+
+#endif
+
+#endif

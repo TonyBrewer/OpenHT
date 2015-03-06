@@ -1,0 +1,21 @@
+// model Module capabilities
+
+dsnInfo.AddModule(name=model, htIdW=0);
+
+model.AddInst(name=TEST);
+
+model.AddPrivate()
+	.AddVar(type=uint8_t, name=jobId)
+	.AddVar(type=ht_uint48, name=pJobInfo)
+	.AddVar(type=ht_uint2, name=persMode)
+	;
+
+model.AddEntry(func=htmain, inst=TEST, host=true)
+	.AddParam(type=uint8_t, name=jobId)
+	.AddParam(hostType=uint64_t, type=ht_uint48, name=pJobInfo)
+	.AddParam(hostType=uint8_t, type=ht_uint2, name=persMode)
+	;
+
+model.AddReturn(func=htmain) 
+	.AddParam(type=uint8_t, name=jobId)
+	;

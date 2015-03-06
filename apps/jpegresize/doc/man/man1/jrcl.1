@@ -1,0 +1,102 @@
+.TH CONVEY jrcl 1 "August 26, 2014"
+.SH NAME
+jrcl \- JPEG image resizing client program
+.SH SYNOPSIS
+.B jrcl --server <name> [options...] <infile> <outfile>
+.br
+.B jrcl --server <name> [options...] --batch <file>
+.br
+.SH DESCRIPTION
+.PP
+.B jrcl
+is designed to work with the jrd accelerated image resizing server to downscale 
+large numbers of JPEG images at very high throughput.  Before running jrcl you 
+should already have started the jrd daemon on the target server.  In its first form 
+the command takes the pathname of a file to be resized and writes the resized image 
+to the specified output file.  In its second form it takes a batch file with a list 
+of filename pairs and resize parameters.
+.br
+.SH OPTIONS
+.TP
+.B \--batch <file>
+Read the specified file containing a list of input and output pathnames for files to be 
+resized.  The resize requests may also include resize options, which will override the
+command line options for that file pair.
+.TP
+.B \--help
+Print summary of options.
+.TP
+.B \--keep_aspect [x|y]
+Resize image to the largest size that will fit within the boundaries specified by --size,
+while preserving the original aspect ratio.  If x or y are specified, force that dimension
+to the size specified by --size.
+.TP
+.B \--port <num>
+TCP port server is listening on (default 18811).
+.TP
+.B \--scale <n>
+Resize image to n% of the original.  n should be an integer from 1 to 100.
+.TP
+.B \--server <name>
+Name or ip address of server (required).
+.TP
+.B \--server_read
+Send pathname of file to server instead of reading and sending the image.  The file will
+be processed directly by the server (the path must be accessible on the server running jrd).
+.TP
+.B \--server_write
+Send pathname of output file to server.  The file will be written directly by the server 
+(the directory for the output file must be writable by the jrd daemon).
+.TP
+.B \--size <x> <y>
+Resize image to x by y pixels (minimum 16x8).
+.TP
+.B \--threads <n>
+Number of threads to create.  Each thread will send one file at a time to the server
+and wait for it to be processed.  Adding threads increases the number of files that are
+processed in parallel.
+.TP
+.B \--version
+Print version info.
+.br
+.SH EXAMPLES
+.PP
+To start the server:
+.PP
+# jrd --threads 16
+.PP
+To resize a single image to 50% of its original size, connecting to the server via localhost:
+.PP
+# jrcl --server 127.0.0.1 --scale 50 input.jpg output.jpg
+.PP
+To resize multiple images using a batch file, create a text file with one input/output pair
+per line:
+.PP
+JOBSFILE:
+.br
+image1.jpg image1_resized.jpg
+.br
+image2.jpg image2_resized.jpg
+.br
+image3.jpg image3_resized.jpg
+.PP
+and run jrcl using the batch option:
+.PP
+# jrcl --server 127.0.0.1 --scale 50 --batch JOBSFILE
+.PP
+Resize parameters can also be specfied in the batch file.  These parameters will override
+any command line options:
+.PP
+JOBSFILE:
+.PP
+--scale 10 image1.jpg image1_10pct.jpg
+.br
+--scale 20 image1.jpg image1_20pct.jpg
+.br
+--scale 50 image1.jpg image1_50pct.jpg
+.PP
+# jrcl --server=localhost --batch JOBSFILE
+.br
+.SH COPYRIGHT
+jrcl and the jrd server are copyright Convey Computer.
+.br

@@ -1,0 +1,10 @@
+// -cl "C:\Users\TBrewer\Documents\JPegScale\src_model\model.htl"
+//-wd "C:\Users\TBrewer\Documents\JPegScale\msvs10\"		// working directory
+-cp hc-2
+-mo				// model only
+-uc 1			// unit count
+-un Au			// unit name
+-pn JpegScale
+
+../src_model/model.htd				// design file location
+../ht/sysc							// location for output files

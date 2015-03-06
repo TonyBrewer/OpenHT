@@ -1,0 +1,45 @@
+.TH CONVEY jrd 1 "August 26, 2014"
+.SH NAME
+jrd \- accelerated JPEG image resizing server
+.SH SYNOPSIS
+.B jrd [options...]
+.br
+.SH DESCRIPTION
+.PP
+.B jrd
+is an accelerated JPEG image resizer designed to accept resize requests via socket connections
+and queue them for processing in hardware on a Convey coprocessor.  The resizing hardware decodes
+the JPEG images, rescales them to a smaller size using a 16 point filter in each dimension, and
+reencodes them as JPEGs.  Images that are larger than the maximum input size (8191x8191) or 
+that scale to smaller than the minimum output size (16x8) are processed in software using the 
+ImageMagick libraries. 
+.br
+.SH OPTIONS
+.TP
+.B \--help
+Print summary of options.
+.TP
+.B \--interface <ip>
+IP address of interface to listen on (default all).
+.TP
+.B \--no_server_read
+Disable direct read of input files.
+.TP
+.B \--no_server_write
+Disable direct write of output files.
+.TP
+.B \--port <num>
+TCP port to listen for requests (default 18811).
+.TP
+.B \--threads <n>
+Number of threads to create.  Each thread will process one request at a time and queue it
+for processing on the resizing hardware.  Adding threads increases throughput by ensuring
+there are always jobs waiting to be processing on the hardware work queues, thus minimizing
+wait time.  
+.TP
+.B \--version
+Print version info.
+.br
+.SH COPYRIGHT
+jrcl and the jrd server are copyright Convey Computer.
+.br

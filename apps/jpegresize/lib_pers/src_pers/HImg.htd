@@ -1,0 +1,242 @@
+#ifdef HORZ_FIXTURE
+
+#include "JpegCommon.h"
+#include "PersStructs.h"
+
+
+dsnInfo.AddModule(name=himg, htIdW=0);
+
+himg.AddInst(name=HIMG_ENTRY);
+himg.AddInst(name=HIMG_HORZ);
+himg.AddInst(name=HIMG_HSMC_JOIN);
+himg.AddInst(name=HIMG_HCTL_JOIN);
+himg.AddInst(name=HIMG_HDM_JOIN);
+himg.AddInst(name=HIMG_HSMC_CONT);
+himg.AddInst(name=HIMG_HCTL_CONT);
+himg.AddInst(name=HIMG_HDM_CONT);
+himg.AddInst(name=HIMG_RETURN);
+
+himg.AddPrivate()
+	.AddVar(type=uint8_t, name=jobId)
+	.AddVar(type=ht_uint48, name=pJobInfo)
+	.AddVar(type=ht_uint2, name=imageIdx)
+	;
+
+himg.AddShared()
+	.AddVar(type=ht_uint1, name=fileIdx)
+    ;
+
+himg.AddEntry(func=htmain, inst=HIMG_ENTRY, host=true)
+	.AddParam(type=uint8_t, name=jobId)
+	.AddParam(hostType=uint64_t, type=ht_uint48, name=pJobInfo)
+	;
+
+himg.AddReturn(func=htmain)
+	.AddParam(type=uint8_t, name=jobId)
+	;
+
+himg.AddCall(func=dhInfo)
+	;
+
+	// horz source messages - mimics jpeg decoder messages
+himg.AddCall(func=hsmc, fork=true)
+	;
+
+himg.AddCall(func=hwrk, fork=true)
+	;
+
+	// horz write messages - mimics vertical resizer (drops messages)
+himg.AddCall(func=hdm, fork=true)
+	;
+
+
+////////////////////////////////////////
+
+dsnInfo.AddModule(name=hctl, htIdW=0);
+
+hctl.AddInst(name=HCTL_ENTRY)
+	.AddInst(name=HCTL_CALL_HINFO)
+	.AddInst(name=HCTL_RETURN)
+	;
+
+hctl.AddEntry(func=hctl, inst=HCTL_ENTRY)
+	.AddParam(type=ht_uint2, name=imageIdx)
+	.AddParam(type=uint8_t, name=jobId)
+	;
+
+hctl.AddReturn(func=hctl)
+	;
+
+hctl.AddCall(func=hwrk);
+
+hctl.AddPrivate()
+	.AddVar(type=ht_uint2, name=imageIdx)
+	.AddVar(type=uint8_t, name=jobId)
+	;
+
+////////////////////////////////////////
+
+struct HsmcJobInfo {
+	ht_uint11 m_rstCnt;
+};
+
+dsnInfo.AddModule(name=hsmc, htIdW=0);
+
+hsmc.AddInst(name=HSMC_ENTRY)
+	.AddInst(name=HSMC_START)
+	.AddInst(name=HSMC_JOIN)
+	.AddInst(name=HSMC_RETURN)
+	;
+
+hsmc.AddEntry(func=hsmc, inst=HSMC_ENTRY)
+	.AddParam(type=ht_uint2, name=imageIdx)
+	;
+
+hsmc.AddReturn(func=hsmc)
+	;
+
+hsmc.AddCall(func=hsmw, fork=true)
+	;
+
+hsmc.AddPrivate()
+	.AddVar(type=ht_uint2, name=imageIdx)
+	.AddVar(type=ht_uint11, name=rstIdx)
+	;
+
+hsmc.AddShared()
+	.AddVar(type=bool,			name=bInfoRdy,		dimen1=4)
+	.AddVar(type=HsmcJobInfo,	name=dec)
+	;
+
+hsmc.AddMsgIntf(dir=in, name=jobInfo, type=JobInfoMsg);
+
+hsmc.AddFunction(type=void, name=RecvJobInfo);
+
+////////////////////////////////////////
+
+struct HsmwDcpInfo {
+	ht_uint2 m_blkRowsPerMcu;
+	ht_uint2 m_blkColsPerMcu;
+	ht_uint8 m_compBufColLines;
+	ht_uint14 m_compRows;
+	ht_uint14 m_compCols;
+	ht_uint48 m_pCompBuf;
+};
+
+struct HsmwJobInfo {
+	ht_uint2 m_compCnt;
+	ht_uint11 m_mcuRows;
+	ht_uint11 m_mcuCols;
+	ht_uint11 m_rstMcuCnt;
+	ht_uint11 m_rstCnt;
+	HsmwDcpInfo m_dcp[3];
+};
+
+struct HsmwIhufMsg {
+	ht_uint10	m_rstIdx;		// full restart index
+	bool		m_bRstFirst;	// first data for restart
+	bool		m_bRstLast;		// last data for restart
+	bool		m_bEndOfImage;	// last data for image
+	ht_uint2	m_imageIdx;		// image index for double buffering
+	ht_uint8	m_jobId;		// host job info index (for debug)
+	ht_uint1	m_bufIdx;		// double buffering
+};
+
+#define HSMW_HTID_W	2
+
+#if HSMW_HTID_W==0
+typedef sc_uint<1> HsmwIhufIdx_t;
+#else
+typedef sc_uint<HSMW_HTID_W> HsmwIhufIdx_t;
+#endif
+typedef sc_uint<HSMW_HTID_W+1> RdReqGrpId_t;
+
+dsnInfo.AddModule(name=hsmw, htIdW=HSMW_HTID_W);
+
+hsmw.AddInst(name=HSMW_ENTRY)
+	.AddInst(name=HSMW_LOOP)
+	.AddInst(name=HSMW_RETURN)
+	;
+
+hsmw.AddEntry(func=hsmw, inst=HSMW_ENTRY)
+	.AddParam(type=ht_uint2, name=imageIdx)
+	.AddParam(type=bool, name=bSingleRst)
+	.AddParam(type=ht_uint11, name=rstIdx)
+	;
+
+hsmw.AddReturn(func=hsmw)
+	;
+
+hsmw.AddPrivate()
+	.AddVar(type=ht_uint2, name=imageIdx)
+	.AddVar(type=bool, name=bSingleRst)
+	.AddVar(type=ht_uint11, name=rstIdx)
+	.AddVar(type=RdReqGrpId_t, name=rdReqGrpId)
+	.AddVar(type=ht_uint2, name=compIdx)
+	.AddVar(type=ht_uint2, name=mcuBlkRow)
+	.AddVar(type=ht_uint2, name=mcuBlkCol)
+	.AddVar(type=bool, name=readDone)
+	.AddVar(type=bool, name=pollDone)
+	.AddVar(type=ht_uint2, name=mcuPendCnt)
+	.AddVar(type=ht_uint3, name=rowInBlk)
+	.AddVar(type=ht_uint11, name=mcuRow)
+	.AddVar(type=ht_uint11, name=mcuCol)
+	.AddVar(type=bool,		name=bRstFirst)
+	;
+
+hsmw.AddShared()
+	.AddVar(type=bool,			name=bInfoRdy,		dimen1=4)
+	.AddVar(type=HsmwJobInfo,	name=dec)
+	.AddVar(type=ht_uint3,		name=skipIdx)
+	.AddVar(type=HsmwIhufIdx_t,	name=ihufQueIdx)
+	.AddVar(type=HsmwIhufMsg,	name=hsmwIhufQue,	dimen1=(1<<HSMW_HTID_W), queueW=2)
+	.AddVar(type=ht_uint3,		name=outCol,		dimen1=(1<<HSMW_HTID_W) )
+	.AddVar(type=uint64_t,		name=mcuBuf,		addr1W=HSMW_HTID_W+5, addr2W=3, dimen1=8, blockRam=true )
+	.AddVar(type=ht_uint2,		name=bufInUse,		dimen1=(1<<HSMW_HTID_W) )
+	.AddVar(type=ht_uint2,		name=compIdx,		dimen1=(1<<HSMW_HTID_W) )
+	.AddVar(type=ht_uint2,		name=mcuBlkCol,		dimen1=(1<<HSMW_HTID_W) )
+	.AddVar(type=ht_uint2,		name=mcuBlkRow,		dimen1=(1<<HSMW_HTID_W) )
+	.AddVar(type=ht_uint11,		name=mcuRow,		dimen1=(1<<HSMW_HTID_W) )
+	.AddVar(type=ht_uint11,		name=mcuCol,		dimen1=(1<<HSMW_HTID_W) )
+	.AddVar(type=ht_uint1,		name=readBufIdx,	dimen1=(1<<HSMW_HTID_W) )
+	.AddVar(type=ht_uint1,		name=pollBufIdx,	dimen1=(1<<HSMW_HTID_W) )
+	;
+
+hsmw.AddStage()
+	.AddVar(type=bool,			name=bPushJdm,	range=1)
+	.AddVar(type=JpegDecMsg,	name=jdm,		range=1)
+	.AddVar(type=ht_uint3,		name=outCol,	range=1)
+	.AddVar(type=ht_uint2,		name=mcuBlkRow,	range=1)
+	.AddVar(type=ht_uint2,		name=mcuBlkCol,	range=1)
+	.AddVar(type=ht_uint11,		name=mcuCol,	range=1)
+	;
+
+hsmw.AddReadMem( queueW=5, rspCntW=8, rspGrpId=rdReqGrpId, maxBw=true, pause=false, poll=true )
+	.AddDst( name=mcuBuf, var=mcuBuf, multiRd=true, dstIdx=varAddr2, memSrc=coproc )
+	;
+
+hsmw.AddMsgIntf(dir=in, name=jobInfo, type=JobInfoMsg);
+hsmw.AddMsgIntf(dir=out, name=jdm, type=JpegDecMsg);
+
+hsmw.AddFunction(type=void, name=RecvJobInfo);
+
+////////////////////////////////////////
+
+dsnInfo.AddModule(name=hdm, htIdW=0);
+
+hdm.AddInst(name=HDM_ENTRY)
+	;
+
+hdm.AddEntry(func=hdm, inst=HDM_ENTRY)
+	;
+
+hdm.AddReturn(func=hdm)
+	;
+
+hdm.AddShared()
+	.AddVar(type=bool, name=bEndOfImage)
+	;
+
+hdm.AddMsgIntf(dir=in, name=hrm, type=HorzResizeMsg);
+
+#endif

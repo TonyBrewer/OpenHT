@@ -1,0 +1,17 @@
+// -cl "C:\Users\TBrewer\Documents\JpegScale_img4\src_pers\DhImg.htl"
+-wd "C:\Users\TBrewer\Documents\JpegScale_img4\msvs10\"
+-cp wx-690
+-ac 1
+-uc 1
+-mt
+-vcd
+//-vcd_start 2842000
+-vcd_filter dhimg_ihuf2_full.txt
+-I ../src
+-I ../src_pers
+-D_HTL
+-DDHIMG_FIXTURE
+-ml 1.0
+-pn JpegScale_pers_DhImg
+"../src_pers/DhImg.htd" "../src_pers/DhInfo.htd" "../src_pers/Horz.htd" "../src_pers/decode.htd"
+../ht/sysc

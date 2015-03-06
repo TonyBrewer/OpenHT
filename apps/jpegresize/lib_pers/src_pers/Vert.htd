@@ -1,0 +1,363 @@
+#include "PersConfig.h"
+
+#ifdef VERT
+
+#include "JpegCommon.h"
+#include "PersStructs.h"
+
+////////////////////////////////////////
+
+struct VctlJobInfo {
+	ht_uint2 m_maxBlkRowsPerMcu;
+	ImageRows_t m_inImageRows;
+	ImageRows_t m_outImageRows;
+	McuRows_t m_inMcuRows;
+	McuCols_t m_outMcuCols;
+	ht_uint5 m_filterWidth;
+};
+
+#define VCTL_HTID_W 1
+#define VCTL_HTID (1<<VCTL_HTID_W)
+
+#if VCTL_HTID_W == 0
+typedef sc_uint<1> VctlHtId__t;
+#else
+typedef sc_uint<VCTL_HTID_W> VctlHtId__t;
+#endif
+
+dsnInfo.AddModule(name=vctl, htIdW=VCTL_HTID_W);
+
+vctl.AddInst(name=VCTL_ENTRY)
+	.AddInst(name=VCTL_CALC_START)
+	.AddInst(name=VCTL_CALC_END)
+	.AddInst(name=VCTL_MSG_LOOP)
+	.AddInst(name=VCTL_JOIN)
+	.AddInst(name=VCTL_RETURN)
+	;
+
+vctl.AddEntry(func=vctl, inst=VCTL_ENTRY)
+	.AddParam(type=ht_uint3, name=imageHtId)
+	.AddParam(type=ImageIdx_t, name=imageIdx)
+	.AddParam(type=ht_uint2, name=persMode)
+	;
+
+vctl.AddReturn(func=vctl)
+	;
+
+vctl.AddCall(func=vwrk, fork=true);
+
+typedef sc_uint<IMAGE_ROWS_W> PntWghtAddr_t;
+
+vctl.AddPrivate()
+	.AddVar(type=ht_uint3, name=imageHtId)
+	.AddVar(type=ImageIdx_t, name=imageIdx)
+	.AddVar(type=bool, name=bEndOfImage)
+	.AddVar(type=ImageRows_t, name=inImageRowStart)
+	.AddVar(type=ImageRows_t, name=inImageRowEnd)
+	.AddVar(type=McuRows_t, name=outMcuRowStart)
+	.AddVar(type=McuCols_t, name=outMcuColStart)
+	.AddVar(type=PntWghtAddr_t, name=pntWghtStartRdAddr1)
+	.AddVar(type=ht_uint1, name=pntWghtStartRdAddr2)
+	.AddVar(type=PntWghtCpInt_t, name=pntWghtStart)
+	.AddVar(type=PntWghtCpInt_t, name=pntWghtEnd)
+	.AddVar(type=McuRows_t, name=mcuRowCompletionCnt)
+	.AddVar(type=bool, name=mcuRowComplete, addr1=mcuRowCompletionCnt, addr1W=MCU_ROWS_W)
+	.AddVar(type=bool, name=bEndOfColumn)
+	.AddVar(type=ht_uint2, name=persMode)
+	;
+
+vctl.AddShared()
+	.AddVar(type=VctlJobInfo,	name=jobInfo,				dimen1=VCTL_HTID, reset=false )
+	.AddVar(type=bool,			name=vertWorkLock)
+	.AddVar(type=VctlHtId__t,	name=vertWorkHtId)
+	.AddVar(type=McuRows_t,		name=mcuRowClearIdx,		dimen1=VCTL_HTID )
+	;
+
+vctl.AddStage()
+	.AddVar(type=HorzResizeMsg,	name=hrm,					range=1 )
+	.AddVar(type=bool,			name=hrm_bValid,			range=1 )
+	;
+
+vctl.AddGlobal(var=pntWghtStart, addr1W=IMAGE_ROWS_W, addr1=pntWghtStartRdAddr1, addr2W=1, addr2=pntWghtStartRdAddr2)
+	.AddField(type=PntWghtCpInt_t, name=d, read=true, write=true);
+
+vctl.AddMsgIntf(dir=in, name=veInfo, type=JobInfoMsg);
+vctl.AddMsgIntf(dir=in, name=hrm, type=HorzResizeMsg, queueW=9, fanin=HORZ_REPL/VERT_REPL);
+
+vctl.AddFunction(type=void, name=RecvJobInfo);
+
+////////////////////////////////////////
+
+struct VwrkVcpInfo {
+	ht_uint2 m_blkRowsPerMcu;
+	ht_uint2 m_blkColsPerMcu;
+	ImageRows_t m_outCompRows;
+	McuCols_t m_inCompBlkCols;
+	ht_uint48 m_pInCompBuf;
+	ImageRows_t m_outCompBufRows;		// used to write vert output to memory (debug only)
+	ImageCols_t m_outCompBufCols;		// used to write vert output to memory (debug only)
+	ht_uint48 m_pOutCompBuf;		// used to write vert output to memory (debug only)
+};
+
+struct VwrkJobInfo {
+	ht_uint2 m_compCnt;
+	ht_uint2 m_maxBlkRowsPerMcu;
+	ht_uint5 m_filterWidth;
+	McuRows_t m_inMcuRows;
+	McuCols_t m_outMcuCols;
+	ImageRows_t m_outImageRows;
+	ImageRows_t m_pntWghtListSize;
+	VwrkVcpInfo m_vcp[3];
+};
+
+struct VertState {
+	bool m_bUpScale;
+	PntWghtCpInt_t m_rowDataPos;
+	ImageRows_t m_inRow;
+	ImageRows_t m_inRowIgnore;
+	ImageRows_t m_inRowOutDiff;
+};
+
+#define VRS_IDX_W 1
+#define VRS_CNT (1<<VRS_IDX_W)
+#define VRS_AVL_W (1<<VRS_IDX_W)
+typedef sc_uint<VRS_IDX_W> VrsIdx_t;
+typedef sc_uint<VRS_AVL_W> VrsAvl_t;
+
+#define VWRK_HTID_W 3
+#define VWRK_HTID (1 << VWRK_HTID_W)
+
+#if VWRK_HTID_W==0
+#define VWRK_HTID_W1 1
+#else
+#define VWRK_HTID_W1 VWRK_HTID_W
+#endif
+
+typedef sc_uint<VWRK_HTID_W1> VwrkHtId_t;
+typedef sc_uint<VWRK_HTID> VwrkHtIdMask_t;
+
+typedef sc_uint<VWRK_HTID_W+VERT_PREFETCH_MCUS_W> RdRspGrpId_t;
+typedef sc_uint<VERT_PREFETCH_MCUS_W> VwrkBufId_t;
+typedef sc_uint<4+VERT_PREFETCH_MCUS_W> DpBufIdx_t;
+
+#if VERT_IMAGES_W == 0
+typedef ht_uint1 VertImages_t;
+#else
+typedef sc_uint<VERT_IMAGES_W> VertImages_t;
+#endif
+
+struct VertWorkMsg {
+#if VWRK_HTID_W == 0
+	ht_uint1 m_htId;
+#else
+	sc_uint<VWRK_HTID_W> m_htId;
+#endif
+	VrsIdx_t m_vrsIdx;
+	ht_uint1 m_mcuBlkRowFirst[3];
+	VwrkBufId_t m_bufIdx;
+	McuCols_t m_outMcuColStart;
+	bool m_bEndOfColumn;
+	PntWghtCpInt_t m_pntWghtEnd;
+	ht_uint2 m_imageIdx;
+};
+
+struct VertOrderState {
+	ht_uint2 m_compIdx;
+	ht_uint1 m_mcuBlkRow;
+	ht_uint1 m_mcuBlkCol;
+	ht_uint3 m_blkRow;
+};
+
+dsnInfo.AddModule(name=vwrk, htIdW=VWRK_HTID_W, pause=true);
+
+vwrk.AddInst(name=VWRK_ENTRY)
+	.AddInst(name=VWRK_PREREAD_WAIT)
+	.AddInst(name=VWRK_PREREAD)
+	.AddInst(name=VWRK_VRS_WAIT)
+	.AddInst(name=VWRK_VRS_INIT)
+	.AddInst(name=VWRK_WORK_WAIT)
+	.AddInst(name=VWRK_WORK_LOOP)
+	.AddInst(name=VWRK_RETURN)
+	;
+
+vwrk.AddEntry(func=vwrk, inst=VWRK_ENTRY)
+	.AddParam(type=bool, name=bEndOfImage)
+	.AddParam(type=bool, name=bEndOfColumn)
+	.AddParam(type=ImageIdx_t, name=imageIdx)
+	.AddParam(type=McuRows_t, name=outMcuRowStart)
+	.AddParam(type=McuCols_t, name=outMcuColStart)
+	.AddParam(type=ImageRows_t, name=inImageRowStart)
+	.AddParam(type=ImageRows_t, name=inImageRowEnd)
+	.AddParam(type=PntWghtCpInt_t, name=pntWghtStart)
+	.AddParam(type=PntWghtCpInt_t, name=pntWghtEnd)
+	;
+
+vwrk.AddReturn(func=vwrk)
+	;
+
+vwrk.AddPrivate()
+	.AddVar(type=bool, name=bEndOfImage)
+	.AddVar(type=bool, name=bEndOfColumn)
+	.AddVar(type=ImageIdx_t, name=imageIdx)
+	.AddVar(type=ImageRows_t, name=inImageRowStart)
+	.AddVar(type=ImageRows_t, name=inImageRowEnd)
+	.AddVar(type=McuRows_t, name=outMcuRowStart)
+	.AddVar(type=McuCols_t, name=outMcuColStart)
+	.AddVar(type=ht_uint2, name=mcuBlkCol)
+	.AddVar(type=ht_uint2, name=compIdx)
+	.AddVar(type=PntWghtCpInt_t, name=pntWghtStart)
+	.AddVar(type=PntWghtCpInt_t, name=pntWghtEnd)
+	.AddVar(type=McuRows_t, name=preMcuRow)
+	.AddVar(type=McuRows_t, name=pendMcuRow)
+	.AddVar(type=McuRows_t, name=inMcuRowEnd)
+	.AddVar(type=ht_uint2, name=preMcuBlkRow)
+	.AddVar(type=ht_uint2, name=preMcuBlkCol)
+	.AddVar(type=VwrkBufId_t, name=readBufIdx)
+	.AddVar(type=VwrkBufId_t, name=pendBufIdx)
+	.AddVar(type=ht_uint2, name=preMcuBlkRowFirst, dimen1=3)
+	.AddVar(type=RdRspGrpId_t, name=rdReqGrpId)
+	.AddVar(type=RdRspGrpId_t, name=rdPollGrpId)
+	.AddVar(type=ht_uint4, name=mcuReadPendCnt)
+	.AddVar(type=bool, name=bFirstWorkMcu)
+	.AddVar(type=ht_uint1, name=wrkMcuBlkRowFirst, dimen1=3)
+	.AddVar(type=bool, name=bHtIdPushed)
+	.AddVar(type=VrsIdx_t, name=vrsIdx)
+	;
+
+vwrk.AddShared()
+	//.AddVar(type=Tst1,			name=tst,					addr1W=4)
+	.AddVar(type=ht_uint3,			name=row)
+	.AddVar(type=VertState,			name=vrs,					addr1W=6, dimen1=(1<<VRS_IDX_W))
+	.AddVar(type=ImageRows_t,		name=outRow,				addr1W=6, dimen1=(1<<VRS_IDX_W))
+	.AddVar(type=ImageRows_t,		name=outRowEnd,				addr1W=6, dimen1=(1<<VRS_IDX_W))
+	.AddVar(type=bool,      		name=outRowVal,				addr1W=6, dimen1=(1<<VRS_IDX_W))
+	.AddVar(type=VwrkJobInfo,		name=jobInfo,				dimen1=VERT_IMAGES, reset=false )
+	.AddVar(type=ht_uint4,			name=mcuBufInUseCnt,		dimen1=VWRK_HTID, reset=false)
+	.AddVar(type=VertWorkMsg,		name=workQue,				queueW=5)
+	.AddVar(type=VertWorkMsg,		name=work )
+	.AddVar(type=bool,				name=bWorkVal )
+	.AddVar(type=uint64_t,			name=rowPref, addr1W=(MAX_MCU_COMPONENTS_W + MAX_MCU_BLK_ROWS_W + MAX_MCU_BLK_COLS_W + VERT_PREFETCH_MCUS_W), addr2W=VWRK_HTID_W, dimen1=DCTSIZE, blockRam=true )
+	.AddVar(type=Sixteen_u8,		name=rowData, addr1W=(MAX_MCU_COMPONENTS_W + MAX_MCU_BLK_COLS_W), dimen1=DCTSIZE, blockRam=true)
+	.AddVar(type=ht_uint8,			name=bFirstInMcuCol)
+	.AddVar(type=bool,				name=bFirstInRow)
+	.AddVar(type=ht_uint2,			name=dpCompIdx)
+	.AddVar(type=ht_uint2,			name=dpMcuBlkRow)
+	.AddVar(type=ht_uint2,			name=dpMcuBlkCol)
+	.AddVar(type=bool,				name=dpActive)	// debug
+	.AddVar(type=VwrkHtId_t,		name=dpHtId)	// debug
+	.AddVar(type=bool,				name=readPaused,			dimen1=VWRK_HTID)
+	.AddVar(type=bool,				name=pendPaused,			dimen1=VWRK_HTID)
+	.AddVar(type=bool,				name=readBusy)
+	.AddVar(type=bool,				name=pendBusy)
+	.AddVar(type=VwrkHtId_t,		name=readHtId)
+	.AddVar(type=VwrkHtId_t,		name=pendHtId)
+	.AddVar(type=VwrkHtId_t,		name=readOrderQue,			queueW=VWRK_HTID_W1)
+	.AddVar(type=VwrkHtId_t,		name=pendOrderQue,			queueW=VWRK_HTID_W1)
+#if defined(HT_SYSC)
+	.AddVar(type=PntWghtCpInt_t,			name=pntWghtStart,			addr1W=IMAGE_ROWS_W, addr2W=VERT_IMAGES_W, blockRam=true)
+#endif
+	.AddVar(type=PntWghtIdx_t,		name=pntWghtIdx,			addr1W=IMAGE_ROWS_W, addr2W=VERT_IMAGES_W, blockRam=true)
+	.AddVar(type=ht_uint7,			name=pntWghtOut,    		addr1W=IMAGE_ROWS_W, addr2W=VERT_IMAGES_W, blockRam=true)
+	.AddVar(type=Four_i13,			name=pntWghtList,			addr1W=PNT_WGHT_SIZE_W, addr2W=VERT_IMAGES_W, dimen1=4, blockRam=true)
+	.AddVar(type=VertResizeMsg,		name=vertOut,				queueW=5)
+	.AddVar(type=ht_uint4,			name=vertOutFillCnt)
+	.AddVar(type=bool,				name=bAllBlkColComplete)
+	.AddVar(type=ht_uint3,			name=vobRdIdx,				dimen1=12 )
+	.AddVar(type=ht_uint3,			name=vobWrIdx,				dimen1=12 )
+	.AddVar(type=JpegEncMsg,		name=vertOrderBuf,			addr1W=4, addr2W=5, blockRam=true )
+	.AddVar(type=ht_uint10,			name=vobIdx, 				reset=true )
+	.AddVar(type=VertOrderState,	name=vos )
+	.AddVar(type=VertImages_t,		name=vobVImgIdx,			addr1W=4, addr2W=2 )
+	.AddVar(type=VrsAvl_t,			name=vrsAvl )
+	.AddVar(type=bool,			name=dpStall )
+	;
+
+vwrk.AddStage(execStg=3)
+	.AddVar(type=bool,			name=bValid,			range=1-4 )
+	.AddVar(type=ht_uint3,		name=vrsAddr,			range=1 )
+	.AddVar(type=ht_uint1,		name=bEven,				range=2-3 )
+	.AddVar(type=bool,			name=bUpScale,			range=1-3 )
+	.AddVar(type=ImageRows_t,	name=outRow,			range=1-9 )
+	.AddVar(type=ImageRows_t,	name=outRowP1,			range=1 )
+	.AddVar(type=ImageRows_t,	name=outRowEnd,			range=1 )
+	.AddVar(type=McuCols_t,		name=outMcuColStart,	range=1-9 )		// debug
+	.AddVar(type=PntWghtCpInt_t,		name=rowDataPos,		range=1 )
+	.AddVar(type=DpBufIdx_t,	name=dpBufIdx,			range=1-2 )
+	.AddVar(type=ImageRows_t,	name=outImageRow,		range=1 )
+	.AddVar(type=Sixteen_u8,	name=shiftedData,		range=4, dimen1=8 )
+	.AddVar(type=Eight_u8,		name=rowRslt,			range=9 )
+	.AddVar(type=bool,			name=bWorkPop,			range=1 )		// debug
+	.AddVar(type=ht_uint3,		name=dpRowDataAddr,		range=1-4 )
+	.AddVar(type=ImageRows_t,  	name=inRow,				range=1-3 )
+	.AddVar(type=VwrkHtId_t,	name=dpHtId,			range=1-3 )
+	.AddVar(type=ht_uint2,		name=compIdx,			range=1-9)
+	.AddVar(type=ht_uint1,		name=mcuBlkCol,			range=1-9)
+	.AddVar(type=McuRows_t,		name=outMcuRow,			range=2-9)
+	.AddVar(type=bool,			name=outMcuBlkRow,		range=2-9)
+	.AddVar(type=ht_uint3,		name=outBlkRow,			range=2-9)
+	.AddVar(type=bool,			name=bGenOutPixel,		range=1-9)
+	.AddVar(type=ht_int13,		name=pntWght,			range=4, dimen1=16)
+	.AddVar(type=ht_uint8,		name=pntData,			range=4, dimen1=8, dimen2=16)
+	.AddVar(type=ht_int21,		name=pntRslt16,			range=5, dimen1=8, dimen2=16)
+	.AddVar(type=ht_int21,		name=pntRslt8,			range=6, dimen1=8, dimen2=8)
+	.AddVar(type=ht_int21,		name=pntRslt4,			range=7, dimen1=8, dimen2=4)
+	.AddVar(type=ht_int21,		name=pntRslt2,			range=8, dimen1=8, dimen2=2)
+	.AddVar(type=ht_int21,		name=pntRslt,			range=9, dimen1=8)
+	.AddVar(type=bool,			name=bStall,			range=1-8)
+	.AddVar(type=VertResizeMsg,	name=vom,				range=9)
+	.AddVar(type=VertResizeMsg,	name=vrm,				range=8)
+	.AddVar(type=bool,			name=bEndOfMcuRow,		range=2-9 )
+	.AddVar(type=VertState,		name=vrs,				range=1-3)
+	.AddVar(type=VertWorkMsg,	name=work,				range=1-8)
+	.AddVar(type=bool,			name=bSendJemMsg,		range=1 )
+	.AddVar(type=ImageIdx_t,	name=imageIdx,			range=1-9 )
+	.AddVar(type=JpegEncMsg,	name=jem,				range=2 )
+	.AddVar(type=ht_uint4,		name=vobAddr1,			range=1 )
+	.AddVar(type=ht_uint5,		name=vobAddr2,			range=1 )
+	.AddVar(type=ht_uint48,		name=memAddr,			range=3 )
+	.AddVar(type=ht_uint48,		name=memAddrSum1,		range=2 )
+	.AddVar(type=ht_uint48,		name=memAddrSum2,		range=2 )
+	.AddVar(type=McuCols_t,		name=blkCol,			range=1 )
+    .AddVar(type=McuCols_t, 	name=inCompBlkCols,		range=1 )
+	.AddVar(type=McuRows_t,		name=blkRow,			range=1 )
+	.AddVar(type=PntWghtIdx_t,	name=pntWghtIdx,		range=2-3 )
+	.AddVar(type=bool,			name=bVertOutQueFull,	range=1 )
+	.AddVar(type=bool,			name=bWorkQueEmpty,		range=1 )
+	.AddVar(type=VertResizeMsg,	name=sendVrm,			range=1 )
+	.AddVar(type=bool,			name=bSendVrm,			range=1 )
+	.AddVar(type=ht_uint3,		name=vobWrIdx,			range=1 )
+	.AddVar(type=VwrkVcpInfo,	name=loopVcp,			range=2-4 )
+	.AddVar(type=bool,			name=bOutMcuColStartEq,	range=3 )
+	.AddVar(type=bool,			name=bMcuBlkColEq,		range=2-3 )
+	.AddVar(type=bool,			name=bCompIdxEq,		range=2-3 )
+	.AddVar(type=bool,			name=bOutBlkRowEq,		range=3 )
+	.AddVar(type=bool,			name=bOutRowEq,			range=3 )
+	.AddVar(type=bool,			name=bEndOfColumn,		range=8-9 )
+	.AddVar(type=ht_uint4,		name=fillSizeM1,		range=8-9 )
+	.AddVar(type=bool,			name=bReadMem,			range=1 )
+	.AddVar(type=bool,			name=bMcuBufFull,		range=1 )
+	.AddVar(type=bool,			name=bMcuRowEnd,		range=1 )
+	.AddVar(type=bool,			name=bReadMemBusy,		range=1 )
+	.AddVar(type=bool,			name=bPendHtId,			range=1 )
+	.AddVar(type=bool,			name=bMcuReadPendCnt,	range=1 )
+	.AddVar(type=bool,			name=bReadMemPoll,		range=1 )
+	.AddVar(type=bool,			name=bWorkQueNotFull,	range=1 )
+	.AddVar(type=bool,			name=preMcuRow_lt_inMcuRowEnd,					range=2 )
+	.AddVar(type=bool,			name=mcuBufInUseCnt_lt_VERT_PREFETCH_MCUS,		range=2 )
+	.AddVar(type=bool,			name=preMcuBlkColP1_eq_blkColsPerMcu,			range=2 )
+	.AddVar(type=bool,			name=pendMcuRow_lt_inMcuRowEnd,					range=2 )
+	.AddVar(type=VwrkJobInfo,	name=jobInfo,									range=2 )
+	;
+
+vwrk.AddReadMem( queueW=5, rspCntW=8, rspGrpId=rdReqGrpId, maxBw=true, pause=false, poll=true )
+	.AddDst( name=rowPref, var=rowPref, multiRd=true, dstIdx=varIdx1, memSrc=coproc )
+	;
+
+vwrk.AddMsgIntf(dir=in, name=veInfo, type=JobInfoMsg);
+vwrk.AddMsgIntf(dir=out, name=jem, type=JpegEncMsg, reserve=10);
+
+vwrk.AddFunction(type=void, name=RecvJobInfo);
+vwrk.AddFunction(type=void, name=FilterControl);
+vwrk.AddFunction(type=void, name=FilterDataPath);
+
+#endif

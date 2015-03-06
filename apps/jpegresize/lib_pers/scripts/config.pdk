@@ -1,0 +1,2 @@
+VIV_SYN_OPTIONS += -flatten_hierarchy none
+VIV_ROUTE_OPTIONS = -directive Explore

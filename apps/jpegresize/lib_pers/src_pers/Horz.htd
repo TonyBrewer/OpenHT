@@ -1,0 +1,212 @@
+#include "PersConfig.h"
+
+#ifdef HORZ
+
+#include "JpegCommon.h"
+#include "PersStructs.h"
+
+////////////////////////////////////////
+
+#define HWRK_HTID_W 1
+#define HWRK_HTID (1 << HWRK_HTID_W)
+
+#define DEC_IHUF_IDX_W	3
+#define HRS_ADDR_W (MAX_MCU_COMPONENTS_W + MAX_MCU_BLK_ROWS_W + DEC_IHUF_IDX_W)
+#define HRB_BUF_IDX_W 2
+#define TRANS_BUF_IDX_W 8
+
+typedef sc_uint<HRS_ADDR_W> HrsAddr_t;
+typedef sc_uint<HRS_ADDR_W + HRB_BUF_IDX_W> ColRsltAddr_t;
+typedef sc_uint<TRANS_BUF_IDX_W> TransBufIdx_t;
+typedef sc_uint<TRANS_BUF_IDX_W-3> TransBlkIdx_t;
+typedef sc_uint<DEC_IHUF_IDX_W> IhufIdx_t;
+typedef sc_uint<HRB_BUF_IDX_W> HrbBufIdx_t;
+typedef sc_uint<HRS_ADDR_W + 1> HrbBufBaseCnt_t;
+
+struct HwrkHcpInfo {
+	ht_uint2 m_blkRowsPerMcu;
+	ht_uint2 m_blkColsPerMcu;
+	ImageCols_t m_outCompCols;
+	McuRows_t m_outCompBlkRows;
+	McuCols_t m_outCompBlkCols;
+	ht_uint48 m_pOutCompBuf;
+#ifdef CHECK_INBOUND_HORZ_MSG
+	ImageRows_t m_inCompRows;
+	ImageCols_t m_inCompBufCols;
+	ht_uint48 m_pInCompBuf;
+#endif
+};
+
+struct HwrkJobInfo {
+	ht_uint2 m_compCnt;
+	ImageCols_t m_outImageCols;
+	ht_uint2 m_maxBlkColsPerMcu;
+	McuRows_t m_mcuRows;
+	McuCols_t m_mcuCols;
+	McuRows_t m_mcuRowsM1;
+	McuCols_t m_mcuColsM1;
+	ht_uint5 m_filterWidth;
+	ImageCols_t m_pntWghtListSize;
+	PntWghtCpInt_t m_pntWghtStart;
+	HwrkHcpInfo m_hcp[3];
+};
+
+struct HorzState {
+	bool m_bStartOfBlkRow;
+	bool m_bUpScale;
+	PntWghtCpInt_t m_colDataPos;
+	bool m_bBlkRowComplete;
+	bool m_bEndOfMcuRow;
+	PntWghtCpInt_t m_pntWghtStart;
+	PntWghtCpInt_t m_pntWghtEnd;
+	ImageCols_t m_inCol;
+};
+
+struct HorzDecState {
+	bool m_bStartOfBlkRow;
+	bool m_bLastOfBlkRow;
+	ht_uint4 m_lastOfBlkRowCnt;
+	McuRows_t m_mcuRow;
+	McuCols_t m_mcuCol;
+	ht_uint2 m_mcuBlkRow;
+	ht_uint3 m_blkCol;
+	ht_uint1 m_mcuBlkCol;
+	ht_uint2 m_compIdx;
+};
+
+struct HorzTransMsg {
+	ht_uint2 m_compIdx;
+	McuRows_t m_mcuRow;
+	ht_uint4 m_lastCol;
+	bool m_bFillSecondBlk;
+	bool m_bEndOfMcuRow;
+	ColRsltAddr_t m_colRsltAddr;
+	ht_uint20 m_outPos;
+	IhufIdx_t m_decPipeId;
+};
+
+struct HorzWriteMsg {
+	ht_uint2 m_compIdx;
+	McuRows_t m_mcuRow;
+	bool m_bEndOfMcuRow;
+	TransBlkIdx_t m_transBlkIdx;
+	ht_uint20 m_outPos;
+	IhufIdx_t m_decPipeId;
+};
+
+dsnInfo.AddModule(name=hwrk, htIdW=HWRK_HTID_W);
+
+hwrk.AddInst(name=HWRK_ENTRY)
+	.AddInst(name=HWRK_INIT_HDS)
+	.AddInst(name=HWRK_WRITE_LOOP)
+	.AddInst(name=HWRK_RETURN)
+	;
+
+hwrk.AddEntry(func=hwrk, inst=HWRK_ENTRY)
+	.AddParam(type=ht_uint3, name=imageHtId)
+	.AddParam(type=ht_uint2, name=imageIdx)
+	.AddParam(type=ht_uint2, name=persMode)
+	;
+
+hwrk.AddReturn(func=hwrk)
+	;
+
+hwrk.AddPrivate()
+	.AddVar(type=ht_uint3, 			name=imageHtId)
+	.AddVar(type=ht_uint2,			name=imageIdx)
+	.AddVar(type=ht_uint4,			name=loopCnt)
+	.AddVar(type=McuRows_t,			name=endOfMcuRowCnt)
+	.AddVar(type=ht_uint3,			name=endOfCompRowCnt,	dimen1=(1 << DEC_IHUF_IDX_W) )
+	.AddVar(type=ht_uint3,			name=blkRowsPerMcu)
+	.AddVar(type=ht_uint2,			name=persMode)
+	;
+
+hwrk.AddShared()
+	.AddVar(type=HwrkJobInfo,		name=horz, reset=false )
+	.AddVar(type=bool,				name=bInfoRdy,			dimen1=4)
+	.AddVar(type=bool,				name=bRowFirstProcessed )
+	.AddVar(type=bool,				name=bStateRdy )
+	.AddVar(type=HorzDecState,		name=hds,				addr1W=DEC_IHUF_IDX_W )
+	.AddVar(type=HorzState,			name=hrs,				addr1W=HRS_ADDR_W )
+#if defined(HT_SYSC)
+	.AddVar(type=PntWghtCpInt_t,			name=pntWghtStart,		addr1W=IMAGE_COLS_W, blockRam=true)
+#endif	
+	.AddVar(type=ht_uint4,			name=pntWghtOut,		addr1W=IMAGE_COLS_W, blockRam=true)
+	.AddVar(type=PntWghtIdx_t,		name=pntWghtIdx,		addr1W=IMAGE_COLS_W, blockRam=true)
+	.AddVar(type=Four_i13,			name=pntWghtList,		addr1W=PNT_WGHT_SIZE_W, dimen1=4, blockRam=true)
+	.AddVar(type=ImageCols_t,		name=outCol,			addr1W=HRS_ADDR_W )
+	.AddVar(type=Sixteen_u8,		name=colData,			addr1W=HRS_ADDR_W, dimen1=DCTSIZE, blockRam=true)
+	.AddVar(type=uint64_t,			name=colRslt,			addr1W=(HRS_ADDR_W + HRB_BUF_IDX_W), addr2W=3, blockRam=true )
+	.AddVar(type=HorzWriteMsg,		name=writeMsgQue,		queueW=4 )
+	.AddVar(type=HorzTransMsg,		name=transMsgQue,		queueW=4 )
+	.AddVar(type=ht_uint4,			name=transCol )
+	.AddVar(type=TransBufIdx_t,		name=transBufWrIdx )
+	.AddVar(type=uint64_t,			name=transBuf,			addr1W=TRANS_BUF_IDX_W, blockRam=true )
+	.AddVar(type=HrbBufIdx_t,		name=hrbBufBase,		addr1W=HRS_ADDR_W )
+	.AddVar(type=HrbBufBaseCnt_t,	name=hrbBufBaseAddr )
+#ifdef CHECK_HTB_BUF_CONFLICTS
+	.AddVar(type=bool,				name=bHrbBufInUse,		dimen1=256)		// debug
+#endif
+	.AddVar(type=HorzWriteMsg,	name=hwm )
+	.AddVar(type=bool,	name=hwmEmpty )
+	.AddVar(type=bool,	name=hwmPop )
+	;
+
+hwrk.AddStage()
+	.AddVar(type=bool,				name=bJdmPop,			range=1-7 )
+	.AddVar(type=bool,				name=bValid,			range=1-7 )
+	.AddVar(type=bool,				name=bGenOutPixel,		range=2-9 )
+	.AddVar(type=HorzDecState,		name=hds,				range=1-9 )
+	.AddVar(type=HorzState,			name=hrs,				range=1-7 )
+	.AddVar(type=ImageCols_t,		name=outImageCol,		range=1 )
+	.AddVar(type=ImageCols_t,		name=inCol,     		range=1 )
+	.AddVar(type=ImageCols_t,		name=outCol,			range=1-9 )
+	.AddVar(type=ImageCols_t,		name=outColP1,			range=1 )
+	.AddVar(type=ht_uint1,			name=bEven,				range=2-3 )
+	.AddVar(type=HrsAddr_t,			name=hrsAddr,			range=1-9 )
+	.AddVar(type=McuCols_t,			name=outMcuCol,			range=2-8 )
+	.AddVar(type=bool,				name=outMcuBlkCol,		range=2-8 )
+	.AddVar(type=ht_uint3,			name=outBlkCol,			range=2-8 )
+	.AddVar(type=bool,				name=bDiffBlkRow,		range=1-8 )
+	.AddVar(type=JpegDecMsg,		name=jdm,				range=1-9 )
+	.AddVar(type=Sixteen_u8,		name=shiftedData,		range=4, dimen1=8 )
+	.AddVar(type=ht_int13,			name=pntWght,			range=3-8, dimen1=16)
+	.AddVar(type=ht_uint8,			name=pntData,			range=3-8, dimen1=8, dimen2=16)
+	.AddVar(type=ht_int21,			name=pntRslt16,			range=5, dimen1=8, dimen2=16)
+	.AddVar(type=ht_int21,			name=pntRslt8,			range=6, dimen1=8, dimen2=8)
+	.AddVar(type=ht_int21,			name=pntRslt4,			range=7, dimen1=8, dimen2=4)
+	.AddVar(type=ht_int21,			name=pntRslt2,			range=8, dimen1=8, dimen2=2)
+	.AddVar(type=ht_int21,			name=pntRslt,			range=9, dimen1=8)
+	.AddVar(type=ht_uint11,			name=outCompBlkCols,	range=5-7 )
+	.AddVar(type=bool,				name=bTransMsgQueFull,	range=1 )
+	.AddVar(type=bool,				name=bLastOfBlkRowHold,	range=1 )
+	.AddVar(type=HorzWriteMsg,		name=hwmRd,				range=1 )
+	.AddVar(type=McuRows_t,			name=jobInfo_mcuRowsM1,	range=1 )
+	.AddVar(type=McuCols_t,			name=jobInfo_mcuColsM1,	range=1 )
+	.AddVar(type=ht_uint10,			name=transMsg_blkRow,	range=5 )
+	.AddVar(type=ht_uint21,			name=transMsg_outPos,	range=6-9 )
+	.AddVar(type=HrbBufIdx_t,		name=hrbBufIdx,			range=9 )
+	.AddVar(type=bool,				name=bEndOfMcuRow,		range=9 )
+
+	// transfer staging
+	.AddVar(type=HorzTransMsg,		name=transMsgQueFront,		range=1 )
+	.AddVar(type=bool,				name=bTransMsgQueEmpty,		range=1 )
+	.AddVar(type=ht_uint4,			name=transCol,				range=1 )
+	.AddVar(type=bool,				name=bTransValid,			range=1-2 )
+	.AddVar(type=TransBufIdx_t,		name=transBufWrIdx,			range=2 )
+	;
+
+hwrk.AddWriteMem( rspCntW=8 )
+	.AddSrc( name=rslt, var=transBuf, multiWr=true, srcIdx=varAddr1, memDst=coproc )
+	;
+
+hwrk.AddMsgIntf(dir=in, name=jobInfo, type=JobInfoMsg);
+hwrk.AddMsgIntf(dir=in, name=jdm, type=JpegDecMsg, queueW=5);
+hwrk.AddMsgIntf(dir=out, name=hrm, type=HorzResizeMsg);
+
+hwrk.AddFunction(type=void, name=RecvJobInfo);
+hwrk.AddFunction(type=void, name=HandleWriteTransfer);
+hwrk.AddFunction(type=void, name=FilterControl);
+hwrk.AddFunction(type=void, name=FilterDataPath);
+
+#endif
