@@ -12,7 +12,7 @@ export SVNREV = $(shell svn info | grep Revis | awk -F: '{print $$2}' | sed 's/ 
 CFLAGS += -DVERSION="\"$(VERSION)\""
 CFLAGS += -DSVNREV="\"$(SVNREV)\""
 
-levstrcmp: levstrcmp.o procname.o
+levstrcmp: bin levstrcmp.o procname.o
 	$(CC) $(CFLAGS) levstrcmp.o procname.o -o $@ $(LIBS)
 	cp -pu $@ bin
 
@@ -22,15 +22,18 @@ levstrcmp: levstrcmp.o procname.o
 levstrcmp.o: levstrcmp.h
 procname.o: levstrcmp.h
 
-cnyleved: ../app
+cnyleved: bin ../app
 	cp -pu ../app cnyleved
 	cp -pu cnyleved bin
 
-../app::
+../app:
 	cd ..; $(MAKE) app
 
+bin:
+	mkdir -p $@
+
 clean:
-	$(RM) levstrcmp.o procname.o levstrcmp cnyleved core.* bin/cnyleved bin/levstrcmp
+	rm -rf bin *.o levstrcmp cnyleved core.*
 
 cleanall:
 	$(MAKE) clean
