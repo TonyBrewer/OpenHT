@@ -1,0 +1,9 @@
+#!/bin/sh
+
+CFG="-c ${0%/*}/uncrustify.cfg"
+
+for f in $@
+do
+    uncrustify $CFG "$f"
+    mv -f "$f.uncrustify" "$f"
+done
