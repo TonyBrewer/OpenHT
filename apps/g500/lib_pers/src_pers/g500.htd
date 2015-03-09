@@ -117,13 +117,13 @@ scatter.AddHostMsg(dir=in, name=BFS_PACKED_ADDR)
 
 scatter.AddPrivate()
 	.AddVar(type=uint64_t, name=k)
+	.AddVar(type=uint64_t, name=addrMem)
+	.AddVar(type=uint64_t, name=valMem)
 	;
 
 scatter.AddShared(reset=false)
 	.AddVar(type=MemAddr_t, name=bfsAddr)
 	.AddVar(type=MemAddr_t, name=bfsPackedAddr)
-	.AddVar(type=uint64_t, name=addrMem, addr1W=SCATTER_HTID_W)
-	.AddVar(type=uint64_t, name=valMem, addr1W=SCATTER_HTID_W)
 	;
 
 scatter.AddEntry(func=scatter, inst=SCATTER_LD1)

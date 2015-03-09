@@ -12,8 +12,6 @@
 void
 CPersScatter::PersScatter()
 {
-	S_addrMem.read_addr(PR_htId);
-	S_valMem.read_addr(PR_htId);
 	if (PR_htValid) {
 		switch (PR_htInst) {
 		case SCATTER_LD1: {
@@ -21,7 +19,7 @@ CPersScatter::PersScatter()
 
 			// Memory read request
 			MemAddr_t memRdAddr = SR_bfsPackedAddr + ((2 * P_k) << 3);
-			ReadMem_valMem(memRdAddr, PR_htId);
+			ReadMem_valMem(memRdAddr);
 			HtContinue(SCATTER_LD2);
 		}
 		break;
@@ -30,7 +28,7 @@ CPersScatter::PersScatter()
 
 			// Memory read request
 			MemAddr_t memRdAddr = SR_bfsPackedAddr + ((2 * P_k + 1) << 3);
-			ReadMem_addrMem(memRdAddr, PR_htId);
+			ReadMem_addrMem(memRdAddr);
 			ReadMemPause(SCATTER_ST);
 		}
 		break;
@@ -38,8 +36,8 @@ CPersScatter::PersScatter()
 			BUSY_RETRY(WriteMemBusy());
 
 			// Memory write request
-			MemAddr_t memWrAddr = (MemAddr_t)(SR_bfsAddr + (S_addrMem.read_mem() << 3));
-			WriteMem(memWrAddr, S_valMem.read_mem());
+			MemAddr_t memWrAddr = (MemAddr_t)(SR_bfsAddr + (PR_addrMem << 3));
+			WriteMem(memWrAddr, PR_valMem);
 			WriteMemPause(SCATTER_RTN);
 		}
 		break;
