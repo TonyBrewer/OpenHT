@@ -166,16 +166,12 @@ bmap.AddPrivate()
 	.AddVar(type=BCW_t, name=updBitIdx)
 	.AddVar(type=bool, name=vtxUpdated)
 	.AddVar(type=uint64_t, name=bmapUpdCnt)
-	.AddVar(type=BmHtId_t, name=bmapMemRdPtr)
+	.AddVar(type=uint64_t, name=data)
 	;
 
 bmap.AddShared(reset=false)
 	.AddVar(type=MemAddr_t, name=bmapOldAddr)
 	.AddVar(type=MemAddr_t, name=bmapNewAddr)
-	;
-
-bmap.AddGlobal(var=bmapMem, addr1W=BMAP_HTID_W, addr1=bmapMemRdPtr)
-	.AddField(type=uint64_t, name=data, read=true, write=true)
 	;
 
 bmap.AddEntry(func=bmap, inst=BMAP_LD)
@@ -189,7 +185,7 @@ bmap.AddReturn(func=bmap)
 bmap.AddCall(func=bufp, fork=true);
 
 bmap.AddReadMem(maxBw=true, rspCntW=1)
-	.AddDst(name=bmapMem, var=bmapMem, field=data)
+	.AddDst(var=data)
 	;
 
 bmap.AddWriteMem();
@@ -235,13 +231,10 @@ bufp.AddPrivate()
 	.AddVar(type=bool, name=vtxUpdated)
 	.AddVar(type=BVW_t, name=bitIdx)
 	.AddVar(type=IW_t, name=vso)
-	;
-
-bufp.AddGlobal(var=arrayMem, addr1=htId, addr1W=BUFP_HTID_W)
-	.AddField(type=IW_t, name=xoff0, read=true)
-	.AddField(type=IW_t, name=xoff1, read=true)
-	.AddField(type=uint32_t, name=xadj, read=true)
-	.AddField(type=uint64_t, name=bmap, read=true)
+	.AddVar(type=IW_t, name=xoff0)
+	.AddVar(type=IW_t, name=xoff1)
+	.AddVar(type=uint32_t, name=xadj)
+	.AddVar(type=uint64_t, name=bmap)
 	;
 
 bufp.AddEntry(func=bufp, inst=BUFP_XOFF0_LD)
@@ -254,10 +247,10 @@ bufp.AddReturn(func=bufp)
 	;
 
 bufp.AddReadMem(maxBw=true, rspCntW=2)
-	.AddDst(name=xoff0, var=arrayMem, field=xoff0)
-	.AddDst(name=xoff1, var=arrayMem, field=xoff1)
-	.AddDst(name=xadj, var=arrayMem, field=xadj, rdType=uint32)
-	.AddDst(name=bmap, var=arrayMem, field=bmap)
+	.AddDst(var=xoff0)
+	.AddDst(var=xoff1)
+	.AddDst(var=xadj, rdType=uint32)
+	.AddDst(var=bmap)
 	;
 
 bufp.AddWriteMem();

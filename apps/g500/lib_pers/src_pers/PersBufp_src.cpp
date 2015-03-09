@@ -17,7 +17,7 @@ CPersBufp::PersBufp()
 			MemAddr_t memRdAddr = SR_xoffAddr + (2 * P_vertex << 3);
 
 			// Issue read request to memory
-			ReadMem_xoff0(memRdAddr, PR_htId);
+			ReadMem_xoff0(memRdAddr);
 
 			HtContinue(BUFP_XOFF1_LD);
 		}
@@ -29,23 +29,23 @@ CPersBufp::PersBufp()
 			MemAddr_t memRdAddr = SR_xoffAddr + ((2 * P_vertex + 1) << 3);
 
 			// Issue read request to memory
-			ReadMem_xoff1(memRdAddr, PR_htId);
+			ReadMem_xoff1(memRdAddr);
 
 			ReadMemPause(BUFP_XOFF_CHK);
 		}
 		break;
 		case BUFP_XOFF_CHK: {
-			if ((GR_arrayMem_xoff1() - GR_arrayMem_xoff0()) <= 0) {
+			if ((PR_xoff1 - PR_xoff0) <= 0) {
 				P_vtxUpdated = 1;
 				HtContinue(BUFP_RTN);
 			} else {
 				HtContinue(BUFP_XADJ_LD);
 			}
-			P_vso = GR_arrayMem_xoff0();
+			P_vso = PR_xoff0;
 		}
 		break;
 		case BUFP_XADJ_LD: {
-			if ((GR_arrayMem_xoff1() - PR_vso) <= 0) {
+			if ((PR_xoff1 - PR_vso) <= 0) {
 				P_vtxUpdated = 0;
 				HtContinue(BUFP_RTN);
 				break;
@@ -58,7 +58,7 @@ CPersBufp::PersBufp()
 			MemAddr_t memRdAddr = SR_xadjAddr + off;
 
 			// Issue read request to memory
-			ReadMem_xadj(memRdAddr, PR_htId);
+			ReadMem_xadj(memRdAddr);
 
 			// increment vso for next iteration
 			P_vso++;
@@ -70,12 +70,12 @@ CPersBufp::PersBufp()
 			BUSY_RETRY(ReadMemBusy());
 
 			// Calculate memory read address--index = xadj/64
-			uint32_t bmapIdx = (uint32_t)(GR_arrayMem_xadj() >> 6);
-			BVW_t bmapBitIdx = (GR_arrayMem_xadj() & 0x3fLL);
+			uint32_t bmapIdx = (uint32_t)(PR_xadj >> 6);
+			BVW_t bmapBitIdx = (PR_xadj & 0x3fLL);
 			MemAddr_t memRdAddr = SR_bmapOldAddr + (bmapIdx << 3);
 
 			// Issue read request to memory
-			ReadMem_bmap(memRdAddr, PR_htId);
+			ReadMem_bmap(memRdAddr);
 
 			// Save the bit index so we know which bit of rsp data to look at
 			P_bitIdx = bmapBitIdx;
@@ -84,14 +84,14 @@ CPersBufp::PersBufp()
 		}
 		break;
 		case BUFP_BFS_RSP: {
-			if (((GR_arrayMem_bmap() >> PR_bitIdx) & 1LL) == 0) {
+			if (((PR_bmap >> PR_bitIdx) & 1LL) == 0) {
 				BUSY_RETRY(WriteMemBusy());
 
 				// Calculate memory read address
 				MemAddr_t memWrAddr = SR_bfsAddr + (P_vertex << 3);
 
 				// Issue write request to memory
-				WriteMem(memWrAddr, (uint64_t)GR_arrayMem_xadj());
+				WriteMem(memWrAddr, (uint64_t)PR_xadj);
 				WriteMemPause(BUFP_RTN);
 
 				// Update bmap, we're done with this vertex

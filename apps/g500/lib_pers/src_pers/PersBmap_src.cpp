@@ -16,9 +16,6 @@ static ht_uint6 tzc(uint16_t v)
 void
 CPersBmap::PersBmap()
 {
-	// Set address for reading bmap memory
-	P_bmapMemRdPtr = PR_htId;
-
 	if (PR_htValid) {
 		switch (PR_htInst) {
 		case BMAP_LD: {
@@ -27,7 +24,7 @@ CPersBmap::PersBmap()
 			// Calculate memory read address
 			MemAddr_t memRdAddr = SR_bmapOldAddr + (MemAddr_t)(P_bmapIdx << 3);
 
-			ReadMem_bmapMem(memRdAddr, PR_htId);
+			ReadMem_data(memRdAddr);
 
 			ReadMemPause(BMAP_ZERO);
 		}
@@ -35,7 +32,7 @@ CPersBmap::PersBmap()
 		case BMAP_ZERO: {
 			P_bitCnt = 0;
 			P_bmapUpdCnt = 0;
-			P_mask = GR_bmapMem_data();
+			P_mask = PR_data;
 
 			if (P_mask == 0)
 				HtContinue(BMAP_ST);
@@ -52,8 +49,8 @@ CPersBmap::PersBmap()
 				SendCallFork_bufp(BMAP_UPD, vertex);
 
 			// find next set bit
-			BCW_t    rem  = (BCW_t)(63 - P_bitCnt);
-			ht_uint6 skip = tzc((uint16_t)((P_mask>>1)<<1));
+			BCW_t rem = (BCW_t)(63 - P_bitCnt);
+			ht_uint6 skip = tzc((uint16_t)((P_mask >> 1) << 1));
 
 			if (skip > rem) {
 				RecvReturnPause_bufp(BMAP_ST);
@@ -61,16 +58,15 @@ CPersBmap::PersBmap()
 			}
 
 			P_bitCnt = (BCW_t)(P_bitCnt + skip);
-			P_mask   = P_mask >> skip;
+			P_mask = P_mask >> skip;
 
 			HtContinue(BMAP_PROCESS);
 		}
 		break;
 		case BMAP_UPD: {
-			uint64_t newBmap = GR_bmapMem_data() & ~((uint64_t)P_vtxUpdated << P_updBitIdx);
+			uint64_t newBmap = PR_data & ~((uint64_t)P_vtxUpdated << P_updBitIdx);
 			if (P_vtxUpdated) {
-				GW_bmapMem_data(PR_htId, newBmap);
-
+				PW_data(newBmap);
 				P_bmapUpdCnt++;
 			}
 
@@ -84,7 +80,7 @@ CPersBmap::PersBmap()
 			MemAddr_t memWrAddr = SR_bmapNewAddr + (MemAddr_t)(P_bmapIdx << 3);
 
 			// Issue write memory request
-			WriteMem(memWrAddr, GR_bmapMem_data());
+			WriteMem(memWrAddr, PR_data);
 
 			WriteMemPause(BMAP_RTN);
 		}
