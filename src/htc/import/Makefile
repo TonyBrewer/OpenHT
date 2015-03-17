@@ -22,23 +22,25 @@ local_rose: patchelf
 		--with-CXX_OPTIMIZE=-O0 \
 		--with-C_OPTIMIZE=-O0 && \
 	    nice $(MAKE) -j16 install-core
-	rsync -a --delete --exclude=.svn $(ROSE_BUILD)/local/ local_rose
+	rsync -a --delete $(ROSE_BUILD)/local/ local_rose
 	./localize_rose.sh
+	rm -rf $(ROSE_BUILD)
 
 ##########
 
-SHM_BUILD = /dev/shm/patchelf
+ELF_BUILD = /dev/shm/patchelf
 
 patchelf:
-	rm -rf $(SHM_BUILD); mkdir -p $(SHM_BUILD)
-	cd $(SHM_BUILD) > /dev/null && \
+	rm -rf $(ELF_BUILD); mkdir -p $(ELF_BUILD)
+	cd $(ELF_BUILD) > /dev/null && \
 	    wget http://nixos.org/releases/patchelf/patchelf-0.8/patchelf-0.8.tar.gz && \
 	    tar -xf *.gz
 	. ./build_vars.sh && \
-	    cd $(SHM_BUILD)/patchelf* && \
-	    ./configure --prefix=$(SHM_BUILD)/local && \
+	    cd $(ELF_BUILD)/patchelf* && \
+	    ./configure --prefix=$(ELF_BUILD)/local && \
 	    nice $(MAKE)
-	cp -p $(SHM_BUILD)/patchelf-0.8/src/patchelf .
+	cp -p $(ELF_BUILD)/patchelf-0.8/src/patchelf .
+	rm -rf $(ELF_BUILD)
 
 ##########
 
@@ -58,10 +60,11 @@ local_boost:
 	    ./bjam install \
 		--prefix=$(BOOST_BUILD)/local \
 		--without-mpi
-	rsync -a --delete --exclude=.svn $(BOOST_BUILD)/local/ local_boost
+	rsync -a --delete $(BOOST_BUILD)/local/ local_boost
+	rm -rf $(BOOST_BUILD)
 
 ##########
 
 clean:
-	rm -rf $(ROSE_BUILD) $(BOOST_BUILD) $(SHM_BUILD)
+	rm -rf $(ROSE_BUILD) $(BOOST_BUILD) $(ELF_BUILD)
 	rm -rf local_rose local_boost patchelf
