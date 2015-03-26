@@ -72,8 +72,9 @@ void CPersMethod::PersMethod()
 					B b1, b2;
 					b1.c = false;
 					b2.c = false;
-					if (b1 == b2) {
+					if (b1 != b2) {
 						HtAssert(0, 0);
+						P_err |= 0x40000;
 					}
 				}
 
