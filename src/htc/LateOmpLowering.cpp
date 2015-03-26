@@ -41,6 +41,8 @@ public:
     case V_SgFunctionDeclaration:
       preVisitSgFunctionDeclaration(dynamic_cast<SgFunctionDeclaration *>(S));
       break;
+    default:
+      break;
     }
   }
 
@@ -51,6 +53,8 @@ public:
       break;
     case V_SgFunctionCallExp:
       postVisitSgFunctionCallExp(dynamic_cast<SgFunctionCallExp *>(S));
+      break;
+    default:
       break;
     }
   }
@@ -1570,6 +1574,30 @@ void DoLateOmpLowering(SgProject *project)
           HtdInfoAttribute *htd = getHtdInfoAttribute(tfd);
           assert(htd);
           htd->moduleWidth = max_phys_threads;
+        }
+
+        // Remove pragma, taking care of any attached PreprocessingInfo.
+        if (isSgGlobal(SageInterface::getScope(pragmaDecl))) {
+          AttachedPreprocessingInfoType *comments = 
+              pragmaDecl->getAttachedPreprocessingInfo();
+          if (comments && comments->size() > 0) {
+            SgName baseName = "___htc_dummy_decl_";
+            baseName << ++SageInterface::gensym_counter;
+            SgVariableDeclaration *dstmt = 
+                SageBuilder::buildVariableDeclaration(baseName,
+                    SageBuilder::buildIntType(), 0,
+                    SageInterface::getScope(pragmaDecl));
+            SageInterface::setExtern(dstmt);
+            SageInterface::insertStatementBefore(pragmaDecl, dstmt);
+            moveUpPreprocessingInfo(dstmt, pragmaDecl);
+            SageInterface::removeStatement(pragmaDecl);
+          } else {
+            SageInterface::removeStatement(pragmaDecl);
+          }
+        } else {
+          SgStatement *nstmt = SageBuilder::buildNullStatement();
+          SageInterface::replaceStatement(isSgStatement(pragmaDecl), 
+              nstmt, true /* move preproc info */); 
         }
       } else {
         std::cerr << "WARNING: unrecognized rhomp pragma '" << pragmaStr

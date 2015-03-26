@@ -106,6 +106,8 @@ void ScreenForHtcRestrictions(SgProject *project)
         }
         break;
         }
+      default:
+        break;
       }
     }
  

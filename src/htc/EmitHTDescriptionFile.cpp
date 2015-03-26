@@ -36,6 +36,8 @@ private:
     case V_SgFunctionDeclaration:
       visitSgFunctionDeclaration(dynamic_cast<SgFunctionDeclaration *>(S));
       break;
+    default:
+      break;
     }
   }
 
@@ -204,6 +206,18 @@ void EmitHTDVisitor::visitSgFunctionDeclaration(SgFunctionDeclaration *FD)
   assert(htd && "missing HtdInfoAttribute");
 
   //
+  // Emit any defines.
+  //
+  std::vector<def_tuple_t> &dl = htd->getDefines();
+  if (dl.size() > 0) {
+    foreach (def_tuple_t ds, dl) {
+        fs << "#define " + tget(0, ds) + " " + tget(1, ds) 
+           << std::endl;
+    }
+    fs << std::endl << std::endl;
+  }
+
+  //
   // Emit the Module declaration.
   //
   std::vector<module_tuple_t> &module = htd->getModule();
@@ -237,18 +251,6 @@ void EmitHTDVisitor::visitSgFunctionDeclaration(SgFunctionDeclaration *FD)
       }
     }
     fs << std::endl;
-  }
-
-  //
-  // Emit any defines.
-  //
-  std::vector<def_tuple_t> &dl = htd->getDefines();
-  if (dl.size() > 0) {
-    foreach (def_tuple_t ds, dl) {
-        fs << "#define " + tget(0, ds) + " " + tget(1, ds) 
-           << std::endl;
-    }
-    fs << std::endl << std::endl;
   }
 
   //

@@ -38,6 +38,8 @@ private:
             true, isSgGlobal(S));
       }
       break;
+    default:
+      break;
     }
   }
 
@@ -478,6 +480,8 @@ private:
         }
       }
       break;
+    default:
+      break;
     }
   }
 
@@ -539,6 +543,9 @@ private:
           }
         }
       } while (0);
+      break;
+
+    default:
       break;
     }
   }

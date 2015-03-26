@@ -1,0 +1,218 @@
+
+//----------------------------------------------------
+// Module 'lock'
+//----------------------------------------------------
+#define LOCK_HTID_W 5
+dsnInfo.AddModule(name=__htc_lock, htIdW=LOCK_HTID_W);
+
+__htc_lock.AddInst(name=LOCK__START);
+
+
+
+
+typedef ht_uint48 MemAddr_t;
+typedef sc_uint<LOCK_HTID_W> lock_uplevel_index_t;
+typedef sc_int<7> omp_lock_t;
+
+__htc_lock.AddPrivate()
+    .AddVar(type=int, name=op)
+    .AddVar(type=omp_lock_t, name=L)
+    ;
+
+__htc_lock.AddShared()
+    .AddVar(type=int, name=lk)
+    ;
+
+__htc_lock.AddEntry(func=__htc_lock, inst=LOCK__START)
+    .AddParam(type=int, name=op)
+    .AddParam(type=omp_lock_t, name=L)
+    ;
+
+__htc_lock.AddReturn(func=__htc_lock)
+    .AddParam(type=int, name=retval_lock)
+    ;
+
+
+
+
+
+//----------------------------------------------------
+// Module 'rhomp_test_lock'
+//----------------------------------------------------
+#define RHOMP_TEST_LOCK_HTID_W 5
+dsnInfo.AddModule(name=rhomp_test_lock, htIdW=RHOMP_TEST_LOCK_HTID_W);
+
+rhomp_test_lock.AddInst(name=RHOMP_TEST_LOCK__START);
+rhomp_test_lock.AddInst(name=RHOMP_TEST_LOCK__CALL_RTN__14);
+
+
+
+
+typedef sc_uint<RHOMP_TEST_LOCK_HTID_W> rhomp_test_lock_uplevel_index_t;
+
+
+rhomp_test_lock.AddPrivate()
+    .AddVar(type=int, name=retval_lock)
+    .AddVar(type=omp_lock_t, name=L)
+    ;
+
+rhomp_test_lock.AddEntry(func=rhomp_test_lock, inst=RHOMP_TEST_LOCK__START)
+    .AddParam(type=omp_lock_t, name=L)
+    ;
+
+rhomp_test_lock.AddReturn(func=rhomp_test_lock)
+    .AddParam(type=int, name=retval_rhomp_test_lock)
+    ;
+
+rhomp_test_lock.AddCall(func=__htc_lock);
+
+
+
+//----------------------------------------------------
+// Module 'rhomp_set_lock'
+//----------------------------------------------------
+#define RHOMP_SET_LOCK_HTID_W 5
+dsnInfo.AddModule(name=rhomp_set_lock, htIdW=RHOMP_SET_LOCK_HTID_W);
+
+rhomp_set_lock.AddInst(name=RHOMP_SET_LOCK__START);
+rhomp_set_lock.AddInst(name=RHOMP_SET_LOCK__LOOP_TOP__4);
+rhomp_set_lock.AddInst(name=RHOMP_SET_LOCK__CALL_RTN__15);
+rhomp_set_lock.AddInst(name=RHOMP_SET_LOCK__LOOP_EXIT__4);
+
+
+
+
+typedef sc_uint<RHOMP_SET_LOCK_HTID_W> rhomp_set_lock_uplevel_index_t;
+
+
+rhomp_set_lock.AddPrivate()
+    .AddVar(type=int, name=retval_lock)
+    .AddVar(type=omp_lock_t, name=L)
+    ;
+
+rhomp_set_lock.AddEntry(func=rhomp_set_lock, inst=RHOMP_SET_LOCK__START)
+    .AddParam(type=omp_lock_t, name=L)
+    ;
+
+rhomp_set_lock.AddReturn(func=rhomp_set_lock)
+    ;
+
+rhomp_set_lock.AddCall(func=__htc_lock);
+
+
+
+//----------------------------------------------------
+// Module 'rhomp_unset_lock'
+//----------------------------------------------------
+#define RHOMP_UNSET_LOCK_HTID_W 5
+dsnInfo.AddModule(name=rhomp_unset_lock, htIdW=RHOMP_UNSET_LOCK_HTID_W);
+
+rhomp_unset_lock.AddInst(name=RHOMP_UNSET_LOCK__START);
+rhomp_unset_lock.AddInst(name=RHOMP_UNSET_LOCK__CALL_RTN__16);
+
+
+
+
+typedef sc_uint<RHOMP_UNSET_LOCK_HTID_W> rhomp_unset_lock_uplevel_index_t;
+
+
+rhomp_unset_lock.AddPrivate()
+    .AddVar(type=int, name=retval_lock)
+    .AddVar(type=omp_lock_t, name=L)
+    ;
+
+rhomp_unset_lock.AddEntry(func=rhomp_unset_lock, inst=RHOMP_UNSET_LOCK__START)
+    .AddParam(type=omp_lock_t, name=L)
+    ;
+
+rhomp_unset_lock.AddReturn(func=rhomp_unset_lock)
+    ;
+
+rhomp_unset_lock.AddCall(func=__htc_lock);
+
+
+
+
+
+
+//----------------------------------------------------
+// Module 'rhomp_init_lock'
+//----------------------------------------------------
+#define RHOMP_INIT_LOCK_HTID_W 5
+dsnInfo.AddModule(name=rhomp_init_lock, htIdW=RHOMP_INIT_LOCK_HTID_W);
+
+rhomp_init_lock.AddInst(name=RHOMP_INIT_LOCK);
+rhomp_init_lock.AddInst(name=RHOMP_DESTROY_LOCK);
+
+
+
+
+typedef sc_uint<RHOMP_INIT_LOCK_HTID_W> rhomp_init_lock_uplevel_index_t;
+
+
+rhomp_init_lock.AddPrivate()
+    .AddVar(type=omp_lock_t, name=result)
+    .AddVar(type=omp_lock_t, name=lk)
+    ;
+
+rhomp_init_lock.AddShared()
+    .AddVar(type=int, name=lock_counter)
+    .AddVar(type=omp_lock_t, name=Q, queueW=7)
+    ;
+rhomp_init_lock.AddEntry(func=rhomp_destroy_lock, inst=RHOMP_DESTROY_LOCK)
+    .AddParam(type=omp_lock_t, name=lk)
+    ;
+
+rhomp_init_lock.AddEntry(func=rhomp_init_lock, inst=RHOMP_INIT_LOCK)
+    ;
+
+rhomp_init_lock.AddReturn(func=rhomp_init_lock)
+    .AddParam(type=omp_lock_t, name=retval_rhomp_init_lock)
+    ;
+
+rhomp_init_lock.AddReturn(func=rhomp_destroy_lock)
+    ;
+
+
+
+
+//----------------------------------------------------
+// Module 'rhomp_begin_named_critical'
+//----------------------------------------------------
+#define RHOMP_BEGIN_NAMED_CRITICAL_HTID_W 5
+dsnInfo.AddModule(name=rhomp_begin_named_critical, htIdW=RHOMP_BEGIN_NAMED_CRITICAL_HTID_W);
+
+rhomp_begin_named_critical.AddInst(name=RHOMP_BEGIN_NAMED_CRITICAL__START);
+rhomp_begin_named_critical.AddInst(name=RHOMP_BEGIN_NAMED_CRITICAL__CALL_RTN__17);
+rhomp_begin_named_critical.AddInst(name=RHOMP_BEGIN_NAMED_CRITICAL__IF_ELSE__34);
+rhomp_begin_named_critical.AddInst(name=RHOMP_BEGIN_NAMED_CRITICAL__CALL_RTN__18);
+rhomp_begin_named_critical.AddInst(name=RHOMP_BEGIN_NAMED_CRITICAL__CALL_RTN__19);
+rhomp_begin_named_critical.AddInst(name=RHOMP_BEGIN_NAMED_CRITICAL__IF_JOIN__33);
+rhomp_begin_named_critical.AddInst(name=RHOMP_BEGIN_NAMED_CRITICAL__CALL_RTN__20);
+rhomp_begin_named_critical.AddInst(name=RHOMP_BEGIN_NAMED_CRITICAL__CALL_RTN__21);
+rhomp_begin_named_critical.AddInst(name=RHOMP_BEGIN_NAMED_CRITICAL__IF_JOIN__34);
+
+
+
+
+typedef sc_uint<RHOMP_BEGIN_NAMED_CRITICAL_HTID_W> rhomp_begin_named_critical_uplevel_index_t;
+
+
+rhomp_begin_named_critical.AddPrivate()
+    .AddVar(type=omp_lock_t, name=__htc_t_fn8)
+    .AddVar(type=omp_lock_t, name=retval_rhomp_init_lock)
+    .AddVar(type=omp_lock_t, name=temp)
+    .AddVar(type=omp_lock_t, name=GW)
+    .AddVar(type=omp_lock_t, name=L)
+    ;
+
+rhomp_begin_named_critical.AddEntry(func=rhomp_begin_named_critical, inst=RHOMP_BEGIN_NAMED_CRITICAL__START)
+    .AddParam(type=omp_lock_t, name=L)
+    ;
+
+rhomp_begin_named_critical.AddReturn(func=rhomp_begin_named_critical)
+    ;
+
+rhomp_begin_named_critical.AddCall(func=rhomp_init_lock);
+rhomp_begin_named_critical.AddCall(func=rhomp_set_lock);
+rhomp_begin_named_critical.AddCall(func=rhomp_unset_lock);

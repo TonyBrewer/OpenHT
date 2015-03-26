@@ -8,12 +8,12 @@
  * See the LICENSE file for the complete license text.
  */
 #ifndef HTC_LATE_OMP_LOWERING_H
-#define HTC_OMP_LOWERING_H
+#define HTC_LATE_OMP_LOWERING_H
 
 #include <rose.h>
 
 
 extern void DoLateOmpLowering(SgProject *project);
 
-#endif //HTC_OMP_LOWERING_H
+#endif //HTC_LATE_OMP_LOWERING_H
 
