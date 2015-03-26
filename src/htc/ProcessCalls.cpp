@@ -35,6 +35,8 @@ private:
     case V_SgFunctionDeclaration:
       preVisitSgFunctionDeclaration(dynamic_cast<SgFunctionDeclaration *>(S));
       break;
+    default:
+      break;
     }
   }
 
@@ -48,6 +50,8 @@ private:
       break;
     case V_SgReturnStmt:
       rewriteReturnList.push_back(dynamic_cast<SgReturnStmt *>(S));
+      break;
+    default:
       break;
     }
   }

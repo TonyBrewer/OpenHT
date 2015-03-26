@@ -110,6 +110,9 @@ public:
                 before_body += "#include \"Pers" +
                     CapFnName +
                     ".h\"\n";
+                before_body += "#ifndef __htc_GW_write_addr\n";
+                before_body += "#define __htc_GW_write_addr(v,a) v.write_addr(a)\n";
+                before_body += "#endif\n";
                 before_body += "void CPers" +
                     CapFnName +
                     "::Pers" +

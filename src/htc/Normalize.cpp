@@ -92,6 +92,8 @@ static void NormalizeSwitchCaseBodies(SgProject *project) {
         }
         break;
         }
+      default:
+        break;
       }
     }
   };
@@ -131,6 +133,8 @@ public:
     case V_SgDoWhileStmt:
       assert(0 && "unexpected loop in call flattening");
       break;
+    default:
+      break;
     }
   }
 
@@ -146,6 +150,8 @@ public:
     case V_SgIfStmt:
     case V_SgSwitchStatement:
       currAncestorStmt.pop();
+      break;
+    default:
       break;
     }
   }
@@ -296,6 +302,8 @@ public:
     case V_SgDoWhileStmt:
       assert(0 && "unexpected loop in call flattening");
       break;
+    default:
+      break;
     }
   }
 
@@ -306,6 +314,8 @@ public:
       break;
     case V_SgConditionalExp:
       postVisitSgConditionalExp(dynamic_cast<SgConditionalExp *>(S));
+      break;
+    default:
       break;
     }
   }
@@ -508,6 +518,8 @@ public:
     case V_SgDoWhileStmt:
       assert(0 && "unexpected loop in comma flattening");
       break;
+    default:
+      break;
     }
   }
 
@@ -518,6 +530,8 @@ public:
       break;
     case V_SgCommaOpExp:
       postVisitSgCommaOpExp(dynamic_cast<SgCommaOpExp  *>(S));
+      break;
+    default:
       break;
     }
   }
@@ -623,6 +637,8 @@ public:
     case V_SgDoWhileStmt:
       assert(0 && "unexpected loop in comma flattening");
       break;
+    default:
+      break;
     }
   }
 
@@ -633,6 +649,8 @@ public:
       break;
     case V_SgInitializedName:
       postVisitSgInitializedName(dynamic_cast<SgInitializedName *>(S));
+      break;
+    default:
       break;
     }
   }
@@ -1221,6 +1239,8 @@ public:
     case V_SgDoWhileStmt:
       assert(0 && "unexpected loop in array index flattening");
       break;
+    default:
+      break;
     }
   }
 
@@ -1233,6 +1253,8 @@ public:
     case V_SgPntrArrRefExp:
     case V_SgPointerDerefExp:
         postVisitAggregate(isSgExpression(S));
+      break;
+    default:
       break;
     }
   }
@@ -1417,6 +1439,8 @@ public:
     case V_SgDoWhileStmt:
       assert(0 && "unexpected loop in assign flattening");
       break;
+    default:
+      break;
     }
   }
 
@@ -1427,6 +1451,8 @@ public:
       break;
     case V_SgAssignOp:
       postVisitSgAssignOp(dynamic_cast<SgAssignOp *>(S));
+      break;
+    default:
       break;
     }
   }

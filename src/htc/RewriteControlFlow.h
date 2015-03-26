@@ -39,6 +39,8 @@ private:
     case V_SgDoWhileStmt:
       visitSgDoWhileStmt(dynamic_cast<SgDoWhileStmt *>(S));
       break;
+    default:
+      break;
     }
   }
 
@@ -84,6 +86,8 @@ private:
       break;
     case V_SgSwitchStatement:
       visitSgSwitchStatement(dynamic_cast<SgSwitchStatement *>(S));
+      break;
+    default:
       break;
     }
 
