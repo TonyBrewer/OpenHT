@@ -113,6 +113,9 @@ public:
                 before_body += "#ifndef __htc_GW_write_addr\n";
                 before_body += "#define __htc_GW_write_addr(v,a) v.write_addr(a)\n";
                 before_body += "#endif\n";
+                before_body += "#ifndef __htc_GW_write_addr2\n";
+                before_body += "#define __htc_GW_write_addr2(v,a,b) v.write_addr(a,b)\n";
+                before_body += "#endif\n";
                 before_body += "void CPers" +
                     CapFnName +
                     "::Pers" +
