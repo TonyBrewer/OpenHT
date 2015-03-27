@@ -724,15 +724,6 @@ public:
     
     void clear() { fieldList.clear(); }
     
-    void declareMifWriteInterface(std::string &functionName,
-                                  SgFunctionDefinition *fndef) {
-        
-        HtdInfoAttribute *htd = getHtdInfoAttribute(fndef);
-        assert(htd && "missing HtdInfoAttribute");
-        
-        htd->appendArbitraryModuleString( "AddWriteMem(queueW=5);\n") ;
-    }
-
     SgFunctionDeclaration *declareReadMem(int field, 
                                           SgType *type,
                                           SgFunctionDefinition *f_def) {
@@ -762,13 +753,6 @@ public:
     void declareMifReadInterface(std::string &functionName,
                                  SgFunctionDefinition *fndef) {
         
-        // FIXME: how is QueueDepthW calculated?
-        
-        unsigned int maxOutCnt = ActualLg2(fieldList.size()) + 1;
-        if (maxOutCnt == 0) {
-            maxOutCnt = 1;
-        }
-        
         HtdInfoAttribute *htd = getHtdInfoAttribute(fndef);
         assert(htd && "missing HtdInfoAttribute");
 
@@ -785,9 +769,8 @@ public:
 
         htd->appendPrivateVar("", uniqueId + "_t", "mif_rdVal_index");
         
-        std::string ReadMemString("AddReadMem(queueW=5, rspCntW=" +
-                                  to_string<int>(maxOutCnt) +
-                                  ")\n") ;
+        std::string ReadMemString("AddReadMem()\n");
+
         ReadMemString += "// ReadMem interface to global off-chip memory\n";        
         for (unsigned int i = 0; i < fieldList.size(); i++) {
 
@@ -795,36 +778,24 @@ public:
             SgType* baseType = field->getBaseType();
             baseType = baseType->stripType(SgType::STRIP_TYPEDEF_TYPE);
             size_t basesize = getSizeOf(baseType) * 8;
-            std::string rdTypeString = ", rdType=";
-            rdTypeString += baseType->isUnsignedType() ? "uint" : "int";
-            rdTypeString += to_string<int>(basesize);
 
             if (basesize > 64) {
                 std::cerr << "Reads larger than 64 bits are not yet supported in HTC" << std::endl;
-                basesize = 64;
                 //                assert(0);
             }
 
             ReadMemString += 
                 "    .AddDst(name=f" +
                 to_string<int>(i) + 
-                ", var=mifRdVal_" + functionName + ", field=fld" +
+                ", var=" + functionName + "_fld" + 
                 to_string<int>(i) +
-                rdTypeString +
-                ")\n";
+                ", memSrc=host)\n";
         }
         ReadMemString +=  "    ;\n" ;
         htd->appendArbitraryModuleString( ReadMemString) ;
         
         std::string RamString;
-        RamString += "AddGlobal(var=mifRdVal_" + functionName + ", addr1=mif_rdVal_index, addr1W=" +
-#if 1
-            Upper(functionName) +
-            "_HTID_W)\n" ;
-#else
-            // Work around HTL bug????
-        "5)\n" ;
-#endif
+        RamString += "AddGlobal()\n";
         
         RamString += "// Ram for reading global off-chip memory\n";
 
@@ -839,10 +810,13 @@ public:
             
             std::string typeString = baseType->unparseToString();
             
-            RamString += "    .AddField(type=" + 
+            RamString += "    .AddVar(type=" + 
                 typeString +
-                ", name=fld" +
+                ", name=" + functionName + "_fld" + 
                 to_string<int>(i) +
+                ", addr1=mif_rdVal_index, addr1W=" +
+                Upper(functionName) +
+                "_HTID_W" +
                 ", read=true, write=false)\n" ;
         }
         RamString += "    ;\n\n" ;
@@ -917,6 +891,7 @@ class TransformMemoryReferences : public AstSimpleProcessing {
     std::vector<UplevelRef *> uplevelRefs;
     std::vector<SgInitializedName *> fields;
     std::vector<SgExprStatement *> writeMemStatements;
+    std::set<int> writeMemSizes;
     std::string functionName;
     std::map<SgStatement *, std::vector<MifRef *>* >  mifrefs;
     FieldManager FM;
@@ -946,7 +921,7 @@ public:
         mifStates.clear();
         globalVarStates.clear();
         writeMemStatements.clear();
-
+        writeMemSizes.clear();
     }
 
     std::string getFunctionName() { return functionName; }
@@ -988,10 +963,11 @@ public:
             buildFunctionCallStmt( readMemName,
                                    buildVoidType(), 
                                    buildExprListExp(
-                                       buildCastExp(
-                                           mr->getAddress(),
-                                           SCDecls->get_MemAddr_t_type()),
-                                      buildVarRefExp("PR_htId", global_scope)),
+                                      buildCastExp(
+                                         mr->getAddress(),
+                                         SCDecls->get_MemAddr_t_type()),
+                                      buildVarRefExp("PR_htId", global_scope),
+                                      buildIntVal(1)), /* length */
                                    scope);
         insertStatement (stmt, readMemCallStmt, true /* before */);
 
@@ -1024,23 +1000,45 @@ public:
         }
 #endif
         
-        // Replace original reference with reference to GR_mifRdVal_fld[n]
-        std::string GR_field_name("GR_mifRdVal_");
-        GR_field_name += functionName;
-        GR_field_name += "_fld";
-        GR_field_name += to_string<unsigned int>(mr->getFieldId());
+        // Replace original reference with reference to GR_fld[n]
+        std::string GRName("GR_");
+        GRName += functionName + "_fld";
 
-        declareGRReadFunction(GR_field_name, top->get_type());
-        SgFunctionCallExp *GR_call = 
-                              buildFunctionCallExp(GR_field_name,
-                                                    top->get_type(),
-                                                    buildExprListExp(),
-                                                    scope);
-        replaceExpression(top, GR_call, true);
+        GRName += to_string<unsigned int>(mr->getFieldId());
+
+        declareVariableInFunction(f_def,
+                                  GRName,
+                                  baseType,
+                                  false);
+        SgVarRefExp *GR_exp = buildVarRefExp(GRName, scope);
+        replaceExpression(top, GR_exp, true);
 
     }
     
     
+    void declareMifWriteInterface(std::string &functionName,
+                                  SgFunctionDefinition *fndef) {
+        
+        HtdInfoAttribute *htd = getHtdInfoAttribute(fndef);
+        assert(htd && "missing HtdInfoAttribute");
+
+        std::string addWriteMem = "AddWriteMem()\n";
+
+        std::set<int>::iterator iter;
+        for (iter = writeMemSizes.begin(); iter != writeMemSizes.end(); 
+             iter++) {
+            int size = *iter;
+            std::string addSrc = "    .AddSrc(type=uint";
+            addSrc += to_string<int>(size);
+            addSrc += "_t, memDst=host)\n";
+
+            addWriteMem += addSrc;
+        }
+        addWriteMem += "    ;\n\n";
+        
+        htd->appendArbitraryModuleString( addWriteMem );
+    }
+
     void ProcessMifWrite(SgStatement *stmt, 
                          MifRef *mr) {
         // fprintf(stderr,"%s was called\n", __FUNCTION__);
@@ -1058,8 +1056,10 @@ public:
         SgType* baseType = mr->getBaseType();
         baseType = baseType->stripType(SgType::STRIP_TYPEDEF_TYPE);
         size_t basesize = getSizeOf(baseType) * 8;
+        writeMemSizes.insert(basesize);
         std::string wrName = "WriteMem_uint";
         wrName += to_string<int>(basesize);
+        wrName += "_t";
 
         SgName writeMemName(wrName);
         SgExprStatement* writeMemCallStmt = 
@@ -1207,7 +1207,7 @@ public:
             FM.declareMifReadInterface(functionName, fndef);
         }
         if (haveMifWrites) {
-            FM.declareMifWriteInterface(functionName, fndef);
+            declareMifWriteInterface(functionName, fndef);
         }
     }
     
@@ -1221,7 +1221,9 @@ public:
         assert(0);
     }
     
-    std::string  DeclareBlockGlobalMemFields(SgInitializedName *iname) {
+    std::string  DeclareBlockGlobalMemVars(SgInitializedName *iname,
+                                           std::string &addrstring,
+                                           std::string &functionName) {
         std::string returnString;
         std::set<SgInitializedName *> fieldSet;
         
@@ -1240,10 +1242,13 @@ public:
             SgInitializedName* fld = isSgInitializedName(*iter);
             
             returnString += "   .AddField(type="
-                      + fld->get_type()->unparseToString()
-                      + ", name="
-                      + fld->get_name().getString()
-                      + ", read=true, write=true)\n";
+                + fld->get_type()->unparseToString()
+                + ", name="
+                + functionName
+                + "_"
+                + fld->get_name().getString()
+                + addrstring
+                + ", read=true, write=true)\n";
         }
 
         returnString += "   ;\n";
@@ -1284,19 +1289,21 @@ public:
                                   "globalVar_index_" + name);
             
             std::string declareGlobal;
-            declareGlobal =  "AddGlobal(var=" +
-                name +
+            declareGlobal =  "AddGlobal()\n";
+            std::string addrstring = 
                 ", addr1=globalVar_index_" +
                 name +
                 ", addr1W="+
                 to_string<int>(FindLgSizeForSgVariableDeclaration(vdecl)) +
                 "+"+
                 Upper(functionName)+
-                "_HTID_W)\n";
+                "_HTID_W";
             declareGlobal += "// Global Variable (on-chip) for " + name + "\n";
             
-            // output fields here
-            declareGlobal += DeclareBlockGlobalMemFields(vdecl);
+            // output fields (Variables) here
+            declareGlobal += DeclareBlockGlobalMemVars(vdecl, 
+                                                       addrstring,
+                                                       functionName);
             
             htd->appendArbitraryModuleString( declareGlobal) ;
         }
@@ -1359,10 +1366,21 @@ public:
                         GWFuncName,
                         buildVoidType(), 
                         buildExprListExp( 
-                                  ref->getIndexExpr(),
-                                  buildVarRefExp(tempVarName, scope)),
+                           ref->getIndexExpr(),
+                           buildVarRefExp(tempVarName, scope)),
                         scope);
+
+                SgExprStatement* GWWriteAddr = 
+                    buildFunctionCallStmt("__htc_GW_write_addr",
+                                          buildVoidType(),
+                                          buildExprListExp(
+                                             ref->getIndexExpr()),
+                                          scope);
+
+                // These are inserted in reverse order so write_addr is first
+                // in the resulting sequential output.
                 insertStatement (stmt, GWCallStmt, false /* after */);
+                insertStatement (stmt, GWWriteAddr, false /* after */);
 
 #if BREAKSTATES
                 SgLabelStatement *nextLabel = 
@@ -1517,23 +1535,32 @@ public:
         assert(htd && "missing HtdInfoAttribute");
 
         std::string declareGlobal;
-        declareGlobal =  "AddGlobal(var=" + varname + ", addr1=" + indexname +
-            ", addr1W=" + width;
-        if (addr2W > -1) {
-            declareGlobal += ", addr2=" + addr2VarName + ", addr2W=" +
-                to_string<int>(addr2W);
-        }
-        if (Xtern) {
-            declareGlobal += ", extern=true";
-        }
-        declareGlobal += ")\n";
+        declareGlobal =  "AddGlobal()\n";
 
         declareGlobal += comment;
 
         declareGlobal += 
-            "   .AddField(type=" + fieldtype + ", name=" + fieldname
-            + ", read=" + (read ? "true" : "false")
-            + ", write=" + (write ? "true" : "false")
+            "   .AddVar(type=" + fieldtype + ", name=" + fieldname
+            + ", addr1=" + indexname;
+#if 0
+        // addr1W is now superfulous
+            + ", addr1W=" + width;
+#endif
+        if (addr2W > -1) {
+            declareGlobal += ", addr2=" + addr2VarName + ", addr2W=" +
+                to_string<int>(addr2W);
+        }
+#if 0
+        // extern is deprecated
+        if (Xtern) {
+            declareGlobal += ", extern=true";
+        }
+#endif
+        std::string readstr = read ? "true" : "false";
+        std::string writestr = write ? "true" : "false";
+        declareGlobal += 
+            ", read=" + readstr
+            + ", write=" + writestr
             + ");\n";
 
         htd->appendArbitraryModuleString( declareGlobal) ;
@@ -1552,6 +1579,7 @@ public:
         
         std::string GWFuncName = 
             "GW_" + uplevelGVName + "_uplevel_index";
+
         SgExprStatement* GWCallStmt = 
             buildFunctionCallStmt(
                 GWFuncName,
@@ -1683,6 +1711,8 @@ public:
 
         bool contains_parallel_region = 
             fdef->attributeExists("contains_omp_parallel");
+        
+        SgScopeStatement *scope = fdef->get_body();
 
         // Collect all uplevel symbol declarations
         Rose_STL_Container< SgNode *> sgVariableDecls;
@@ -1732,19 +1762,6 @@ public:
             int addr2W = -1;
             std::string addr2VarName;
 
-
-#if 0
-            std::cerr << "symtype for " << symname << " at level " <<
-                level << " is " <<
-                symtype->unparseToString() << " " << symtype->sage_class_name() << std::endl;
-
-            if (isParameter) {
-                std::cerr << symname << " is a parameter\n";
-            } else {
-                std::cerr << symname << " is a not parameter\n";
-            }
-#endif
-
             // Assign parameter value to the Global Variable
             // Emit calls directly.   They do not need Ht_Continue.
             if (isParameter && (level == 0)) {
@@ -1755,17 +1772,31 @@ public:
                 std::string uplevelGVName = 
                     getUplevelGVName(fdef->get_declaration(), symname);
 
-                std::string GWFuncName("GW_" + uplevelGVName + "_" + symname);
+                std::string GWName("GW_" + uplevelGVName + "_" + symname);
 
-                SgExprStatement* GWCallStmt = 
+                declareVariableInFunction(fdef,
+                                          GWName,
+                                          rhs->get_type(),
+                                          false);
+
+                SgExprStatement* GWWriteAddr = 
                     buildFunctionCallStmt(
-                        GWFuncName,
-                        buildVoidType(),
-                        buildExprListExp(
-                            buildVarRefExp("PR_htId", global_scope),
-                            rhs),
-                        fdef);
-                insertStatementAfterLastDeclaration(GWCallStmt, fdef);
+                       "__htc_GW_write_addr",
+                       buildVoidType(),
+                       buildExprListExp(
+                          buildVarRefExp(GWName, scope),
+                          buildVarRefExp("PR_htId", global_scope)),
+                       fdef);
+
+                SgExprStatement *GWAssignStmt =
+                    buildAssignStatement(
+                       buildVarRefExp(GWName, scope),
+                       rhs);
+                
+                // These are inserted in reverse order so write_addr is first
+                // in the resulting sequential output.
+                insertStatementAfterLastDeclaration(GWAssignStmt, fdef);
+                insertStatementAfterLastDeclaration(GWWriteAddr, fdef);
             }
 
 
@@ -1807,7 +1838,7 @@ public:
                           addr2W,
                           addr2VarName,
                           "// Global Variable OMP shared variable \n",
-                          symname,
+                          uplevelGVName + "_" + symname,
                           tyname,
                           readsSym,
                           writesSym);
@@ -1897,7 +1928,7 @@ public:
                           -1, /* addr2W, */
                           "", /* addr2VarName */
                           "// Global Variable for OMP uplevel_index \n",
-                          "uplevel_index",
+                          uplevelGVName + "_" + "uplevel_index",
                           "int",
                           level > 0,   // read
                           level == 0); // write
@@ -1960,11 +1991,37 @@ public:
                                     stmt, &lhs, &rhs, &readlhs);
                 assert(isAsg);
 
-                std::string GWFuncName("GW_" + uplevelGVName + "_" + symname);
+                std::string GWName("GW_" + uplevelGVName + "_" + symname);
                 std::string index_name = getUplevelIndexName(level);
+
+                declareVariableInFunction(fdef,
+                                          GWName,
+                                          baseType,
+                                          false);
 
                 index_name = "P_" + index_name;
 
+                SgExprStatement* GWWriteAddr;
+                if (addr2) {
+                    GWWriteAddr= 
+                        buildFunctionCallStmt(
+                           "__htc_GW_write_addr2",
+                           buildVoidType(),
+                           buildExprListExp(
+                              buildVarRefExp(GWName, scope),
+                              buildVarRefExp(index_name, scope),
+                              addr2),
+                           fdef);
+                } else {
+                    GWWriteAddr= 
+                        buildFunctionCallStmt(
+                           "__htc_GW_write_addr",
+                           buildVoidType(),
+                           buildExprListExp(
+                              buildVarRefExp(GWName, scope),
+                              buildVarRefExp(index_name, scope)),
+                           fdef);
+                }
                 // Check if baseType is a struct/class.   Those need 
                 // read/modify/write.   Others can just do a write.
                 if (isSgClassType(baseType->stripTypedefsAndModifiers())) {
@@ -1979,84 +2036,63 @@ public:
                     insertStatementBefore(stmt, tempVar);
                     
                     // Read old value
-                    std::string GRFuncName("GR_" + uplevelGVName + "_" +symname);
-                    declareGRReadFunction(GRFuncName, baseType);
-                    
-                    SgFunctionCallExp *GR_call = 
-                        buildFunctionCallExp(GRFuncName,
-                                             baseType,
-                                             buildExprListExp(),
-                                             scope);
+                    std::string GRName("GR_" + uplevelGVName + "_uplevel_index");
+                    declareVariableInFunction(fdef,
+                                              GRName,
+                                              baseType,
+                                              false);
+
                     SgExprStatement *assignTemp =
                         buildAssignStatement(
                             buildVarRefExp(tempName, scope),
-                            GR_call);
+                            buildVarRefExp(GRName, scope));
                     insertStatementBefore(stmt, assignTemp);
                     
-                    SgExprListExp *args;
                     if (addr2) {
                         SageInterface::replaceExpression(
                                           top, 
                                           buildVarRefExp(tempName,
                                                          scope));
 
-                        args = buildExprListExp( 
-                                   buildVarRefExp(index_name, scope),
-                                   addr2,
-                                   buildVarRefExp(tempName, scope));
                     } else {
                         SageInterface::replaceExpression(
                                           base, 
                                           buildVarRefExp(tempName,
                                                          scope));
-
-                        args = buildExprListExp( 
-                                   buildVarRefExp(index_name, scope),
-                                   buildVarRefExp(tempName, scope));
                     }
 
-                    SgExprStatement* GWCallStmt = 
-                        buildFunctionCallStmt( 
-                            GWFuncName,
-                            buildVoidType(), 
-                            args,
-                            scope);
-                    insertStatement(stmt, GWCallStmt, false /* after */);
+                    SgExprStatement* GWAssignStmt = 
+                        buildAssignStatement(
+                           buildVarRefExp(GWName, scope),
+                           buildVarRefExp(tempName, scope));
+
+                    replaceStatement(stmt, GWWriteAddr, true);
+                    SageInterface::insertStatementAfter(GWWriteAddr,
+                                                        GWAssignStmt);
                     
 #if BREAKSTATES
                     SgLabelStatement *nextLabel = 
                         HtSageUtils::makeLabelStatement("GW", fdef);
                     SgGotoStatement *gts = buildGotoStatement(nextLabel);
-                    insertStatement(GWCallStmt, gts, false /* after */);
+                    insertStatement(GWAssignStmt, gts, false /* after */);
                     insertStatement(gts, nextLabel, false /* after */);
 #endif
                     
                 } else {  // simple write
 
-                    SgExprListExp *args;
-                    if (addr2) {
-                        args = buildExprListExp( 
-                                   buildVarRefExp(index_name, scope),
-                                   addr2,
-                                   rhs);
-                    } else {
-                        args = buildExprListExp( 
-                                   buildVarRefExp(index_name, scope),
-                                   rhs);
-                    }
-                    SgExprStatement* GWCallStmt = 
-                        buildFunctionCallStmt( 
-                            GWFuncName,
-                            buildVoidType(), 
-                            args,
-                            scope);
-                    replaceStatement(stmt, GWCallStmt, true);
-                    
+                    SgExprStatement* GWAssignStmt = 
+                        buildAssignStatement(
+                           buildVarRefExp(GWName, scope),
+                           rhs);
+                    replaceStatement(stmt, GWWriteAddr, true);
+                    SageInterface::insertStatementAfter(GWWriteAddr,
+                                                        GWAssignStmt);
+
 #if BREAKSTATES
                     SgLabelStatement *nextLabel = 
                         HtSageUtils::makeLabelStatement("GW", fdef);
                     SgGotoStatement *gts = buildGotoStatement(nextLabel);
-                    insertStatement(GWCallStmt, gts, false /* after */);
+                    insertStatement(GWAssignStmt, gts, false /* after */);
                     insertStatement(gts, nextLabel, false /* after */);
 #endif
                     
@@ -2071,16 +2107,16 @@ public:
                 // unless the variable is an array.   Then we need
                 // to set the addr2 index.
 
-                std::string GRFuncName("GR_" + uplevelGVName + "_" + symname);
+                std::string GRName("GR_" + uplevelGVName + "_" + symname);
 
-                declareGRReadFunction(GRFuncName, baseType);
-                    SgFunctionCallExp *GR_call = 
-                              buildFunctionCallExp(GRFuncName,
-                                                   baseType,
-                                                   buildExprListExp(),
-                                                   scope);
+                declareVariableInFunction(fdef,
+                                          GRName,
+                                          baseType,
+                                          false);
+                SgVarRefExp*GRRef = buildVarRefExp(GRName, scope);
+
                 if (addr2 == NULL) {
-                    replaceExpression(base, GR_call, true);
+                    replaceExpression(base, GRRef, true);
                 } else {
                     stmt = HtSageUtils::findSafeInsertPoint(stmt);
 
@@ -2126,7 +2162,7 @@ public:
                     SgExprStatement* assignToTemp = 
                         buildAssignStatement(
                            buildVarRefExp(tempVarName, scope),
-                                         GR_call);
+                                         GRRef);
 
                     insertStatement (stmt, assignToTemp, true /* before */);
                 }
@@ -2489,7 +2525,7 @@ public:
             SgDotExp *DR = isSgDotExp(expr);
             return flattenSgDotExp(DR);
         }
-
+	assert(0 && "unexpected expr type in getBaseAddress");
     }
 
 
@@ -3176,6 +3212,8 @@ void setGlobalScope(SgProject *project)
           case V_SgFunctionDefinition:
               global_scope = SageInterface::getGlobalScope(S);
               return;
+          default:
+              break;
           }
       }
   } vgs;
@@ -3283,6 +3321,8 @@ public:
     case V_SgDoWhileStmt:
       assert(0 && "unexpected loop in array index flattening");
       break;
+    default:
+      break;
     }
   }
 
@@ -3293,6 +3333,8 @@ public:
       break;
     case V_SgSubtractOp:
         postVisitExpression(isSgExpression(S));
+      break;
+    default:
       break;
     }
   }
@@ -3397,6 +3439,8 @@ public:
     case V_SgDoWhileStmt:
       assert(0 && "unexpected loop in array index flattening");
       break;
+    default:
+      break;
     }
   }
 
@@ -3408,6 +3452,8 @@ public:
     case V_SgAddOp:
     case V_SgSubtractOp:
         postVisitExpression(isSgExpression(S));
+      break;
+    default:
       break;
     }
   }
@@ -3537,6 +3583,8 @@ std::string declareStructOrUnionInHtd(SgType* t) {
     std::string name;
 
     switch (t->variantT()) {
+    default:
+        break;
     case V_SgClassType: { // Also covers structs and unions
         SgClassDeclaration* decl = 
             isSgClassDeclaration(isSgClassType(t)->get_declaration());
