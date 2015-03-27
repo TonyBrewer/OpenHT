@@ -66,7 +66,7 @@ CPersBmap::PersBmap()
 		case BMAP_UPD: {
 			uint64_t newBmap = PR_data & ~((uint64_t)P_vtxUpdated << P_updBitIdx);
 			if (P_vtxUpdated) {
-				PW_data(newBmap);
+				P_data = newBmap;
 				P_bmapUpdCnt++;
 			}
 
