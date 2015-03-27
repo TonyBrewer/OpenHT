@@ -108,18 +108,18 @@ bool CDsnInfo::IsNativeCType(string &type, bool bAllowHostPtr)
 		}
 
 		// non-native type, check if it is a host accessable structure
-		size_t structIdx;
-		for (structIdx = 0; structIdx < m_recordList.size(); structIdx += 1) {
+		size_t recordIdx;
+		for (recordIdx = 0; recordIdx < m_recordList.size(); recordIdx += 1) {
 
-			if (m_recordList[structIdx].m_scope != eHost) continue;
+			if (m_recordList[recordIdx]->m_scope != eHost) continue;
 
-			if (type == m_recordList[structIdx].m_typeName) {
+			if (type == m_recordList[recordIdx]->m_typeName) {
 				if (bNative || bPtr || bHostVar) return false;
 				bHostVar = true;
 				break;
 			}
 		}
-		if (structIdx < m_recordList.size())
+		if (recordIdx < m_recordList.size())
 			continue;
 
 		return false;
@@ -556,16 +556,16 @@ void CDsnInfo::GenerateHifFiles()
 		}
 		fprintf(incFile, "\n");
 
-		for (size_t structIdx = 0; structIdx < m_recordList.size(); structIdx += 1) {
+		for (size_t recordIdx = 0; recordIdx < m_recordList.size(); recordIdx += 1) {
 
-			if (m_recordList[structIdx].m_scope != eHost) continue;
-			if (m_recordList[structIdx].m_bInclude) continue;
+			if (m_recordList[recordIdx]->m_scope != eHost) continue;
+			if (m_recordList[recordIdx]->m_bInclude) continue;
 
-			GenUserStructs(incFile, m_recordList[structIdx]);
+			GenUserStructs(incFile, m_recordList[recordIdx]);
 
 			CHtCode htFile(incFile);
-			GenUserStructBadData(htFile, true, m_recordList[structIdx].m_typeName,
-				m_recordList[structIdx].m_fieldList, m_recordList[structIdx].m_bCStyle, "");
+			GenUserStructBadData(htFile, true, m_recordList[recordIdx]->m_typeName,
+				m_recordList[recordIdx]->m_fieldList, m_recordList[recordIdx]->m_bCStyle, "");
 		}
 		fprintf(incFile, "\n");
 

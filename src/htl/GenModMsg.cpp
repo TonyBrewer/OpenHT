@@ -40,11 +40,11 @@ void CDsnInfo::InitAndValidateModMsg()
 		for (size_t outIdx = 0; outIdx < mod.m_msgIntfList.size(); outIdx += 1) {
 			CMsgIntf * pOutMsgIntf = mod.m_msgIntfList[outIdx];
 
-			for (size_t structIdx = 0; structIdx < m_recordList.size(); structIdx += 1) {
-				CRecord & record = m_recordList[structIdx];
+			for (size_t recordIdx = 0; recordIdx < m_recordList.size(); recordIdx += 1) {
+				CRecord * pRecord = m_recordList[recordIdx];
 
-				if (record.m_typeName == pOutMsgIntf->m_pType->m_typeName)
-					record.m_bNeedIntf = true;
+				if (pRecord->m_typeName == pOutMsgIntf->m_pType->m_typeName)
+					pRecord->m_bNeedIntf = true;
 			}
 
 			if (pOutMsgIntf->m_dir != "out") continue;

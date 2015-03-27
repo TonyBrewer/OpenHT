@@ -2039,8 +2039,8 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 	void GenerateBanner(CHtFile &htFile, const char *fileName, bool is_h);
 	void GenIntfStruct(FILE *incFp, string intfName, vector<CField *> &fieldList, bool bCStyle, bool bInclude, bool bData64, bool bUnion);
 	void GenRamIntfStruct(FILE *incFp, string intfName, CRam &ram, EStructType type);
-	void GenUserStructs(FILE *incFp, CRecord &userStruct, char const * pTabs = "");
-	void GenUserStructs(CHtCode &htFile, CRecord &userStruct, char const * pTabs = "");
+	void GenUserStructs(FILE *incFp, CRecord * pUserRecord, char const * pTabs = "");
+	void GenUserStructs(CHtCode &htFile, CRecord * pUserRecord, char const * pTabs = "");
 	void GenStructIsEqual(CHtCode &htFile, char const * pTabs, string prefixName, string &typeName, vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType structType = eStructAll, bool bHeader = true);
 	void GenStructAssign(CHtCode &htFile, char const * pTabs, string prefixName, string &typeName, vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType structType = eStructAll, bool bHeader = true);
 	void GenStructAssignToZero(CHtCode &htFile, char const * pTabs, string prefixName, string &typeName, vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType structType = eStructAll, bool bHeader = true);
@@ -2066,7 +2066,7 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 	void GenHtMon();
 
 	void MarkNeededIncludeStructs();
-	void MarkNeededIncludeStructs(CRecord & record);
+	void MarkNeededIncludeStructs(CRecord * pRecord);
 	bool FindStringValue(CLineInfo &lineInfo, string ramIdxW, int &ramIdxWidth) { bool bIsSigned; return m_defineTable.FindStringValue(lineInfo, ramIdxW, ramIdxWidth, bIsSigned); }
 
 	bool IsInstanceLinkPresent(CHtString &, int, CHtString &, int) { return false; }
@@ -2128,7 +2128,7 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 	bool IsInStructList(string &typeName)
 	{
 		for (size_t typeIdx = 0; typeIdx < m_recordList.size(); typeIdx += 1)
-			if (m_recordList[typeIdx].m_typeName == typeName)
+			if (m_recordList[typeIdx]->m_typeName == typeName)
 				return true;
 		return false;
 	}
@@ -2182,7 +2182,7 @@ public:
 	CDefineTable		m_defineTable;
 	vector<CTypeDef>	m_typedefList;
 	vector<CType>		m_typeList;
-	vector<CRecord>		m_recordList;
+	vector<CRecord *>	m_recordList;
 	vector<CMifInst>	m_mifInstList;
 	vector<CNgvInfo *>	m_ngvList;
 

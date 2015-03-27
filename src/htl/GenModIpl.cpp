@@ -358,7 +358,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 		//string htPrivName = "CHtPriv";
 		mod.m_threads.m_htPriv.m_typeName = "CHtPriv";
 		mod.m_threads.m_htPriv.m_bCStyle = false;
-		GenUserStructs(m_iplRegDecl, mod.m_threads.m_htPriv, "\t");
+		GenUserStructs(m_iplRegDecl, &mod.m_threads.m_htPriv, "\t");
 
 		string privStructName = VA("CPers%s::CHtPriv", mod.m_modName.Uc().c_str());
 

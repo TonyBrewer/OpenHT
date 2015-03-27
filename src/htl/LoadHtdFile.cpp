@@ -79,9 +79,8 @@ void CDsnInfo::AddTypeDef(string name, string type, string width, bool bInitWidt
 
 CRecord * CDsnInfo::AddStruct(string structName, bool bCStyle, bool bUnion, EScope scope, bool bInclude, string modName)
 {
-	CRecord record(structName, bCStyle, bUnion, scope, bInclude, modName);
-	m_recordList.push_back(record);
-	return &m_recordList.back();
+	m_recordList.push_back(new CRecord(structName, bCStyle, bUnion, scope, bInclude, modName));
+	return m_recordList.back();
 }
 
 CModule * CDsnInfo::AddModule(string name, EClkRate clkRate)

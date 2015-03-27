@@ -310,12 +310,12 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 		if (structType == eStructAll || structType == eStructRamRdData && (pField->m_bSrcRead || pField->m_bMifRead)
 			|| structType != eStructRamRdData && (pField->m_bSrcWrite || pField->m_bMifWrite)) {
 
-			size_t structIdx;
-			for (structIdx = 0; structIdx < m_recordList.size(); structIdx += 1) {
-				if (m_recordList[structIdx].m_typeName == pField->m_type)
+			size_t recordIdx;
+			for (recordIdx = 0; recordIdx < m_recordList.size(); recordIdx += 1) {
+				if (m_recordList[recordIdx]->m_typeName == pField->m_type)
 					break;
 			}
-			if (structType != eGenRamWrEn && !bCStyle && structIdx < m_recordList.size()) {
+			if (structType != eGenRamWrEn && !bCStyle && recordIdx < m_recordList.size()) {
 				size_t prefixLen = prefixName.size();
 
 				if (pField->m_elemCnt <= 8) {
@@ -327,7 +327,7 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 						if (pField->m_name.size() > 0)
 							prefixName += m_ + pField->m_name + fldIdx + ".";
 
-						GenStructIsEqual(htFile, pTabs, prefixName, typeName, m_recordList[structIdx].m_fieldList, m_recordList[structIdx].m_bCStyle, pStr, structType, false);
+						GenStructIsEqual(htFile, pTabs, prefixName, typeName, m_recordList[recordIdx]->m_fieldList, m_recordList[recordIdx]->m_bCStyle, pStr, structType, false);
 
 						prefixName.erase(prefixLen);
 
@@ -347,7 +347,7 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 					if (pField->m_name.size() > 0)
 						prefixName += m_ + pField->m_name + pField->m_dimenIndex + ".";
 
-					GenStructIsEqual(htFile, tabs.c_str(), prefixName, typeName, m_recordList[structIdx].m_fieldList, m_recordList[structIdx].m_bCStyle, pStr, structType, false);
+					GenStructIsEqual(htFile, tabs.c_str(), prefixName, typeName, m_recordList[recordIdx]->m_fieldList, m_recordList[recordIdx]->m_bCStyle, pStr, structType, false);
 
 					prefixName.erase(prefixLen);
 
@@ -411,12 +411,12 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 		if (structType == eStructAll || structType == eStructRamRdData && (pField->m_bSrcRead || pField->m_bMifRead)
 			|| structType != eStructRamRdData && (pField->m_bSrcWrite || pField->m_bMifWrite)) {
 
-			size_t structIdx;
-			for (structIdx = 0; structIdx < m_recordList.size(); structIdx += 1) {
-				if (m_recordList[structIdx].m_typeName == pField->m_type)
+			size_t recordIdx;
+			for (recordIdx = 0; recordIdx < m_recordList.size(); recordIdx += 1) {
+				if (m_recordList[recordIdx]->m_typeName == pField->m_type)
 					break;
 			}
-			if (structType != eGenRamWrEn && structIdx < m_recordList.size()) {
+			if (structType != eGenRamWrEn && recordIdx < m_recordList.size()) {
 				size_t prefixLen = prefixName.size();
 
 				if (pField->m_elemCnt <= 8) {
@@ -428,8 +428,8 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 						if (pField->m_name.size() > 0)
 							prefixName += m_ + pField->m_name + fldIdx + ".";
 
-						GenStructAssign(htFile, pTabs, prefixName, typeName, m_recordList[structIdx].m_fieldList,
-							m_recordList[structIdx].m_bCStyle, pStr, structType, false);
+						GenStructAssign(htFile, pTabs, prefixName, typeName, m_recordList[recordIdx]->m_fieldList,
+							m_recordList[recordIdx]->m_bCStyle, pStr, structType, false);
 
 						prefixName.erase(prefixLen);
 
@@ -449,8 +449,8 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 					if (pField->m_name.size() > 0)
 						prefixName += m_ + pField->m_name + pField->m_dimenIndex + ".";
 
-					GenStructAssign(htFile, tabs.c_str(), prefixName, typeName, m_recordList[structIdx].m_fieldList,
-						m_recordList[structIdx].m_bCStyle, pStr, structType, false);
+					GenStructAssign(htFile, tabs.c_str(), prefixName, typeName, m_recordList[recordIdx]->m_fieldList,
+						m_recordList[recordIdx]->m_bCStyle, pStr, structType, false);
 
 					prefixName.erase(prefixLen);
 
@@ -504,12 +504,12 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 		if (structType == eStructAll || structType == eStructRamRdData && (pField->m_bSrcRead || pField->m_bMifRead)
 			|| structType != eStructRamRdData && (pField->m_bSrcWrite || pField->m_bMifWrite)) {
 
-			size_t structIdx;
-			for (structIdx = 0; structIdx < m_recordList.size(); structIdx += 1) {
-				if (m_recordList[structIdx].m_typeName == pField->m_type)
+			size_t recordIdx;
+			for (recordIdx = 0; recordIdx < m_recordList.size(); recordIdx += 1) {
+				if (m_recordList[recordIdx]->m_typeName == pField->m_type)
 					break;
 			}
-			if (structType != eGenRamWrEn && !bCStyle && structIdx < m_recordList.size()) {
+			if (structType != eGenRamWrEn && !bCStyle && recordIdx < m_recordList.size()) {
 				size_t prefixLen = prefixName.size();
 
 				if (pField->m_elemCnt <= 8) {
@@ -521,8 +521,8 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 						if (pField->m_name.size() > 0)
 							prefixName += m_ + pField->m_name + fldIdx + ".";
 
-						GenStructAssignToZero(htFile, pTabs, prefixName, typeName, m_recordList[structIdx].m_fieldList,
-							m_recordList[structIdx].m_bCStyle, pStr, structType, false);
+						GenStructAssignToZero(htFile, pTabs, prefixName, typeName, m_recordList[recordIdx]->m_fieldList,
+							m_recordList[recordIdx]->m_bCStyle, pStr, structType, false);
 
 						prefixName.erase(prefixLen);
 
@@ -542,8 +542,8 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 					if (pField->m_name.size() > 0)
 						prefixName += m_ + pField->m_name + pField->m_dimenIndex + ".";
 
-					GenStructAssignToZero(htFile, tabs.c_str(), prefixName, typeName, m_recordList[structIdx].m_fieldList,
-						m_recordList[structIdx].m_bCStyle, pStr, structType, false);
+					GenStructAssignToZero(htFile, tabs.c_str(), prefixName, typeName, m_recordList[recordIdx]->m_fieldList,
+						m_recordList[recordIdx]->m_bCStyle, pStr, structType, false);
 
 					prefixName.erase(prefixLen);
 
@@ -606,12 +606,12 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 		if (structType == eStructAll || structType == eStructRamRdData && (pField->m_bSrcRead || pField->m_bMifRead)
 			|| structType != eStructRamRdData && (pField->m_bSrcWrite || pField->m_bMifWrite)) {
 
-			size_t structIdx;
-			for (structIdx = 0; structIdx < m_recordList.size(); structIdx += 1) {
-				if (m_recordList[structIdx].m_typeName == pField->m_type)
+			size_t recordIdx;
+			for (recordIdx = 0; recordIdx < m_recordList.size(); recordIdx += 1) {
+				if (m_recordList[recordIdx]->m_typeName == pField->m_type)
 					break;
 			}
-			if (structType != eGenRamWrEn && !bCStyle && structIdx < m_recordList.size()) {
+			if (structType != eGenRamWrEn && !bCStyle && recordIdx < m_recordList.size()) {
 				size_t prefixLen1 = prefixName1.size();
 				size_t prefixLen2 = prefixName2.size();
 
@@ -626,8 +626,8 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 							prefixName2 += m_ + pField->m_name + fldIdx + ".";
 						}
 
-						GenStructScTrace(htFile, pTabs, prefixName1, prefixName2, typeName, m_recordList[structIdx].m_fieldList,
-							m_recordList[structIdx].m_bCStyle, pStr, structType, false);
+						GenStructScTrace(htFile, pTabs, prefixName1, prefixName2, typeName, m_recordList[recordIdx]->m_fieldList,
+							m_recordList[recordIdx]->m_bCStyle, pStr, structType, false);
 
 						prefixName1.erase(prefixLen1);
 						prefixName2.erase(prefixLen2);
@@ -652,8 +652,8 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 						prefixName2 += m_ + pField->m_name + loopIdx + ".";
 					}
 
-					GenStructScTrace(htFile, tabs.c_str(), prefixName1, prefixName2, typeName, m_recordList[structIdx].m_fieldList,
-						m_recordList[structIdx].m_bCStyle, pStr, structType, false);
+					GenStructScTrace(htFile, tabs.c_str(), prefixName1, prefixName2, typeName, m_recordList[recordIdx]->m_fieldList,
+						m_recordList[recordIdx]->m_bCStyle, pStr, structType, false);
 
 					prefixName1.erase(prefixLen1);
 					prefixName2.erase(prefixLen2);
@@ -709,19 +709,19 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 void
 CDsnInfo::GenStructInit(FILE *fp, string &tabs, string prefixName, CField * pField, int idxCnt, bool bZero)
 {
-	size_t structIdx;
-	for (structIdx = 0; structIdx < m_recordList.size(); structIdx += 1) {
-		if (m_recordList[structIdx].m_typeName == pField->m_type)
+	size_t recordIdx;
+	for (recordIdx = 0; recordIdx < m_recordList.size(); recordIdx += 1) {
+		if (m_recordList[recordIdx]->m_typeName == pField->m_type)
 			break;
 	}
-	bool bIsInStructList = structIdx < m_recordList.size();
+	bool bIsInStructList = recordIdx < m_recordList.size();
 	if (bIsInStructList || pField->m_pType->IsRecord()) {
 		size_t prefixLen = prefixName.size();
 
 		CRecord * pRecord = pField->m_pType->AsRecord();
 
 		vector<CField *> & fieldList = bIsInStructList
-			? m_recordList[structIdx].m_fieldList : pRecord->m_fieldList;
+			? m_recordList[recordIdx]->m_fieldList : pRecord->m_fieldList;
 
 		for (size_t i = 0; i < fieldList.size(); i += 1) {
 			CField * pSubField = fieldList[i];
@@ -945,10 +945,10 @@ CRecord * CDsnInfo::FindRecord(string recordName)
 		if (pTypeDef) recordName = pTypeDef->m_type;
 	} while (pTypeDef);
 
-	size_t structIdx;
-	for (structIdx = 0; structIdx < m_recordList.size(); structIdx += 1) {
-		if (m_recordList[structIdx].m_typeName == recordName)
-			return &m_recordList[structIdx];
+	size_t recordIdx;
+	for (recordIdx = 0; recordIdx < m_recordList.size(); recordIdx += 1) {
+		if (m_recordList[recordIdx]->m_typeName == recordName)
+			return m_recordList[recordIdx];
 	}
 
 	return 0;
@@ -982,14 +982,14 @@ CDsnInfo::GenUserStructFieldList(CHtCode &htFile, bool bIsHtPriv, vector<CField 
 	for (size_t fieldIdx = 0; fieldIdx < fieldList.size(); fieldIdx += 1) {
 		CField * pField = fieldList[fieldIdx];
 
-		size_t structIdx;
-		for (structIdx = 0; structIdx < m_recordList.size(); structIdx += 1) {
-			if (m_recordList[structIdx].m_typeName == pField->m_type)
+		size_t recordIdx;
+		for (recordIdx = 0; recordIdx < m_recordList.size(); recordIdx += 1) {
+			if (m_recordList[recordIdx]->m_typeName == pField->m_type)
 				break;
 		}
 
-		if (structIdx < m_recordList.size() && pField->m_name.size() == 0)
-			GenUserStructFieldList(htFile, false, m_recordList[structIdx].m_fieldList, bCStyle, m_recordList[structIdx].m_bUnion ? Union : Struct, tabs + "\t", bUnion);
+		if (recordIdx < m_recordList.size() && pField->m_name.size() == 0)
+			GenUserStructFieldList(htFile, false, m_recordList[recordIdx]->m_fieldList, bCStyle, m_recordList[recordIdx]->m_bUnion ? Union : Struct, tabs + "\t", bUnion);
 		else if (pField->m_name.size() == 0 && pField->m_pType->IsRecord()) {
 			CRecord * pRecord = pField->m_pType->AsRecord();
 			GenUserStructFieldList(htFile, false, pRecord->m_fieldList, pRecord->m_bCStyle, pRecord->m_bUnion ? Union : Struct, tabs + "\t", bUnion);
@@ -1054,14 +1054,14 @@ void CDsnInfo::GenUserStructBadData(CHtCode &htFile, bool bHeader, string struct
 	for (size_t fieldIdx = 0; fieldIdx < fieldList.size(); fieldIdx += 1) {
 		CField * pField = fieldList[fieldIdx];
 
-		size_t structIdx;
-		for (structIdx = 0; structIdx < m_recordList.size(); structIdx += 1) {
-			if (m_recordList[structIdx].m_typeName == pField->m_type)
+		size_t recordIdx;
+		for (recordIdx = 0; recordIdx < m_recordList.size(); recordIdx += 1) {
+			if (m_recordList[recordIdx]->m_typeName == pField->m_type)
 				break;
 		}
 
-		if (structIdx < m_recordList.size() && pField->m_name.size() == 0)
-			GenUserStructBadData(htFile, false, structName, m_recordList[structIdx].m_fieldList, bCStyle, tabs);
+		if (recordIdx < m_recordList.size() && pField->m_name.size() == 0)
+			GenUserStructBadData(htFile, false, structName, m_recordList[recordIdx]->m_fieldList, bCStyle, tabs);
 
 		else if (pField->m_name.size() == 0 && pField->m_pType->IsRecord()) {
 
@@ -1102,27 +1102,27 @@ void CDsnInfo::GenUserStructBadData(CHtCode &htFile, bool bHeader, string struct
 }
 
 void
-CDsnInfo::GenUserStructs(FILE *incFp, CRecord &userStruct, char const * pTabs)
+CDsnInfo::GenUserStructs(FILE *incFp, CRecord * pUserRecord, char const * pTabs)
 {
 	CHtCode htFile(incFp);
 
-	GenUserStructs(htFile, userStruct, pTabs);
+	GenUserStructs(htFile, pUserRecord, pTabs);
 	htFile.Write(incFp);
 }
 
 void
-CDsnInfo::GenUserStructs(CHtCode &htFile, CRecord &userStruct, char const * pTabs)
+CDsnInfo::GenUserStructs(CHtCode &htFile, CRecord * pUserRecord, char const * pTabs)
 {
-	string structName = userStruct.m_typeName + (userStruct.m_bInclude ? "Intf" : "");
+	string structName = pUserRecord->m_typeName + (pUserRecord->m_bInclude ? "Intf" : "");
 
 	// mode: 0-all, 1-read, 2-write
-	if (userStruct.m_bUnion)
+	if (pUserRecord->m_bUnion)
 		htFile.Append("%sunion %s {\n", pTabs, structName.c_str());
 	else
 		htFile.Append("%sstruct %s {\n", pTabs, structName.c_str());
 
 	htFile.Append("#%s\tifndef _HTV\n", pTabs);
-	if (!userStruct.m_bUnion) {
+	if (!pUserRecord->m_bUnion) {
 		htFile.Append("%s\t%s() {}\n", pTabs, structName.c_str());
 		htFile.Append("%s\t%s(int zero)\n", pTabs, structName.c_str());
 		htFile.Append("%s\t{\n", pTabs);
@@ -1133,19 +1133,19 @@ CDsnInfo::GenUserStructs(CHtCode &htFile, CRecord &userStruct, char const * pTab
 	// compare for equal
 	const char *pStr = "";
 	string prefixName;
-	GenStructIsEqual(htFile, pTabs, prefixName, structName, userStruct.m_fieldList, userStruct.m_bCStyle, pStr);
+	GenStructIsEqual(htFile, pTabs, prefixName, structName, pUserRecord->m_fieldList, pUserRecord->m_bCStyle, pStr);
 
 	// assignment to zero
 	pStr = "";
 	prefixName = "";
-	GenStructAssignToZero(htFile, pTabs, prefixName, structName, userStruct.m_fieldList, userStruct.m_bCStyle, pStr);
+	GenStructAssignToZero(htFile, pTabs, prefixName, structName, pUserRecord->m_fieldList, pUserRecord->m_bCStyle, pStr);
 
 	// signal tracing
 	pStr = "\t\t";
 	prefixName = "";
 	htFile.Append("#%s\tifdef HT_SYSC\n", pTabs);
 
-	GenStructScTrace(htFile, pTabs, prefixName, prefixName, structName, userStruct.m_fieldList, userStruct.m_bCStyle, pStr);
+	GenStructScTrace(htFile, pTabs, prefixName, prefixName, structName, pUserRecord->m_fieldList, pUserRecord->m_bCStyle, pStr);
 
 	// signal printing
 	htFile.Append("%s\tfriend ostream& operator << (ostream& os, %s const & v) { return os; }\n", pTabs, structName.c_str());
@@ -1154,7 +1154,7 @@ CDsnInfo::GenUserStructs(CHtCode &htFile, CRecord &userStruct, char const * pTab
 	htFile.Append("#%s\tendif\n", pTabs);
 
 	bool bIsHtPriv = structName == "CHtPriv";
-	GenUserStructFieldList(htFile, bIsHtPriv, userStruct.m_fieldList, userStruct.m_bCStyle, FieldList, pTabs);
+	GenUserStructFieldList(htFile, bIsHtPriv, pUserRecord->m_fieldList, pUserRecord->m_bCStyle, FieldList, pTabs);
 
 	htFile.Append("%s};\n", pTabs);
 	htFile.Append("\n");

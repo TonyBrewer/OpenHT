@@ -3493,17 +3493,17 @@ CDsnInfo::ZeroStruct(CHtCode &code, string fieldBase, vector<CField *> &fieldLis
 	for (size_t fldIdx = 0; fldIdx < fieldList.size(); fldIdx += 1) {
 		CField * pField = fieldList[fldIdx];
 
-		size_t structIdx;
-		for (structIdx = 0; structIdx < m_recordList.size(); structIdx += 1) {
-			if (m_recordList[structIdx].m_typeName == pField->m_type)
+		size_t recordIdx;
+		for (recordIdx = 0; recordIdx < m_recordList.size(); recordIdx += 1) {
+			if (m_recordList[recordIdx]->m_typeName == pField->m_type)
 				break;
 		}
-		if (structIdx < m_recordList.size()) {
+		if (recordIdx < m_recordList.size()) {
 			size_t prefixLen = fieldBase.size();
 			if (pField->m_name.size() > 0)
 				fieldBase += ".m_" + pField->m_name;
 
-			ZeroStruct(code, fieldBase, m_recordList[structIdx].m_fieldList);
+			ZeroStruct(code, fieldBase, m_recordList[recordIdx]->m_fieldList);
 
 			fieldBase.erase(prefixLen);
 

@@ -2531,7 +2531,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 		if (rdRspInfo.m_fieldList.size() > 0) {
 			rdRspInfo.AddStructField(&g_uint32, "m_uint32");
 
-			GenUserStructs(m_mifDecl, rdRspInfo, "\t");
+			GenUserStructs(m_mifDecl, &rdRspInfo, "\t");
 
 			string fullName = VA("CPers%s::CRdRspInfo", mod.m_modName.Uc().c_str());
 
@@ -2701,9 +2701,9 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 			memReq.AddStructField(&g_uint32, "m_pad", "1");
 
 		if (wrTypeUnion.m_fieldList.size() > 0)
-			GenUserStructs(m_mifDecl, wrTypeUnion, "\t");
+			GenUserStructs(m_mifDecl, &wrTypeUnion, "\t");
 
-		GenUserStructs(m_mifDecl, memReq, "\t");
+		GenUserStructs(m_mifDecl, &memReq, "\t");
 	}
 
 	if (bMultiQwReq) {
@@ -2901,7 +2901,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 
 			reqState.AddStructField(FindHtIntType(eUnsigned, mod.m_mif.m_mifRd.m_rspCntW.AsInt()), "m_cnt");
 
-			GenUserStructs(m_mifDecl, reqState, "\t");
+			GenUserStructs(m_mifDecl, &reqState, "\t");
 
 		} else {
 			;
@@ -2925,7 +2925,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 
 				reqState.AddStructField(FindHtIntType(eUnsigned, mif.m_mifRd.m_rspCntW.AsInt()), "m_cnt");
 
-				GenUserStructs(m_mifDecl, reqState, "\t");
+				GenUserStructs(m_mifDecl, &reqState, "\t");
 			}
 
 			{
@@ -2940,7 +2940,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 
 				rspState.AddStructField(FindHtIntType(eUnsigned, mif.m_mifRd.m_rspCntW.AsInt()), "m_cnt");
 
-				GenUserStructs(m_mifDecl, rspState, "\t");
+				GenUserStructs(m_mifDecl, &rspState, "\t");
 			}
 		}
 
@@ -3176,7 +3176,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 
 			reqState.AddStructField(FindHtIntType(eUnsigned, mod.m_mif.m_mifWr.m_rspCntW.AsInt()), "m_cnt");
 
-			GenUserStructs(m_mifDecl, reqState, "\t");
+			GenUserStructs(m_mifDecl, &reqState, "\t");
 
 		} else {
 			;
@@ -3200,7 +3200,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 
 				reqState.AddStructField(FindHtIntType(eUnsigned, mod.m_mif.m_mifWr.m_rspCntW.AsInt()), "m_cnt");
 
-				GenUserStructs(m_mifDecl, reqState, "\t");
+				GenUserStructs(m_mifDecl, &reqState, "\t");
 			}
 
 			{
@@ -3215,7 +3215,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 
 				rspState.AddStructField(FindHtIntType(eUnsigned, mod.m_mif.m_mifWr.m_rspCntW.AsInt()), "m_cnt");
 
-				GenUserStructs(m_mifDecl, rspState, "\t");
+				GenUserStructs(m_mifDecl, &rspState, "\t");
 			}
 		}
 
@@ -3878,7 +3878,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 					HtlAssert(0);
 
 
-				if ((wrSrc.m_pPrivVar || wrSrc.m_pType != 0) && mif.m_mifReqStgCnt == 2) continue;
+				if ((bPrivGblAndNoAddr || wrSrc.m_pPrivVar || wrSrc.m_pType != 0) && mif.m_mifReqStgCnt == 2) continue;
 
 				mifPostInstr.Append("%s\tcase %d:\n", tabs.c_str(), wrSrcIdx);
 				tabs += "\t";

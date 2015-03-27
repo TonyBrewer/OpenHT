@@ -59,10 +59,10 @@ void CDsnInfo::ValidateDesignInfo()
 		typeDef.m_width.InitValue(typeDef.m_lineInfo, false, 0);
 	}
 
-	for (size_t structIdx = 0; structIdx < m_recordList.size(); structIdx += 1) {
-		CRecord & struc = m_recordList[structIdx];
+	for (size_t recordIdx = 0; recordIdx < m_recordList.size(); recordIdx += 1) {
+		CRecord * pRecord = m_recordList[recordIdx];
 
-		InitFieldDimenValues(struc.m_fieldList);
+		InitFieldDimenValues(pRecord->m_fieldList);
 	}
 
 	for (size_t modIdx = 0; modIdx < m_modList.size(); modIdx += 1) {
@@ -609,9 +609,9 @@ bool CDsnInfo::FindStructName(string const &structType, string &structName)
 
 	// not found as typedef, check user structs
 	for (size_t i = 0; i < m_recordList.size(); i += 1) {
-		CRecord & record = m_recordList[i];
+		CRecord * pRecord = m_recordList[i];
 
-		if (record.m_typeName != structType) continue;
+		if (pRecord->m_typeName != structType) continue;
 
 		// found it, now determine with of struct/union
 		structName = structType;
@@ -696,14 +696,14 @@ int CDsnInfo::FindTypeWidth(string const &varName, string const &typeName, CHtSt
 
 	// not found as typedef, check user structs
 	for (size_t i = 0; i < m_recordList.size(); i += 1) {
-		CRecord & record = m_recordList[i];
+		CRecord * pRecord = m_recordList[i];
 
-		if (record.m_typeName != baseName) continue;
+		if (pRecord->m_typeName != baseName) continue;
 
 		// found it, now determine width of struct/union
 
 		HtlAssert(bitWidth.size() == 0);
-		int width = bPointer ? 64 : FindStructWidth(record, &minAlign, bHostType);
+		int width = bPointer ? 64 : FindStructWidth(*pRecord, &minAlign, bHostType);
 		if (pMinAlign) *pMinAlign = minAlign;
 		return width;
 	}
@@ -777,22 +777,22 @@ int CDsnInfo::FindTypeWidth(string const &varName, string const &typeName, CHtSt
 bool CDsnInfo::FindFieldInStruct(CLineInfo const &lineInfo, string const &type,
 	string const &fldName, bool bIndexCheck, bool &bCStyle, CField const * &pBaseField, CField const * &pLastField)
 {
-	size_t stIdx;
-	for (stIdx = 0; stIdx < m_recordList.size(); stIdx += 1) {
-		CRecord & strut = m_recordList[stIdx];
+	size_t recordIdx;
+	for (recordIdx = 0; recordIdx < m_recordList.size(); recordIdx += 1) {
+		CRecord * pRecord = m_recordList[recordIdx];
 
-		if (strut.m_typeName == type)
+		if (pRecord->m_typeName == type)
 			break;
 	}
-	if (stIdx == m_recordList.size()) {
+	if (recordIdx == m_recordList.size()) {
 		ParseMsg(Error, lineInfo, "did not find type in design struct/unions, '%s'", type.c_str());
 		return false;
 	}
-	CRecord & strut = m_recordList[stIdx];
+	CRecord * pRecord = m_recordList[recordIdx];
 
-	bCStyle = strut.m_bCStyle;
+	bCStyle = pRecord->m_bCStyle;
 
-	return IsInFieldList(lineInfo, fldName, strut.m_fieldList, strut.m_bCStyle, bIndexCheck, pBaseField, pLastField, 0);
+	return IsInFieldList(lineInfo, fldName, pRecord->m_fieldList, pRecord->m_bCStyle, bIndexCheck, pBaseField, pLastField, 0);
 }
 
 bool CDsnInfo::IsInFieldList(CLineInfo const &lineInfo, string const &fldName, vector<CField *> const &fieldList,
@@ -881,18 +881,18 @@ bool CDsnInfo::IsInFieldList(CLineInfo const &lineInfo, string const &fldName, v
 				return true;
 			}
 
-			size_t stIdx;
-			for (stIdx = 0; stIdx < m_recordList.size(); stIdx += 1) {
-				CRecord & strut = m_recordList[stIdx];
+			size_t recordIdx;
+			for (recordIdx = 0; recordIdx < m_recordList.size(); recordIdx += 1) {
+				CRecord * pRecord = m_recordList[recordIdx];
 
-				if (strut.m_typeName == pField->m_type)
+				if (pRecord->m_typeName == pField->m_type)
 					break;
 			}
 
-			if (stIdx == m_recordList.size())
+			if (recordIdx == m_recordList.size())
 				return false;
 
-			if (IsInFieldList(lineInfo, postName, m_recordList[stIdx].m_fieldList, m_recordList[stIdx].m_bCStyle, true,
+			if (IsInFieldList(lineInfo, postName, m_recordList[recordIdx]->m_fieldList, m_recordList[recordIdx]->m_bCStyle, true,
 				pBaseField, pLastField, pFullName)) {
 				pBaseField = pField;
 				return true;
@@ -1003,9 +1003,9 @@ void CDsnInfo::InitAndValidateTypes()
 {
 	// scan declared struct/unions
 	for (size_t idx = 0; idx < m_recordList.size(); idx += 1) {
-		CRecord & record = m_recordList[idx];
+		CRecord * pRecord = m_recordList[idx];
 
-		InitAndValidateRecord(&record);
+		InitAndValidateRecord(pRecord);
 	}
 
 	// Validate types in modules

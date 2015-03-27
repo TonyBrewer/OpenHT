@@ -1150,6 +1150,12 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 				}
 
 				gblPostInstr.Append(";\n");
+
+				gblPostInstr.Append("\tassert_msg(!c_t%d_%sTo%s_iwWrEn%s || r_t%d_%sIwData%s.IsAddrSet(),\n",
+					gvWrStg, mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), dimIdx.c_str(),
+					gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str());
+				gblPostInstr.Append("\t\t\"%s variable %cW_%s%s was written but address was not set, use method .write_addr()\");\n",
+					pGv->m_bPrivGbl ? "private" : "global", pGv->m_bPrivGbl ? 'P' : 'G', pGv->m_gblName.Lc().c_str(), dimIdx.c_str());
 			} while (DimenIter(pGv->m_dimenList, refList));
 			gblPostInstr.NewLine();
 		}

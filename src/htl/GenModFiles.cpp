@@ -454,15 +454,15 @@ CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 	fprintf(incFile, "\t//////////////////////////////////\n");
 	fprintf(incFile, "\t// Module %s structs and unions\n", mod.m_modName.c_str());
 	CHtCode fStructUnion;
-	for (size_t structIdx = 0; structIdx < m_recordList.size(); structIdx += 1) {
-		if (m_recordList[structIdx].m_scope != eModule)
+	for (size_t recordIdx = 0; recordIdx < m_recordList.size(); recordIdx += 1) {
+		if (m_recordList[recordIdx]->m_scope != eModule)
 			continue;	// module only
-		GenUserStructs(fStructUnion, m_recordList[structIdx]);
+		GenUserStructs(fStructUnion, m_recordList[recordIdx]);
 
-		string structName = VA("CPers%s::%s", mod.m_modName.Uc().c_str(), m_recordList[structIdx].m_typeName.c_str());
+		string structName = VA("CPers%s::%s", mod.m_modName.Uc().c_str(), m_recordList[recordIdx]->m_typeName.c_str());
 
 		GenUserStructBadData(m_iplBadDecl, true, structName,
-			m_recordList[structIdx].m_fieldList, m_recordList[structIdx].m_bCStyle, "");
+			m_recordList[recordIdx]->m_fieldList, m_recordList[recordIdx]->m_bCStyle, "");
 	}
 	fStructUnion.Write(incFile, "\t");
 	fprintf(incFile, "\n\n");
