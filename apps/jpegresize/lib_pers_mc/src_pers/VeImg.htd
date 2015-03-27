@@ -1,0 +1,82 @@
+#include "PersConfig.h"
+
+#ifdef VEIMG_FIXTURE
+
+#include "JpegCommon.h"
+#include "PersStructs.h"
+
+////////////////////////////////////////
+
+dsnInfo.AddModule(name=veImg, htIdW=0);
+
+veImg.AddInst(name=VEIMG_ENTRY);
+veImg.AddInst(name=VEIMG_FORK);
+veImg.AddInst(name=VEIMG_VSM_JOIN);
+veImg.AddInst(name=VEIMG_VCTL_JOIN);
+veImg.AddInst(name=VEIMG_ENC_JOIN);
+veImg.AddInst(name=VEIMG_VSM_CONT);
+veImg.AddInst(name=VEIMG_VCTL_CONT);
+veImg.AddInst(name=VEIMG_ENC_CONT);
+veImg.AddInst(name=VEIMG_RETURN);
+
+veImg.AddPrivate()
+	.AddVar(type=uint8_t, name=jobId)
+	.AddVar(type=ht_uint48, name=pJobInfo)
+	.AddVar(type=ht_uint1, name=imageIdx)
+	;
+
+veImg.AddShared()
+	.AddVar(type=ht_uint1, name=fileIdx)
+        ;
+
+veImg.AddEntry(func=htmain, inst=VEIMG_ENTRY, host=true)
+	.AddParam(type=uint8_t, name=jobId)
+	.AddParam(hostType=uint64_t, type=ht_uint48, name=pJobInfo)
+	;
+
+veImg.AddReturn(func=htmain)
+	.AddParam(type=uint8_t, name=jobId)
+	;
+
+veImg.AddCall(func=veInfo)
+	;
+
+	// vert source messages - mimics horizontal resize messages
+veImg.AddCall(func=vsm, fork=true)
+	;
+
+veImg.AddCall(func=vctl, fork=true)
+	;
+
+veImg.AddCall(func=enc, fork=true);
+
+////////////////////////////////////////
+
+dsnInfo.AddModule(name=vsm, htIdW=0);
+
+vsm.AddInst(name=VSM_ENTRY)
+	.AddInst(name=VSM_SEND)
+	.AddInst(name=VSM_RETURN)
+	;
+
+vsm.AddEntry(func=vsm, inst=VSM_ENTRY)
+	.AddParam(type=ImageIdx_t, name=imageIdx)
+	;
+
+vsm.AddReturn(func=vsm)
+	;
+
+vsm.AddPrivate()
+	.AddVar(type=ImageIdx_t, name=imageIdx)
+	.AddVar(type=McuRows_t, name=msgRow)
+	;
+
+vsm.AddShared()
+	.AddVar(type=McuRows_t, name=mcuRows)
+	.AddVar(type=McuCols_t, name=mcuCols)
+	;
+
+vsm.AddMsgIntf(dir=in, name=veInfo, type=JobInfoMsg);
+vsm.AddMsgIntf(dir=out, name=hrm, type=HorzResizeMsg);
+
+#endif

@@ -1,0 +1,59 @@
+#include "PersConfig.h"
+
+#ifdef VEINFO
+
+#include "PersStructs.h"
+
+#define JOB_INFO_VERT_OFFSET			0x534c0
+#define JOB_INFO_ENC_OFFSET			0xa3580
+
+#define SIZE_OF_PNT_INFO				(COPROC_MAX_IMAGE_PNTS*8)
+
+#define START_OF_PNT_INFO_QOFF		0x18
+#define START_OF_PNT_WGHT_LIST_QW	(START_OF_PNT_INFO_QOFF + SIZE_OF_PNT_INFO/8)
+
+
+////////////////////////////////////////
+
+dsnInfo.AddModule(name=veInfo, htIdW=0);
+
+veInfo.AddInst(name=VEINFO_ENTRY)
+	.AddInst(name=EINFO_READ)
+	.AddInst(name=VINFO_ENTRY)
+	.AddInst(name=VINFO_READ)
+	.AddInst(name=VINFO_PNT_INFO)
+	.AddInst(name=VINFO_PNT_INFO_READ)
+	.AddInst(name=VINFO_PNT_WGHT_LIST)
+	.AddInst(name=VINFO_PNT_WGHT_LIST_READ)
+	.AddInst(name=VINFO_RETURN)
+	;
+
+veInfo.AddEntry(func=veInfo, inst=VEINFO_ENTRY)
+	.AddParam(type=ImageIdx_t, name=imageIdx)
+	.AddParam(hostType=uint64_t, type=ht_uint48, name=pJobInfo)
+	;
+
+veInfo.AddReturn(func=veInfo)
+	;
+
+veInfo.AddPrivate()
+	.AddVar(type=ImageIdx_t, name=imageIdx)
+	.AddVar(type=ht_uint48, name=pJobInfo)
+	.AddVar(type=ht_uint48, name=memAddr)
+	.AddVar(type=ht_uint13, name=readIdx)
+	.AddVar(type=ht_uint13, name=readCnt)
+	;
+
+veInfo.AddShared()
+	.AddVar(type=ht_uint14, name=inImageRows)
+	.AddVar(type=ht_uint14, name=outImageRows)
+	.AddVar(type=ht_uint14, name=pntWghtListSize)
+	.AddVar(type=ImageIdx_t, name=imageIdx)
+	;
+
+veInfo.AddReadMem(rspCntW=8)
+	.AddFunction(name=ReadRspFunc, rspInfoW=JOB_INFO_MEM_LINE_IDX_W+JOB_INFO_SECTION_ID_W, multiRd=true, memSrc=host);
+
+veInfo.AddMsgIntf(dir=out, name=veInfo, type=JobInfoMsg);
+
+#endif

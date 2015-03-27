@@ -1,0 +1,67 @@
+#include "PersConfig.h"
+
+#ifdef IMG4
+
+#include "JpegCommon.h"
+#include "PersStructs.h"
+
+////////////////////////////////////////
+
+dsnInfo.AddModule(name=img4, htIdW=3);
+
+img4.AddInst(name=IMG_ENTRY)
+	.AddInst(name=IMG_DH_WAIT)
+	.AddInst(name=IMG_DH_INFO)
+	.AddInst(name=IMG_DH_FORK)
+	.AddInst(name=IMG_VE_WAIT)
+	.AddInst(name=IMG_VE_INFO)
+	.AddInst(name=IMG_VE_FORK)
+	.AddInst(name=IMG_DEC_PAUSE)
+	.AddInst(name=IMG_HWRK_PAUSE)
+	.AddInst(name=IMG_VCTL_PAUSE)
+	.AddInst(name=IMG_ENC_PAUSE)
+	.AddInst(name=IMG_DEC_JOIN)
+	.AddInst(name=IMG_HWRK_JOIN)
+	.AddInst(name=IMG_VCTL_JOIN)
+	.AddInst(name=IMG_ENC_JOIN)
+	.AddInst(name=IMG_RETURN)
+	;
+
+img4.AddPrivate()
+	.AddVar(type=uint8_t, name=jobId)
+	.AddVar(type=ht_uint48, name=pJobInfo)
+	.AddVar(type=ht_uint2, name=imageIdx)
+	.AddVar(type=ht_uint2, name=persMode)
+	;
+
+img4.AddShared()
+	.AddVar(type=ht_uint2,	name=imageIdxPool,	queueW=2 )
+	.AddVar(type=ht_uint3,	name=orderQue,		queueW=3 )
+	.AddVar(type=bool,		name=bVeBusy,		dimen1=4 )
+	.AddVar(type=bool,		name=bDhBusy,		dimen1=4 )
+	.AddVar(type=ht_uint3,	name=poolInitCnt )
+       ;
+
+img4.AddEntry(func=htmain, inst=IMG_ENTRY, host=true)
+	.AddParam(type=uint8_t, name=jobId)
+	.AddParam(hostType=uint64_t, type=ht_uint48, name=pJobInfo)
+	.AddParam(hostType=uint8_t, type=ht_uint2, name=persMode)
+	;
+
+img4.AddReturn(func=htmain)
+	.AddParam(type=uint8_t, name=jobId)
+	;
+
+img4.AddCall(func=dhInfo);
+
+img4.AddCall(func=dec, fork=true, dest=user);
+
+img4.AddCall(func=hwrk, fork=true, dest=user);
+
+img4.AddCall(func=veInfo);
+
+img4.AddCall(func=vctl, fork=true, dest=user);
+
+img4.AddCall(func=enc, fork=true, dest=user);
+
+#endif

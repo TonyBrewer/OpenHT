@@ -1,0 +1,76 @@
+#include "PersConfig.h"
+
+#ifdef DHINFO
+
+#include "JpegCommon.h"
+#include "PersStructs.h"
+
+#define JOB_INFO_DEC_OFFSET		0x80
+#define JOB_INFO_HORZ_OFFSET	0x3400
+
+#define START_OF_DEC_DCP_QW	0x728
+
+#define SIZE_OF_HORZ_PNT_WGHT_START             (COPROC_MAX_IMAGE_PNTS*2)
+#define SIZE_OF_HORZ_PNT_WGHT_IDX               (COPROC_MAX_IMAGE_PNTS*2)
+
+// offsets within JobInfo Horz section
+#define HINFO_PNT_INFO_QOFF 0x18
+#define HINFO_PNT_WGHT_LIST_QOFF 0x2018
+
+struct DhInfoDec {
+	McuRows_t m_rstCnt;
+};
+
+struct DhInfoHorz {
+	ImageCols_t m_inImageCols;
+	ImageCols_t m_outImageCols;
+	ImageCols_t m_pntWghtListSize;
+};
+
+dsnInfo.AddModule(name=dhInfo, htIdW=0);
+
+dhInfo.AddInst(name=DHINFO_ENTRY)
+	.AddInst(name=DINFO_READ)
+	.AddInst(name=DINFO_RSTINFO)
+	.AddInst(name=DINFO_RSTINFO_READ)
+	.AddInst(name=DINFO_DCDHT)
+	.AddInst(name=DINFO_DCDHT_READ)
+	.AddInst(name=HINFO_ENTRY)
+	.AddInst(name=HINFO_READ)
+	.AddInst(name=HINFO_PNT_INFO)
+	.AddInst(name=HINFO_PNT_INFO_READ)
+	.AddInst(name=HINFO_PNT_WGHT_LIST)
+	.AddInst(name=HINFO_PNT_WGHT_LIST_READ)
+	.AddInst(name=DHINFO_RETURN)
+	;
+
+dhInfo.AddEntry(func=dhInfo, inst=DHINFO_ENTRY)
+	.AddParam(type=ht_uint2, name=imageIdx)
+	.AddParam(hostType=uint64_t, type=ht_uint48, name=pJobInfo)
+	;
+
+dhInfo.AddReturn(func=dhInfo)
+	;
+
+dhInfo.AddPrivate()
+	.AddVar(type=ht_uint2, name=imageIdx)
+	.AddVar(type=ht_uint48, name=pJobInfo)
+	.AddVar(type=ht_uint48, name=pInfoBase)
+	.AddVar(type=ht_uint48, name=memAddr)
+	.AddVar(type=ht_uint13, name=readIdx)
+	.AddVar(type=ht_uint13, name=readCnt)
+	;
+
+dhInfo.AddShared()
+	.AddVar(type=ht_uint2,			name=sectionId)
+	.AddVar(type=DhInfoHorz,		name=horz)
+	.AddVar(type=DhInfoDec,			name=dec)
+	.AddVar(type=ht_uint2,			name=imageIdx)
+	;
+
+dhInfo.AddReadMem(rspCntW=8)
+	.AddFunction(name=ReadRspFunc, rspInfoW=JOB_INFO_MEM_LINE_IDX_W, multiRd=true, memSrc=host);
+
+dhInfo.AddMsgIntf(dir=out, name=jobInfo, type=JobInfoMsg);
+
+#endif
