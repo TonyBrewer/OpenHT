@@ -90,7 +90,16 @@ PLAT_hc-1ex_ARCH  = 2
 PLAT_hc-2ex_ARCH  = 2
 PLAT_wx-2000_ARCH = 4
 PLAT_wx-690_ARCH  = 5
+PLAT_ma-100_ARCH  = 16
+PLAT_ma-400_ARCH  = 17
 PLAT_ARCH = ${PLAT_${CNY_PDK_PLATFORM}_ARCH}
+
+ifneq (,$(findstring wx,$(CNY_PDK_PLATFORM)))
+PLAT_WX_OR_MA = true
+endif
+ifneq (,$(findstring ma,$(CNY_PDK_PLATFORM)))
+PLAT_WX_OR_MA = true
+endif
 
 PERS_DIR = personalities/$(CNY_HT_SIG).1.1.$(PLAT_ARCH).0
 
@@ -99,14 +108,14 @@ CNY_PDK_FPGA_PARTNUM ?= 510_48540$(PLAT_ARCH)_000
 PERFMON_MASK ?= 2
 
 ifdef DISABLE_CP_MEM
- ifneq ($(findstring wx,$(CNY_PDK_PLATFORM)),)
+ ifneq (,$(PLAT_WX_OR_MA))
   DISABLE_CP_MEM = DISABLE_CP_MEM = true
  else
   DISABLE_CP_MEM =
  endif
 endif
 
-ifneq (,$(findstring wx,$(CNY_PDK_PLATFORM)))
+ifneq (,$(PLAT_WX_OR_MA))
  CNY_HT_AEUCNT ?= 1
  ifeq (,$(wildcard ht/$(TGT)/PersAeTop.sc))
   NUM_MC_PORTS = 16
