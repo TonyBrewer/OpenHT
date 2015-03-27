@@ -32,7 +32,16 @@ CNY_HT_CFLAGS_SYSC  ?= $(DEFAULT_CFLAGS)
 CNY_HT_CFLAGS_VSIM  ?= $(DEFAULT_CFLAGS)
 CNY_HT_CFLAGS_APP   ?= $(DEFAULT_CFLAGS)
 
+ifneq (,$(findstring wx,$(CNY_PDK_PLATFORM)))
+PLAT_WX_OR_MA = true
+endif
+ifneq (,$(findstring ma,$(CNY_PDK_PLATFORM)))
+PLAT_WX_OR_MA = true
+endif
+
 PLAT_wx-690_HT_AE_CNT = 1
+PLAT_ma-100_HT_AE_CNT = 1
+PLAT_ma-400_HT_AE_CNT = 1
 PLAT_${CNY_PDK_PLATFORM}_HT_AE_CNT ?= 4
 HT_AE_CNT = $(PLAT_${CNY_PDK_PLATFORM}_HT_AE_CNT)
 
@@ -58,7 +67,7 @@ vsim libvsim vfiles:	CFLAGS += $(CNY_HT_CFLAGS_VSIM)
 vsim libvsim vfiles:	CFLAGS += -DHT_VSIM
 vsim libvsim vfiles:	CFLAGS += -I$(CNY_PATH)/include
 vsim libvsim vfiles:	CFLAGS += -I$(PWD)/ht/vsim
-ifneq ($(findstring wx,$(CNY_PDK_PLATFORM)),)
+ifneq (,$(PLAT_WX_OR_MA))
 vsim libvsim vfiles:	CFLAGS += -DHT_AE_CNT=$(HT_AE_CNT)
 endif
 
@@ -109,6 +118,9 @@ HTV_FLAGS += $(CNY_HT_DEFINES)
 HTV_FLAGS += -I $(HT_LIB) -I $(HT_LIB)/sysc -I $(SDIR) -I $(STDIR)
 ifneq ($(findstring wx,$(CNY_PDK_PLATFORM)),)
 HTV_FLAGS += -vivado
+endif
+ifneq ($(findstring ma,$(CNY_PDK_PLATFORM)),)
+HTV_FLAGS += -quartus
 endif
 ifneq ($(origin TGT), undefined)
 HTV_FLAGS += -DHT_$(TGT)
