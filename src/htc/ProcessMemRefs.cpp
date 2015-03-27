@@ -1241,7 +1241,7 @@ public:
         for (iter = fieldSet.begin(); iter != fieldSet.end(); iter++) {
             SgInitializedName* fld = isSgInitializedName(*iter);
             
-            returnString += "   .AddField(type="
+            returnString += "   .AddVar(type="
                 + fld->get_type()->unparseToString()
                 + ", name="
                 + functionName
@@ -1291,13 +1291,7 @@ public:
             std::string declareGlobal;
             declareGlobal =  "AddGlobal()\n";
             std::string addrstring = 
-                ", addr1=globalVar_index_" +
-                name +
-                ", addr1W="+
-                to_string<int>(FindLgSizeForSgVariableDeclaration(vdecl)) +
-                "+"+
-                Upper(functionName)+
-                "_HTID_W";
+                ", addr1=globalVar_index_" + name;
             declareGlobal += "// Global Variable (on-chip) for " + name + "\n";
             
             // output fields (Variables) here
@@ -1366,7 +1360,7 @@ public:
                         GWFuncName,
                         buildVoidType(), 
                         buildExprListExp( 
-                           ref->getIndexExpr(),
+                           // ref->getIndexExpr(),
                            buildVarRefExp(tempVarName, scope)),
                         scope);
 
@@ -1427,16 +1421,13 @@ public:
                 insertStatement(gts, nextLabel, false /* after */);
 #endif
                 // handle use
-                std::string GRFuncName("GR_" + arrayName + fieldString);
-                declareGRReadFunction(GRFuncName, baseType);
-                SgFunctionCallExp *GR_call = 
-                              buildFunctionCallExp(GRFuncName,
-                                                   baseType,
-                                                   buildExprListExp(),
-                                                   scope);
+                std::string GRName("GR_" + arrayName + fieldString);
+
+                declareVariableInFunction(fndef, GRName, baseType, false);
+
                 SgExprStatement* assignToTemp = 
                     buildAssignStatement(buildVarRefExp(tempVarName, scope),
-                                         GR_call);
+                                         buildVarRefExp(GRName, scope));
 
                 insertStatement (stmt, assignToTemp, true /* before */);
 
@@ -1672,16 +1663,15 @@ public:
                 std::string uplevelGVName = 
                     getUplevelGVName(fdecl, "uplevel_index");
 
-                std::string GRCallName("GR_" + uplevelGVName + "_uplevel_index");
-                declareGRReadFunction(GRCallName, baseType);
-                SgFunctionCallExp *GR_call = 
-                    buildFunctionCallExp(GRCallName,
-                                         baseType,
-                                         buildExprListExp(),
-                                         scope);
-                assign = buildAssignStatement(lhs,
-                                              buildCastExp(GR_call,
-                                                           baseType));
+                std::string GRName("GR_" + uplevelGVName + "_uplevel_index");
+
+                declareVariableInFunction(fdef, GRName, baseType, false);
+
+                assign = buildAssignStatement(
+                            lhs,
+                            buildCastExp(
+                                buildVarRefExp(GRName, scope),
+                                baseType));
                 break;
             }
 
