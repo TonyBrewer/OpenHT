@@ -281,17 +281,19 @@ bool HtiFile::ParseParameters(CParamList *params)
 			*(string *)params[i].m_pValue = m_pLex->GetExprStr(',');
 			tk = m_pLex->GetNextTk();
 
-		} else {
+		} else if (params[i].m_paramType == ePrmIdent) {
 			tk = m_pLex->GetNextTk();
-			if (tk == ePrmUnknown) {
-				bError = true;
-				CPreProcess::ParseMsg(Error, "unknown expression for '%s'", params[i].m_pName);
-				break;
-			} else if (params[i].m_paramType == ePrmIdent && tk != eTkIdent && tk != eTkString) {
+			if (tk != eTkIdent && tk != eTkString) {
 				bError = true;
 				CPreProcess::ParseMsg(Error, "expected an identifier for parameter '%s'", params[i].m_pName);
 				break;
-			} else if (params[i].m_paramType == ePrmInteger && tk != eTkIdent && tk != eTkInteger && tk != eTkString) {
+			}
+
+			*(string *)params[i].m_pValue = m_pLex->GetTkString();
+			tk = m_pLex->GetNextTk();
+		} else if (params[i].m_paramType == ePrmInteger) {
+			tk = m_pLex->GetNextTk();
+			if (tk != eTkIdent && tk != eTkInteger && tk != eTkString) {
 				bError = true;
 				CPreProcess::ParseMsg(Error, "expected an identifier or integer for parameter '%s'", params[i].m_pName);
 				break;
@@ -299,7 +301,8 @@ bool HtiFile::ParseParameters(CParamList *params)
 
 			*(string *)params[i].m_pValue = m_pLex->GetTkString();
 			tk = m_pLex->GetNextTk();
-		}
+		} else
+			HtlAssert(0);
 
 		if (tk != eTkComma)
 			break;

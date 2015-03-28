@@ -76,8 +76,8 @@ void CDsnInfo::InitAndValidateModIpl()
 		else
 			tsStg += mod.m_clkRate == eClk2x ? 1 : 0;
 
-		mod.m_gblBlockRam = false;// mod.m_extRamList.size() > 0;
-		mod.m_gblDistRam = false;// mod.m_intGblList.size() > 0;
+		mod.m_gblBlockRam = false;
+		mod.m_gblDistRam = false;
 		for (size_t ngvIdx = 0; ngvIdx < mod.m_ngvList.size(); ngvIdx += 1) {
 
 			if (mod.m_ngvList[ngvIdx]->m_addr1W.AsInt() == 0) continue;

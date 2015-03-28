@@ -221,24 +221,19 @@ void CDsnInfo::InitAndValidateModMif()
 				} else
 					HtlAssert(0);
 
-				if (rdDst.m_pRdType) {
-
+				if (rdDst.m_pRdType)
 					rdDst.m_memSize = rdDst.m_pRdType->m_clangBitWidth;
-
-				} else {
-					if (rdDst.m_pDstType) {
-						rdDst.m_memSize = rdDst.m_pDstType->m_clangMinAlign;
-						if (rdDst.m_memSize == 1) {
-							if (rdDst.m_pDstType->m_clangBitWidth == 8 || rdDst.m_pDstType->m_clangBitWidth == 16 ||
-								rdDst.m_pDstType->m_clangBitWidth == 32 || rdDst.m_pDstType->m_clangBitWidth == 64)
-							{
-								rdDst.m_memSize = rdDst.m_pDstType->m_clangBitWidth;
-							} else
-								ParseMsg(Error, rdDst.m_lineInfo, "rdType parameter must be specified when type is an ht_uint or ht_int");
-						}
-					} else
-						rdDst.m_memSize = 64;
-				}
+				 else if (rdDst.m_pDstType) {
+					rdDst.m_memSize = rdDst.m_pDstType->m_clangMinAlign;
+					if (rdDst.m_memSize == 1) {
+						if (rdDst.m_pDstType->m_clangBitWidth == 8 || rdDst.m_pDstType->m_clangBitWidth == 16 ||
+							rdDst.m_pDstType->m_clangBitWidth == 32 || rdDst.m_pDstType->m_clangBitWidth == 64) {
+							rdDst.m_memSize = rdDst.m_pDstType->m_clangBitWidth;
+						} else
+							ParseMsg(Error, rdDst.m_lineInfo, "rdType parameter must be specified when type is an ht_uint or ht_int");
+					}
+				} else
+					rdDst.m_memSize = 64;
 
 				int rdDstSize = 1;
 				if (rdDst.m_fieldRefList.size() > 0) {
@@ -286,7 +281,13 @@ void CDsnInfo::InitAndValidateModMif()
 
 					wrSrc.m_varAddr1W = -1;
 					wrSrc.m_varAddr2W = -1;
-					wrSrc.m_memSize = wrSrc.m_pSrcType->m_clangMinAlign;
+					if (wrSrc.m_pSrcType->m_clangMinAlign == 1) {
+						if (wrSrc.m_pWrType)
+							wrSrc.m_memSize = wrSrc.m_pWrType->m_clangBitWidth;
+						else
+							ParseMsg(Error, wrSrc.m_lineInfo, "wrType parameter must be specified when type is an ht_uint or ht_int");
+					} else
+						wrSrc.m_memSize = wrSrc.m_pSrcType->m_clangMinAlign;
 
 					wrSrc.m_bMultiElemWr = false;
 
@@ -437,7 +438,9 @@ void CDsnInfo::InitAndValidateModMif()
 				} else
 					HtlAssert(0);
 
-				if (wrSrc.m_pSrcType) {
+				if (wrSrc.m_pWrType)
+					wrSrc.m_memSize = wrSrc.m_pWrType->m_clangBitWidth;
+				else if (wrSrc.m_pSrcType) {
 					wrSrc.m_memSize = wrSrc.m_pSrcType->m_clangMinAlign;
 					if (wrSrc.m_memSize == 1)
 						ParseMsg(Error, wrSrc.m_lineInfo, "AddSrc type of ht_uint or ht_int not supported");
@@ -2690,7 +2693,10 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 
 				wrSrcTypeList.push_back(wrSrc.m_pSrcType);
 
-				wrTypeUnion.AddStructField(wrSrc.m_pSrcType, VA("m_%s", wrSrc.m_pSrcType->m_typeName.c_str()));
+				if (wrSrc.m_pSrcType->m_clangMinAlign == 1)
+					wrTypeUnion.AddStructField(&g_uint64, VA("m_%s", wrSrc.m_pSrcType->m_typeName.c_str()), VA("%d", wrSrc.m_pSrcType->m_clangBitWidth));
+				else
+					wrTypeUnion.AddStructField(wrSrc.m_pSrcType, VA("m_%s", wrSrc.m_pSrcType->m_typeName.c_str()));
 			}
 
 			if (wrTypeUnion.m_fieldList.size() > 0)
@@ -3862,7 +3868,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 					} else {
 						ramType = wrSrc.m_pGblVar->m_ramType;
 						varName = VA("%s%s%s", ramType == eRegRam ? "r_" : "", wrSrc.m_pGblVar->m_gblName.c_str(), ramType == eRegRam ? "" : "Mr");
-						addrVar = VA("%sMr", wrSrc.m_pGblVar->m_gblName.c_str());
+						addrVar = VA("%s%s", wrSrc.m_pGblVar->m_gblName.c_str(), wrSrc.m_pGblVar->m_addrW > 0 ? "Mr" : "");
 					}
 				} else if (wrSrc.m_pSharedVar) {
 					ramType = wrSrc.m_pSharedVar->m_ramType;
@@ -4032,16 +4038,30 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 			mifPostInstr.Append("\t\tswitch (r_t%d_memReq.m_wrSrc) {\n",
 				mod.m_execStg + 2);
 
+			// generate for non block ram reads
 			for (size_t wrSrcTypeIdx = 0; wrSrcTypeIdx < wrSrcTypeList.size(); wrSrcTypeIdx += 1) {
 				CType * pWrSrcType = wrSrcTypeList[wrSrcTypeIdx];
 
+				int caseCnt = 0;
 				for (size_t wrSrcIdx = 0; wrSrcIdx < mif.m_mifWr.m_wrSrcList.size(); wrSrcIdx += 1) {
 					CMifWrSrc & wrSrc = mif.m_mifWr.m_wrSrcList[wrSrcIdx];
 
 					if (wrSrc.m_pSrcType != pWrSrcType) continue;
 
+					ERamType ramType = eRegRam;
+
+					if (wrSrc.m_pGblVar)
+						ramType = wrSrc.m_pGblVar->m_ramType;
+					else if (wrSrc.m_pSharedVar)
+						ramType = wrSrc.m_pSharedVar->m_ramType;
+
+					if (ramType == eBlockRam) continue;
+
 					mifPostInstr.Append("\t\tcase %d:\n", wrSrcIdx);
+					caseCnt += 1;
 				}
+
+				if (caseCnt == 0) continue;
 
 				int elemWidth = pWrSrcType->m_clangBitWidth;
 				int reqSize = pWrSrcType->m_clangMinAlign == 1 ? pWrSrcType->m_clangBitWidth : pWrSrcType->m_clangMinAlign;
@@ -4093,6 +4113,104 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 
 				mifPostInstr.Append("\t\t\tbreak;\n");
 			}
+
+			// generate for block ram reads
+			for (size_t wrSrcIdx = 0; wrSrcIdx < mif.m_mifWr.m_wrSrcList.size(); wrSrcIdx += 1) {
+				CMifWrSrc & wrSrc = mif.m_mifWr.m_wrSrcList[wrSrcIdx];
+
+				ERamType ramType = eRegRam;
+				string varIdx;
+				string addrVar;
+
+				if (wrSrc.m_pGblVar) {
+					ramType = wrSrc.m_pGblVar->m_ramType;
+					addrVar = VA("%s%s", wrSrc.m_pGblVar->m_gblName.c_str(), wrSrc.m_pGblVar->m_addrW > 0 ? "Mr" : "");
+				} else if (wrSrc.m_pSharedVar) {
+					ramType = wrSrc.m_pSharedVar->m_ramType;
+					addrVar = VA("%s", wrSrc.m_pSharedVar->m_name.c_str());
+				}
+
+				if (ramType != eBlockRam) continue;
+
+				mifPostInstr.Append("\t\tcase %d:\n", wrSrcIdx);
+
+				if (!(wrSrc.m_pPrivVar || wrSrc.m_pGblVar && wrSrc.m_pGblVar->m_bPrivGbl &&
+					wrSrc.m_pGblVar->m_addrW == mod.m_threads.m_htIdW.AsInt())) {
+					CFieldRef & fieldRef = wrSrc.m_fieldRefList[0];
+
+					for (int dimIdx = 0; dimIdx < (int)fieldRef.m_refDimenList.size(); dimIdx += 1) {
+						CRefDimen & refDimen = fieldRef.m_refDimenList[dimIdx];
+
+						string idxStr;
+						if (refDimen.m_value >= 0)
+							idxStr = VA("[%d]", refDimen.m_value);
+
+						else if (refDimen.m_size == 1)
+							idxStr = "[0]";
+
+						else if (refDimen.m_isIdx) {
+							idxStr = VA("[INT(r_t%d_memReq.m_vIdx%d(%d, 0))]",
+								mod.m_execStg + 2, dimIdx + 1, FindLg2(refDimen.m_size - 1) - 1);
+						} else {
+							idxStr = VA("[INT(r_t%d_memReq.m_s%d_f%dIdx%d)]",
+								mod.m_execStg + 2, wrSrcIdx, 1, dimIdx + 1);
+						}
+
+						addrVar += idxStr;
+					}
+				}
+
+				int elemWidth = wrSrc.m_pSrcType->m_clangBitWidth;
+				int reqSize = wrSrc.m_pSrcType->m_clangMinAlign == 1 ? wrSrc.m_pSrcType->m_clangBitWidth : wrSrc.m_pSrcType->m_clangMinAlign;
+				int elemQwCnt = (elemWidth + reqSize - 1) / reqSize;
+				string tabs;
+
+				if (elemQwCnt > 1) {
+					mifPostInstr.Append("\t\t\tswitch (r_t%d_memReq.m_elemQwIdx) {\n",
+						mod.m_execStg + 2);
+					tabs = "\t";
+				}
+
+				for (int qwIdx = 0; qwIdx < elemQwCnt; qwIdx += 1) {
+
+					if (elemQwCnt > 1)
+						mifPostInstr.Append("\t\t\tcase %d:\n", qwIdx);
+
+					for (CStructElemIter iter(this, wrSrc.m_pSrcType); !iter.end(); iter++) {
+						if (iter.IsStructOrUnion()) continue;
+
+						int pos = iter.GetHeirFieldPos();
+						int width = iter.GetWidth();
+
+						if (pos < qwIdx * reqSize || pos >= (qwIdx + 1) * reqSize) continue;
+
+						if (width < 64) {
+							mifPostInstr.Append("\t\t\t%sc_t%d_%sToMif_req.m_data |= (uint64_t)((m_%s%s.read_mem()%s & ((1LL << %d) - 1)) << %d);\n",
+								tabs.c_str(),
+								mod.m_execStg + 2, mod.m_modName.Lc().c_str(),
+								addrVar.c_str(), varIdx.c_str(), iter.GetHeirFieldName().c_str(),
+								width, pos % reqSize);
+						} else {
+							mifPostInstr.Append("\t\t\t%sc_t%d_%sToMif_req.m_data |= m_%s%s.read_mem()%s;\n",
+								tabs.c_str(),
+								mod.m_execStg + 2, mod.m_modName.Lc().c_str(),
+								addrVar.c_str(), varIdx.c_str(), iter.GetHeirFieldName().c_str());
+						}
+					}
+
+					if (elemQwCnt > 1)
+						mifPostInstr.Append("\t\t\t\tbreak;\n");
+				}
+
+				if (elemQwCnt > 1) {
+					mifPostInstr.Append("\t\t\tdefault:\n");
+					mifPostInstr.Append("\t\t\t\tbreak;\n");
+					mifPostInstr.Append("\t\t\t}\n");
+				}
+
+				mifPostInstr.Append("\t\t\tbreak;\n");
+			}
+
 
 			mifPostInstr.Append("\t\tdefault:\n");
 			mifPostInstr.Append("\t\t\tbreak;\n");

@@ -82,12 +82,6 @@ void CDsnInfo::InitAndValidateModNgv()
 					ParseMsg(Error, pNgv->m_lineInfo, "previous declaration");
 				}
 
-				//if (m_ngvList[gvIdx]->m_ramType == eAutoRam) {
-				//	m_ngvList[gvIdx]->m_ramType = pMgv->m_ramType;
-				//} else if (pMgv->m_ramType != eAutoRam && m_ngvList[gvIdx]->m_ramType != pMgv->m_ramType) {
-				//	ParseMsg(Error, pMgv->m_lineInfo, "global variable '%s' declared with inconsistent ramType", pMgv->m_gblName.c_str());
-				//}
-
 				m_ngvList[gvIdx]->m_modInfoList.push_back(CNgvModInfo(&mod, pMgv));
 				pMgv->m_pNgvInfo = m_ngvList[gvIdx];
 
@@ -922,12 +916,15 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 						pGv->m_gblName.c_str(), dimIdx.c_str());
 				} while (DimenIter(pGv->m_dimenList, refList));
 			} else {
+				int rdAddrStgNum = pGv->m_ramType == eBlockRam ? (mod.m_tsStg - 2) : (mod.m_tsStg - 1);
+				string rdAddrStg = rdAddrStgNum == 1 ? "c_t1" : VA("r_t%d", rdAddrStgNum);
+
 				vector<int> refList(pGv->m_dimenList.size());
 				do {
 					string dimIdx = IndexStr(refList);
-					gblPostInstr.Append("\tm_%sIf%s.read_addr(r_t%d_htId);\n",
+					gblPostInstr.Append("\tm_%sIf%s.read_addr(%s_htId);\n",
 						pGv->m_gblName.c_str(), dimIdx.c_str(),
-						mod.m_tsStg - 1);
+						rdAddrStg.c_str());
 					gblPostInstr.Append("\tc_t%d_%sIfData%s = m_%sIf%s.read_mem();\n",
 						mod.m_tsStg - 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
 						pGv->m_gblName.c_str(), dimIdx.c_str());
@@ -971,17 +968,18 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 						pGv->m_gblName.c_str(), dimIdx.c_str());
 				} while (DimenIter(pGv->m_dimenList, refList));
 			} else {
-				int rdAddrStg = pGv->m_ramType == eBlockRam ? (mod.m_tsStg - 2) : (mod.m_tsStg - 1);
+				int rdAddrStgNum = pGv->m_ramType == eBlockRam ? (mod.m_tsStg - 2) : (mod.m_tsStg - 1);
+				string rdAddrStg = rdAddrStgNum == 1 ? "c_t1" : VA("r_t%d", rdAddrStgNum);
 
-				string addr1Name = pGv->m_addr1Name == "htId" ? VA("r_t%d_htId", rdAddrStg) : VA("r_t%d_htPriv.m_%s", rdAddrStg, pGv->m_addr1Name.c_str());
+				string addr1Name = pGv->m_addr1Name == "htId" ? VA("%s_htId", rdAddrStg.c_str()) : VA("%s_htPriv.m_%s", rdAddrStg.c_str(), pGv->m_addr1Name.c_str());
 				string addr2Name;
 				if (pGv->m_addr2W.AsInt() > 0)
-					addr2Name = pGv->m_addr2Name == "htId" ? VA("r_t%d_htId", rdAddrStg) : VA("r_t%d_htPriv.m_%s", rdAddrStg, pGv->m_addr2Name.c_str());
+					addr2Name = pGv->m_addr2Name == "htId" ? VA("%s_htId", rdAddrStg.c_str()) : VA("%s_htPriv.m_%s", rdAddrStg.c_str(), pGv->m_addr2Name.c_str());
 
 				bool bNeedParan = ((pGv->m_addr0W.AsInt() > 0 ? 1 : 0) + (pGv->m_addr1W.AsInt() > 0 ? 1 : 0) + (pGv->m_addr2W.AsInt() > 0 ? 1 : 0)) > 1;
-				gblPostInstr.Append("\tht_uint%d c_t%d_%sRdAddr = %s", pGv->m_addrW, rdAddrStg, pGv->m_gblName.Lc().c_str(), bNeedParan ? "(" : "");
+				gblPostInstr.Append("\tht_uint%d c_t%d_%sRdAddr = %s", pGv->m_addrW, rdAddrStgNum, pGv->m_gblName.Lc().c_str(), bNeedParan ? "(" : "");
 				if (pGv->m_addr0W.AsInt() > 0)
-					gblPostInstr.Append("r_t%d_htId", mod.m_tsStg - 1);
+					gblPostInstr.Append("%s_htId", rdAddrStg.c_str());
 				if (pGv->m_addr0W.AsInt() > 0 && pGv->m_addr1W.AsInt() > 0)
 					gblPostInstr.Append(", ");
 				if (pGv->m_addr1W.AsInt() > 0)
@@ -996,14 +994,14 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 
 					gblPostInstr.Append("\tm_%sIr%s.read_addr(c_t%d_%sRdAddr);\n",
 						pGv->m_gblName.c_str(), dimIdx.c_str(),
-						rdAddrStg, pGv->m_gblName.Lc().c_str());
+						rdAddrStgNum, pGv->m_gblName.Lc().c_str());
 
 					bool bNgvReg = pGv->m_addrW == 0;
 					bool bNgvDist = !bNgvReg && pGv->m_ramType != eBlockRam;
 
 					if (bNgvDist) {
 						gblPostInstr.Append("\tc_t%d_%sIrData%s = m_%sIr%s.read_mem();\n",
-							rdAddrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
+							rdAddrStgNum, pGv->m_gblName.c_str(), dimIdx.c_str(),
 							pGv->m_gblName.c_str(), dimIdx.c_str());
 					} else {
 
@@ -1151,11 +1149,13 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 
 				gblPostInstr.Append(";\n");
 
-				gblPostInstr.Append("\tassert_msg(!c_t%d_%sTo%s_iwWrEn%s || r_t%d_%sIwData%s.IsAddrSet(),\n",
-					gvWrStg, mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), dimIdx.c_str(),
-					gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str());
-				gblPostInstr.Append("\t\t\"%s variable %cW_%s%s was written but address was not set, use method .write_addr()\");\n",
-					pGv->m_bPrivGbl ? "private" : "global", pGv->m_bPrivGbl ? 'P' : 'G', pGv->m_gblName.Lc().c_str(), dimIdx.c_str());
+				if (pGv->m_addr1W.size() > 0 && pGv->m_addr1Name != "htId" || pGv->m_addr2W.size() > 0 && pGv->m_addr2Name != "htId") {
+					gblPostInstr.Append("\tassert_msg(!c_t%d_%sTo%s_iwWrEn%s || r_t%d_%sIwData%s.IsAddrSet(),\n",
+						gvWrStg, mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), dimIdx.c_str(),
+						gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str());
+					gblPostInstr.Append("\t\t\"%s variable %cW_%s%s was written but address was not set, use method .write_addr()\");\n",
+						pGv->m_bPrivGbl ? "private" : "global", pGv->m_bPrivGbl ? 'P' : 'G', pGv->m_gblName.Lc().c_str(), dimIdx.c_str());
+				}
 			} while (DimenIter(pGv->m_dimenList, refList));
 			gblPostInstr.NewLine();
 		}

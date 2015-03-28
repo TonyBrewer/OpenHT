@@ -38,7 +38,7 @@ ctl.AddCall(func=add, fork=true);
 
 ////////////////////////////////////////////////////
 // Loads vector elements from op arrays, adds, stores results
-#define ADD_HTID_W 7
+#define ADD_HTID_W 9
 typedef ht_uint48 MemAddr_t;
 
 dsnInfo.AddModule(name=add, htIdW=ADD_HTID_W);

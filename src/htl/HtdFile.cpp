@@ -856,7 +856,7 @@ void HtdFile::ParseModuleMethods()
 			string elemCntW;
 
 			m_pDsn->m_mifWrSrcList.insert(name);
-			m_pDsnInfo->AddSrc(m_pOpenMifWr, name, pType, var, memDst, elemCntW);
+			m_pDsnInfo->AddSrc(m_pOpenMifWr, name, pType, var, memDst, 0, elemCntW);
 		}
 
 		m_pParseMethod = &HtdFile::ParseMifWrMethods;
@@ -2145,6 +2145,7 @@ void HtdFile::ParseMifWrMethods()
 		string memDst;// = "coproc";
 		string cntW;
 		string elemCntW;
+		CType * pWrType = 0;
 		CType * pType = 0;
 
 		CParamList pavars[] = {
@@ -2152,6 +2153,7 @@ void HtdFile::ParseMifWrMethods()
 				{ "type", &pType, false, ePrmType, 0, 0 },
 				{ "var", &var, false, ePrmIdentRef, 0, 0 },
 				{ "memDst", &memDst, false, ePrmIdent, 0, 0 },
+				{ "wrType", &pWrType, false, ePrmType, 0, 0 },
 				{ "elemCntW", &elemCntW, false, ePrmInteger, 0, 0 },
 
 				// depricated parameters
@@ -2185,7 +2187,7 @@ void HtdFile::ParseMifWrMethods()
 			CPreProcess::ParseMsg(Error, "duplicate memory write interface source name '%s'", name.c_str());
 		else {
 			m_pDsn->m_mifWrSrcList.insert(name);
-			m_pDsnInfo->AddSrc(m_pOpenMifWr, name, pType, var, memDst, elemCntW);
+			m_pDsnInfo->AddSrc(m_pOpenMifWr, name, pType, var, memDst, pWrType, elemCntW);
 		}
 
 		m_pLex->GetNextTk();

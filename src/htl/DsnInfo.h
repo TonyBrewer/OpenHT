@@ -1124,8 +1124,8 @@ public:
 
 struct CMifWrSrc {
 	CMifWrSrc(string const & name, CType * pType, string const & var, string const & memDst,
-		string const & elemCntW) :
-		m_name(name), m_pType(pType), m_var(var), m_memDst(memDst), m_elemCntW(elemCntW)
+		CType * pWrType, string const & elemCntW) :
+		m_name(name), m_pType(pType), m_var(var), m_memDst(memDst), m_elemCntW(elemCntW), m_pWrType(pWrType)
 	{
 		m_lineInfo = CPreProcess::m_lineInfo;
 		m_pSharedVar = 0;
@@ -1156,6 +1156,7 @@ struct CMifWrSrc {
 	CLineInfo	m_lineInfo;
 
 	CType *		m_pSrcType;
+	CType *		m_pWrType;
 	CField *	m_pSharedVar;
 	CField *	m_pPrivVar;
 	CRam *		m_pGblVar;
@@ -1570,6 +1571,7 @@ struct CModule {
 		m_threads.m_resetInstr = resetInstr;
 		m_threads.m_bPause = bPause;
 		m_threads.m_lineInfo = CPreProcess::m_lineInfo;
+		m_threads.m_ramType = HtdFile::eAutoRam;
 
 		if (resetInstr.size() > 0)
 			m_resetInstrCnt += 1;
@@ -1930,7 +1932,7 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 		string idx1Lsb, string idx2Lsb, string field, string fldIdx1Lsb, string fldIdx2Lsb, bool bReadOnly);
 
 	CMifWr * AddSrc(CMifWr * pMifWr, string const & name, CType * pType,
-		string const & var, string const & memDst, string const & elemCntW);
+		string const & var, string const & memDst, CType * pWrType, string const & elemCntW);
 	void AddDst(CMifRd * pOpenMifRd, string const & name, string const & var, string const & field, string const & dataLsb,
 		bool bMultiRd, string const & dstIdx, string const & memSrc, string const & atomic, CType * pRdType, string const & elemCntW);
 	void AddDst(CMifRd * pOpenMifRd, string name, string infoW, string stgCnt,

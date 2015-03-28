@@ -763,8 +763,6 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 			CModInst &modInst = *mifInst.m_pModInst;
 			CModMemPort & modMemPort = *mifInst.m_pModMemPort;
 
-			CModule * pMod = modInst.m_pMod;
-
 			if (!modMemPort.m_bRead) continue;
 
 			fprintf(cppFile, "%si_%sP%dToMif%d_rdRspFull.read()",
