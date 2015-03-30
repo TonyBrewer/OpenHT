@@ -2923,8 +2923,11 @@ public:
                             SgVarRefExp *rhs = 
                                 buildVarRefExp(sym->get_name().getString(),
                                                fndef);
+                            std::string lhs_name = "P_";
+                            lhs_name += sym->get_name().getString();
+
                             SgVarRefExp *lhs = 
-                                buildVarRefExp(sym->get_name().getString(),
+                                buildVarRefExp(lhs_name,
                                                fndef);
                             
                             local_scalars.push_back(valDecl);
