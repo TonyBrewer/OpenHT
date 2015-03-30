@@ -369,9 +369,9 @@ void * CDsnInfo::AddMsgDst(void * pHandle, string var, string dataLsb, string ad
 }
 
 CMifWr * CDsnInfo::AddSrc(CMifWr * pMifWr, string const & name, CType * pType,
-	string const & var, string const & memDst, string const & elemCntW)
+	string const & var, string const & memDst, CType * pWrType, string const & elemCntW)
 {
-	pMifWr->m_wrSrcList.push_back(CMifWrSrc(name, pType, var, memDst, elemCntW));
+	pMifWr->m_wrSrcList.push_back(CMifWrSrc(name, pType, var, memDst, pWrType, elemCntW));
 	return pMifWr;
 }
 

@@ -228,38 +228,18 @@ CAppArgs::Parse(int argc, char const **argv)
 			} else if ((strcmp(argv[argPos], "-ac") == 0)) {
 				argPos += 1;
 				m_aeCnt = atoi(argv[argPos]);
-			} else if ((strcmp(argv[argPos], "-ar") == 0)) {
-				printf("Warning: -ar flag has been deprecated, ignored\n");
-				m_bDsnRpt = true;
-			} else if ((strcmp(argv[argPos], "-mune") == 0)) {
-				printf("Warning: -mune flag has been deprecated, ignored\n");
-				m_bModuleUnitNames = true;
 			} else if ((strcmp(argv[argPos], "-mund") == 0)) {
 				m_bModuleUnitNames = false;
-			} else if ((strcmp(argv[argPos], "-grpe") == 0)) {
-				printf("Warning: -grpe flag has been deprecated, ignored\n");
-				m_bGlobalReadParan = true;
 			} else if ((strcmp(argv[argPos], "-grpd") == 0)) {
 				m_bGlobalReadParan = false;
-			} else if ((strcmp(argv[argPos], "-gwhe") == 0)) {
-				printf("Warning: -gwhe flag has been deprecated, ignored\n");
-				m_bGlobalWriteHtid = true;
 			} else if ((strcmp(argv[argPos], "-gwhd") == 0)) {
 				m_bGlobalWriteHtid = false;
-			} else if ((strcmp(argv[argPos], "-gr") == 0)) {
-				printf("Warning: -gr flag has been deprecated, ignored\n");
-				m_bGenReports = true;
 			} else if ((strcmp(argv[argPos], "-it") == 0)) {
 				m_bInstrTrace = true;
 			} else if ((strcmp(argv[argPos], "-ofj") == 0)) {
 				m_bForkPrivWr = false;
-			} else if ((strcmp(argv[argPos], "-pm") == 0)) {
-				printf("Warning: -pm flag has been deprecated, ignored\n");
-				m_bPerfMon = true;
 			} else if ((strcmp(argv[argPos], "-mo") == 0)) {
 				m_bModelOnly = true;
-			} else if ((strcmp(argv[argPos], "-ut") == 0)) {
-				printf("Warning: -ut flag has been deprecated, ignored\n");
 			} else if ((strcmp(argv[argPos], "-ri") == 0)) {
 				m_bRndInit = true;
 			} else if ((strcmp(argv[argPos], "-nri") == 0)) {

@@ -163,9 +163,6 @@ inline void CHtCode::Append(const char *format, ...)
 		char buf[4096];
 		vsprintf(buf, format, marker);
 
-		//if (strncmp(buf, "\tuint8_t c_final_flag[8];\n", 16) == 0)
-		//	bool stop = true;
-
 		bool bNewLine = strcmp(buf, "\n") == 0;
 
 		if (!bNewLine || !m_code.empty() && m_code.back() != "\n")

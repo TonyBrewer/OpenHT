@@ -5552,9 +5552,6 @@ void CHtfeDesign::ParseEvaluateExpression(CHtfeIdent *pHier, EToken tk, vector<C
 						Assert(pOp1Type);
 						Assert(pOp2Type);
 
-						if (GetLineInfo().m_lineNum == 85)
-							bool stop = true;
-
 						// iterate through op1 options
 						int minConvCnt = 100;
 						vector<CConvPair> convList;

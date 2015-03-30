@@ -34,7 +34,6 @@ void CDsnInfo::InitializeAndValidate()
 	InitAndValidateModMif();
 	InitAndValidateModNgv();
 	InitAndValidateModIpl();
-	//InitAndValidateModRam();
 	InitAndValidateModIhm();
 	InitAndValidateModOhm();
 	InitAndValidateModIhd();
@@ -199,7 +198,7 @@ void CDsnInfo::InitAddrWFromAddrName()
 				int addr1W;
 				bool bHtId = true;
 				bool bPrivate = true;
-				bool bShared = true;
+				bool bShared = false;
 				bool bStage = true;
 
 				if (FindVariableWidth(pNgv->m_lineInfo, mod, pNgv->m_addr1Name, bHtId, bPrivate, bShared, bStage, addr1W)) {
@@ -211,14 +210,14 @@ void CDsnInfo::InitAddrWFromAddrName()
 						ParseMsg(Error, pNgv->m_lineInfo, "addr1Name (%d) and addr1W (%d) have inconsistent widths",
 						addr1W, pNgv->m_addr1W.AsInt());
 				} else
-					ParseMsg(Error, pNgv->m_lineInfo, "%s was not declared", pNgv->m_addr1Name.c_str());
+					ParseMsg(Error, pNgv->m_lineInfo, "%s was not found as a private or stage variable", pNgv->m_addr1Name.c_str());
 			}
 
 			if (pNgv->m_addr2Name.size() > 0) {
 				int addr2W;
 				bool bHtId = true;
 				bool bPrivate = true;
-				bool bShared = true;
+				bool bShared = false;
 				bool bStage = true;
 
 				if (FindVariableWidth(pNgv->m_lineInfo, mod, pNgv->m_addr2Name, bHtId, bPrivate, bShared, bStage, addr2W)) {
@@ -231,7 +230,7 @@ void CDsnInfo::InitAddrWFromAddrName()
 							addr2W, pNgv->m_addr2W.AsInt());
 					}
 				} else
-					ParseMsg(Error, pNgv->m_lineInfo, "%s was not declared", pNgv->m_addr2Name.c_str());
+					ParseMsg(Error, pNgv->m_lineInfo, "%s was not found as a private or stage variable", pNgv->m_addr2Name.c_str());
 			}
 		}
 
@@ -243,28 +242,28 @@ void CDsnInfo::InitAddrWFromAddrName()
 				int addr1W;
 				bool bHtId = true;
 				bool bPrivate = true;
-				bool bShared = true;
+				bool bShared = false;
 				bool bStage = true;
 
 				if (FindVariableWidth(pPriv->m_lineInfo, mod, pPriv->m_addr1Name, bHtId, bPrivate, bShared, bStage, addr1W)) {
 					pPriv->m_addr1W = CHtString(VA("%d", addr1W));
 					pPriv->m_addr1W.SetValue(addr1W);
 				} else
-					ParseMsg(Error, pPriv->m_lineInfo, "%s was not declared", pPriv->m_addr1Name.c_str());
+					ParseMsg(Error, pPriv->m_lineInfo, "%s was not found as a private or stage variable", pPriv->m_addr1Name.c_str());
 			}
 
 			if (pPriv->m_addr2W.size() == 0 && pPriv->m_addr2Name.size() > 0) {
 				int addr2W;
 				bool bHtId = false;
 				bool bPrivate = true;
-				bool bShared = true;
+				bool bShared = false;
 				bool bStage = true;
 
 				if (FindVariableWidth(pPriv->m_lineInfo, mod, pPriv->m_addr2Name, bHtId, bPrivate, bShared, bStage, addr2W)) {
 					pPriv->m_addr2W = CHtString(VA("%d", addr2W));
 					pPriv->m_addr2W.SetValue(addr2W);
 				} else
-					ParseMsg(Error, pPriv->m_lineInfo, "%s was not declared", pPriv->m_addr2Name.c_str());
+					ParseMsg(Error, pPriv->m_lineInfo, "%s was not found as a private or stage variable", pPriv->m_addr2Name.c_str());
 			}
 		}
 	}
@@ -313,6 +312,7 @@ void CDsnInfo::InitPrivateAsGlobal()
 			pNgv->InitDimen(pPriv->m_lineInfo);
 			pNgv->m_addrW = pNgv->m_addr0W.AsInt() + pNgv->m_addr1W.AsInt() + pNgv->m_addr2W.AsInt();
 			pNgv->m_wrStg.SetValue(mod.m_stage.m_privWrStg.AsInt());
+			pNgv->m_ramType = eAutoRam;
 
 			// now delete from private list
 			mod.m_threads.m_htPriv.m_fieldList.erase(mod.m_threads.m_htPriv.m_fieldList.begin() + prIdx);
@@ -364,6 +364,7 @@ void CDsnInfo::InitPrivateAsGlobal()
 					pNgv->InitDimen(pPriv->m_lineInfo);
 					pNgv->m_addrW = pNgv->m_addr0W.AsInt() + pNgv->m_addr1W.AsInt() + pNgv->m_addr2W.AsInt();
 					pNgv->m_wrStg.SetValue(mod.m_stage.m_privWrStg.AsInt());
+					pNgv->m_ramType = eAutoRam;
 
 					// now delete from private list
 					mod.m_threads.m_htPriv.m_fieldList.erase(mod.m_threads.m_htPriv.m_fieldList.begin() + prIdx);
@@ -416,6 +417,7 @@ void CDsnInfo::InitPrivateAsGlobal()
 					pNgv->InitDimen(pPriv->m_lineInfo);
 					pNgv->m_addrW = pNgv->m_addr0W.AsInt() + pNgv->m_addr1W.AsInt() + pNgv->m_addr2W.AsInt();
 					pNgv->m_wrStg.SetValue(mod.m_stage.m_privWrStg.AsInt());
+					pNgv->m_ramType = eAutoRam;
 
 					// now delete from private list
 					mod.m_threads.m_htPriv.m_fieldList.erase(mod.m_threads.m_htPriv.m_fieldList.begin() + prIdx);
@@ -485,14 +487,14 @@ void CDsnInfo::InitBramUsage()
 			CBramTarget target;
 			target.m_name = pRam->m_gblName;
 			target.m_pRamType = &pRam->m_ramType;
-			target.m_depth = 1 << (pRam->m_addr1W.AsInt() + pRam->m_addr2W.AsInt());
+			target.m_depth = 1 << pRam->m_addrW;
 			target.m_width = pRam->m_pType->m_clangBitWidth;
 			target.m_copies = (int)mod.m_modInstList.size();
 			target.m_copies *= pRam->m_elemCnt;
 			target.m_copies *= (pRam->m_bReadForInstrRead ? 1 : 0) + (pRam->m_bReadForMifWrite ? 1 : 0);
 			target.m_brams = FindBramCnt(target.m_depth, target.m_width);
 			target.m_slicePerBramRatio = FindSlicePerBramRatio(target.m_depth, target.m_width) / target.m_brams;
-			target.m_varType = "Global";
+			target.m_varType = pRam->m_bPrivGbl ? "Private" : "Global";
 			target.m_modName = mod.m_modName.AsStr();
 
 			m_bramTargetList.push_back(target);
@@ -1555,6 +1557,9 @@ void CDsnInfo::ReportRamFieldUsage()
 
 	for (size_t targetIdx = 0; targetIdx < m_bramTargetList.size(); targetIdx += 1) {
 		CBramTarget & target = m_bramTargetList[targetIdx];
+
+		if (target.m_depth == 1) continue;
+
 		int num_luts = target.m_width * (int)((target.m_depth + 31) / 32);
 
 		fprintf(fp, "%s      <tr>\n", ws);
@@ -1564,7 +1569,7 @@ void CDsnInfo::ReportRamFieldUsage()
 			target.m_copies, num_luts, num_luts * target.m_copies,
 			target.m_brams, target.m_brams * target.m_copies,
 			(double)target.m_slicePerBramRatio,
-			target.m_depth == 1 ? "Reg" : (*target.m_pRamType == eDistRam ? "Dist" : "Block"));
+			*target.m_pRamType == eDistRam ? "Dist" : "Block");
 		fprintf(fp, "%s      </tr>\n", ws);
 	}
 

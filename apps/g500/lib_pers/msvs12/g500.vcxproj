@@ -96,7 +96,8 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <MinimalRebuild>false</MinimalRebuild>
-      <ForcedIncludeFiles>../../msvs12/linux/linux.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
       <DisableSpecificWarnings>
       </DisableSpecificWarnings>
       <AdditionalOptions>/bigobj</AdditionalOptions>
@@ -294,6 +295,7 @@
     <ClCompile Include="..\ht\sysc\PersCtl.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\src\ht_bottom_up.cpp" />
     <ClCompile Include="..\src_pers\PersCtl_src.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
@@ -382,9 +384,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="$(HtToolsPath)\ht_lib\sysc\SyscMonLib.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\src\Main.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
   </ItemGroup>
