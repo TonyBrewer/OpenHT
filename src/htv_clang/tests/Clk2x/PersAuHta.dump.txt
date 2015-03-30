@@ -1,0 +1,1150 @@
+C:\Users\TBrewer\Documents\llvm-project\my_tests\Clk2x\PersAuHta.cpp:47:80: warning: '&&' within '||' [-Wlogical-op-parentheses]
+        bool c_bCollision_2_0 = c_bCollision_1_0 || c_bCollision_1_1 || c_bAssert_1_0 && c_bAssert_1_1;
+                                                                     ~~ ~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~
+C:\Users\TBrewer\Documents\llvm-project\my_tests\Clk2x\PersAuHta.cpp:47:80: note: place parentheses around the '&&' expression to silence this warning
+        bool c_bCollision_2_0 = c_bCollision_1_0 || c_bCollision_1_1 || c_bAssert_1_0 && c_bAssert_1_1;
+                                                                                      ^
+                                                                        (                             )
+TranslationUnitDecl 0x6eb470 <<invalid sloc>>
+|-TypedefDecl 0x6eb9b0 <<invalid sloc>> __int128_t '__int128'
+|-TypedefDecl 0x6eba10 <<invalid sloc>> __uint128_t 'unsigned __int128'
+|-TypedefDecl 0x6ebaa0 <<invalid sloc>> __builtin_va_list 'char *'
+|-CXXRecordDecl 0x6ebaf0 <<built-in>:27:1, col:7> class type_info
+|-TypedefDecl 0x6ebc40 <C:/Users/TBrewer/Documents/llvm-project/my_tests/ht_lib/HtIntTypes.h:3:1, col:28> uint64_t 'unsigned long long'
+|-TypedefDecl 0x6ebca0 <line:4:1, col:22> uint32_t 'unsigned int'
+|-TypedefDecl 0x6ebd00 <line:5:1, col:24> uint16_t 'unsigned short'
+|-TypedefDecl 0x6ebd60 <line:6:1, col:23> uint8_t 'unsigned char'
+|-TypedefDecl 0x6ebdc0 <line:8:1, col:19> int64_t 'long long'
+|-TypedefDecl 0x6ebe20 <line:9:1, col:13> int32_t 'int'
+|-TypedefDecl 0x6ebe80 <line:10:1, col:15> int16_t 'short'
+|-TypedefDecl 0x6ebee0 <line:11:1, col:14> int8_t 'char'
+|-ClassTemplateDecl 0x6ec050 <line:13:1, line:29:1> sc_uint
+| |-NonTypeTemplateParmDecl 0x6ebf40 <line:13:10, col:14> 'int' W
+| |-CXXRecordDecl 0x6ebfb0 <line:14:1, line:29:1> class sc_uint
+| | |-CXXRecordDecl 0x7222a0 <line:14:1, col:7> class sc_uint
+| | |-AccessSpecDecl 0x722340 <line:15:1, col:7> public
+| | |-CXXConstructorDecl 0x722410 <line:16:2, col:10> sc_uint<W> 'void (void)'
+| | |-CXXConstructorDecl 0x722600 <line:17:2, col:24> sc_uint<W> 'void (uint64_t)'
+| | | `-ParmVarDecl 0x722500 <col:10, col:19> value 'uint64_t':'unsigned long long'
+| | |-CXXConstructorDecl 0x722800 <line:18:2, col:24> sc_uint<W> 'void (uint32_t)'
+| | | `-ParmVarDecl 0x722700 <col:10, col:19> value 'uint32_t':'unsigned int'
+| | |-CXXConstructorDecl 0x722a00 <line:19:2, col:23> sc_uint<W> 'void (int64_t)'
+| | | `-ParmVarDecl 0x722900 <col:10, col:18> value 'int64_t':'long long'
+| | |-CXXConstructorDecl 0x722c00 <line:20:2, col:23> sc_uint<W> 'void (int32_t)'
+| | | `-ParmVarDecl 0x722b00 <col:10, col:18> value 'int32_t':'int'
+| | |-CXXMethodDecl 0x722de0 <line:22:2, col:37> operator= 'uint64_t (uint64_t)'
+| | | `-ParmVarDecl 0x722ce0 <col:23, col:32> value 'uint64_t':'unsigned long long'
+| | |-CXXMethodDecl 0x722f20 <line:23:2, col:38> operator|= 'uint64_t (uint64_t)'
+| | | `-ParmVarDecl 0x722ea0 <col:24, col:33> value 'uint64_t':'unsigned long long'
+| | |-CXXMethodDecl 0x723060 <line:24:2, col:38> operator&= 'uint64_t (uint64_t)'
+| | | `-ParmVarDecl 0x722fe0 <col:24, col:33> value 'uint64_t':'unsigned long long'
+| | |-CXXMethodDecl 0x7232c0 <line:25:2, col:38> operator^= 'uint64_t (uint64_t)'
+| | | `-ParmVarDecl 0x723240 <col:24, col:33> value 'uint64_t':'unsigned long long'
+| | |-CXXConversionDecl 0x723420 <line:26:2, col:20> operator unsigned long long 'uint64_t (void)'
+| | |-AccessSpecDecl 0x7234e0 <line:27:1, col:8> private
+| | `-FieldDecl 0x723540 <line:28:2, col:19> m_value 'uint64_t':'unsigned long long'
+| |   `-DeclRefExpr 0x723508 <col:19> 'int' NonTypeTemplateParm 0x6ebf40 'W' 'int'
+| |-ClassTemplateSpecializationDecl 0x725480 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 1
+| | |-CXXRecordDecl 0xbdf080 prev 0x725480 <line:14:1, col:7> class sc_uint
+| | |-AccessSpecDecl 0xbdf120 <line:15:1, col:7> public
+| | |-CXXConstructorDecl 0xbdf190 <line:16:2> sc_uint 'void (void)'
+| | |-CXXConstructorDecl 0xbe0520 <line:17:2> sc_uint 'void (uint64_t)'
+| | | `-ParmVarDecl 0xbdf260 <col:10, col:19> value 'uint64_t':'unsigned long long'
+| | |-CXXConstructorDecl 0xbe0680 <line:18:2> sc_uint 'void (uint32_t)'
+| | | `-ParmVarDecl 0xbe0600 <col:10, col:19> value 'uint32_t':'unsigned int'
+| | |-CXXConstructorDecl 0xbe07e0 <line:19:2> sc_uint 'void (int64_t)'
+| | | `-ParmVarDecl 0xbe0760 <col:10, col:18> value 'int64_t':'long long'
+| | |-CXXConstructorDecl 0xbe0940 <line:20:2> sc_uint 'void (int32_t)'
+| | | `-ParmVarDecl 0xbe08c0 <col:10, col:18> value 'int32_t':'int'
+| | |-CXXMethodDecl 0xbe0a80 <line:22:2, col:37> operator= 'uint64_t (uint64_t)'
+| | | `-ParmVarDecl 0xbe0a20 <col:23, col:32> value 'uint64_t':'unsigned long long'
+| | |-CXXMethodDecl 0xbe0bb0 <line:23:2, col:38> operator|= 'uint64_t (uint64_t)'
+| | | `-ParmVarDecl 0xbe0b50 <col:24, col:33> value 'uint64_t':'unsigned long long'
+| | |-CXXMethodDecl 0xbe0ce0 <line:24:2, col:38> operator&= 'uint64_t (uint64_t)'
+| | | `-ParmVarDecl 0xbe0c80 <col:24, col:33> value 'uint64_t':'unsigned long long'
+| | |-CXXMethodDecl 0xbe0e10 <line:25:2, col:38> operator^= 'uint64_t (uint64_t)'
+| | | `-ParmVarDecl 0xbe0db0 <col:24, col:33> value 'uint64_t':'unsigned long long'
+| | |-CXXConversionDecl 0xbe0ee0 <line:26:2, col:20> operator unsigned long long 'uint64_t (void)'
+| | |-AccessSpecDecl 0xbe0fb0 <line:27:1, col:8> private
+| | `-FieldDecl 0xbe1030 <line:28:2, col:19> m_value 'uint64_t':'unsigned long long'
+| |   `-SubstNonTypeTemplateParmExpr 0xbe1000 <col:19> 'int'
+| |     `-IntegerLiteral 0xbe0fd8 <col:19> 'int' 1
+| |-ClassTemplateSpecializationDecl 0x7256b0 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 2
+| |-ClassTemplateSpecializationDecl 0x7258e0 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 3
+| |-ClassTemplateSpecializationDecl 0x725b10 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 4
+| |-ClassTemplateSpecializationDecl 0x725d40 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 5
+| |-ClassTemplateSpecializationDecl 0x725f70 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 6
+| |-ClassTemplateSpecializationDecl 0x7261a0 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 7
+| |-ClassTemplateSpecializationDecl 0x726560 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 8
+| | |-CXXRecordDecl 0xbd8b20 prev 0x726560 <line:14:1, col:7> class sc_uint
+| | |-AccessSpecDecl 0xbd8bc0 <line:15:1, col:7> public
+| | |-CXXConstructorDecl 0xbd8db0 <line:16:2> sc_uint 'void (void)'
+| | |-CXXConstructorDecl 0xbd8f00 <line:17:2> sc_uint 'void (uint64_t)'
+| | | `-ParmVarDecl 0xbd8e80 <col:10, col:19> value 'uint64_t':'unsigned long long'
+| | |-CXXConstructorDecl 0xbd9060 <line:18:2> sc_uint 'void (uint32_t)'
+| | | `-ParmVarDecl 0xbd8fe0 <col:10, col:19> value 'uint32_t':'unsigned int'
+| | |-CXXConstructorDecl 0xbd91c0 <line:19:2> sc_uint 'void (int64_t)'
+| | | `-ParmVarDecl 0xbd9140 <col:10, col:18> value 'int64_t':'long long'
+| | |-CXXConstructorDecl 0xbd9320 <line:20:2> sc_uint 'void (int32_t)'
+| | | `-ParmVarDecl 0xbd92a0 <col:10, col:18> value 'int32_t':'int'
+| | |-CXXMethodDecl 0xbd9460 <line:22:2, col:37> operator= 'uint64_t (uint64_t)'
+| | | `-ParmVarDecl 0xbd9400 <col:23, col:32> value 'uint64_t':'unsigned long long'
+| | |-CXXMethodDecl 0xbd9590 <line:23:2, col:38> operator|= 'uint64_t (uint64_t)'
+| | | `-ParmVarDecl 0xbd9530 <col:24, col:33> value 'uint64_t':'unsigned long long'
+| | |-CXXMethodDecl 0xbd96c0 <line:24:2, col:38> operator&= 'uint64_t (uint64_t)'
+| | | `-ParmVarDecl 0xbd9660 <col:24, col:33> value 'uint64_t':'unsigned long long'
+| | |-CXXMethodDecl 0xbd97f0 <line:25:2, col:38> operator^= 'uint64_t (uint64_t)'
+| | | `-ParmVarDecl 0xbd9790 <col:24, col:33> value 'uint64_t':'unsigned long long'
+| | |-CXXConversionDecl 0xbd98c0 <line:26:2, col:20> operator unsigned long long 'uint64_t (void)'
+| | |-AccessSpecDecl 0xbd9990 <line:27:1, col:8> private
+| | |-FieldDecl 0xbd9a10 <line:28:2, col:19> m_value 'uint64_t':'unsigned long long'
+| | | `-SubstNonTypeTemplateParmExpr 0xbd99e0 <col:19> 'int'
+| | |   `-IntegerLiteral 0xbd99b8 <col:19> 'int' 8
+| | |-CXXDestructorDecl 0xbe4e70 <line:14:7> ~sc_uint 'void (void) noexcept' inline
+| | |-CXXConstructorDecl 0xbe5330 <col:7> sc_uint 'void (const class sc_uint<8> &)' inline noexcept-unevaluated 0xbe5330
+| | | `-ParmVarDecl 0xbe5470 <col:7> 'const class sc_uint<8> &'
+| | |-CXXConstructorDecl 0xbe5500 <col:7> sc_uint 'void (class sc_uint<8> &&)' inline noexcept-unevaluated 0xbe5500
+| | | `-ParmVarDecl 0xbe5640 <col:7> 'class sc_uint<8> &&'
+| | |-CXXMethodDecl 0xbe9640 <col:7, <invalid sloc>> operator= 'class sc_uint<8> &(const class sc_uint<8> &)' inline noexcept-unevaluated 0xbe9640
+| | | `-ParmVarDecl 0xbe9770 <col:7> 'const class sc_uint<8> &'
+| | `-CXXMethodDecl 0xbe97d0 <col:7, <invalid sloc>> operator= 'class sc_uint<8> &(class sc_uint<8> &&)' inline noexcept-unevaluated 0xbe97d0
+| |   `-ParmVarDecl 0xbe9900 <col:7> 'class sc_uint<8> &&'
+| |-ClassTemplateSpecializationDecl 0x726790 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 9
+| |-ClassTemplateSpecializationDecl 0x7269c0 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 10
+| |-ClassTemplateSpecializationDecl 0x726bf0 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 11
+| |-ClassTemplateSpecializationDecl 0x726e20 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 12
+| |-ClassTemplateSpecializationDecl 0x727050 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 13
+| |-ClassTemplateSpecializationDecl 0x727280 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 14
+| |-ClassTemplateSpecializationDecl 0x727670 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 15
+| |-ClassTemplateSpecializationDecl 0x7278a0 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 16
+| | |-CXXRecordDecl 0xbd9b60 prev 0x7278a0 <line:14:1, col:7> class sc_uint
+| | |-AccessSpecDecl 0xbd9c00 <line:15:1, col:7> public
+| | |-CXXConstructorDecl 0xbd9c70 <line:16:2> sc_uint 'void (void)'
+| | |-CXXConstructorDecl 0xbd9ee0 <line:17:2> sc_uint 'void (uint64_t)'
+| | | `-ParmVarDecl 0xbd9d40 <col:10, col:19> value 'uint64_t':'unsigned long long'
+| | |-CXXConstructorDecl 0xbda040 <line:18:2> sc_uint 'void (uint32_t)'
+| | | `-ParmVarDecl 0xbd9fc0 <col:10, col:19> value 'uint32_t':'unsigned int'
+| | |-CXXConstructorDecl 0xbda1a0 <line:19:2> sc_uint 'void (int64_t)'
+| | | `-ParmVarDecl 0xbda120 <col:10, col:18> value 'int64_t':'long long'
+| | |-CXXConstructorDecl 0xbda300 <line:20:2> sc_uint 'void (int32_t)'
+| | | `-ParmVarDecl 0xbda280 <col:10, col:18> value 'int32_t':'int'
+| | |-CXXMethodDecl 0xbda440 <line:22:2, col:37> operator= 'uint64_t (uint64_t)'
+| | | `-ParmVarDecl 0xbda3e0 <col:23, col:32> value 'uint64_t':'unsigned long long'
+| | |-CXXMethodDecl 0xbda570 <line:23:2, col:38> operator|= 'uint64_t (uint64_t)'
+| | | `-ParmVarDecl 0xbda510 <col:24, col:33> value 'uint64_t':'unsigned long long'
+| | |-CXXMethodDecl 0xbda6a0 <line:24:2, col:38> operator&= 'uint64_t (uint64_t)'
+| | | `-ParmVarDecl 0xbda640 <col:24, col:33> value 'uint64_t':'unsigned long long'
+| | |-CXXMethodDecl 0xbda7d0 <line:25:2, col:38> operator^= 'uint64_t (uint64_t)'
+| | | `-ParmVarDecl 0xbda770 <col:24, col:33> value 'uint64_t':'unsigned long long'
+| | |-CXXConversionDecl 0xbda8a0 <line:26:2, col:20> operator unsigned long long 'uint64_t (void)'
+| | |-AccessSpecDecl 0xbda970 <line:27:1, col:8> private
+| | |-FieldDecl 0xbda9f0 <line:28:2, col:19> m_value 'uint64_t':'unsigned long long'
+| | | `-SubstNonTypeTemplateParmExpr 0xbda9c0 <col:19> 'int'
+| | |   `-IntegerLiteral 0xbda998 <col:19> 'int' 16
+| | |-CXXDestructorDecl 0xbe4f90 <line:14:7> ~sc_uint 'void (void) noexcept' inline
+| | |-CXXConstructorDecl 0xbe56d0 <col:7> sc_uint 'void (const class sc_uint<16> &)' inline noexcept-unevaluated 0xbe56d0
+| | | `-ParmVarDecl 0xbe5810 <col:7> 'const class sc_uint<16> &'
+| | |-CXXConstructorDecl 0xbe5a70 <col:7> sc_uint 'void (class sc_uint<16> &&)' inline noexcept-unevaluated 0xbe5a70
+| | | `-ParmVarDecl 0xbe5bb0 <col:7> 'class sc_uint<16> &&'
+| | |-CXXMethodDecl 0xc0e250 <col:7, <invalid sloc>> operator= 'class sc_uint<16> &(const class sc_uint<16> &)' inline noexcept-unevaluated 0xc0e250
+| | | `-ParmVarDecl 0xc0e380 <col:7> 'const class sc_uint<16> &'
+| | `-CXXMethodDecl 0xc0e3e0 <col:7, <invalid sloc>> operator= 'class sc_uint<16> &(class sc_uint<16> &&)' inline noexcept-unevaluated 0xc0e3e0
+| |   `-ParmVarDecl 0xc0e510 <col:7> 'class sc_uint<16> &&'
+| |-ClassTemplateSpecializationDecl 0x727ad0 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 17
+| |-ClassTemplateSpecializationDecl 0x727d00 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 18
+| |-ClassTemplateSpecializationDecl 0x727f30 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 19
+| |-ClassTemplateSpecializationDecl 0x728160 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 20
+| |-ClassTemplateSpecializationDecl 0x728390 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 21
+| |-ClassTemplateSpecializationDecl 0x728780 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 22
+| |-ClassTemplateSpecializationDecl 0x7289b0 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 23
+| |-ClassTemplateSpecializationDecl 0x728be0 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 24
+| |-ClassTemplateSpecializationDecl 0x728e10 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 25
+| |-ClassTemplateSpecializationDecl 0x729040 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 26
+| |-ClassTemplateSpecializationDecl 0x729270 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 27
+| |-ClassTemplateSpecializationDecl 0x7294a0 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 28
+| |-ClassTemplateSpecializationDecl 0x729890 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 29
+| |-ClassTemplateSpecializationDecl 0x729ac0 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 30
+| |-ClassTemplateSpecializationDecl 0x729cf0 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 31
+| |-ClassTemplateSpecializationDecl 0x729f20 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 32
+| | |-CXXRecordDecl 0xbdab40 prev 0x729f20 <line:14:1, col:7> class sc_uint
+| | |-AccessSpecDecl 0xbdabe0 <line:15:1, col:7> public
+| | |-CXXConstructorDecl 0xbdac50 <line:16:2> sc_uint 'void (void)'
+| | |-CXXConstructorDecl 0xbdada0 <line:17:2> sc_uint 'void (uint64_t)'
+| | | `-ParmVarDecl 0xbdad20 <col:10, col:19> value 'uint64_t':'unsigned long long'
+| | |-CXXConstructorDecl 0xbdb050 <line:18:2> sc_uint 'void (uint32_t)'
+| | | `-ParmVarDecl 0xbdafd0 <col:10, col:19> value 'uint32_t':'unsigned int'
+| | |-CXXConstructorDecl 0xbdb1b0 <line:19:2> sc_uint 'void (int64_t)'
+| | | `-ParmVarDecl 0xbdb130 <col:10, col:18> value 'int64_t':'long long'
+| | |-CXXConstructorDecl 0xbdb310 <line:20:2> sc_uint 'void (int32_t)'
+| | | `-ParmVarDecl 0xbdb290 <col:10, col:18> value 'int32_t':'int'
+| | |-CXXMethodDecl 0xbdb450 <line:22:2, col:37> operator= 'uint64_t (uint64_t)'
+| | | `-ParmVarDecl 0xbdb3f0 <col:23, col:32> value 'uint64_t':'unsigned long long'
+| | |-CXXMethodDecl 0xbdb580 <line:23:2, col:38> operator|= 'uint64_t (uint64_t)'
+| | | `-ParmVarDecl 0xbdb520 <col:24, col:33> value 'uint64_t':'unsigned long long'
+| | |-CXXMethodDecl 0xbdb6b0 <line:24:2, col:38> operator&= 'uint64_t (uint64_t)'
+| | | `-ParmVarDecl 0xbdb650 <col:24, col:33> value 'uint64_t':'unsigned long long'
+| | |-CXXMethodDecl 0xbdb7e0 <line:25:2, col:38> operator^= 'uint64_t (uint64_t)'
+| | | `-ParmVarDecl 0xbdb780 <col:24, col:33> value 'uint64_t':'unsigned long long'
+| | |-CXXConversionDecl 0xbdb8b0 <line:26:2, col:20> operator unsigned long long 'uint64_t (void)'
+| | |-AccessSpecDecl 0xbdb980 <line:27:1, col:8> private
+| | |-FieldDecl 0xbdba00 <line:28:2, col:19> m_value 'uint64_t':'unsigned long long'
+| | | `-SubstNonTypeTemplateParmExpr 0xbdb9d0 <col:19> 'int'
+| | |   `-IntegerLiteral 0xbdb9a8 <col:19> 'int' 32
+| | |-CXXDestructorDecl 0xbe50b0 <line:14:7> ~sc_uint 'void (void) noexcept' inline
+| | |-CXXConstructorDecl 0xbe5c40 <col:7> sc_uint 'void (const class sc_uint<32> &)' inline noexcept-unevaluated 0xbe5c40
+| | | `-ParmVarDecl 0xbe5d80 <col:7> 'const class sc_uint<32> &'
+| | |-CXXConstructorDecl 0xbe5e10 <col:7> sc_uint 'void (class sc_uint<32> &&)' inline noexcept-unevaluated 0xbe5e10
+| | | `-ParmVarDecl 0xbe5f50 <col:7> 'class sc_uint<32> &&'
+| | |-CXXMethodDecl 0xc14e00 <col:7, <invalid sloc>> operator= 'class sc_uint<32> &(const class sc_uint<32> &)' inline noexcept-unevaluated 0xc14e00
+| | | `-ParmVarDecl 0xc14f30 <col:7> 'const class sc_uint<32> &'
+| | `-CXXMethodDecl 0xc14f90 <col:7, <invalid sloc>> operator= 'class sc_uint<32> &(class sc_uint<32> &&)' inline noexcept-unevaluated 0xc14f90
+| |   `-ParmVarDecl 0xc150c0 <col:7> 'class sc_uint<32> &&'
+| |-ClassTemplateSpecializationDecl 0x72a150 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 33
+| |-ClassTemplateSpecializationDecl 0x72a380 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 34
+| |-ClassTemplateSpecializationDecl 0x72a5b0 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 35
+| |-ClassTemplateSpecializationDecl 0x72a9a0 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 36
+| |-ClassTemplateSpecializationDecl 0x72abd0 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 37
+| |-ClassTemplateSpecializationDecl 0x72ae00 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 38
+| |-ClassTemplateSpecializationDecl 0x72b030 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 39
+| |-ClassTemplateSpecializationDecl 0x72b260 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 40
+| |-ClassTemplateSpecializationDecl 0x72b490 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 41
+| |-ClassTemplateSpecializationDecl 0x72b6c0 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 42
+| |-ClassTemplateSpecializationDecl 0x72bab0 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 43
+| |-ClassTemplateSpecializationDecl 0x72bce0 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 44
+| |-ClassTemplateSpecializationDecl 0x72bf10 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 45
+| |-ClassTemplateSpecializationDecl 0x72c140 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 46
+| |-ClassTemplateSpecializationDecl 0x72c370 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 47
+| |-ClassTemplateSpecializationDecl 0x72c5a0 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 48
+| |-ClassTemplateSpecializationDecl 0x72c7d0 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 49
+| |-ClassTemplateSpecializationDecl 0x72cbc0 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 50
+| |-ClassTemplateSpecializationDecl 0x72cdf0 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 51
+| |-ClassTemplateSpecializationDecl 0x72d020 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 52
+| |-ClassTemplateSpecializationDecl 0x72d250 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 53
+| |-ClassTemplateSpecializationDecl 0x72d480 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 54
+| |-ClassTemplateSpecializationDecl 0x72d6b0 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 55
+| |-ClassTemplateSpecializationDecl 0x72d8e0 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 56
+| |-ClassTemplateSpecializationDecl 0x72ede0 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 57
+| |-ClassTemplateSpecializationDecl 0x72f010 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 58
+| |-ClassTemplateSpecializationDecl 0x72f240 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 59
+| |-ClassTemplateSpecializationDecl 0x72f470 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 60
+| |-ClassTemplateSpecializationDecl 0x72f6a0 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 61
+| |-ClassTemplateSpecializationDecl 0x72f8d0 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 62
+| |-ClassTemplateSpecializationDecl 0x72fb00 <line:13:1, line:29:1> class sc_uint
+| | |-TemplateArgument integral 63
+| `-ClassTemplateSpecializationDecl 0x72fef0 <line:13:1, line:29:1> class sc_uint
+|   |-TemplateArgument integral 64
+|   |-CXXRecordDecl 0xbdc8d0 prev 0x72fef0 <line:14:1, col:7> class sc_uint
+|   |-AccessSpecDecl 0xbdc970 <line:15:1, col:7> public
+|   |-CXXConstructorDecl 0xbdc9e0 <line:16:2> sc_uint 'void (void)'
+|   |-CXXConstructorDecl 0xbdcb30 <line:17:2> sc_uint 'void (uint64_t)'
+|   | `-ParmVarDecl 0xbdcab0 <col:10, col:19> value 'uint64_t':'unsigned long long'
+|   |-CXXConstructorDecl 0xbdcc90 <line:18:2> sc_uint 'void (uint32_t)'
+|   | `-ParmVarDecl 0xbdcc10 <col:10, col:19> value 'uint32_t':'unsigned int'
+|   |-CXXConstructorDecl 0xbdcdf0 <line:19:2> sc_uint 'void (int64_t)'
+|   | `-ParmVarDecl 0xbdcd70 <col:10, col:18> value 'int64_t':'long long'
+|   |-CXXConstructorDecl 0xbdcf50 <line:20:2> sc_uint 'void (int32_t)'
+|   | `-ParmVarDecl 0xbdced0 <col:10, col:18> value 'int32_t':'int'
+|   |-CXXMethodDecl 0xbde300 <line:22:2, col:37> operator= 'uint64_t (uint64_t)'
+|   | `-ParmVarDecl 0xbdd030 <col:23, col:32> value 'uint64_t':'unsigned long long'
+|   |-CXXMethodDecl 0xbde430 <line:23:2, col:38> operator|= 'uint64_t (uint64_t)'
+|   | `-ParmVarDecl 0xbde3d0 <col:24, col:33> value 'uint64_t':'unsigned long long'
+|   |-CXXMethodDecl 0xbde560 <line:24:2, col:38> operator&= 'uint64_t (uint64_t)'
+|   | `-ParmVarDecl 0xbde500 <col:24, col:33> value 'uint64_t':'unsigned long long'
+|   |-CXXMethodDecl 0xbde690 <line:25:2, col:38> operator^= 'uint64_t (uint64_t)'
+|   | `-ParmVarDecl 0xbde630 <col:24, col:33> value 'uint64_t':'unsigned long long'
+|   |-CXXConversionDecl 0xbde760 <line:26:2, col:20> operator unsigned long long 'uint64_t (void)'
+|   |-AccessSpecDecl 0xbde830 <line:27:1, col:8> private
+|   `-FieldDecl 0xbde8b0 <line:28:2, col:19> m_value 'uint64_t':'unsigned long long'
+|     `-SubstNonTypeTemplateParmExpr 0xbde880 <col:19> 'int'
+|       `-IntegerLiteral 0xbde858 <col:19> 'int' 64
+|-ClassTemplateDecl 0x7236c0 <line:31:1, line:41:1> sc_int
+| |-NonTypeTemplateParmDecl 0x7235b0 <line:31:10, col:14> 'int' W
+| |-CXXRecordDecl 0x723620 <line:32:1, line:41:1> class sc_int
+| | |-CXXRecordDecl 0x723980 <line:32:1, col:7> class sc_int
+| | |-AccessSpecDecl 0x723a20 <line:33:1, col:7> public
+| | |-CXXMethodDecl 0x723b90 <line:34:2, col:35> operator= 'int64_t (int64_t)'
+| | | `-ParmVarDecl 0x723a60 <col:22, col:30> value 'int64_t':'long long'
+| | |-CXXMethodDecl 0x723cd0 <line:35:2, col:36> operator|= 'int64_t (int64_t)'
+| | | `-ParmVarDecl 0x723c50 <col:23, col:31> value 'int64_t':'long long'
+| | |-CXXMethodDecl 0x723e10 <line:36:2, col:36> operator&= 'int64_t (int64_t)'
+| | | `-ParmVarDecl 0x723d90 <col:23, col:31> value 'int64_t':'long long'
+| | |-CXXMethodDecl 0x723f50 <line:37:2, col:36> operator^= 'int64_t (int64_t)'
+| | | `-ParmVarDecl 0x723ed0 <col:23, col:31> value 'int64_t':'long long'
+| | |-CXXConversionDecl 0x7240b0 <line:38:2, col:19> operator long long 'int64_t (void)'
+| | |-AccessSpecDecl 0x724170 <line:39:1, col:8> private
+| | `-FieldDecl 0x7241d0 <line:40:2, col:18> m_value 'int64_t':'long long'
+| |   `-DeclRefExpr 0x724198 <col:18> 'int' NonTypeTemplateParm 0x7235b0 'W' 'int'
+| |-ClassTemplateSpecializationDecl 0x730120 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 1
+| |-ClassTemplateSpecializationDecl 0x730350 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 2
+| |-ClassTemplateSpecializationDecl 0x730580 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 3
+| |-ClassTemplateSpecializationDecl 0x7307b0 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 4
+| |-ClassTemplateSpecializationDecl 0x7309e0 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 5
+| |-ClassTemplateSpecializationDecl 0x730c10 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 6
+| |-ClassTemplateSpecializationDecl 0x731000 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 7
+| |-ClassTemplateSpecializationDecl 0x731230 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 8
+| |-ClassTemplateSpecializationDecl 0x731460 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 9
+| |-ClassTemplateSpecializationDecl 0x731690 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 10
+| |-ClassTemplateSpecializationDecl 0x7318c0 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 11
+| |-ClassTemplateSpecializationDecl 0x731af0 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 12
+| |-ClassTemplateSpecializationDecl 0x731d20 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 13
+| |-ClassTemplateSpecializationDecl 0x732110 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 14
+| |-ClassTemplateSpecializationDecl 0x732340 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 15
+| |-ClassTemplateSpecializationDecl 0x732570 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 16
+| |-ClassTemplateSpecializationDecl 0x7327a0 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 17
+| |-ClassTemplateSpecializationDecl 0x7329d0 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 18
+| |-ClassTemplateSpecializationDecl 0x732c00 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 19
+| |-ClassTemplateSpecializationDecl 0x732e30 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 20
+| |-ClassTemplateSpecializationDecl 0x734330 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 21
+| |-ClassTemplateSpecializationDecl 0x734560 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 22
+| |-ClassTemplateSpecializationDecl 0x734790 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 23
+| |-ClassTemplateSpecializationDecl 0x7349c0 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 24
+| |-ClassTemplateSpecializationDecl 0x734bf0 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 25
+| |-ClassTemplateSpecializationDecl 0x734e20 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 26
+| |-ClassTemplateSpecializationDecl 0x735050 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 27
+| |-ClassTemplateSpecializationDecl 0x735440 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 28
+| |-ClassTemplateSpecializationDecl 0x735670 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 29
+| |-ClassTemplateSpecializationDecl 0x7358a0 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 30
+| |-ClassTemplateSpecializationDecl 0x735ad0 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 31
+| |-ClassTemplateSpecializationDecl 0x735d00 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 32
+| |-ClassTemplateSpecializationDecl 0x735f30 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 33
+| |-ClassTemplateSpecializationDecl 0x736160 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 34
+| |-ClassTemplateSpecializationDecl 0x736550 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 35
+| |-ClassTemplateSpecializationDecl 0x736780 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 36
+| |-ClassTemplateSpecializationDecl 0x7369b0 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 37
+| |-ClassTemplateSpecializationDecl 0x736be0 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 38
+| |-ClassTemplateSpecializationDecl 0x736e10 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 39
+| |-ClassTemplateSpecializationDecl 0x737040 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 40
+| |-ClassTemplateSpecializationDecl 0x737270 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 41
+| |-ClassTemplateSpecializationDecl 0x737660 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 42
+| |-ClassTemplateSpecializationDecl 0x737890 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 43
+| |-ClassTemplateSpecializationDecl 0x737ac0 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 44
+| |-ClassTemplateSpecializationDecl 0x737cf0 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 45
+| |-ClassTemplateSpecializationDecl 0x737f20 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 46
+| |-ClassTemplateSpecializationDecl 0x738150 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 47
+| |-ClassTemplateSpecializationDecl 0x738380 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 48
+| |-ClassTemplateSpecializationDecl 0x738770 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 49
+| |-ClassTemplateSpecializationDecl 0x7389a0 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 50
+| |-ClassTemplateSpecializationDecl 0x738bd0 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 51
+| |-ClassTemplateSpecializationDecl 0x738e00 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 52
+| |-ClassTemplateSpecializationDecl 0x739030 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 53
+| |-ClassTemplateSpecializationDecl 0x739260 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 54
+| |-ClassTemplateSpecializationDecl 0x739490 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 55
+| |-ClassTemplateSpecializationDecl 0x739880 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 56
+| |-ClassTemplateSpecializationDecl 0x739ab0 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 57
+| |-ClassTemplateSpecializationDecl 0x739ce0 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 58
+| |-ClassTemplateSpecializationDecl 0x739f10 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 59
+| |-ClassTemplateSpecializationDecl 0x73a140 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 60
+| |-ClassTemplateSpecializationDecl 0x73a370 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 61
+| |-ClassTemplateSpecializationDecl 0x73a5a0 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 62
+| |-ClassTemplateSpecializationDecl 0xbce310 <line:31:1, line:41:1> class sc_int
+| | |-TemplateArgument integral 63
+| `-ClassTemplateSpecializationDecl 0xbce540 <line:31:1, line:41:1> class sc_int
+|   |-TemplateArgument integral 64
+|-TypedefDecl 0x725640 <line:43:1, col:21> ht_uint1 'sc_uint<1>':'class sc_uint<1>'
+|-TypedefDecl 0x725870 <line:44:1, col:21> ht_uint2 'sc_uint<2>':'class sc_uint<2>'
+|-TypedefDecl 0x725aa0 <line:45:1, col:21> ht_uint3 'sc_uint<3>':'class sc_uint<3>'
+|-TypedefDecl 0x725cd0 <line:46:1, col:21> ht_uint4 'sc_uint<4>':'class sc_uint<4>'
+|-TypedefDecl 0x725f00 <line:47:1, col:21> ht_uint5 'sc_uint<5>':'class sc_uint<5>'
+|-TypedefDecl 0x726130 <line:48:1, col:21> ht_uint6 'sc_uint<6>':'class sc_uint<6>'
+|-TypedefDecl 0x726360 <line:49:1, col:21> ht_uint7 'sc_uint<7>':'class sc_uint<7>'
+|-TypedefDecl 0x726720 <line:50:1, col:21> ht_uint8 'sc_uint<8>':'class sc_uint<8>'
+|-TypedefDecl 0x726950 <line:51:1, col:21> ht_uint9 'sc_uint<9>':'class sc_uint<9>'
+|-TypedefDecl 0x726b80 <line:52:1, col:22> ht_uint10 'sc_uint<10>':'class sc_uint<10>'
+|-TypedefDecl 0x726db0 <line:53:1, col:22> ht_uint11 'sc_uint<11>':'class sc_uint<11>'
+|-TypedefDecl 0x726fe0 <line:54:1, col:22> ht_uint12 'sc_uint<12>':'class sc_uint<12>'
+|-TypedefDecl 0x727210 <line:55:1, col:22> ht_uint13 'sc_uint<13>':'class sc_uint<13>'
+|-TypedefDecl 0x727440 <line:56:1, col:22> ht_uint14 'sc_uint<14>':'class sc_uint<14>'
+|-TypedefDecl 0x727830 <line:57:1, col:22> ht_uint15 'sc_uint<15>':'class sc_uint<15>'
+|-TypedefDecl 0x727a60 <line:58:1, col:22> ht_uint16 'sc_uint<16>':'class sc_uint<16>'
+|-TypedefDecl 0x727c90 <line:59:1, col:22> ht_uint17 'sc_uint<17>':'class sc_uint<17>'
+|-TypedefDecl 0x727ec0 <line:60:1, col:22> ht_uint18 'sc_uint<18>':'class sc_uint<18>'
+|-TypedefDecl 0x7280f0 <line:61:1, col:22> ht_uint19 'sc_uint<19>':'class sc_uint<19>'
+|-TypedefDecl 0x728320 <line:62:1, col:22> ht_uint20 'sc_uint<20>':'class sc_uint<20>'
+|-TypedefDecl 0x728550 <line:63:1, col:22> ht_uint21 'sc_uint<21>':'class sc_uint<21>'
+|-TypedefDecl 0x728940 <line:64:1, col:22> ht_uint22 'sc_uint<22>':'class sc_uint<22>'
+|-TypedefDecl 0x728b70 <line:65:1, col:22> ht_uint23 'sc_uint<23>':'class sc_uint<23>'
+|-TypedefDecl 0x728da0 <line:66:1, col:22> ht_uint24 'sc_uint<24>':'class sc_uint<24>'
+|-TypedefDecl 0x728fd0 <line:67:1, col:22> ht_uint25 'sc_uint<25>':'class sc_uint<25>'
+|-TypedefDecl 0x729200 <line:68:1, col:22> ht_uint26 'sc_uint<26>':'class sc_uint<26>'
+|-TypedefDecl 0x729430 <line:69:1, col:22> ht_uint27 'sc_uint<27>':'class sc_uint<27>'
+|-TypedefDecl 0x729660 <line:70:1, col:22> ht_uint28 'sc_uint<28>':'class sc_uint<28>'
+|-TypedefDecl 0x729a50 <line:71:1, col:22> ht_uint29 'sc_uint<29>':'class sc_uint<29>'
+|-TypedefDecl 0x729c80 <line:72:1, col:22> ht_uint30 'sc_uint<30>':'class sc_uint<30>'
+|-TypedefDecl 0x729eb0 <line:73:1, col:22> ht_uint31 'sc_uint<31>':'class sc_uint<31>'
+|-TypedefDecl 0x72a0e0 <line:74:1, col:22> ht_uint32 'sc_uint<32>':'class sc_uint<32>'
+|-TypedefDecl 0x72a310 <line:75:1, col:22> ht_uint33 'sc_uint<33>':'class sc_uint<33>'
+|-TypedefDecl 0x72a540 <line:76:1, col:22> ht_uint34 'sc_uint<34>':'class sc_uint<34>'
+|-TypedefDecl 0x72a770 <line:77:1, col:22> ht_uint35 'sc_uint<35>':'class sc_uint<35>'
+|-TypedefDecl 0x72ab60 <line:78:1, col:22> ht_uint36 'sc_uint<36>':'class sc_uint<36>'
+|-TypedefDecl 0x72ad90 <line:79:1, col:22> ht_uint37 'sc_uint<37>':'class sc_uint<37>'
+|-TypedefDecl 0x72afc0 <line:80:1, col:22> ht_uint38 'sc_uint<38>':'class sc_uint<38>'
+|-TypedefDecl 0x72b1f0 <line:81:1, col:22> ht_uint39 'sc_uint<39>':'class sc_uint<39>'
+|-TypedefDecl 0x72b420 <line:82:1, col:22> ht_uint40 'sc_uint<40>':'class sc_uint<40>'
+|-TypedefDecl 0x72b650 <line:83:1, col:22> ht_uint41 'sc_uint<41>':'class sc_uint<41>'
+|-TypedefDecl 0x72b880 <line:84:1, col:22> ht_uint42 'sc_uint<42>':'class sc_uint<42>'
+|-TypedefDecl 0x72bc70 <line:85:1, col:22> ht_uint43 'sc_uint<43>':'class sc_uint<43>'
+|-TypedefDecl 0x72bea0 <line:86:1, col:22> ht_uint44 'sc_uint<44>':'class sc_uint<44>'
+|-TypedefDecl 0x72c0d0 <line:87:1, col:22> ht_uint45 'sc_uint<45>':'class sc_uint<45>'
+|-TypedefDecl 0x72c300 <line:88:1, col:22> ht_uint46 'sc_uint<46>':'class sc_uint<46>'
+|-TypedefDecl 0x72c530 <line:89:1, col:22> ht_uint47 'sc_uint<47>':'class sc_uint<47>'
+|-TypedefDecl 0x72c760 <line:90:1, col:22> ht_uint48 'sc_uint<48>':'class sc_uint<48>'
+|-TypedefDecl 0x72c990 <line:91:1, col:22> ht_uint49 'sc_uint<49>':'class sc_uint<49>'
+|-TypedefDecl 0x72cd80 <line:92:1, col:22> ht_uint50 'sc_uint<50>':'class sc_uint<50>'
+|-TypedefDecl 0x72cfb0 <line:93:1, col:22> ht_uint51 'sc_uint<51>':'class sc_uint<51>'
+|-TypedefDecl 0x72d1e0 <line:94:1, col:22> ht_uint52 'sc_uint<52>':'class sc_uint<52>'
+|-TypedefDecl 0x72d410 <line:95:1, col:22> ht_uint53 'sc_uint<53>':'class sc_uint<53>'
+|-TypedefDecl 0x72d640 <line:96:1, col:22> ht_uint54 'sc_uint<54>':'class sc_uint<54>'
+|-TypedefDecl 0x72d870 <line:97:1, col:22> ht_uint55 'sc_uint<55>':'class sc_uint<55>'
+|-TypedefDecl 0x72daa0 <line:98:1, col:22> ht_uint56 'sc_uint<56>':'class sc_uint<56>'
+|-TypedefDecl 0x72efa0 <line:99:1, col:22> ht_uint57 'sc_uint<57>':'class sc_uint<57>'
+|-TypedefDecl 0x72f1d0 <line:100:1, col:22> ht_uint58 'sc_uint<58>':'class sc_uint<58>'
+|-TypedefDecl 0x72f400 <line:101:1, col:22> ht_uint59 'sc_uint<59>':'class sc_uint<59>'
+|-TypedefDecl 0x72f630 <line:102:1, col:22> ht_uint60 'sc_uint<60>':'class sc_uint<60>'
+|-TypedefDecl 0x72f860 <line:103:1, col:22> ht_uint61 'sc_uint<61>':'class sc_uint<61>'
+|-TypedefDecl 0x72fa90 <line:104:1, col:22> ht_uint62 'sc_uint<62>':'class sc_uint<62>'
+|-TypedefDecl 0x72fcc0 <line:105:1, col:22> ht_uint63 'sc_uint<63>':'class sc_uint<63>'
+|-TypedefDecl 0x7300b0 <line:106:1, col:22> ht_uint64 'sc_uint<64>':'class sc_uint<64>'
+|-TypedefDecl 0x7302e0 <line:108:1, col:20> ht_int1 'sc_int<1>':'class sc_int<1>'
+|-TypedefDecl 0x730510 <line:109:1, col:20> ht_int2 'sc_int<2>':'class sc_int<2>'
+|-TypedefDecl 0x730740 <line:110:1, col:20> ht_int3 'sc_int<3>':'class sc_int<3>'
+|-TypedefDecl 0x730970 <line:111:1, col:20> ht_int4 'sc_int<4>':'class sc_int<4>'
+|-TypedefDecl 0x730ba0 <line:112:1, col:20> ht_int5 'sc_int<5>':'class sc_int<5>'
+|-TypedefDecl 0x730dd0 <line:113:1, col:20> ht_int6 'sc_int<6>':'class sc_int<6>'
+|-TypedefDecl 0x7311c0 <line:114:1, col:20> ht_int7 'sc_int<7>':'class sc_int<7>'
+|-TypedefDecl 0x7313f0 <line:115:1, col:20> ht_int8 'sc_int<8>':'class sc_int<8>'
+|-TypedefDecl 0x731620 <line:116:1, col:20> ht_int9 'sc_int<9>':'class sc_int<9>'
+|-TypedefDecl 0x731850 <line:117:1, col:21> ht_int10 'sc_int<10>':'class sc_int<10>'
+|-TypedefDecl 0x731a80 <line:118:1, col:21> ht_int11 'sc_int<11>':'class sc_int<11>'
+|-TypedefDecl 0x731cb0 <line:119:1, col:21> ht_int12 'sc_int<12>':'class sc_int<12>'
+|-TypedefDecl 0x731ee0 <line:120:1, col:21> ht_int13 'sc_int<13>':'class sc_int<13>'
+|-TypedefDecl 0x7322d0 <line:121:1, col:21> ht_int14 'sc_int<14>':'class sc_int<14>'
+|-TypedefDecl 0x732500 <line:122:1, col:21> ht_int15 'sc_int<15>':'class sc_int<15>'
+|-TypedefDecl 0x732730 <line:123:1, col:21> ht_int16 'sc_int<16>':'class sc_int<16>'
+|-TypedefDecl 0x732960 <line:124:1, col:21> ht_int17 'sc_int<17>':'class sc_int<17>'
+|-TypedefDecl 0x732b90 <line:125:1, col:21> ht_int18 'sc_int<18>':'class sc_int<18>'
+|-TypedefDecl 0x732dc0 <line:126:1, col:21> ht_int19 'sc_int<19>':'class sc_int<19>'
+|-TypedefDecl 0x732ff0 <line:127:1, col:21> ht_int20 'sc_int<20>':'class sc_int<20>'
+|-TypedefDecl 0x7344f0 <line:128:1, col:21> ht_int21 'sc_int<21>':'class sc_int<21>'
+|-TypedefDecl 0x734720 <line:129:1, col:21> ht_int22 'sc_int<22>':'class sc_int<22>'
+|-TypedefDecl 0x734950 <line:130:1, col:21> ht_int23 'sc_int<23>':'class sc_int<23>'
+|-TypedefDecl 0x734b80 <line:131:1, col:21> ht_int24 'sc_int<24>':'class sc_int<24>'
+|-TypedefDecl 0x734db0 <line:132:1, col:21> ht_int25 'sc_int<25>':'class sc_int<25>'
+|-TypedefDecl 0x734fe0 <line:133:1, col:21> ht_int26 'sc_int<26>':'class sc_int<26>'
+|-TypedefDecl 0x735210 <line:134:1, col:21> ht_int27 'sc_int<27>':'class sc_int<27>'
+|-TypedefDecl 0x735600 <line:135:1, col:21> ht_int28 'sc_int<28>':'class sc_int<28>'
+|-TypedefDecl 0x735830 <line:136:1, col:21> ht_int29 'sc_int<29>':'class sc_int<29>'
+|-TypedefDecl 0x735a60 <line:137:1, col:21> ht_int30 'sc_int<30>':'class sc_int<30>'
+|-TypedefDecl 0x735c90 <line:138:1, col:21> ht_int31 'sc_int<31>':'class sc_int<31>'
+|-TypedefDecl 0x735ec0 <line:139:1, col:21> ht_int32 'sc_int<32>':'class sc_int<32>'
+|-TypedefDecl 0x7360f0 <line:140:1, col:21> ht_int33 'sc_int<33>':'class sc_int<33>'
+|-TypedefDecl 0x736320 <line:141:1, col:21> ht_int34 'sc_int<34>':'class sc_int<34>'
+|-TypedefDecl 0x736710 <line:142:1, col:21> ht_int35 'sc_int<35>':'class sc_int<35>'
+|-TypedefDecl 0x736940 <line:143:1, col:21> ht_int36 'sc_int<36>':'class sc_int<36>'
+|-TypedefDecl 0x736b70 <line:144:1, col:21> ht_int37 'sc_int<37>':'class sc_int<37>'
+|-TypedefDecl 0x736da0 <line:145:1, col:21> ht_int38 'sc_int<38>':'class sc_int<38>'
+|-TypedefDecl 0x736fd0 <line:146:1, col:21> ht_int39 'sc_int<39>':'class sc_int<39>'
+|-TypedefDecl 0x737200 <line:147:1, col:21> ht_int40 'sc_int<40>':'class sc_int<40>'
+|-TypedefDecl 0x737430 <line:148:1, col:21> ht_int41 'sc_int<41>':'class sc_int<41>'
+|-TypedefDecl 0x737820 <line:149:1, col:21> ht_int42 'sc_int<42>':'class sc_int<42>'
+|-TypedefDecl 0x737a50 <line:150:1, col:21> ht_int43 'sc_int<43>':'class sc_int<43>'
+|-TypedefDecl 0x737c80 <line:151:1, col:21> ht_int44 'sc_int<44>':'class sc_int<44>'
+|-TypedefDecl 0x737eb0 <line:152:1, col:21> ht_int45 'sc_int<45>':'class sc_int<45>'
+|-TypedefDecl 0x7380e0 <line:153:1, col:21> ht_int46 'sc_int<46>':'class sc_int<46>'
+|-TypedefDecl 0x738310 <line:154:1, col:21> ht_int47 'sc_int<47>':'class sc_int<47>'
+|-TypedefDecl 0x738540 <line:155:1, col:21> ht_int48 'sc_int<48>':'class sc_int<48>'
+|-TypedefDecl 0x738930 <line:156:1, col:21> ht_int49 'sc_int<49>':'class sc_int<49>'
+|-TypedefDecl 0x738b60 <line:157:1, col:21> ht_int50 'sc_int<50>':'class sc_int<50>'
+|-TypedefDecl 0x738d90 <line:158:1, col:21> ht_int51 'sc_int<51>':'class sc_int<51>'
+|-TypedefDecl 0x738fc0 <line:159:1, col:21> ht_int52 'sc_int<52>':'class sc_int<52>'
+|-TypedefDecl 0x7391f0 <line:160:1, col:21> ht_int53 'sc_int<53>':'class sc_int<53>'
+|-TypedefDecl 0x739420 <line:161:1, col:21> ht_int54 'sc_int<54>':'class sc_int<54>'
+|-TypedefDecl 0x739650 <line:162:1, col:21> ht_int55 'sc_int<55>':'class sc_int<55>'
+|-TypedefDecl 0x739a40 <line:163:1, col:21> ht_int56 'sc_int<56>':'class sc_int<56>'
+|-TypedefDecl 0x739c70 <line:164:1, col:21> ht_int57 'sc_int<57>':'class sc_int<57>'
+|-TypedefDecl 0x739ea0 <line:165:1, col:21> ht_int58 'sc_int<58>':'class sc_int<58>'
+|-TypedefDecl 0x73a0d0 <line:166:1, col:21> ht_int59 'sc_int<59>':'class sc_int<59>'
+|-TypedefDecl 0x73a300 <line:167:1, col:21> ht_int60 'sc_int<60>':'class sc_int<60>'
+|-TypedefDecl 0x73a530 <line:168:1, col:21> ht_int61 'sc_int<61>':'class sc_int<61>'
+|-TypedefDecl 0x73a760 <line:169:1, col:21> ht_int62 'sc_int<62>':'class sc_int<62>'
+|-TypedefDecl 0xbce4d0 <line:170:1, col:21> ht_int63 'sc_int<63>':'class sc_int<63>'
+|-TypedefDecl 0xbce700 <line:171:1, col:21> ht_int64 'sc_int<64>':'class sc_int<64>'
+|-ClassTemplateDecl 0xbce930 <C:/Users/TBrewer/Documents/llvm-project/my_tests/ht_lib/HtMemTypes.h:3:1, line:14:1> ht_dist_que
+| |-TemplateTypeParmDecl 0xbce750 <line:3:10, col:19> typename T
+| |-NonTypeTemplateParmDecl 0xbce810 <col:22, col:26> 'int' D
+| `-CXXRecordDecl 0xbce890 <line:4:1, line:14:1> class ht_dist_que
+|   |-CXXRecordDecl 0xbcec30 <line:4:1, col:7> class ht_dist_que
+|   |-AccessSpecDecl 0xbcecd0 <line:5:1, col:7> public
+|   |-CXXMethodDecl 0xbcee40 <line:6:2, col:13> push 'void (T)'
+|   | `-ParmVarDecl 0xbced10 <col:12, col:13> 'T'
+|   |-CXXMethodDecl 0xbcef70 <line:7:2, col:10> front 'T (void)'
+|   |-CXXMethodDecl 0xbcf040 <line:8:2, col:11> pop 'void (void)'
+|   |-CXXMethodDecl 0xbcf140 <line:9:2, col:13> empty '_Bool (void)'
+|   |-CXXMethodDecl 0xbcf420 <line:10:2, col:17> clock 'void (_Bool)'
+|   | `-ParmVarDecl 0xbcf200 <col:13, col:17> '_Bool'
+|   |-CXXMethodDecl 0xbcf560 <line:11:2, col:22> push_clock 'void (_Bool)'
+|   | `-ParmVarDecl 0xbcf4e0 <col:18, col:22> '_Bool'
+|   |-CXXMethodDecl 0xbcf6a0 <line:12:2, col:21> pop_clock 'void (_Bool)'
+|   | `-ParmVarDecl 0xbcf620 <col:17, col:21> '_Bool'
+|   `-AccessSpecDecl 0xbcf750 <line:13:1, col:8> private
+|-ClassTemplateDecl 0xbcf8b0 <C:/Users/TBrewer/Documents/llvm-project/my_tests/ht_lib/HtSyscTypes.h:4:1, line:12:1> sc_in
+| |-TemplateTypeParmDecl 0xbcf780 <line:4:10, col:19> typename T
+| |-CXXRecordDecl 0xbcf810 <line:5:1, line:12:1> class sc_in
+| | |-CXXRecordDecl 0xbcfb50 <line:5:1, col:7> class sc_in
+| | |-AccessSpecDecl 0xbcfbf0 <line:6:1, col:7> public
+| | |-CXXMethodDecl 0xbcfc70 <line:7:2, col:11> pos '_Bool (void)'
+| | |-CXXConversionDecl 0xbcfda0 <line:8:2, col:13> operator type-parameter-0-0 'T (void)'
+| | |-CXXMethodDecl 0xbcfe80 <line:9:2, col:9> read 'T (void)'
+| | |-AccessSpecDecl 0xbcff30 <line:10:1, col:8> private
+| | `-FieldDecl 0xbcff70 <line:11:2, col:4> m_value 'T'
+| |-ClassTemplateSpecializationDecl 0xbe1b50 <line:4:1, line:12:1> class sc_in
+| | |-TemplateArgument type '_Bool'
+| | |-CXXRecordDecl 0xbe1d90 prev 0xbe1b50 <line:5:1, col:7> class sc_in
+| | |-AccessSpecDecl 0xbe1e30 <line:6:1, col:7> public
+| | |-CXXMethodDecl 0xbe1e60 <line:7:2, col:11> pos '_Bool (void)'
+| | |-CXXConversionDecl 0xbe1fd0 <line:8:2, col:13> operator _Bool '_Bool (void)'
+| | |-CXXMethodDecl 0xbe20c0 <line:9:2, col:9> read '_Bool (void)'
+| | |-AccessSpecDecl 0xbe2180 <line:10:1, col:8> private
+| | |-FieldDecl 0xbe21c0 <line:11:2, col:4> m_value '_Bool':'_Bool'
+| | |-CXXConstructorDecl 0xbe45d0 <line:5:7> sc_in 'void (void)' inline noexcept-unevaluated 0xbe45d0
+| | | `-CompoundStmt 0xbe4b90 <col:7>
+| | |-CXXConstructorDecl 0xbe4700 <col:7> sc_in 'void (const class sc_in<_Bool> &)' inline noexcept-unevaluated 0xbe4700
+| | | `-ParmVarDecl 0xbe4960 <col:7> 'const class sc_in<_Bool> &'
+| | |-CXXConstructorDecl 0xbe49f0 <col:7> sc_in 'void (class sc_in<_Bool> &&)' inline noexcept-unevaluated 0xbe49f0
+| | | `-ParmVarDecl 0xbe4b30 <col:7> 'class sc_in<_Bool> &&'
+| | |-CXXMethodDecl 0xbe8e30 <col:7, <invalid sloc>> operator= 'class sc_in<_Bool> &(const class sc_in<_Bool> &)' inline noexcept-unevaluated 0xbe8e30
+| | | `-ParmVarDecl 0xbe8f60 <col:7> 'const class sc_in<_Bool> &'
+| | `-CXXMethodDecl 0xbe8fc0 <col:7, <invalid sloc>> operator= 'class sc_in<_Bool> &(class sc_in<_Bool> &&)' inline noexcept-unevaluated 0xbe8fc0
+| |   `-ParmVarDecl 0xbe90f0 <col:7> 'class sc_in<_Bool> &&'
+| `-ClassTemplateSpecializationDecl 0xbe2270 <line:4:1, line:12:1> class sc_in
+|   |-TemplateArgument type 'struct CHtAssertIntf'
+|   |-CXXRecordDecl 0xbe24b0 prev 0xbe2270 <line:5:1, col:7> class sc_in
+|   |-AccessSpecDecl 0xbe2550 <line:6:1, col:7> public
+|   |-CXXMethodDecl 0xbe2740 <line:7:2, col:11> pos '_Bool (void)'
+|   |-CXXConversionDecl 0xbe28e0 <line:8:2, col:13> operator CHtAssertIntf 'struct CHtAssertIntf (void)'
+|   |-CXXMethodDecl 0xbe29d0 <line:9:2, col:9> read 'struct CHtAssertIntf (void)'
+|   |-AccessSpecDecl 0xbe2a90 <line:10:1, col:8> private
+|   |-FieldDecl 0xbe2ad0 <line:11:2, col:4> m_value 'struct CHtAssertIntf':'struct CHtAssertIntf'
+|   |-CXXConstructorDecl 0xbe4c30 <line:5:7> sc_in 'void (void) noexcept(false)' inline
+|   | |-CXXCtorInitializer Field 0xbe2ad0 'm_value' 'struct CHtAssertIntf':'struct CHtAssertIntf'
+|   | | |-CXXConstructExpr 0xbe6498 <col:7> 'struct CHtAssertIntf':'struct CHtAssertIntf' 'void (void) noexcept(false)'
+|   | `-CompoundStmt 0xbe6500 <col:7>
+|   |-CXXConstructorDecl 0xbe6150 <col:7> sc_in 'void (const class sc_in<struct CHtAssertIntf> &)' inline noexcept-unevaluated 0xbe6150
+|   | `-ParmVarDecl 0xbe6290 <col:7> 'const class sc_in<struct CHtAssertIntf> &'
+|   `-CXXMethodDecl 0xbe9180 <col:7, <invalid sloc>> operator= 'class sc_in<struct CHtAssertIntf> &(const class sc_in<struct CHtAssertIntf> &)' inline noexcept-unevaluated 0xbe9180
+|     `-ParmVarDecl 0xbe92b0 <col:7> 'const class sc_in<struct CHtAssertIntf> &'
+|-ClassTemplateDecl 0xbd00f0 <line:14:1, line:20:1> sc_out
+| |-TemplateTypeParmDecl 0xbcffc0 <line:14:10, col:19> typename T
+| |-CXXRecordDecl 0xbd0050 <line:15:1, line:20:1> class sc_out
+| | |-CXXRecordDecl 0xbd0530 <line:15:1, col:7> class sc_out
+| | |-AccessSpecDecl 0xbd05d0 <line:16:1, col:7> public
+| | |-CXXMethodDecl 0xbd0910 <line:17:2, col:43> operator= 'sc_out<T> &(const T &)'
+| | | `-ParmVarDecl 0xbd0750 <col:27, col:37> value 'const T &'
+| | |-AccessSpecDecl 0xbd09c0 <line:18:1, col:8> private
+| | `-FieldDecl 0xbd0a00 <line:19:2, col:4> m_value 'T'
+| `-ClassTemplateSpecializationDecl 0xbe2da0 <line:14:1, line:20:1> class sc_out
+|   |-TemplateArgument type 'struct CHtAssertIntf'
+|   |-CXXRecordDecl 0xbe2fe0 prev 0xbe2da0 <line:15:1, col:7> class sc_out
+|   |-AccessSpecDecl 0xbe3080 <line:16:1, col:7> public
+|   |-CXXMethodDecl 0xbe3310 <line:17:2, col:43> operator= 'sc_out<struct CHtAssertIntf> &(const struct CHtAssertIntf &)'
+|   | `-ParmVarDecl 0xbe31e0 <col:27, col:37> value 'const struct CHtAssertIntf &'
+|   |-AccessSpecDecl 0xbe33e0 <line:18:1, col:8> private
+|   |-FieldDecl 0xbe3420 <line:19:2, col:4> m_value 'struct CHtAssertIntf':'struct CHtAssertIntf'
+|   |-CXXConstructorDecl 0xbe6680 <line:15:7> sc_out 'void (void) noexcept(false)' inline
+|   | |-CXXCtorInitializer Field 0xbe3420 'm_value' 'struct CHtAssertIntf':'struct CHtAssertIntf'
+|   | | |-CXXConstructExpr 0xbe6950 <col:7> 'struct CHtAssertIntf':'struct CHtAssertIntf' 'void (void) noexcept(false)'
+|   | `-CompoundStmt 0xbe69c0 <col:7>
+|   |-CXXConstructorDecl 0xbe67b0 <col:7> sc_out 'void (const class sc_out<struct CHtAssertIntf> &)' inline noexcept-unevaluated 0xbe67b0
+|   | `-ParmVarDecl 0xbe68f0 <col:7> 'const class sc_out<struct CHtAssertIntf> &'
+|   `-CXXMethodDecl 0xbe9310 <col:7, <invalid sloc>> operator= 'class sc_out<struct CHtAssertIntf> &(const class sc_out<struct CHtAssertIntf> &)' inline noexcept-unevaluated 0xbe9310
+|     `-ParmVarDecl 0xbe9440 <col:7> 'const class sc_out<struct CHtAssertIntf> &'
+|-ClassTemplateDecl 0xbd0b80 <line:22:1, line:30:1> sc_signal
+| |-TemplateTypeParmDecl 0xbd0a50 <line:22:10, col:19> typename T
+| `-CXXRecordDecl 0xbd0ae0 <line:23:1, line:30:1> class sc_signal
+|   |-CXXRecordDecl 0xbd0e20 <line:23:1, col:7> class sc_signal
+|   |-AccessSpecDecl 0xbd0ec0 <line:24:1, col:7> public
+|   |-CXXMethodDecl 0xbd11d0 <line:25:2, col:46> operator= 'sc_signal<T> &(const T &)'
+|   | `-ParmVarDecl 0xbd1010 <col:30, col:40> value 'const T &'
+|   |-CXXConversionDecl 0xbd12e0 <line:26:2, col:13> operator type-parameter-0-0 'T (void)'
+|   |-CXXMethodDecl 0xbd13c0 <line:27:2, col:9> read 'T (void)'
+|   |-AccessSpecDecl 0xbd1470 <line:28:1, col:8> private
+|   `-FieldDecl 0xbd14b0 <line:29:2, col:4> m_value 'T'
+|-CXXRecordDecl 0xbd1640 <line:32:1, line:35:1> class ClockList
+| |-CXXRecordDecl 0xbd1780 <line:32:1, col:7> class ClockList
+| |-AccessSpecDecl 0xbd1820 <line:33:1, col:7> public
+| |-CXXMethodDecl 0xbd1910 <line:34:2, col:24> operator<< 'void (_Bool)'
+| | `-ParmVarDecl 0xbd1860 <col:20, col:24> '_Bool'
+| |-CXXConstructorDecl 0xbe3b40 <line:32:7> ClockList 'void (void)' inline noexcept-unevaluated 0xbe3b40
+| | `-CompoundStmt 0xbe44a0 <col:7>
+| |-CXXDestructorDecl 0xbe3c60 <col:7> ~ClockList 'void (void)' inline noexcept-unevaluated 0xbe3c60
+| |-CXXConstructorDecl 0xbe3dc0 <col:7> ClockList 'void (const class ClockList &)' inline noexcept-unevaluated 0xbe3dc0
+| | `-ParmVarDecl 0xbe3f00 <col:7> 'const class ClockList &'
+| |-CXXConstructorDecl 0xbe3f90 <col:7> ClockList 'void (class ClockList &&)' inline noexcept-unevaluated 0xbe3f90
+| | `-ParmVarDecl 0xbe40d0 <col:7> 'class ClockList &&'
+| |-CXXMethodDecl 0xbe8800 <col:7, <invalid sloc>> operator= 'class ClockList &(const class ClockList &)' inline noexcept-unevaluated 0xbe8800
+| | `-ParmVarDecl 0xbe8930 <col:7> 'const class ClockList &'
+| `-CXXMethodDecl 0xbe8990 <col:7, <invalid sloc>> operator= 'class ClockList &(class ClockList &&)' inline noexcept-unevaluated 0xbe8990
+|   `-ParmVarDecl 0xbe8ac0 <col:7> 'class ClockList &&'
+|-CXXRecordDecl 0xbd19c0 <line:37:1, line:40:1> class ScModuleBase
+| |-CXXRecordDecl 0xbd1b00 <line:37:1, col:7> class ScModuleBase
+| |-AccessSpecDecl 0xbd1ba0 <line:38:1, col:7> public
+| |-FieldDecl 0xbd1be0 <line:39:2, col:12> sensitive 'class ClockList'
+| |-CXXConstructorDecl 0xbe3a20 <line:37:7> ScModuleBase 'void (void)' inline noexcept-unevaluated 0xbe3a20
+| | |-CXXCtorInitializer Field 0xbd1be0 'sensitive' 'class ClockList'
+| | | |-CXXConstructExpr 0xbe44b8 <col:7> 'class ClockList' 'void (void)'
+| | `-CompoundStmt 0xbe4520 <col:7>
+| |-CXXConstructorDecl 0xbe4130 <col:7> ScModuleBase 'void (const class ScModuleBase &)' inline noexcept-unevaluated 0xbe4130
+| | `-ParmVarDecl 0xbe4270 <col:7> 'const class ScModuleBase &'
+| |-CXXConstructorDecl 0xbe4300 <col:7> ScModuleBase 'void (class ScModuleBase &&)' inline noexcept-unevaluated 0xbe4300
+| | `-ParmVarDecl 0xbe4440 <col:7> 'class ScModuleBase &&'
+| |-CXXMethodDecl 0xbe8640 <col:7, <invalid sloc>> operator= 'class ScModuleBase &(const class ScModuleBase &)' inline noexcept-unevaluated 0xbe8640
+| | `-ParmVarDecl 0xbe8770 <col:7> 'const class ScModuleBase &'
+| `-CXXMethodDecl 0xbe8b20 <col:7, <invalid sloc>> operator= 'class ScModuleBase &(class ScModuleBase &&)' inline noexcept-unevaluated 0xbe8b20
+|   `-ParmVarDecl 0xbe8da0 <col:7> 'class ScModuleBase &&'
+|-CXXRecordDecl 0xbd1ca0 <C:/Users/TBrewer/Documents/llvm-project/my_tests/Clk2x\HostIntf.h:74:1, line:94:1> struct CHtHifParams
+| |-CXXRecordDecl 0xbd1de0 <line:74:1, col:8> struct CHtHifParams
+| |-FieldDecl 0xbd1e90 <line:87:2, col:11> m_ctlTimerUSec 'uint32_t':'unsigned int'
+| |-FieldDecl 0xbd1ef0 <line:88:2, col:11> m_iBlkTimerUSec 'uint32_t':'unsigned int'
+| |-FieldDecl 0xbd1f50 <line:89:2, col:11> m_oBlkTimerUSec 'uint32_t':'unsigned int'
+| |-FieldDecl 0xbd1fb0 <line:90:2, col:11> m_appPersMemSize 'uint64_t':'unsigned long long'
+| |-FieldDecl 0xbd2010 <line:91:2, col:11> m_appUnitMemSize 'uint64_t':'unsigned long long'
+| |-FieldDecl 0xbd2070 <line:92:2, col:10> m_numaSetCnt 'int32_t':'int'
+| `-FieldDecl 0xbd21b0 <line:93:2, col:42> m_numaSetUnitCnt 'uint8_t [4]'
+|-FunctionDecl 0xbd23b0 <C:/Users/TBrewer/Documents/llvm-project/my_tests/ht_lib\Ht.h:20:23, col:103> ResetFDSE 'void (_Bool &, const _Bool &)' inline
+| |-ParmVarDecl 0xbd2240 <col:46, col:52> r_reset '_Bool &'
+| |-ParmVarDecl 0xbd22e0 <col:61, col:73> i_reset 'const _Bool &'
+| `-CompoundStmt 0xbd7cd8 <col:82, col:103>
+|   `-BinaryOperator 0xbd24d0 <col:84, col:94> '_Bool' lvalue '='
+|     |-DeclRefExpr 0xbd2468 <col:84> '_Bool' lvalue ParmVar 0xbd2240 'r_reset' '_Bool &'
+|     `-ImplicitCastExpr 0xbd24b8 <col:94> '_Bool' <LValueToRValue>
+|       `-DeclRefExpr 0xbd2490 <col:94> 'const _Bool' lvalue ParmVar 0xbd22e0 'i_reset' 'const _Bool &'
+|-TypedefDecl 0xbd7dd0 <C:/Users/TBrewer/Documents/llvm-project/my_tests/Clk2x/PersAuCommon.h:41:1, col:30> CtlInst_t 'sc_uint<1>':'class sc_uint<1>'
+| `-FullComment 0xbeb690 <line:38:4, col:34>
+|   `-ParagraphComment 0xbeb668 <col:4, col:34>
+|     `-TextComment 0xbeb640 <col:4, col:34> Text="///////////////////////////////"
+|-TypedefDecl 0xbd7ef0 <line:42:1, col:32> Clk2xInst_t 'sc_uint<1>':'class sc_uint<1>'
+|-TypedefDecl 0xbd8010 <line:43:1, col:36> Clk2xRtnInst_t 'sc_uint<1>':'class sc_uint<1>'
+|-TypedefDecl 0xbd8130 <line:44:1, col:32> Clk1xInst_t 'sc_uint<1>':'class sc_uint<1>'
+|-TypedefDecl 0xbd8250 <line:45:1, col:36> Clk1xRtnInst_t 'sc_uint<1>':'class sc_uint<1>'
+|-TypedefDecl 0xbd8370 <line:46:1, col:32> Clk1xHtId_t 'sc_uint<4>':'class sc_uint<4>'
+|-CXXRecordDecl 0xbd8430 <line:91:1, line:102:1> struct CHtAssertIntf
+| |-CXXRecordDecl 0xbd8570 <line:91:1, col:8> struct CHtAssertIntf
+| |-CXXMethodDecl 0xbd8770 <line:92:2, col:55> operator= 'struct CHtAssertIntf &(const struct CHtAssertIntf &)'
+| | `-ParmVarDecl 0xbd8650 <col:30, col:52> rhs 'const struct CHtAssertIntf &'
+| |-CXXMethodDecl 0xbd8900 <line:93:2, col:38> operator= 'struct CHtAssertIntf &(int)'
+| | `-ParmVarDecl 0xbd8840 <col:30, col:34> zero 'int'
+| |-FieldDecl 0xbd89c0 <line:97:2, col:7> m_bAssert '_Bool'
+| |-FieldDecl 0xbd8a20 <line:98:2, col:7> m_bCollision '_Bool'
+| |-FieldDecl 0xbd9a60 <line:99:2, col:11> m_module 'ht_uint8':'class sc_uint<8>'
+| |-FieldDecl 0xbdaa40 <line:100:2, col:12> m_lineNum 'ht_uint16':'class sc_uint<16>'
+| |-FieldDecl 0xbdba50 <line:101:2, col:12> m_info 'ht_uint32':'class sc_uint<32>'
+| |-CXXConstructorDecl 0xbe4d50 <line:91:8> CHtAssertIntf 'void (void) noexcept(false)' inline
+| | |-CXXCtorInitializer Field 0xbd9a60 'm_module' 'ht_uint8':'class sc_uint<8>'
+| | | |-CXXConstructExpr 0xbe62f0 <col:8> 'ht_uint8':'class sc_uint<8>' 'void (void)'
+| | |-CXXCtorInitializer Field 0xbdaa40 'm_lineNum' 'ht_uint16':'class sc_uint<16>'
+| | | |-CXXConstructExpr 0xbe6358 <col:8> 'ht_uint16':'class sc_uint<16>' 'void (void)'
+| | |-CXXCtorInitializer Field 0xbdba50 'm_info' 'ht_uint32':'class sc_uint<32>'
+| | | |-CXXConstructExpr 0xbe63b8 <col:8> 'ht_uint32':'class sc_uint<32>' 'void (void)'
+| | `-CompoundStmt 0xbe6430 <col:8>
+| |-CXXDestructorDecl 0xbe51d0 <col:8> ~CHtAssertIntf 'void (void) noexcept' inline
+| | `-CompoundStmt 0xbe83d0 <col:8>
+| `-CXXConstructorDecl 0xbe5fb0 <col:8> CHtAssertIntf 'void (const struct CHtAssertIntf &)' inline noexcept-unevaluated 0xbe5fb0
+|   `-ParmVarDecl 0xbe60f0 <col:8> 'const struct CHtAssertIntf &'
+|-CXXRecordDecl 0xbdbae0 <line:155:1, line:167:1> struct CHostCtrlMsgIntf
+| |-CXXRecordDecl 0xbdbc20 <line:155:1, col:8> struct CHostCtrlMsgIntf
+| |-CXXRecordDecl 0xbdbcc0 <line:159:2, line:166:2> union
+| | |-CXXRecordDecl 0xbdbe00 <line:160:3, line:164:3> struct
+| | | |-FieldDecl 0xbdbf70 <line:161:4, col:22> m_bValid 'uint64_t':'unsigned long long'
+| | | | `-IntegerLiteral 0xbdbf38 <col:22> 'int' 1
+| | | |-FieldDecl 0xbdc120 <line:162:4, col:23> m_msgType 'uint64_t':'unsigned long long'
+| | | | `-IntegerLiteral 0xbdc0e0 <col:23> 'int' 7
+| | | `-FieldDecl 0xbdc1b0 <line:163:4, col:23> m_msgData 'uint64_t':'unsigned long long'
+| | |   `-IntegerLiteral 0xbdc170 <col:23> 'int' 56
+| | |-FieldDecl 0xbdc250 <line:160:3> 'struct CHostCtrlMsgIntf::<anonymous at C:/Users/TBrewer/Documents/llvm-project/my_tests/Clk2x/PersAuCommon.h:160:3>'
+| | |-IndirectFieldDecl 0xbdc2b0 <line:161:13> m_bValid 'uint64_t':'unsigned long long'
+| | | |-Field 0xbdc250 '' 'struct CHostCtrlMsgIntf::<anonymous at C:/Users/TBrewer/Documents/llvm-project/my_tests/Clk2x/PersAuCommon.h:160:3>'
+| | | `-Field 0xbdbf70 'm_bValid' 'uint64_t':'unsigned long long'
+| | |-IndirectFieldDecl 0xbdc300 <line:162:13> m_msgType 'uint64_t':'unsigned long long'
+| | | |-Field 0xbdc250 '' 'struct CHostCtrlMsgIntf::<anonymous at C:/Users/TBrewer/Documents/llvm-project/my_tests/Clk2x/PersAuCommon.h:160:3>'
+| | | `-Field 0xbdc120 'm_msgType' 'uint64_t':'unsigned long long'
+| | |-IndirectFieldDecl 0xbdc350 <line:163:13> m_msgData 'uint64_t':'unsigned long long'
+| | | |-Field 0xbdc250 '' 'struct CHostCtrlMsgIntf::<anonymous at C:/Users/TBrewer/Documents/llvm-project/my_tests/Clk2x/PersAuCommon.h:160:3>'
+| | | `-Field 0xbdc1b0 'm_msgData' 'uint64_t':'unsigned long long'
+| | `-FieldDecl 0xbdc3a0 <line:165:3, col:13> m_data64 'uint64_t':'unsigned long long'
+| |-FieldDecl 0xbdc440 <line:159:2> 'union CHostCtrlMsgIntf::<anonymous at C:/Users/TBrewer/Documents/llvm-project/my_tests/Clk2x/PersAuCommon.h:159:2>'
+| |-IndirectFieldDecl 0xbdc4b0 <line:161:13> m_bValid 'uint64_t':'unsigned long long'
+| | |-Field 0xbdc440 '' 'union CHostCtrlMsgIntf::<anonymous at C:/Users/TBrewer/Documents/llvm-project/my_tests/Clk2x/PersAuCommon.h:159:2>'
+| | |-Field 0xbdc250 '' 'struct CHostCtrlMsgIntf::<anonymous at C:/Users/TBrewer/Documents/llvm-project/my_tests/Clk2x/PersAuCommon.h:160:3>'
+| | `-Field 0xbdbf70 'm_bValid' 'uint64_t':'unsigned long long'
+| |-IndirectFieldDecl 0xbdc510 <line:162:13> m_msgType 'uint64_t':'unsigned long long'
+| | |-Field 0xbdc440 '' 'union CHostCtrlMsgIntf::<anonymous at C:/Users/TBrewer/Documents/llvm-project/my_tests/Clk2x/PersAuCommon.h:159:2>'
+| | |-Field 0xbdc250 '' 'struct CHostCtrlMsgIntf::<anonymous at C:/Users/TBrewer/Documents/llvm-project/my_tests/Clk2x/PersAuCommon.h:160:3>'
+| | `-Field 0xbdc120 'm_msgType' 'uint64_t':'unsigned long long'
+| |-IndirectFieldDecl 0xbdc570 <line:163:13> m_msgData 'uint64_t':'unsigned long long'
+| | |-Field 0xbdc440 '' 'union CHostCtrlMsgIntf::<anonymous at C:/Users/TBrewer/Documents/llvm-project/my_tests/Clk2x/PersAuCommon.h:159:2>'
+| | |-Field 0xbdc250 '' 'struct CHostCtrlMsgIntf::<anonymous at C:/Users/TBrewer/Documents/llvm-project/my_tests/Clk2x/PersAuCommon.h:160:3>'
+| | `-Field 0xbdc1b0 'm_msgData' 'uint64_t':'unsigned long long'
+| `-IndirectFieldDecl 0xbdc5c0 <line:165:13> m_data64 'uint64_t':'unsigned long long'
+|   |-Field 0xbdc440 '' 'union CHostCtrlMsgIntf::<anonymous at C:/Users/TBrewer/Documents/llvm-project/my_tests/Clk2x/PersAuCommon.h:159:2>'
+|   `-Field 0xbdc3a0 'm_data64' 'uint64_t':'unsigned long long'
+|-CXXRecordDecl 0xbdc640 <line:217:1, line:223:1> struct CHostDataQueIntf
+| |-CXXRecordDecl 0xbdc780 <line:217:1, col:8> struct CHostDataQueIntf
+| |-FieldDecl 0xbde900 <line:221:2, col:12> m_data 'ht_uint64':'class sc_uint<64>'
+| `-FieldDecl 0xbde990 <line:222:2, col:17> m_ctl 'uint64_t':'unsigned long long'
+|   `-IntegerLiteral 0xbde950 <col:17> 'int' 3
+|-CXXRecordDecl 0xbdea50 <line:267:1, line:274:1> struct CClk2xToCtl_Clk2xRtnIntf
+| |-CXXRecordDecl 0xbdeb90 <line:267:1, col:8> struct CClk2xToCtl_Clk2xRtnIntf
+| |-CXXMethodDecl 0xbded90 <line:268:2, col:77> operator= 'struct CClk2xToCtl_Clk2xRtnIntf &(const struct CClk2xToCtl_Clk2xRtnIntf &)'
+| | `-ParmVarDecl 0xbdec70 <col:41, col:74> rhs 'const struct CClk2xToCtl_Clk2xRtnIntf &'
+| |-CXXMethodDecl 0xbdef20 <line:269:2, col:49> operator= 'struct CClk2xToCtl_Clk2xRtnIntf &(int)'
+| | `-ParmVarDecl 0xbdee60 <col:41, col:45> zero 'int'
+| `-FieldDecl 0xbe1080 <line:273:2, col:12> m_rtnInst 'CtlInst_t':'class sc_uint<1>'
+|-CXXRecordDecl 0xbe10d0 <line:308:1, line:313:1> struct CCtlToClk2x_Clk2xCallIntf
+| |-CXXRecordDecl 0xbe1210 <line:308:1, col:8> struct CCtlToClk2x_Clk2xCallIntf
+| `-FieldDecl 0xbe12c0 <line:312:2, col:12> m_rtnInst 'CtlInst_t':'class sc_uint<1>'
+|-CXXRecordDecl 0xbe1310 <line:347:1, line:352:1> struct CClk1xToClk2x_Clk1xRtnIntf
+| |-CXXRecordDecl 0xbe1450 <line:347:1, col:8> struct CClk1xToClk2x_Clk1xRtnIntf
+| `-FieldDecl 0xbe1640 <line:351:2, col:14> m_rtnInst 'Clk2xInst_t':'class sc_uint<1>'
+|-CXXRecordDecl 0xbe1690 <line:386:1, line:391:1> struct CClk2xToClk1x_Clk1xCallIntf
+| |-CXXRecordDecl 0xbe17d0 <line:386:1, col:8> struct CClk2xToClk1x_Clk1xCallIntf
+| `-FieldDecl 0xbe1880 <line:390:2, col:14> m_rtnInst 'Clk2xInst_t':'class sc_uint<1>'
+|-CXXRecordDecl 0xbe1910 <C:/Users/TBrewer/Documents/llvm-project/my_tests/ht_lib/HtSyscTypes.h:42:22, C:/Users/TBrewer/Documents/llvm-project/my_tests/Clk2x/PersAuHta.h:42:1> class CPersAuHta
+| |-public 'class ScModuleBase'
+| |-CXXRecordDecl 0xbe1aa0 <C:/Users/TBrewer/Documents/llvm-project/my_tests/ht_lib/HtSyscTypes.h:42:22, C:/Users/TBrewer/Documents/llvm-project/my_tests/Clk2x/PersAuHta.h:16:11> class CPersAuHta
+| |-FieldDecl 0xbe2210 <line:19:2, col:14> i_clock1x 'sc_in<_Bool>':'class sc_in<_Bool>'
+| |-FieldDecl 0xbe2b20 <line:20:2, col:23> i_ctlToHta_assert 'sc_in<struct CHtAssertIntf>':'class sc_in<struct CHtAssertIntf>'
+| |-FieldDecl 0xbe2c30 <line:21:2, col:23> i_clk2xToHta_assert 'sc_in<struct CHtAssertIntf>':'class sc_in<struct CHtAssertIntf>'
+| |-FieldDecl 0xbe2d40 <line:22:2, col:23> i_clk1xToHta_assert 'sc_in<struct CHtAssertIntf>':'class sc_in<struct CHtAssertIntf>'
+| |-FieldDecl 0xbe3470 <line:23:2, col:24> o_htaToHif_assert 'sc_out<struct CHtAssertIntf>':'class sc_out<struct CHtAssertIntf>'
+| |-FieldDecl 0xbe3510 <line:28:2, col:16> r_ctlToHta_assert 'struct CHtAssertIntf'
+| | `-FullComment 0xbeb740 <line:25:5, col:45>
+| |   `-ParagraphComment 0xbeb718 <col:5, col:45>
+| |     `-TextComment 0xbeb6f0 <col:5, col:45> Text="/////////////////////////////////////////"
+| |-FieldDecl 0xbe3570 <line:29:2, col:16> r_clk2xToHta_assert 'struct CHtAssertIntf'
+| |-FieldDecl 0xbe35d0 <line:30:2, col:16> r_clk1xToHta_assert 'struct CHtAssertIntf'
+| |-FieldDecl 0xbe3630 <line:31:2, col:16> r_htaToHif_assert 'struct CHtAssertIntf'
+| |-CXXMethodDecl 0xbe3850 <line:36:2, col:19> PersAuHta1x 'void (void)'
+| | `-FullComment 0xbeb7f0 <line:33:5, col:45>
+| |   `-ParagraphComment 0xbeb7c8 <col:5, col:45>
+| |     `-TextComment 0xbeb7a0 <col:5, col:45> Text="/////////////////////////////////////////"
+| |-CXXConstructorDecl 0xbe3940 <line:38:10, line:41:2> CPersAuHta 'void (void)'
+| | |-CXXCtorInitializer 'class ScModuleBase'
+| | | |-CXXConstructExpr 0xbe4538 <line:38:10> 'class ScModuleBase' 'void (void)'
+| | |-CXXCtorInitializer Field 0xbe2210 'i_clock1x' 'sc_in<_Bool>':'class sc_in<_Bool>'
+| | | |-CXXConstructExpr 0xbe4ba8 <col:10> 'sc_in<_Bool>':'class sc_in<_Bool>' 'void (void)'
+| | |-CXXCtorInitializer Field 0xbe2b20 'i_ctlToHta_assert' 'sc_in<struct CHtAssertIntf>':'class sc_in<struct CHtAssertIntf>'
+| | | |-CXXConstructExpr 0xbe6530 <col:10> 'sc_in<struct CHtAssertIntf>':'class sc_in<struct CHtAssertIntf>' 'void (void) noexcept(false)'
+| | |-CXXCtorInitializer Field 0xbe2c30 'i_clk2xToHta_assert' 'sc_in<struct CHtAssertIntf>':'class sc_in<struct CHtAssertIntf>'
+| | | |-CXXConstructExpr 0xbe6598 <col:10> 'sc_in<struct CHtAssertIntf>':'class sc_in<struct CHtAssertIntf>' 'void (void) noexcept(false)'
+| | |-CXXCtorInitializer Field 0xbe2d40 'i_clk1xToHta_assert' 'sc_in<struct CHtAssertIntf>':'class sc_in<struct CHtAssertIntf>'
+| | | |-CXXConstructExpr 0xbe65f8 <col:10> 'sc_in<struct CHtAssertIntf>':'class sc_in<struct CHtAssertIntf>' 'void (void) noexcept(false)'
+| | |-CXXCtorInitializer Field 0xbe3470 'o_htaToHif_assert' 'sc_out<struct CHtAssertIntf>':'class sc_out<struct CHtAssertIntf>'
+| | | |-CXXConstructExpr 0xbe69f0 <col:10> 'sc_out<struct CHtAssertIntf>':'class sc_out<struct CHtAssertIntf>' 'void (void) noexcept(false)'
+| | |-CXXCtorInitializer Field 0xbe3510 'r_ctlToHta_assert' 'struct CHtAssertIntf'
+| | | |-CXXConstructExpr 0xbe7c90 <col:10> 'struct CHtAssertIntf' 'void (void) noexcept(false)'
+| | |-CXXCtorInitializer Field 0xbe3570 'r_clk2xToHta_assert' 'struct CHtAssertIntf'
+| | | |-CXXConstructExpr 0xbe7cf8 <col:10> 'struct CHtAssertIntf' 'void (void) noexcept(false)'
+| | |-CXXCtorInitializer Field 0xbe35d0 'r_clk1xToHta_assert' 'struct CHtAssertIntf'
+| | | |-CXXConstructExpr 0xbe7d58 <col:10> 'struct CHtAssertIntf' 'void (void) noexcept(false)'
+| | |-CXXCtorInitializer Field 0xbe3630 'r_htaToHif_assert' 'struct CHtAssertIntf'
+| | | |-CXXConstructExpr 0xbe7db8 <col:10> 'struct CHtAssertIntf' 'void (void) noexcept(false)'
+| | `-CompoundStmt 0xbe80e8 <col:22, line:41:2>
+| |   |-CXXMemberCallExpr 0xbe7eb0 <line:39:13, C:/Users/TBrewer/Documents/llvm-project/my_tests/ht_lib/HtSyscTypes.h:44:24> 'void'
+| |   | `-MemberExpr 0xbe7e80 <C:/Users/TBrewer/Documents/llvm-project/my_tests/Clk2x/PersAuHta.h:39:13> '<bound member function type>' ->PersAuHta1x 0xbe3850
+| |   |   `-CXXThisExpr 0xbe7e68 <col:13> 'class CPersAuHta *' this
+| |   `-CXXOperatorCallExpr 0xbe80a0 <line:40:3, col:30> 'void'
+| |     |-ImplicitCastExpr 0xbe8088 <col:13> 'void (*)(_Bool)' <FunctionToPointerDecay>
+| |     | `-DeclRefExpr 0xbe8038 <col:13> 'void (_Bool)' lvalue CXXMethod 0xbd1910 'operator<<' 'void (_Bool)'
+| |     |-MemberExpr 0xbe7f38 <col:3> 'class ClockList' lvalue ->sensitive 0xbd1be0
+| |     | `-ImplicitCastExpr 0xbe7f18 <col:3> 'class ScModuleBase *' <UncheckedDerivedToBase (ScModuleBase)>
+| |     |   `-CXXThisExpr 0xbe7ed8 <col:3> 'class CPersAuHta *' this
+| |     `-CXXMemberCallExpr 0xbe7fe0 <col:16, col:30> '_Bool'
+| |       `-MemberExpr 0xbe7fb0 <col:16, col:26> '<bound member function type>' .pos 0xbe1e60
+| |         `-MemberExpr 0xbe7f80 <col:16> 'sc_in<_Bool>':'class sc_in<_Bool>' lvalue ->i_clock1x 0xbe2210
+| |           `-CXXThisExpr 0xbe7f68 <col:16> 'class CPersAuHta *' this
+| `-CXXMethodDecl 0xbe8480 <line:16:11, <invalid sloc>> operator= 'class CPersAuHta &(const class CPersAuHta &)' inline noexcept-unevaluated 0xbe8480
+|   `-ParmVarDecl 0xbe85b0 <col:11> 'const class CPersAuHta &'
+`-CXXMethodDecl 0xbe8170 parent 0xbe1910 prev 0xbe3850 <C:\Users\TBrewer\Documents\llvm-project\my_tests\Clk2x\PersAuHta.cpp:15:1, line:64:1> PersAuHta1x 'void (void)'
+  `-CompoundStmt 0xbeb518 <line:17:1, line:64:1>
+    |-DeclStmt 0xbe8340 <line:22:2, col:33>
+    | `-VarDecl 0xbe82b0 <col:2, col:16> c_htaToHif_assert 'struct CHtAssertIntf'
+    |   |-CXXConstructExpr 0xbe8308 <col:16> 'struct CHtAssertIntf' 'void (void) noexcept(false)'
+    |   `-FullComment 0xbeb8a0 <line:19:5, col:26>
+    |     `-ParagraphComment 0xbeb878 <col:5, col:26>
+    |       `-TextComment 0xbeb850 <col:5, col:26> Text="//////////////////////"
+    |-CXXOperatorCallExpr 0xbe9540 <line:24:2, col:36> 'struct CHtAssertIntf' lvalue
+    | |-ImplicitCastExpr 0xbe9528 <col:20> 'struct CHtAssertIntf &(*)(const struct CHtAssertIntf &)' <FunctionToPointerDecay>
+    | | `-DeclRefExpr 0xbe94d8 <col:20> 'struct CHtAssertIntf &(const struct CHtAssertIntf &)' lvalue CXXMethod 0xbd8770 'operator=' 'struct CHtAssertIntf &(const struct CHtAssertIntf &)'
+    | |-DeclRefExpr 0xbe8358 <col:2> 'struct CHtAssertIntf' lvalue Var 0xbe82b0 'c_htaToHif_assert' 'struct CHtAssertIntf'
+    | `-MaterializeTemporaryExpr 0xbe94b8 <col:22, col:36> 'const struct CHtAssertIntf' lvalue
+    |   `-ImplicitCastExpr 0xbe94a0 <col:22, col:36> 'const struct CHtAssertIntf' <NoOp>
+    |     `-CXXTemporaryObjectExpr 0xbe8390 <col:22, col:36> 'struct CHtAssertIntf' 'void (void) noexcept(false)' zeroing
+    |-CXXOperatorCallExpr 0xc14760 <line:26:2, col:31> 'uint64_t':'unsigned long long'
+    | |-ImplicitCastExpr 0xc14748 <col:29> 'uint64_t (*)(uint64_t)' <FunctionToPointerDecay>
+    | | `-DeclRefExpr 0xc146c0 <col:29> 'uint64_t (uint64_t)' lvalue CXXMethod 0xbd9460 'operator=' 'uint64_t (uint64_t)'
+    | |-MemberExpr 0xbe95b0 <col:2, col:20> 'ht_uint8':'class sc_uint<8>' lvalue .m_module 0xbd9a60
+    | | `-DeclRefExpr 0xbe9588 <col:2> 'struct CHtAssertIntf' lvalue Var 0xbe82b0 'c_htaToHif_assert' 'struct CHtAssertIntf'
+    | `-ImplicitCastExpr 0xc146a8 <col:31> 'uint64_t':'unsigned long long' <IntegralCast>
+    |   `-IntegerLiteral 0xbe95e0 <col:31> 'int' 0
+    |-IfStmt 0xc14958 <line:27:2, col:65>
+    | |-<<<NULL>>>
+    | |-ImplicitCastExpr 0xc14820 <col:6, col:24> '_Bool' <LValueToRValue>
+    | | `-MemberExpr 0xc147f0 <col:6, col:24> '_Bool' lvalue .m_bAssert 0xbd89c0
+    | |   `-MemberExpr 0xc147c0 <col:6> 'struct CHtAssertIntf' lvalue ->r_ctlToHta_assert 0xbe3510
+    | |     `-CXXThisExpr 0xc147a8 <col:6> 'class CPersAuHta *' this
+    | |-CXXOperatorCallExpr 0xc14910 <col:35, col:65> 'uint64_t':'unsigned long long'
+    | | |-ImplicitCastExpr 0xc148f8 <col:62> 'uint64_t (*)(uint64_t)' <FunctionToPointerDecay>
+    | | | `-DeclRefExpr 0xc148d0 <col:62> 'uint64_t (uint64_t)' lvalue CXXMethod 0xbd9590 'operator|=' 'uint64_t (uint64_t)'
+    | | |-MemberExpr 0xc14860 <col:35, col:53> 'ht_uint8':'class sc_uint<8>' lvalue .m_module 0xbd9a60
+    | | | `-DeclRefExpr 0xc14838 <col:35> 'struct CHtAssertIntf' lvalue Var 0xbe82b0 'c_htaToHif_assert' 'struct CHtAssertIntf'
+    | | `-ImplicitCastExpr 0xc148b8 <col:65> 'uint64_t':'unsigned long long' <IntegralCast>
+    | |   `-IntegerLiteral 0xc14890 <col:65> 'int' 0
+    | `-<<<NULL>>>
+    |-IfStmt 0xc14b38 <line:28:2, col:67>
+    | |-<<<NULL>>>
+    | |-ImplicitCastExpr 0xc14a00 <col:6, col:26> '_Bool' <LValueToRValue>
+    | | `-MemberExpr 0xc149d0 <col:6, col:26> '_Bool' lvalue .m_bAssert 0xbd89c0
+    | |   `-MemberExpr 0xc149a0 <col:6> 'struct CHtAssertIntf' lvalue ->r_clk2xToHta_assert 0xbe3570
+    | |     `-CXXThisExpr 0xc14988 <col:6> 'class CPersAuHta *' this
+    | |-CXXOperatorCallExpr 0xc14af0 <col:37, col:67> 'uint64_t':'unsigned long long'
+    | | |-ImplicitCastExpr 0xc14ad8 <col:64> 'uint64_t (*)(uint64_t)' <FunctionToPointerDecay>
+    | | | `-DeclRefExpr 0xc14ab0 <col:64> 'uint64_t (uint64_t)' lvalue CXXMethod 0xbd9590 'operator|=' 'uint64_t (uint64_t)'
+    | | |-MemberExpr 0xc14a40 <col:37, col:55> 'ht_uint8':'class sc_uint<8>' lvalue .m_module 0xbd9a60
+    | | | `-DeclRefExpr 0xc14a18 <col:37> 'struct CHtAssertIntf' lvalue Var 0xbe82b0 'c_htaToHif_assert' 'struct CHtAssertIntf'
+    | | `-ImplicitCastExpr 0xc14a98 <col:67> 'uint64_t':'unsigned long long' <IntegralCast>
+    | |   `-IntegerLiteral 0xc14a70 <col:67> 'int' 1
+    | `-<<<NULL>>>
+    |-IfStmt 0xc14d18 <line:29:2, col:67>
+    | |-<<<NULL>>>
+    | |-ImplicitCastExpr 0xc14be0 <col:6, col:26> '_Bool' <LValueToRValue>
+    | | `-MemberExpr 0xc14bb0 <col:6, col:26> '_Bool' lvalue .m_bAssert 0xbd89c0
+    | |   `-MemberExpr 0xc14b80 <col:6> 'struct CHtAssertIntf' lvalue ->r_clk1xToHta_assert 0xbe35d0
+    | |     `-CXXThisExpr 0xc14b68 <col:6> 'class CPersAuHta *' this
+    | |-CXXOperatorCallExpr 0xc14cd0 <col:37, col:67> 'uint64_t':'unsigned long long'
+    | | |-ImplicitCastExpr 0xc14cb8 <col:64> 'uint64_t (*)(uint64_t)' <FunctionToPointerDecay>
+    | | | `-DeclRefExpr 0xc14c90 <col:64> 'uint64_t (uint64_t)' lvalue CXXMethod 0xbd9590 'operator|=' 'uint64_t (uint64_t)'
+    | | |-MemberExpr 0xc14c20 <col:37, col:55> 'ht_uint8':'class sc_uint<8>' lvalue .m_module 0xbd9a60
+    | | | `-DeclRefExpr 0xc14bf8 <col:37> 'struct CHtAssertIntf' lvalue Var 0xbe82b0 'c_htaToHif_assert' 'struct CHtAssertIntf'
+    | | `-ImplicitCastExpr 0xc14c78 <col:67> 'uint64_t':'unsigned long long' <IntegralCast>
+    | |   `-IntegerLiteral 0xc14c50 <col:67> 'int' 2
+    | `-<<<NULL>>>
+    |-CXXOperatorCallExpr 0xc151a0 <line:31:2, col:29> 'uint64_t':'unsigned long long'
+    | |-ImplicitCastExpr 0xc15188 <col:27> 'uint64_t (*)(uint64_t)' <FunctionToPointerDecay>
+    | | `-DeclRefExpr 0xc15160 <col:27> 'uint64_t (uint64_t)' lvalue CXXMethod 0xbdb450 'operator=' 'uint64_t (uint64_t)'
+    | |-MemberExpr 0xc14d70 <col:2, col:20> 'ht_uint32':'class sc_uint<32>' lvalue .m_info 0xbdba50
+    | | `-DeclRefExpr 0xc14d48 <col:2> 'struct CHtAssertIntf' lvalue Var 0xbe82b0 'c_htaToHif_assert' 'struct CHtAssertIntf'
+    | `-ImplicitCastExpr 0xc15148 <col:29> 'uint64_t':'unsigned long long' <IntegralCast>
+    |   `-IntegerLiteral 0xc14da0 <col:29> 'int' 0
+    |-CXXOperatorCallExpr 0xc0dda0 <line:32:2, col:48> 'uint64_t':'unsigned long long'
+    | |-ImplicitCastExpr 0xc0dd88 <col:27> 'uint64_t (*)(uint64_t)' <FunctionToPointerDecay>
+    | | `-DeclRefExpr 0xc0dd60 <col:27> 'uint64_t (uint64_t)' lvalue CXXMethod 0xbdb580 'operator|=' 'uint64_t (uint64_t)'
+    | |-MemberExpr 0xc15210 <col:2, col:20> 'ht_uint32':'class sc_uint<32>' lvalue .m_info 0xbdba50
+    | | `-DeclRefExpr 0xc151e8 <col:2> 'struct CHtAssertIntf' lvalue Var 0xbe82b0 'c_htaToHif_assert' 'struct CHtAssertIntf'
+    | `-ImplicitCastExpr 0xc0dd48 <col:30, col:48> 'uint64_t':'unsigned long long' <UserDefinedConversion>
+    |   `-CXXMemberCallExpr 0xc0dd20 <col:30, col:48> 'uint64_t':'unsigned long long'
+    |     `-MemberExpr 0xc0dcf0 <col:30, col:48> '<bound member function type>' .operator unsigned long long 0xbdb8b0
+    |       `-MemberExpr 0xc15288 <col:30, col:48> 'ht_uint32':'class sc_uint<32>' lvalue .m_info 0xbdba50
+    |         `-MemberExpr 0xc15258 <col:30> 'struct CHtAssertIntf' lvalue ->r_ctlToHta_assert 0xbe3510
+    |           `-CXXThisExpr 0xc15240 <col:30> 'class CPersAuHta *' this
+    |-CXXOperatorCallExpr 0xc0df78 <line:33:2, col:50> 'uint64_t':'unsigned long long'
+    | |-ImplicitCastExpr 0xc0df60 <col:27> 'uint64_t (*)(uint64_t)' <FunctionToPointerDecay>
+    | | `-DeclRefExpr 0xc0df38 <col:27> 'uint64_t (uint64_t)' lvalue CXXMethod 0xbdb580 'operator|=' 'uint64_t (uint64_t)'
+    | |-MemberExpr 0xc0de10 <col:2, col:20> 'ht_uint32':'class sc_uint<32>' lvalue .m_info 0xbdba50
+    | | `-DeclRefExpr 0xc0dde8 <col:2> 'struct CHtAssertIntf' lvalue Var 0xbe82b0 'c_htaToHif_assert' 'struct CHtAssertIntf'
+    | `-ImplicitCastExpr 0xc0df20 <col:30, col:50> 'uint64_t':'unsigned long long' <UserDefinedConversion>
+    |   `-CXXMemberCallExpr 0xc0def8 <col:30, col:50> 'uint64_t':'unsigned long long'
+    |     `-MemberExpr 0xc0dec8 <col:30, col:50> '<bound member function type>' .operator unsigned long long 0xbdb8b0
+    |       `-MemberExpr 0xc0de88 <col:30, col:50> 'ht_uint32':'class sc_uint<32>' lvalue .m_info 0xbdba50
+    |         `-MemberExpr 0xc0de58 <col:30> 'struct CHtAssertIntf' lvalue ->r_clk2xToHta_assert 0xbe3570
+    |           `-CXXThisExpr 0xc0de40 <col:30> 'class CPersAuHta *' this
+    |-CXXOperatorCallExpr 0xc0e150 <line:34:2, col:50> 'uint64_t':'unsigned long long'
+    | |-ImplicitCastExpr 0xc0e138 <col:27> 'uint64_t (*)(uint64_t)' <FunctionToPointerDecay>
+    | | `-DeclRefExpr 0xc0e110 <col:27> 'uint64_t (uint64_t)' lvalue CXXMethod 0xbdb580 'operator|=' 'uint64_t (uint64_t)'
+    | |-MemberExpr 0xc0dfe8 <col:2, col:20> 'ht_uint32':'class sc_uint<32>' lvalue .m_info 0xbdba50
+    | | `-DeclRefExpr 0xc0dfc0 <col:2> 'struct CHtAssertIntf' lvalue Var 0xbe82b0 'c_htaToHif_assert' 'struct CHtAssertIntf'
+    | `-ImplicitCastExpr 0xc0e0f8 <col:30, col:50> 'uint64_t':'unsigned long long' <UserDefinedConversion>
+    |   `-CXXMemberCallExpr 0xc0e0d0 <col:30, col:50> 'uint64_t':'unsigned long long'
+    |     `-MemberExpr 0xc0e0a0 <col:30, col:50> '<bound member function type>' .operator unsigned long long 0xbdb8b0
+    |       `-MemberExpr 0xc0e060 <col:30, col:50> 'ht_uint32':'class sc_uint<32>' lvalue .m_info 0xbdba50
+    |         `-MemberExpr 0xc0e030 <col:30> 'struct CHtAssertIntf' lvalue ->r_clk1xToHta_assert 0xbe35d0
+    |           `-CXXThisExpr 0xc0e018 <col:30> 'class CPersAuHta *' this
+    |-CXXOperatorCallExpr 0xc0e5f0 <line:36:2, col:32> 'uint64_t':'unsigned long long'
+    | |-ImplicitCastExpr 0xc0e5d8 <col:30> 'uint64_t (*)(uint64_t)' <FunctionToPointerDecay>
+    | | `-DeclRefExpr 0xc0e5b0 <col:30> 'uint64_t (uint64_t)' lvalue CXXMethod 0xbda440 'operator=' 'uint64_t (uint64_t)'
+    | |-MemberExpr 0xc0e1c0 <col:2, col:20> 'ht_uint16':'class sc_uint<16>' lvalue .m_lineNum 0xbdaa40
+    | | `-DeclRefExpr 0xc0e198 <col:2> 'struct CHtAssertIntf' lvalue Var 0xbe82b0 'c_htaToHif_assert' 'struct CHtAssertIntf'
+    | `-ImplicitCastExpr 0xc0e598 <col:32> 'uint64_t':'unsigned long long' <IntegralCast>
+    |   `-IntegerLiteral 0xc0e1f0 <col:32> 'int' 0
+    |-CXXOperatorCallExpr 0xc0e7c8 <line:37:2, col:51> 'uint64_t':'unsigned long long'
+    | |-ImplicitCastExpr 0xc0e7b0 <col:30> 'uint64_t (*)(uint64_t)' <FunctionToPointerDecay>
+    | | `-DeclRefExpr 0xc0e788 <col:30> 'uint64_t (uint64_t)' lvalue CXXMethod 0xbda570 'operator|=' 'uint64_t (uint64_t)'
+    | |-MemberExpr 0xc0e660 <col:2, col:20> 'ht_uint16':'class sc_uint<16>' lvalue .m_lineNum 0xbdaa40
+    | | `-DeclRefExpr 0xc0e638 <col:2> 'struct CHtAssertIntf' lvalue Var 0xbe82b0 'c_htaToHif_assert' 'struct CHtAssertIntf'
+    | `-ImplicitCastExpr 0xc0e770 <col:33, col:51> 'uint64_t':'unsigned long long' <UserDefinedConversion>
+    |   `-CXXMemberCallExpr 0xc0e748 <col:33, col:51> 'uint64_t':'unsigned long long'
+    |     `-MemberExpr 0xc0e718 <col:33, col:51> '<bound member function type>' .operator unsigned long long 0xbda8a0
+    |       `-MemberExpr 0xc0e6d8 <col:33, col:51> 'ht_uint16':'class sc_uint<16>' lvalue .m_lineNum 0xbdaa40
+    |         `-MemberExpr 0xc0e6a8 <col:33> 'struct CHtAssertIntf' lvalue ->r_ctlToHta_assert 0xbe3510
+    |           `-CXXThisExpr 0xc0e690 <col:33> 'class CPersAuHta *' this
+    |-CXXOperatorCallExpr 0xc0e9a0 <line:38:2, col:53> 'uint64_t':'unsigned long long'
+    | |-ImplicitCastExpr 0xc0e988 <col:30> 'uint64_t (*)(uint64_t)' <FunctionToPointerDecay>
+    | | `-DeclRefExpr 0xc0e960 <col:30> 'uint64_t (uint64_t)' lvalue CXXMethod 0xbda570 'operator|=' 'uint64_t (uint64_t)'
+    | |-MemberExpr 0xc0e838 <col:2, col:20> 'ht_uint16':'class sc_uint<16>' lvalue .m_lineNum 0xbdaa40
+    | | `-DeclRefExpr 0xc0e810 <col:2> 'struct CHtAssertIntf' lvalue Var 0xbe82b0 'c_htaToHif_assert' 'struct CHtAssertIntf'
+    | `-ImplicitCastExpr 0xc0e948 <col:33, col:53> 'uint64_t':'unsigned long long' <UserDefinedConversion>
+    |   `-CXXMemberCallExpr 0xc0e920 <col:33, col:53> 'uint64_t':'unsigned long long'
+    |     `-MemberExpr 0xc0e8f0 <col:33, col:53> '<bound member function type>' .operator unsigned long long 0xbda8a0
+    |       `-MemberExpr 0xc0e8b0 <col:33, col:53> 'ht_uint16':'class sc_uint<16>' lvalue .m_lineNum 0xbdaa40
+    |         `-MemberExpr 0xc0e880 <col:33> 'struct CHtAssertIntf' lvalue ->r_clk2xToHta_assert 0xbe3570
+    |           `-CXXThisExpr 0xc0e868 <col:33> 'class CPersAuHta *' this
+    |-CXXOperatorCallExpr 0xc0eb78 <line:39:2, col:53> 'uint64_t':'unsigned long long'
+    | |-ImplicitCastExpr 0xc0eb60 <col:30> 'uint64_t (*)(uint64_t)' <FunctionToPointerDecay>
+    | | `-DeclRefExpr 0xc0eb38 <col:30> 'uint64_t (uint64_t)' lvalue CXXMethod 0xbda570 'operator|=' 'uint64_t (uint64_t)'
+    | |-MemberExpr 0xc0ea10 <col:2, col:20> 'ht_uint16':'class sc_uint<16>' lvalue .m_lineNum 0xbdaa40
+    | | `-DeclRefExpr 0xc0e9e8 <col:2> 'struct CHtAssertIntf' lvalue Var 0xbe82b0 'c_htaToHif_assert' 'struct CHtAssertIntf'
+    | `-ImplicitCastExpr 0xc0eb20 <col:33, col:53> 'uint64_t':'unsigned long long' <UserDefinedConversion>
+    |   `-CXXMemberCallExpr 0xc0eaf8 <col:33, col:53> 'uint64_t':'unsigned long long'
+    |     `-MemberExpr 0xc0eac8 <col:33, col:53> '<bound member function type>' .operator unsigned long long 0xbda8a0
+    |       `-MemberExpr 0xc0ea88 <col:33, col:53> 'ht_uint16':'class sc_uint<16>' lvalue .m_lineNum 0xbdaa40
+    |         `-MemberExpr 0xc0ea58 <col:33> 'struct CHtAssertIntf' lvalue ->r_clk1xToHta_assert 0xbe35d0
+    |           `-CXXThisExpr 0xc0ea40 <col:33> 'class CPersAuHta *' this
+    |-DeclStmt 0xbe9f68 <line:41:2, col:83>
+    | `-VarDecl 0xc0ebd0 <col:2, col:74> c_bAssert_1_0 '_Bool'
+    |   `-BinaryOperator 0xbe9f40 <col:23, col:74> '_Bool' '||'
+    |     |-ImplicitCastExpr 0xbe9f10 <col:23, col:41> '_Bool' <LValueToRValue>
+    |     | `-MemberExpr 0xc0ec70 <col:23, col:41> '_Bool' lvalue .m_bAssert 0xbd89c0
+    |     |   `-MemberExpr 0xc0ec40 <col:23> 'struct CHtAssertIntf' lvalue ->r_ctlToHta_assert 0xbe3510
+    |     |     `-CXXThisExpr 0xc0ec28 <col:23> 'class CPersAuHta *' this
+    |     `-ImplicitCastExpr 0xbe9f28 <col:54, col:74> '_Bool' <LValueToRValue>
+    |       `-MemberExpr 0xbe9ee0 <col:54, col:74> '_Bool' lvalue .m_bAssert 0xbd89c0
+    |         `-MemberExpr 0xbe9eb0 <col:54> 'struct CHtAssertIntf' lvalue ->r_clk2xToHta_assert 0xbe3570
+    |           `-CXXThisExpr 0xc0eca0 <col:54> 'class CPersAuHta *' this
+    |-DeclStmt 0xbea130 <line:42:2, col:86>
+    | `-VarDecl 0xbe9f90 <col:2, col:77> c_bCollision_1_0 '_Bool'
+    |   `-BinaryOperator 0xbea108 <col:26, col:77> '_Bool' '&&'
+    |     |-ImplicitCastExpr 0xbea0d8 <col:26, col:44> '_Bool' <LValueToRValue>
+    |     | `-MemberExpr 0xbea030 <col:26, col:44> '_Bool' lvalue .m_bAssert 0xbd89c0
+    |     |   `-MemberExpr 0xbea000 <col:26> 'struct CHtAssertIntf' lvalue ->r_ctlToHta_assert 0xbe3510
+    |     |     `-CXXThisExpr 0xbe9fe8 <col:26> 'class CPersAuHta *' this
+    |     `-ImplicitCastExpr 0xbea0f0 <col:57, col:77> '_Bool' <LValueToRValue>
+    |       `-MemberExpr 0xbea0a8 <col:57, col:77> '_Bool' lvalue .m_bAssert 0xbd89c0
+    |         `-MemberExpr 0xbea078 <col:57> 'struct CHtAssertIntf' lvalue ->r_clk2xToHta_assert 0xbe3570
+    |           `-CXXThisExpr 0xbea060 <col:57> 'class CPersAuHta *' this
+    |-DeclStmt 0xbea248 <line:43:2, col:52>
+    | `-VarDecl 0xbea160 <col:2, col:43> c_bAssert_1_1 '_Bool'
+    |   `-ImplicitCastExpr 0xbea230 <col:23, col:43> '_Bool' <LValueToRValue>
+    |     `-MemberExpr 0xbea200 <col:23, col:43> '_Bool' lvalue .m_bAssert 0xbd89c0
+    |       `-MemberExpr 0xbea1d0 <col:23> 'struct CHtAssertIntf' lvalue ->r_clk1xToHta_assert 0xbe35d0
+    |         `-CXXThisExpr 0xbea1b8 <col:23> 'class CPersAuHta *' this
+    |-DeclStmt 0xbea358 <line:44:2, col:55>
+    | `-VarDecl 0xbea270 <col:2, col:46> c_bCollision_1_1 '_Bool'
+    |   `-ImplicitCastExpr 0xbea340 <col:26, col:46> '_Bool' <LValueToRValue>
+    |     `-MemberExpr 0xbea310 <col:26, col:46> '_Bool' lvalue .m_bAssert 0xbd89c0
+    |       `-MemberExpr 0xbea2e0 <col:26> 'struct CHtAssertIntf' lvalue ->r_clk1xToHta_assert 0xbe35d0
+    |         `-CXXThisExpr 0xbea2c8 <col:26> 'class CPersAuHta *' this
+    |-DeclStmt 0xbea480 <line:46:2, col:53>
+    | `-VarDecl 0xbea380 <col:2, col:40> c_bAssert_2_0 '_Bool'
+    |   `-BinaryOperator 0xbea458 <col:23, col:40> '_Bool' '||'
+    |     |-ImplicitCastExpr 0xbea428 <col:23> '_Bool' <LValueToRValue>
+    |     | `-DeclRefExpr 0xbea3d8 <col:23> '_Bool' lvalue Var 0xc0ebd0 'c_bAssert_1_0' '_Bool'
+    |     `-ImplicitCastExpr 0xbea440 <col:40> '_Bool' <LValueToRValue>
+    |       `-DeclRefExpr 0xbea400 <col:40> '_Bool' lvalue Var 0xbea160 'c_bAssert_1_1' '_Bool'
+    |-DeclStmt 0xbea680 <line:47:2, col:96>
+    | `-VarDecl 0xbea4b0 <col:2, col:83> c_bCollision_2_0 '_Bool'
+    |   `-BinaryOperator 0xbea658 <col:26, col:83> '_Bool' '||'
+    |     |-BinaryOperator 0xbea588 <col:26, col:46> '_Bool' '||'
+    |     | |-ImplicitCastExpr 0xbea558 <col:26> '_Bool' <LValueToRValue>
+    |     | | `-DeclRefExpr 0xbea508 <col:26> '_Bool' lvalue Var 0xbe9f90 'c_bCollision_1_0' '_Bool'
+    |     | `-ImplicitCastExpr 0xbea570 <col:46> '_Bool' <LValueToRValue>
+    |     |   `-DeclRefExpr 0xbea530 <col:46> '_Bool' lvalue Var 0xbea270 'c_bCollision_1_1' '_Bool'
+    |     `-BinaryOperator 0xbea630 <col:66, col:83> '_Bool' '&&'
+    |       |-ImplicitCastExpr 0xbea600 <col:66> '_Bool' <LValueToRValue>
+    |       | `-DeclRefExpr 0xbea5b0 <col:66> '_Bool' lvalue Var 0xc0ebd0 'c_bAssert_1_0' '_Bool'
+    |       `-ImplicitCastExpr 0xbea618 <col:83> '_Bool' <LValueToRValue>
+    |         `-DeclRefExpr 0xbea5d8 <col:83> '_Bool' lvalue Var 0xbea160 'c_bAssert_1_1' '_Bool'
+    |-BinaryOperator 0xbea730 <line:49:2, col:32> '_Bool' lvalue '='
+    | |-MemberExpr 0xbea6c0 <col:2, col:20> '_Bool' lvalue .m_bAssert 0xbd89c0
+    | | `-DeclRefExpr 0xbea698 <col:2> 'struct CHtAssertIntf' lvalue Var 0xbe82b0 'c_htaToHif_assert' 'struct CHtAssertIntf'
+    | `-ImplicitCastExpr 0xbea718 <col:32> '_Bool' <LValueToRValue>
+    |   `-DeclRefExpr 0xbea6f0 <col:32> '_Bool' lvalue Var 0xbea380 'c_bAssert_2_0' '_Bool'
+    |-BinaryOperator 0xbeaa90 <line:50:2, col:35> '_Bool' lvalue '='
+    | |-MemberExpr 0xbeaa20 <col:2, col:20> '_Bool' lvalue .m_bCollision 0xbd8a20
+    | | `-DeclRefExpr 0xbea9f8 <col:2> 'struct CHtAssertIntf' lvalue Var 0xbe82b0 'c_htaToHif_assert' 'struct CHtAssertIntf'
+    | `-ImplicitCastExpr 0xbeaa78 <col:35> '_Bool' <LValueToRValue>
+    |   `-DeclRefExpr 0xbeaa50 <col:35> '_Bool' lvalue Var 0xbea4b0 'c_bCollision_2_0' '_Bool'
+    |-CXXOperatorCallExpr 0xbead00 <line:55:2, col:22> 'struct CHtAssertIntf' lvalue
+    | |-ImplicitCastExpr 0xbeace8 <col:20> 'struct CHtAssertIntf &(*)(const struct CHtAssertIntf &)' <FunctionToPointerDecay>
+    | | `-DeclRefExpr 0xbeacc0 <col:20> 'struct CHtAssertIntf &(const struct CHtAssertIntf &)' lvalue CXXMethod 0xbd8770 'operator=' 'struct CHtAssertIntf &(const struct CHtAssertIntf &)'
+    | |-MemberExpr 0xbeab08 <col:2> 'struct CHtAssertIntf' lvalue ->r_ctlToHta_assert 0xbe3510
+    | | `-CXXThisExpr 0xbeaaf0 <col:2> 'class CPersAuHta *' this
+    | `-MaterializeTemporaryExpr 0xbeaca0 <col:22> 'const struct CHtAssertIntf' lvalue
+    |   `-ImplicitCastExpr 0xbeac88 <col:22> 'const struct CHtAssertIntf' <NoOp>
+    |     `-ImplicitCastExpr 0xbeac70 <col:22> 'struct CHtAssertIntf':'struct CHtAssertIntf' <UserDefinedConversion>
+    |       `-CXXMemberCallExpr 0xbeac48 <col:22> 'struct CHtAssertIntf':'struct CHtAssertIntf'
+    |         `-MemberExpr 0xbeac18 <col:22> '<bound member function type>' .operator CHtAssertIntf 0xbe28e0
+    |           `-MemberExpr 0xbeab50 <col:22> 'sc_in<struct CHtAssertIntf>':'class sc_in<struct CHtAssertIntf>' lvalue ->i_ctlToHta_assert 0xbe2b20
+    |             `-CXXThisExpr 0xbeab38 <col:22> 'class CPersAuHta *' this
+    |-CXXOperatorCallExpr 0xbeb000 <line:56:2, col:24> 'struct CHtAssertIntf' lvalue
+    | |-ImplicitCastExpr 0xbeafe8 <col:22> 'struct CHtAssertIntf &(*)(const struct CHtAssertIntf &)' <FunctionToPointerDecay>
+    | | `-DeclRefExpr 0xbeafc0 <col:22> 'struct CHtAssertIntf &(const struct CHtAssertIntf &)' lvalue CXXMethod 0xbd8770 'operator=' 'struct CHtAssertIntf &(const struct CHtAssertIntf &)'
+    | |-MemberExpr 0xbead60 <col:2> 'struct CHtAssertIntf' lvalue ->r_clk2xToHta_assert 0xbe3570
+    | | `-CXXThisExpr 0xbead48 <col:2> 'class CPersAuHta *' this
+    | `-MaterializeTemporaryExpr 0xbeae78 <col:24> 'const struct CHtAssertIntf' lvalue
+    |   `-ImplicitCastExpr 0xbeae60 <col:24> 'const struct CHtAssertIntf' <NoOp>
+    |     `-ImplicitCastExpr 0xbeae48 <col:24> 'struct CHtAssertIntf':'struct CHtAssertIntf' <UserDefinedConversion>
+    |       `-CXXMemberCallExpr 0xbeae20 <col:24> 'struct CHtAssertIntf':'struct CHtAssertIntf'
+    |         `-MemberExpr 0xbeadf0 <col:24> '<bound member function type>' .operator CHtAssertIntf 0xbe28e0
+    |           `-MemberExpr 0xbeada8 <col:24> 'sc_in<struct CHtAssertIntf>':'class sc_in<struct CHtAssertIntf>' lvalue ->i_clk2xToHta_assert 0xbe2c30
+    |             `-CXXThisExpr 0xbead90 <col:24> 'class CPersAuHta *' this
+    |-CXXOperatorCallExpr 0xbeb1d8 <line:57:2, col:24> 'struct CHtAssertIntf' lvalue
+    | |-ImplicitCastExpr 0xbeb1c0 <col:22> 'struct CHtAssertIntf &(*)(const struct CHtAssertIntf &)' <FunctionToPointerDecay>
+    | | `-DeclRefExpr 0xbeb198 <col:22> 'struct CHtAssertIntf &(const struct CHtAssertIntf &)' lvalue CXXMethod 0xbd8770 'operator=' 'struct CHtAssertIntf &(const struct CHtAssertIntf &)'
+    | |-MemberExpr 0xbeb060 <col:2> 'struct CHtAssertIntf' lvalue ->r_clk1xToHta_assert 0xbe35d0
+    | | `-CXXThisExpr 0xbeb048 <col:2> 'class CPersAuHta *' this
+    | `-MaterializeTemporaryExpr 0xbeb178 <col:24> 'const struct CHtAssertIntf' lvalue
+    |   `-ImplicitCastExpr 0xbeb160 <col:24> 'const struct CHtAssertIntf' <NoOp>
+    |     `-ImplicitCastExpr 0xbeb148 <col:24> 'struct CHtAssertIntf':'struct CHtAssertIntf' <UserDefinedConversion>
+    |       `-CXXMemberCallExpr 0xbeb120 <col:24> 'struct CHtAssertIntf':'struct CHtAssertIntf'
+    |         `-MemberExpr 0xbeb0f0 <col:24> '<bound member function type>' .operator CHtAssertIntf 0xbe28e0
+    |           `-MemberExpr 0xbeb0a8 <col:24> 'sc_in<struct CHtAssertIntf>':'class sc_in<struct CHtAssertIntf>' lvalue ->i_clk1xToHta_assert 0xbe2d40
+    |             `-CXXThisExpr 0xbeb090 <col:24> 'class CPersAuHta *' this
+    |-CXXOperatorCallExpr 0xbeb2e8 <line:58:2, col:22> 'struct CHtAssertIntf' lvalue
+    | |-ImplicitCastExpr 0xbeb2d0 <col:20> 'struct CHtAssertIntf &(*)(const struct CHtAssertIntf &)' <FunctionToPointerDecay>
+    | | `-DeclRefExpr 0xbeb2a8 <col:20> 'struct CHtAssertIntf &(const struct CHtAssertIntf &)' lvalue CXXMethod 0xbd8770 'operator=' 'struct CHtAssertIntf &(const struct CHtAssertIntf &)'
+    | |-MemberExpr 0xbeb238 <col:2> 'struct CHtAssertIntf' lvalue ->r_htaToHif_assert 0xbe3630
+    | | `-CXXThisExpr 0xbeb220 <col:2> 'class CPersAuHta *' this
+    | `-ImplicitCastExpr 0xbeb290 <col:22> 'const struct CHtAssertIntf' lvalue <NoOp>
+    |   `-DeclRefExpr 0xbeb268 <col:22> 'struct CHtAssertIntf' lvalue Var 0xbe82b0 'c_htaToHif_assert' 'struct CHtAssertIntf'
+    `-CXXOperatorCallExpr 0xbeb4d0 <line:63:2, col:22> 'sc_out<struct CHtAssertIntf>':'class sc_out<struct CHtAssertIntf>' lvalue
+      |-ImplicitCastExpr 0xbeb4b8 <col:20> 'sc_out<struct CHtAssertIntf> &(*)(const struct CHtAssertIntf &)' <FunctionToPointerDecay>
+      | `-DeclRefExpr 0xbeb438 <col:20> 'sc_out<struct CHtAssertIntf> &(const struct CHtAssertIntf &)' lvalue CXXMethod 0xbe3310 'operator=' 'sc_out<struct CHtAssertIntf> &(const struct CHtAssertIntf &)'
+      |-MemberExpr 0xbeb380 <col:2> 'sc_out<struct CHtAssertIntf>':'class sc_out<struct CHtAssertIntf>' lvalue ->o_htaToHif_assert 0xbe3470
+      | `-CXXThisExpr 0xbeb368 <col:2> 'class CPersAuHta *' this
+      `-ImplicitCastExpr 0xbeb3f8 <col:22> 'const struct CHtAssertIntf':'const struct CHtAssertIntf' lvalue <NoOp>
+        `-MemberExpr 0xbeb3c8 <col:22> 'struct CHtAssertIntf' lvalue ->r_htaToHif_assert 0xbe3630
+          `-CXXThisExpr 0xbeb3b0 <col:22> 'class CPersAuHta *'1 warning generated.
+ this
+Press any key to continue . . .

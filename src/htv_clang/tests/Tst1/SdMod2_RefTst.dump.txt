@@ -1,0 +1,263 @@
+TranslationUnitDecl 0x3fb190 <<invalid sloc>>
+|-TypedefDecl 0x3fb6d0 <<invalid sloc>> __int128_t '__int128'
+|-TypedefDecl 0x3fb730 <<invalid sloc>> __uint128_t 'unsigned __int128'
+|-TypedefDecl 0x3fb7c0 <<invalid sloc>> __builtin_va_list 'char *'
+|-CXXRecordDecl 0x3fb810 <<built-in>:27:1, col:7> class type_info
+|-ClassTemplateDecl 0x3fba30 <C:/Users/TBrewer/Documents/llvm-project/my_tests/ht_lib\HtSyscTypes.h:4:1, line:12:1> sc_in
+| |-TemplateTypeParmDecl 0x3fb8d0 <line:4:10, col:19> typename T
+| `-CXXRecordDecl 0x3fb990 <line:5:1, line:12:1> class sc_in
+|   |-CXXRecordDecl 0x3fbcd0 <line:5:1, col:7> class sc_in
+|   |-AccessSpecDecl 0x3fbd70 <line:6:1, col:7> public
+|   |-CXXMethodDecl 0x431ba0 <line:7:2, col:11> pos '_Bool (void)'
+|   |-CXXConversionDecl 0x431d00 <line:8:2, col:13> operator type-parameter-0-0 'T (void)'
+|   | `-<<<NULL>>>
+|   |-CXXMethodDecl 0x431de0 <line:9:2, col:9> read 'T (void)'
+|   | `-<<<NULL>>>
+|   |-AccessSpecDecl 0x431e90 <line:10:1, col:8> private
+|   `-FieldDecl 0x431ed0 <line:11:2, col:4> m_value 'T'
+|-ClassTemplateDecl 0x432050 <line:14:1, line:20:1> sc_out
+| |-TemplateTypeParmDecl 0x431f20 <line:14:10, col:19> typename T
+| `-CXXRecordDecl 0x431fb0 <line:15:1, line:20:1> class sc_out
+|   |-CXXRecordDecl 0x4322f0 <line:15:1, col:7> class sc_out
+|   |-AccessSpecDecl 0x432390 <line:16:1, col:7> public
+|   |-CXXMethodDecl 0x4326d0 <line:17:2, col:43> operator= 'sc_out<T> &(const T &)'
+|   | |-ParmVarDecl 0x432510 <col:27, col:37> value 'const T &'
+|   | `-<<<NULL>>>
+|   |-AccessSpecDecl 0x432780 <line:18:1, col:8> private
+|   `-FieldDecl 0x4327c0 <line:19:2, col:4> m_value 'T'
+|-ClassTemplateDecl 0x432940 <line:22:1, line:30:1> sc_signal
+| |-TemplateTypeParmDecl 0x432810 <line:22:10, col:19> typename T
+| `-CXXRecordDecl 0x4328a0 <line:23:1, line:30:1> class sc_signal
+|   |-CXXRecordDecl 0x433e40 <line:23:1, col:7> class sc_signal
+|   |-AccessSpecDecl 0x433ee0 <line:24:1, col:7> public
+|   |-CXXMethodDecl 0x4341f0 <line:25:2, col:46> operator= 'sc_signal<T> &(const T &)'
+|   | |-ParmVarDecl 0x434030 <col:30, col:40> value 'const T &'
+|   | `-<<<NULL>>>
+|   |-CXXConversionDecl 0x434300 <line:26:2, col:13> operator type-parameter-0-0 'T (void)'
+|   | `-<<<NULL>>>
+|   |-CXXMethodDecl 0x4343e0 <line:27:2, col:9> read 'T (void)'
+|   | `-<<<NULL>>>
+|   |-AccessSpecDecl 0x434490 <line:28:1, col:8> private
+|   `-FieldDecl 0x4344d0 <line:29:2, col:4> m_value 'T'
+|-CXXRecordDecl 0x434520 <line:32:1, line:35:1> class ClockList
+| |-CXXRecordDecl 0x434660 <line:32:1, col:7> class ClockList
+| |-AccessSpecDecl 0x434700 <line:33:1, col:7> public
+| |-CXXMethodDecl 0x434830 <line:34:2, col:24> operator<< 'void (_Bool)'
+| | `-ParmVarDecl 0x434740 <col:20, col:24> '_Bool'
+| |-CXXConstructorDecl 0x4364c0 <line:32:7> ClockList 'void (void)' inline noexcept-unevaluated 0x4364c0
+| | `-CompoundStmt 0x436e20 <col:7>
+| |-CXXDestructorDecl 0x4365e0 <col:7> ~ClockList 'void (void)' inline noexcept-unevaluated 0x4365e0
+| |-CXXConstructorDecl 0x436740 <col:7> ClockList 'void (const class ClockList &)' inline noexcept-unevaluated 0x436740
+| | `-ParmVarDecl 0x436880 <col:7> 'const class ClockList &'
+| |-CXXConstructorDecl 0x436910 <col:7> ClockList 'void (class ClockList &&)' inline noexcept-unevaluated 0x436910
+| | `-ParmVarDecl 0x436a50 <col:7> 'class ClockList &&'
+| |-CXXMethodDecl 0x4390c0 <col:7, <invalid sloc>> operator= 'class ClockList &(const class ClockList &)' inline noexcept-unevaluated 0x4390c0
+| | `-ParmVarDecl 0x439310 <col:7> 'const class ClockList &'
+| `-CXXMethodDecl 0x439370 <col:7, <invalid sloc>> operator= 'class ClockList &(class ClockList &&)' inline noexcept-unevaluated 0x439370
+|   `-ParmVarDecl 0x4394a0 <col:7> 'class ClockList &&'
+|-CXXRecordDecl 0x4348e0 <line:37:1, line:40:1> class ScModuleBase
+| |-CXXRecordDecl 0x434a20 <line:37:1, col:7> class ScModuleBase
+| |-AccessSpecDecl 0x434ac0 <line:38:1, col:7> public
+| |-FieldDecl 0x434b00 <line:39:2, col:12> sensitive 'class ClockList'
+| |-CXXConstructorDecl 0x4363a0 <line:37:7> ScModuleBase 'void (void)' inline noexcept-unevaluated 0x4363a0
+| | |-CXXCtorInitializer Field 0x434b00 'sensitive' 'class ClockList'
+| | | |-CXXConstructExpr 0x436e38 <col:7> 'class ClockList' 'void (void)'
+| | `-CompoundStmt 0x436ea0 <col:7>
+| |-CXXConstructorDecl 0x436ab0 <col:7> ScModuleBase 'void (const class ScModuleBase &)' inline noexcept-unevaluated 0x436ab0
+| | `-ParmVarDecl 0x436bf0 <col:7> 'const class ScModuleBase &'
+| |-CXXConstructorDecl 0x436c80 <col:7> ScModuleBase 'void (class ScModuleBase &&)' inline noexcept-unevaluated 0x436c80
+| | `-ParmVarDecl 0x436dc0 <col:7> 'class ScModuleBase &&'
+| |-CXXMethodDecl 0x438f00 <col:7, <invalid sloc>> operator= 'class ScModuleBase &(const class ScModuleBase &)' inline noexcept-unevaluated 0x438f00
+| | `-ParmVarDecl 0x439030 <col:7> 'const class ScModuleBase &'
+| `-CXXMethodDecl 0x439500 <col:7, <invalid sloc>> operator= 'class ScModuleBase &(class ScModuleBase &&)' inline noexcept-unevaluated 0x439500
+|   `-ParmVarDecl 0x439630 <col:7> 'class ScModuleBase &&'
+|-FunctionDecl 0x434ba0 <line:42:22, col:41> __SC_MODULE__ 'void (void)'
+|-CXXRecordDecl 0x434c50 <col:44, C:\Users\TBrewer\Documents\llvm-project\my_tests\Tst1\ScMod2_RefTst.cpp:27:1> class RefTst
+| |-public 'class ScModuleBase'
+| |-CXXRecordDecl 0x434f10 <C:/Users/TBrewer/Documents/llvm-project/my_tests/ht_lib\HtSyscTypes.h:42:44, C:\Users\TBrewer\Documents\llvm-project\my_tests\Tst1\ScMod2_RefTst.cpp:3:11> class RefTst
+| |-CXXMethodDecl 0x435000 <line:4:2, col:16> RefTst1x 'void (void)'
+| |-CXXRecordDecl 0x4350b0 <line:6:2, line:11:2> struct A
+| | |-CXXRecordDecl 0x4351f0 <line:6:2, col:9> struct A
+| | |-CXXConstructorDecl 0x435300 <line:7:3, col:8> A 'void (void)'
+| | | `-CompoundStmt 0x4360a0 <col:7, col:8>
+| | |-CXXConstructorDecl 0x4354c0 <line:8:3, col:42> A 'void (struct RefTst::A &)'
+| | | |-ParmVarDecl 0x435400 <col:5, col:8> ax 'struct RefTst::A &'
+| | | `-CompoundStmt 0x436278 <col:12, col:42>
+| | |   |-BinaryOperator 0x436170 <col:14, col:23> 'int' lvalue bitfield '='
+| | |   | |-MemberExpr 0x4360d0 <col:14> 'int' lvalue bitfield ->m_a 0x4355d0
+| | |   | | `-CXXThisExpr 0x4360b8 <col:14> 'struct RefTst::A *' this
+| | |   | `-ImplicitCastExpr 0x436158 <col:20, col:23> 'int' <LValueToRValue>
+| | |   |   `-MemberExpr 0x436128 <col:20, col:23> 'int' lvalue bitfield .m_b 0x435660
+| | |   |     `-DeclRefExpr 0x436100 <col:20> 'struct RefTst::A' lvalue ParmVar 0x435400 'ax' 'struct RefTst::A &'
+| | |   `-BinaryOperator 0x436250 <col:28, col:37> 'int' lvalue bitfield '='
+| | |     |-MemberExpr 0x4361b0 <col:28> 'int' lvalue bitfield ->m_b 0x435660
+| | |     | `-CXXThisExpr 0x436198 <col:28> 'struct RefTst::A *' this
+| | |     `-ImplicitCastExpr 0x436238 <col:34, col:37> 'int' <LValueToRValue>
+| | |       `-MemberExpr 0x436208 <col:34, col:37> 'int' lvalue bitfield .m_a 0x4355d0
+| | |         `-DeclRefExpr 0x4361e0 <col:34> 'struct RefTst::A' lvalue ParmVar 0x435400 'ax' 'struct RefTst::A &'
+| | |-FieldDecl 0x4355d0 <line:9:3, col:11> m_a 'int'
+| | | `-IntegerLiteral 0x435588 <col:11> 'int' 3
+| | |-FieldDecl 0x435660 <line:10:3, col:11> m_b 'int'
+| | | `-IntegerLiteral 0x435620 <col:11> 'int' 4
+| | |-CXXDestructorDecl 0x437210 <line:6:9> ~A 'void (void)' inline noexcept-unevaluated 0x437210
+| | `-CXXMethodDecl 0x4396c0 <col:9> operator= 'struct RefTst::A &(const struct RefTst::A &) noexcept' inline
+| |   |-ParmVarDecl 0x4397f0 <col:9> 'const struct RefTst::A &'
+| |   `-CompoundStmt 0x439c10 <col:9>
+| |     |-BinaryOperator 0x439b08 <col:9> 'int' lvalue bitfield '='
+| |     | |-MemberExpr 0x439ac0 <col:9> 'int' lvalue bitfield ->m_a 0x4355d0
+| |     | | `-CXXThisExpr 0x439a78 <col:9> 'struct RefTst::A *' this
+| |     | `-ImplicitCastExpr 0x439af0 <col:9> 'int' <LValueToRValue>
+| |     |   `-MemberExpr 0x439a90 <col:9> 'const int' lvalue bitfield .m_a 0x4355d0
+| |     |     `-DeclRefExpr 0x439a50 <col:9> 'const struct RefTst::A' lvalue ParmVar 0x4397f0 '' 'const struct RefTst::A &'
+| |     |-BinaryOperator 0x439ba8 <col:9> 'int' lvalue bitfield '='
+| |     | |-MemberExpr 0x439b60 <col:9> 'int' lvalue bitfield ->m_b 0x435660
+| |     | | `-CXXThisExpr 0x439a78 <col:9> 'struct RefTst::A *' this
+| |     | `-ImplicitCastExpr 0x439b90 <col:9> 'int' <LValueToRValue>
+| |     |   `-MemberExpr 0x439b30 <col:9> 'const int' lvalue bitfield .m_b 0x435660
+| |     |     `-DeclRefExpr 0x439a50 <col:9> 'const struct RefTst::A' lvalue ParmVar 0x4397f0 '' 'const struct RefTst::A &'
+| |     `-ReturnStmt 0x439bf0 <col:9>
+| |       `-UnaryOperator 0x439bd0 <col:9> 'struct RefTst::A' lvalue prefix '*'
+| |         `-CXXThisExpr 0x439a78 <col:9> 'struct RefTst::A *' this
+| |-FieldDecl 0x435700 <col:2, line:11:4> m_A 'struct A':'struct RefTst::A'
+| |-CXXRecordDecl 0x435770 <line:13:2, line:17:2> struct B
+| | |-CXXRecordDecl 0x4358b0 <line:13:2, col:9> struct B
+| | |-FieldDecl 0x435990 <line:14:3, col:11> m_c 'int'
+| | | `-IntegerLiteral 0x435948 <col:11> 'int' 5
+| | |-FieldDecl 0x435a20 <line:15:3, col:11> m_d 'int'
+| | | `-IntegerLiteral 0x4359e0 <col:11> 'int' 6
+| | |-FieldDecl 0x435a80 <line:16:3, col:5> m_e 'struct RefTst::A'
+| | |-CXXConstructorDecl 0x4370f0 <line:13:9> B 'void (void) noexcept(false)' inline
+| | | |-CXXCtorInitializer Field 0x435a80 'm_e' 'struct RefTst::A'
+| | | | |-CXXConstructExpr 0x4374e0 <col:9> 'struct RefTst::A' 'void (void)'
+| | | `-CompoundStmt 0x437550 <col:9>
+| | |-CXXConstructorDecl 0x437340 <col:9> B 'void (struct RefTst::B &) noexcept(false)' inline
+| | | |-ParmVarDecl 0x437480 <col:9> 'struct RefTst::B &'
+| | | |-CXXCtorInitializer Field 0x435990 'm_c' 'int'
+| | | | |-ImplicitCastExpr 0x438828 <col:9> 'int' <LValueToRValue>
+| | | | | `-MemberExpr 0x4387f8 <col:9> 'int' lvalue bitfield .m_c 0x435990
+| | | | |   `-DeclRefExpr 0x4387d0 <col:9> 'struct RefTst::B' lvalue ParmVar 0x437480 '' 'struct RefTst::B &'
+| | | |-CXXCtorInitializer Field 0x435a20 'm_d' 'int'
+| | | | |-ImplicitCastExpr 0x4388c0 <col:9> 'int' <LValueToRValue>
+| | | | | `-MemberExpr 0x438890 <col:9> 'int' lvalue bitfield .m_d 0x435a20
+| | | | |   `-DeclRefExpr 0x438868 <col:9> 'struct RefTst::B' lvalue ParmVar 0x437480 '' 'struct RefTst::B &'
+| | | |-CXXCtorInitializer Field 0x435a80 'm_e' 'struct RefTst::A'
+| | | | |-CXXConstructExpr 0x438958 <col:9> 'struct RefTst::A' 'void (struct RefTst::A &)'
+| | | | | `-MemberExpr 0x438928 <col:9> 'struct RefTst::A' lvalue .m_e 0x435a80
+| | | | |   `-DeclRefExpr 0x438900 <col:9> 'struct RefTst::B' lvalue ParmVar 0x437480 '' 'struct RefTst::B &'
+| | | `-CompoundStmt 0x4389d8 <col:9>
+| | `-CXXMethodDecl 0x439880 <col:9, <invalid sloc>> operator= 'struct RefTst::B &(const struct RefTst::B &)' inline noexcept-unevaluated 0x439880
+| |   `-ParmVarDecl 0x4399b0 <col:9> 'const struct RefTst::B &'
+| |-FieldDecl 0x435b20 <col:2, line:17:4> m_B 'struct B':'struct RefTst::B'
+| |-CXXMethodDecl 0x435ce0 <line:19:2, line:21:2> refA 'struct RefTst::A &(struct RefTst::A &, struct RefTst::A &)'
+| | |-ParmVarDecl 0x435ba0 <line:19:11, col:15> a1 'struct RefTst::A &'
+| | |-ParmVarDecl 0x435c10 <col:19, col:23> a2 'struct RefTst::A &'
+| | `-CompoundStmt 0x436358 <col:27, line:21:2>
+| |   `-ReturnStmt 0x436338 <line:20:3, col:23>
+| |     `-ConditionalOperator 0x436308 <col:10, col:23> 'struct RefTst::A' lvalue
+| |       |-CXXBoolLiteralExpr 0x4362a0 <col:10> '_Bool' false
+| |       |-DeclRefExpr 0x4362b8 <col:18> 'struct RefTst::A' lvalue ParmVar 0x435ba0 'a1' 'struct RefTst::A &'
+| |       `-DeclRefExpr 0x4362e0 <col:23> 'struct RefTst::A' lvalue ParmVar 0x435c10 'a2' 'struct RefTst::A &'
+| |-CXXMethodDecl 0x435dc0 <C:/Users/TBrewer/Documents/llvm-project/my_tests/ht_lib\HtSyscTypes.h:43:20, col:37> __SC_CTOR__ 'void (void)'
+| |-CXXConstructorDecl 0x435fe0 <C:\Users\TBrewer\Documents\llvm-project\my_tests\Tst1\ScMod2_RefTst.cpp:23:10, line:26:2> RefTst 'void (void)'
+| | |-CXXCtorInitializer 'class ScModuleBase'
+| | | |-CXXConstructExpr 0x436eb8 <line:23:10> 'class ScModuleBase' 'void (void)'
+| | |-CXXCtorInitializer Field 0x435700 'm_A' 'struct A':'struct RefTst::A'
+| | | |-CXXConstructExpr 0x436f28 <col:10> 'struct A':'struct RefTst::A' 'void (void)'
+| | |-CXXCtorInitializer Field 0x435b20 'm_B' 'struct B':'struct RefTst::B'
+| | | |-CXXConstructExpr 0x4375b8 <col:10> 'struct B':'struct RefTst::B' 'void (void) noexcept(false)'
+| | `-CompoundStmt 0x437780 <col:18, line:26:2>
+| |   |-DeclStmt 0x4376f8 <C:/Users/TBrewer/Documents/llvm-project/my_tests/ht_lib\HtSyscTypes.h:44:22, col:42>
+| |   | `-FunctionDecl 0x437650 <col:22, col:41> __SC_METHOD__ 'void (void)'
+| |   `-CXXMemberCallExpr 0x437758 <C:\Users\TBrewer\Documents\llvm-project\my_tests\Tst1\ScMod2_RefTst.cpp:24:13, C:/Users/TBrewer/Documents/llvm-project/my_tests/ht_lib\HtSyscTypes.h:44:46> 'void'
+| |     `-MemberExpr 0x437728 <C:\Users\TBrewer\Documents\llvm-project\my_tests\Tst1\ScMod2_RefTst.cpp:24:13> '<bound member function type>' ->RefTst1x 0x435000
+| |       `-CXXThisExpr 0x437710 <col:13> 'class RefTst *' this
+| `-CXXMethodDecl 0x438d40 <line:3:11, <invalid sloc>> operator= 'class RefTst &(const class RefTst &)' inline noexcept-unevaluated 0x438d40
+|   `-ParmVarDecl 0x438e70 <col:11> 'const class RefTst &'
+`-CXXMethodDecl 0x437800 parent 0x434c50 prev 0x435000 <line:31:1, line:55:1> RefTst1x 'void (void)'
+  `-CompoundStmt 0x43a0c0 <line:32:1, line:55:1>
+    |-DeclStmt 0x4379e8 <line:33:2, col:13>
+    | `-VarDecl 0x437900 <col:2, col:10> a 'struct RefTst::A &'
+    |   `-MemberExpr 0x437970 <col:10> 'struct A':'struct RefTst::A' lvalue ->m_A 0x435700
+    |     `-CXXThisExpr 0x437958 <col:10> 'class RefTst *' this
+    |-DeclStmt 0x437b28 <line:34:2, col:17>
+    | `-VarDecl 0x437a10 <col:2, col:14> b 'struct RefTst::A &'
+    |   `-MemberExpr 0x437ab0 <col:10, col:14> 'struct RefTst::A' lvalue .m_e 0x435a80
+    |     `-MemberExpr 0x437a80 <col:10> 'struct B':'struct RefTst::B' lvalue ->m_B 0x435b20
+    |       `-CXXThisExpr 0x437a68 <col:10> 'class RefTst *' this
+    |-DeclStmt 0x437c38 <line:35:2, col:13>
+    | `-VarDecl 0x437b50 <col:2, col:10> c 'struct RefTst::B &'
+    |   `-MemberExpr 0x437bc0 <col:10> 'struct B':'struct RefTst::B' lvalue ->m_B 0x435b20
+    |     `-CXXThisExpr 0x437ba8 <col:10> 'class RefTst *' this
+    |-DeclStmt 0x437d58 <line:36:2, col:15>
+    | `-VarDecl 0x437c60 <col:2, col:12> d 'struct RefTst::A &'
+    |   `-MemberExpr 0x437ce0 <col:10, col:12> 'struct RefTst::A' lvalue .m_e 0x435a80
+    |     `-DeclRefExpr 0x437cb8 <col:10> 'struct RefTst::B' lvalue Var 0x437b50 'c' 'struct RefTst::B &'
+    |-DeclStmt 0x437eb8 <line:37:2, col:22>
+    | `-VarDecl 0x437d80 <col:2, col:21> e 'struct RefTst::A &'
+    |   `-ConditionalOperator 0x437e40 <col:10, col:21> 'struct RefTst::A' lvalue
+    |     |-CXXBoolLiteralExpr 0x437dd8 <col:10> '_Bool' true
+    |     |-DeclRefExpr 0x437df0 <col:17> 'struct RefTst::A' lvalue Var 0x437c60 'd' 'struct RefTst::A &'
+    |     `-DeclRefExpr 0x437e18 <col:21> 'struct RefTst::A' lvalue Var 0x437a10 'b' 'struct RefTst::A &'
+    |-DeclStmt 0x438028 <line:39:2, col:15>
+    | `-VarDecl 0x437fd0 <col:2, col:14> bo '_Bool [2][3]'
+    |-DeclStmt 0x4383c8 <line:40:2, col:23>
+    | `-VarDecl 0x438260 <col:2, col:22> br '_Bool (&)[3]'
+    |   `-ArraySubscriptExpr 0x438350 <col:18, col:22> '_Bool [3]' lvalue
+    |     |-ImplicitCastExpr 0x438338 <col:18> '_Bool (*)[3]' <ArrayToPointerDecay>
+    |     | `-DeclRefExpr 0x4382b8 <col:18> '_Bool [2][3]' lvalue Var 0x437fd0 'bo' '_Bool [2][3]'
+    |     `-IntegerLiteral 0x4382e0 <col:21> 'int' 1
+    |-DeclStmt 0x438548 <line:41:2, col:16>
+    | `-VarDecl 0x438400 <col:2, col:15> bi 'int'
+    |   `-ImplicitCastExpr 0x438530 <col:11, col:15> 'int' <IntegralCast>
+    |     `-ImplicitCastExpr 0x438518 <col:11, col:15> '_Bool' <LValueToRValue>
+    |       `-ArraySubscriptExpr 0x4384f0 <col:11, col:15> '_Bool' lvalue
+    |         |-ImplicitCastExpr 0x4384d8 <col:11> '_Bool *' <ArrayToPointerDecay>
+    |         | `-DeclRefExpr 0x438458 <col:11> '_Bool [3]':'_Bool [3]' lvalue Var 0x438260 'br' '_Bool (&)[3]'
+    |         `-IntegerLiteral 0x438480 <col:14> 'int' 2
+    |-DeclStmt 0x438630 <line:43:2, col:9>
+    | `-VarDecl 0x438570 <col:2, col:8> f 'struct RefTst::A'
+    |   `-CXXConstructExpr 0x4385f0 <col:8> 'struct RefTst::A' 'void (struct RefTst::A &)'
+    |     `-DeclRefExpr 0x4385c8 <col:8> 'struct RefTst::A' lvalue Var 0x437900 'a' 'struct RefTst::A &'
+    |-DeclStmt 0x438720 <line:44:2, col:9>
+    | `-VarDecl 0x438660 <col:2, col:8> g 'struct RefTst::A'
+    |   `-CXXConstructExpr 0x4386e0 <col:8> 'struct RefTst::A' 'void (struct RefTst::A &)'
+    |     `-DeclRefExpr 0x4386b8 <col:8> 'struct RefTst::A' lvalue Var 0x437a10 'b' 'struct RefTst::A &'
+    |-DeclStmt 0x438a90 <line:45:2, col:9>
+    | `-VarDecl 0x438750 <col:2, col:8> h 'struct RefTst::B'
+    |   `-CXXConstructExpr 0x438a50 <col:8> 'struct RefTst::B' 'void (struct RefTst::B &) noexcept(false)'
+    |     `-DeclRefExpr 0x4387a8 <col:8> 'struct RefTst::B' lvalue Var 0x437b50 'c' 'struct RefTst::B &'
+    |-DeclStmt 0x438b80 <line:46:2, col:9>
+    | `-VarDecl 0x438ac0 <col:2, col:8> i 'struct RefTst::A'
+    |   `-CXXConstructExpr 0x438b40 <col:8> 'struct RefTst::A' 'void (struct RefTst::A &)'
+    |     `-DeclRefExpr 0x438b18 <col:8> 'struct RefTst::A' lvalue Var 0x437c60 'd' 'struct RefTst::A &'
+    |-DeclStmt 0x438c70 <line:47:2, col:9>
+    | `-VarDecl 0x438bb0 <col:2, col:8> j 'struct RefTst::A'
+    |   `-CXXConstructExpr 0x438c30 <col:8> 'struct RefTst::A' 'void (struct RefTst::A &)'
+    |     `-DeclRefExpr 0x438c08 <col:8> 'struct RefTst::A' lvalue Var 0x437d80 'e' 'struct RefTst::A &'
+    |-CXXOperatorCallExpr 0x439cf0 <line:48:2, col:6> 'struct RefTst::A' lvalue
+    | |-ImplicitCastExpr 0x439cd8 <col:4> 'struct RefTst::A &(*)(const struct RefTst::A &)' <FunctionToPointerDecay>
+    | | `-DeclRefExpr 0x439a28 <col:4> 'struct RefTst::A &(const struct RefTst::A &)' lvalue CXXMethod 0x4396c0 'operator=' 'struct RefTst::A &(const struct RefTst::A &) noexcept'
+    | |-DeclRefExpr 0x438c88 <col:2> 'struct RefTst::A' lvalue Var 0x438bb0 'j' 'struct RefTst::A'
+    | `-ImplicitCastExpr 0x439a10 <col:6> 'const struct RefTst::A' lvalue <NoOp>
+    |   `-DeclRefExpr 0x438cb0 <col:6> 'struct RefTst::A' lvalue Var 0x437d80 'e' 'struct RefTst::A &'
+    |-BinaryOperator 0x439db8 <line:50:2, col:10> 'int' lvalue bitfield '='
+    | |-MemberExpr 0x439d60 <col:2, col:4> 'int' lvalue bitfield .m_b 0x435660
+    | | `-DeclRefExpr 0x439d38 <col:2> 'struct RefTst::A' lvalue Var 0x437d80 'e' 'struct RefTst::A &'
+    | `-IntegerLiteral 0x439d90 <col:10> 'int' 3
+    |-DeclStmt 0x439f58 <line:52:2, col:18>
+    | `-VarDecl 0x439df0 <col:2, col:17> k 'struct RefTst::A'
+    |   `-CXXConstructExpr 0x439f18 <col:8, col:17> 'struct RefTst::A' 'void (struct RefTst::A &)'
+    |     `-CXXMemberCallExpr 0x439ee0 <col:8, col:17> 'struct RefTst::A' lvalue
+    |       |-MemberExpr 0x439e60 <col:8> '<bound member function type>' ->refA 0x435ce0
+    |       | `-CXXThisExpr 0x439e48 <col:8> 'class RefTst *' this
+    |       |-DeclRefExpr 0x439e90 <col:13> 'struct RefTst::A' lvalue Var 0x437d80 'e' 'struct RefTst::A &'
+    |       `-DeclRefExpr 0x439eb8 <col:16> 'struct RefTst::A' lvalue Var 0x438bb0 'j' 'struct RefTst::A'
+    `-BinaryOperator 0x43a098 <line:54:2, col:19> 'int' lvalue bitfield '='
+      |-MemberExpr 0x43a040 <col:2, col:13> 'int' lvalue bitfield .m_a 0x4355d0
+      | `-CXXMemberCallExpr 0x43a008 <col:2, col:11> 'struct RefTst::A' lvalue
+      |   |-MemberExpr 0x439f88 <col:2> '<bound member function type>' ->refA 0x435ce0
+      |   | `-CXXThisExpr 0x439f70 <col:2> 'class RefTst *' this
+      |   |-DeclRefExpr 0x439fb8 <col:7> 'struct RefTst::A' lvalue Var 0x437d80 'e' 'struct RefTst::A &'
+      |   `-DeclRefExpr 0x439fe0 <col:10> 'struct RefTst::A' lvalue Var 0x438bb0 'j' 'struct RefTst::A'
+      `-IntegerLiteral 0x43a070 <col:19> 'int' 2
+Press any key to continue . . .

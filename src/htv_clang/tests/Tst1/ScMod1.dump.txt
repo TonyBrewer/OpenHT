@@ -1,0 +1,364 @@
+C:\Users\TBrewer\Documents\llvm-project\my_tests\Tst1\ScMod1.cpp:35:10: error: use of undeclared identifier 'f'
+        int e = f[5];
+                ^
+C:\Users\TBrewer\Documents\llvm-project\my_tests\Tst1\ScMod1.cpp:38:5: warning: multiple unsequenced modifications to 'i' [-Wunsequenced]
+        f[i++] = b[i++] + a[i++];
+           ^        ~~
+TranslationUnitDecl 0x55b470 <<invalid sloc>>
+|-TypedefDecl 0x55b9b0 <<invalid sloc>> __int128_t '__int128'
+|-TypedefDecl 0x55ba10 <<invalid sloc>> __uint128_t 'unsigned __int128'
+|-TypedefDecl 0x55baa0 <<invalid sloc>> __builtin_va_list 'char *'
+|-CXXRecordDecl 0x55baf0 <<built-in>:27:1, col:7> class type_info
+|-ClassTemplateDecl 0x55bd10 <C:/Users/TBrewer/Documents/llvm-project/my_tests/ht_lib\HtSyscTypes.h:4:1, line:12:1> sc_in
+| |-TemplateTypeParmDecl 0x55bbb0 <line:4:10, col:19> typename T
+| `-CXXRecordDecl 0x55bc70 <line:5:1, line:12:1> class sc_in
+|   |-CXXRecordDecl 0x55bfb0 <line:5:1, col:7> class sc_in
+|   |-AccessSpecDecl 0x55c050 <line:6:1, col:7> public
+|   |-CXXMethodDecl 0x591bf0 <line:7:2, col:11> pos '_Bool (void)'
+|   |-CXXConversionDecl 0x591d50 <line:8:2, col:13> operator type-parameter-0-0 'T (void)'
+|   |-CXXMethodDecl 0x591e30 <line:9:2, col:9> read 'T (void)'
+|   |-AccessSpecDecl 0x591ee0 <line:10:1, col:8> private
+|   `-FieldDecl 0x591f20 <line:11:2, col:4> m_value 'T'
+|-ClassTemplateDecl 0x5920a0 <line:14:1, line:20:1> sc_out
+| |-TemplateTypeParmDecl 0x591f70 <line:14:10, col:19> typename T
+| `-CXXRecordDecl 0x592000 <line:15:1, line:20:1> class sc_out
+|   |-CXXRecordDecl 0x592340 <line:15:1, col:7> class sc_out
+|   |-AccessSpecDecl 0x5923e0 <line:16:1, col:7> public
+|   |-CXXMethodDecl 0x592720 <line:17:2, col:43> operator= 'sc_out<T> &(const T &)'
+|   | `-ParmVarDecl 0x592560 <col:27, col:37> value 'const T &'
+|   |-AccessSpecDecl 0x5927d0 <line:18:1, col:8> private
+|   `-FieldDecl 0x592810 <line:19:2, col:4> m_value 'T'
+|-ClassTemplateDecl 0x592990 <line:22:1, line:30:1> sc_signal
+| |-TemplateTypeParmDecl 0x592860 <line:22:10, col:19> typename T
+| `-CXXRecordDecl 0x5928f0 <line:23:1, line:30:1> class sc_signal
+|   |-CXXRecordDecl 0x593e90 <line:23:1, col:7> class sc_signal
+|   |-AccessSpecDecl 0x593f30 <line:24:1, col:7> public
+|   |-CXXMethodDecl 0x594240 <line:25:2, col:46> operator= 'sc_signal<T> &(const T &)'
+|   | `-ParmVarDecl 0x594080 <col:30, col:40> value 'const T &'
+|   |-CXXConversionDecl 0x594350 <line:26:2, col:13> operator type-parameter-0-0 'T (void)'
+|   |-CXXMethodDecl 0x594430 <line:27:2, col:9> read 'T (void)'
+|   |-AccessSpecDecl 0x5944e0 <line:28:1, col:8> private
+|   `-FieldDecl 0x594520 <line:29:2, col:4> m_value 'T'
+|-CXXRecordDecl 0x594570 <line:32:1, line:35:1> class ClockList
+| |-CXXRecordDecl 0x5946b0 <line:32:1, col:7> class ClockList
+| |-AccessSpecDecl 0x594750 <line:33:1, col:7> public
+| |-CXXMethodDecl 0x594880 <line:34:2, col:24> operator<< 'void (_Bool)'
+| | `-ParmVarDecl 0x594790 <col:20, col:24> '_Bool'
+| |-CXXConstructorDecl 0x596030 <line:32:7> ClockList 'void (void)' inline noexcept-unevaluated 0x596030
+| | `-CompoundStmt 0x596990 <col:7>
+| |-CXXDestructorDecl 0x596150 <col:7> ~ClockList 'void (void)' inline noexcept-unevaluated 0x596150
+| |-CXXConstructorDecl 0x5962b0 <col:7> ClockList 'void (const class ClockList &)' inline noexcept-unevaluated 0x5962b0
+| | `-ParmVarDecl 0x5963f0 <col:7> 'const class ClockList &'
+| |-CXXConstructorDecl 0x596480 <col:7> ClockList 'void (class ClockList &&)' inline noexcept-unevaluated 0x596480
+| | `-ParmVarDecl 0x5965c0 <col:7> 'class ClockList &&'
+| |-CXXMethodDecl 0x59b960 <col:7, <invalid sloc>> operator= 'class ClockList &(const class ClockList &)' inline noexcept-unevaluated 0x59b960
+| | `-ParmVarDecl 0x59ba90 <col:7> 'const class ClockList &'
+| `-CXXMethodDecl 0x59baf0 <col:7, <invalid sloc>> operator= 'class ClockList &(class ClockList &&)' inline noexcept-unevaluated 0x59baf0
+|   `-ParmVarDecl 0x59bc20 <col:7> 'class ClockList &&'
+|-CXXRecordDecl 0x594930 <line:37:1, line:40:1> class ScModuleBase
+| |-CXXRecordDecl 0x594a70 <line:37:1, col:7> class ScModuleBase
+| |-AccessSpecDecl 0x594b10 <line:38:1, col:7> public
+| |-FieldDecl 0x594b50 <line:39:2, col:12> sensitive 'class ClockList'
+| |-CXXConstructorDecl 0x595da0 <line:37:7> ScModuleBase 'void (void)' inline noexcept-unevaluated 0x595da0
+| | |-CXXCtorInitializer Field 0x594b50 'sensitive' 'class ClockList'
+| | | |-CXXConstructExpr 0x5969a8 <col:7> 'class ClockList' 'void (void)'
+| | `-CompoundStmt 0x596a10 <col:7>
+| |-CXXConstructorDecl 0x596620 <col:7> ScModuleBase 'void (const class ScModuleBase &)' inline noexcept-unevaluated 0x596620
+| | `-ParmVarDecl 0x596760 <col:7> 'const class ScModuleBase &'
+| |-CXXConstructorDecl 0x5967f0 <col:7> ScModuleBase 'void (class ScModuleBase &&)' inline noexcept-unevaluated 0x5967f0
+| | `-ParmVarDecl 0x596930 <col:7> 'class ScModuleBase &&'
+| |-CXXMethodDecl 0x59b7a0 <col:7, <invalid sloc>> operator= 'class ScModuleBase &(const class ScModuleBase &)' inline noexcept-unevaluated 0x59b7a0
+| | `-ParmVarDecl 0x59b8d0 <col:7> 'const class ScModuleBase &'
+| `-CXXMethodDecl 0x59bc80 <col:7, <invalid sloc>> operator= 'class ScModuleBase &(class ScModuleBase &&)' inline noexcept-unevaluated 0x59bc80
+|   `-ParmVarDecl 0x59bdb0 <col:7> 'class ScModuleBase &&'
+|-FunctionDecl 0x594bf0 <line:42:22, col:41> __SC_MODULE__ 'void (void)'
+|-CXXRecordDecl 0x594ca0 <col:44, C:\Users\TBrewer\Documents\llvm-project\my_tests\Tst1\ScMod1.cpp:29:1> class PersHta
+| |-public 'class ScModuleBase'
+| |-CXXRecordDecl 0x594f60 <C:/Users/TBrewer/Documents/llvm-project/my_tests/ht_lib\HtSyscTypes.h:42:44, C:\Users\TBrewer\Documents\llvm-project\my_tests\Tst1\ScMod1.cpp:3:11> class PersHta
+| |-CXXRecordDecl 0x595000 <line:5:2, line:12:2> class X
+| | |-CXXRecordDecl 0x595140 <line:5:2, col:8> class X
+| | |-AccessSpecDecl 0x5951e0 <line:6:2, col:8> public
+| | |-CXXConstructorDecl 0x595280 <line:7:3, col:16> X 'void (void)'
+| | | `-CompoundStmt 0x595c88 <col:7, col:16>
+| | |   `-BinaryOperator 0x595c60 <col:9, col:13> 'int' lvalue '='
+| | |     |-MemberExpr 0x595c08 <col:9> 'int' lvalue ->a 0x595530
+| | |     | `-CXXThisExpr 0x595bf0 <col:9> 'class PersHta::X *' this
+| | |     `-IntegerLiteral 0x595c38 <col:13> 'int' 1
+| | |-CXXConstructorDecl 0x595420 <line:8:3, col:23> X 'void (int)'
+| | | |-ParmVarDecl 0x595360 <col:5, col:9> a_ 'int'
+| | | `-CompoundStmt 0x595d58 <col:13, col:23>
+| | |   `-BinaryOperator 0x595d30 <col:15, col:19> 'int' lvalue '='
+| | |     |-MemberExpr 0x595cc0 <col:15> 'int' lvalue ->a 0x595530
+| | |     | `-CXXThisExpr 0x595ca8 <col:15> 'class PersHta::X *' this
+| | |     `-ImplicitCastExpr 0x595d18 <col:19> 'int' <LValueToRValue>
+| | |       `-DeclRefExpr 0x595cf0 <col:19> 'int' lvalue ParmVar 0x595360 'a_' 'int'
+| | |-AccessSpecDecl 0x5954f0 <line:10:2, col:9> private
+| | |-FieldDecl 0x595530 <line:11:3, col:7> a 'int'
+| | |-CXXConstructorDecl 0x596ad0 <line:5:8> X 'void (const class PersHta::X &)' inline noexcept-unevaluated 0x596ad0
+| | | `-ParmVarDecl 0x596c10 <col:8> 'const class PersHta::X &'
+| | |-CXXConstructorDecl 0x596ca0 <col:8> X 'void (class PersHta::X &&) noexcept' inline
+| | | |-ParmVarDecl 0x596de0 <col:8> 'class PersHta::X &&'
+| | | |-CXXCtorInitializer Field 0x595530 'a' 'int'
+| | | | |-ImplicitCastExpr 0x59b418 <col:8> 'int' <LValueToRValue>
+| | | | | `-MemberExpr 0x59b3d0 <col:8> 'int' xvalue .a 0x595530
+| | | | |   `-CXXStaticCastExpr 0x59b3a0 <col:8> 'class PersHta::X' xvalue static_cast<class PersHta::X &&> <NoOp>
+| | | | |     `-DeclRefExpr 0x59b368 <col:8> 'class PersHta::X' lvalue ParmVar 0x596de0 '' 'class PersHta::X &&'
+| | | `-CompoundStmt 0x59d7a0 <col:8>
+| | |-CXXDestructorDecl 0x597fe0 <col:8> ~X 'void (void) noexcept' inline
+| | | `-CompoundStmt 0x5980d8 <col:8>
+| | |-CXXMethodDecl 0x59be40 <col:8, <invalid sloc>> operator= 'class PersHta::X &(const class PersHta::X &)' inline noexcept-unevaluated 0x59be40
+| | | `-ParmVarDecl 0x59bf70 <col:8> 'const class PersHta::X &'
+| | `-CXXMethodDecl 0x59bfd0 <col:8> operator= 'class PersHta::X &(class PersHta::X &&) noexcept' inline
+| |   |-ParmVarDecl 0x59c100 <col:8> 'class PersHta::X &&'
+| |   `-CompoundStmt 0x59c4c8 <col:8>
+| |     |-BinaryOperator 0x59c460 <col:8> 'int' lvalue '='
+| |     | |-MemberExpr 0x59c418 <col:8> 'int' lvalue ->a 0x595530
+| |     | | `-CXXThisExpr 0x59c3d0 <col:8> 'class PersHta::X *' this
+| |     | `-ImplicitCastExpr 0x59c448 <col:8> 'int' <LValueToRValue>
+| |     |   `-MemberExpr 0x59c3e8 <col:8> 'int' xvalue .a 0x595530
+| |     |     `-CXXStaticCastExpr 0x59c3a0 <col:8> 'class PersHta::X' xvalue static_cast<class PersHta::X &&> <NoOp>
+| |     |       `-DeclRefExpr 0x59c368 <col:8> 'class PersHta::X' lvalue ParmVar 0x59c100 '' 'class PersHta::X &&'
+| |     `-ReturnStmt 0x59c4a8 <col:8>
+| |       `-UnaryOperator 0x59c488 <col:8> 'class PersHta::X' lvalue prefix '*'
+| |         `-CXXThisExpr 0x59c3d0 <col:8> 'class PersHta::X *' this
+| |-CXXRecordDecl 0x595580 <line:14:2, line:18:2> class V
+| | |-CXXRecordDecl 0x5956c0 <line:14:2, col:8> class V
+| | |-AccessSpecDecl 0x595760 <line:15:2, col:8> public
+| | |-FieldDecl 0x5957a0 <line:17:3, col:7> b 'int'
+| | |-CXXConstructorDecl 0x59a590 <line:14:8> V 'void (void)' inline noexcept-unevaluated 0x59a590
+| | | `-CompoundStmt 0x59aa30 <col:8>
+| | |-CXXConstructorDecl 0x59a6c0 <col:8> V 'void (const class PersHta::V &)' inline noexcept-unevaluated 0x59a6c0
+| | | `-ParmVarDecl 0x59a800 <col:8> 'const class PersHta::V &'
+| | |-CXXConstructorDecl 0x59a890 <col:8> V 'void (class PersHta::V &&)' inline noexcept-unevaluated 0x59a890
+| | | `-ParmVarDecl 0x59a9d0 <col:8> 'class PersHta::V &&'
+| | |-CXXDestructorDecl 0x59ab30 <col:8> ~V 'void (void) noexcept' inline
+| | | `-CompoundStmt 0x59ac28 <col:8>
+| | |-CXXMethodDecl 0x59ac70 <col:8, <invalid sloc>> operator= 'class PersHta::V &(const class PersHta::V &)' inline noexcept-unevaluated 0x59ac70
+| | | `-ParmVarDecl 0x59ada0 <col:8> 'const class PersHta::V &'
+| | `-CXXMethodDecl 0x59ae00 <col:8> operator= 'class PersHta::V &(class PersHta::V &&) noexcept' inline
+| |   |-ParmVarDecl 0x59af30 <col:8> 'class PersHta::V &&'
+| |   `-CompoundStmt 0x59b160 <col:8>
+| |     |-BinaryOperator 0x59b0f8 <col:8> 'int' lvalue '='
+| |     | |-MemberExpr 0x59b0b0 <col:8> 'int' lvalue ->b 0x5957a0
+| |     | | `-CXXThisExpr 0x59b068 <col:8> 'class PersHta::V *' this
+| |     | `-ImplicitCastExpr 0x59b0e0 <col:8> 'int' <LValueToRValue>
+| |     |   `-MemberExpr 0x59b080 <col:8> 'int' xvalue .b 0x5957a0
+| |     |     `-CXXStaticCastExpr 0x59b038 <col:8> 'class PersHta::V' xvalue static_cast<class PersHta::V &&> <NoOp>
+| |     |       `-DeclRefExpr 0x59b000 <col:8> 'class PersHta::V' lvalue ParmVar 0x59af30 '' 'class PersHta::V &&'
+| |     `-ReturnStmt 0x59b140 <col:8>
+| |       `-UnaryOperator 0x59b120 <col:8> 'class PersHta::V' lvalue prefix '*'
+| |         `-CXXThisExpr 0x59b068 <col:8> 'class PersHta::V *' this
+| |-FieldDecl 0x595800 <line:20:2, col:4> xx 'class PersHta::X'
+| |-CXXMethodDecl 0x5958a0 <line:22:2, col:17> PersHta1x 'void (void)'
+| |-CXXMethodDecl 0x595970 <line:23:2, col:19> PersHta_src 'void (void)'
+| |-CXXMethodDecl 0x595a40 <C:/Users/TBrewer/Documents/llvm-project/my_tests/ht_lib\HtSyscTypes.h:43:20, col:37> __SC_CTOR__ 'void (void)'
+| |-CXXConstructorDecl 0x595b30 <C:\Users\TBrewer\Documents\llvm-project\my_tests\Tst1\ScMod1.cpp:25:10, line:28:2> PersHta 'void (void)'
+| | |-CXXCtorInitializer 'class ScModuleBase'
+| | | |-CXXConstructExpr 0x596a28 <line:25:10> 'class ScModuleBase' 'void (void)'
+| | |-CXXCtorInitializer Field 0x595800 'xx' 'class PersHta::X'
+| | | |-CXXConstructExpr 0x596e40 <col:10> 'class PersHta::X' 'void (void)'
+| | `-CompoundStmt 0x597140 <col:19, line:28:2>
+| |   |-DeclStmt 0x596f88 <C:/Users/TBrewer/Documents/llvm-project/my_tests/ht_lib\HtSyscTypes.h:44:22, col:42>
+| |   | `-FunctionDecl 0x596ee0 <col:22, col:41> __SC_METHOD__ 'void (void)'
+| |   `-CXXMemberCallExpr 0x596fe8 <C:\Users\TBrewer\Documents\llvm-project\my_tests\Tst1\ScMod1.cpp:26:13, C:/Users/TBrewer/Documents/llvm-project/my_tests/ht_lib\HtSyscTypes.h:44:46> 'void'
+| |     `-MemberExpr 0x596fb8 <C:\Users\TBrewer\Documents\llvm-project\my_tests\Tst1\ScMod1.cpp:26:13> '<bound member function type>' ->PersHta1x 0x5958a0
+| |       `-CXXThisExpr 0x596fa0 <col:13> 'class PersHta *' this
+| |-CXXMethodDecl 0x59b5e0 <line:3:11, <invalid sloc>> operator= 'class PersHta &(const class PersHta &)' inline noexcept-unevaluated 0x59b5e0
+| | `-ParmVarDecl 0x59b710 <col:11> 'const class PersHta &'
+| `-CXXMethodDecl 0x59c190 <col:11, <invalid sloc>> operator= 'class PersHta &(class PersHta &&)' inline noexcept-unevaluated 0x59c190
+|   `-ParmVarDecl 0x59c2c0 <col:11> 'class PersHta &&'
+|-FunctionDecl 0x5974e0 <line:31:1, line:39:1> func 'void (int *, int (&)[3])'
+| |-ParmVarDecl 0x597250 <line:31:11, col:18> a 'int *':'int *'
+| |-ParmVarDecl 0x5973d0 <col:21, col:31> b 'int (&)[3]'
+| `-CompoundStmt 0x597d00 <line:32:1, line:39:1>
+|   |-DeclStmt 0x5976b0 <line:33:2, col:14>
+|   | `-VarDecl 0x5975b0 <col:2, col:13> c 'int'
+|   |   `-ImplicitCastExpr 0x597698 <col:10, col:13> 'int' <LValueToRValue>
+|   |     `-ArraySubscriptExpr 0x597670 <col:10, col:13> 'int' lvalue
+|   |       |-ImplicitCastExpr 0x597658 <col:10> 'int *' <ArrayToPointerDecay>
+|   |       | `-DeclRefExpr 0x597608 <col:10> 'int [3]':'int [3]' lvalue ParmVar 0x5973d0 'b' 'int (&)[3]'
+|   |       `-IntegerLiteral 0x597630 <col:12> 'int' 1
+|   |-DeclStmt 0x5977e0 <line:34:2, col:14>
+|   | `-VarDecl 0x5976e0 <col:2, col:13> d 'int'
+|   |   `-ImplicitCastExpr 0x5977c8 <col:10, col:13> 'int' <LValueToRValue>
+|   |     `-ArraySubscriptExpr 0x5977a0 <col:10, col:13> 'int' lvalue
+|   |       |-ImplicitCastExpr 0x597788 <col:10> 'int *':'int *' <LValueToRValue>
+|   |       | `-DeclRefExpr 0x597738 <col:10> 'int *':'int *' lvalue ParmVar 0x597250 'a' 'int *':'int *'
+|   |       `-IntegerLiteral 0x597760 <col:12> 'int' 4
+|   |-DeclStmt 0x5978a8 <line:35:2, col:14>
+|   | `-VarDecl 0x597810 <col:2, col:6> e 'int'
+|   |-DeclStmt 0x597960 <line:36:2, col:11>
+|   | `-VarDecl 0x5978e0 <col:2, col:10> i 'int'
+|   |   `-IntegerLiteral 0x597938 <col:10> 'int' 1
+|   |-DeclStmt 0x597a58 <line:37:2, col:10>
+|   | `-VarDecl 0x597a00 <col:2, col:9> f 'int [6]'
+|   `-BinaryOperator 0x597cd8 <line:38:2, col:25> 'int' lvalue '='
+|     |-ArraySubscriptExpr 0x597af8 <col:2, col:7> 'int' lvalue
+|     | |-ImplicitCastExpr 0x597ae0 <col:2> 'int *' <ArrayToPointerDecay>
+|     | | `-DeclRefExpr 0x597a70 <col:2> 'int [6]' lvalue Var 0x597a00 'f' 'int [6]'
+|     | `-UnaryOperator 0x597ac0 <col:4, col:5> 'int' postfix '++'
+|     |   `-DeclRefExpr 0x597a98 <col:4> 'int' lvalue Var 0x5978e0 'i' 'int'
+|     `-BinaryOperator 0x597cb0 <col:11, col:25> 'int' '+'
+|       |-ImplicitCastExpr 0x597c80 <col:11, col:16> 'int' <LValueToRValue>
+|       | `-ArraySubscriptExpr 0x597ba8 <col:11, col:16> 'int' lvalue
+|       |   |-ImplicitCastExpr 0x597b90 <col:11> 'int *' <ArrayToPointerDecay>
+|       |   | `-DeclRefExpr 0x597b20 <col:11> 'int [3]':'int [3]' lvalue ParmVar 0x5973d0 'b' 'int (&)[3]'
+|       |   `-UnaryOperator 0x597b70 <col:13, col:14> 'int' postfix '++'
+|       |     `-DeclRefExpr 0x597b48 <col:13> 'int' lvalue Var 0x5978e0 'i' 'int'
+|       `-ImplicitCastExpr 0x597c98 <col:20, col:25> 'int' <LValueToRValue>
+|         `-ArraySubscriptExpr 0x597c58 <col:20, col:25> 'int' lvalue
+|           |-ImplicitCastExpr 0x597c40 <col:20> 'int *':'int *' <LValueToRValue>
+|           | `-DeclRefExpr 0x597bd0 <col:20> 'int *':'int *' lvalue ParmVar 0x597250 'a' 'int *':'int *'
+|           `-UnaryOperator 0x597c20 <col:22, col:23> 'int' postfix '++'
+|             `-DeclRefExpr 0x597bf8 <col:22> 'int' lvalue Var 0x5978e0 'i' 'int'
+|-CXXMethodDecl 0x597da0 parent 0x594ca0 prev 0x5958a0 <line:41:1, line:55:1> PersHta1x 'void (void)'
+| `-CompoundStmt 0x59dbd8 <line:42:1, line:55:1>
+|   |-DeclStmt 0x597f30 <line:43:2, col:5>
+|   | `-VarDecl 0x597ea0 <col:2, col:4> x 'class PersHta::X'
+|   |   `-CXXConstructExpr 0x597ef8 <col:4> 'class PersHta::X' 'void (void)'
+|   |-CXXOperatorCallExpr 0x59a4b0 <line:44:2, col:8> 'class PersHta::X' lvalue
+|   | |-ImplicitCastExpr 0x59a498 <col:4> 'class PersHta::X &(*)(class PersHta::X &&)' <FunctionToPointerDecay>
+|   | | `-DeclRefExpr 0x59c340 <col:4> 'class PersHta::X &(class PersHta::X &&)' lvalue CXXMethod 0x59bfd0 'operator=' 'class PersHta::X &(class PersHta::X &&) noexcept'
+|   | |-DeclRefExpr 0x597f48 <col:2> 'class PersHta::X' lvalue Var 0x597ea0 'x' 'class PersHta::X'
+|   | `-MaterializeTemporaryExpr 0x59c320 <col:6, col:8> 'class PersHta::X' xvalue
+|   |   `-CXXTemporaryObjectExpr 0x597f80 <col:6, col:8> 'class PersHta::X' 'void (void)'
+|   |-DeclStmt 0x59aa80 <line:46:2, col:5>
+|   | `-VarDecl 0x59a510 <col:2, col:4> v 'class PersHta::V'
+|   |   `-CXXConstructExpr 0x59aa48 <col:4> 'class PersHta::V' 'void (void)'
+|   |-CXXOperatorCallExpr 0x59b240 <line:47:2, col:8> 'class PersHta::V' lvalue
+|   | |-ImplicitCastExpr 0x59b228 <col:4> 'class PersHta::V &(*)(class PersHta::V &&)' <FunctionToPointerDecay>
+|   | | `-DeclRefExpr 0x59afd8 <col:4> 'class PersHta::V &(class PersHta::V &&)' lvalue CXXMethod 0x59ae00 'operator=' 'class PersHta::V &(class PersHta::V &&) noexcept'
+|   | |-DeclRefExpr 0x59aa98 <col:2> 'class PersHta::V' lvalue Var 0x59a510 'v' 'class PersHta::V'
+|   | `-MaterializeTemporaryExpr 0x59af90 <col:6, col:8> 'class PersHta::V' xvalue
+|   |   `-CXXTemporaryObjectExpr 0x59aad0 <col:6, col:8> 'class PersHta::V' 'void (void)' zeroing
+|   |-DeclStmt 0x59d838 <line:49:2, col:11>
+|   | `-VarDecl 0x59b2a0 <col:2, col:10> y 'class PersHta::X'
+|   |   `-CXXConstructExpr 0x59d7f8 <col:8, col:10> 'class PersHta::X' 'void (class PersHta::X &&) noexcept' elidable
+|   |     `-MaterializeTemporaryExpr 0x59b348 <col:8, col:10> 'class PersHta::X' xvalue
+|   |       `-CXXTemporaryObjectExpr 0x59b308 <col:8, col:10> 'class PersHta::X' 'void (void)'
+|   |-DeclStmt 0x59d9b8 <line:50:2, col:12>
+|   | `-VarDecl 0x59d860 <col:2, col:11> z 'class PersHta::X'
+|   |   `-CXXConstructExpr 0x59d978 <col:8, col:11> 'class PersHta::X' 'void (class PersHta::X &&) noexcept' elidable
+|   |     `-MaterializeTemporaryExpr 0x59d958 <col:8, col:11> 'class PersHta::X' xvalue
+|   |       `-CXXFunctionalCastExpr 0x59d930 <col:8, col:11> 'class PersHta::X' functional cast to class PersHta::X <ConstructorConversion>
+|   |         `-CXXConstructExpr 0x59d8f0 <col:8, col:11> 'class PersHta::X' 'void (int)'
+|   |           `-IntegerLiteral 0x59d8c8 <col:10> 'int' 3
+|   |-CXXOperatorCallExpr 0x59db20 <line:52:2, col:9> 'class PersHta::X' lvalue
+|   | |-ImplicitCastExpr 0x59db08 <col:4> 'class PersHta::X &(*)(class PersHta::X &&) noexcept' <FunctionToPointerDecay>
+|   | | `-DeclRefExpr 0x59dab8 <col:4> 'class PersHta::X &(class PersHta::X &&) noexcept' lvalue CXXMethod 0x59bfd0 'operator=' 'class PersHta::X &(class PersHta::X &&) noexcept'
+|   | |-DeclRefExpr 0x59d9d0 <col:2> 'class PersHta::X' lvalue Var 0x59d860 'z' 'class PersHta::X'
+|   | `-MaterializeTemporaryExpr 0x59da98 <col:6, col:9> 'class PersHta::X' xvalue
+|   |   `-CXXFunctionalCastExpr 0x59da70 <col:6, col:9> 'class PersHta::X' functional cast to class PersHta::X <ConstructorConversion>
+|   |     `-CXXConstructExpr 0x59da30 <col:6, col:9> 'class PersHta::X' 'void (int)'
+|   |       `-IntegerLiteral 0x59da08 <col:8> 'int' 3
+|   `-CXXMemberCallExpr 0x59dbb0 <line:54:2, col:14> 'void'
+|     `-MemberExpr 0x59db80 <col:2> '<bound member function type>' ->PersHta_src 0x595970
+|       `-CXXThisExpr 0x59db68 <col:2> 'class PersHta *' this
+`-CXXMethodDecl 0x59dc70 parent 0x594ca0 prev 0x595970 <line:57:1, line:77:1> PersHta_src 'void (void)'
+  `-CompoundStmt 0x5998e0 <line:58:1, line:77:1>
+    |-DeclStmt 0x59df20 <line:59:2, col:8>
+    | `-VarDecl 0x59de90 <col:2, col:7> q 'class PersHta::X [5]'
+    |   `-CXXConstructExpr 0x59dee8 <col:4> 'class PersHta::X [5]' 'void (void)'
+    |-DeclStmt 0x59e2f8 <line:60:2, col:25>
+    | `-VarDecl 0x59dfc0 <col:2, col:24> s 'class PersHta::X [4]'
+    |   `-InitListExpr 0x59e1a8 <col:11, col:24> 'class PersHta::X [4]'
+    |     |-CXXConstructExpr 0x59e208 <col:13, col:16> 'class PersHta::X' 'void (class PersHta::X &&) noexcept' elidable
+    |     | `-MaterializeTemporaryExpr 0x59e1e8 <col:13, col:16> 'class PersHta::X' xvalue
+    |     |   `-CXXFunctionalCastExpr 0x59e090 <col:13, col:16> 'class PersHta::X' functional cast to class PersHta::X <ConstructorConversion>
+    |     |     `-CXXConstructExpr 0x59e050 <col:13, col:16> 'class PersHta::X' 'void (int)'
+    |     |       `-IntegerLiteral 0x59e028 <col:15> 'int' 1
+    |     `-CXXConstructExpr 0x59e270 <col:19, col:22> 'class PersHta::X' 'void (class PersHta::X &&) noexcept' elidable
+    |       `-MaterializeTemporaryExpr 0x59e250 <col:19, col:22> 'class PersHta::X' xvalue
+    |         `-CXXFunctionalCastExpr 0x59e130 <col:19, col:22> 'class PersHta::X' functional cast to class PersHta::X <ConstructorConversion>
+    |           `-CXXConstructExpr 0x59e0f0 <col:19, col:22> 'class PersHta::X' 'void (int)'
+    |             `-IntegerLiteral 0x59e0c8 <col:21> 'int' 4
+    |-DeclStmt 0x5984c8 <line:61:2, col:47>
+    | `-VarDecl 0x59e3d0 <col:2, col:46> t 'class PersHta::X [4][5]'
+    |   `-InitListExpr 0x59e748 <col:14, col:46> 'class PersHta::X [4][5]'
+    |     `-InitListExpr 0x598270 <col:16, col:44> 'class PersHta::X [5]'
+    |       |-CXXConstructExpr 0x5982f8 <col:16, col:19> 'class PersHta::X' 'void (class PersHta::X &&) noexcept' elidable
+    |       | `-MaterializeTemporaryExpr 0x5982d8 <col:16, col:19> 'class PersHta::X' xvalue
+    |       |   `-CXXFunctionalCastExpr 0x59e4a0 <col:16, col:19> 'class PersHta::X' functional cast to class PersHta::X <ConstructorConversion>
+    |       |     `-CXXConstructExpr 0x59e460 <col:16, col:19> 'class PersHta::X' 'void (int)'
+    |       |       `-IntegerLiteral 0x59e438 <col:18> 'int' 0
+    |       |-CXXConstructExpr 0x598358 <col:22, col:24> 'class PersHta::X' 'void (class PersHta::X &&) noexcept' elidable
+    |       | `-MaterializeTemporaryExpr 0x598338 <col:22, col:24> 'class PersHta::X' xvalue
+    |       |   `-CXXTemporaryObjectExpr 0x59e4d8 <col:22, col:24> 'class PersHta::X' 'void (void)'
+    |       |-CXXConstructExpr 0x5983b8 <col:27, col:32> 'class PersHta::X' 'void (class PersHta::X &&) noexcept' elidable
+    |       | `-MaterializeTemporaryExpr 0x598398 <col:29, col:32> 'class PersHta::X' xvalue
+    |       |   `-CXXFunctionalCastExpr 0x59e590 <col:29, col:32> 'class PersHta::X' functional cast to class PersHta::X <ConstructorConversion>
+    |       |     `-CXXConstructExpr 0x59e550 <col:29, col:32> 'class PersHta::X' 'void (int)'
+    |       |       `-IntegerLiteral 0x59e528 <col:31> 'int' 2
+    |       `-CXXConstructExpr 0x598418 <col:37, col:42> 'class PersHta::X' 'void (class PersHta::X &&) noexcept' elidable
+    |         `-MaterializeTemporaryExpr 0x5983f8 <col:39, col:42> 'class PersHta::X' xvalue
+    |           `-CXXFunctionalCastExpr 0x59e678 <col:39, col:42> 'class PersHta::X' functional cast to class PersHta::X <ConstructorConversion>
+    |             `-CXXConstructExpr 0x59e638 <col:39, col:42> 'class PersHta::X' 'void (int)'
+    |               `-IntegerLiteral 0x59e610 <col:41> 'int' 5
+    |-DeclStmt 0x598d10 <line:62:2, col:50>
+    | `-VarDecl 0x5985e0 <col:2, col:49> u 'class PersHta::X [4][3]'
+    |   `-InitListExpr 0x598950 <col:14, col:49> 'class PersHta::X [4][3]'
+    |     |-InitListExpr 0x598990 <col:16, col:27> 'class PersHta::X [3]'
+    |     | |-CXXConstructExpr 0x5989f8 <col:18, col:20> 'class PersHta::X' 'void (class PersHta::X &&) noexcept' elidable
+    |     | | `-MaterializeTemporaryExpr 0x5989d8 <col:18, col:20> 'class PersHta::X' xvalue
+    |     | |   `-CXXTemporaryObjectExpr 0x598648 <col:18, col:20> 'class PersHta::X' 'void (void)'
+    |     | `-CXXConstructExpr 0x598a60 <col:23, col:25> 'class PersHta::X' 'void (class PersHta::X &&) noexcept' elidable
+    |     |   `-MaterializeTemporaryExpr 0x598a40 <col:23, col:25> 'class PersHta::X' xvalue
+    |     |     `-CXXTemporaryObjectExpr 0x598698 <col:23, col:25> 'class PersHta::X' 'void (void)'
+    |     |-InitListExpr 0x598ab0 <col:30, col:37> 'class PersHta::X [3]'
+    |     | `-CXXConstructExpr 0x598b20 <col:32, col:35> 'class PersHta::X' 'void (class PersHta::X &&) noexcept' elidable
+    |     |   `-MaterializeTemporaryExpr 0x598b00 <col:32, col:35> 'class PersHta::X' xvalue
+    |     |     `-CXXFunctionalCastExpr 0x5987a0 <col:32, col:35> 'class PersHta::X' functional cast to class PersHta::X <ConstructorConversion>
+    |     |       `-CXXConstructExpr 0x598760 <col:32, col:35> 'class PersHta::X' 'void (int)'
+    |     |         `-IntegerLiteral 0x598738 <col:34> 'int' 1
+    |     `-InitListExpr 0x598b68 <col:40, col:47> 'class PersHta::X [3]'
+    |       `-CXXConstructExpr 0x598be8 <col:42, col:45> 'class PersHta::X' 'void (class PersHta::X &&) noexcept' elidable
+    |         `-MaterializeTemporaryExpr 0x598bc8 <col:42, col:45> 'class PersHta::X' xvalue
+    |           `-CXXFunctionalCastExpr 0x598888 <col:42, col:45> 'class PersHta::X' functional cast to class PersHta::X <ConstructorConversion>
+    |             `-CXXConstructExpr 0x598848 <col:42, col:45> 'class PersHta::X' 'void (int)'
+    |               `-IntegerLiteral 0x598820 <col:44> 'int' 2
+    |-CXXOperatorCallExpr 0x598f50 <line:63:2, col:15> 'class PersHta::X' lvalue
+    | |-ImplicitCastExpr 0x598f38 <col:10> 'class PersHta::X &(*)(class PersHta::X &&) noexcept' <FunctionToPointerDecay>
+    | | `-DeclRefExpr 0x598f10 <col:10> 'class PersHta::X &(class PersHta::X &&) noexcept' lvalue CXXMethod 0x59bfd0 'operator=' 'class PersHta::X &(class PersHta::X &&) noexcept'
+    | |-ArraySubscriptExpr 0x598e28 <col:2, col:8> 'class PersHta::X' lvalue
+    | | |-ImplicitCastExpr 0x598e10 <col:2, col:5> 'class PersHta::X *' <ArrayToPointerDecay>
+    | | | `-ArraySubscriptExpr 0x598dc0 <col:2, col:5> 'class PersHta::X [5]' lvalue
+    | | |   |-ImplicitCastExpr 0x598da8 <col:2> 'class PersHta::X (*)[5]' <ArrayToPointerDecay>
+    | | |   | `-DeclRefExpr 0x598d28 <col:2> 'class PersHta::X [4][5]' lvalue Var 0x59e3d0 't' 'class PersHta::X [4][5]'
+    | | |   `-IntegerLiteral 0x598d50 <col:4> 'int' 2
+    | | `-IntegerLiteral 0x598de8 <col:7> 'int' 4
+    | `-MaterializeTemporaryExpr 0x598ef0 <col:12, col:15> 'class PersHta::X' xvalue
+    |   `-CXXFunctionalCastExpr 0x598ec8 <col:12, col:15> 'class PersHta::X' functional cast to class PersHta::X <ConstructorConversion>
+    |     `-CXXConstructExpr 0x598e88 <col:12, col:15> 'class PersHta::X' 'void (int)'
+    |       `-IntegerLiteral 0x598e60 <col:14> 'int' 6
+    |-CompoundStmt 0x599170 <line:65:2, line:69:2>
+    | |-DeclStmt 0x599030 <line:66:3, col:12>
+    | | `-VarDecl 0x598fb0 <col:3, col:11> x 'int'
+    | |   `-IntegerLiteral 0x599008 <col:11> 'int' 3
+    | |-DeclStmt 0x5990e0 <line:67:3, col:12>
+    | | `-VarDecl 0x599060 <col:3, col:11> t 'int'
+    | |   `-IntegerLiteral 0x5990b8 <col:11> 'int' 2
+    | `-BinaryOperator 0x599148 <line:68:3, col:7> 'int' lvalue '='
+    |   |-DeclRefExpr 0x5990f8 <col:3> 'int' lvalue Var 0x599060 't' 'int'
+    |   `-IntegerLiteral 0x599120 <col:7> 'int' 1
+    |-DeclStmt 0x5993b8 <line:71:2, col:10>
+    | `-VarDecl 0x599360 <col:2, col:9> g 'int [2]'
+    |-DeclStmt 0x5994e8 <line:72:2, col:13>
+    | `-VarDecl 0x599490 <col:2, col:12> h 'int [4][3]'
+    |-DeclStmt 0x5996c8 <line:74:2, col:20>
+    | `-VarDecl 0x599560 <col:2, col:19> j 'int (&)[3]'
+    |   `-ArraySubscriptExpr 0x599650 <col:16, col:19> 'int [3]' lvalue
+    |     |-ImplicitCastExpr 0x599638 <col:16> 'int (*)[3]' <ArrayToPointerDecay>
+    |     | `-DeclRefExpr 0x5995b8 <col:16> 'int [4][3]' lvalue Var 0x599490 'h' 'int [4][3]'
+    |     `-IntegerLiteral 0x5995e0 <col:18> 'int' 1
+    `-CallExpr 0x599890 <line:76:2, col:14> 'void'
+      |-ImplicitCastExpr 0x599878 <col:2> 'void (*)(int *, int (&)[3])' <FunctionToPointerDecay>
+      | `-DeclRefExpr 0x5997f8 <col:2> 'void (int *, int (&)[3])' lvalue Function 0x5974e0 'func' 'void (int *, int (&)[3])'
+      |-ImplicitCastExpr 0x5998c8 <col:7> 'int *' <ArrayToPointerDecay>
+      | `-DeclRefExpr 0x599740 <col:7> 'int [2]' lvalue Var 0x599360 'g' 'int [2]'
+      `-ArraySubscriptExpr 0x5997d0 <col:10, col:13> 'int [3]' lvalue
+        |-ImplicitCastExpr 0x5997b8 <col:10> 'int (*)[3]' <ArrayToPointerDecay>
+        | `-DeclRefExpr 0x599768 <col:10> 'int [4][3]' lvalue Var 0x599490 'h' 'int [4][3]'
+        `-IntegerLiteral 0x599790 <col:12> 'int' 11 warning and 1 error generated.
+Error while processing C:\Users\TBrewer\Documents\llvm-project\my_tests\Tst1\ScMod1.cpp.
+
+Press any key to continue . . .
