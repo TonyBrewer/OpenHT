@@ -329,24 +329,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\src_pers\bug_randy.htl">
-      <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(HtToolsPath)\bin\htl -cl ..\src_pers\bug_randy.htl</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(HtToolsPath)\bin\htl -cl ..\src_pers\bug_randy.htl</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">$(HtToolsPath)\bin\htl -cl ..\src_pers\bug_randy.htl</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(HtToolsPath)\bin\htl -cl ..\src_pers\bug_randy.htl</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(HtToolsPath)\bin\htl -cl ..\src_pers\bug_randy.htl</Command>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">htl %(Filename) ...</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">htl %(Filename) ...</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">htl %(Filename) ...</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">htl %(Filename) ...</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">htl %(Filename) ...</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\ht\sysc\HostIntf.h</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\ht\sysc\HostIntf.h;..\ht\sysc\UnitIntf.h;..\ht\sysc\PersCommon.h;..\ht\sysc\PersAeTop.h;..\ht\sysc\PersAuTop.h;..\ht\sysc\PersHif.h;..\ht\sysc\PersAuHti.h;..\ht\sysc\PersAuHta.h;..\ht\sysc\PersAuMif0.h;..\ht\sysc\PersHello.h;..\ht\sysc\SyscAeTop.h;..\ht\sysc\SyscTop.h;..\ht\sysc\UnitIntf.cpp;..\ht\sysc\PersHif.cpp;..\ht\sysc\PersAuHti.cpp;..\ht\sysc\PersAuHta.cpp;..\ht\sysc\PersAuMif0.cpp;..\ht\sysc\PersHello.cpp;..\ht\sysc\SyscMon.cpp;..\ht\sysc\PersAuTop.sc;..\ht\sysc\PersAeTop.sc;..\ht\verilog\PersHif.v_;..\ht\verilog\PersAuHti.v_;..\ht\verilog\PersAuHta.v_;..\ht\verilog\PersAuMif0.v_;..\ht\verilog\PersHello.v_;..\ht\verilog\PersUnitCnt.v_;..\ht\verilog\PersXbarStub.v_;..\ht\verilog\PersMiStub.v_;..\ht\verilog\PersMoStub.v_</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">..\ht\sysc\HostIntf.h;..\ht\sysc\UnitIntf.h;..\ht\sysc\PersCommon.h;..\ht\sysc\PersAeTop.h;..\ht\sysc\PersAuTop.h;..\ht\sysc\PersHif.h;..\ht\sysc\PersAuHti.h;..\ht\sysc\PersAuHta.h;..\ht\sysc\PersAuMif0.h;..\ht\sysc\PersHello.h;..\ht\sysc\SyscAeTop.h;..\ht\sysc\SyscTop.h;..\ht\sysc\UnitIntf.cpp;..\ht\sysc\PersHif.cpp;..\ht\sysc\PersAuHti.cpp;..\ht\sysc\PersAuHta.cpp;..\ht\sysc\PersAuMif0.cpp;..\ht\sysc\PersHello.cpp;..\ht\sysc\SyscMon.cpp;..\ht\sysc\PersAuTop.sc;..\ht\sysc\PersAeTop.sc;..\ht\verilog\PersHif.v_;..\ht\verilog\PersAuHti.v_;..\ht\verilog\PersAuHta.v_;..\ht\verilog\PersAuMif0.v_;..\ht\verilog\PersHello.v_;..\ht\verilog\PersUnitCnt.v_;..\ht\verilog\PersXbarStub.v_;..\ht\verilog\PersMiStub.v_;..\ht\verilog\PersMoStub.v_</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\ht\sysc\HostIntf.h</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\ht\sysc\HostIntf.h</Outputs>
-    </CustomBuild>
     <CustomBuild Include="..\ht\sysc\PersAuTop.sc">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(HtToolsPath)\bin\htv -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc -DHT_SYSC ..\ht\sysc\%(Filename).sc ..\ht\sysc\%(Filename).h ..\ht\verilog\%(Filename).v</Command>

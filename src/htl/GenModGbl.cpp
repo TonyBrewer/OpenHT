@@ -247,18 +247,22 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 
 	if (bInstrWrite) {
 		// ht completion struct
-		m_gblRegDecl.Append("\tstruct CHtComp {\n");
+		CRecord htComp;
+		htComp.m_typeName = "CHtComp";
+		htComp.m_bCStyle = true;
 
 		if (mod.m_threads.m_htIdW.AsInt() > 0)
-			m_gblRegDecl.Append("\t\tsc_uint<%s_HTID_W> m_htId;\n", mod.m_modName.Upper().c_str());
+			htComp.AddStructField(FindHtIntType(eUnsigned, mod.m_threads.m_htIdW.AsInt()), "m_htId");
+		//mod.m_threads.m_htPriv.m_fieldList.back()->InitDimen(mod.m_threads.m_lineInfo);
+
+		htComp.AddStructField(&g_bool, "m_htCmdRdy");
 
 		for (size_t gvIdx = 0; gvIdx < mod.m_ngvList.size(); gvIdx += 1) {
 			CRam * pGv = mod.m_ngvList[gvIdx];
 
 			if (pGv->m_bWriteForInstrWrite)
-				m_gblRegDecl.Append("\t\tbool m_%sIwComp%s;\n", pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
+				htComp.AddStructField(&g_bool, VA("m_%sIwComp", pGv->m_gblName.c_str()), "", "", pGv->m_dimenList);
 		}
-		m_gblRegDecl.Append("\t\tbool m_htCmdRdy;\n");
 
 		for (size_t intfIdx = 0; intfIdx < modInst.m_cxrIntfList.size(); intfIdx += 1) {
 			CCxrIntf &cxrIntf = modInst.m_cxrIntfList[intfIdx];
@@ -267,11 +271,10 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 			if (cxrIntf.m_pDstMod->m_modName.AsStr() == "hif") continue;
 			if (cxrIntf.GetPortReplId() != 0) continue;
 
-			m_gblRegDecl.Append("\t\tbool m_%sCompRdy%s;\n",
-				cxrIntf.GetIntfName(), cxrIntf.GetPortReplDecl());
+			htComp.AddStructField(&g_bool, VA("m_%sCompRdy", cxrIntf.GetIntfName()), "", "", cxrIntf.GetPortReplDimen());
 		}
 
-		m_gblRegDecl.Append("\t};\n");
+		GenUserStructs(m_gblRegDecl, &htComp, "\t");
 
 		if (mod.m_threads.m_htIdW.AsInt() == 0) {
 			gblReg.Append("\tr_t%d_htCmdRdy = c_t%d_htCmdRdy;\n",
@@ -1179,6 +1182,47 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 		m_gblRegDecl.Append("\tht_dist_que<CHtComp, %d> m_htCompQue;\n", queDepthW);
 		gblReg.Append("\tm_htCompQue.clock(r_reset1x);\n");
 
+		if (mod.m_threads.m_htIdW.AsInt() == 0) {
+			GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, "CHtComp", "r_htCompQueFront");
+			gblReg.Append("\tr_htCompQueFront = c_htCompQueFront;\n");
+
+			GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, "bool", "r_htCompQueValid");
+			gblReg.Append("\tr_htCompQueValid = !r_reset1x && c_htCompQueValid;\n");
+		} else {
+			GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, "CHtComp", "r_c1_htCompQueFront");
+			gblReg.Append("\tr_c1_htCompQueFront = c_c0_htCompQueFront;\n");
+
+			GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, "bool", "r_c1_htCompQueValid");
+			gblReg.Append("\tr_c1_htCompQueValid = !r_reset1x && c_c0_htCompQueValid;\n");
+
+			GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, "CHtComp", "r_c2_htCompQueFront");
+			gblReg.Append("\tr_c2_htCompQueFront = c_c1_htCompQueFront;\n");
+
+			GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, "bool", "r_c2_htCompQueValid");
+			gblReg.Append("\tr_c2_htCompQueValid = !r_reset1x && c_c1_htCompQueValid;\n");
+
+			GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, "bool", "r_c2_htCompQueReplay");
+			gblReg.Append("\tr_c2_htCompQueReplay = c_c1_htCompQueReplay;\n");
+
+			for (size_t gvIdx = 0; gvIdx < mod.m_ngvList.size(); gvIdx += 1) {
+				CRam * pGv = mod.m_ngvList[gvIdx];
+
+				if (!pGv->m_bWriteForInstrWrite) continue;
+
+				m_gblRegDecl.Append("\tbool c_c1_%sIwComp%s;\n", pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
+
+				GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, "bool",
+					VA("r_c2_%sIwComp", pGv->m_gblName.c_str()), pGv->m_dimenList);
+
+				vector<int> refList(pGv->m_dimenList.size());
+				do {
+					string dimIdx = IndexStr(refList);
+					gblReg.Append("\tr_c2_%sIwComp%s = c_c1_%sIwComp%s;\n",
+						pGv->m_gblName.c_str(), dimIdx.c_str(), pGv->m_gblName.c_str(), dimIdx.c_str());
+				} while (DimenIter(pGv->m_dimenList, refList));
+			}
+		}
+
 		m_gblRegDecl.Append("\tht_uint%d c_htCompQueAvlCnt;\n", queDepthW + 1);
 		GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, VA("ht_uint%d", queDepthW + 1), "r_htCompQueAvlCnt");
 
@@ -1270,9 +1314,6 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 		gblPostInstr.Append("\t}\n");
 		gblPostInstr.Append("\n");
 
-		gblPostInstr.Append("\tbool c_htCompQueEmpty = m_htCompQue.empty();\n");
-		gblPostInstr.Append("\tCHtComp c_htCompQueFront = m_htCompQue.front();\n");
-
 		for (size_t gvIdx = 0; gvIdx < mod.m_ngvList.size(); gvIdx += 1) {
 			CRam * pGv = mod.m_ngvList[gvIdx];
 
@@ -1286,13 +1327,49 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 							gvWrStg - 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
 							pGv->m_gblName.c_str(), dimIdx.c_str());
 					} else {
-						gblPostInstr.Append("\tm_%sIwComp%s[1].read_addr(c_htCompQueFront.m_htId);\n",
+						gblPostInstr.Append("\tm_%sIwComp%s[1].read_addr(r_c1_htCompQueFront.m_htId);\n",
+							pGv->m_gblName.c_str(), dimIdx.c_str());
+						gblPostInstr.Append("\tc_c1_%sIwComp%s = m_%sIwComp%s[1].read_mem();\n",
+							pGv->m_gblName.c_str(), dimIdx.c_str(),
 							pGv->m_gblName.c_str(), dimIdx.c_str());
 					}
 				} while (DimenIter(pGv->m_dimenList, refList));
 			}
 		}
 		gblPostInstr.Append("\n");
+
+		string c2StgStr = mod.m_threads.m_htIdW.AsInt() == 0 ? "" : "c2_";
+
+		gblPostInstr.Append("\tbool c_%shtComp = r_%shtCompQueValid", c2StgStr.c_str(), c2StgStr.c_str());
+
+		for (size_t gvIdx = 0; gvIdx < mod.m_ngvList.size(); gvIdx += 1) {
+			CRam * pGv = mod.m_ngvList[gvIdx];
+
+			if (pGv->m_bWriteForInstrWrite) {
+				vector<int> refList(pGv->m_dimenList.size());
+				do {
+					string dimIdx = IndexStr(refList);
+					if (mod.m_threads.m_htIdW.AsInt() == 0) {
+						gblPostInstr.Append("\n\t\t&& r_htCompQueFront.m_%sIwComp%s == r_%sIwComp%s",
+							pGv->m_gblName.c_str(), dimIdx.c_str(),
+							pGv->m_gblName.c_str(), dimIdx.c_str());
+					} else {
+						gblPostInstr.Append("\n\t\t&& r_c2_htCompQueFront.m_%sIwComp%s == r_c2_%sIwComp%s",
+							pGv->m_gblName.c_str(), dimIdx.c_str(), pGv->m_gblName.c_str(), dimIdx.c_str());
+					}
+				} while (DimenIter(pGv->m_dimenList, refList));
+			}
+		}
+		gblPostInstr.Append(";\n");
+		gblPostInstr.NewLine();
+
+		if (mod.m_threads.m_htIdW.AsInt() == 0) {
+			gblPostInstr.Append("\tbool c_htCompQueHold = r_htCompQueValid && !c_htComp;\n");
+		} else {
+			gblPostInstr.Append("\tbool c_c1_htCompQueReplay = !r_c2_htCompQueReplay && r_c2_htCompQueValid && !c_c2_htComp;\n");
+			gblPostInstr.Append("\tbool c_htCompReplay = c_c1_htCompQueReplay || r_c2_htCompQueReplay;\n");
+		}
+		gblPostInstr.NewLine();
 
 		for (size_t intfIdx = 0; intfIdx < modInst.m_cxrIntfList.size(); intfIdx += 1) {
 			CCxrIntf &cxrIntf = modInst.m_cxrIntfList[intfIdx];
@@ -1304,29 +1381,14 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 				cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 		}
 
-		gblPostInstr.Append("\tif (!c_htCompQueEmpty");
-
-		for (size_t gvIdx = 0; gvIdx < mod.m_ngvList.size(); gvIdx += 1) {
-			CRam * pGv = mod.m_ngvList[gvIdx];
-
-			if (pGv->m_bWriteForInstrWrite) {
-				vector<int> refList(pGv->m_dimenList.size());
-				do {
-					string dimIdx = IndexStr(refList);
-					if (mod.m_threads.m_htIdW.AsInt() == 0) {
-						gblPostInstr.Append("\n\t\t&& c_htCompQueFront.m_%sIwComp%s == r_%sIwComp%s",
-							pGv->m_gblName.c_str(), dimIdx.c_str(),
-							pGv->m_gblName.c_str(), dimIdx.c_str());
-					} else {
-						gblPostInstr.Append("\n\t\t&& c_htCompQueFront.m_%sIwComp%s == m_%sIwComp%s[1].read_mem()",
-							pGv->m_gblName.c_str(), dimIdx.c_str(), pGv->m_gblName.c_str(), dimIdx.c_str());
-					}
-				} while (DimenIter(pGv->m_dimenList, refList));
-			}
+		if (mod.m_threads.m_htIdW.AsInt() == 0) {
+			gblPostInstr.Append("\tif (c_htComp) {\n");
+			gblPostInstr.Append("\t\tif (r_htCompQueFront.m_htCmdRdy)\n");
+		} else {
+			gblPostInstr.Append("\tif (!c_htCompReplay && c_c2_htComp) {\n");
+			gblPostInstr.Append("\t\tif (r_c2_htCompQueFront.m_htCmdRdy)\n");
 		}
-		gblPostInstr.Append(")\n\t{\n");
 
-		gblPostInstr.Append("\t\tif (c_htCompQueFront.m_htCmdRdy)\n");
 		if (mod.m_threads.m_htIdW.AsInt() == 0)
 			gblPostInstr.Append("\t\t\tc_htCompRdy = true;\n");
 		else
@@ -1339,12 +1401,14 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 			if (cxrIntf.m_pDstMod->m_modName.AsStr() == "hif") continue;
 
 			if (cxrIntf.m_cxrType == CxrCall) {
-				gblPostInstr.Append("\t\tif (c_htCompQueFront.m_%sCompRdy%s)\n",
+				gblPostInstr.Append("\t\tif (r_%shtCompQueFront.m_%sCompRdy%s)\n",
+					c2StgStr.c_str(),
 					cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 				gblPostInstr.Append("\t\t\tc_%s_%sCompRdy%s = true;\n",
 					cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 			} else {
-				gblPostInstr.Append("\t\tif (c_htCompQueFront.m_%sCompRdy%s) {\n",
+				gblPostInstr.Append("\t\tif (r_%shtCompQueFront.m_%sCompRdy%s) {\n",
+					c2StgStr.c_str(),
 					cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 				gblPostInstr.Append("\t\t\tc_%s_%sCompRdy%s = true;\n",
 					cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
@@ -1352,15 +1416,37 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 				if (mod.m_threads.m_htIdW.AsInt() == 0) {
 					gblPostInstr.Append("\t\t\tc_htBusy = false;\n");
 				} else {
-					gblPostInstr.Append("\t\t\tm_htIdPool.push(c_htCompQueFront.m_htId);\n");
+					gblPostInstr.Append("\t\t\tm_htIdPool.push(r_%shtCompQueFront.m_htId);\n",	c2StgStr.c_str());
 				}
 				gblPostInstr.Append("\t\t}\n");
 			}
 		}
 
 		gblPostInstr.Append("\t\tc_htCompQueAvlCnt += 1;\n");
-		gblPostInstr.Append("\t\tm_htCompQue.pop();\n");
 		gblPostInstr.Append("\t}\n");
+		gblPostInstr.NewLine();
+
+		if (mod.m_threads.m_htIdW.AsInt() == 0) {
+			gblPostInstr.Append("\tbool c_htCompQueValid = !c_htCompQueHold && !m_htCompQue.empty() || c_htCompQueHold && r_htCompQueValid;\n");
+			gblPostInstr.Append("\tCHtComp c_htCompQueFront = c_htCompQueHold ? r_htCompQueFront : m_htCompQue.front();\n");
+			gblPostInstr.NewLine();
+
+			gblPostInstr.Append("\tif (!m_htCompQue.empty() && (c_htComp || !r_htCompQueValid))\n");
+			gblPostInstr.Append("\t\tm_htCompQue.pop();\n");
+			gblPostInstr.NewLine();
+		} else {
+			gblPostInstr.Append("\tbool c_c0_htCompQueValid = !c_htCompReplay && !m_htCompQue.empty() || c_htCompReplay && r_c2_htCompQueValid;\n");
+			gblPostInstr.Append("\tCHtComp c_c0_htCompQueFront = c_htCompReplay ? r_c2_htCompQueFront : m_htCompQue.front();\n");
+			gblPostInstr.NewLine();
+
+			gblPostInstr.Append("\tbool c_c1_htCompQueValid = r_c1_htCompQueValid;\n");
+			gblPostInstr.Append("\tCHtComp c_c1_htCompQueFront = r_c1_htCompQueFront;\n");
+			gblPostInstr.NewLine();
+
+			gblPostInstr.Append("\tif (!m_htCompQue.empty() && !c_htCompReplay && (c_c2_htComp || !r_c2_htCompQueValid))\n");
+			gblPostInstr.Append("\t\tm_htCompQue.pop();\n");
+			gblPostInstr.NewLine();
+		}
 	}
 }
 
