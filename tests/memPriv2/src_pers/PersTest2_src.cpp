@@ -10,10 +10,6 @@ void CPersTest2::PersTest2()
 		case TEST2_ENTRY: {
 			S_called = true;
 
-			HtContinue(TEST2_RTN);
-			break;
-		}
-		case TEST2_RTN: {
 			BUSY_RETRY(SendReturnBusy_test2() || S_cnt < 128);
 
 			SendReturn_test2();

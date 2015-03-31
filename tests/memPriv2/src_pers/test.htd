@@ -28,9 +28,7 @@ test.AddCall(func=test2, fork=true);
 
 dsnInfo.AddModule(name=test2, htIdW=5);
 
-test2.AddInstr(name=TEST2_ENTRY)
-	.AddInstr(name=TEST2_RTN)
-	;
+test2.AddInstr(name=TEST2_ENTRY);
 
 test2.AddShared()
         .AddVar(type=bool, name=called)
