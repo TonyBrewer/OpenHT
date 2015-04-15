@@ -3085,9 +3085,14 @@ std::map <SgVariableSymbol *, bool> collectVariableAppearance (SgNode* root)
 
       appendStatement (option_stmt,  isSgBasicBlock(switch_stmt->get_body()));
     } // end case 0, 1, ...  
+#if 0
+    // Convey
+    // Omit default case with call to abort
+
     // default option: 
     SgDefaultOptionStmt* default_stmt = buildDefaultOptionStmt(buildBasicBlock(buildFunctionCallStmt("abort", buildVoidType(), NULL, scope))); 
     appendStatement (default_stmt,  isSgBasicBlock(switch_stmt->get_body()));
+#endif
 
     // save the current section id before checking for next available one
     // This is only useful to support lastprivate clause
