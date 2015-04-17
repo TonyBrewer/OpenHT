@@ -1,4 +1,4 @@
-dsnInfo.AddModule(name=test, htIdW=5);
+dsnInfo.AddModule(name=test, htIdW=3);
 
 test.AddInstr(name=TEST_ENTRY)
 	.AddInstr(name=TEST_CALL)

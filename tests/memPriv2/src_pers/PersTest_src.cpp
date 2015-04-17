@@ -28,7 +28,7 @@ void CPersTest::PersTest()
 			break;
 		}
 		case TEST_JOIN: {
-			P_sum = P_sum + 1;
+			P_sum += 1;
 
 			RecvReturnJoin_test2();
 			break;

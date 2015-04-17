@@ -1,0 +1,13 @@
+// -cl $(HtToolsPath)/tests/memPriv2/src_pers/memPriv.htl
+-wd $(HtToolsPath)/tests/memPriv2/msvs12/
+
+-cp wx-690
+-ac 1
+-uc 1
+-df 150
+-vcd_all
+-pn memPriv2
+-ml 0.2
+-I ../src
+../src_pers/test.htd
+../ht/sysc
