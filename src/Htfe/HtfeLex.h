@@ -98,7 +98,7 @@ public:
 		string tokenStr = m_tokenTbl[m_token].GetString();
 		return (tokenStr.empty()) ? m_stringBuf : tokenStr;
 	}
-	bool IsEqualOperator(EToken token) {
+	static bool IsEqualOperator(EToken token) {
 		string tkStr = GetTokenString(token);
 		char last = tkStr[tkStr.length()-1];
 		return (last == '=') && token != tk_lessEqual && token != tk_greaterEqual &&

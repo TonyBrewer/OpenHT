@@ -4866,6 +4866,8 @@ CHtvDesign::EIdentFmt CHtvDesign::FindIdentFmt(CHtvObject * pObj, CHtvObject * p
 				if (bConstRange) {
 					if (g_htvArgs.IsVivadoEnabled() && !bIsLeftOfEqual && subFieldLowBit > 0 && prevTk != tk_comma)
 						identFmt = eShfLowBitAndMask1;
+					else if (bTempVar && pExpr->IsExprTempVarWidth() && pExpr->GetExprTempVarWidth() == 1)
+						identFmt = eName;
 					else
 						identFmt = eNameAndConstBit;
 				} else

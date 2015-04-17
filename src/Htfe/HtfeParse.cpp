@@ -2717,14 +2717,19 @@ void CHtfeDesign::ParseStructMethod(CHtfeIdent *pHier)
 		}
 
 		if (GetToken() == tk_operator) {
-			if (GetNextToken() != tk_equal) {
-				ParseMsg(PARSE_ERROR, "HTV only supports overloaded assignment operator");
+			EToken tk = GetNextToken();
+			if (tk != tk_equal && tk != tk_plusEqual && tk != tk_minusEqual && tk != tk_asteriskEqual
+				&& tk != tk_slashEqual && tk != tk_percentEqual && tk != tk_ampersandEqual 
+				&& tk != tk_vbarEqual && tk != tk_lessLessEqual && tk != tk_greaterGreaterEqual
+				&& tk != tk_carotEqual) 
+			{
+				ParseMsg(PARSE_ERROR, "unsupported overloaded operator");
 				SkipTo(tk_rbrace);
 				GetNextToken();
 				return;
 			}
 
-			funcName = "operator=";
+			funcName = "operator" + CHtfeLex::GetTokenString(tk);
 
 			bIsOverloadedOperator = true;
 			overloadedOperator = GetToken();
@@ -2742,7 +2747,7 @@ void CHtfeDesign::ParseStructMethod(CHtfeIdent *pHier)
 		GetNextToken();
 	}
 
-	CHtfeIdent * pMember = pHier->InsertIdent(funcName);
+	CHtfeIdent * pMember = pHier->InsertIdent(funcName, true, true);
 	pMember->SetId(CHtfeIdent::id_function);
 	pMember->SetType(pType);
 	pMember->SetIsReturnRef(bIsReturnRef);
@@ -4609,16 +4614,16 @@ struct CFuncConv {
 	vector<CHtfeIdent *> m_pArgConvList;
 };
 
+CHtfeOperand *g_pErrOp = 0;
+
 CHtfeOperand * CHtfeDesign::ParseExpression(CHtfeIdent *pHier,
 	bool bCommaAsSeparator, bool bFoldConstants, bool bAllowOpEqual)
 {
-	static CHtfeOperand *pErrOp = 0;
-
-	if (pErrOp == 0) {
-		// if a parse error occurs, return pErrOp to avoid seg faults
-		pErrOp = HandleNewOperand();
-		pErrOp->InitAsConstant(GetLineInfo(), CConstValue(0));
-		pErrOp->SetIsErrOp();   // set flag to prohibit deletion
+	if (g_pErrOp == 0) {
+		// if a parse error occurs, return g_pErrOp to avoid seg faults
+		g_pErrOp = HandleNewOperand();
+		g_pErrOp->InitAsConstant(GetLineInfo(), CConstValue(0));
+		g_pErrOp->SetIsErrOp();   // set flag to prohibit deletion
 	}
 
 	CHtfeIdent *pIdent = 0;
@@ -4702,7 +4707,7 @@ CHtfeOperand * CHtfeDesign::ParseExpression(CHtfeIdent *pHier,
 			else if (GetString() == "sizeof") {
 				uint64_t bytes;
 				if (!ParseSizeofFunction(pHier, bytes))
-					return pErrOp;
+					return g_pErrOp;
 
 				pOperand = HandleNewOperand();
 				pOperand->InitAsConstant(GetLineInfo(), CConstValue(bytes));
@@ -4718,12 +4723,12 @@ CHtfeOperand * CHtfeDesign::ParseExpression(CHtfeIdent *pHier,
 						ParseMsg(PARSE_FATAL, "statement labels are not supported");
 					else
 						ParseMsg(PARSE_ERROR, lineInfo, "undeclared variable %s", identName.c_str());
-					return pErrOp;
+					return g_pErrOp;
 				}
 
 				if (pIdent->IsType()) {
 					ParseMsg(PARSE_ERROR, "constructor style type conversion is not supported");
-					return pErrOp;
+					return g_pErrOp;
 				}
 
 				vector<CHtfeOperand *> indexList;
@@ -4749,7 +4754,7 @@ CHtfeOperand * CHtfeDesign::ParseExpression(CHtfeIdent *pHier,
 			}
 
 			if (pOperand == 0)
-				return pErrOp;
+				return g_pErrOp;
 
 			operandStack.push_back(pOperand);
 
@@ -4778,7 +4783,7 @@ CHtfeOperand * CHtfeDesign::ParseExpression(CHtfeIdent *pHier,
 			}
 
 			if (!(pOperand = ParseExpression(pHier, false, false)))
-				return pErrOp;
+				return g_pErrOp;
 
 			pOperand->SetIsParenExpr();
 			operandStack.push_back(pOperand);
@@ -4786,14 +4791,14 @@ CHtfeOperand * CHtfeDesign::ParseExpression(CHtfeIdent *pHier,
 			if (GetToken() != tk_rparen) {
 				ParseMsg(PARSE_ERROR, "Expected a ')'");
 				SkipTo(tk_semicolon);
-				return pErrOp;
+				return g_pErrOp;
 			}
 
 			GetNextToken();
 		} else {
 			ParseMsg(PARSE_ERROR, "expected an operand");
 			SkipTo(tk_semicolon);
-			return pErrOp;
+			return g_pErrOp;
 		}
 
 		CScSubField ** ppSubField = operandStack.back()->GetSubFieldP();
@@ -4825,7 +4830,7 @@ CHtfeOperand * CHtfeDesign::ParseExpression(CHtfeIdent *pHier,
 				if (GetNextToken() != tk_identifier) {
 					ParseMsg(PARSE_ERROR, "expected a member name");
 					SkipTo(tk_semicolon);
-					return pErrOp;
+					return g_pErrOp;
 				}
 
 				pOp1 = operandStack.back();
@@ -4833,7 +4838,7 @@ CHtfeOperand * CHtfeDesign::ParseExpression(CHtfeIdent *pHier,
 				if (!pOp1->GetType()) {
 					ParseMsg(PARSE_ERROR, "expected a class or struct identifier");
 					SkipTo(tk_semicolon);
-					return pErrOp;
+					return g_pErrOp;
 				}
 
 				pIdent = pOp1->GetType()->FindIdent(GetString());
@@ -4846,7 +4851,7 @@ CHtfeOperand * CHtfeDesign::ParseExpression(CHtfeIdent *pHier,
 						ParseMsg(PARSE_ERROR, "expected struct identifier");
 						SkipTo(tk_semicolon);
 						GetNextToken();
-						return pErrOp;
+						return g_pErrOp;
 					}
 
 					HtfeOperandList_t indexList;
@@ -4911,7 +4916,7 @@ CHtfeOperand * CHtfeDesign::ParseExpression(CHtfeIdent *pHier,
 				if (pIdent == 0 || pIdent->GetId() != CHtfeIdent::id_function) {
 					ParseMsg(PARSE_ERROR, "'%s', expected a function or member name", GetString().c_str());
 					SkipTo(tk_semicolon);
-					return pErrOp;
+					return g_pErrOp;
 				}
 
 				// we found a method, push the tk_period operator
@@ -4933,7 +4938,7 @@ CHtfeOperand * CHtfeDesign::ParseExpression(CHtfeIdent *pHier,
 				if (pOp1->GetMember() == 0) {
 					ParseMsg(PARSE_ERROR, "unexpected [");
 					SkipTo(tk_semicolon);
-					return pErrOp;
+					return g_pErrOp;
 				}
 
 				if (pOp1->GetMember()->GetPrevHier() && pOp1->GetMember()->GetPrevHier()->IsStruct() && pOp1->GetDimenCnt() == 0) {
@@ -5046,7 +5051,7 @@ CHtfeOperand * CHtfeDesign::ParseExpression(CHtfeIdent *pHier,
 				if (GetToken() != tk_rparen) {
 					ParseMsg(PARSE_ERROR, "syntax error, expected a ')'");
 					SkipTo(tk_semicolon);
-					return pErrOp;
+					return g_pErrOp;
 				}
 
 				GetNextToken();	
@@ -5094,7 +5099,7 @@ CHtfeOperand * CHtfeDesign::ParseExpression(CHtfeIdent *pHier,
 					} else {
 						ParseMsg(PARSE_ERROR, "term does not evaluate to a function");
 						SkipTo(tk_semicolon);
-						return pErrOp;
+						return g_pErrOp;
 					}
 				} else {
 					pMember = pOp1->GetMember();
@@ -5103,7 +5108,7 @@ CHtfeOperand * CHtfeDesign::ParseExpression(CHtfeIdent *pHier,
 				if (!pIdent) {
 					ParseMsg(PARSE_ERROR, "function not declared");
 					SkipTo(tk_semicolon);
-					return pErrOp;
+					return g_pErrOp;
 				}
 
 				// check if a function exists with matching parameters
@@ -5167,11 +5172,11 @@ CHtfeOperand * CHtfeDesign::ParseExpression(CHtfeIdent *pHier,
 					if (minConvCnt == 0x10000) {
 						ParseMsg(PARSE_ERROR, "no function found that matches arguments");
 						SkipTo(tk_semicolon);
-						return pErrOp;
+						return g_pErrOp;
 					} else if (convList.size() > 1) {
 						ParseMsg(PARSE_ERROR, "multiple functions found that match arguments");
 						SkipTo(tk_semicolon);
-						return pErrOp;
+						return g_pErrOp;
 					} else {
 						// found a unique match, apply argument conversions
 						CHtfeIdent * pFunc = convList[0].m_pFunc;
@@ -5375,7 +5380,7 @@ CHtfeOperand * CHtfeDesign::ParseExpression(CHtfeIdent *pHier,
 			if (GetToken() != tk_colon) {
 				ParseMsg(PARSE_ERROR, "expected a ':'");
 				SkipTo(tk_semicolon);
-				return pErrOp;
+				return g_pErrOp;
 			}
 
 			GetNextToken();
@@ -5384,12 +5389,12 @@ CHtfeOperand * CHtfeDesign::ParseExpression(CHtfeIdent *pHier,
 		case tk_minusGreater:
 			ParseMsg(PARSE_ERROR, "unexpected operator '->'");
 			SkipTo(tk_semicolon);
-			return pErrOp;
+			return g_pErrOp;
 
 		default:
 			ParseMsg(PARSE_ERROR, "Expected an operator, near %s", GetTokenString().c_str());
 			SkipTo(tk_semicolon);
-			return pErrOp;
+			return g_pErrOp;
 		}
 	}
 }
@@ -5456,67 +5461,70 @@ void CHtfeDesign::ParseEvaluateExpression(CHtfeIdent *pHier, EToken tk, vector<C
 					pOp1->GetMember()->AddReader(pHier);
 				break;
 			}
-			case tk_ampersandEqual:
-			case tk_vbarEqual:
-			case tk_minusEqual:
-			case tk_lessLessEqual:
-			case tk_greaterGreaterEqual:
-			case tk_carotEqual:
-			case tk_asteriskEqual:
-			case tk_slashEqual:
-			case tk_percentEqual:
-			case tk_plusEqual:
-				{
-					// must separate into an equal and an operator
-					Assert(operandStack.size() >= 2);
-					pOp2 = operandStack.back();
-					operandStack.pop_back();
-					pOp1 = operandStack.back();
-					operandStack.pop_back();
+			//case tk_ampersandEqual:
+			//case tk_vbarEqual:
+			//case tk_minusEqual:
+			//case tk_lessLessEqual:
+			//case tk_greaterGreaterEqual:
+			//case tk_carotEqual:
+			//case tk_asteriskEqual:
+			//case tk_slashEqual:
+			//case tk_percentEqual:
+			//case tk_plusEqual:
+			//	{
+			//		// must separate into an equal and an operator
+			//		Assert(operandStack.size() >= 2);
+			//		pOp2 = operandStack.back();
+			//		operandStack.pop_back();
+			//		pOp1 = operandStack.back();
+			//		operandStack.pop_back();
 
-					CHtfeOperand *pTmpOp1 = HandleNewOperand();
-					pTmpOp1->InitAsIdentifier(GetLineInfo(), pOp1->GetMember());
-					pTmpOp1->SetType(pOp1->GetType());
-					pTmpOp1->SetIndexList(pOp1->GetIndexList());
-					*pTmpOp1->GetSubFieldP() = pOp1->GetSubField();
+			//		if (pOp1->GetLineInfo().m_lineNum == 31)
+			//			bool stop = true;
 
-					// link replicated operands so common index equations can be handled
-					pOp1->SetLinkedOp(pTmpOp1);
-					pTmpOp1->SetLinkedOp(pOp1);
+			//		CHtfeOperand *pTmpOp1 = HandleNewOperand();
+			//		pTmpOp1->InitAsIdentifier(GetLineInfo(), pOp1->GetMember());
+			//		pTmpOp1->SetType(pOp1->GetType());
+			//		pTmpOp1->SetIndexList(pOp1->GetIndexList());
+			//		*pTmpOp1->GetSubFieldP() = pOp1->GetSubField();
+
+			//		// link replicated operands so common index equations can be handled
+			//		pOp1->SetLinkedOp(pTmpOp1);
+			//		pTmpOp1->SetLinkedOp(pOp1);
 
 
-					CHtfeLex::EToken tkOp;
-					switch (stackTk) {
-					case tk_ampersandEqual:			tkOp = tk_ampersand; break;
-					case tk_vbarEqual:				tkOp = tk_vbar; break;
-					case tk_minusEqual:				tkOp = tk_minus; break;
-					case tk_lessLessEqual:			tkOp = tk_lessLess; break;
-					case tk_greaterGreaterEqual:	tkOp = tk_greaterGreater; break;
-					case tk_carotEqual:				tkOp = tk_carot; break;
-					case tk_asteriskEqual:			tkOp = tk_asterisk; break;
-					case tk_slashEqual:				tkOp = tk_slash; break;
-					case tk_percentEqual:			tkOp = tk_percent; break;
-					case tk_plusEqual:				tkOp = tk_plus; break;
-					default: Assert(0); tkOp = tk_eof; break;
-					}
+			//		CHtfeLex::EToken tkOp;
+			//		switch (stackTk) {
+			//		case tk_ampersandEqual:			tkOp = tk_ampersand; break;
+			//		case tk_vbarEqual:				tkOp = tk_vbar; break;
+			//		case tk_minusEqual:				tkOp = tk_minus; break;
+			//		case tk_lessLessEqual:			tkOp = tk_lessLess; break;
+			//		case tk_greaterGreaterEqual:	tkOp = tk_greaterGreater; break;
+			//		case tk_carotEqual:				tkOp = tk_carot; break;
+			//		case tk_asteriskEqual:			tkOp = tk_asterisk; break;
+			//		case tk_slashEqual:				tkOp = tk_slash; break;
+			//		case tk_percentEqual:			tkOp = tk_percent; break;
+			//		case tk_plusEqual:				tkOp = tk_plus; break;
+			//		default: Assert(0); tkOp = tk_eof; break;
+			//		}
 
-					CHtfeOperand *pTmp = HandleNewOperand();
-					pTmp->InitAsOperator(GetLineInfo(), tkOp, pTmpOp1, pOp2);
+			//		CHtfeOperand *pTmp = HandleNewOperand();
+			//		pTmp->InitAsOperator(GetLineInfo(), tkOp, pTmpOp1, pOp2);
 
-					pOp2->SetIsParenExpr();
+			//		pOp2->SetIsParenExpr();
 
-					pRslt = HandleNewOperand();
-					pRslt->InitAsOperator(GetLineInfo(), tk_equal, pOp1, pTmp);
-					operandStack.push_back(pRslt);
+			//		pRslt = HandleNewOperand();
+			//		pRslt->InitAsOperator(GetLineInfo(), tk_equal, pOp1, pTmp);
+			//		operandStack.push_back(pRslt);
 
-					if (pOp1->GetMember()->IsVariable())
-						pOp1->GetMember()->AddWriter(pHier);
-					if (pOp1->GetMember()->IsVariable())
-						pOp1->GetMember()->AddReader(pHier);
-					if (pOp2->GetMember()->IsVariable())
-						pOp2->GetMember()->AddReader(pHier);
-				}
-				break;
+			//		if (pOp1->GetMember()->IsVariable())
+			//			pOp1->GetMember()->AddWriter(pHier);
+			//		if (pOp1->GetMember()->IsVariable())
+			//			pOp1->GetMember()->AddReader(pHier);
+			//		if (pOp2->GetMember()->IsVariable())
+			//			pOp2->GetMember()->AddReader(pHier);
+			//	}
+			//	break;
 			case tk_equal:
 				bIsEqual = true;
 				// fall into default
@@ -5528,6 +5536,54 @@ void CHtfeDesign::ParseEvaluateExpression(CHtfeIdent *pHier, EToken tk, vector<C
 					operandStack.pop_back();
 					pOp1 = operandStack.back();
 					operandStack.pop_back();
+
+					if (!pOp1->GetType()->IsStruct() && (stackTk == tk_ampersandEqual || stackTk == tk_vbarEqual ||
+						stackTk == tk_minusEqual || stackTk == tk_lessLessEqual || stackTk == tk_greaterGreaterEqual ||
+						stackTk == tk_carotEqual || stackTk == tk_asteriskEqual || stackTk == tk_slashEqual ||
+						stackTk == tk_percentEqual || stackTk == tk_plusEqual))
+					{
+						CHtfeOperand *pTmpOp1 = HandleNewOperand();
+						pTmpOp1->InitAsIdentifier(GetLineInfo(), pOp1->GetMember());
+						pTmpOp1->SetType(pOp1->GetType());
+						pTmpOp1->SetIndexList(pOp1->GetIndexList());
+						*pTmpOp1->GetSubFieldP() = pOp1->GetSubField();
+
+						// link replicated operands so common index equations can be handled
+						pOp1->SetLinkedOp(pTmpOp1);
+						pTmpOp1->SetLinkedOp(pOp1);
+
+						CHtfeLex::EToken tkOp;
+						switch (stackTk) {
+						case tk_ampersandEqual:			tkOp = tk_ampersand; break;
+						case tk_vbarEqual:				tkOp = tk_vbar; break;
+						case tk_minusEqual:				tkOp = tk_minus; break;
+						case tk_lessLessEqual:			tkOp = tk_lessLess; break;
+						case tk_greaterGreaterEqual:	tkOp = tk_greaterGreater; break;
+						case tk_carotEqual:				tkOp = tk_carot; break;
+						case tk_asteriskEqual:			tkOp = tk_asterisk; break;
+						case tk_slashEqual:				tkOp = tk_slash; break;
+						case tk_percentEqual:			tkOp = tk_percent; break;
+						case tk_plusEqual:				tkOp = tk_plus; break;
+						default: Assert(0);				tkOp = tk_eof; break;
+						}
+
+						CHtfeOperand *pTmp = HandleNewOperand();
+						pTmp->InitAsOperator(GetLineInfo(), tkOp, pTmpOp1, pOp2);
+
+						pOp2->SetIsParenExpr();
+
+						pRslt = HandleNewOperand();
+						pRslt->InitAsOperator(GetLineInfo(), tk_equal, pOp1, pTmp);
+						operandStack.push_back(pRslt);
+
+						if (pOp1->GetMember()->IsVariable())
+							pOp1->GetMember()->AddWriter(pHier);
+						if (pOp1->GetMember()->IsVariable())
+							pOp1->GetMember()->AddReader(pHier);
+						if (pOp2->GetMember()->IsVariable())
+							pOp2->GetMember()->AddReader(pHier);
+						break;
+					}
 
 					if (stackTk == tk_comma && (
 						(!pOp1->IsLeaf() && pOp1->GetOperator() != tk_comma && pOp1->GetOperator() != tk_typeCast) ||
@@ -5566,7 +5622,7 @@ void CHtfeDesign::ParseEvaluateExpression(CHtfeIdent *pHier, EToken tk, vector<C
 							for (op1Iter.Begin(); !op1Iter.End(); op1Iter++) {
 
 								if (op1Iter.IsConstructor()) continue;
-								if (op1Iter.IsUserConversion() && stackTk == tk_equal) continue;
+								if (op1Iter.IsUserConversion() && CHtfeLex::IsEqualOperator(stackTk)) continue;
 								if (memberIter.IsOverloadedOperator() && op1Iter.IsOverloadedOperator()) continue;
 								if (op1Iter.IsOverloadedOperator() && op1Iter.GetOverloadedOperator() != stackTk) continue;
 
@@ -5599,9 +5655,11 @@ void CHtfeDesign::ParseEvaluateExpression(CHtfeIdent *pHier, EToken tk, vector<C
 							}
 						}
 
-						if (minConvCnt == 100)
+						if (minConvCnt == 100) {
 							ParseMsg(PARSE_ERROR, "Incompatible operands for expression");
-						else if (minConvCnt > 0) {
+							operandStack.push_back(g_pErrOp);
+							break;
+						} else if (minConvCnt > 0) {
 							if (convList.size() == 1) {
 								// apply conversions to expression
 								if (convList[0].m_pOp2Conv) {
