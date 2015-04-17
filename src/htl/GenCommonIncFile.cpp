@@ -388,17 +388,12 @@ void CDsnInfo::GenGlobalVarWriteTypes(CHtFile & htFile, CType * pType, int &atom
 {
 	string ramTypeName = pType->m_typeName;
 	if (pGv) {
-		ramTypeName = VA("%s_A%d", pType->m_typeName.c_str(), pGv->m_addrW);
-
-		int pos = 0;
-		if (pGv->m_addr2Name == "htId")
-			ramTypeName += "_H0";
-		pos += pGv->m_addr2W.AsInt();
-		if (pGv->m_addr1Name == "htId")
-			ramTypeName += VA("_H%d", pos);
-		pos += pGv->m_addr1W.AsInt();
 		if (pGv->m_addr0W.AsInt() > 0)
-			ramTypeName += VA("_H%d", pos);
+			ramTypeName += VA("_H%d", pGv->m_addr0W.AsInt());
+		if (pGv->m_addr1W.AsInt() > 0)
+			ramTypeName += VA("_%c%d", pGv->m_addr1Name == "htId" ? 'H' : 'A', pGv->m_addr1W.AsInt());
+		if (pGv->m_addr2W.AsInt() > 0)
+			ramTypeName += VA("_%c%d", pGv->m_addr2Name == "htId" ? 'H' : 'A', pGv->m_addr2W.AsInt());
 
 		pGv->m_pNgvInfo->m_ngvWrType = ramTypeName;
 	}
@@ -835,11 +830,15 @@ void CDsnInfo::GenGlobalVarWriteTypes(CHtFile & htFile, CType * pType, int &atom
 			fprintf(htFile, "\t}\n");
 		}
 
-		fprintf(htFile, "\tvoid operator = (%s rhs)\n", pType->m_typeName.c_str());
-		fprintf(htFile, "\t{\n");
-		fprintf(htFile, "\t\tm_bWrite = true;\n");
-		fprintf(htFile, "\t\tm_data = rhs;\n");
-		fprintf(htFile, "\t}\n");
+		char * opList[] = { "=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "<<=", ">>=", 0 };
+
+		for (int i = 0; opList[i]; i += 1) {
+			fprintf(htFile, "\tvoid operator %s (%s rhs)\n", opList[i], pType->m_typeName.c_str());
+			fprintf(htFile, "\t{\n");
+			fprintf(htFile, "\t\tm_bWrite = true;\n");
+			fprintf(htFile, "\t\tm_data %s rhs;\n", opList[i]);
+			fprintf(htFile, "\t}\n");
+		}
 
 		switch (atomicMask) {
 		case ATOMIC_INC:

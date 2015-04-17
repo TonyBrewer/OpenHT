@@ -18,14 +18,13 @@ void CDsnInfo::InitAndValidateModNgv()
 		if (!mod.m_bIsUsed || mod.m_ngvList.size() == 0) continue;
 
 		mod.m_bGvIwComp = false;
+		mod.m_gvIwCompStg = /*max(*/mod.m_stage.m_execStg.AsInt();// , mod.m_stage.m_privWrStg.AsInt());
 
 		// create unique list of global variables for entire unit
 		for (size_t mgvIdx = 0; mgvIdx < mod.m_ngvList.size(); mgvIdx += 1) {
 			CRam * pMgv = mod.m_ngvList[mgvIdx];
 
 			mod.m_bGvIwComp |= pMgv->m_bWriteForInstrWrite;
-
-			mod.m_gvIwCompStg = max(mod.m_stage.m_execStg.AsInt(), mod.m_stage.m_privWrStg.AsInt());
 
 			int lastStg = 1;
 			if (pMgv->m_wrStg.size() > 0)
@@ -201,9 +200,6 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 
 		bInstrWrite |= pGv->m_bWriteForInstrWrite;
 
-		//if (mod.m_stage.m_privWrStg.AsInt() > 1) lastStg = max(lastStg, mod.m_stage.m_privWrStg.AsInt());
-		//if (mod.m_stage.m_execStg.AsInt() > 1) lastStg = max(lastStg, mod.m_stage.m_execStg.AsInt());
-
 		for (int stgIdx = 1; stgIdx <= pGv->m_wrStg.AsInt(); stgIdx += 1) {
 
 			string varStg;
@@ -273,6 +269,9 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 
 			htComp.AddStructField(&g_bool, VA("m_%sCompRdy", cxrIntf.GetIntfName()), "", "", cxrIntf.GetPortReplDimen());
 		}
+
+		if (mod.m_threads.m_bCallFork && mod.m_threads.m_htIdW.AsInt() > 2)
+			htComp.AddStructField(&g_bool, VA("m_htPrivLkData"));
 
 		GenUserStructs(m_gblRegDecl, &htComp, "\t");
 
@@ -825,7 +824,7 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 		bool bPrivGblAndNoAddr = pGv->m_bPrivGbl && pGv->m_addrW == mod.m_threads.m_htIdW.AsInt();
 
 		if (pGv->m_bReadForInstrRead) {
-			int lastStg = bPrivGblAndNoAddr ? pGv->m_rdStg.AsInt() : mod.m_stage.m_privWrStg.AsInt();
+			int lastStg = pGv->m_bPrivGbl ? mod.m_stage.m_privWrStg.AsInt() : pGv->m_wrStg.AsInt();
 			for (int gvRdStg = pGv->m_rdStg.AsInt(); gvRdStg <= lastStg; gvRdStg += 1) {
 				m_gblRegDecl.Append("\t%s c_t%d_%sIrData%s;\n",
 					pGv->m_type.c_str(), mod.m_tsStg + gvRdStg - 2, pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
@@ -1160,6 +1159,24 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 						pGv->m_bPrivGbl ? "private" : "global", pGv->m_bPrivGbl ? 'P' : 'G', pGv->m_gblName.Lc().c_str(), dimIdx.c_str());
 				}
 			} while (DimenIter(pGv->m_dimenList, refList));
+
+			for (int gvIwStg = gvWrStg + 1; gvIwStg <= mod.m_gvIwCompStg; gvIwStg += 1) {
+				if (pGv->m_dimenList.size() > 0) {
+					gblPostInstr.Append("\tbool c_t%d_%sTo%s_iwWrEn%s;\n",
+						gvIwStg, mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), pGv->m_dimenDecl.c_str());
+				}
+				GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, "bool", VA("r_t%d_%sTo%s_iwWrEn", gvIwStg, mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str()), pGv->m_dimenList);
+				vector<int> refList(pGv->m_dimenList.size());
+				do {
+					string dimIdx = IndexStr(refList);
+					gblPostInstr.Append("\t%sc_t%d_%sTo%s_iwWrEn%s = r_t%d_%sTo%s_iwWrEn%s;\n", typeStr.c_str(),
+						gvIwStg, mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), dimIdx.c_str(),
+						gvIwStg, mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), dimIdx.c_str());
+					gblReg.Append("\tr_t%d_%sTo%s_iwWrEn%s = c_t%d_%sTo%s_iwWrEn%s;\n",
+						gvIwStg, mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), dimIdx.c_str(),
+						gvIwStg - 1, mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), dimIdx.c_str());
+				} while (DimenIter(pGv->m_dimenList, refList));
+			}
 			gblPostInstr.NewLine();
 		}
 
@@ -1173,6 +1190,28 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 					gvWrStg - 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
 					pGv->m_gblName.c_str(), dimIdx.c_str());
 			} while (DimenIter(pGv->m_dimenList, refList));
+
+			for (int gvIwStg = gvWrStg; gvIwStg < mod.m_gvIwCompStg; gvIwStg += 1) {
+				string typeStr;
+				if (pGv->m_dimenList.size() == 0)
+					typeStr = "bool ";
+				else {
+					gblPostInstr.Append("\tbool c_t%d_%sIwComp%s;\n",
+						gvIwStg, pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
+				}
+				GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, "bool", VA("r_t%d_%sIwComp", gvIwStg + 1, pGv->m_gblName.c_str()), pGv->m_dimenList);
+				vector<int> refList(pGv->m_dimenList.size());
+				do {
+					string dimIdx = IndexStr(refList);
+					gblPostInstr.Append("\t%sc_t%d_%sIwComp%s = r_t%d_%sIwComp%s;\n", typeStr.c_str(),
+						gvIwStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
+						gvIwStg, pGv->m_gblName.c_str(), dimIdx.c_str());
+					gblReg.Append("\tr_t%d_%sIwComp%s = c_t%d_%sIwComp%s;\n",
+						gvIwStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
+						gvIwStg, pGv->m_gblName.c_str(), dimIdx.c_str());
+				} while (DimenIter(pGv->m_dimenList, refList));
+			}
+
 			gblPostInstr.NewLine();
 		}
 	}
@@ -1262,6 +1301,11 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 		gblPostInstr.Append("\tif (r_t%d_htValid) {\n", mod.m_gvIwCompStg);
 		gblPostInstr.Append("\t\tCHtComp htComp;\n");
 
+		if (mod.m_threads.m_htIdW.AsInt() > 0) {
+			gblPostInstr.Append("\t\thtComp.m_htId = r_t%d_htId;\n",
+				mod.m_gvIwCompStg);
+		}
+
 		for (size_t gvIdx = 0; gvIdx < mod.m_ngvList.size(); gvIdx += 1) {
 			CRam * pGv = mod.m_ngvList[gvIdx];
 
@@ -1269,10 +1313,6 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 				vector<int> refList(pGv->m_dimenList.size());
 				do {
 					string dimIdx = IndexStr(refList);
-					if (mod.m_threads.m_htIdW.AsInt() > 0) {
-						gblPostInstr.Append("\t\thtComp.m_htId = r_t%d_htId;\n",
-							mod.m_gvIwCompStg);
-					}
 					gblPostInstr.Append("\t\thtComp.m_%sIwComp%s = c_t%d_%sTo%s_iwWrEn%s ? !r_t%d_%sIwComp%s : r_t%d_%sIwComp%s;\n",
 						pGv->m_gblName.c_str(), dimIdx.c_str(),
 						mod.m_gvIwCompStg, mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), dimIdx.c_str(),
@@ -1308,6 +1348,9 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 					intfRdy.c_str());
 			}
 		}
+
+		if (mod.m_threads.m_bCallFork && mod.m_threads.m_htIdW.AsInt() > 2)
+			gblPostInstr.Append("\t\thtComp.m_htPrivLkData = r_t%d_htPrivLkData;\n", mod.m_gvIwCompStg);
 
 		gblPostInstr.Append("\t\tm_htCompQue.push(htComp);\n");
 
@@ -1371,6 +1414,28 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 		}
 		gblPostInstr.NewLine();
 
+		if (mod.m_bMultiThread && mod.m_threads.m_bCallFork && mod.m_bGvIwComp) {
+			if (mod.m_threads.m_htIdW.AsInt() <= 2) {
+				// no code for registered version
+			} else {
+				for (size_t intfIdx = 0; intfIdx < modInst.m_cxrIntfList.size(); intfIdx += 1) {
+					CCxrIntf &cxrIntf = modInst.m_cxrIntfList[intfIdx];
+
+					if (cxrIntf.m_cxrDir == CxrOut) continue;
+					if (cxrIntf.m_cxrType == CxrCall || cxrIntf.m_cxrType == CxrTransfer) continue;
+
+					gblPostInstr.Append("\tm_%s_%sPrivLk1%s.write_addr(r_c2_htCompQueFront.m_htId);\n",
+						cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
+				}
+				gblPostInstr.Append("\tm_htCmdPrivLk1.write_addr(r_c2_htCompQueFront.m_htId);\n");
+
+				if (mod.m_rsmSrcCnt > 0)
+					gblPostInstr.Append("\tm_rsmPrivLk1.write_addr(r_c2_htCompQueFront.m_htId);\n");
+
+				gblPostInstr.Append("\n");
+			}
+		}
+
 		for (size_t intfIdx = 0; intfIdx < modInst.m_cxrIntfList.size(); intfIdx += 1) {
 			CCxrIntf &cxrIntf = modInst.m_cxrIntfList[intfIdx];
 
@@ -1423,11 +1488,35 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 		}
 
 		gblPostInstr.Append("\t\tc_htCompQueAvlCnt += 1;\n");
+
+		if (mod.m_bMultiThread && mod.m_threads.m_bCallFork && mod.m_bGvIwComp) {
+			gblPostInstr.NewLine();
+			if (mod.m_threads.m_htIdW.AsInt() == 0)
+				gblPostInstr.Append("\t\tc_htPrivLk = 0;\n");
+			else if (mod.m_threads.m_htIdW.AsInt() <= 2)
+				gblPostInstr.Append("\t\tc_htPrivLk[INT(r_c2_htCompQueFront.m_htId)] = 0;\n");
+			else {
+				for (size_t intfIdx = 0; intfIdx < modInst.m_cxrIntfList.size(); intfIdx += 1) {
+					CCxrIntf &cxrIntf = modInst.m_cxrIntfList[intfIdx];
+
+					if (cxrIntf.m_cxrDir == CxrOut) continue;
+					if (cxrIntf.m_cxrType == CxrCall || cxrIntf.m_cxrType == CxrTransfer) continue;
+
+					gblPostInstr.Append("\t\tm_%s_%sPrivLk1%s.write_mem(r_c2_htCompQueFront.m_htPrivLkData);\n",
+						cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
+				}
+				gblPostInstr.Append("\t\tm_htCmdPrivLk1.write_mem(r_c2_htCompQueFront.m_htPrivLkData);\n");
+
+				if (mod.m_rsmSrcCnt > 0)
+					gblPostInstr.Append("\t\tm_rsmPrivLk1.write_mem(r_c2_htCompQueFront.m_htPrivLkData);\n");
+			}
+		}
+
 		gblPostInstr.Append("\t}\n");
 		gblPostInstr.NewLine();
 
 		if (mod.m_threads.m_htIdW.AsInt() == 0) {
-			gblPostInstr.Append("\tbool c_htCompQueValid = !c_htCompQueHold && !m_htCompQue.empty() || c_htCompQueHold && r_htCompQueValid;\n");
+			gblPostInstr.Append("\tbool c_htCompQueValid = (!c_htCompQueHold && !m_htCompQue.empty()) || (c_htCompQueHold && r_htCompQueValid);\n");
 			gblPostInstr.Append("\tCHtComp c_htCompQueFront = c_htCompQueHold ? r_htCompQueFront : m_htCompQue.front();\n");
 			gblPostInstr.NewLine();
 
@@ -1435,7 +1524,7 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 			gblPostInstr.Append("\t\tm_htCompQue.pop();\n");
 			gblPostInstr.NewLine();
 		} else {
-			gblPostInstr.Append("\tbool c_c0_htCompQueValid = !c_htCompReplay && !m_htCompQue.empty() || c_htCompReplay && r_c2_htCompQueValid;\n");
+			gblPostInstr.Append("\tbool c_c0_htCompQueValid = (!c_htCompReplay && !m_htCompQue.empty()) || (c_htCompReplay && r_c2_htCompQueValid);\n");
 			gblPostInstr.Append("\tCHtComp c_c0_htCompQueFront = c_htCompReplay ? r_c2_htCompQueFront : m_htCompQue.front();\n");
 			gblPostInstr.NewLine();
 
