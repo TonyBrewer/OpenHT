@@ -995,7 +995,7 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 						pGv->m_gblName.c_str(), dimIdx.c_str());
 				} while (DimenIter(pGv->m_dimenList, refList));
 			} else {
-				int rdAddrStgNum = pGv->m_ramType == eBlockRam ? (mod.m_tsStg - 2) : (mod.m_tsStg - 1);
+				int rdAddrStgNum = mod.m_tsStg + pGv->m_rdStg.AsInt() - (pGv->m_ramType == eBlockRam ? 3 : 2);
 				string rdAddrStg = rdAddrStgNum == 1 ? "c_t1" : VA("r_t%d", rdAddrStgNum);
 
 				string addr1Name = pGv->m_addr1Name == "htId" ? VA("%s_htId", rdAddrStg.c_str()) : VA("%s_htPriv.m_%s", rdAddrStg.c_str(), pGv->m_addr1Name.c_str());
