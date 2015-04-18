@@ -18,7 +18,7 @@ void CDsnInfo::InitAndValidateModNgv()
 		if (!mod.m_bIsUsed || mod.m_ngvList.size() == 0) continue;
 
 		mod.m_bGvIwComp = false;
-		mod.m_gvIwCompStg = /*max(*/mod.m_stage.m_execStg.AsInt();// , mod.m_stage.m_privWrStg.AsInt());
+		mod.m_gvIwCompStg = max(mod.m_stage.m_execStg.AsInt(), mod.m_stage.m_privWrStg.AsInt());
 
 		// create unique list of global variables for entire unit
 		for (size_t mgvIdx = 0; mgvIdx < mod.m_ngvList.size(); mgvIdx += 1) {
@@ -793,18 +793,43 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 		}
 
 		if (pGv->m_bWriteForInstrWrite) {
+
 			int gvWrStg = mod.m_tsStg + pGv->m_wrStg.AsInt();
-			GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, "bool",
-				VA("r_t%d_%sIwComp", gvWrStg, pGv->m_gblName.c_str()), pGv->m_dimenList);
-			m_gblRegDecl.Append("\tbool c_t%d_%sIwComp%s;\n",
-				gvWrStg - 1, pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
 			vector<int> refList(pGv->m_dimenList.size());
 			do {
 				string dimIdx = IndexStr(refList);
-				gblReg.Append("\tr_t%d_%sIwComp%s = c_t%d_%sIwComp%s;\n",
-					gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
-					gvWrStg - 1, pGv->m_gblName.c_str(), dimIdx.c_str());
+				if (mod.m_threads.m_htIdW.AsInt() == 0) {
+					gblPostInstr.Append("\tc_t%d_%sIwComp%s = r_%sIwComp%s;\n",
+						gvWrStg - 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
+						pGv->m_gblName.c_str(), dimIdx.c_str());
+				}
+				else {
+					gblPostInstr.Append("\tm_%sIwComp%s[0].read_addr(r_t%d_htId);\n",
+						pGv->m_gblName.c_str(), dimIdx.c_str(), gvWrStg - 1);
+					gblPostInstr.Append("\tc_t%d_%sIwComp%s = m_%sIwComp%s[0].read_mem();\n",
+						gvWrStg - 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
+						pGv->m_gblName.c_str(), dimIdx.c_str());
+				}
 			} while (DimenIter(pGv->m_dimenList, refList));
+
+			for (; gvWrStg <= mod.m_gvIwCompStg; gvWrStg += 1) {
+				m_gblRegDecl.Append("\tbool c_t%d_%sIwComp%s;\n",
+					gvWrStg - 1, pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
+				GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, "bool",
+					VA("r_t%d_%sIwComp", gvWrStg, pGv->m_gblName.c_str()), pGv->m_dimenList);
+				vector<int> refList(pGv->m_dimenList.size());
+				do {
+					string dimIdx = IndexStr(refList);
+					if (gvWrStg > mod.m_tsStg + pGv->m_wrStg.AsInt()) {
+						gblPostInstr.Append("\tc_t%d_%sIwComp%s = r_t%d_%sIwComp%s;\n",
+							gvWrStg - 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
+							gvWrStg - 1, pGv->m_gblName.c_str(), dimIdx.c_str());
+					}
+					gblReg.Append("\tr_t%d_%sIwComp%s = c_t%d_%sIwComp%s;\n",
+						gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
+						gvWrStg - 1, pGv->m_gblName.c_str(), dimIdx.c_str());
+				} while (DimenIter(pGv->m_dimenList, refList));
+			}
 		}
 
 		if (pGv->m_bReadForInstrRead && pNgvInfo->m_atomicMask != 0) {
@@ -1179,41 +1204,6 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 			}
 			gblPostInstr.NewLine();
 		}
-
-		if (pGv->m_bWriteForInstrWrite && mod.m_threads.m_htIdW.AsInt() > 0) {
-			vector<int> refList(pGv->m_dimenList.size());
-			do {
-				string dimIdx = IndexStr(refList);
-				gblPostInstr.Append("\tm_%sIwComp%s[0].read_addr(r_t%d_htId);\n",
-					pGv->m_gblName.c_str(), dimIdx.c_str(), gvWrStg - 1);
-				gblPostInstr.Append("\tc_t%d_%sIwComp%s = m_%sIwComp%s[0].read_mem();\n",
-					gvWrStg - 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
-					pGv->m_gblName.c_str(), dimIdx.c_str());
-			} while (DimenIter(pGv->m_dimenList, refList));
-
-			for (int gvIwStg = gvWrStg; gvIwStg < mod.m_gvIwCompStg; gvIwStg += 1) {
-				string typeStr;
-				if (pGv->m_dimenList.size() == 0)
-					typeStr = "bool ";
-				else {
-					gblPostInstr.Append("\tbool c_t%d_%sIwComp%s;\n",
-						gvIwStg, pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
-				}
-				GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, "bool", VA("r_t%d_%sIwComp", gvIwStg + 1, pGv->m_gblName.c_str()), pGv->m_dimenList);
-				vector<int> refList(pGv->m_dimenList.size());
-				do {
-					string dimIdx = IndexStr(refList);
-					gblPostInstr.Append("\t%sc_t%d_%sIwComp%s = r_t%d_%sIwComp%s;\n", typeStr.c_str(),
-						gvIwStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
-						gvIwStg, pGv->m_gblName.c_str(), dimIdx.c_str());
-					gblReg.Append("\tr_t%d_%sIwComp%s = c_t%d_%sIwComp%s;\n",
-						gvIwStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
-						gvIwStg, pGv->m_gblName.c_str(), dimIdx.c_str());
-				} while (DimenIter(pGv->m_dimenList, refList));
-			}
-
-			gblPostInstr.NewLine();
-		}
 	}
 
 	if (bInstrWrite) {
@@ -1365,11 +1355,7 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 				vector<int> refList(pGv->m_dimenList.size());
 				do {
 					string dimIdx = IndexStr(refList);
-					if (mod.m_threads.m_htIdW.AsInt() == 0) {
-						gblPostInstr.Append("\tc_t%d_%sIwComp%s = r_%sIwComp%s;\n",
-							gvWrStg - 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
-							pGv->m_gblName.c_str(), dimIdx.c_str());
-					} else {
+					if (mod.m_threads.m_htIdW.AsInt() > 0) {
 						gblPostInstr.Append("\tm_%sIwComp%s[1].read_addr(r_c1_htCompQueFront.m_htId);\n",
 							pGv->m_gblName.c_str(), dimIdx.c_str());
 						gblPostInstr.Append("\tc_c1_%sIwComp%s = m_%sIwComp%s[1].read_mem();\n",
