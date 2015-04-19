@@ -1,0 +1,13 @@
+// -cl $(HtToolsPath)/tests/memPSGRand_bug23/src_pers/memPSGRand.htl
+-wd $(HtToolsPath)/tests/memPSGRand_bug23/msvs12/
+
+-cp wx-690
+-ac 1
+-uc 1
+-df 150
+-vcd_all
+-pn memPSGRand_bug23
+-ml 0.2
+-I ../src
+../src_pers/memPSGRand.htd
+../ht/sysc

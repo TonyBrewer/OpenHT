@@ -1484,7 +1484,8 @@ CLoopInfo::CLoopInfo(CHtCode &htCode, string &tabs, vector<CHtString> & dimenLis
 {
 	for (size_t i = 0; i < m_dimenList.size(); i += 1) {
 		m_unrollList[i] = false;// stmtCnt <= 3;
-		stmtCnt *= m_dimenList[i].AsInt();
+		if (m_unrollList[i])
+			stmtCnt *= m_dimenList[i].AsInt();
 
 		if (!m_unrollList[i]) {
 			htCode.Append("%sfor (int idx%d = 0; idx%d < %d; idx%d += 1)%s\n",
@@ -1567,11 +1568,15 @@ bool CLoopInfo::Iter(bool bNewLine)
 
 void CLoopInfo::LoopEnd(bool bNewLine)
 {
+	int stmtCnt = m_stmtCnt;
 	for (size_t i = 0; i < m_dimenList.size(); i += 1) {
+		if (m_unrollList[i])
+			stmtCnt *= m_dimenList[i].AsInt();
+
 		if (!m_unrollList[i]) {
 			m_tabs.erase(0, 1);
-			m_htCode.Append("%s}\n",
-				m_tabs.c_str());
+			if (stmtCnt > 1)
+				m_htCode.Append("%s}\n", m_tabs.c_str());
 		}
 	}
 	if (bNewLine)

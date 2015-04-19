@@ -1,0 +1,1 @@
+AddModInstParams(unit=Au, modPath="/Ctl/Test02", memPort=0);

@@ -1112,7 +1112,7 @@ void CDsnInfo::InitAndValidateRecord(CRecord * pRecord)
 		}
 
 		if (pRecord->m_bUnion)
-			packedBitWidth = max(packedBitWidth, pType->m_clangBitWidth * (int)pField->m_elemCnt);
+			packedBitWidth = max(packedBitWidth, pType->m_packedBitWidth * (int)pField->m_elemCnt);
 		else
 			packedBitWidth += pType->m_packedBitWidth * pField->m_elemCnt;
 

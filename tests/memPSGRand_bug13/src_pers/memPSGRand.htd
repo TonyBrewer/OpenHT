@@ -1,0 +1,102 @@
+typedef sc_uint<48> MemAddr_t;
+
+struct test03_1_2_data_struct {
+  uint32_t test03_1_2_data;
+  struct  {
+    struct  {
+      struct  {
+        uint16_t test03_1_3_data;
+        uint32_t test03_1_4_data[3];
+      };
+      uint16_t test03_1_5_data;
+      uint16_t test03_1_6_data;
+    };
+    uint32_t test03_1_7_data;
+    struct  {
+      struct  {
+        uint32_t test03_1_8_data;
+      };
+    };
+  };
+};
+
+struct test03_2_10_data_struct {
+  uint16_t test03_2_10_data[3];
+  uint16_t test03_2_11_data;
+};
+
+
+
+/////////////////////////////////////
+// CTL
+
+dsnInfo.AddModule(name=Ctl, htIdW=0);
+
+Ctl.AddInstr(name=CTL_TEST03);
+Ctl.AddInstr(name=CTL_RTN);
+
+Ctl.AddEntry(func=main, inst=CTL_TEST03, host=true)
+	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=memAddr)
+	;
+
+Ctl.AddReturn(func=main)
+	;
+
+Ctl.AddCall(func=test03);
+
+Ctl.AddPrivate()
+	.AddVar(type=MemAddr_t, name=memAddr)
+	;
+
+
+/////////////////////////////////////
+// TEST03
+
+#define TEST03_HTID_W 5
+dsnInfo.AddModule(name=Test03, htIdW=TEST03_HTID_W);
+
+Test03.AddInstr(name=TEST03_ENTRY);
+Test03.AddInstr(name=TEST03_WR);
+Test03.AddInstr(name=TEST03_ST0);
+Test03.AddInstr(name=TEST03_ST1);
+Test03.AddInstr(name=TEST03_ST2);
+Test03.AddInstr(name=TEST03_LD0);
+Test03.AddInstr(name=TEST03_LD1);
+Test03.AddInstr(name=TEST03_LD2);
+Test03.AddInstr(name=TEST03_CHK);
+Test03.AddInstr(name=TEST03_RTN);
+
+Test03.AddEntry(func=test03, inst=TEST03_ENTRY)
+	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=memAddr)
+	;
+
+Test03.AddReturn(func=test03)
+	;
+
+Test03.AddPrivate()
+	.AddVar(type=MemAddr_t, name=memAddr)
+	.AddVar(type=uint32_t, name=test03_0_0_data)
+	.AddVar(type=uint32_t, name=test03_0_1_data, addr1=test03_0_1_data_RdAddr)
+	.AddVar(type=uint16_t, name=test03_1_9_data, addr1=test03_1_9_data_RdAddr)
+	.AddVar(type=test03_2_10_data_struct, name=test03_2_10_data)
+	.AddVar(type=ht_uint1, name=test03_0_1_data_RdAddr)
+	.AddVar(type=ht_uint3, name=test03_1_9_data_RdAddr)
+	;
+
+Test03.AddGlobal()
+	.AddVar(type=test03_1_2_data_struct, name=test03_1_2_data)
+	;
+
+Test03.AddReadMem()
+	.AddDst(var=test03_0_1_data, name=test03_0_1_data, memSrc=host)
+	.AddDst(var=test03_1_9_data, name=test03_1_9_data, memSrc=host)
+	.AddDst(var=test03_2_10_data.test03_2_10_data[2], name=test03_2_10_data, memSrc=host)
+	;
+
+Test03.AddWriteMem()
+	.AddSrc(var=test03_1_2_data.test03_1_5_data, name=test03_1_5_data, memDst=host)
+	.AddSrc(var=test03_2_10_data.test03_2_10_data[2], name=test03_2_10_data, memDst=host)
+	.AddSrc(type=uint32_t, memDst=host)
+	;
+
+

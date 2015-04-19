@@ -824,8 +824,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 			} else {
 				for (size_t dimIdx = 0; dimIdx < rdDst.m_fieldRefList.back().m_refDimenList.size(); dimIdx += 1) {
 					CRefDimen & refDimen = rdDst.m_fieldRefList.back().m_refDimenList[dimIdx];
-					int vIdx = refDimen.m_size;
-					int vIdxW = FindLg2(vIdx);
+					int vIdxW = refDimen.m_value >= 0 ? 0 : FindLg2(refDimen.m_size - 1);
 					if (vIdxWList.size() <= dimIdx)
 						vIdxWList.push_back(vIdxW);
 					else
@@ -911,8 +910,8 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 				}
 			} else {
 				for (size_t dimIdx = 0; dimIdx < wrSrc.m_fieldRefList.back().m_refDimenList.size(); dimIdx += 1) {
-					int vIdx = wrSrc.m_fieldRefList.back().m_refDimenList[dimIdx].m_size;
-					int vIdxW = FindLg2(vIdx);
+					CRefDimen & refDimen = wrSrc.m_fieldRefList.back().m_refDimenList[dimIdx];
+					int vIdxW = refDimen.m_value >= 0 ? 0 : FindLg2(refDimen.m_size - 1);
 					if (vIdxWList.size() <= dimIdx)
 						vIdxWList.push_back(vIdxW);
 					else
@@ -3995,6 +3994,12 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 						mifPostInstr.Append("%s\tm_%s%s.read_addr(r_t%d_memReq.m_vIdx1(%d, 0));\n", tabs.c_str(),
 							addrVar.c_str(), varIdx.c_str(),
 							mod.m_execStg + 1, wrSrc.m_varAddr1W - 1);
+					}
+					else if (wrSrc.m_pSharedVar) {
+						mifPostInstr.Append("%s\tm_%s%s.read_addr(c_t%d_memReq.m_vIdx1(%d, 0), c_t%d_memReq.m_vIdx2(%d, 0));\n", tabs.c_str(),
+							addrVar.c_str(), varIdx.c_str(),
+							mod.m_execStg + 1, wrSrc.m_varAddr1W - 1,
+							mod.m_execStg + 1, wrSrc.m_varAddr2W - 1);
 					} else {
 						mifPostInstr.Append("%s\tm_%s%s.read_addr((c_t%d_memReq.m_vIdx1(%d, 0), c_t%d_memReq.m_vIdx2(%d, 0)));\n", tabs.c_str(),
 							addrVar.c_str(), varIdx.c_str(),
@@ -4480,7 +4485,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 						baseVar = VA("c_%s", rdDst.m_pSharedVar->m_name.c_str());
 					}
 				} else if (rdDst.m_pPrivVar) {
-					pDstType = rdDst.m_pPrivVar->m_pType;
+					pDstType = rdDst.m_pDstType;
 					baseVar = VA("c_htPriv.m_%s", rdDst.m_pPrivVar->m_name.c_str());
 				} else
 					HtlAssert(0);

@@ -1,0 +1,66 @@
+typedef sc_uint<48> MemAddr_t;
+
+
+
+/////////////////////////////////////
+// CTL
+
+dsnInfo.AddModule(name=Ctl, htIdW=0);
+
+Ctl.AddInstr(name=CTL_TEST14);
+Ctl.AddInstr(name=CTL_RTN);
+
+Ctl.AddEntry(func=main, inst=CTL_TEST14, host=true)
+	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=memAddr)
+	;
+
+Ctl.AddReturn(func=main)
+	;
+
+Ctl.AddCall(func=test14);
+
+Ctl.AddPrivate()
+	.AddVar(type=MemAddr_t, name=memAddr)
+	;
+
+
+/////////////////////////////////////
+// TEST14
+
+#define TEST14_HTID_W 0
+dsnInfo.AddModule(name=Test14, htIdW=TEST14_HTID_W);
+
+Test14.AddInstr(name=TEST14_ENTRY);
+Test14.AddInstr(name=TEST14_WR);
+Test14.AddInstr(name=TEST14_ST0);
+Test14.AddInstr(name=TEST14_LD0);
+Test14.AddInstr(name=TEST14_CHK);
+Test14.AddInstr(name=TEST14_RTN);
+
+Test14.AddEntry(func=test14, inst=TEST14_ENTRY)
+	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=memAddr)
+	;
+
+Test14.AddReturn(func=test14)
+	;
+
+Test14.AddStage(execStg=2, privWrStg=2)
+	;
+
+Test14.AddPrivate()
+	.AddVar(type=MemAddr_t, name=memAddr)
+	.AddVar(type=ht_uint2, name=test14_0_0_data_RdAddr1)
+	;
+
+Test14.AddGlobal()
+	.AddVar(type=uint16_t, name=test14_0_0_data, addr1=test14_0_0_data_RdAddr1, dimen1=2, rdStg=2, wrStg=2)
+	.AddVar(type=uint16_t, name=test14_0_1_data, dimen1=2, rdStg=2, wrStg=2)
+	;
+
+Test14.AddReadMem()
+	.AddDst(var=test14_0_1_data[], name=test14_0_1_data, memSrc=host)
+	;
+
+Test14.AddWriteMem()
+	.AddSrc(var=test14_0_0_data[0], name=test14_0_0_data, memDst=host)
+	;

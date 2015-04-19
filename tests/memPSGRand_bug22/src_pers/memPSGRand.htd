@@ -1,0 +1,80 @@
+typedef sc_uint<48> MemAddr_t;
+
+struct test01_0_0_data_struct {
+  uint32_t test01_0_0_data[1];
+  uint16_t test01_0_1_data[2];
+};
+
+struct test01_0_2_data_struct {
+  struct  {
+    uint16_t test01_0_2_data;
+    struct  {
+      uint32_t test01_0_3_data[1];
+      uint32_t test01_0_4_data[1];
+    };
+  };
+  uint32_t test01_0_5_data[2];
+};
+
+
+
+/////////////////////////////////////
+// CTL
+
+dsnInfo.AddModule(name=Ctl, htIdW=0);
+
+Ctl.AddInstr(name=CTL_TEST01);
+Ctl.AddInstr(name=CTL_RTN);
+
+Ctl.AddEntry(func=main, inst=CTL_TEST01, host=true)
+	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=memAddr)
+	;
+
+Ctl.AddReturn(func=main)
+	;
+
+Ctl.AddCall(func=test01);
+
+Ctl.AddPrivate()
+	.AddVar(type=MemAddr_t, name=memAddr)
+	;
+
+
+/////////////////////////////////////
+// TEST01
+
+#define TEST01_HTID_W 0
+dsnInfo.AddModule(name=Test01, htIdW=TEST01_HTID_W);
+
+Test01.AddInstr(name=TEST01_ENTRY);
+Test01.AddInstr(name=TEST01_WR);
+Test01.AddInstr(name=TEST01_ST0);
+Test01.AddInstr(name=TEST01_LD0);
+Test01.AddInstr(name=TEST01_CHK);
+Test01.AddInstr(name=TEST01_RTN);
+
+Test01.AddEntry(func=test01, inst=TEST01_ENTRY)
+	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=memAddr)
+	;
+
+Test01.AddReturn(func=test01)
+	;
+
+Test01.AddPrivate()
+	.AddVar(type=MemAddr_t, name=memAddr)
+	.AddVar(type=test01_0_2_data_struct, name=test01_0_2_data)
+	;
+
+Test01.AddGlobal()
+	.AddVar(type=test01_0_0_data_struct, name=test01_0_0_data)
+	;
+
+Test01.AddReadMem()
+	.AddDst(var=test01_0_2_data.test01_0_3_data[0], name=test01_0_3_data, memSrc=host)
+	;
+
+Test01.AddWriteMem()
+	.AddSrc(var=test01_0_0_data.test01_0_0_data[0], name=test01_0_0_data, memDst=host)
+	;
+
+

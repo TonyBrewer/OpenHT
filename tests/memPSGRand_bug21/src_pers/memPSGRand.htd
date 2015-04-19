@@ -1,0 +1,66 @@
+typedef sc_uint<48> MemAddr_t;
+
+
+
+/////////////////////////////////////
+// CTL
+
+dsnInfo.AddModule(name=Ctl, htIdW=0);
+
+Ctl.AddInstr(name=CTL_TEST10);
+Ctl.AddInstr(name=CTL_RTN);
+
+Ctl.AddEntry(func=main, inst=CTL_TEST10, host=true)
+	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=memAddr)
+	;
+
+Ctl.AddReturn(func=main)
+	;
+
+Ctl.AddCall(func=test10);
+
+Ctl.AddPrivate()
+	.AddVar(type=MemAddr_t, name=memAddr)
+	;
+
+
+/////////////////////////////////////
+// TEST10
+
+#define TEST10_HTID_W 0
+dsnInfo.AddModule(name=Test10, htIdW=TEST10_HTID_W);
+
+Test10.AddInstr(name=TEST10_ENTRY);
+Test10.AddInstr(name=TEST10_WR);
+Test10.AddInstr(name=TEST10_ST0);
+Test10.AddInstr(name=TEST10_LD0);
+Test10.AddInstr(name=TEST10_CHK);
+Test10.AddInstr(name=TEST10_RTN);
+
+Test10.AddEntry(func=test10, inst=TEST10_ENTRY)
+	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=memAddr)
+	;
+
+Test10.AddReturn(func=test10)
+	;
+
+Test10.AddStage(execStg=1, privWrStg=2)
+	;
+
+Test10.AddPrivate()
+	.AddVar(type=MemAddr_t, name=memAddr)
+	.AddVar(type=uint16_t, name=test10_0_0_data, addr1=test10_0_0_data_RdAddr1, dimen1=2)
+	.AddVar(type=ht_uint1, name=test10_0_0_data_RdAddr1)
+	;
+
+Test10.AddGlobal()
+	.AddVar(type=uint16_t, name=test10_0_1_data, dimen1=1)
+	;
+
+Test10.AddReadMem()
+	.AddDst(var=test10_0_1_data[], name=test10_0_1_data, memSrc=host)
+	;
+
+Test10.AddWriteMem()
+	.AddSrc(var=test10_0_0_data[1], name=test10_0_0_data, memDst=host)
+	;
