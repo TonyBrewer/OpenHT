@@ -917,7 +917,7 @@ int CDsnInfo::FindStructWidth(CRecord & record, int * pMinAlign, bool bHostType)
 
 			int fldWidth;
 			if (pField->m_pType->IsRecord())
-				fldWidth = FindStructWidth(*pField->m_pType->AsRecord(), &minAlign, bHostType);
+				fldWidth = FindStructWidth(*pField->m_pType->AsRecord(), &minAlign, bHostType) * pField->m_elemCnt;
 			else
 				fldWidth = FindTypeWidth(pField, &minAlign, bHostType) * pField->m_elemCnt;
 

@@ -16,7 +16,7 @@ void InstallSigHandler() { signal(SIGSEGV, SigHandler); }
 
 int main(int argc, char const **argv)
 {
-	//InstallSigHandler();
+	InstallSigHandler();
 
 	g_appArgs.Parse(argc, argv);
 

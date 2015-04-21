@@ -1384,7 +1384,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 									m_mifMacros.Append("\tc_t%d_memReq.m_vIdx%d = %sIdx%d;\n",
 										mod.m_execStg, dimIdx + 1, fldName.c_str(), (int)dimIdx + 1);
 									rdDst.m_fieldRefList[fldIdx].m_refDimenList[dimIdx].m_isIdx = true;
-									if (dimIdx > 0) {
+									if (bNeedCntM1) {
 										m_mifMacros.Append("\tc_t%d_memReq.m_vIdx%dCntM1 = %d;\n",
 											mod.m_execStg, dimIdx + 1, rdDst.m_fieldRefList[fldIdx].m_refDimenList[dimIdx].m_size - 1);
 									}
@@ -2993,14 +2993,14 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 				mod.m_modName.Uc().c_str());
 		}
 
-		{
+		if (bNeedRdRspInfo) {
 			GenModDecl(eVcdAll, m_mifDecl, vcdModName, "bool", "r_m2_rdRspRdy");
 			mifReg.Append("\tr_m2_rdRspRdy = c_m1_rdRspRdy;\n");
 
 			m_mifCtorInit.Append("\t\tr_m2_rdRspRdy = false;\n");
 		}
 
-		{
+		if (bNeedRdRspInfo) {
 			GenModDecl(eVcdAll, m_mifDecl, vcdModName, "CMemRdRspIntf", "r_m2_rdRsp");
 			mifReg.Append("\tr_m2_rdRsp = c_m1_rdRsp;\n");
 		}
@@ -3440,7 +3440,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 		mifPostInstr.Append("\t\tc_t%d_memReq = r_t%d_memReq;\n",
 			mod.m_execStg,
 			mod.m_execStg + 1);
-		if (mif.m_bMifRd) {
+		if (mif.m_bMifRd && bNeedRdRspInfo) {
 			mifPostInstr.Append("\t\tc_t%d_rdRspInfo = r_t%d_rdRspInfo;\n",
 				mod.m_execStg,
 				mod.m_execStg + 1);
@@ -3453,7 +3453,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 		mifPostInstr.Append("\t\tc_t%d_memReq = r_t%d_memReqLas;\n",
 			mod.m_execStg,
 			mod.m_execStg + 1);
-		if (mif.m_bMifRd) {
+		if (mif.m_bMifRd && bNeedRdRspInfo) {
 			mifPostInstr.Append("\t\tc_t%d_rdRspInfo = r_t%d_rdRspInfoLas;\n",
 				mod.m_execStg,
 				mod.m_execStg + 1);
@@ -3799,7 +3799,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 			}
 		}
 
-		if (mif.m_bMifRd) {
+		if (mif.m_bMifRd && bNeedRdRspInfo) {
 			mifPostInstr.NewLine();
 
 			mifPostInstr.Append("\t\t\tc_t%d_%sToMif_req.m_tid = c_rdRspId;\n",
@@ -4262,11 +4262,15 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 	mifPostInstr.Append("\t}\n");
 	mifPostInstr.NewLine();
 
+	int rdRspStg = bNeedRdRspInfo ? 2 : 1;
+		
 	if (mif.m_bMifRd) {
 		mifPostInstr.Append("\tbool c_m0_rdRspRdy = i_mifTo%sP0_rdRspRdy.read();\n",
 			mod.m_modName.Uc().c_str());
-		mifPostInstr.Append("\tbool c_m1_rdRspRdy = r_m1_rdRspRdy;\n");
-		mifPostInstr.Append("\tCMemRdRspIntf c_m1_rdRsp = r_m1_rdRsp;\n");
+		if (rdRspStg > 1) {
+			mifPostInstr.Append("\tbool c_m1_rdRspRdy = r_m1_rdRspRdy;\n");
+			mifPostInstr.Append("\tCMemRdRspIntf c_m1_rdRsp = r_m1_rdRsp;\n");
+		}
 		mifPostInstr.NewLine();
 
 		if (bNeedRdRspInfo) {
@@ -4284,7 +4288,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 				mifPostInstr.Append("\tCRdRspInfo c_m2_rdRspInfo = r_m2_rdRspInfo;\n");
 			mifPostInstr.NewLine();
 		}
-		
+
 		if (bMultiQwReq) {
 			mifPostInstr.Append("\tht_uint3 c_m1_rdRspQwIdx = r_m2_rdRspQwIdx;\n");
 			mifPostInstr.NewLine();
@@ -4297,7 +4301,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 		}
 
 		mifPostInstr.Append("\t// write read response to ram\n");
-		mifPostInstr.Append("\tif (r_m2_rdRspRdy) {\n");
+		mifPostInstr.Append("\tif (r_m%d_rdRspRdy) {\n", rdRspStg);
 
 		if (bNeedRdRspInfo) {
 			string tabs;
@@ -4389,7 +4393,8 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 			mifPostInstr.NewLine();
 		}
 
-		mifPostInstr.Append("\t\tht_uint64 c_m2_rdRspData = r_m2_rdRsp.m_data;\n");
+		mifPostInstr.Append("\t\tht_uint64 c_m%d_rdRspData = r_m%d_rdRsp.m_data;\n",
+			rdRspStg, rdRspStg);
 		mifPostInstr.NewLine();
 
 		string tabs;
@@ -4460,7 +4465,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 					m_mifFuncDecl.Append("sc_uint<%s> rdRsp_info, ", rdDst.m_infoW.c_str());
 				}
 
-				mifPostInstr.Append("c_m2_rdRspData);\n");
+				mifPostInstr.Append("c_m%d_rdRspData);\n", rdRspStg);
 				m_mifFuncDecl.Append("ht_uint64 rdRspData);\n");
 
 			} else {
@@ -4600,42 +4605,48 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 
 						if (width < 64) {
 							if (bMemVar) {
-								mifPostInstr.Append("\t\t%s%s%s.write_mem((%s)(c_m2_rdRspData >> %d));\n",
+								mifPostInstr.Append("\t\t%s%s%s.write_mem((%s)(c_m%d_rdRspData >> %d));\n",
 									tabs.c_str(),
 									baseVar.c_str(),
 									iter.GetHeirFieldName().c_str(),
 									typeCast.c_str(),
+									rdRspStg,
 									pos % reqSize);
 							} else {
-								mifPostInstr.Append("\t\t%s%s%s = (%s)(c_m2_rdRspData >> %d);\n",
+								mifPostInstr.Append("\t\t%s%s%s = (%s)(c_m%d_rdRspData >> %d);\n",
 									tabs.c_str(),
 									baseVar.c_str(),
 									iter.GetHeirFieldName().c_str(),
 									typeCast.c_str(),
+									rdRspStg,
 									pos % reqSize);
 							}
 						} else {
 							if (bMemVar) {
-								mifPostInstr.Append("\t\t%s%s%s.write_mem(c_m2_rdRspData);\n",
-									tabs.c_str(),
-									baseVar.c_str(),
-									iter.GetHeirFieldName().c_str());
-							} else if (bQueVar) {
-								mifPostInstr.Append("\t\t%s%s%s.push(c_m2_rdRspData);\n",
-									tabs.c_str(),
-									baseVar.c_str(),
-									iter.GetHeirFieldName().c_str());
-							} else if (typeCast.size() == 0) {
-								mifPostInstr.Append("\t\t%s%s%s = c_m2_rdRspData;\n",
-									tabs.c_str(),
-									baseVar.c_str(),
-									iter.GetHeirFieldName().c_str());
-							} else {
-								mifPostInstr.Append("%s\t\t%s%s = (%s)c_m2_rdRspData;\n",
+								mifPostInstr.Append("\t\t%s%s%s.write_mem(c_m%d_rdRspData);\n",
 									tabs.c_str(),
 									baseVar.c_str(),
 									iter.GetHeirFieldName().c_str(),
-									typeCast.c_str());
+									rdRspStg);
+							} else if (bQueVar) {
+								mifPostInstr.Append("\t\t%s%s%s.push(c_m%d_rdRspData);\n",
+									tabs.c_str(),
+									baseVar.c_str(),
+									iter.GetHeirFieldName().c_str(),
+									rdRspStg);
+							} else if (typeCast.size() == 0) {
+								mifPostInstr.Append("\t\t%s%s%s = c_m%d_rdRspData;\n",
+									tabs.c_str(),
+									baseVar.c_str(),
+									iter.GetHeirFieldName().c_str(),
+									rdRspStg);
+							} else {
+								mifPostInstr.Append("%s\t\t%s%s = (%s)c_m%d_rdRspData;\n",
+									tabs.c_str(),
+									baseVar.c_str(),
+									iter.GetHeirFieldName().c_str(),
+									typeCast.c_str(),
+									rdRspStg);
 							}
 						}
 					}
@@ -4696,10 +4707,10 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 			rdRspGrpId = "r_m2_rdRspInfo.m_grpId";
 
 			if (bMultiQwRdMif) {
-				rdRspRdy = "r_m2_rdRspRdy && c_m2_bWrData";
+				rdRspRdy = VA("r_m%d_rdRspRdy && c_m%d_bWrData", rdRspStg, rdRspStg);
 				rdRspRdyWithParan = "(" + rdRspRdy + ")";
 			} else {
-				rdRspRdy = "r_m2_rdRspRdy";
+				rdRspRdy = VA("r_m%d_rdRspRdy", rdRspStg);
 				rdRspRdyWithParan = rdRspRdy;
 			}
 
@@ -5135,9 +5146,9 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 
 			string rdRspRdy;
 			if (bMultiQwRdMif) {
-				rdRspRdy = "r_m2_rdRspRdy && c_m2_bWrData";
+				rdRspRdy = VA("r_m%d_rdRspRdy && c_m%d_bWrData", rdRspStg, rdRspStg);
 			} else {
-				rdRspRdy = "r_m2_rdRspRdy";
+				rdRspRdy = VA("r_m%d_rdRspRdy", rdRspStg);
 			}
 
 			if (rdRspGrpIdW > 0) {
