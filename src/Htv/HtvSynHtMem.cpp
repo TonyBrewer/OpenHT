@@ -878,8 +878,6 @@ void CHtvDesign::SynHtDistRamWe(CHtvIdent *pHier, CHtvObject * pObj, CHtvObject 
 	if (!bIsAlwaysAt)
 		m_vFile.Print("assign ");
 
-	vector<CHtfeOperand *> &weIndexList = pExpr->GetOperand1()->GetIndexList();
-
 	CHtvIdent *pWeIdent = pExpr->GetOperand1()->GetMember();
 	vector<CHtDistRamWeWidth> *pWeWidth = pWeIdent->GetHtDistRamWeWidth();
 
@@ -907,6 +905,9 @@ void CHtvDesign::SynHtDistRamWe(CHtvIdent *pHier, CHtvObject * pObj, CHtvObject 
 		int exprHighBit, exprLowBit;
 		pExpr->GetOperand1()->GetDistRamWeWidth(exprHighBit, exprLowBit);
 
+		CHtvIdent * pOp1Ident = pExpr->GetOperand1()->GetMember();
+		string origIdent = pOp1Ident->GetName();
+
 		for (size_t i = 0; i < (*pWeWidth).size(); i += 1) {
 			int highBit = (*pWeWidth)[i].m_highBit;
 			int lowBit = (*pWeWidth)[i].m_lowBit;
@@ -914,22 +915,24 @@ void CHtvDesign::SynHtDistRamWe(CHtvIdent *pHier, CHtvObject * pObj, CHtvObject 
 			if (!(exprLowBit < 0) && !(exprLowBit <= lowBit && highBit <= exprHighBit))
 				continue;
 
-			m_vFile.Print("%s_%d_%d", pWeIdent->GetName().c_str(), highBit, lowBit);
+			string weName = VA("%s_%d_%d", origIdent.c_str(), highBit, lowBit);
+			pOp1Ident->SetName(weName);
 
-			for (size_t i = 0; i < weIndexList.size(); i += 1) {
-				if (!weIndexList[i]->IsConstValue())
-					ParseMsg(PARSE_FATAL, weIndexList[i]->GetLineInfo(), "Non-constant index not supported");
-				m_vFile.Print("$%d", weIndexList[i]->GetConstValue().GetSint32());
+			bool bFoundSubExpr;
+			bool bWriteIndex;
+			FindSubExpr(pObj, pRtnObj, pExpr, bFoundSubExpr, bWriteIndex);
+
+			if (!bWriteIndex) {
+				PrintSubExpr(pObj, pRtnObj, pExpr);
+				m_vFile.Print(";\n");
 			}
 
-			m_vFile.Print(" = ");
-
-			if (pOp2->IsScX())
-				m_vFile.Print("1'bx;\n");
-			else if (pOp2->GetConstValue().GetUint64() == 0)
-				m_vFile.Print("1'b0;\n");
-			else
-				m_vFile.Print("1'b1;\n");
+			if (bFoundSubExpr) {
+				m_vFile.DecIndentLevel();
+				m_vFile.Print("end\n");
+			}
 		}
+
+		pOp1Ident->SetName(origIdent);
 	}
 }

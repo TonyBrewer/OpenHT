@@ -5418,10 +5418,12 @@ void CHtfeDesign::ParseEvaluateExpression(CHtfeIdent *pHier, EToken tk, vector<C
 				Assert(operandStack.size() == 1 && operatorStack.size() == 0);
 				pOp1 = operandStack.back();
 
-				if (pOp1->GetMember()->IsVariable())
-					pOp1->GetMember()->AddReader(pHier);
-				else if (pOp1->GetMember()->IsFunction())
-					pOp1->GetMember()->AddCaller(pHier);
+				if (pOp1->GetMember()) {
+					if (pOp1->GetMember()->IsVariable())
+						pOp1->GetMember()->AddReader(pHier);
+					else if (pOp1->GetMember()->IsFunction())
+						pOp1->GetMember()->AddCaller(pHier);
+				}
 
 				return;
 			} else switch (stackTk) {
@@ -5457,74 +5459,10 @@ void CHtfeDesign::ParseEvaluateExpression(CHtfeIdent *pHier, EToken tk, vector<C
 
 				operandStack.push_back(pRslt);
 
-				if (pOp1->GetMember()->IsVariable())
+				if (pOp1->GetMember() && pOp1->GetMember()->IsVariable())
 					pOp1->GetMember()->AddReader(pHier);
 				break;
 			}
-			//case tk_ampersandEqual:
-			//case tk_vbarEqual:
-			//case tk_minusEqual:
-			//case tk_lessLessEqual:
-			//case tk_greaterGreaterEqual:
-			//case tk_carotEqual:
-			//case tk_asteriskEqual:
-			//case tk_slashEqual:
-			//case tk_percentEqual:
-			//case tk_plusEqual:
-			//	{
-			//		// must separate into an equal and an operator
-			//		Assert(operandStack.size() >= 2);
-			//		pOp2 = operandStack.back();
-			//		operandStack.pop_back();
-			//		pOp1 = operandStack.back();
-			//		operandStack.pop_back();
-
-			//		if (pOp1->GetLineInfo().m_lineNum == 31)
-			//			bool stop = true;
-
-			//		CHtfeOperand *pTmpOp1 = HandleNewOperand();
-			//		pTmpOp1->InitAsIdentifier(GetLineInfo(), pOp1->GetMember());
-			//		pTmpOp1->SetType(pOp1->GetType());
-			//		pTmpOp1->SetIndexList(pOp1->GetIndexList());
-			//		*pTmpOp1->GetSubFieldP() = pOp1->GetSubField();
-
-			//		// link replicated operands so common index equations can be handled
-			//		pOp1->SetLinkedOp(pTmpOp1);
-			//		pTmpOp1->SetLinkedOp(pOp1);
-
-
-			//		CHtfeLex::EToken tkOp;
-			//		switch (stackTk) {
-			//		case tk_ampersandEqual:			tkOp = tk_ampersand; break;
-			//		case tk_vbarEqual:				tkOp = tk_vbar; break;
-			//		case tk_minusEqual:				tkOp = tk_minus; break;
-			//		case tk_lessLessEqual:			tkOp = tk_lessLess; break;
-			//		case tk_greaterGreaterEqual:	tkOp = tk_greaterGreater; break;
-			//		case tk_carotEqual:				tkOp = tk_carot; break;
-			//		case tk_asteriskEqual:			tkOp = tk_asterisk; break;
-			//		case tk_slashEqual:				tkOp = tk_slash; break;
-			//		case tk_percentEqual:			tkOp = tk_percent; break;
-			//		case tk_plusEqual:				tkOp = tk_plus; break;
-			//		default: Assert(0); tkOp = tk_eof; break;
-			//		}
-
-			//		CHtfeOperand *pTmp = HandleNewOperand();
-			//		pTmp->InitAsOperator(GetLineInfo(), tkOp, pTmpOp1, pOp2);
-
-			//		pOp2->SetIsParenExpr();
-
-			//		pRslt = HandleNewOperand();
-			//		pRslt->InitAsOperator(GetLineInfo(), tk_equal, pOp1, pTmp);
-			//		operandStack.push_back(pRslt);
-
-			//		if (pOp1->GetMember()->IsVariable())
-			//			pOp1->GetMember()->AddWriter(pHier);
-			//		if (pOp1->GetMember()->IsVariable())
-			//			pOp1->GetMember()->AddReader(pHier);
-			//		if (pOp2->GetMember()->IsVariable())
-			//			pOp2->GetMember()->AddReader(pHier);
-			//	}
-			//	break;
 			case tk_equal:
 				bIsEqual = true;
 				// fall into default
@@ -5576,11 +5514,11 @@ void CHtfeDesign::ParseEvaluateExpression(CHtfeIdent *pHier, EToken tk, vector<C
 						pRslt->InitAsOperator(GetLineInfo(), tk_equal, pOp1, pTmp);
 						operandStack.push_back(pRslt);
 
-						if (pOp1->GetMember()->IsVariable())
+						if (pOp1->GetMember() && pOp1->GetMember()->IsVariable())
 							pOp1->GetMember()->AddWriter(pHier);
-						if (pOp1->GetMember()->IsVariable())
+						if (pOp1->GetMember() && pOp1->GetMember()->IsVariable())
 							pOp1->GetMember()->AddReader(pHier);
-						if (pOp2->GetMember()->IsVariable())
+						if (pOp2->GetMember() && pOp2->GetMember()->IsVariable())
 							pOp2->GetMember()->AddReader(pHier);
 						break;
 					}
@@ -5763,13 +5701,13 @@ void CHtfeDesign::ParseEvaluateExpression(CHtfeIdent *pHier, EToken tk, vector<C
 						pOp2->GetOperand1()->GetMember()->GetId() == CHtfeIdent::id_class)
 						pOp1->GetMember()->SetInstanceName(pOp2->GetOperand1()->GetMember()->GetInstanceName());
 
-					if (pOp1->GetMember()->IsVariable()) {
+					if (pOp1->GetMember() && pOp1->GetMember()->IsVariable()) {
 						if (bIsEqual)
 							pOp1->GetMember()->AddWriter(pHier);
 						else
 							pOp1->GetMember()->AddReader(pHier);
 					}
-					if (pOp2->GetMember()->IsVariable())
+					if (pOp2->GetMember() && pOp2->GetMember()->IsVariable())
 						pOp2->GetMember()->AddReader(pHier);
 				}
 				break;
@@ -5797,11 +5735,11 @@ void CHtfeDesign::ParseEvaluateExpression(CHtfeIdent *pHier, EToken tk, vector<C
 				pRslt->SetType(pOp2->GetType());
 				operandStack.push_back(pRslt);
 
-				if (pOp1->GetMember()->IsVariable())
+				if (pOp1->GetMember() && pOp1->GetMember()->IsVariable())
 					pOp1->GetMember()->AddReader(pHier);
-				if (pOp2->GetMember()->IsVariable())
+				if (pOp2->GetMember() && pOp2->GetMember()->IsVariable())
 					pOp2->GetMember()->AddReader(pHier);
-				if (pOp3->GetMember()->IsVariable())
+				if (pOp3->GetMember() && pOp3->GetMember()->IsVariable())
 					pOp3->GetMember()->AddReader(pHier);
 			}
 
@@ -6795,6 +6733,28 @@ void CHtfeDesign::SkipTo(EToken token1, EToken token2)
 			lvl += 1;
 	}
 }
+
+void CHtfeDesign::CopyTo(EToken token, string & str)
+{
+	str += GetTokenString();
+	for (int lvl = 0;;) {
+		EToken tk = GetNextToken();
+		str += GetTokenString();
+		if (tk == tk_eof)
+			return;
+		if (token == tk) {
+			if (lvl == 0)
+				return;
+			else
+				lvl -= 1;
+		}
+		if (token == tk_rbrace && tk == tk_lbrace)
+			lvl += 1;
+		if (token == tk_rparen && tk == tk_lparen)
+			lvl += 1;
+	}
+}
+
 
 #ifdef DUMP_TO_FILE
 CHtvFile sFp;

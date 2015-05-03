@@ -1,8 +1,8 @@
 
 #pragma message "  __SEED__ " __SEED__
 #ifdef _WIN32
-//#define TEST 0x12b0c00a
-#define TEST __RANDOM__
+#define TEST 0x12b0c00a
+//#define TEST __RANDOM__
 #else
 //#define TEST 0x3
 #define TEST __RANDOM__

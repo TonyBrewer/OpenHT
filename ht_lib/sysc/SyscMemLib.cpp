@@ -517,8 +517,8 @@ namespace Ht {
 
 					if (m_pReqTime->m_req.m_type == MEM_REQ_RD && (m_pReqTime->m_req.m_tid & 7) != 0) {
 						// check that multi-quadword reads have reqCnt == 8 && addr aligned to 64B
-						assert((m_pReqTime->m_req.m_tid & 7) == 7);
-						assert((m_pReqTime->m_req.m_addr & 0x3f) == 0);
+						ht_assert((m_pReqTime->m_req.m_tid & 7) == 7);
+						ht_assert((m_pReqTime->m_req.m_addr & 0x3f) == 0);
 					}
 				} else 
 					m_pReqTime->m_data[m_wrDataIdx++] = m_pSyscMem->i_mifToXbar_req.read().m_data;

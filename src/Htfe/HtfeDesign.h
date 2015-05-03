@@ -255,6 +255,7 @@ private:
 
     void SkipTo(EToken);
     void SkipTo(EToken, EToken);
+	void CopyTo(EToken, string & str);
 
     bool IsConstCondExpression(CHtfeOperand *pExpr);
     bool IsExpressionEqual(CHtfeOperand *pOp1, CHtfeOperand *pOp2);

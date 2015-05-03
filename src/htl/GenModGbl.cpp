@@ -374,6 +374,7 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 		}
 
 		if (pGv->m_bWriteForMifRead) { // Memory
+			int rdRspStg = mod.m_mif.m_mifRd.m_bNeedRdRspInfoRam ? 2 : 1;
 			if (mod.m_mif.m_mifRd.m_rspGrpW.AsInt() > 0) {
 				m_gblIoDecl.Append("\tsc_out<sc_uint<%s_RD_GRP_ID_W> > o_%sTo%s_mwGrpId%s;\n",
 					mod.m_modName.Upper().c_str(),
@@ -381,8 +382,9 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 				vector<int> refList(pGv->m_dimenList.size());
 				do {
 					string dimIdx = IndexStr(refList);
-					gblOut.Append("\to_%sTo%s_mwGrpId%s = r_m3_rdRspInfo.m_grpId;\n",
-						mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), dimIdx.c_str());
+					gblOut.Append("\to_%sTo%s_mwGrpId%s = r_m%d_rdRspInfo.m_grpId;\n",
+						mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), dimIdx.c_str(),
+						rdRspStg + 1);
 				} while (DimenIter(pGv->m_dimenList, refList));
 			}
 
@@ -393,13 +395,13 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 				vector<int> refList(pGv->m_dimenList.size());
 				do {
 					string dimIdx = IndexStr(refList);
-					gblOut.Append("\to_%sTo%s_mwData%s = r_m3_%sMwData%s;\n",
+					gblOut.Append("\to_%sTo%s_mwData%s = r_m%d_%sMwData%s;\n",
 						mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), dimIdx.c_str(),
-						pGv->m_gblName.c_str(), dimIdx.c_str());
+						rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str());
 				} while (DimenIter(pGv->m_dimenList, refList));
 			}
 
-			if (pGv->m_pNgvInfo->m_bNeedQue) {
+			if (pGv->m_pNgvInfo->m_bNeedQue && (mod.m_threads.m_htIdW.AsInt() > 0 || mod.m_mif.m_mifRd.m_bMultiQwHostRdMif || mod.m_mif.m_mifRd.m_bMultiQwCoprocRdMif)) {
 				m_gblIoDecl.Append("\tsc_in<bool> i_%sTo%s_mwFull%s;\n",
 					pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), pGv->m_dimenDecl.c_str());
 			}
@@ -914,22 +916,26 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 		gblPostInstr.NewLine();
 
 		if (pGv->m_bWriteForMifRead) {
+			int rdRspStg = mod.m_mif.m_mifRd.m_bNeedRdRspInfoRam ? 2 : 1;
 			GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, VA("CGW_%s", pGv->m_pNgvInfo->m_ngvWrType.c_str()),
-				VA("r_m3_%sMwData", pGv->m_gblName.c_str()), pGv->m_dimenList);
-			m_gblRegDecl.Append("\tCGW_%s c_m2_%sMwData%s;\n",
-				pGv->m_pNgvInfo->m_ngvWrType.c_str(), pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
+				VA("r_m%d_%sMwData", rdRspStg + 1, pGv->m_gblName.c_str()), pGv->m_dimenList);
+			m_gblRegDecl.Append("\tCGW_%s c_m%d_%sMwData%s;\n",
+				pGv->m_pNgvInfo->m_ngvWrType.c_str(),
+				rdRspStg,
+				pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
 
 			string htIdStr = (mod.m_threads.m_htIdW.AsInt() > 0 &&
-				(pGv->m_bPrivGbl || pGv->m_addr1Name == "htId" || pGv->m_addr2Name == "htId")) ? "r_m2_rdRspInfo.m_htId" : "";
+				(pGv->m_bPrivGbl || pGv->m_addr1Name == "htId" || pGv->m_addr2Name == "htId")) ? VA("r_m%d_rdRspInfo.m_htId", rdRspStg) : "";
 			vector<int> refList(pGv->m_dimenList.size());
 			do {
 				string dimIdx = IndexStr(refList);
-				gblPreInstr.Append("\tc_m2_%sMwData%s.InitZero(%s);\n",
+				gblPreInstr.Append("\tc_m%d_%sMwData%s.InitZero(%s);\n",
+					rdRspStg,
 					pGv->m_gblName.c_str(), dimIdx.c_str(),
 					htIdStr.c_str());
-				gblReg.Append("\tr_m3_%sMwData%s = c_m2_%sMwData%s;\n",
-					pGv->m_gblName.c_str(), dimIdx.c_str(),
-					pGv->m_gblName.c_str(), dimIdx.c_str());
+				gblReg.Append("\tr_m%d_%sMwData%s = c_m%d_%sMwData%s;\n",
+					rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
+					rdRspStg, pGv->m_gblName.c_str(), dimIdx.c_str());
 			} while (DimenIter(pGv->m_dimenList, refList));
 		}
 
@@ -1351,7 +1357,6 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 			CRam * pGv = mod.m_ngvList[gvIdx];
 
 			if (pGv->m_bWriteForInstrWrite) {
-				int gvWrStg = mod.m_tsStg + pGv->m_wrStg.AsInt();
 				vector<int> refList(pGv->m_dimenList.size());
 				do {
 					string dimIdx = IndexStr(refList);
@@ -1700,7 +1705,7 @@ void CDsnInfo::GenerateNgvFiles()
 				//	mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), pGv->m_dimenDecl.c_str());
 				ngvIo.Append("\tsc_in<CGW_%s> i_%sTo%s_mwData%s;\n",
 					pGv->m_pNgvInfo->m_ngvWrType.c_str(), mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), pGv->m_dimenDecl.c_str());
-				if (bNeedQue) {
+				if (bNeedQue && (mod.m_threads.m_htIdW.AsInt() > 0 || mod.m_mif.m_mifRd.m_bMultiQwHostRdMif || mod.m_mif.m_mifRd.m_bMultiQwCoprocRdMif)) {
 					ngvIo.Append("\tsc_out<bool> o_%sTo%s_mwFull%s;\n",
 						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), pGv->m_dimenDecl.c_str());
 				}
@@ -2384,7 +2389,7 @@ void CDsnInfo::GenerateNgvFiles()
 
 				ngvRegDecl.Append("\tbool c_%sTo%s_%cwWrEn%s%s;\n",
 					mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), imCh, ngvClkModIn.c_str(), pGv->m_dimenDecl.c_str());
-				if (bNeedQue && imIdx == 1) {
+				if ((bNeedQue && imIdx == 1 && idW > 0)) {
 					GenVcdDecl(ngvSosCode, eVcdAll, ngvRegDecl, vcdModName, "bool",
 						VA("r_%sTo%s_%cwFull%s", pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), imCh, ngvClkModIn.c_str()), pGv->m_dimenList);
 				}
@@ -2405,7 +2410,7 @@ void CDsnInfo::GenerateNgvFiles()
 							mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), imCh, eoStr.c_str(), ngvClkModIn.c_str(), pGv->m_dimenDecl.c_str());
 						ngvRegDecl.NewLine();
 					}
-					if (idW > 0 || imIdx == 1) {
+					if (idW > 0/* || imIdx == 1*/) {
 						string queueW = imIdx == 1 ? "5" : VA("%s_HTID_W", mod.m_modName.Upper().c_str());
 						ngvRegDecl.Append("\tht_dist_que <ht_uint%d, %s> m_%s_%cw%sIdQue%s%s;\n",
 							idW, queueW.c_str(),
@@ -2478,7 +2483,8 @@ void CDsnInfo::GenerateNgvFiles()
 								portRrSel = VA("(c_t0_%s_%cwRrSelE%s%s || c_t0_%s_%cwRrSelO%s%s)",
 									mod.m_modName.Lc().c_str(), imCh, ngvClkWrComp.c_str(), dimIdx.c_str(),
 									mod.m_modName.Lc().c_str(), imCh, ngvClkWrComp.c_str(), dimIdx.c_str());
-							} else {
+							}
+							else {
 								portRrSel = VA("c_t0_%s_%cwRrSel%s%s%s",
 									mod.m_modName.Lc().c_str(), imCh, eoStr.c_str(), ngvClkWrComp.c_str(), dimIdx.c_str());
 							}
@@ -2538,7 +2544,8 @@ void CDsnInfo::GenerateNgvFiles()
 										mod.m_modName.Lc().c_str(), imCh, eoStr.c_str(), ngvClkWrComp.c_str(), queRegWrEnSig.c_str(), dimIdx.c_str(),
 										portRrSel.c_str(),
 										mod.m_modName.Lc().c_str(), imCh, eoStr.c_str(), dimIdx.c_str());
-								} else {
+								}
+								else {
 									ngvPreRegModIn.Append("%sif (c_%sTo%s_%cwWrEn%s%s%s) {\n", tabs.c_str(),
 										mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), imCh, eoStr.c_str(), ngvClkModIn.c_str(), dimIdx.c_str());
 								}
@@ -2556,19 +2563,36 @@ void CDsnInfo::GenerateNgvFiles()
 									mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), imCh, ngvClkModIn.c_str(), dimIdx.c_str());
 
 								ngvPreRegModIn.Append("%s}\n", tabs.c_str());
-
-								if (imIdx == 1) {
-									ngvRegModIn.Append("\tr_%sTo%s_%cwFull%s%s = m_%s_%cwDataQue%s%s.size() > 24;\n",
-										pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), imCh, ngvClkModIn.c_str(), dimIdx.c_str(),
-										mod.m_modName.Lc().c_str(), imCh, eoStr.c_str(), dimIdx.c_str());
-									ngvRegModIn.NewLine();
-
-									ngvOutModIn.Append("\to_%sTo%s_%cwFull%s = r_%sTo%s_%cwFull%s%s;\n",
-										pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), imCh, dimIdx.c_str(),
-										pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), imCh, ngvClkModIn.c_str(), dimIdx.c_str());
-								}
 							}
 						} while (loopInfo.Iter());
+
+						if (bNeedQue && imIdx == 1 && idW > 0) {
+							string tabs = "\t";
+							CLoopInfo loopInfo(ngvRegModIn, tabs, pGv->m_dimenList, 5);
+							do {
+								string dimIdx = loopInfo.IndexStr();
+
+								ngvRegModIn.Append("%sr_%sTo%s_%cwFull%s%s = m_%s_%cwDataQue%s%s.size() > 24;\n", tabs.c_str(),
+									pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), imCh, ngvClkModIn.c_str(), dimIdx.c_str(),
+									mod.m_modName.Lc().c_str(), imCh, eoStr.c_str(), dimIdx.c_str());
+
+							} while (loopInfo.Iter());
+							ngvRegModIn.NewLine();
+						}
+
+						if (bNeedQue && imIdx == 1 && idW > 0) {
+							string tabs = "\t";
+							CLoopInfo loopInfo(ngvOutModIn, tabs, pGv->m_dimenList, 5);
+							do {
+								string dimIdx = loopInfo.IndexStr();
+
+								ngvOutModIn.Append("%so_%sTo%s_%cwFull%s = r_%sTo%s_%cwFull%s%s;\n", tabs.c_str(),
+									pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), imCh, dimIdx.c_str(),
+									pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), imCh, ngvClkModIn.c_str(), dimIdx.c_str());
+							} while (loopInfo.Iter());
+							ngvOutModIn.NewLine();
+						}
+
 					}
 
 					{
@@ -2864,105 +2888,116 @@ void CDsnInfo::GenerateNgvFiles()
 				"r_t1_gwData", pGv->m_dimenList);
 			ngvRegDecl.NewLine();
 
-			string tabs = "\t";
-			CLoopInfo loopInfo(ngvPreRegRrSel, tabs, pGv->m_dimenList, 10);
-			do {
-				string dimIdx = loopInfo.IndexStr();
+			{
+				string tabs = "\t";
+				CLoopInfo loopInfo(ngvPreRegRrSel, tabs, pGv->m_dimenList, 10);
+				do {
+					string dimIdx = loopInfo.IndexStr();
 
-				ngvPreRegRrSel.Append("%sc_t0_gwWrEn%s = false;\n", tabs.c_str(), dimIdx.c_str());
-				ngvPreRegRrSel.Append("%sc_t0_gwData%s = 0;\n", tabs.c_str(), dimIdx.c_str());
-				ngvPreRegRrSel.NewLine();
+					ngvPreRegRrSel.Append("%sc_t0_gwWrEn%s = false;\n", tabs.c_str(), dimIdx.c_str());
+					ngvPreRegRrSel.Append("%sc_t0_gwData%s = 0;\n", tabs.c_str(), dimIdx.c_str());
+					ngvPreRegRrSel.NewLine();
 
-				for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
-					CModule &mod = *ngvModInfoList[ngvPortList[ngvIdx].first].m_pMod;
-					int imIdx = ngvPortList[ngvIdx].second;
-					char imCh = imIdx == 0 ? 'i' : 'm';
-					string idStr = imIdx == 0 ? "Ht" : "Grp";
-					int idW = imIdx == 0 ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
+					for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
+						CModule &mod = *ngvModInfoList[ngvPortList[ngvIdx].first].m_pMod;
+						int imIdx = ngvPortList[ngvIdx].second;
+						char imCh = imIdx == 0 ? 'i' : 'm';
+						string idStr = imIdx == 0 ? "Ht" : "Grp";
+						int idW = imIdx == 0 ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
 
-					ngvPreRegRrSel.Append("%sc_t0_%s_%cwWrEn%s = c_t0_%s_%cwRrSel%s;\n", tabs.c_str(),
-						mod.m_modName.Lc().c_str(), imCh, dimIdx.c_str(),
-						mod.m_modName.Lc().c_str(), imCh, dimIdx.c_str());
-
-					if (idW > 0) {
-						ngvPreRegRrSel.Append("%sc_t0_%s_%cw%sId%s = r_%s_%cw%sId%s;\n", tabs.c_str(),
-							mod.m_modName.Lc().c_str(), imCh, idStr.c_str(), dimIdx.c_str(),
-							mod.m_modName.Lc().c_str(), imCh, idStr.c_str(), dimIdx.c_str());
-					}
-					if (imIdx == 0) {
-						ngvPreRegRrSel.Append("%sc_t0_%s_%cwComp%s = r_%s_%cwComp%s;\n", tabs.c_str(),
+						ngvPreRegRrSel.Append("%sc_t0_%s_%cwWrEn%s = c_t0_%s_%cwRrSel%s;\n", tabs.c_str(),
 							mod.m_modName.Lc().c_str(), imCh, dimIdx.c_str(),
 							mod.m_modName.Lc().c_str(), imCh, dimIdx.c_str());
+
+						if (idW > 0) {
+							ngvPreRegRrSel.Append("%sc_t0_%s_%cw%sId%s = r_%s_%cw%sId%s;\n", tabs.c_str(),
+								mod.m_modName.Lc().c_str(), imCh, idStr.c_str(), dimIdx.c_str(),
+								mod.m_modName.Lc().c_str(), imCh, idStr.c_str(), dimIdx.c_str());
+						}
+						if (imIdx == 0) {
+							ngvPreRegRrSel.Append("%sc_t0_%s_%cwComp%s = r_%s_%cwComp%s;\n", tabs.c_str(),
+								mod.m_modName.Lc().c_str(), imCh, dimIdx.c_str(),
+								mod.m_modName.Lc().c_str(), imCh, dimIdx.c_str());
+						}
+						ngvPreRegRrSel.NewLine();
+					}
+
+					for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
+						CModule &mod = *ngvModInfoList[ngvPortList[ngvIdx].first].m_pMod;
+						char imCh = ngvPortList[ngvIdx].second == 0 ? 'i' : 'm';
+
+						ngvPreRegRrSel.Append("%sif (c_t0_%s_%cwRrSel%s) {\n", tabs.c_str(),
+							mod.m_modName.Lc().c_str(), imCh, dimIdx.c_str());
+
+						ngvPreRegRrSel.Append("%s\tc_rrSel%s = 0x%x;\n", tabs.c_str(),
+							dimIdx.c_str(),
+							1 << ((ngvIdx + 1) % ngvPortCnt));
+
+						ngvPreRegRrSel.Append("%s\tc_t0_gwWrEn%s = true;\n", tabs.c_str(), dimIdx.c_str());
+
+						ngvPreRegRrSel.Append("%s\tc_t0_gwData%s = r_%s_%cwData%s;\n", tabs.c_str(),
+							dimIdx.c_str(),
+							mod.m_modName.Lc().c_str(), imCh, dimIdx.c_str());
+
+						ngvPreRegRrSel.Append("%s}\n", tabs.c_str());
 					}
 					ngvPreRegRrSel.NewLine();
-				}
 
-				for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
-					CModule &mod = *ngvModInfoList[ngvPortList[ngvIdx].first].m_pMod;
-					char imCh = ngvPortList[ngvIdx].second == 0 ? 'i' : 'm';
-
-					ngvPreRegRrSel.Append("%sif (c_t0_%s_%cwRrSel%s) {\n", tabs.c_str(),
-						mod.m_modName.Lc().c_str(), imCh, dimIdx.c_str());
-
-					ngvPreRegRrSel.Append("%s\tc_rrSel%s = 0x%x;\n", tabs.c_str(),
+					ngvPreRegRrSel.Append("%sc_t1_gwWrEn%s = r_t1_gwWrEn%s;\n", tabs.c_str(),
 						dimIdx.c_str(),
-						1 << ((ngvIdx + 1) % ngvPortCnt));
+						dimIdx.c_str());
 
-					ngvPreRegRrSel.Append("%s\tc_t0_gwWrEn%s = true;\n", tabs.c_str(), dimIdx.c_str());
-
-					ngvPreRegRrSel.Append("%s\tc_t0_gwData%s = r_%s_%cwData%s;\n", tabs.c_str(),
+					ngvPreRegRrSel.Append("%sc_t1_gwData%s = r_t1_gwData%s;\n", tabs.c_str(),
 						dimIdx.c_str(),
-						mod.m_modName.Lc().c_str(), imCh, dimIdx.c_str());
+						dimIdx.c_str());
 
-					ngvPreRegRrSel.Append("%s}\n", tabs.c_str());
-				}
-				ngvPreRegRrSel.NewLine();
+					ngvPreRegRrSel.NewLine();
 
-				ngvRegRrSel.Append("%sr_t1_gwWrEn%s = c_t0_gwWrEn%s;\n", tabs.c_str(),
-					dimIdx.c_str(),
-					dimIdx.c_str());
+				} while (loopInfo.Iter());
+			}
 
-				ngvRegRrSel.Append("%sr_t1_gwData%s = c_t0_gwData%s;\n", tabs.c_str(),
-					dimIdx.c_str(),
-					dimIdx.c_str());
+			{
+				string tabs = "\t";
+				CLoopInfo loopInfo(ngvRegRrSel, tabs, pGv->m_dimenList, 10);
+				do {
+					string dimIdx = loopInfo.IndexStr();
 
-				ngvRegRrSel.NewLine();
+					ngvRegRrSel.Append("%sr_t1_gwWrEn%s = c_t0_gwWrEn%s;\n", tabs.c_str(),
+						dimIdx.c_str(),
+						dimIdx.c_str());
 
-				for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
-					CModule &mod = *ngvModInfoList[ngvPortList[ngvIdx].first].m_pMod;
-					int imIdx = ngvPortList[ngvIdx].second;
-					char imCh = imIdx == 0 ? 'i' : 'm';
-					string idStr = imIdx == 0 ? "Ht" : "Grp";
-					int idW = imIdx == 0 ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
+					ngvRegRrSel.Append("%sr_t1_gwData%s = c_t0_gwData%s;\n", tabs.c_str(),
+						dimIdx.c_str(),
+						dimIdx.c_str());
 
-					ngvRegRrSel.Append("%sr_t1_%s_%cwWrEn%s = c_t0_%s_%cwWrEn%s;\n", tabs.c_str(),
-						mod.m_modName.Lc().c_str(), imCh, dimIdx.c_str(),
-						mod.m_modName.Lc().c_str(), imCh, dimIdx.c_str());
+					ngvRegRrSel.NewLine();
 
-					if (idW > 0) {
-						ngvRegRrSel.Append("%sr_t1_%s_%cw%sId%s = c_t0_%s_%cw%sId%s;\n", tabs.c_str(),
-							mod.m_modName.Lc().c_str(), imCh, idStr.c_str(), dimIdx.c_str(),
-							mod.m_modName.Lc().c_str(), imCh, idStr.c_str(), dimIdx.c_str());
-					}
-					if (imIdx == 0) {
-						ngvRegRrSel.Append("%sr_t1_%s_%cwComp%s = c_t0_%s_%cwComp%s;\n", tabs.c_str(),
+					for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
+						CModule &mod = *ngvModInfoList[ngvPortList[ngvIdx].first].m_pMod;
+						int imIdx = ngvPortList[ngvIdx].second;
+						char imCh = imIdx == 0 ? 'i' : 'm';
+						string idStr = imIdx == 0 ? "Ht" : "Grp";
+						int idW = imIdx == 0 ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
+
+						ngvRegRrSel.Append("%sr_t1_%s_%cwWrEn%s = c_t0_%s_%cwWrEn%s;\n", tabs.c_str(),
 							mod.m_modName.Lc().c_str(), imCh, dimIdx.c_str(),
 							mod.m_modName.Lc().c_str(), imCh, dimIdx.c_str());
+
+						if (idW > 0) {
+							ngvRegRrSel.Append("%sr_t1_%s_%cw%sId%s = c_t0_%s_%cw%sId%s;\n", tabs.c_str(),
+								mod.m_modName.Lc().c_str(), imCh, idStr.c_str(), dimIdx.c_str(),
+								mod.m_modName.Lc().c_str(), imCh, idStr.c_str(), dimIdx.c_str());
+						}
+						if (imIdx == 0) {
+							ngvRegRrSel.Append("%sr_t1_%s_%cwComp%s = c_t0_%s_%cwComp%s;\n", tabs.c_str(),
+								mod.m_modName.Lc().c_str(), imCh, dimIdx.c_str(),
+								mod.m_modName.Lc().c_str(), imCh, dimIdx.c_str());
+						}
+						ngvRegRrSel.NewLine();
 					}
-					ngvRegRrSel.NewLine();
-				}
 
-				ngvPreRegRrSel.Append("%sc_t1_gwWrEn%s = r_t1_gwWrEn%s;\n", tabs.c_str(),
-					dimIdx.c_str(),
-					dimIdx.c_str());
-
-				ngvPreRegRrSel.Append("%sc_t1_gwData%s = r_t1_gwData%s;\n", tabs.c_str(),
-					dimIdx.c_str(),
-					dimIdx.c_str());
-
-				ngvPreRegRrSel.NewLine();
-
-			} while (loopInfo.Iter());
+				} while (loopInfo.Iter());
+			}
 
 			{
 				ngvRegDecl.Append("\tbool c_t1_gwWrEn%s;\n",
@@ -4186,7 +4221,7 @@ void CDsnInfo::GenerateNgvFiles()
 						string idStr = imIdx == 0 ? "Ht" : "Grp";
 						int idW = imIdx == 0 ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
 
-						if (stgIdx > 0 || idW > 0 || imIdx == 0) {
+						if (bNeedIfStg && stgIdx > 0 || bNeedIfStg && idW > 0 || bNeedCompStg && imIdx == 0) {
 							string tabs = "\t";
 							CLoopInfo loopInfo(ngvPreRegWrData, tabs, pGv->m_dimenList, 1);
 							do {

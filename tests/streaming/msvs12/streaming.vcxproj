@@ -126,7 +126,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:/Ht/tests/msvs12/Linux/x64/Debug;C:/Ht/tests/msvs12/x64/Debug;C:/Ht/systemc-2.3.1/win_x86_64/Debug;C:/ht/pthread-win32-2.9.0/win_x86_64/Debug;./x64/Debug;./x64/Debug;$(HtToolsPath)/systemc-2.3.1/win_x86_64/Debug;$(HtToolsPath)/pthread-win32-2.9.0/win_x86_64/Debug</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(HtToolsPath)/tests/msvs12/Linux/x64/Debug;$(HtToolsPath)/tests/msvs12/x64/Debug;./x64/Debug;$(HtToolsPath)/systemc-2.3.1/win_x86_64/Debug;$(HtToolsPath)/pthread-win32-2.9.0/win_x86_64/Debug</AdditionalLibraryDirectories>
       <AdditionalDependencies>gettimeofday.obj;pthread.lib;systemc.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>

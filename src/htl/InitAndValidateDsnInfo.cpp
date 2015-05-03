@@ -942,7 +942,7 @@ int CDsnInfo::FindFieldListWidth(string structName, CLineInfo &lineInfo, vector<
 
 		int fieldWidth;
 		if (pField->m_pType->IsRecord())
-			fieldWidth = FindStructWidth(*pField->m_pType->AsRecord(), &minAlign, bHostType);
+			fieldWidth = FindStructWidth(*pField->m_pType->AsRecord(), &minAlign, bHostType) * pField->m_elemCnt;
 		else
 			fieldWidth = FindTypeWidth(pField, &minAlign, bHostType) * pField->m_elemCnt;
 

@@ -12,7 +12,7 @@ union CSubFld {
 };
 
 struct CGVar {
-	char m_a;
+	uint8_t m_a;
 	short m_b[2];
 	CSubFld m_c[3];
 	uint32_t m_d;

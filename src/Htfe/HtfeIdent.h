@@ -583,8 +583,8 @@ public:
 	void SetIsFunctionCalled(bool bCalled) { m_bIsFunctionCalled = bCalled; }
 	bool IsFunctionCalled() { return m_bIsFunctionCalled; }
 
-    bool IsVariable() const { return this ? m_id == id_variable : false; }
-    bool IsFunction() const { return this ? m_id == id_function : false; }
+	bool IsVariable() const { Assert(this);  return m_id == id_variable; }
+	bool IsFunction() const { Assert(this);  return m_id == id_function; }
     bool IsType() const { return m_bIsType; }
 
     CHtfeIdent *GetPrevHier() const { 

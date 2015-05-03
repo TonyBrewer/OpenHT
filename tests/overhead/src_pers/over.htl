@@ -5,6 +5,7 @@
 -uc 1
 -un Au
 -df 150
+//-vcd_all
 -pn overhead
 ../src_pers/over.htd
 ../ht/sysc

@@ -1091,6 +1091,8 @@ struct CMifRd {
 		m_bMultiQwCoprocRdReq = false;
 		m_bMultiQwHostRdMif = false;
 		m_bMultiQwCoprocRdMif = false;
+		m_bRdRspCallBack = false;
+		m_bNeedRdRspInfoRam = false;
 		m_bPause = false;
 		m_bPoll = false;
 		m_bMaxBw = false;
@@ -1118,6 +1120,9 @@ public:
 	bool		m_bMultiQwHostRdMif;
 	bool		m_bMultiQwCoprocRdMif;
 	int			m_maxRsmDly;
+	int			m_maxRdRspInfoW;
+	bool		m_bNeedRdRspInfoRam;
+	bool		m_bRdRspCallBack;
 
 	vector<CMifRdDst>		m_rdDstList;
 };
@@ -1199,6 +1204,7 @@ public:
 		m_bMultiQwHostWrMif = false;
 		m_bMultiQwCoprocWrMif = false;
 		m_bRspGrpIdPriv = false;
+		m_bRamAccessReq = false;
 		m_bMaxBw = false;
 		m_bPause = false;
 		m_bPoll = false;
@@ -1228,6 +1234,7 @@ public:
 	bool        m_bMultiQwCoprocWrReq;
 	bool        m_bMultiQwHostWrMif;
 	bool        m_bMultiQwCoprocWrMif;
+	bool		m_bRamAccessReq;
 
 	vector<CMifWrSrc>		m_wrSrcList;
 };
@@ -1257,6 +1264,8 @@ public:
 
 	CMifRd	m_mifRd;
 	CMifWr	m_mifWr;
+
+	vector<int> m_vIdxWList;
 };
 
 class COutHostMsg {

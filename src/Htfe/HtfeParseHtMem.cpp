@@ -1759,26 +1759,14 @@ CHtfeOperand * CHtfeDesign::ParseHtMemoryExpr(CHtfeIdent *pHier, CHtfeIdent *pId
 
 			GetNextToken();
 			while (GetToken() == tk_lbrack) {
-				//if (pIdent->GetDimenCnt() == dimIdx)
-				//	break;
+				CopyTo(tk_rbrack, rdDataStr);
 
-				GetNextToken();
-
-				CConstValue idxValue;
-				if (!ParseConstExpr(idxValue)) {
-					ParseMsg(PARSE_ERROR, "Parsing '[ integer ]', expected contant index");
-					SkipTo(tk_rbrack);
-				}
 				if (GetToken() != tk_rbrack) {
 					ParseMsg(PARSE_ERROR, "Parsing '[ integer ]', expected ]");
 					SkipTo(tk_rbrack);
 				}
 				GetNextToken();
-
-				char buf[32];
-				sprintf(buf, "[%d]", (int)idxValue.GetSint64());
-				rdDataStr += buf;
-			}			
+			}
 		}
 		rdDataStr += ")";
 

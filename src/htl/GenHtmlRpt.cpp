@@ -63,7 +63,8 @@ CGenHtmlRpt::CGenHtmlRpt(string htlPath, string fileName, int argc, char const *
 
 void CGenHtmlRpt::AddLevel(const char *pFormat, ...)
 {
-	if (this == 0 || m_fp == 0)
+	HtlAssert(this);
+	if (m_fp == 0)
 		return;
 
 	m_indentLevel += 1;
@@ -120,7 +121,8 @@ void CGenHtmlRpt::AddLevel(const char *pFormat, ...)
 
 void CGenHtmlRpt::AddItem(const char *pFormat, ...)
 {
-	if (this == 0 || m_fp == 0)
+	HtlAssert(this);
+	if (m_fp == 0)
 		return;
 
 	HtlAssert(!m_bPendingText);
@@ -164,7 +166,8 @@ void CGenHtmlRpt::AddItem(const char *pFormat, ...)
 
 void CGenHtmlRpt::AddText(const char *pFormat, ...)
 {
-	if (this == 0 || m_fp == 0)
+	HtlAssert(this);
+	if (m_fp == 0)
 		return;
 
 	HtlAssert(m_bPendingText);
@@ -199,7 +202,8 @@ void CGenHtmlRpt::AddText(const char *pFormat, ...)
 
 void CGenHtmlRpt::EndLevel()
 {
-	if (this == 0 || m_fp == 0)
+	HtlAssert(this);
+	if (m_fp == 0)
 		return;
 
 	m_indentLevel -= 1;

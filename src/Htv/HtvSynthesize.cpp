@@ -3870,8 +3870,12 @@ void CHtvDesign::GenAlwaysAtHeader(bool bBeginEnd)
     m_vFile.IncIndentLevel();
 
     if (bBeginEnd) {
-        m_vFile.Print("begin : Always$%d\n", GetNextAlwaysBlockIdx());
+		int blockIdx;
+		m_vFile.Print("begin : Always$%d\n", blockIdx = GetNextAlwaysBlockIdx());
         m_vFile.IncIndentLevel(); // begin
+
+		if (blockIdx == 7)
+			bool stop = true;
     }
 }
 
