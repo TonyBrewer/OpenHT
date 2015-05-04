@@ -46,28 +46,13 @@ CXXFLAGS += -DVCSREV="\"$(VCSREV)\""
 CXXFLAGS += -DVERSION="\"$(VERSION)\""
 CFLAGS = $(CXXFLAGS)
 
-CXXFLAGS += -DNO_LIC_CHK
-ifeq (,$(findstring NO_LIC_CHK, $(CXXFLAGS)))
-ifeq ($(shell uname), Linux)
-LIC_LIB	= /opt/convey/lib/libwx_lic.a -ldl -lpthread
-else
-CXXFLAGS += -DNO_LIC_CHK
-endif
-endif
-
 SPEC = $(TOPDIR)/rpm/convey_ht_tools.spec
 PREFIX ?= $(TOPDIR)/rpm/prefix
 
-.PHONY: all install rpm clean
+.PHONY: all prefix rpm clean
 
 all: local_systemc
 	$(MAKE) htl htv ht_lib/libht.a ht_lib/libht.pa
-
-debug:
-	$(MAKE) OPT_LVL=-ggdb
-
-install_debug:
-	$(MAKE) install OPT_LVL=-ggdb
 
 local_systemc:
 	cd import > /dev/null; $(MAKE)
@@ -94,7 +79,7 @@ ht_lib/libht.a: $(CNY_OBJ) $(HTLIB_OBJ)
 ht_lib/libht.pa: $(CNY_OBJ) $(HTLIB_POBJ)
 	ar rcs $@ $(CNY_OBJ) $(HTLIB_POBJ)
 
-install: all
+prefix install: all
 	rm -rf $(PREFIX)
 	mkdir -p $(PREFIX)/bin
 	cp -p htl htv $(PREFIX)/bin
@@ -130,7 +115,7 @@ endif
 REL_RPM  = convey-ht-tools-$(VERSION)-$(VCSREV).x86_64.rpm
 REL_PATH = /work/ht_releases/$(REL_DIR)
 
-release: install
+release: prefix
 	find $(PREFIX) -type d | xargs chmod 775
 	rsync -av --delete rpm/prefix/ $(REL_PATH)
 	cd $(dir $(REL_PATH)); rm -f latest; ln -s $(REL_DIR) latest
