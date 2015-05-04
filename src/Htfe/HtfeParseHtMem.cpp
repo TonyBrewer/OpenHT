@@ -521,9 +521,14 @@ void CHtfeDesign::HtMemoryVarDecl(CHtfeIdent *pHier, CHtfeIdent *pIdent)
 
 	CHtfeIdent *pWrData = pHier->FindIdent(cQueName + "_WrData");
 	pWrData->SetIsWriteOnly();
+	pWrData->SetIsMemVarWrData();
+	pWrData->SetMemVar(pIdent);
 
 	CHtfeIdent *pWrEn = pHier->FindIdent(cQueName + "_WrEn");
 	pWrEn->SetIsWriteOnly();
+	pWrEn->SetIsMemVarWrEn();
+	pWrEn->SetMemVar(pIdent);
+
 	if (pIdent->IsHtDistRam()) {
 		vector<CHtDistRamWeWidth> *pWeWidth = new vector<CHtDistRamWeWidth>;
 		pWeWidth->push_back(CHtDistRamWeWidth(dataWidth-1, 0));
@@ -1529,7 +1534,7 @@ CHtfeStatement * CHtfeDesign::ParseHtMemoryStatement(CHtfeIdent *pHier)
 
 			if (!pIdent->IsHtBlockRam() && !pIdent->IsHtMrdBlockRam() && !pIdent->IsHtMwrBlockRam() && dataWidth > 1) {
 				CHtfeOperand *pWrEnOp = pStatement2->GetExpr()->GetOperand1();
-				pWrEnOp->SetDistRamWeWidth(highBit, lowBit);
+				pWrEnOp->SetDistRamWeWidth(lowBit+width-1, lowBit);
 			}
 
 			pStatement2->SetNext(pStatement);
