@@ -115,6 +115,7 @@ public:
 	void SynScPrim(CHtvIdent *pHier, CHtvObject * pObj, CHtvStatement *pStatement);
 	void SynXilinxRegisters(CHtvIdent *pHier, CHtvObject * pObj, CHtvStatement *pStatement, bool &bAlwaysAtNeeded);
 	void SynIndividualStatements(CHtvIdent *pHier, CHtvObject * pObj, CHtvObject * pRtnObj, CHtvStatement *pStatement, int synSetSize);
+	void RemoveWrDataMux(CHtvStatement *pStatement, int synSetSize);
 
     void GenVFileHeader();
     void GenModuleHeader(CHtvIdent *pIdent);
@@ -230,6 +231,7 @@ public:
 		return idx;
 	}
 	int GetNextAlwaysBlockIdx() { return ++m_alwaysBlockIdx; }
+	int GetAlwaysBlockIdx() { return m_alwaysBlockIdx; }
 
 public:
 	enum ETempType { eTempVar, eTempArrIdx, eTempFldIdx };

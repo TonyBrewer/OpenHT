@@ -111,6 +111,7 @@ public:
         m_funcId = fid_unknown;
 		m_pUserConvType = 0;
 		m_pOverloadedNext = 0;
+		m_pMemVar = 0;
 
 		m_bIsReturnRef = false;
         m_bConstVarRead = false;
@@ -168,6 +169,8 @@ public:
 		m_bIsUserConversion = false;
 		m_bNullConvOperator = false;
 		m_bIsConstructor = false;
+		m_bIsMemVarWrEn = false;
+		m_bIsMemVarWrData = false;
 
 		// id_types
 		m_bIsStruct = false;
@@ -679,10 +682,28 @@ public:
 	void SetIsReadOnly(bool bIsReadOnly=true);
     bool IsReadOnly() { return m_bIsConst || m_bIsReadOnly; }
 
-	CHtfeIdent * SetIsWriteOnly(bool bIsWriteOnly=true);
-    bool IsWriteOnly() { return m_bIsParam && !m_bIsConst || m_bIsWriteOnly; }
+	CHtfeIdent * SetIsWriteOnly(bool bIsWriteOnly = true);
+	bool IsWriteOnly() { return m_bIsParam && !m_bIsConst || m_bIsWriteOnly; }
 
-	void SetIsRemoveIfWriteOnly(bool bIsRemoveIfWriteOnly=true);
+	void SetIsMemVarWrData(bool bIsMemVarWrData = true) { m_bIsMemVarWrData = bIsMemVarWrData; }
+	bool IsMemVarWrData() {
+		if (m_pHierIdent) { return m_pHierIdent->IsMemVarWrData(); }
+		return m_bIsMemVarWrData;
+	}
+
+	void SetIsMemVarWrEn(bool bIsMemVarWrEn = true) { m_bIsMemVarWrEn = bIsMemVarWrEn; }
+	bool IsMemVarWrEn() {
+		if (m_pHierIdent) { return m_pHierIdent->IsMemVarWrEn(); }
+		return m_bIsMemVarWrEn;
+	}
+
+	void SetMemVar(CHtfeIdent * pMemVar) { m_pMemVar = pMemVar; }
+	CHtfeIdent * GetMemVar() { 
+		if (m_pHierIdent) { return m_pHierIdent->GetMemVar(); }
+		return m_pMemVar;
+	}
+
+	void SetIsRemoveIfWriteOnly(bool bIsRemoveIfWriteOnly = true);
 	bool IsRemoveIfWriteOnly() { return m_bIsRemoveIfWriteOnly; }
 
     CHtfeIdent *GetParenOperator() { return m_pParenOperator; }
@@ -1250,6 +1271,8 @@ private:
 		bool m_bIsUserConversion:1;
 		bool m_bNullConvOperator:1;
 		bool m_bIsConstructor:1;
+		bool m_bIsMemVarWrEn : 1;
+		bool m_bIsMemVarWrData : 1;
 
 		// id_types
 		bool m_bIsStruct:1;
@@ -1282,7 +1305,8 @@ private:
 		uint8_t		m_scMemoryAddrWidth1;
 		uint8_t		m_scMemoryAddrWidth2;
 
-		vector<CHtDistRamWeWidth>	* m_pHtDistRamWeWidth;
+		vector<CHtDistRamWeWidth> * m_pHtDistRamWeWidth;
+		CHtfeIdent * m_pMemVar;
 	};
 	uint8_t			m_lastByte;
 

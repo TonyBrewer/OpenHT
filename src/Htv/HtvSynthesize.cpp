@@ -1399,6 +1399,8 @@ void CHtvDesign::SynIndividualStatements(CHtvIdent *pHier, CHtvObject * pObj, CH
                 continue;
 
             GenAlwaysAtHeader(true);
+
+			RemoveWrDataMux(pStatement, synSetSize);
         }
 
         //m_vFile.SetLineBuffering(true);
@@ -1639,6 +1641,189 @@ bool CHtvDesign::HandleAllConstantAssignments(CHtvIdent *pHier, CHtvObject * pOb
     pExpr->GetOperand2()->SetMember(pWire);
 
     return false;
+}
+
+struct CMemVarIndexList {
+	void operator = (vector<CHtfeOperand *> & opList) {
+		for (size_t i = 0; i < opList.size(); i += 1) {
+			if (opList[i]->IsConstValue()) {
+				int idx = opList[i]->GetConstValue().GetSint32();
+				m_indexList.push_back(idx);
+			}
+			else
+				Assert(0);
+		}
+	}
+	bool operator == (vector<CHtfeOperand *> & opList) {
+		Assert(opList.size() == m_indexList.size());
+		for (size_t i = 0; i < opList.size(); i += 1) {
+			if (opList[i]->IsConstValue()) {
+				int idx = opList[i]->GetConstValue().GetSint32();
+				if (m_indexList[i] != idx)
+					return false;
+			}
+			else
+				Assert(0);
+		}
+		return true;
+	}
+
+	vector<int> m_indexList;
+};
+
+struct CMemVarInfo {
+	CMemVarInfo() { m_pMemVar = 0; m_bWrEnInit = false; m_bWrDataInit = false; m_bWrEnSet = false;  m_wrEnSize = 0; m_bConvert = true; }
+
+	CHtvIdent * m_pMemVar;
+	bool m_bWrEnInit;
+	bool m_bWrDataInit;
+	bool m_bWrEnSet;
+	vector<int> m_wrEnLowBit;
+	int m_wrEnSize;
+	bool m_bConvert;
+	CMemVarIndexList m_indexList;
+};
+
+void CHtvDesign::RemoveWrDataMux(CHtvStatement *pStatement, int synSetSize)
+{
+	//if (GetAlwaysBlockIdx() == 4)
+	//	bool stop = true;
+
+	vector<CMemVarInfo> memVarList;
+
+	for (CHtvStatement ** ppStatement2 = &pStatement; *ppStatement2; ppStatement2 = (*ppStatement2)->GetPNext()) {
+		if (pStatement->GetSynSetId() != (*ppStatement2)->GetSynSetId())
+			continue;
+
+		switch ((*ppStatement2)->GetStType()) {
+		case st_assign:
+		{
+			if ((*ppStatement2)->GetExpr()->IsLeaf())
+				break;
+
+			CHtvOperand * pOp1 = (*ppStatement2)->GetExpr()->GetOperand1();
+			CHtvIdent * pIdent = pOp1->GetMember();
+			if (pIdent->IsMemVarWrData() || pIdent->IsMemVarWrEn()) {
+				CHtvIdent * pMemVar = pIdent->GetMemVar();
+
+				CMemVarInfo * pMemVarInfo = 0;
+				for (size_t i = 0; i < memVarList.size(); i += 1) {
+					if (memVarList[i].m_pMemVar == pMemVar && memVarList[i].m_indexList == pOp1->GetIndexList()) {
+						pMemVarInfo = &memVarList[i];
+						break;
+					}
+				}
+				if (pMemVarInfo == 0) {
+					memVarList.push_back(CMemVarInfo());
+					pMemVarInfo = &memVarList.back();
+					pMemVarInfo->m_pMemVar = pMemVar;
+					pMemVarInfo->m_indexList = pOp1->GetIndexList();
+				}
+
+				CHtvOperand * pOp2 = (*ppStatement2)->GetExpr()->GetOperand2();
+				if (pOp2->IsConstValue() && pOp2->GetConstValue().IsZero()) {
+					if (pIdent->IsMemVarWrData()) {
+						if (pMemVarInfo->m_bWrDataInit)
+							pMemVarInfo->m_bConvert = false;
+						else
+							pMemVarInfo->m_bWrDataInit = true;
+					} else {
+						if (pMemVarInfo->m_bWrEnInit)
+							pMemVarInfo->m_bConvert = false;
+						else
+							pMemVarInfo->m_bWrEnInit = true;
+					}
+				}
+			}
+			break;
+		}
+		case st_if:
+		{
+			if ((*ppStatement2)->GetCompound2())
+				return;
+
+			for (CHtvStatement **ppStatement3 = (*ppStatement2)->GetPCompound1(); *ppStatement3; ) {
+				if ((*ppStatement3)->GetStType() != st_assign)
+					return;
+
+				CHtvOperand * pOp1 = (*ppStatement3)->GetExpr()->GetOperand1();
+				CHtvIdent * pIdent = pOp1->GetMember();
+				if (pIdent->IsMemVarWrData() || pIdent->IsMemVarWrEn()) {
+					CHtvIdent * pMemVar = pIdent->GetMemVar();
+
+					CMemVarInfo * pMemVarInfo = 0;
+					for (size_t i = 0; i < memVarList.size(); i += 1) {
+						if (memVarList[i].m_pMemVar == pMemVar && memVarList[i].m_indexList == pOp1->GetIndexList()) {
+							pMemVarInfo = &memVarList[i];
+							break;
+						}
+					}
+
+					if (pMemVarInfo == 0) {
+						ppStatement3 = (*ppStatement3)->GetPNext();
+						continue;
+					}
+
+					CHtvOperand * pOp2 = (*ppStatement3)->GetExpr()->GetOperand2();
+					if (pIdent->IsMemVarWrEn()) {
+						if (pOp2->IsConstValue() && pOp2->GetConstValue().GetUint64() == 1) {
+							if (!pMemVarInfo->m_bWrEnInit || pMemVarInfo->m_bWrEnSet)
+								pMemVarInfo->m_bConvert = false;
+							else {
+								int highBit, lowBit;
+								pOp1->GetDistRamWeWidth(highBit, lowBit);
+								if (highBit == -1 && lowBit == -1) {
+									if (pMemVarInfo->m_wrEnSize == 0)
+										pMemVarInfo->m_bWrEnSet = true;
+									else
+										pMemVarInfo->m_bConvert = false;
+								} else {
+									size_t i;
+									for (i = 0; i < pMemVarInfo->m_wrEnLowBit.size(); i += 1) {
+										if (lowBit == pMemVarInfo->m_wrEnLowBit[i]) {
+											pMemVarInfo->m_bConvert = false;
+											break;
+										}
+									}
+									if (i == pMemVarInfo->m_wrEnLowBit.size()) {
+										pMemVarInfo->m_wrEnLowBit.push_back(lowBit);
+										pMemVarInfo->m_wrEnSize += highBit - lowBit + 1;
+
+										if (pMemVarInfo->m_wrEnSize == pMemVar->GetWidth())
+											pMemVarInfo->m_bWrEnSet = true;
+									}
+								}
+							}
+						}
+					}
+
+					if (pIdent->IsMemVarWrData()) {
+						if (pMemVarInfo->m_bWrEnInit && pMemVarInfo->m_bWrDataInit && pMemVarInfo->m_bWrEnSet && pMemVarInfo->m_bConvert) {
+							// Do the conversion
+							CHtvStatement * pStatement3 = *ppStatement3;
+							*ppStatement3 = (*ppStatement3)->GetNext();
+
+							pStatement3->SetNext(*ppStatement2);
+							*ppStatement2 = pStatement3;
+							ppStatement2 = (*ppStatement2)->GetPNext();
+
+							pStatement3->SetSynSetId(pStatement->GetSynSetId());
+							continue;
+
+						} else
+							pMemVarInfo->m_bConvert = false;
+					}
+				} else
+					return;
+
+				ppStatement3 = (*ppStatement3)->GetPNext();
+			}
+			break;
+		}
+		default:
+			return;
+		}
+	}
 }
 
 void CHtvDesign::SynIndividualStatements(CHtvIdent *pHier, CHtvObject * pObj, CHtvObject * pRtnObj, CHtvStatement *pStatement, int synSetSize)
@@ -3870,12 +4055,8 @@ void CHtvDesign::GenAlwaysAtHeader(bool bBeginEnd)
     m_vFile.IncIndentLevel();
 
     if (bBeginEnd) {
-		int blockIdx;
-		m_vFile.Print("begin : Always$%d\n", blockIdx = GetNextAlwaysBlockIdx());
+		m_vFile.Print("begin : Always$%d\n", GetNextAlwaysBlockIdx());
         m_vFile.IncIndentLevel(); // begin
-
-		if (blockIdx == 7)
-			bool stop = true;
     }
 }
 

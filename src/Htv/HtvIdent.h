@@ -30,6 +30,7 @@ public:
 	CHtvIdent * InsertIdent(const string &name, bool bInsertFlatTbl=true) { return (CHtvIdent *)CHtfeIdent::InsertIdent(name, bInsertFlatTbl); }
 	CHtvIdent * InsertFlatIdent(CHtfeIdent * pHierIdent, const string &flatVarName) { return (CHtvIdent *)CHtfeIdent::InsertFlatIdent(pHierIdent, flatVarName); }
 	CHtvIdent * GetWriterList(size_t i) { return (CHtvIdent *)CHtfeIdent::GetWriterList()[i]; }
+	CHtvIdent * GetMemVar() { return (CHtvIdent *)CHtfeIdent::GetMemVar(); }
 
 private:
 
