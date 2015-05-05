@@ -60,7 +60,7 @@ void CPersBcm::PersBcm()
 				break;
 			}
 
-			ReadMem_task(PR_pBcmTask, 0, 8);
+			ReadMem_task(PR_pBcmTask);
 
 			ReadMemPause(BCM_TASK_VALID);
 		}
