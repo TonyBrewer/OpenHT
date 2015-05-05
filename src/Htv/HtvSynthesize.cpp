@@ -1739,6 +1739,7 @@ void CHtvDesign::RemoveWrDataMux(CHtvStatement *pStatement, int synSetSize)
 		}
 		case st_if:
 		{
+			bool bConvert = true;
 			if ((*ppStatement2)->GetCompound2())
 				return;
 
@@ -1798,7 +1799,7 @@ void CHtvDesign::RemoveWrDataMux(CHtvStatement *pStatement, int synSetSize)
 					}
 
 					if (pIdent->IsMemVarWrData()) {
-						if (pMemVarInfo->m_bWrEnInit && pMemVarInfo->m_bWrDataInit && pMemVarInfo->m_bWrEnSet && pMemVarInfo->m_bConvert) {
+						if (pMemVarInfo->m_bWrEnInit && pMemVarInfo->m_bWrDataInit && pMemVarInfo->m_bWrEnSet && pMemVarInfo->m_bConvert && bConvert) {
 							// Do the conversion
 							CHtvStatement * pStatement3 = *ppStatement3;
 							*ppStatement3 = (*ppStatement3)->GetNext();
@@ -1808,13 +1809,15 @@ void CHtvDesign::RemoveWrDataMux(CHtvStatement *pStatement, int synSetSize)
 							ppStatement2 = (*ppStatement2)->GetPNext();
 
 							pStatement3->SetSynSetId(pStatement->GetSynSetId());
+
+							pMemVarInfo->m_bConvert = false;
 							continue;
 
 						} else
 							pMemVarInfo->m_bConvert = false;
 					}
 				} else
-					return;
+					bConvert = false;
 
 				ppStatement3 = (*ppStatement3)->GetPNext();
 			}
