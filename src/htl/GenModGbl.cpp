@@ -658,12 +658,14 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 		}
 
 		if (pGv->m_bReadForInstrRead && pGv->m_ramType == eBlockRam) {
+			int rdAddrStgNum = mod.m_tsStg + pGv->m_rdStg.AsInt() - (pGv->m_ramType == eBlockRam ? 3 : 2);
+
 			GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, VA("ht_uint%d", pGv->m_addrW),
-				VA("r_t%d_%sRdAddr", mod.m_tsStg - 1, pGv->m_gblName.Lc().c_str()));
+				VA("r_t%d_%sRdAddr", rdAddrStgNum + 1, pGv->m_gblName.Lc().c_str()));
 
 			gblReg.Append("\tr_t%d_%sRdAddr = c_t%d_%sRdAddr;\n",
-				mod.m_tsStg - 1, pGv->m_gblName.Lc().c_str(),
-				mod.m_tsStg - 2, pGv->m_gblName.Lc().c_str());
+				rdAddrStgNum + 1, pGv->m_gblName.Lc().c_str(),
+				rdAddrStgNum, pGv->m_gblName.Lc().c_str());
 		}
 
 		if (pGv->m_bReadForInstrRead || pGv->m_bReadForMifWrite) {
@@ -1041,16 +1043,16 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 						gblPostInstr.Append("\tif (r_g1_%sTo%s_wrEn%s && r_g1_%sTo%s_wrAddr%s == r_t%d_%sRdAddr)\n",
 							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
 							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
-							mod.m_tsStg - 1, pGv->m_gblName.Lc().c_str());
+							rdAddrStgNum + 1, pGv->m_gblName.Lc().c_str());
 
 						gblPostInstr.Append("\t\tc_t%d_%sIrData%s = r_g1_%sTo%s_wrData%s;\n",
-							mod.m_tsStg - 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
+							rdAddrStgNum + 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
 							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
 
 						gblPostInstr.Append("\telse\n");
 
 						gblPostInstr.Append("\t\tc_t%d_%sIrData%s = m_%sIr%s.read_mem();\n",
-							mod.m_tsStg - 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
+							rdAddrStgNum + 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
 							pGv->m_gblName.c_str(), dimIdx.c_str());
 					}
 					gblPostInstr.NewLine();
