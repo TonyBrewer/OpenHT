@@ -74,8 +74,8 @@ bcm.AddReturn(func=bcm)
 	.AddParam(hostType=void *, type=ht_uint48, name=pBcmTask)
 	;
 
-bcm.AddReadMem(rspCntW=4)
-	.AddDst(var=task, field=m_qw, dstIdx=fldIdx1, multiRd=true, memSrc=host)
+bcm.AddReadMem()
+	.AddDst(var=task, memSrc=host)
 	;
 
 bcm.AddWriteMem();
