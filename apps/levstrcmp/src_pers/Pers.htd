@@ -123,8 +123,8 @@ ctl.AddEntry(func=htmain, inst=CTL_ENTRY, host=true)
 	.AddParam(hostType=uint16_t, type=ConId_t, name=conIdR)
 	.AddParam(hostType=uint16_t, type=ConSize_t, name=conSizeL)
 	.AddParam(hostType=uint16_t, type=ConSize_t, name=conSizeR)
-	.AddParam(hostType="void *", type=MemAddr_t, name=conBaseL)
-	.AddParam(hostType="void *", type=MemAddr_t, name=conBaseR)
+	.AddParam(hostType=void *, type=MemAddr_t, name=conBaseL)
+	.AddParam(hostType=void *, type=MemAddr_t, name=conBaseR)
 	;
 
 ctl.AddReturn(func=htmain)
@@ -151,6 +151,8 @@ read.AddPrivate()
 	.AddVar(type=SideIdx_t, name=sideIdx)
 	.AddVar(type=BlkSize_t, name=blkIdx)
 	.AddVar(type=RamBlkIdx_t, name=ramBlkIdx)
+	.AddVar(type=ht_uint9, name=strSetL_RdAddr1)
+	.AddVar(type=ht_uint9, name=strSetR_RdAddr1)
 	;
 
 read.AddShared()
@@ -170,21 +172,16 @@ read.AddEntry(func=Read, inst=READ_ENTRY)
 read.AddReturn(func=Read)
 	;
 
-read.AddReadMem(queueW=5, rspCntW=6)
-	.AddDst(name=strSetL0, var=strSetL, field=data0)
-	.AddDst(name=strSetL1, var=strSetL, field=data1)
-	.AddDst(name=strSetR0, var=strSetR, field=data0)
-	.AddDst(name=strSetR1, var=strSetR, field=data1)
+read.AddReadMem() // rspCntW=6 ??
+	.AddDst(var=strSetL[].m_data0, name=strSetL0, memSrc=host)
+	.AddDst(var=strSetL[].m_data1, name=strSetL1, memSrc=host)
+	.AddDst(var=strSetR[].m_data0, name=strSetR0, memSrc=host)
+	.AddDst(var=strSetR[].m_data1, name=strSetR1, memSrc=host)
 	;
 
-read.AddGlobal(var=strSetL, addr1W=9, dimen1=LINE_STR_CNT_L)
-	.AddField(type=uint64_t, name=data0, read=false, write=false)
-	.AddField(type=uint16_t, name=data1, read=false, write=false)
-	;
-
-read.AddGlobal(var=strSetR, addr1W=9, dimen1=LINE_STR_CNT_R)
-	.AddField(type=uint64_t, name=data0, read=false, write=false)
-	.AddField(type=uint16_t, name=data1, read=false, write=false)
+read.AddGlobal()
+	.AddVar(type=CStrUnion, name=strSetL, addr1=strSetL_RdAddr1, dimen1=LINE_STR_CNT_L, read=false, write=true)
+	.AddVar(type=CStrUnion, name=strSetR, addr1=strSetR_RdAddr1, dimen1=LINE_STR_CNT_R, read=false, write=true)
 	;
 
 ////////////////////////////////////////////////////
@@ -259,14 +256,9 @@ mch.AddReturn(func=MchBlkLx1R)
 	.AddParam(type=ht_uint36, name=rsltCnt)
 	;
 
-mch.AddGlobal(var=strSetL, addr1W=9, addr1=ramIdxL, dimen1=LINE_STR_CNT_L, extern=true)
-	.AddField(type=uint64_t, name=data0, read=true, write=false)
-	.AddField(type=uint16_t, name=data1, read=true, write=false)
-	;
-
-mch.AddGlobal(var=strSetR, addr1W=9, addr1=ramIdxR, dimen1=LINE_STR_CNT_R, extern=true)
-	.AddField(type=uint64_t, name=data0, read=true, write=false)
-	.AddField(type=uint16_t, name=data1, read=true, write=false)
+mch.AddGlobal()
+	.AddVar(type=CStrUnion, name=strSetL, addr1=ramIdxL, dimen1=LINE_STR_CNT_L, read=true, write=false)
+	.AddVar(type=CStrUnion, name=strSetR, addr1=ramIdxR, dimen1=LINE_STR_CNT_R, read=true, write=false)
 	;
 
 mch.AddFunction(type=void, name=ByteCmpMatrix)

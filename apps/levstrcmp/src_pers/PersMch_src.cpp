@@ -157,20 +157,16 @@ CPersMch::PersMch()
     ht_attrib(equivalent_register_removal, TR2_strL[0][idxL], "no");
     ht_attrib(equivalent_register_removal, TR2_strL[1][idxL], "no");
 
-    T1_strL[0][idxL].m_data0 = GR1_strSetL_data0(idxL);
-    T1_strL[0][idxL].m_data1 = GR1_strSetL_data1(idxL);
-    T1_strL[1][idxL].m_data0 = GR1_strSetL_data0(idxL);
-    T1_strL[1][idxL].m_data1 = GR1_strSetL_data1(idxL);
+    T1_strL[0][idxL] = GR1_strSetL[idxL];
+    T1_strL[1][idxL] = GR1_strSetL[idxL];
   }
 
   for (int idxR = 0; idxR < LINE_STR_CNT_R; idxR += 1) {
     ht_attrib(equivalent_register_removal, TR2_strR[0][idxR], "no");
     ht_attrib(equivalent_register_removal, TR2_strR[1][idxR], "no");
 
-    T1_strR[0][idxR].m_data0 = GR1_strSetR_data0(idxR);
-    T1_strR[0][idxR].m_data1 = GR1_strSetR_data1(idxR);
-    T1_strR[1][idxR].m_data0 = GR1_strSetR_data0(idxR);
-    T1_strR[1][idxR].m_data1 = GR1_strSetR_data1(idxR);
+    T1_strR[0][idxR] = GR1_strSetR[idxR];
+    T1_strR[1][idxR] = GR1_strSetR[idxR];
   }
 
 

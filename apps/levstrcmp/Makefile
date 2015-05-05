@@ -3,7 +3,7 @@ export CNY_PDK_REV      = latest
 export CNY_PDK_PLATFORM = hc-2ex
 
 #export CNY_HT_SIG       = 32050
-export CNY_HT_NICK      = fzy_lev
+#export CNY_HT_NICK      = fzy_lev
 
 PLAT_hc-1_AEUCNT = 3
 PLAT_hc-2_AEUCNT = $(PLAT_hc-1_AEUCNT)
