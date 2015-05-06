@@ -1064,6 +1064,7 @@ void CDsnInfo::InitAndValidateRecord(CRecord * pRecord)
 
 		CType * pType;
 		int fieldWidth;
+		int packedFieldWidth;
 
 		if (pField->m_pType->IsRecord()) {
 			// unnamed struct/union
@@ -1086,9 +1087,10 @@ void CDsnInfo::InitAndValidateRecord(CRecord * pRecord)
 			pField->m_fieldWidth.InitValue(pField->m_lineInfo);
 
 			fieldWidth = pField->m_fieldWidth.AsInt();
+			packedFieldWidth = pField->m_fieldWidth.AsInt();
 			prevTypeWidth = pType->m_clangBitWidth;
 
-			if (prevTypeWidth != pType->m_clangBitWidth || clangBitPos + fieldWidth > clangBitWidth) {
+			if (clangBitPos + fieldWidth > clangBitWidth) {
 
 				if (clangBitWidth % pType->m_clangMinAlign > 0)
 					clangBitPos = clangBitWidth = clangBitWidth + pType->m_clangMinAlign - clangBitWidth % pType->m_clangMinAlign;
@@ -1100,6 +1102,7 @@ void CDsnInfo::InitAndValidateRecord(CRecord * pRecord)
 			}
 		} else {
 			fieldWidth = pType->m_clangBitWidth;
+			packedFieldWidth = pType->m_packedBitWidth;
 			prevTypeWidth = 0;
 
 			if (clangBitWidth % pType->m_clangMinAlign > 0)
@@ -1112,9 +1115,9 @@ void CDsnInfo::InitAndValidateRecord(CRecord * pRecord)
 		}
 
 		if (pRecord->m_bUnion)
-			packedBitWidth = max(packedBitWidth, pType->m_packedBitWidth * (int)pField->m_elemCnt);
+			packedBitWidth = max(packedBitWidth, packedFieldWidth * (int)pField->m_elemCnt);
 		else
-			packedBitWidth += pType->m_packedBitWidth * pField->m_elemCnt;
+			packedBitWidth += packedFieldWidth * pField->m_elemCnt;
 
 		pField->m_clangBitPos = clangBitPos;
 		if (!pRecord->m_bUnion)

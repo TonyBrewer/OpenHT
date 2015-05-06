@@ -1283,17 +1283,17 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 				rdDst.m_fieldRefList.back().m_refDimenList.size() > 0 && rdDstSize > 1);
 
 			int elemCntW = 0;
-			int maxElemCnt = 1;
+			int elemCnt = 1;
 			if (bMultiElemDstParam) {
 				if (rdDst.m_varAddr1W > 0) {
 					if (!rdDst.m_varAddr1IsHtId)
-						maxElemCnt *= 1 << rdDst.m_varAddr1W;
+						elemCnt *= 1 << rdDst.m_varAddr1W;
 					if (rdDst.m_varAddr2W > 0 && !rdDst.m_varAddr2IsHtId)
-						maxElemCnt *= 1 << rdDst.m_varAddr2W;
+						elemCnt *= 1 << rdDst.m_varAddr2W;
 				} else {
-					maxElemCnt = rdDstSize;
+					elemCnt = rdDstSize;
 				}
-				elemCntW = FindLg2(maxElemCnt);
+				elemCntW = FindLg2(elemCnt);
 
 				if (rdDst.m_elemCntW.size() > 0 && rdDst.m_elemCntW.AsInt() < elemCntW)
 					elemCntW = rdDst.m_elemCntW.AsInt();
@@ -1490,7 +1490,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 						}
 					}
 				}
-				m_mifMacros.Append(" + elemCnt <= %d, ", maxElemCnt);
+				m_mifMacros.Append(" + elemCnt <= %d, ", elemCnt);
 				m_mifMacros.Append(" \"Runtime check failed in CPers%s%s::%sMem%s(...) - elemCnt range check failed\\n\");\n",
 					unitNameUc.c_str(), mod.m_modName.Uc().c_str(), pMemOpName, dstName);
 			}

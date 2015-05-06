@@ -476,7 +476,7 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 					string dimIdx = IndexStr(refList);
 
 					if (pNgvInfo->m_bNgvWrDataClk2x == (mod.m_clkRate == eClk2x)) {
-						gblReg.Append("\tm_%sIf%s.clock();\n",
+						gblReg.Append("\tm_%sIf%s.clock(r_reset1x);\n",
 							pGv->m_gblName.c_str(), dimIdx.c_str());
 					} else {
 						gblReg.Append("\tm_%sIf%s.read_clock();\n",
@@ -519,7 +519,7 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 					string dimIdx = IndexStr(refList);
 
 					if (pNgvInfo->m_bNgvWrDataClk2x == (mod.m_clkRate == eClk2x))
-						gblReg.Append("\tm_%s%s%s.clock();\n",
+						gblReg.Append("\tm_%s%s%s.clock(r_reset1x);\n",
 						pGv->m_gblName.c_str(), pImStr, dimIdx.c_str());
 					else {
 						gblReg.Append("\tm_%s%s%s.read_clock();\n",
@@ -550,9 +550,9 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 				do {
 					string dimIdx = IndexStr(refList);
 					if (pNgvInfo->m_bNgvWrCompClk2x == (mod.m_clkRate == eClk2x)) {
-						gblRegWrComp.Append("\tm_%sIwComp%s[0].clock();\n",
+						gblRegWrComp.Append("\tm_%sIwComp%s[0].clock(r_reset1x);\n",
 							pGv->m_gblName.c_str(), dimIdx.c_str());
-						gblRegWrComp.Append("\tm_%sIwComp%s[1].clock();\n",
+						gblRegWrComp.Append("\tm_%sIwComp%s[1].clock(r_reset1x);\n",
 							pGv->m_gblName.c_str(), dimIdx.c_str());
 					} else {
 						CHtCode &gblRegMod = mod.m_clkRate == eClk2x ? m_gblReg2x : m_gblReg1x;
@@ -4434,7 +4434,7 @@ void CDsnInfo::GenerateNgvFiles()
 					do {
 						string dimIdx = loopInfo.IndexStr();
 
-						ngvRegWrData.Append("%sm_%s%s.clock();\n", tabs.c_str(),
+						ngvRegWrData.Append("%sm_%s%s.clock(r_reset1x);\n", tabs.c_str(),
 							pGv->m_gblName.c_str(), dimIdx.c_str());
 
 					} while (loopInfo.Iter());
