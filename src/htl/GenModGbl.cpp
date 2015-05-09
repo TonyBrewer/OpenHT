@@ -189,6 +189,8 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 	CHtCode & gblReg = mod.m_clkRate == eClk2x ? m_gblReg2x : m_gblReg1x;
 	CHtCode & gblOut = mod.m_clkRate == eClk2x ? m_gblOut2x : m_gblOut1x;
 
+	string gblRegReset = mod.m_clkRate == eClk2x ? "c_reset1x" : "r_reset1x";
+
 	string vcdModName = VA("Pers%s", mod.m_modName.Uc().c_str());
 
 	bool bInstrWrite = false;
@@ -291,6 +293,9 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 
 		CHtCode & gblRegWrData = pNgvInfo->m_bNgvWrDataClk2x ? m_gblReg2x : m_gblReg1x;
 		CHtCode & gblRegWrComp = pNgvInfo->m_bNgvWrCompClk2x ? m_gblReg2x : m_gblReg1x;
+
+		string gblRegWrDataReset = pNgvInfo->m_bNgvWrDataClk2x ? "c_reset1x" : "r_reset1x";
+		string gblRegWrCompReset = pNgvInfo->m_bNgvWrCompClk2x ? "c_reset1x" : "r_reset1x";
 
 		// global variable module I/O
 		if (pGv->m_bWriteForInstrWrite) { // Instruction read
@@ -476,13 +481,16 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 					string dimIdx = IndexStr(refList);
 
 					if (pNgvInfo->m_bNgvWrDataClk2x == (mod.m_clkRate == eClk2x)) {
-						gblReg.Append("\tm_%sIf%s.clock(r_reset1x);\n",
-							pGv->m_gblName.c_str(), dimIdx.c_str());
+						gblReg.Append("\tm_%sIf%s.clock(%s);\n",
+							pGv->m_gblName.c_str(), dimIdx.c_str(),
+							gblRegReset.c_str());
 					} else {
-						gblReg.Append("\tm_%sIf%s.read_clock();\n",
-							pGv->m_gblName.c_str(), dimIdx.c_str());
-						gblRegWrData.Append("\tm_%sIf%s.write_clock();\n",
-							pGv->m_gblName.c_str(), dimIdx.c_str());
+						gblReg.Append("\tm_%sIf%s.read_clock(%s);\n",
+							pGv->m_gblName.c_str(), dimIdx.c_str(),
+							gblRegReset.c_str());
+						gblRegWrData.Append("\tm_%sIf%s.write_clock(%s);\n",
+							pGv->m_gblName.c_str(), dimIdx.c_str(),
+							gblRegWrDataReset.c_str());
 					}
 				} while (DimenIter(pGv->m_dimenList, refList));
 			}
@@ -518,14 +526,18 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 				do {
 					string dimIdx = IndexStr(refList);
 
-					if (pNgvInfo->m_bNgvWrDataClk2x == (mod.m_clkRate == eClk2x))
-						gblReg.Append("\tm_%s%s%s.clock(r_reset1x);\n",
-						pGv->m_gblName.c_str(), pImStr, dimIdx.c_str());
+					if (pNgvInfo->m_bNgvWrDataClk2x == (mod.m_clkRate == eClk2x)) {
+						gblReg.Append("\tm_%s%s%s.clock(%s);\n",
+							pGv->m_gblName.c_str(), pImStr, dimIdx.c_str(),
+							gblRegReset.c_str());
+					} 
 					else {
-						gblReg.Append("\tm_%s%s%s.read_clock();\n",
-							pGv->m_gblName.c_str(), pImStr, dimIdx.c_str());
-						gblRegWrData.Append("\tm_%s%s%s.write_clock();\n",
-							pGv->m_gblName.c_str(), pImStr, dimIdx.c_str());
+						gblReg.Append("\tm_%s%s%s.read_clock(%s);\n",
+							pGv->m_gblName.c_str(), pImStr, dimIdx.c_str(), 
+							gblRegReset.c_str());
+						gblRegWrData.Append("\tm_%s%s%s.write_clock(%s);\n",
+							pGv->m_gblName.c_str(), pImStr, dimIdx.c_str(), 
+							gblRegWrDataReset.c_str());
 					}
 				} while (DimenIter(pGv->m_dimenList, refList));
 			}
@@ -550,21 +562,23 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 				do {
 					string dimIdx = IndexStr(refList);
 					if (pNgvInfo->m_bNgvWrCompClk2x == (mod.m_clkRate == eClk2x)) {
-						gblRegWrComp.Append("\tm_%sIwComp%s[0].clock(r_reset1x);\n",
-							pGv->m_gblName.c_str(), dimIdx.c_str());
-						gblRegWrComp.Append("\tm_%sIwComp%s[1].clock(r_reset1x);\n",
-							pGv->m_gblName.c_str(), dimIdx.c_str());
+
+						gblRegWrComp.Append("\tm_%sIwComp%s[0].clock(%s);\n",
+							pGv->m_gblName.c_str(), dimIdx.c_str(), gblRegWrCompReset.c_str());
+						gblRegWrComp.Append("\tm_%sIwComp%s[1].clock(%s);\n",
+							pGv->m_gblName.c_str(), dimIdx.c_str(), gblRegWrCompReset.c_str());
 					} else {
 						CHtCode &gblRegMod = mod.m_clkRate == eClk2x ? m_gblReg2x : m_gblReg1x;
+						string gblRegModReset = mod.m_clkRate == eClk2x ? "c_reset1x" : "r_reset1x";
 
-						gblRegMod.Append("\tm_%sIwComp%s[0].read_clock();\n",
-							pGv->m_gblName.c_str(), dimIdx.c_str());
-						gblRegMod.Append("\tm_%sIwComp%s[1].read_clock();\n",
-							pGv->m_gblName.c_str(), dimIdx.c_str());
-						gblRegWrComp.Append("\tm_%sIwComp%s[0].write_clock();\n",
-							pGv->m_gblName.c_str(), dimIdx.c_str());
-						gblRegWrComp.Append("\tm_%sIwComp%s[1].write_clock();\n",
-							pGv->m_gblName.c_str(), dimIdx.c_str());
+						gblRegMod.Append("\tm_%sIwComp%s[0].read_clock(%s);\n",
+							pGv->m_gblName.c_str(), dimIdx.c_str(), gblRegModReset.c_str());
+						gblRegMod.Append("\tm_%sIwComp%s[1].read_clock(%s);\n",
+							pGv->m_gblName.c_str(), dimIdx.c_str(), gblRegModReset.c_str());
+						gblRegWrComp.Append("\tm_%sIwComp%s[0].write_clock(%s);\n",
+							pGv->m_gblName.c_str(), dimIdx.c_str(), gblRegWrCompReset.c_str());
+						gblRegWrComp.Append("\tm_%sIwComp%s[1].write_clock(%s);\n",
+							pGv->m_gblName.c_str(), dimIdx.c_str(), gblRegWrCompReset.c_str());
 					}
 				} while (DimenIter(pGv->m_dimenList, refList));
 
@@ -1217,7 +1231,7 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 	if (bInstrWrite) {
 		int queDepthW = mod.m_threads.m_htIdW.AsInt() <= 5 ? 5 : mod.m_threads.m_htIdW.AsInt();
 		m_gblRegDecl.Append("\tht_dist_que<CHtComp, %d> m_htCompQue;\n", queDepthW);
-		gblReg.Append("\tm_htCompQue.clock(r_reset1x);\n");
+		gblReg.Append("\tm_htCompQue.clock(%s);\n", gblRegReset.c_str());
 
 		if (mod.m_threads.m_htIdW.AsInt() == 0) {
 			GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, "CHtComp", "r_htCompQueFront");
@@ -1594,6 +1608,8 @@ void CDsnInfo::GenerateNgvFiles()
 
 		CHtCode &ngvOut = pNgvInfo->m_bNgvWrDataClk2x ? ngvOut_2x : ngvOut_1x;
 		CHtCode &ngvWrCompOut = pNgvInfo->m_bNgvWrCompClk2x ? ngvOut_2x : ngvOut_1x;
+
+		string ngvRegWrDataReset = pNgvInfo->m_bNgvWrDataClk2x ? "c_reset1x" : "r_reset1x";
 
 		string ngvWrDataClk = pNgvInfo->m_bNgvWrDataClk2x ? "_2x" : "";
 		string ngvSelClk = pNgvInfo->m_bNgvWrCompClk2x ? "_2x" : "";
@@ -2378,6 +2394,8 @@ void CDsnInfo::GenerateNgvFiles()
 
 				CHtCode & ngvOutModIn = mod.m_clkRate == eClk2x ? ngvOut_2x : ngvOut_1x;
 
+				string ngvRegSelGwReset = pNgvInfo->m_bNgvWrCompClk2x ? "c_reset1x" : "r_reset1x";
+
 				if (idW > 0) {
 					GenVcdDecl(ngvSosCode, eVcdAll, ngvRegDecl, vcdModName, VA("ht_uint%d", idW),
 						VA("r_%sTo%s_%cw%sId%s", mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), imCh, idStr.c_str(), ngvClkModIn.c_str()), pGv->m_dimenList);
@@ -2753,31 +2771,33 @@ void CDsnInfo::GenerateNgvFiles()
 						do {
 							string dimIdx = loopInfo.IndexStr();
 
-							string resetWrComp = bNgvSelGwClk2x ? "c_reset1x" : "r_reset1x";
 							if (bQueBypass) {
 								ngvRegSelGw.Append("%sm_%s_%cw%sIdQue%s%s.clock(%s);\n", tabs.c_str(),
 									mod.m_modName.Lc().c_str(), imCh, idStr.c_str(), eoStr.c_str(), dimIdx.c_str(),
-									resetWrComp.c_str());
+									ngvRegSelGwReset.c_str());
 
 								if (imIdx == 0) {
 									ngvRegSelGw.Append("%sm_%s_%cwCompQue%s%s.clock(%s);\n", tabs.c_str(),
 										mod.m_modName.Lc().c_str(), imCh, eoStr.c_str(), dimIdx.c_str(),
-										resetWrComp.c_str());
+										ngvRegSelGwReset.c_str());
 								}
 								ngvRegSelGw.Append("%sm_%s_%cwDataQue%s%s.clock(%s);\n", tabs.c_str(),
 									mod.m_modName.Lc().c_str(), imCh, eoStr.c_str(), dimIdx.c_str(),
-									resetWrComp.c_str());
+									ngvRegSelGwReset.c_str());
 							} else {
-								ngvRegSelGw.Append("%sm_%s_%cw%sIdQue%s%s.pop_clock(c_reset1x);\n", tabs.c_str(),
-									mod.m_modName.Lc().c_str(), imCh, idStr.c_str(), eoStr.c_str(), dimIdx.c_str());
+								ngvRegSelGw.Append("%sm_%s_%cw%sIdQue%s%s.pop_clock(%s);\n", tabs.c_str(),
+									mod.m_modName.Lc().c_str(), imCh, idStr.c_str(), eoStr.c_str(), dimIdx.c_str(),
+									ngvRegSelGwReset.c_str());
 
 								if (imIdx == 0) {
-									ngvRegSelGw.Append("%sm_%s_%cwCompQue%s%s.pop_clock(c_reset1x);\n", tabs.c_str(),
-										mod.m_modName.Lc().c_str(), imCh, eoStr.c_str(), dimIdx.c_str());
+									ngvRegSelGw.Append("%sm_%s_%cwCompQue%s%s.pop_clock(%s);\n", tabs.c_str(),
+										mod.m_modName.Lc().c_str(), imCh, eoStr.c_str(), dimIdx.c_str(),
+										ngvRegSelGwReset.c_str());
 								}
 
-								ngvRegSelGw.Append("%sm_%s_%cwDataQue%s%s.pop_clock(c_reset1x);\n", tabs.c_str(),
-									mod.m_modName.Lc().c_str(), imCh, eoStr.c_str(), dimIdx.c_str());
+								ngvRegSelGw.Append("%sm_%s_%cwDataQue%s%s.pop_clock(%s);\n", tabs.c_str(),
+									mod.m_modName.Lc().c_str(), imCh, eoStr.c_str(), dimIdx.c_str(),
+									ngvRegSelGwReset.c_str());
 							}
 
 						} while (loopInfo.Iter());
@@ -4434,8 +4454,8 @@ void CDsnInfo::GenerateNgvFiles()
 					do {
 						string dimIdx = loopInfo.IndexStr();
 
-						ngvRegWrData.Append("%sm_%s%s.clock(r_reset1x);\n", tabs.c_str(),
-							pGv->m_gblName.c_str(), dimIdx.c_str());
+						ngvRegWrData.Append("%sm_%s%s.clock(%s);\n", tabs.c_str(),
+							pGv->m_gblName.c_str(), dimIdx.c_str(), ngvRegWrDataReset.c_str());
 
 					} while (loopInfo.Iter());
 				}

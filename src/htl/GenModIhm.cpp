@@ -322,10 +322,10 @@ void CDsnInfo::GenModIhmStatements(CModule &mod)
 
 
 			if (msgDst.m_pShared->m_queueW.size() > 0) {
-				ihmPostInstr.Append("%s\t\t\t\tm_%s%s.push( (%s)(%s.read().m_msgData >> %s) );\n", extraTab.c_str(),
+				ihmPostInstr.Append("%s\t\t\t\tm__SHR__%s%s.push( (%s)(%s.read().m_msgData >> %s) );\n", extraTab.c_str(),
 					msgDst.m_var.c_str(), indexes.c_str(), msgDst.m_pShared->m_type.c_str(), ihmSignal, msgDst.m_dataLsb.c_str());
 			} else if (msgDst.m_addr1Lsb.size() > 0) {
-				ihmPostInstr.Append("%s\t\t\t\tm_%s%s.write_mem((%s)(%s.read().m_msgData >> %s));\n", extraTab.c_str(),
+				ihmPostInstr.Append("%s\t\t\t\tm__SHR__%s%s.write_mem((%s)(%s.read().m_msgData >> %s));\n", extraTab.c_str(),
 					msgDst.m_var.c_str(), indexes.c_str(), msgDst.m_pShared->m_type.c_str(), ihmSignal, msgDst.m_dataLsb.c_str());
 			} else if (msgDst.m_field.size() > 0) {
 				string castStr;
@@ -334,11 +334,11 @@ void CDsnInfo::GenModIhmStatements(CModule &mod)
 				else
 					castStr = VA("ht_uint%d", msgDst.m_pField->m_fieldWidth.AsInt());
 
-				ihmPostInstr.Append("%s\t\t\t\tc_%s%s.%s%s = (%s)(%s.read().m_msgData >> %s);\n", extraTab.c_str(),
+				ihmPostInstr.Append("%s\t\t\t\tc__SHR__%s%s.%s%s = (%s)(%s.read().m_msgData >> %s);\n", extraTab.c_str(),
 					msgDst.m_var.c_str(), indexes.c_str(), msgDst.m_field.c_str(), fldIndexes.c_str(),
 					castStr.c_str(), ihmSignal, msgDst.m_dataLsb.c_str());
 			} else
-				ihmPostInstr.Append("%s\t\t\t\tc_%s%s = (%s)(%s.read().m_msgData >> %s);\n", extraTab.c_str(),
+				ihmPostInstr.Append("%s\t\t\t\tc__SHR__%s%s = (%s)(%s.read().m_msgData >> %s);\n", extraTab.c_str(),
 				msgDst.m_var.c_str(), indexes.c_str(), msgDst.m_pShared->m_type.c_str(), ihmSignal, msgDst.m_dataLsb.c_str());
 
 			if (msgDst.m_idx1Lsb.size() > 0)

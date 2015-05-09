@@ -1077,6 +1077,7 @@ struct CMifRdDst {
 	bool m_varAddr2IsHtId;
 	bool m_varAddr1IsIdx;
 	bool m_varAddr2IsIdx;
+	int m_maxElemCnt;
 
 	vector<CFieldRef> m_fieldRefList;
 };
@@ -1188,6 +1189,7 @@ struct CMifWrSrc {
 	bool m_varAddr2IsHtId;
 	bool m_varAddr1IsIdx;
 	bool m_varAddr2IsIdx;
+	int m_maxElemCnt;
 
 	vector<CFieldRef> m_fieldRefList;
 };
@@ -1261,6 +1263,7 @@ public:
 	bool	m_bSingleReqMode;
 	int		m_maxDstW;
 	int		m_maxSrcW;
+	int		m_maxElemCnt;
 
 	CMifRd	m_mifRd;
 	CMifWr	m_mifWr;

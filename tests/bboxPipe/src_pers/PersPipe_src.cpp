@@ -14,7 +14,7 @@ CPersPipe::PersPipe()
 	if (PR_htValid) {
 		switch (PR_htInst) {
 		case PIPE_ENTRY: {
-			if (SendReturnBusy_read() || m_writeQueue.full(25)) {
+			if (SendReturnBusy_read() || S_writeQueue.full(25)) {
 				HtRetry();
 				break;
 			}
@@ -36,7 +36,7 @@ CPersPipe::PersPipe()
 				HtRetry();
 				break;
 			}
-			if (S_cmpValidCnt == 0 && m_writeQueue.empty())
+			if (S_cmpValidCnt == 0 && S_writeQueue.empty())
 				WriteMemPause(SR_wrGrp, PIPE_RTN);
 			else
 				HtContinue(PIPE_DRAIN);
@@ -70,14 +70,14 @@ CPersPipe::PersPipe()
 		c_pushInfo.m_rsltT = T26_rsltT;
 		c_pushInfo.m_addr = T26_addr;
 		c_pushInfo.m_hit = T26_rsltVm;
-		m_writeQueue.push(c_pushInfo);
+		S_writeQueue.push(c_pushInfo);
 		S_cmpValidCnt -= 1;
 	}
-	if (!m_writeQueue.empty() && !WriteMemBusy()) {
+	if (!S_writeQueue.empty() && !WriteMemBusy()) {
 		// hit is always 0 so not adding logic to send a host message
 		CWriteQueue c_popInfo;
-		c_popInfo = m_writeQueue.front();
-		m_writeQueue.pop();
+		c_popInfo = S_writeQueue.front();
+		S_writeQueue.pop();
 		WriteMem(SR_wrGrp, c_popInfo.m_addr, c_popInfo.m_rsltT);
 	}
 
