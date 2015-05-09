@@ -1558,11 +1558,8 @@ CHtfeStatement * CHtfeDesign::ParseHtMemoryStatement(CHtfeIdent *pHier)
 
 		// just drop the statement (clock is required for systemC)
 		pStatement = 0;
-		if (GetNextToken() != tk_rparen) {
-			// reset
-
-			CHtfeOperand *pResetOp = ParseExpression(pHier, true);
-		}
+		if (GetNextToken() != tk_rparen)
+			ParseExpression(pHier, true);	// reset
 
 		pIdent->AddWriter(pHier);
 		pIdent->AddReader(pHier);
@@ -1573,7 +1570,8 @@ CHtfeStatement * CHtfeDesign::ParseHtMemoryStatement(CHtfeIdent *pHier)
 
 		// just drop the statement (clock is required for systemC)
 		pStatement = 0;
-		GetNextToken();
+		if (GetNextToken() != tk_rparen)
+			ParseExpression(pHier, true);	// reset
 
 		pIdent->AddReader(pHier);
 
@@ -1583,7 +1581,8 @@ CHtfeStatement * CHtfeDesign::ParseHtMemoryStatement(CHtfeIdent *pHier)
 
 		// just drop the statement (clock is required for systemC)
 		pStatement = 0;
-		GetNextToken();
+		if (GetNextToken() != tk_rparen)
+			ParseExpression(pHier, true);	// reset
 
 		pIdent->AddWriter(pHier);
 

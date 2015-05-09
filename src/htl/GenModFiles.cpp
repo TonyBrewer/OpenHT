@@ -680,9 +680,9 @@ CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 				GenStructInit(incFile, tabs, "tmp", pShared, idxCnt, false);
 
 				if (pShared->m_rdSelW.AsInt() > 0 || pShared->m_wrSelW.AsInt() > 0)
-					fprintf(incFile, "%sm_%s%s.write_mem_debug(wrSel, wrAddr1", tabs.c_str(), pShared->m_name.c_str(), idxStr.c_str());
+					fprintf(incFile, "%sm__SHR__%s%s.write_mem_debug(wrSel, wrAddr1", tabs.c_str(), pShared->m_name.c_str(), idxStr.c_str());
 				else
-					fprintf(incFile, "%sm_%s%s.write_mem_debug(wrAddr1", tabs.c_str(), pShared->m_name.c_str(), idxStr.c_str());
+					fprintf(incFile, "%sm__SHR__%s%s.write_mem_debug(wrAddr1", tabs.c_str(), pShared->m_name.c_str(), idxStr.c_str());
 				if (pShared->m_addr2W.AsInt() > 0)
 					fprintf(incFile, ", wrAddr2");
 				fprintf(incFile, ") = tmp;\n");
@@ -712,7 +712,7 @@ CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 				}
 
 				bool bZero = !(pShared->m_reset == "false" || pShared->m_reset == "" && !mod.m_bResetShared);
-				GenStructInit(incFile, tabs, VA("r_%s%s", pShared->m_name.c_str(), idxStr.c_str()), pShared, idxCnt, bZero);
+				GenStructInit(incFile, tabs, VA("r__SHR__%s%s", pShared->m_name.c_str(), idxStr.c_str()), pShared, idxCnt, bZero);
 
 				for (size_t i = 0; i < pShared->m_dimenList.size(); i += 1) {
 					tabs.erase(0, 1);
