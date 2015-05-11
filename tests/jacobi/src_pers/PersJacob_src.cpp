@@ -43,7 +43,7 @@ CPersJacob::PersJacob()
 		switch (PR_htInst) {
 		case JSTART:
 		{
-			c_stencil_count = 0;
+			S_stencil_count = 0;
 
 			M_iteration = 1;
 
@@ -65,7 +65,7 @@ CPersJacob::PersJacob()
 
 		case DOLOOP_TOP:
 		{
-			c_change = 0;
+			S_change = 0;
 			M_ii = 0;
 			HtContinue(II_LOOP_TOP);
 		}
@@ -140,10 +140,10 @@ CPersJacob::PersJacob()
 		case STENCIL_JOIN:
 		{
 			// Wait for all stencil asyncCalls to complete
-			c_change = fmax(c_change, M_tchg);
+			S_change = fmax(S_change, M_tchg);
 #if 0
-			fprintf(stderr, "In join: c_change is %g and M_tchg is %g\n",
-				(double)(c_change) / (double)ONE,
+			fprintf(stderr, "In join: S_change is %g and M_tchg is %g\n",
+				(double)(S_change) / (double)ONE,
 				(double)(M_tchg) / (double)ONE);
 #endif
 			RecvReturnJoin_stencil();
@@ -155,9 +155,9 @@ CPersJacob::PersJacob()
 #ifndef _HTV
 			fprintf(stderr, "iteration %d change is %g\n",
 				(int)M_iteration,
-				(double)(c_change) / (double)ONE);
+				(double)(S_change) / (double)ONE);
 #endif
-			if (c_change > P_tolerance) {
+			if (S_change > P_tolerance) {
 				M_iteration = M_iteration + 1;
 				HtContinue(DOLOOP_TOP);
 			} else {

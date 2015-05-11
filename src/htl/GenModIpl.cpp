@@ -2533,7 +2533,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 
 				static bool bError = false;
 				if (pField->m_addr2W.size() > 0) {
-					m_iplRegDecl.Append("\t%s m_%s%s;\n", type.c_str(), pField->m_name.c_str(), pField->m_dimenDecl.c_str());
+					m_iplRegDecl.Append("\t%s m__SHR__%s%s;\n", type.c_str(), pField->m_name.c_str(), pField->m_dimenDecl.c_str());
 
 					if (pField->m_ramType == eDistRam && pField->m_addr1W.AsInt() + pField->m_addr2W.AsInt() > 10) {
 						ParseMsg(Error, pField->m_lineInfo, "unsupported distributed ram depth (addr1W + addr2W > 10)");
@@ -2544,7 +2544,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 						}
 					}
 				} else {
-					m_iplRegDecl.Append("\t%s m_%s%s;\n", type.c_str(), pField->m_name.c_str(), pField->m_dimenDecl.c_str());
+					m_iplRegDecl.Append("\t%s m__SHR__%s%s;\n", type.c_str(), pField->m_name.c_str(), pField->m_dimenDecl.c_str());
 
 					if (pField->m_ramType == eDistRam && pField->m_addr1W.AsInt() > 10) {
 						ParseMsg(Error, pField->m_lineInfo, "unsupported distributed ram depth (addr1W > 10)");
@@ -2558,19 +2558,19 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 
 			} else if (pField->m_queueW.size() > 0) {
 
-				m_iplRegDecl.Append("\t%s m_%s%s;\n", type.c_str(), pField->m_name.c_str(), pField->m_dimenDecl.c_str());
+				m_iplRegDecl.Append("\t%s m__SHR__%s%s;\n", type.c_str(), pField->m_name.c_str(), pField->m_dimenDecl.c_str());
 
 			} else {
 
-				m_iplRegDecl.Append("\t%s c_%s%s;\n", type.c_str(), pField->m_name.c_str(), pField->m_dimenDecl.c_str());
+				m_iplRegDecl.Append("\t%s c__SHR__%s%s;\n", type.c_str(), pField->m_name.c_str(), pField->m_dimenDecl.c_str());
 
 				GenRamIndexLoops(*pIplTxStg, "", *pField);
-				pIplTxStg->Append("\tc_%s%s = r_%s%s;\n", pField->m_name.c_str(), pField->m_dimenIndex.c_str(), pField->m_name.c_str(), pField->m_dimenIndex.c_str());
+				pIplTxStg->Append("\tc__SHR__%s%s = r__SHR__%s%s;\n", pField->m_name.c_str(), pField->m_dimenIndex.c_str(), pField->m_name.c_str(), pField->m_dimenIndex.c_str());
 
-				m_iplRegDecl.Append("\t%s r_%s%s;\n", pField->m_pType->m_typeName.c_str(), pField->m_name.c_str(), pField->m_dimenDecl.c_str());
+				m_iplRegDecl.Append("\t%s r__SHR__%s%s;\n", pField->m_pType->m_typeName.c_str(), pField->m_name.c_str(), pField->m_dimenDecl.c_str());
 
 				GenRamIndexLoops(iplReg, "", *pField);
-				iplReg.Append("\tr_%s%s = c_%s%s;\n", pField->m_name.c_str(), pField->m_dimenIndex.c_str(), pField->m_name.c_str(), pField->m_dimenIndex.c_str());
+				iplReg.Append("\tr__SHR__%s%s = c__SHR__%s%s;\n", pField->m_name.c_str(), pField->m_dimenIndex.c_str(), pField->m_name.c_str(), pField->m_dimenIndex.c_str());
 			}
 		}
 
@@ -2593,26 +2593,26 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 					const char *pNoLoad = stgIdx == pField->m_rngHigh.AsInt() + 1 ? " ht_noload" : "";
 
 					if (pField->m_dimenList.size() > 0) {
-						m_iplRegDecl.Append("\t%s%s c_t%d_%s%s;\n",
+						m_iplRegDecl.Append("\t%s%s c_t%d__STG__%s%s;\n",
 							pField->m_pType->m_typeName.c_str(), pNoLoad,
 							varStg, pField->m_name.c_str(), pField->m_dimenDecl.c_str());
 					} else {
-						m_iplRegDecl.Append("\t%s%s c_t%d_%s;\n",
+						m_iplRegDecl.Append("\t%s%s c_t%d__STG__%s;\n",
 							pField->m_pType->m_typeName.c_str(), pNoLoad, varStg, pField->m_name.c_str());
 
-						iplTsStg.Append("\tc_t%d_%s = r_t%d_%s;\n",
+						iplTsStg.Append("\tc_t%d__STG__%s = r_t%d__STG__%s;\n",
 							varStg, pField->m_name.c_str(), varStg, pField->m_name.c_str());
 					}
 				} else {
 					if (pField->m_dimenList.size() > 0) {
-						m_iplRegDecl.Append("\t%s c_t%d_%s%s;\n",
+						m_iplRegDecl.Append("\t%s c_t%d__STG__%s%s;\n",
 							pField->m_pType->m_typeName.c_str(),
 							varStg, pField->m_name.c_str(), pField->m_dimenDecl.c_str());
 					} else {
-						m_iplRegDecl.Append("\t%s c_t%d_%s;\n",
+						m_iplRegDecl.Append("\t%s c_t%d__STG__%s;\n",
 							pField->m_pType->m_typeName.c_str(), varStg, pField->m_name.c_str());
 						if (pField->m_bZero)
-							iplTsStg.Append("\tc_t%d_%s = 0;\n",
+							iplTsStg.Append("\tc_t%d__STG__%s = 0;\n",
 							varStg, pField->m_name.c_str());
 					}
 				}
@@ -2628,11 +2628,11 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 				for (; stgIdx <= pField->m_rngHigh.AsInt() + 1; stgIdx += 1) {
 					int varStg = mod.m_tsStg + stgIdx - 1;
 					if (stgIdx != pField->m_rngLow.AsInt()) {
-						iplTsStg.Append("%s\tc_t%d_%s%s = r_t%d_%s%s;\n", pTabs,
+						iplTsStg.Append("%s\tc_t%d__STG__%s%s = r_t%d__STG__%s%s;\n", pTabs,
 							varStg, pField->m_name.c_str(), pField->m_dimenIndex.c_str(),
 							varStg, pField->m_name.c_str(), pField->m_dimenIndex.c_str());
 					} else if (pField->m_bZero) {
-						iplTsStg.Append("%s\tc_t%d_%s%s = 0;\n", pTabs,
+						iplTsStg.Append("%s\tc_t%d__STG__%s%s = 0;\n", pTabs,
 							varStg, pField->m_name.c_str(), pField->m_dimenIndex.c_str());
 					}
 				}
@@ -2653,19 +2653,19 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 			for (stgIdx = pField->m_rngLow.AsInt(); stgIdx <= pField->m_rngHigh.AsInt(); stgIdx += 1) {
 				int varStg = mod.m_tsStg + stgIdx - 1;
 
-				m_iplRegDecl.Append("\t%s r_t%d_%s%s;\n",
+				m_iplRegDecl.Append("\t%s r_t%d__STG__%s%s;\n",
 					pField->m_pType->m_typeName.c_str(), varStg + 1, pField->m_name.c_str(), pField->m_dimenDecl.c_str());
 
 				if (stgIdx == pField->m_rngLow.AsInt())
 					GenRamIndexLoops(iplReg, "", *pField, pField->m_dimenList.size() > 0);
 
 				if (pField->m_bInit && stgIdx == pField->m_rngLow.AsInt())
-					iplReg.Append("%s\tr_t%d_%s%s = %sc_t%d_htPriv.m_%s%s;\n", pTabs,
+					iplReg.Append("%s\tr_t%d__STG__%s%s = %sc_t%d_htPriv.m_%s%s;\n", pTabs,
 					varStg + 1, pField->m_name.c_str(), pField->m_dimenIndex.c_str(),
 					resetStr,
 					mod.m_tsStg, pField->m_name.c_str(), pField->m_dimenIndex.c_str());
 				else
-					iplReg.Append("%s\tr_t%d_%s%s = %sc_t%d_%s%s;\n", pTabs,
+					iplReg.Append("%s\tr_t%d__STG__%s%s = %sc_t%d__STG__%s%s;\n", pTabs,
 					varStg + 1, pField->m_name.c_str(), pField->m_dimenIndex.c_str(),
 					resetStr,
 					varStg, pField->m_name.c_str(), pField->m_dimenIndex.c_str());
@@ -3052,13 +3052,13 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 					VA("%s", pField->m_pType->m_typeName.c_str()),
 					pField->m_dimenDecl,
 					VA("T%d_%s", stgIdx, pField->m_name.c_str()),
-					VA("c_t%d_%s", varStg, pField->m_name.c_str()),
+					VA("c_t%d__STG__%s", varStg, pField->m_name.c_str()),
 					pField->m_dimenList);
 				GenModVar(eVcdUser, vcdModName, bFirstModVar,
 					VA("%s const", pField->m_pType->m_typeName.c_str()),
 					pField->m_dimenDecl,
 					VA("TR%d_%s", stgIdx + 1, pField->m_name.c_str()),
-					VA("r_t%d_%s", varStg + 1, pField->m_name.c_str()),
+					VA("r_t%d__STG__%s", varStg + 1, pField->m_name.c_str()),
 					pField->m_dimenList);
 			}
 
@@ -3067,7 +3067,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 				VA("%s", pField->m_pType->m_typeName.c_str()),
 				pField->m_dimenDecl,
 				VA("T%d_%s", stgIdx, pField->m_name.c_str()),
-				VA("c_t%d_%s", varStg, pField->m_name.c_str()),
+				VA("c_t%d__STG__%s", varStg, pField->m_name.c_str()),
 				pField->m_dimenList);
 		}
 
@@ -3165,7 +3165,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 						GenFieldType(pShared, false),
 						pShared->m_dimenDecl,
 						VA("S_%s", pShared->m_name.c_str()),
-						VA("%c_%s", preCh, pShared->m_name.c_str()),
+						VA("%c__SHR__%s", preCh, pShared->m_name.c_str()),
 						pShared->m_dimenList);
 				}
 
@@ -3174,7 +3174,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 						GenFieldType(pShared, true),
 						pShared->m_dimenDecl,
 						VA("SR_%s", pShared->m_name.c_str()),
-						VA("%c_%s", regCh, pShared->m_name.c_str()),
+						VA("%c__SHR__%s", regCh, pShared->m_name.c_str()),
 						pShared->m_dimenList);
 				}
 			}
@@ -3709,9 +3709,9 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 			GenRamIndexLoops(iplReg, "", *pField);
 
 		if (pField->m_queueW.size() > 0)
-			iplReg.Append("\tm_%s%s.clock(c_reset1x);\n", pField->m_name.c_str(), pField->m_dimenIndex.c_str());
+			iplReg.Append("\tm__SHR__%s%s.clock(c_reset1x);\n", pField->m_name.c_str(), pField->m_dimenIndex.c_str());
 		else if (pField->m_addr1W.size() > 0)
-			iplReg.Append("\tm_%s%s.clock();\n", pField->m_name.c_str(), pField->m_dimenIndex.c_str());
+			iplReg.Append("\tm__SHR__%s%s.clock();\n", pField->m_name.c_str(), pField->m_dimenIndex.c_str());
 	}
 
 	if (mod.m_threads.m_htIdW.AsInt() == 0) {
@@ -3784,12 +3784,12 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 			vector<int> refList(pShared->m_dimenList.size(), 0);
 			do {
 				string idxStr = IndexStr(refList);
-				iplReset.Append("\t\tc_%s%s = 0;\n", pShared->m_name.c_str(), idxStr.c_str());
+				iplReset.Append("\t\tc__SHR__%s%s = 0;\n", pShared->m_name.c_str(), idxStr.c_str());
 
 			} while (DimenIter(pShared->m_dimenList, refList));
 		} else {
 			GenRamIndexLoops(iplReset, "\t", *pShared);
-			iplReset.Append("\t\tc_%s%s = 0;\n", pShared->m_name.c_str(), pShared->m_dimenIndex.c_str());
+			iplReset.Append("\t\tc__SHR__%s%s = 0;\n", pShared->m_name.c_str(), pShared->m_dimenIndex.c_str());
 		}
 	}
 
