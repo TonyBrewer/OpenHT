@@ -51,7 +51,7 @@ CPersMch::PersMch()
               // end of run indicator, wait until idle
               HtContinue(MCH_WAIT_TIL_IDLE);
           else if (P_blkSizeL == 0)
-              SendReturn_MchBlkLx1R(r_rsltCnt);		// an empty block, just return
+              SendReturn_MchBlkLx1R(SR_rsltCnt);		// an empty block, just return
           else
               HtContinue(MCH_BLK_L_LOOP);
 
@@ -60,7 +60,7 @@ CPersMch::PersMch()
       case MCH_BLK_L_LOOP:
           // perform string compare of one left line of strings by one right line of strings
       {
-          if (SendReturnBusy_MchBlkLx1R() || m_lineMatchQue.full(8)) {
+          if (SendReturnBusy_MchBlkLx1R() || S_lineMatchQue.full(8)) {
               HtRetry();
               break;
           } else
@@ -76,7 +76,7 @@ CPersMch::PersMch()
           if (P_blkIdxL < P_blkSizeL)
               HtContinue(MCH_BLK_L_LOOP);
           else
-              SendReturn_MchBlkLx1R(r_rsltCnt);
+              SendReturn_MchBlkLx1R(SR_rsltCnt);
 
           break;
       }
@@ -90,14 +90,14 @@ CPersMch::PersMch()
           // we are idle when:
           //   only this thread is present
           //   no cmpValid bits are set
-          //   the m_lineMatchQue is empty
-          //   r_findNextMatchBusy is false
+          //   the S_lineMatchQue is empty
+          //   S_findNextMatchBusy is false
 
           if (!T2_cmpValid && !T3_cmpValid && !T4_cmpValid && !T5_cmpValid &&
                   !T6_cmpValid && !T7_cmpValid && !T8_cmpValid &&
                   S_lineMatchQue.empty() && !S_findNextMatchBusy) {
 
-              SendReturn_MchBlkLx1R(r_rsltCnt);		// an empty block, just return
+              SendReturn_MchBlkLx1R(SR_rsltCnt);		// an empty block, just return
 
               S_rsltCnt = 0;	// clear result count for next program run
           } else
@@ -212,68 +212,68 @@ CPersMch::PersMch()
   //   we push them on a queue because multiple matches may occur and we
   //   can only push one string match pair to the HIF per clock
   if (T8_cmpValid && T8_matchMask != 0) {
-    CLineMatch c_lineMatch;
-    c_lineMatch.m_matchMask = T8_matchMask;
-    c_lineMatch.m_pair = T8_matchId;
+    CLineMatch S_lineMatch;
+    S_lineMatch.m_matchMask = T8_matchMask;
+    S_lineMatch.m_pair = T8_matchId;
 
-    m_lineMatchQue.push(c_lineMatch);
+    S_lineMatchQue.push(S_lineMatch);
   }
 
-  if (!m_lineMatchQue.empty() && !r_findNextMatchBusy) {
+  if (!S_lineMatchQue.empty() && !SR_findNextMatchBusy) {
     // load compare registers
 
-    c_lineMatch = m_lineMatchQue.front();
-    m_lineMatchQue.pop();
+    S_lineMatch = S_lineMatchQue.front();
+    S_lineMatchQue.pop();
 
-    c_processedMask = 0;
+    S_processedMask = 0;
 
-    c_findNextMatchBusy = true;
+    S_findNextMatchBusy = true;
   }
 
-  c_hifOutQuePush = false;
-  if (r_findNextMatchBusy && !SendHostDataFullIn(1)) {
+  S_hifOutQuePush = false;
+  if (SR_findNextMatchBusy && !SendHostDataFullIn(1)) {
     // Iterate through bits set in matchMask
     //   Start by scanning bit mask from LSB, set mask register after each bit is processed
     bool bZero;
     LineStrCntL_t idxL;
     LineStrCntR_t idxR;
-    FindNextMatch(bZero, idxL, idxR, c_processedMask, r_processedMask, r_lineMatch.m_matchMask);
+    FindNextMatch(bZero, idxL, idxR, S_processedMask, SR_processedMask, SR_lineMatch.m_matchMask);
 
     if (bZero) {
-      c_findNextMatchBusy = false;
+      S_findNextMatchBusy = false;
     } else {
-      c_hifOutQuePush = true;
+      S_hifOutQuePush = true;
 
-      c_strPair.m_conIdxL = (ConIdx_t)(r_lineMatch.m_pair.m_conIdxL | idxL);
-      c_strPair.m_conIdxR = (ConIdx_t)(r_lineMatch.m_pair.m_conIdxR | idxR);
-      c_strPair.m_conIdL = r_lineMatch.m_pair.m_conIdL;
-      c_strPair.m_conIdR = r_lineMatch.m_pair.m_conIdR;
+      S_strPair.m_conIdxL = (ConIdx_t)(SR_lineMatch.m_pair.m_conIdxL | idxL);
+      S_strPair.m_conIdxR = (ConIdx_t)(SR_lineMatch.m_pair.m_conIdxR | idxR);
+      S_strPair.m_conIdL = SR_lineMatch.m_pair.m_conIdL;
+      S_strPair.m_conIdR = SR_lineMatch.m_pair.m_conIdR;
 
 #ifndef _HTV
       //printf("StrPair(conIdL=%d, conIdR=%d, conIdxL=%d, conIdxR=%d)\n",
-      //	c_strPair.m_conIdL, c_strPair.m_conIdR, c_strPair.m_conIdxL, c_strPair.m_conIdxR);
+      //	S_strPair.m_conIdL, S_strPair.m_conIdR, S_strPair.m_conIdxL, S_strPair.m_conIdxR);
 #endif
     }
   }
 
-  if (r_hifOutQuePush) {
+  if (SR_hifOutQuePush) {
 
-    if (r_strPair.m_conIdL != r_strPair.m_conIdR || r_strPair.m_conIdxL != r_strPair.m_conIdxR) {
-      SendHostData(r_strPair.m_data64);
-      c_rsltCnt += 1;
+    if (SR_strPair.m_conIdL != SR_strPair.m_conIdR || SR_strPair.m_conIdxL != SR_strPair.m_conIdxR) {
+      SendHostData(SR_strPair.m_data64);
+      S_rsltCnt += 1;
 
 #ifndef _HTV
       extern FILE *hitFp;
       if (hitFp) fprintf(hitFp, "%d.%dL %d.%dR\n",
-             (int)r_strPair.m_conIdL, (int)r_strPair.m_conIdxL, (int)r_strPair.m_conIdR, (int)r_strPair.m_conIdxR);
+             (int)SR_strPair.m_conIdL, (int)SR_strPair.m_conIdxL, (int)SR_strPair.m_conIdR, (int)SR_strPair.m_conIdxR);
 #endif
     }
   }
 
   if (GR_htReset) {
-    c_processedMask = 0;
-    c_findNextMatchBusy = false;
-    c_rsltCnt = 0;
+    S_processedMask = 0;
+    S_findNextMatchBusy = false;
+    S_rsltCnt = 0;
   }
 }
 
@@ -378,9 +378,9 @@ CPersMch::levenshtein2Band (int const &level, bool const &valid, CmpMatrix_t con
 }
 void
 CPersMch::FindNextMatch(bool &bZero, LineStrCntL_t &idxL, LineStrCntR_t &idxR, MatchMask_t &processedMask,
-              MatchMask_t const &r_processedMask, MatchMask_t const &r_matchMask)
+              MatchMask_t const &SR_processedMask, MatchMask_t const &r_matchMask)
 {
-  MatchMask_t activeMask = r_matchMask & ~r_processedMask;
+  MatchMask_t activeMask = r_matchMask & ~SR_processedMask;
 
   // find non-zero lineStrL
   LineStrMaskR_t c_lineMaskR;
@@ -401,7 +401,7 @@ CPersMch::FindNextMatch(bool &bZero, LineStrCntL_t &idxL, LineStrCntR_t &idxR, M
 
   bZero = c_lineMaskR == 0;
 
-  processedMask = r_processedMask | (MatchMask_t)((1ull << idxL) << (idxR*LINE_STR_CNT_L));
+  processedMask = SR_processedMask | (MatchMask_t)((1ull << idxL) << (idxR*LINE_STR_CNT_L));
 }
 
 void

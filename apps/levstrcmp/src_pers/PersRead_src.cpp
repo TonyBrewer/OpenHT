@@ -104,5 +104,5 @@ CPersRead::PersRead()
 	}
 
 	if (GR_htReset)
-		c_threadActiveCnt = 0;
+		S_threadActiveCnt = 0;
 }
