@@ -12,7 +12,7 @@ CPersStencil::PersStencil()
 			// Split offset calucation from source stencil to destination location over
 			// two cytles for timing. OFF = ((Y_ORIGIN * (PR_cols + X_SIZE-1) + X_ORIGIN) * sizeof(StType_t);
 			//
-			uint32_t offset = Y_ORIGIN * (PR_cols + X_SIZE-1);
+			uint32_t offset = (uint32_t)(Y_ORIGIN * (PR_cols + X_SIZE-1));
 
 			S_rdAddr = PR_rdAddr;
 			S_wrAddr = offset;

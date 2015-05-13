@@ -1499,7 +1499,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 
 			if (bMultiQwReq) {
 				if (bMultiElemDstParam)
-					m_mifMacros.Append("\tc_t%d_memReq.m_qwRem = %d * elemCnt;\n", mod.m_execStg, qwCnt);
+					m_mifMacros.Append("\tc_t%d_memReq.m_qwRem = (ht_uint%d)(%d * elemCnt);\n", mod.m_execStg, FindLg2(maxQwCnt), qwCnt);
 				else
 					m_mifMacros.Append("\tc_t%d_memReq.m_qwRem = %d;\n", mod.m_execStg, qwCnt);
 
@@ -1537,7 +1537,9 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 						vector<CRefDimen> & indexRangeList = rdDst.m_fieldRefList[fldIdx].m_refDimenList;
 						for (size_t dimIdx = 0; dimIdx < indexRangeList.size(); dimIdx += 1) {
 							if (bMultiElemDst && fldIdx + 1 == rdDst.m_fieldRefList.size()) {
-								if (rdDst.m_fieldRefList[fldIdx].m_refDimenList[dimIdx].m_value < 0) {
+								if (mif.m_vIdxWList.size() > dimIdx && mif.m_vIdxWList[dimIdx] > 0 &&
+									rdDst.m_fieldRefList[fldIdx].m_refDimenList[dimIdx].m_value < 0)
+								{
 									m_mifMacros.Append("\tc_t%d_memReq.m_vIdx%d = %sIdx%d;\n",
 										mod.m_execStg, dimIdx + 1, fldName.c_str(), (int)dimIdx + 1);
 									rdDst.m_fieldRefList[fldIdx].m_refDimenList[dimIdx].m_isIdx = true;
@@ -2268,7 +2270,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 
 			if (bMultiQwReq) {
 				if (bMultiElemDstParam)
-					m_mifMacros.Append("\tc_t%d_memReq.m_qwRem = %d * elemCnt;\n", mod.m_execStg, qwCnt);
+					m_mifMacros.Append("\tc_t%d_memReq.m_qwRem = (ht_uint%d)(%d * elemCnt);\n", mod.m_execStg, FindLg2(maxQwCnt), qwCnt);
 				else
 					m_mifMacros.Append("\tc_t%d_memReq.m_qwRem = %d;\n", mod.m_execStg, qwCnt);
 
@@ -2303,7 +2305,9 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 						string fldName = fldIdx == 0 ? "var" : VA("fld%d", (int)fldIdx);
 						for (size_t dimIdx = 0; dimIdx < wrSrc.m_fieldRefList[fldIdx].m_refDimenList.size(); dimIdx += 1) {
 							if (bMultiElemDst && fldIdx + 1 == wrSrc.m_fieldRefList.size()) {
-								if (wrSrc.m_fieldRefList[fldIdx].m_refDimenList[dimIdx].m_value < 0) {
+								if (mif.m_vIdxWList.size() > dimIdx && mif.m_vIdxWList[dimIdx] > 0 &&
+									wrSrc.m_fieldRefList[fldIdx].m_refDimenList[dimIdx].m_value < 0)
+								{
 									m_mifMacros.Append("\tc_t%d_memReq.m_vIdx%d = %sIdx%d;\n",
 										mod.m_execStg, dimIdx + 1, fldName.c_str(), (int)dimIdx + 1);
 									wrSrc.m_fieldRefList[fldIdx].m_refDimenList[dimIdx].m_isIdx = true;
@@ -2449,41 +2453,49 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 			}
 
 			if (mif.m_mifReqStgCnt == 0) {
-				if (wrSrc.m_pType != 0)
-					m_mifMacros.Append("\tc_t%d_%sToMif_req.m_data = data;\n", mod.m_execStg, mod.m_modName.Lc().c_str());
+				string varName;
+				for (int fldIdx = 0; fldIdx < (int)wrSrc.m_fieldRefList.size(); fldIdx += 1) {
+					CFieldRef & fieldRef = wrSrc.m_fieldRefList[fldIdx];
 
-				else if (wrSrc.m_pPrivVar || wrSrc.m_pGblVar && wrSrc.m_pGblVar->m_bPrivGbl &&
+					if (fldIdx > 0) {
+						varName += '.';
+						varName += fieldRef.m_fieldName;
+					}
+
+					string fldName = fldIdx == 0 ? "var" : VA("fld%d", (int)fldIdx);
+
+					for (int dimIdx = 0; dimIdx < (int)fieldRef.m_refDimenList.size(); dimIdx += 1) {
+						CRefDimen & refDimen = fieldRef.m_refDimenList[dimIdx];
+
+						string idxStr;
+						if (refDimen.m_value >= 0)
+							idxStr = VA("[%d]", refDimen.m_value);
+
+						else if (refDimen.m_size == 1)
+							idxStr = "[0]";
+
+						else
+							idxStr = VA("[INT(%sIdx%d)]", fldName.c_str(), dimIdx + 1);
+
+						varName += idxStr;
+					}
+				}
+
+				if (wrSrc.m_pType != 0) {
+					if (!wrSrc.m_pSrcType->IsRecord()) {
+						m_mifMacros.Append("\tc_t%d_%sToMif_req.m_data = data;\n", mod.m_execStg, mod.m_modName.Lc().c_str());
+					} else {
+						for (CStructElemIter iter(this, wrSrc.m_pSrcType); !iter.end(); iter++) {
+							m_mifMacros.Append("\tc_t%d_%sToMif_req.m_data |= (uint64_t)(data%s%s << %dLL);\n",
+								mod.m_execStg, mod.m_modName.Lc().c_str(),
+								varName.c_str(), iter.GetHeirFieldName().c_str(),
+								iter.GetHeirFieldPos());
+						}
+					}
+				} else if (wrSrc.m_pPrivVar || wrSrc.m_pGblVar && wrSrc.m_pGblVar->m_bPrivGbl &&
 					wrSrc.m_pGblVar->m_addrW == mod.m_threads.m_htIdW.AsInt() || wrSrc.m_pGblVar && wrSrc.m_pGblVar->m_addrW == 0 ||
 					wrSrc.m_pSharedVar)
 				{
-					string varName;
-					for (int fldIdx = 0; fldIdx < (int)wrSrc.m_fieldRefList.size(); fldIdx += 1) {
-						CFieldRef & fieldRef = wrSrc.m_fieldRefList[fldIdx];
-
-						if (fldIdx > 0) {
-							varName += '.';
-							varName += fieldRef.m_fieldName;
-						}
-
-						string fldName = fldIdx == 0 ? "var" : VA("fld%d", (int)fldIdx);
-
-						for (int dimIdx = 0; dimIdx < (int)fieldRef.m_refDimenList.size(); dimIdx += 1) {
-							CRefDimen & refDimen = fieldRef.m_refDimenList[dimIdx];
-
-							string idxStr;
-							if (refDimen.m_value >= 0)
-								idxStr = VA("[%d]", refDimen.m_value);
-
-							else if (refDimen.m_size == 1)
-								idxStr = "[0]";
-
-							else
-								idxStr = VA("[INT(%sIdx%d)]", fldName.c_str(), dimIdx + 1);
-
-							varName += idxStr;
-						}
-					}
-
 					if (wrSrc.m_pPrivVar) {
 						if (!wrSrc.m_pSrcType->IsRecord()) {
 							m_mifMacros.Append("\tc_t%d_%sToMif_req.m_data = c_t%d_htPriv.m_%s%s;\n",
@@ -4532,17 +4544,17 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 							CRefDimen & refDimen = fieldRef.m_refDimenList[dimIdx];
 
 							if (refDimen.m_value >= 0)
-								identStr = VA("[%d]", refDimen.m_value);
+								identStr += VA("[%d]", refDimen.m_value);
 
 							else if (refDimen.m_size == 1)
-								identStr = "[0]";
+								identStr += "[0]";
 
 							else if (refDimen.m_isIdx) {
-								identStr = VA("[INT(r_t%d_memReq.m_vIdx%d(%d, 0))]",
+								identStr += VA("[INT(r_t%d_memReq.m_vIdx%d(%d, 0))]",
 									mod.m_execStg + 2, dimIdx + 1, FindLg2(refDimen.m_size - 1) - 1);
 							}
 							else {
-								identStr = VA("[INT(r_t%d_memReq.m_s%d_f%dIdx%d)]",
+								identStr += VA("[INT(r_t%d_memReq.m_s%d_f%dIdx%d)]",
 									mod.m_execStg + 2, wrSrcIdx, 1, dimIdx + 1);
 							}
 						}
