@@ -1,36 +1,8 @@
 typedef sc_uint<48> MemAddr_t;
 
-union test00_0_g_0_data_struct {
-  union  {
-    uint16_t test00_0_g_0_data[1];
-    uint32_t test00_0_g_1_data;
-    uint32_t test00_0_g_2_data;
-  };
-  union  {
-    union  {
-      uint32_t test00_0_g_3_data[3];
-      struct  {
-        uint16_t test00_0_g_4_data;
-        uint8_t test00_0_g_5_data[4];
-      };
-      uint32_t test00_0_g_6_data[2];
-    };
-    union  {
-      uint32_t test00_0_g_7_data[3];
-    };
-  };
-};
-
-struct test00_0_s_8_data_struct {
-  uint16_t test00_0_s_8_data;
-  struct  {
-    struct  {
-      uint16_t test00_0_s_9_data;
-      uint16_t test00_0_s_10_data[3];
-    };
-    uint32_t test00_0_s_11_data[2];
-  };
-  uint32_t test00_0_s_12_data;
+struct test00_0_dst_s0_data_struct {
+  int64_t test00_0_dst_v0_data[1][3];
+  uint32_t test00_0_dst_v1_data[1];
 };
 
 
@@ -60,7 +32,7 @@ Ctl.AddPrivate()
 /////////////////////////////////////
 // TEST00
 
-#define TEST00_HTID_W 3
+#define TEST00_HTID_W 4
 dsnInfo.AddModule(name=Test00, htIdW=TEST00_HTID_W);
 
 Test00.AddInstr(name=TEST00_ENTRY);
@@ -79,22 +51,21 @@ Test00.AddReturn(func=test00)
 
 Test00.AddPrivate()
 	.AddVar(type=MemAddr_t, name=memAddr)
+	.AddVar(type=int64_t, name=test00_0_src_v0_data, addr1=test00_0_src_v0_data_RdAddr1, addr2=test00_0_src_v0_data_RdAddr2, dimen1=3, dimen2=1)
+	.AddVar(type=ht_uint4, name=test00_0_src_v0_data_RdAddr1)
+	.AddVar(type=ht_uint1, name=test00_0_src_v0_data_RdAddr2)
 	;
 
 Test00.AddShared()
-	.AddVar(type=test00_0_s_8_data_struct, name=test00_0_s_8_data)
-	;
-
-Test00.AddGlobal()
-	.AddVar(type=test00_0_g_0_data_struct, name=test00_0_g_0_data)
+	.AddVar(type=test00_0_dst_s0_data_struct, name=test00_0_dst_s0_data, addr1W=3, addr2W=1, dimen1=1)
 	;
 
 Test00.AddReadMem()
-	.AddDst(var=test00_0_s_8_data.test00_0_s_10_data[], name=test00_0_s_10_data, memSrc=host)
+	.AddDst(var=test00_0_dst_s0_data[0].test00_0_dst_v0_data[0][0], name=test00_0_dst_v0_data, memSrc=host)
 	;
 
 Test00.AddWriteMem()
-	.AddSrc(type=uint16_t, memDst=host)
+	.AddSrc(var=test00_0_src_v0_data[2][0], name=test00_0_src_v0_data, memDst=host)
 	;
 
 

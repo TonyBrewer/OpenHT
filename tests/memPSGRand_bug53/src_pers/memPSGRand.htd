@@ -1,36 +1,14 @@
 typedef sc_uint<48> MemAddr_t;
 
-union test00_0_g_0_data_struct {
-  union  {
-    uint16_t test00_0_g_0_data[1];
-    uint32_t test00_0_g_1_data;
-    uint32_t test00_0_g_2_data;
-  };
-  union  {
-    union  {
-      uint32_t test00_0_g_3_data[3];
-      struct  {
-        uint16_t test00_0_g_4_data;
-        uint8_t test00_0_g_5_data[4];
-      };
-      uint32_t test00_0_g_6_data[2];
-    };
-    union  {
-      uint32_t test00_0_g_7_data[3];
-    };
-  };
+union test00_0_dst_u0_data_union {
+  uint64_t test00_0_dst_v3_data;
 };
 
-struct test00_0_s_8_data_struct {
-  uint16_t test00_0_s_8_data;
-  struct  {
-    struct  {
-      uint16_t test00_0_s_9_data;
-      uint16_t test00_0_s_10_data[3];
-    };
-    uint32_t test00_0_s_11_data[2];
-  };
-  uint32_t test00_0_s_12_data;
+struct test00_0_dst_s0_data_struct {
+  uint8_t test00_0_dst_v0_data[2];
+  uint16_t test00_0_dst_v1_data[2][1];
+  int8_t test00_0_dst_v2_data[1];
+  test00_0_dst_u0_data_union test00_0_dst_u0_data[1][1];
 };
 
 
@@ -60,7 +38,7 @@ Ctl.AddPrivate()
 /////////////////////////////////////
 // TEST00
 
-#define TEST00_HTID_W 3
+#define TEST00_HTID_W 1
 dsnInfo.AddModule(name=Test00, htIdW=TEST00_HTID_W);
 
 Test00.AddInstr(name=TEST00_ENTRY);
@@ -79,22 +57,18 @@ Test00.AddReturn(func=test00)
 
 Test00.AddPrivate()
 	.AddVar(type=MemAddr_t, name=memAddr)
-	;
-
-Test00.AddShared()
-	.AddVar(type=test00_0_s_8_data_struct, name=test00_0_s_8_data)
-	;
-
-Test00.AddGlobal()
-	.AddVar(type=test00_0_g_0_data_struct, name=test00_0_g_0_data)
+	.AddVar(type=test00_0_dst_s0_data_struct, name=test00_0_dst_s0_data)
 	;
 
 Test00.AddReadMem()
-	.AddDst(var=test00_0_s_8_data.test00_0_s_10_data[], name=test00_0_s_10_data, memSrc=host)
+	.AddDst(var=test00_0_dst_s0_data.test00_0_dst_u0_data[][], name=test00_0_dst_u0_data, memSrc=host)
 	;
 
 Test00.AddWriteMem()
 	.AddSrc(type=uint16_t, memDst=host)
+	.AddSrc(type=int8_t, memDst=host)
+	.AddSrc(type=test00_0_dst_u0_data_union, memDst=host)
+	.AddSrc(type=int64_t, memDst=host)
 	;
 
 
