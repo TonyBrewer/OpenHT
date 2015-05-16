@@ -1020,10 +1020,25 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 				int rdAddrStgNum = mod.m_tsStg + pGv->m_rdStg.AsInt() - (pGv->m_ramType == eBlockRam ? 3 : 2);
 				string rdAddrStg = rdAddrStgNum == 1 ? "c_t1" : VA("r_t%d", rdAddrStgNum);
 
-				string addr1Name = pGv->m_addr1Name == "htId" ? VA("%s_htId", rdAddrStg.c_str()) : VA("%s_htPriv.m_%s", rdAddrStg.c_str(), pGv->m_addr1Name.c_str());
+				string addr1Name;
+				if (pGv->m_addr1IsHtId)
+					addr1Name = VA("%s_htId", rdAddrStg.c_str());
+				else if (pGv->m_addr1IsPrivate)
+					addr1Name = VA("%s_htPriv.m_%s", rdAddrStg.c_str(), pGv->m_addr1Name.c_str());
+				else if (pGv->m_addr1IsStage)
+					addr1Name = VA("%s__STG__%s", rdAddrStg.c_str(), pGv->m_addr1Name.c_str());
+				else if (pGv->m_addr1W.AsInt() > 0)
+					HtlAssert(0);
+
 				string addr2Name;
-				if (pGv->m_addr2W.AsInt() > 0)
-					addr2Name = pGv->m_addr2Name == "htId" ? VA("%s_htId", rdAddrStg.c_str()) : VA("%s_htPriv.m_%s", rdAddrStg.c_str(), pGv->m_addr2Name.c_str());
+				if (pGv->m_addr2IsHtId)
+					addr2Name = VA("%s_htId", rdAddrStg.c_str());
+				else if (pGv->m_addr2IsPrivate)
+					addr2Name = VA("%s_htPriv.m_%s", rdAddrStg.c_str(), pGv->m_addr2Name.c_str());
+				else if (pGv->m_addr1IsStage)
+					addr2Name = VA("%s__STG__%s", rdAddrStg.c_str(), pGv->m_addr2Name.c_str());
+				else if (pGv->m_addr2W.AsInt() > 0)
+					HtlAssert(0);
 
 				bool bNeedParan = ((pGv->m_addr0W.AsInt() > 0 ? 1 : 0) + (pGv->m_addr1W.AsInt() > 0 ? 1 : 0) + (pGv->m_addr2W.AsInt() > 0 ? 1 : 0)) > 1;
 				gblPostInstr.Append("\tht_uint%d c_t%d_%sRdAddr = %s", pGv->m_addrW, rdAddrStgNum, pGv->m_gblName.Lc().c_str(), bNeedParan ? "(" : "");
