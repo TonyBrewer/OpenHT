@@ -256,7 +256,7 @@ void CDsnInfo::InitAndValidateModMif()
 					(rdDst.m_fieldRefList.size() == 1 && rdDst.m_varAddr1W > 0 ||
 					rdDstSize > 1);
 
-				rdDst.m_bMultiQwRdReq = rdDst.m_bMultiElemRd || rdDst.m_pDstType->m_clangMinAlign != 1 &&
+				rdDst.m_bMultiQwRdReq = rdDst.m_bMultiElemRd || rdDst.m_pDstType->m_clangMinAlign == 64 &&
 					rdDst.m_pDstType->m_clangBitWidth > rdDst.m_pDstType->m_clangMinAlign;
 				rdDst.m_bMultiQwHostRdReq = rdDst.m_bMultiQwRdReq && (rdDst.m_memSrc.size() == 0 || rdDst.m_memSrc == "host");
 				rdDst.m_bMultiQwCoprocRdReq = rdDst.m_bMultiQwRdReq && (rdDst.m_memSrc.size() == 0 || rdDst.m_memSrc == "coproc");
@@ -1040,6 +1040,12 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 
 		assert(rdDst.m_maxElemCnt == elemCnt);
 
+		// check for req size
+		if (modMemSize == 0)
+			modMemSize = rdDst.m_memSize;
+		else if (modMemSize != rdDst.m_memSize)
+			bSingleMemSize = false;
+
 		if (rdDst.m_pGblVar == 0) {
 			if (!bRdDstNonNgv)
 				rdDstRdyCnt += 1;
@@ -1060,12 +1066,6 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 
 		if (rdDst.m_pGblVar->m_pNgvInfo->m_bNgvWrCompClk2x)
 			bNgvWrCompClk2x = true;
-
-		// check for req size
-		if (modMemSize == 0)
-			modMemSize = rdDst.m_memSize;
-		else if (modMemSize != rdDst.m_memSize)
-			bSingleMemSize = false;
 	}
 
 	int maxWrElemQwCnt = 1;
@@ -3893,7 +3893,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 			mifPostInstr.Append("\t\tbool bMultiQwReq = ");
 			string separator;
 			if (bMultiQwHostRdMif) {
-				mifPostInstr.Append("%s(r_t%d_%sToMif_req.m_host && r_t%d_%sToMif_req.m_type == MEM_REQ_RD%s\n\t\t\t&& (r_t%d_%sToMif_req.m_addr & 0x38) != 7 && r_t%d_memReq.m_qwRem >= 2)", separator.c_str(),
+				mifPostInstr.Append("%s(r_t%d_%sToMif_req.m_host && r_t%d_%sToMif_req.m_type == MEM_REQ_RD%s\n\t\t\t&& (r_t%d_%sToMif_req.m_addr & 0x38) != 0x38 && r_t%d_memReq.m_qwRem >= 2)", separator.c_str(),
 					mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
 					mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
 					checkReqSize.c_str(),
@@ -3902,7 +3902,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 				separator = "\n\t\t\t|| ";
 			}
 			if (bMultiQwCoprocRdMif) {
-				mifPostInstr.Append("%s(!r_t%d_%sToMif_req.m_host && r_t%d_%sToMif_req.m_type == MEM_REQ_RD%s\n\t\t\t&& (r_t%d_%sToMif_req.m_addr & 0x38) != 7 && r_t%d_memReq.m_qwRem >= 2)", separator.c_str(),
+				mifPostInstr.Append("%s(!r_t%d_%sToMif_req.m_host && r_t%d_%sToMif_req.m_type == MEM_REQ_RD%s\n\t\t\t&& (r_t%d_%sToMif_req.m_addr & 0x38) != 0x38 && r_t%d_memReq.m_qwRem >= 2)", separator.c_str(),
 					mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
 					mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
 					checkReqSize.c_str(),
@@ -3916,7 +3916,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 					mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
 					checkReqSize.c_str(),
 					mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
-					coprocInfo.IsVarQwReqCnt() ? "!= 7" : " == 0",
+					coprocInfo.IsVarQwReqCnt() ? "!= 0x38" : " == 0",
 					mod.m_execStg + 1,
 					coprocInfo.IsVarQwReqCnt() ? 2 : 8);
 				separator = "\n\t\t\t|| ";
@@ -3927,7 +3927,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 					mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
 					checkReqSize.c_str(),
 					mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
-					coprocInfo.IsVarQwReqCnt() ? "!= 7" : " == 0",
+					coprocInfo.IsVarQwReqCnt() ? "!= 0x38" : " == 0",
 					mod.m_execStg + 1,
 					coprocInfo.IsVarQwReqCnt() ? 2 : 8);
 				separator = "\n\t\t\t|| ";
