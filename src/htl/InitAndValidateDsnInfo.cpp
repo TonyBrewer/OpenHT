@@ -87,6 +87,7 @@ void CDsnInfo::ValidateDesignInfo()
 
 				pPriv->m_addr1W.InitValue(pPriv->m_lineInfo, false, 0);
 				pPriv->m_addr2W.InitValue(pPriv->m_lineInfo, false, 0);
+				pPriv->m_fieldWidth.InitValue(pPriv->m_lineInfo, false, 0);
 				pPriv->InitDimen(pPriv->m_lineInfo);
 			}
 		}
@@ -196,12 +197,14 @@ void CDsnInfo::InitAddrWFromAddrName()
 
 			if (pNgv->m_addr1Name.size() > 0) {
 				int addr1W;
-				bool bHtId = true;
-				bool bPrivate = true;
+				pNgv->m_addr1IsHtId = true;
+				pNgv->m_addr1IsPrivate = true;
+				pNgv->m_addr1IsStage = true;
 				bool bShared = false;
-				bool bStage = true;
 
-				if (FindVariableWidth(pNgv->m_lineInfo, mod, pNgv->m_addr1Name, bHtId, bPrivate, bShared, bStage, addr1W)) {
+				if (FindVariableWidth(pNgv->m_lineInfo, mod, pNgv->m_addr1Name, pNgv->m_addr1IsHtId,
+					pNgv->m_addr1IsPrivate, bShared, pNgv->m_addr1IsStage, addr1W)) 
+				{
 					if (pNgv->m_addr1W.size() == 0) {
 						pNgv->m_addr1W = CHtString(VA("%d", addr1W));
 						pNgv->m_addr1W.SetValue(addr1W);
@@ -215,12 +218,14 @@ void CDsnInfo::InitAddrWFromAddrName()
 
 			if (pNgv->m_addr2Name.size() > 0) {
 				int addr2W;
-				bool bHtId = true;
-				bool bPrivate = true;
+				pNgv->m_addr2IsHtId = true;
+				pNgv->m_addr2IsPrivate = true;
+				pNgv->m_addr2IsStage = true;
 				bool bShared = false;
-				bool bStage = true;
 
-				if (FindVariableWidth(pNgv->m_lineInfo, mod, pNgv->m_addr2Name, bHtId, bPrivate, bShared, bStage, addr2W)) {
+				if (FindVariableWidth(pNgv->m_lineInfo, mod, pNgv->m_addr2Name, pNgv->m_addr2IsHtId,
+					pNgv->m_addr2IsPrivate, bShared, pNgv->m_addr2IsStage, addr2W))
+				{
 					if (pNgv->m_addr2W.size() == 0) {
 						pNgv->m_addr2W = CHtString(VA("%d", addr2W));
 						pNgv->m_addr2W.SetValue(addr2W);
@@ -240,12 +245,14 @@ void CDsnInfo::InitAddrWFromAddrName()
 
 			if (pPriv->m_addr1W.size() == 0 && pPriv->m_addr1Name.size() > 0) {
 				int addr1W;
-				bool bHtId = true;
-				bool bPrivate = true;
+				pPriv->m_addr1IsHtId = true;
+				pPriv->m_addr1IsPrivate = true;
+				pPriv->m_addr1IsStage = true;
 				bool bShared = false;
-				bool bStage = true;
 
-				if (FindVariableWidth(pPriv->m_lineInfo, mod, pPriv->m_addr1Name, bHtId, bPrivate, bShared, bStage, addr1W)) {
+				if (FindVariableWidth(pPriv->m_lineInfo, mod, pPriv->m_addr1Name, pPriv->m_addr1IsHtId,
+					pPriv->m_addr1IsPrivate, bShared, pPriv->m_addr1IsStage, addr1W))
+				{
 					pPriv->m_addr1W = CHtString(VA("%d", addr1W));
 					pPriv->m_addr1W.SetValue(addr1W);
 				} else
@@ -254,12 +261,14 @@ void CDsnInfo::InitAddrWFromAddrName()
 
 			if (pPriv->m_addr2W.size() == 0 && pPriv->m_addr2Name.size() > 0) {
 				int addr2W;
-				bool bHtId = false;
-				bool bPrivate = true;
+				pPriv->m_addr2IsHtId = true;
+				pPriv->m_addr2IsPrivate = true;
+				pPriv->m_addr2IsStage = true;
 				bool bShared = false;
-				bool bStage = true;
 
-				if (FindVariableWidth(pPriv->m_lineInfo, mod, pPriv->m_addr2Name, bHtId, bPrivate, bShared, bStage, addr2W)) {
+				if (FindVariableWidth(pPriv->m_lineInfo, mod, pPriv->m_addr2Name, pPriv->m_addr2IsHtId,
+					pPriv->m_addr2IsPrivate, bShared, pPriv->m_addr2IsStage, addr2W))
+				{
 					pPriv->m_addr2W = CHtString(VA("%d", addr2W));
 					pPriv->m_addr2W.SetValue(addr2W);
 				} else
@@ -300,6 +309,13 @@ void CDsnInfo::InitPrivateAsGlobal()
 				bMaxMw, pPriv->m_ramType, bRead, bWrite));
 
 			CRam * pNgv = mod.m_ngvList.back();
+
+			pNgv->m_addr1IsHtId = pPriv->m_addr1IsHtId;
+			pNgv->m_addr1IsPrivate = pPriv->m_addr1IsPrivate;
+			pNgv->m_addr1IsStage = pPriv->m_addr1IsStage;
+			pNgv->m_addr2IsHtId = pPriv->m_addr2IsHtId;
+			pNgv->m_addr2IsPrivate = pPriv->m_addr2IsPrivate;
+			pNgv->m_addr2IsStage = pPriv->m_addr2IsStage;
 
 			pNgv->m_bPrivGbl = true;
 			pNgv->m_privName = pPriv->m_name;
@@ -352,6 +368,13 @@ void CDsnInfo::InitPrivateAsGlobal()
 						bMaxMw, pPriv->m_ramType, bRead, bWrite));
 
 					CRam * pNgv = mod.m_ngvList.back();
+
+					pNgv->m_addr1IsHtId = pPriv->m_addr1IsHtId;
+					pNgv->m_addr1IsPrivate = pPriv->m_addr1IsPrivate;
+					pNgv->m_addr1IsStage = pPriv->m_addr1IsStage;
+					pNgv->m_addr2IsHtId = pPriv->m_addr2IsHtId;
+					pNgv->m_addr2IsPrivate = pPriv->m_addr2IsPrivate;
+					pNgv->m_addr2IsStage = pPriv->m_addr2IsStage;
 
 					pNgv->m_bPrivGbl = true;
 					pNgv->m_privName = pPriv->m_name;
@@ -822,7 +845,7 @@ bool CDsnInfo::IsInFieldList(CLineInfo const &lineInfo, string const &fldName, v
 			size_t entryLen = pFullName ? pFullName->size() : 0;
 
 			CRecord * pRecord = pField->m_pType->AsRecord();
-			if (IsInFieldList(lineInfo, fldName, pRecord->m_fieldList, pRecord->m_bCStyle, true, pBaseField, pLastField, pFullName)) {
+			if (IsInFieldList(lineInfo, postName, pRecord->m_fieldList, pRecord->m_bCStyle, true, pBaseField, pLastField, pFullName)) {
 				pBaseField = pField;
 				return true;
 			}

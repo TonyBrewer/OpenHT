@@ -163,25 +163,6 @@ public:
 #define ATOMIC_ADD 4
 
 struct CField : CDimenList {
-	//CField(string type, string name, string bitWidth, string base, string dimen1, string dimen2, bool bSrcRead,
-	//	bool bSrcWrite, bool bMifRead, bool bMifWrite, HtdFile::ERamType ramType)
-	//{
-	//	Init();
-
-	//	m_type = type;
-	//	m_name = name;
-	//	m_fieldWidth = bitWidth;
-	//	m_base = base;
-	//	if (dimen1.size() > 0)
-	//		m_dimenList.push_back(dimen1);
-	//	if (dimen2.size() > 0)
-	//		m_dimenList.push_back(dimen2);
-	//	m_bSrcRead = bSrcRead;
-	//	m_bSrcWrite = bSrcWrite;
-	//	m_bMifRead = bMifRead;
-	//	m_bMifWrite = bMifWrite;
-	//	m_ramType = ramType;
-	//}
 
 	CField(CType * pType, string name, string bitWidth, string base, vector<CHtString> const &dimenList, bool bSrcRead,
 		bool bSrcWrite, bool bMifRead, bool bMifWrite, HtdFile::ERamType ramType, int atomicMask)
@@ -324,6 +305,13 @@ private:
 
 		m_bIfDefHtv = false;
 		m_bIhmReadOnly = false;
+
+		m_addr1IsHtId = false;
+		m_addr1IsPrivate = false;
+		m_addr1IsStage = false;
+		m_addr2IsHtId = false;
+		m_addr2IsPrivate = false;
+		m_addr2IsStage = false;
 	}
 
 public:
@@ -339,7 +327,13 @@ public:
 	CHtString	m_addr2W;
 	CHtString	m_queueW;
 	string		m_addr1Name;
+	bool		m_addr1IsHtId;
+	bool		m_addr1IsPrivate;
+	bool		m_addr1IsStage;
 	string		m_addr2Name;
+	bool		m_addr2IsHtId;
+	bool		m_addr2IsPrivate;
+	bool		m_addr2IsStage;
 	string		m_reset;
 	bool		m_bSrcRead;
 	bool		m_bSrcWrite;
@@ -503,38 +497,28 @@ struct CRam : CRecord, CDimenList {
 
 	CRam(string moduleName, string ramName, string addrName, string addrBits, HtdFile::ERamType ramType = HtdFile::eDistRam)
 	{
-
-		m_lineInfo = CPreProcess::m_lineInfo;
+		Init();
 		m_modName = moduleName;
 		m_gblName = ramName;
 		m_addr1Name = addrName;
 		m_addr1W = addrBits;
 		m_pIntGbl = 0;
-		m_bReplAccess = false;
 		m_ramType = ramType;
-		m_bGlobal = false;
-		m_bPrivGbl = false;
-		m_bShAddr = false;
 	}
 
 	CRam(string ramName, string addrName, string addrBits, bool bReplAccess, HtdFile::ERamType ramType = HtdFile::eDistRam)
 	{
-
-		m_lineInfo = CPreProcess::m_lineInfo;
+		Init();
 		m_gblName = ramName;
 		m_addr1Name = addrName;
 		m_addr1W = addrBits;
 		m_bReplAccess = bReplAccess;
 		m_ramType = ramType;
-		m_bGlobal = false;
-		m_bPrivGbl = false;
-		m_bShAddr = false;
 	}
 
 	CRam(string ramName, string addr1, string addr2, string addr1W, string addr2W, string dimen1, string dimen2, string &rdStg, string &wrStg)
 	{
-
-		m_lineInfo = CPreProcess::m_lineInfo;
+		Init();
 		m_gblName = ramName;
 		m_addr1Name = addr1;
 		m_addr2Name = addr2;
@@ -544,21 +528,16 @@ struct CRam : CRecord, CDimenList {
 			m_dimenList.push_back(dimen1);
 		if (dimen2.size() > 0)
 			m_dimenList.push_back(dimen2);
-		m_bReplAccess = false;
 		m_ramType = HtdFile::eDistRam;
-		m_bGlobal = false;
 		m_rdStg = rdStg;
 		m_wrStg = wrStg;
-		m_bPrivGbl = false;
-		m_bShAddr = false;
 	}
 
 	CRam(CType * pType, string &name, string &dimen1, string &dimen2, string &addr1, string &addr2,
 		string &addr1W, string &addr2W, string &rdStg, string &wrStg, bool bMaxIw, bool bMaxMw,
 		HtdFile::ERamType ramType, bool bRead, bool bWrite)
 	{
-
-		m_lineInfo = CPreProcess::m_lineInfo;
+		Init();
 		m_pType = pType;
 		m_type = pType->m_typeName;
 		m_gblName = name;
@@ -570,9 +549,7 @@ struct CRam : CRecord, CDimenList {
 			m_dimenList.push_back(dimen1);
 		if (dimen2.size() > 0)
 			m_dimenList.push_back(dimen2);
-		m_bReplAccess = false;
 		m_ramType = HtdFile::eDistRam;
-		m_bGlobal = false;
 		m_rdStg = rdStg;
 		m_wrStg = wrStg;
 		m_bMaxIw = bMaxIw;
@@ -580,16 +557,13 @@ struct CRam : CRecord, CDimenList {
 		m_ramType = ramType;
 		m_bReadForInstrRead = bRead;
 		m_bWriteForInstrWrite = bWrite;
-		m_bPrivGbl = false;
-		m_bShAddr = false;
 	}
 
 	CRam(string &type, string &name, vector<CHtString> & dimenList, string &addr1, string &addr2,
 		string &addr1W, string &addr2W, string &rdStg, string &wrStg, bool bMaxIw, bool bMaxMw,
 		HtdFile::ERamType ramType, bool bRead, bool bWrite)
 	{
-
-		m_lineInfo = CPreProcess::m_lineInfo;
+		Init();
 		m_type = type;
 		m_gblName = name;
 		m_addr1Name = addr1;
@@ -597,9 +571,7 @@ struct CRam : CRecord, CDimenList {
 		m_addr1W = addr1W;
 		m_addr2W = addr2W;
 		m_dimenList = dimenList;
-		m_bReplAccess = false;
 		m_ramType = HtdFile::eDistRam;
-		m_bGlobal = false;
 		m_rdStg = rdStg;
 		m_wrStg = wrStg;
 		m_bMaxIw = bMaxIw;
@@ -607,8 +579,19 @@ struct CRam : CRecord, CDimenList {
 		m_ramType = ramType;
 		m_bReadForInstrRead = bRead;
 		m_bWriteForInstrWrite = bWrite;
+	}
+
+	void Init() {
+		m_lineInfo = CPreProcess::m_lineInfo;
+		m_bReplAccess = false;
+		m_bGlobal = false;
 		m_bPrivGbl = false;
-		m_bShAddr = false;
+		m_addr1IsHtId = false;
+		m_addr1IsPrivate = false;
+		m_addr1IsStage = false;
+		m_addr2IsHtId = false;
+		m_addr2IsPrivate = false;
+		m_addr2IsStage = false;
 	}
 
 public:
@@ -624,15 +607,19 @@ public:
 	CHtString			m_addr1W;
 	CHtString			m_addr2W;
 	string				m_addr1Name;
+	bool				m_addr1IsHtId;
+	bool				m_addr1IsPrivate;
+	bool				m_addr1IsStage;
 	string				m_addr2Name;
-	bool				m_bExtern;
+	bool				m_addr2IsHtId;
+	bool				m_addr2IsPrivate;
+	bool				m_addr2IsStage;
 	bool				m_bGlobal;
 	CHtString			m_rdStg;
 	CHtString			m_wrStg;
 	bool				m_bMaxIw;
 	bool				m_bMaxMw;
 	bool				m_bPrivGbl;
-	bool				m_bShAddr;
 	int					m_addrW;	// sum of addr0W + addr1W + addr2W
 	string				m_privName;
 
@@ -1206,7 +1193,8 @@ public:
 		m_bMultiQwHostWrMif = false;
 		m_bMultiQwCoprocWrMif = false;
 		m_bRspGrpIdPriv = false;
-		m_bRamAccessReq = false;
+		m_bDistRamAccessReq = false;
+		m_bBlockRamAccessReq = false;
 		m_bMaxBw = false;
 		m_bPause = false;
 		m_bPoll = false;
@@ -1236,7 +1224,8 @@ public:
 	bool        m_bMultiQwCoprocWrReq;
 	bool        m_bMultiQwHostWrMif;
 	bool        m_bMultiQwCoprocWrMif;
-	bool		m_bRamAccessReq;
+	bool		m_bDistRamAccessReq;
+	bool		m_bBlockRamAccessReq;
 
 	vector<CMifWrSrc>		m_wrSrcList;
 };
@@ -2009,7 +1998,8 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 	int FindTypeWidth(string const &varName, string const &typeName, CHtString const &bitWidth, CLineInfo const &lineInfo, int * pMinAlign = 0, bool bHostType = false);
 	int FindStructWidth(CRecord & record, int * pMinAlign = 0, bool bHostType = false);
 	int FindFieldListWidth(string structName, CLineInfo &lineInfo, vector<CField *> &fieldList, int * pMinAlign = 0, bool bHostType = false);
-	bool FindVariableWidth(CLineInfo const &lineInfo, CModule &mod, string name, bool bHtId, bool bPrivate, bool bShared, bool bStage, int &addr1W);
+	bool FindVariableWidth(CLineInfo const &lineInfo, CModule &mod, string name, bool &bHtId, bool &bPrivate, bool &bShared, bool &bStage, int &addr1W);
+	bool FindFieldRefWidth(CLineInfo const &lineInfo, string const &fieldRef, vector<CField *> const &fieldList, int &varW);
 	float FindSlicePerBramRatio(int depth, int width);
 	int FindBramCnt(int depth, int width);
 	void InitNativeCTypes();

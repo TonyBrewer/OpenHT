@@ -256,7 +256,7 @@ void CDsnInfo::InitAndValidateModMif()
 					(rdDst.m_fieldRefList.size() == 1 && rdDst.m_varAddr1W > 0 ||
 					rdDstSize > 1);
 
-				rdDst.m_bMultiQwRdReq = rdDst.m_bMultiElemRd || rdDst.m_pDstType->m_clangMinAlign != 1 &&
+				rdDst.m_bMultiQwRdReq = rdDst.m_bMultiElemRd || rdDst.m_pDstType->m_clangMinAlign == 64 &&
 					rdDst.m_pDstType->m_clangBitWidth > rdDst.m_pDstType->m_clangMinAlign;
 				rdDst.m_bMultiQwHostRdReq = rdDst.m_bMultiQwRdReq && (rdDst.m_memSrc.size() == 0 || rdDst.m_memSrc == "host");
 				rdDst.m_bMultiQwCoprocRdReq = rdDst.m_bMultiQwRdReq && (rdDst.m_memSrc.size() == 0 || rdDst.m_memSrc == "coproc");
@@ -526,6 +526,15 @@ void CDsnInfo::InitAndValidateModMif()
 						wrSrcSize *= wrSrc.m_fieldRefList.back().m_refDimenList[i].m_size;
 				}
 
+				ERamType ramType = eRegRam;
+
+				if (wrSrc.m_pGblVar) {
+					bool bPrivGblAndNoAddr = wrSrc.m_pGblVar->m_bPrivGbl && wrSrc.m_pGblVar->m_addrW == mod.m_threads.m_htIdW.AsInt();
+					if (!bPrivGblAndNoAddr)
+						ramType = wrSrc.m_pGblVar->m_ramType;
+				} else if (wrSrc.m_pSharedVar)
+					ramType = wrSrc.m_pSharedVar->m_ramType;
+
 				wrSrc.m_bMultiElemWr = (wrSrc.m_elemCntW.size() == 0 || wrSrc.m_elemCntW.AsInt() > 0) &&
 					(wrSrc.m_fieldRefList.size() == 1 && wrSrc.m_varAddr1W > 0 ||
 					wrSrcSize > 1);
@@ -548,7 +557,8 @@ void CDsnInfo::InitAndValidateModMif()
 				mif.m_mifWr.m_bMultiQwHostWrMif |= wrSrc.m_bMultiQwHostWrMif;
 				mif.m_mifWr.m_bMultiQwCoprocWrMif |= wrSrc.m_bMultiQwCoprocWrMif;
 
-				mif.m_mifWr.m_bRamAccessReq |= wrSrc.m_varAddr1W > 0;
+				mif.m_mifWr.m_bDistRamAccessReq |= wrSrc.m_varAddr1W > 0 && ramType == eDistRam;
+				mif.m_mifWr.m_bBlockRamAccessReq |= wrSrc.m_varAddr1W > 0 && ramType == eBlockRam;
 
 				if (wrSrc.m_varAddr1W > 0)
 					mif.m_mifReqStgCnt = max(mif.m_mifReqStgCnt, 2);
@@ -726,9 +736,9 @@ void CDsnInfo::InitAndValidateModMif()
 		if (mif.m_mifRd.m_bMultiQwRdReq)
 			mif.m_mifReqStgCnt = max(mif.m_mifReqStgCnt, 1);
 
-		if (mif.m_mifWr.m_bRamAccessReq && mif.m_mifWr.m_bMultiQwWrReq)
+		if (mif.m_mifWr.m_bBlockRamAccessReq || mif.m_mifWr.m_bDistRamAccessReq && mif.m_mifWr.m_bMultiQwWrReq)
 			mif.m_mifReqStgCnt = max(mif.m_mifReqStgCnt, 2);
-		else if (mif.m_mifWr.m_bRamAccessReq || mif.m_mifWr.m_bMultiQwWrReq)
+		else if (mif.m_mifWr.m_bDistRamAccessReq || mif.m_mifWr.m_bMultiQwWrReq)
 			mif.m_mifReqStgCnt = max(mif.m_mifReqStgCnt, 1);
 
 		mod.m_memPortList[0]->m_queueW = mif.m_queueW;
@@ -1040,6 +1050,12 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 
 		assert(rdDst.m_maxElemCnt == elemCnt);
 
+		// check for req size
+		if (modMemSize == 0)
+			modMemSize = rdDst.m_memSize;
+		else if (modMemSize != rdDst.m_memSize)
+			bSingleMemSize = false;
+
 		if (rdDst.m_pGblVar == 0) {
 			if (!bRdDstNonNgv)
 				rdDstRdyCnt += 1;
@@ -1060,12 +1076,6 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 
 		if (rdDst.m_pGblVar->m_pNgvInfo->m_bNgvWrCompClk2x)
 			bNgvWrCompClk2x = true;
-
-		// check for req size
-		if (modMemSize == 0)
-			modMemSize = rdDst.m_memSize;
-		else if (modMemSize != rdDst.m_memSize)
-			bSingleMemSize = false;
 	}
 
 	int maxWrElemQwCnt = 1;
@@ -3082,7 +3092,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 			mod.m_execStg);
 	}
 
-	if (bMultiQwReq) {
+	if (mif.m_mifReqStgCnt == 2 || bMultiQwReq && mif.m_mifReqStgCnt >= 1) {
 		GenModDecl(eVcdAll, m_mifDecl, vcdModName, "CMemReq", VA("r_t%d_memReq", mod.m_execStg + 2));
 		mifReg.Append("\tr_t%d_memReq = c_t%d_memReq;\n",
 			mod.m_execStg + 2,
@@ -3824,13 +3834,18 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 		mifPostInstr.NewLine();
 	}
 
-	if (!bMultiQwReq && (mif.m_mifReqStgCnt == 1 || mif.m_bMifRd && mif.m_mifReqStgCnt == 2)) {
+	if (!bMultiQwReq && mif.m_mifReqStgCnt >= 1) {
 		mifPostInstr.Append("\tbool c_t%d_%sToMif_reqRdy = %s;\n",
 			mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
 			reqValid.c_str());
 		mifPostInstr.Append("\tCMemRdWrReqIntf c_t%d_%sToMif_req = r_t%d_%sToMif_req;\n",
 			mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
 			mod.m_execStg + 1, mod.m_modName.Lc().c_str());
+		if (mif.m_mifReqStgCnt == 2) {
+			mifPostInstr.Append("\tCMemReq c_t%d_memReq = r_t%d_memReq;\n",
+				mod.m_execStg + 1,
+				mod.m_execStg + 1);
+		}
 		mifPostInstr.NewLine();
 	}
 
@@ -3893,7 +3908,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 			mifPostInstr.Append("\t\tbool bMultiQwReq = ");
 			string separator;
 			if (bMultiQwHostRdMif) {
-				mifPostInstr.Append("%s(r_t%d_%sToMif_req.m_host && r_t%d_%sToMif_req.m_type == MEM_REQ_RD%s\n\t\t\t&& (r_t%d_%sToMif_req.m_addr & 0x38) != 7 && r_t%d_memReq.m_qwRem >= 2)", separator.c_str(),
+				mifPostInstr.Append("%s(r_t%d_%sToMif_req.m_host && r_t%d_%sToMif_req.m_type == MEM_REQ_RD%s\n\t\t\t&& (r_t%d_%sToMif_req.m_addr & 0x38) != 0x38 && r_t%d_memReq.m_qwRem >= 2)", separator.c_str(),
 					mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
 					mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
 					checkReqSize.c_str(),
@@ -3902,7 +3917,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 				separator = "\n\t\t\t|| ";
 			}
 			if (bMultiQwCoprocRdMif) {
-				mifPostInstr.Append("%s(!r_t%d_%sToMif_req.m_host && r_t%d_%sToMif_req.m_type == MEM_REQ_RD%s\n\t\t\t&& (r_t%d_%sToMif_req.m_addr & 0x38) != 7 && r_t%d_memReq.m_qwRem >= 2)", separator.c_str(),
+				mifPostInstr.Append("%s(!r_t%d_%sToMif_req.m_host && r_t%d_%sToMif_req.m_type == MEM_REQ_RD%s\n\t\t\t&& (r_t%d_%sToMif_req.m_addr & 0x38) != 0x38 && r_t%d_memReq.m_qwRem >= 2)", separator.c_str(),
 					mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
 					mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
 					checkReqSize.c_str(),
@@ -3916,7 +3931,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 					mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
 					checkReqSize.c_str(),
 					mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
-					coprocInfo.IsVarQwReqCnt() ? "!= 7" : " == 0",
+					coprocInfo.IsVarQwReqCnt() ? "!= 0x38" : " == 0",
 					mod.m_execStg + 1,
 					coprocInfo.IsVarQwReqCnt() ? 2 : 8);
 				separator = "\n\t\t\t|| ";
@@ -3927,7 +3942,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 					mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
 					checkReqSize.c_str(),
 					mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
-					coprocInfo.IsVarQwReqCnt() ? "!= 7" : " == 0",
+					coprocInfo.IsVarQwReqCnt() ? "!= 0x38" : " == 0",
 					mod.m_execStg + 1,
 					coprocInfo.IsVarQwReqCnt() ? 2 : 8);
 				separator = "\n\t\t\t|| ";
@@ -4408,26 +4423,41 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 		}
 	}
 
-	if (mif.m_mifReqStgCnt == 2 && bMultiQwReq) {
-		mifPostInstr.Append("\tbool c_t%d_%sToMif_reqRdy = !c_memReqHold && (r_t%d_%sToMif_reqRdy || r_memReqHold);\n",
-			mod.m_execStg + 2, mod.m_modName.Lc().c_str(),
-			mod.m_execStg + 2, mod.m_modName.Lc().c_str());
-		mifPostInstr.Append("\tCMemRdWrReqIntf c_t%d_%sToMif_req = r_memReqHold ? r_t%d_%sToMif_req : r_t%d_%sToMif_req;\n",
-			mod.m_execStg + 2, mod.m_modName.Lc().c_str(),
-			mod.m_execStg + 3, mod.m_modName.Lc().c_str(),
-			mod.m_execStg + 2, mod.m_modName.Lc().c_str());
-		mifPostInstr.NewLine();
+	if (mif.m_mifReqStgCnt == 2) {
+		if (bMultiQwReq) {
+			mifPostInstr.Append("\tbool c_t%d_%sToMif_reqRdy = !c_memReqHold && (r_t%d_%sToMif_reqRdy || r_memReqHold);\n",
+				mod.m_execStg + 2, mod.m_modName.Lc().c_str(),
+				mod.m_execStg + 2, mod.m_modName.Lc().c_str());
+			mifPostInstr.Append("\tCMemRdWrReqIntf c_t%d_%sToMif_req = r_memReqHold ? r_t%d_%sToMif_req : r_t%d_%sToMif_req;\n",
+				mod.m_execStg + 2, mod.m_modName.Lc().c_str(),
+				mod.m_execStg + 3, mod.m_modName.Lc().c_str(),
+				mod.m_execStg + 2, mod.m_modName.Lc().c_str());
+			mifPostInstr.NewLine();
+		}
+		else {
+			mifPostInstr.Append("\tbool c_t%d_%sToMif_reqRdy = r_t%d_%sToMif_reqRdy;\n",
+				mod.m_execStg + 2, mod.m_modName.Lc().c_str(),
+				mod.m_execStg + 2, mod.m_modName.Lc().c_str());
+			mifPostInstr.Append("\tCMemRdWrReqIntf c_t%d_%sToMif_req = r_t%d_%sToMif_req;\n",
+				mod.m_execStg + 2, mod.m_modName.Lc().c_str(),
+				mod.m_execStg + 2, mod.m_modName.Lc().c_str());
+			mifPostInstr.NewLine();
+		}
 	}
 
 	if (mif.m_bMifWr) {
 		if (mif.m_mifReqStgCnt == 2) {
 			// generate write data code
-			mifPostInstr.Append("\tif (!r_memReqHold) {\n");
+			string tabs;
+			if (bMultiQwReq) {
+				mifPostInstr.Append("\tif (!r_memReqHold) {\n");
+				tabs += "\t";
+			}
 
-			mifPostInstr.Append("\t\tc_t%d_%sToMif_req.m_data = 0;\n",
+			mifPostInstr.Append("%s\tc_t%d_%sToMif_req.m_data = 0;\n", tabs.c_str(),
 				mod.m_execStg + 2, mod.m_modName.Lc().c_str());
 
-			mifPostInstr.Append("\t\tswitch (r_t%d_memReq.m_wrSrc) {\n",
+			mifPostInstr.Append("%s\tswitch (r_t%d_memReq.m_wrSrc) {\n", tabs.c_str(),
 				mod.m_execStg + 2);
 
 			// generate for non block ram reads
@@ -4449,27 +4479,28 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 
 					if (ramType == eBlockRam) continue;
 
-					mifPostInstr.Append("\t\tcase %d:\n", wrSrcIdx);
+					mifPostInstr.Append("%s\tcase %d:\n", tabs.c_str(), wrSrcIdx);
 					caseCnt += 1;
 				}
 
 				if (caseCnt == 0) continue;
 
+				tabs += "\t";
+
 				int elemWidth = pWrSrcType->m_clangBitWidth;
 				int reqSize = pWrSrcType->m_clangMinAlign == 1 ? pWrSrcType->m_clangBitWidth : pWrSrcType->m_clangMinAlign;
 				int elemQwCnt = (elemWidth + reqSize - 1) / reqSize;
-				string tabs;
 
-				if (elemQwCnt > 1) {
-					mifPostInstr.Append("\t\t\tswitch (r_t%d_memReq.m_elemQwIdx) {\n",
+				if (elemQwCnt > 1)
+					mifPostInstr.Append("%s\tswitch (r_t%d_memReq.m_elemQwIdx) {\n", tabs.c_str(),
 						mod.m_execStg + 2);
-					tabs = "\t";
-				}
 
 				for (int qwIdx = 0; qwIdx < elemQwCnt; qwIdx += 1) {
 
-					if (elemQwCnt > 1)
-						mifPostInstr.Append("\t\t\tcase %d:\n", qwIdx);
+					if (elemQwCnt > 1) {
+						mifPostInstr.Append("%s\tcase %d:\n", tabs.c_str(), qwIdx);
+						tabs += "\t";
+					}
 
 					for (CStructElemIter iter(this, pWrSrcType); !iter.end(); iter++) {
 						if (iter.IsStructOrUnion()) continue;
@@ -4480,30 +4511,33 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 						if (pos < qwIdx * reqSize || pos >= (qwIdx + 1) * reqSize) continue;
 
 						if (width < 64) {
-							mifPostInstr.Append("\t\t\t%sc_t%d_%sToMif_req.m_data |= (uint64_t)((r_t%d_memReq.m_wrData.m_%s%s & ((1LL << %d) - 1)) << %d);\n",
+							mifPostInstr.Append("%s\tc_t%d_%sToMif_req.m_data |= (uint64_t)((r_t%d_memReq.m_wrData.m_%s%s & ((1LL << %d) - 1)) << %d);\n",
 								tabs.c_str(),
 								mod.m_execStg + 2, mod.m_modName.Lc().c_str(),
 								mod.m_execStg + 2, pWrSrcType->m_typeName.c_str(), iter.GetHeirFieldName().c_str(),
 								width, pos % reqSize);
 						} else {
-							mifPostInstr.Append("\t\t\t%sc_t%d_%sToMif_req.m_data |= r_t%d_memReq.m_wrData.m_%s%s;\n",
+							mifPostInstr.Append("%s\tc_t%d_%sToMif_req.m_data |= r_t%d_memReq.m_wrData.m_%s%s;\n",
 								tabs.c_str(),
 								mod.m_execStg + 2, mod.m_modName.Lc().c_str(),
 								mod.m_execStg + 2, pWrSrcType->m_typeName.c_str(), iter.GetHeirFieldName().c_str());
 						}
 					}
 
-					if (elemQwCnt > 1)
-						mifPostInstr.Append("\t\t\t\tbreak;\n");
+					if (elemQwCnt > 1) {
+						mifPostInstr.Append("%s\tbreak;\n", tabs.c_str());
+						tabs.erase(0, 1);
+					}
 				}
 
 				if (elemQwCnt > 1) {
-					mifPostInstr.Append("\t\t\tdefault:\n");
-					mifPostInstr.Append("\t\t\t\tbreak;\n");
-					mifPostInstr.Append("\t\t\t}\n");
+					mifPostInstr.Append("%s\tdefault:\n", tabs.c_str());
+					mifPostInstr.Append("%s\t\tbreak;\n", tabs.c_str());
+					mifPostInstr.Append("%s\t}\n", tabs.c_str());
 				}
 
-				mifPostInstr.Append("\t\t\tbreak;\n");
+				mifPostInstr.Append("%s\tbreak;\n", tabs.c_str());
+				tabs.erase(0, 1);
 			}
 
 			// generate for block ram reads
@@ -4525,7 +4559,8 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 
 				if (ramType != eBlockRam) continue;
 
-				mifPostInstr.Append("\t\tcase %d:\n", wrSrcIdx);
+				mifPostInstr.Append("%s\tcase %d:\n", tabs.c_str(), wrSrcIdx);
+				tabs += "\t";
 
 				if (!(wrSrc.m_pPrivVar || wrSrc.m_pGblVar && wrSrc.m_pGblVar->m_bPrivGbl &&
 					wrSrc.m_pGblVar->m_addrW == mod.m_threads.m_htIdW.AsInt())) {
@@ -4571,18 +4606,17 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 				int elemWidth = wrSrc.m_pSrcType->m_clangBitWidth;
 				int reqSize = wrSrc.m_pSrcType->m_clangMinAlign == 1 ? wrSrc.m_pSrcType->m_clangBitWidth : wrSrc.m_pSrcType->m_clangMinAlign;
 				int elemQwCnt = (elemWidth + reqSize - 1) / reqSize;
-				string tabs;
 
-				if (elemQwCnt > 1) {
-					mifPostInstr.Append("\t\t\tswitch (r_t%d_memReq.m_elemQwIdx) {\n",
+				if (elemQwCnt > 1)
+					mifPostInstr.Append("%s\tswitch (r_t%d_memReq.m_elemQwIdx) {\n", tabs.c_str(),
 						mod.m_execStg + 2);
-					tabs = "\t";
-				}
 
 				for (int qwIdx = 0; qwIdx < elemQwCnt; qwIdx += 1) {
 
-					if (elemQwCnt > 1)
-						mifPostInstr.Append("\t\t\tcase %d:\n", qwIdx);
+					if (elemQwCnt > 1) {
+						mifPostInstr.Append("%s\tcase %d:\n", tabs.c_str(), qwIdx);
+						tabs += "\t";
+					}
 
 					for (CStructElemIter iter(this, wrSrc.m_pSrcType); !iter.end(); iter++) {
 						if (iter.IsStructOrUnion()) continue;
@@ -4593,37 +4627,41 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 						if (pos < qwIdx * reqSize || pos >= (qwIdx + 1) * reqSize) continue;
 
 						if (width < 64) {
-							mifPostInstr.Append("\t\t\t%sc_t%d_%sToMif_req.m_data |= (uint64_t)((m_%s%s.read_mem()%s%s & ((1LL << %d) - 1)) << %d);\n",
+							mifPostInstr.Append("%s\tc_t%d_%sToMif_req.m_data |= (uint64_t)((m_%s%s.read_mem()%s%s & ((1LL << %d) - 1)) << %d);\n",
 								tabs.c_str(),
 								mod.m_execStg + 2, mod.m_modName.Lc().c_str(),
 								addrVar.c_str(), varIdx.c_str(), addrFld.c_str(), iter.GetHeirFieldName().c_str(),
 								width, pos % reqSize);
 						} else {
-							mifPostInstr.Append("\t\t\t%sc_t%d_%sToMif_req.m_data |= m_%s%s.read_mem()%s%s;\n",
+							mifPostInstr.Append("%s\tc_t%d_%sToMif_req.m_data |= m_%s%s.read_mem()%s%s;\n",
 								tabs.c_str(),
 								mod.m_execStg + 2, mod.m_modName.Lc().c_str(),
 								addrVar.c_str(), varIdx.c_str(), addrFld.c_str(), iter.GetHeirFieldName().c_str());
 						}
 					}
 
-					if (elemQwCnt > 1)
-						mifPostInstr.Append("\t\t\t\tbreak;\n");
+					if (elemQwCnt > 1) {
+						mifPostInstr.Append("%s\tbreak;\n", tabs.c_str());
+						tabs.erase(0, 1);
+					}
 				}
 
 				if (elemQwCnt > 1) {
-					mifPostInstr.Append("\t\t\tdefault:\n");
-					mifPostInstr.Append("\t\t\t\tbreak;\n");
-					mifPostInstr.Append("\t\t\t}\n");
+					mifPostInstr.Append("%s\tdefault:\n", tabs.c_str());
+					mifPostInstr.Append("%s\t\tbreak;\n", tabs.c_str());
+					mifPostInstr.Append("%s\t}\n", tabs.c_str());
 				}
 
-				mifPostInstr.Append("\t\t\tbreak;\n");
+				mifPostInstr.Append("%s\tbreak;\n", tabs.c_str());
+				tabs.erase(0, 1);
 			}
 
+			mifPostInstr.Append("%s\tdefault:\n", tabs.c_str());
+			mifPostInstr.Append("%s\t\tbreak;\n", tabs.c_str());
+			mifPostInstr.Append("%s\t}\n", tabs.c_str());
 
-			mifPostInstr.Append("\t\tdefault:\n");
-			mifPostInstr.Append("\t\t\tbreak;\n");
-			mifPostInstr.Append("\t\t}\n");
-			mifPostInstr.Append("\t}\n");
+			if (bMultiQwReq)
+				mifPostInstr.Append("\t}\n");
 			mifPostInstr.NewLine();
 		}
 	}

@@ -1,0 +1,13 @@
+AddModInstParams(unit=Au, modPath="/Ctl/Test00", memPort=0);
+AddModInstParams(unit=Au, modPath="/Ctl/Test01", memPort=0);
+AddModInstParams(unit=Au, modPath="/Ctl/Test02", memPort=0);
+AddModInstParams(unit=Au, modPath="/Ctl/Test03", memPort=0);
+AddModInstParams(unit=Au, modPath="/Ctl/Test04", memPort=0);
+AddModInstParams(unit=Au, modPath="/Ctl/Test05", memPort=0);
+AddModInstParams(unit=Au, modPath="/Ctl/Test06", memPort=0);
+AddModInstParams(unit=Au, modPath="/Ctl/Test07", memPort=1);
+AddModInstParams(unit=Au, modPath="/Ctl/Test08", memPort=1);
+AddModInstParams(unit=Au, modPath="/Ctl/Test09", memPort=1);
+AddModInstParams(unit=Au, modPath="/Ctl/Test10", memPort=1);
+AddModInstParams(unit=Au, modPath="/Ctl/Test11", memPort=1);
+AddModInstParams(unit=Au, modPath="/Ctl/Test12", memPort=1);
