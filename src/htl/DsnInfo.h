@@ -1193,7 +1193,8 @@ public:
 		m_bMultiQwHostWrMif = false;
 		m_bMultiQwCoprocWrMif = false;
 		m_bRspGrpIdPriv = false;
-		m_bRamAccessReq = false;
+		m_bDistRamAccessReq = false;
+		m_bBlockRamAccessReq = false;
 		m_bMaxBw = false;
 		m_bPause = false;
 		m_bPoll = false;
@@ -1223,7 +1224,8 @@ public:
 	bool        m_bMultiQwCoprocWrReq;
 	bool        m_bMultiQwHostWrMif;
 	bool        m_bMultiQwCoprocWrMif;
-	bool		m_bRamAccessReq;
+	bool		m_bDistRamAccessReq;
+	bool		m_bBlockRamAccessReq;
 
 	vector<CMifWrSrc>		m_wrSrcList;
 };
