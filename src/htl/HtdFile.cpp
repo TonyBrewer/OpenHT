@@ -720,42 +720,42 @@ void HtdFile::ParseDsnInfoMethods()
 
 		m_pLex->GetNextTk();
 
-	} else if (m_pLex->GetTkString() == "AddStruct" || m_pLex->GetTkString() == "AddUnion") {
+	//} else if (m_pLex->GetTkString() == "AddStruct" || m_pLex->GetTkString() == "AddUnion") {
 
-		static bool bWarn = true;
-		if (bWarn == true) {
-			CPreProcess::ParseMsg(Warning, "AddStruct/AddUnion has been deprecated, use C/C++ struct/union within HTD file");
-			bWarn = false;
-		}
+	//	static bool bWarn = true;
+	//	if (bWarn == true) {
+	//		CPreProcess::ParseMsg(Warning, "AddStruct/AddUnion has been deprecated, use C/C++ struct/union within HTD file");
+	//		bWarn = false;
+	//	}
 
-		bool bUnion = m_pLex->GetTkString() == "AddUnion";
+	//	bool bUnion = m_pLex->GetTkString() == "AddUnion";
 
-		string name;
-		bool bHost = false;
+	//	string name;
+	//	bool bHost = false;
 
-		CParamList params[] = {
-				{ "name", &name, true, ePrmIdent, 0, 0 },
-				{ "host", &bHost, false, ePrmBoolean, 0, 0 },
-				{ 0, 0, 0, ePrmUnknown, 0, 0 }
-		};
+	//	CParamList params[] = {
+	//			{ "name", &name, true, ePrmIdent, 0, 0 },
+	//			{ "host", &bHost, false, ePrmBoolean, 0, 0 },
+	//			{ 0, 0, 0, ePrmUnknown, 0, 0 }
+	//	};
 
-		if (!ParseParameters(params)) {
-			if (bUnion)
-				CPreProcess::ParseMsg(Error, "expected dsnInfo.AddUnion( name )");
-			else
-				CPreProcess::ParseMsg(Error, "expected dsnInfo.AddStruct( name )");
-		}
+	//	if (!ParseParameters(params)) {
+	//		if (bUnion)
+	//			CPreProcess::ParseMsg(Error, "expected dsnInfo.AddUnion( name )");
+	//		else
+	//			CPreProcess::ParseMsg(Error, "expected dsnInfo.AddStruct( name )");
+	//	}
 
-		if (m_pDsn->m_structNameList.isInList(name))
-			CPreProcess::ParseMsg(Error, "duplicate struct/union name '%s'", name.c_str());
-		else {
-			m_pDsn->m_structNameList.insert(name);
-			m_pOpenRecord = m_pDsnInfo->AddStruct(name, false, bUnion, bHost ? eHost : eUnit, false, "");
-			m_pParseMethod = &HtdFile::ParseStructMethods;
-			m_pDsn->m_structFieldList.clear();
-		}
+	//	if (m_pDsn->m_structNameList.isInList(name))
+	//		CPreProcess::ParseMsg(Error, "duplicate struct/union name '%s'", name.c_str());
+	//	else {
+	//		m_pDsn->m_structNameList.insert(name);
+	//		m_pOpenRecord = m_pDsnInfo->AddStruct(name, false, bUnion, bHost ? eHost : eUnit, false, "");
+	//		m_pParseMethod = &HtdFile::ParseStructMethods;
+	//		m_pDsn->m_structFieldList.clear();
+	//	}
 
-		m_pLex->GetNextTk();
+	//	m_pLex->GetNextTk();
 
 	} else
 		CPreProcess::ParseMsg(Error, "Expected DsnInfo method");
@@ -1028,7 +1028,7 @@ void HtdFile::ParseModuleMethods()
 		//if (newGlobal) {
 
 		m_pOpenGlobal = m_pOpenMod->m_pModule->AddGlobal();
-		m_pParseMethod = &HtdFile::ParseNewGlobalMethods;
+		m_pParseMethod = &HtdFile::ParseGlobalMethods;
 
 		//} else {
 
@@ -1724,7 +1724,7 @@ void HtdFile::ParseReturnMethods()
 		CPreProcess::ParseMsg(Error, "Expected an AddReturn method");
 }
 
-void HtdFile::ParseNewGlobalMethods()
+void HtdFile::ParseGlobalMethods()
 {
 	if (m_pLex->GetTkString() == "AddVar") {
 
@@ -1855,51 +1855,51 @@ void HtdFile::ParsePrivateMethods()
 		CPreProcess::ParseMsg(Error, "Expected an AddPrivate method");
 }
 
-void HtdFile::ParseStructMethods()
-{
-	if (m_pLex->GetTkString() == "AddField") {
-
-		string base;
-		CType * pType;
-		string name;
-		string dimen1;
-		string dimen2;
-
-		CParamList params[] = {
-				{ "base", &base, false, ePrmIdent, 0, 0 },
-				{ "type", &pType, true, ePrmType, 0, 0 },
-				{ "name", &name, true, ePrmIdent, 0, 0 },
-				{ "dimen1", &dimen1, false, ePrmInteger, 0, 0 },
-				{ "dimen2", &dimen2, false, ePrmInteger, 0, 0 },
-				{ 0, 0, 0, ePrmUnknown, 0, 0 }
-		};
-
-		if (!ParseParameters(params))
-			CPreProcess::ParseMsg(Error, "expected AddField( {base, } type, name {, dimen1 {, dimen2 }} )");
-
-		vector<CHtString> dimenList;
-		if (dimen2.size() > 0 && dimen1.size() == 0)
-			CPreProcess::ParseMsg(Error, "unsupported parameter conbination, dimen2 is specified but dimen1 is not");
-		else {
-			if (dimen1.size() > 0)
-				dimenList.push_back(dimen1);
-			if (dimen2.size() > 0)
-				dimenList.push_back(dimen2);
-		}
-
-		if (name.size() > 0 && m_pDsn->m_structFieldList.isInList(name))
-			CPreProcess::ParseMsg(Error, "duplicate struct/union field name '%s'", name.c_str());
-		else {
-			m_pDsn->m_structFieldList.insert(name);
-			string bitWidth;
-			m_pDsnInfo->AddStructField(m_pOpenRecord, pType, name, bitWidth, base, dimenList);
-		}
-
-		m_pLex->GetNextTk();
-
-	} else
-		CPreProcess::ParseMsg(Error, "Expected an AddStruct or AddUnion method");
-}
+//void HtdFile::ParseStructMethods()
+//{
+//	if (m_pLex->GetTkString() == "AddField") {
+//
+//		string base;
+//		CType * pType;
+//		string name;
+//		string dimen1;
+//		string dimen2;
+//
+//		CParamList params[] = {
+//				{ "base", &base, false, ePrmIdent, 0, 0 },
+//				{ "type", &pType, true, ePrmType, 0, 0 },
+//				{ "name", &name, true, ePrmIdent, 0, 0 },
+//				{ "dimen1", &dimen1, false, ePrmInteger, 0, 0 },
+//				{ "dimen2", &dimen2, false, ePrmInteger, 0, 0 },
+//				{ 0, 0, 0, ePrmUnknown, 0, 0 }
+//		};
+//
+//		if (!ParseParameters(params))
+//			CPreProcess::ParseMsg(Error, "expected AddField( {base, } type, name {, dimen1 {, dimen2 }} )");
+//
+//		vector<CHtString> dimenList;
+//		if (dimen2.size() > 0 && dimen1.size() == 0)
+//			CPreProcess::ParseMsg(Error, "unsupported parameter conbination, dimen2 is specified but dimen1 is not");
+//		else {
+//			if (dimen1.size() > 0)
+//				dimenList.push_back(dimen1);
+//			if (dimen2.size() > 0)
+//				dimenList.push_back(dimen2);
+//		}
+//
+//		if (name.size() > 0 && m_pDsn->m_structFieldList.isInList(name))
+//			CPreProcess::ParseMsg(Error, "duplicate struct/union field name '%s'", name.c_str());
+//		else {
+//			m_pDsn->m_structFieldList.insert(name);
+//			string bitWidth;
+//			m_pDsnInfo->AddStructField(m_pOpenRecord, pType, name, bitWidth, base, dimenList);
+//		}
+//
+//		m_pLex->GetNextTk();
+//
+//	} else
+//		CPreProcess::ParseMsg(Error, "Expected an AddStruct or AddUnion method");
+//}
 
 void HtdFile::ParseStageMethods()
 {

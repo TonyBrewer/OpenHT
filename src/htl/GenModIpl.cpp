@@ -2724,7 +2724,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 		m_iplDefines.Append("#if !defined(TOPOLOGY_HEADER)\n");
 		for (int privWrIdx = 1; privWrIdx <= mod.m_stage.m_privWrStg.AsInt(); privWrIdx += 1) {
 			char privIdxStr[8];
-			if (mod.m_stage.m_privWrStg.AsInt() > 1)
+			if (mod.m_stage.m_bStageNums)
 				sprintf(privIdxStr, "%d", privWrIdx);
 			else
 				privIdxStr[0] = '\0';
@@ -2740,7 +2740,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 		int privStg = mod.m_tsStg + privWrIdx - 1;
 
 		char privIdxStr[8];
-		if (mod.m_stage.m_privWrStg.AsInt() > 1) {
+		if (mod.m_stage.m_bStageNums) {
 			g_appArgs.GetDsnRpt().AddLevel("Private Variables - Stage %d\n", privWrIdx);
 			sprintf(privIdxStr, "%d", privWrIdx);
 		} else {

@@ -3355,6 +3355,15 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 					GenModDecl(eVcdAll, m_mifDecl, vcdModName, VA("ht_uint%d", FindLg2(rdDstRdyCnt + 1)), VA("r_%sTo%s_mwCompCnt",
 						rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str()), rdDstNgvRamList[i]->m_dimenList);
 
+					if (mod.m_clkRate == eClk1x && rdDstNgvRamList[i]->m_pNgvInfo->m_bNgvWrCompClk2x) {
+						m_mifDecl.Append("\tht_uint%d c_%sTo%s_mwCompCnt_2x%s;\n",
+							FindLg2(rdDstRdyCnt + 1),
+							rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), rdDstNgvRamList[i]->m_dimenDecl.c_str());
+
+						GenModDecl(eVcdAll, m_mifDecl, vcdModName, VA("sc_signal<ht_uint%d>", FindLg2(rdDstRdyCnt + 1)), VA("r_%sTo%s_mwCompCnt_2x",
+							rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str()), rdDstNgvRamList[i]->m_dimenList);
+					}
+
 					vector<int> refList(rdDstNgvRamList[i]->m_dimenList.size());
 					do {
 						string dimIdx = IndexStr(refList);
@@ -3365,6 +3374,15 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 
 						mifReset.Append("\t\tc_%sTo%s_mwCompCnt%s = 0;\n",
 							rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+
+						if (mod.m_clkRate == eClk1x && rdDstNgvRamList[i]->m_pNgvInfo->m_bNgvWrCompClk2x) {
+							m_mifReg2x.Append("\tr_%sTo%s_mwCompCnt_2x%s = c_%sTo%s_mwCompCnt_2x%s;\n",
+								rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
+								rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+
+							m_mifReset2x.Append("\t\tc_%sTo%s_mwCompCnt_2x%s = 0;\n",
+								rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+						}
 
 					} while (DimenIter(rdDstNgvRamList[i]->m_dimenList, refList));
 				}
@@ -5681,7 +5699,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 					mifPostInstr.Append("\tbool c_rdCompRdy = false;\n");
 				}
 
-				if (rdDstRdyCnt > 1) {
+				if (rdDstRdyCnt > 1 || mod.m_clkRate == eClk1x && bNgvWrCompClk2x) {
 					for (size_t i = 0; i < rdDstNgvRamList.size(); i += 1) {
 						vector<int> refList(rdDstNgvRamList[i]->m_dimenList.size());
 						do {
@@ -5691,10 +5709,19 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 								rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
 								rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
 
+							if (mod.m_clkRate == eClk1x && rdDstNgvRamList[i]->m_pNgvInfo->m_bNgvWrCompClk2x) {
+								m_mifPostInstr2x.Append("\tc_%sTo%s_mwCompCnt_2x%s = r_%sTo%s_mwCompCnt_2x%s;\n",
+									rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
+									rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+							}
+
 						} while (DimenIter(rdDstNgvRamList[i]->m_dimenList, refList));
+
+						mifPostInstr.NewLine();
+						if (mod.m_clkRate == eClk1x && rdDstNgvRamList[i]->m_pNgvInfo->m_bNgvWrCompClk2x)
+							m_mifPostInstr2x.NewLine();
 					}
 				}
-				mifPostInstr.NewLine();
 			}
 		}
 
@@ -5751,8 +5778,15 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 						mifPostInstr.Append("\tif (!c_rdCompRdy && !m_%sTo%s_mwCompQue%s.empty()) {\n",
 							rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
 					} else {
-						mifPostInstr.Append("\tif (!c_rdCompRdy && r_%sTo%s_mwCompCnt%s > 0) {\n",
-							rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+						if (mod.m_clkRate == eClk1x && rdDstNgvRamList[i]->m_pNgvInfo->m_bNgvWrCompClk2x) {
+							mifPostInstr.Append("\tif (!c_rdCompRdy && r_%sTo%s_mwCompCnt%s != r_%sTo%s_mwCompCnt_2x%s) {\n",
+								rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
+								rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+						}
+						else {
+							mifPostInstr.Append("\tif (!c_rdCompRdy && r_%sTo%s_mwCompCnt%s > 0) {\n",
+								rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+						}
 					}
 					mifPostInstr.Append("\t\tc_rdCompRdy = true;\n");
 					if (rdRspGrpIdW > 0) {
@@ -5761,8 +5795,14 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 						mifPostInstr.Append("\t\tm_%sTo%s_mwCompQue%s.pop();\n",
 							rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
 					} else {
-						mifPostInstr.Append("\t\tc_%sTo%s_mwCompCnt%s -= 1u;\n",
-							rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+						if (mod.m_clkRate == eClk1x && rdDstNgvRamList[i]->m_pNgvInfo->m_bNgvWrCompClk2x) {
+							mifPostInstr.Append("\t\tc_%sTo%s_mwCompCnt%s += 1u;\n",
+								rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+						}
+						else {
+							mifPostInstr.Append("\t\tc_%sTo%s_mwCompCnt%s -= 1u;\n",
+								rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+						}
 					}
 					mifPostInstr.Append("\t}\n");
 
@@ -5783,8 +5823,14 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 							rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
 							rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
 					} else {
-						mifPostInstrMwComp.Append("\t\tc_%sTo%s_mwCompCnt%s += 1u;\n",
-							rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+						if (mod.m_clkRate == eClk1x && rdDstNgvRamList[i]->m_pNgvInfo->m_bNgvWrCompClk2x) {
+							mifPostInstrMwComp.Append("\t\tc_%sTo%s_mwCompCnt_2x%s += 1u;\n",
+								rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+						}
+						else {
+							mifPostInstrMwComp.Append("\t\tc_%sTo%s_mwCompCnt%s += 1u;\n",
+								rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+						}
 					}
 				} while (DimenIter(rdDstNgvRamList[i]->m_dimenList, refList));
 			}

@@ -6,21 +6,21 @@
 void
 CPersStencil::PersStencil()
 {
-	if (PR_htValid) {
-		switch (PR_htInst) {
+	if (PR1_htValid) {
+		switch (PR1_htInst) {
 		case STENCIL_ENTER: {
 			// Split offset calucation from source stencil to destination location over
-			// two cytles for timing. OFF = ((Y_ORIGIN * (PR_cols + X_SIZE-1) + X_ORIGIN) * sizeof(StType_t);
+			// two cytles for timing. OFF = ((Y_ORIGIN * (PR1_cols + X_SIZE-1) + X_ORIGIN) * sizeof(StType_t);
 			//
-			uint32_t offset = (uint32_t)(Y_ORIGIN * (PR_cols + X_SIZE-1));
+			uint32_t offset = (uint32_t)(Y_ORIGIN * (PR1_cols + X_SIZE-1));
 
-			S_rdAddr = PR_rdAddr;
+			S_rdAddr = PR1_rdAddr;
 			S_wrAddr = offset;
 			S_rdRowIdx = 0;
 			S_wrRowIdx = Y_ORIGIN;
-			S_cols = PR_cols;
-			S_rows = PR_rows;
-			S_coef = PR_coef;
+			S_cols = PR1_cols;
+			S_rows = PR1_rows;
+			S_coef = PR1_coef;
 
 			HtContinue(STENCIL_START);
 		}
@@ -28,9 +28,9 @@ CPersStencil::PersStencil()
 		case STENCIL_START: {
 			S_bStart = true;
 
-			S_wrAddr = ((uint32_t)S_wrAddr + X_ORIGIN) * sizeof(StType_t) + PR_wrAddr;
+			S_wrAddr = ((uint32_t)S_wrAddr + X_ORIGIN) * sizeof(StType_t) + PR1_wrAddr;
 
-			StencilBufferInit_5x5r2((ht_uint11)PR_cols, (ht_uint11)PR_rows);
+			StencilBufferInit_5x5r2((ht_uint11)PR1_cols, (ht_uint11)PR1_rows);
 
 			HtContinue(STENCIL_WAIT);
 		}

@@ -1482,6 +1482,10 @@ struct CModInst {
 };
 
 struct CStage : CRecord {
+	CStage() {
+		m_bStageNums = false;
+	}
+
 	CHtString	m_privWrStg;
 	CHtString	m_execStg;
 	CLineInfo	m_lineInfo;
@@ -1505,7 +1509,6 @@ struct CModule {
 		m_bIsUsed = bIsUsed;
 		m_bActiveCall = false;
 		m_bInHostMsg = false;
-		m_stage.m_bStageNums = false;
 		m_resetInstrCnt = 0;
 		m_maxRtnReplCnt = 0;
 		m_phaseCnt = 0;
@@ -1922,8 +1925,8 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 
 	void AddStageField(CStage * pStage, CType * pType, string name, string dimen1, string dimen2, string *pRange,
 		bool bInit, bool bConn, bool bReset, bool bZero);
-	void AddStructField(CRecord * pRecord, CType * pType, string const & name, string bitWidth = "", string base = "", vector<CHtString> const &dimenList = g_nullHtStringVec,
-		bool bSrcRead = true, bool bSrcWrite = true, bool bMifRead = false, bool bMifWrite = false, HtdFile::ERamType ramType = HtdFile::eDistRam, int atomicMask = 0);
+	//void AddStructField(CRecord * pRecord, CType * pType, string const & name, string bitWidth = "", string base = "", vector<CHtString> const &dimenList = g_nullHtStringVec,
+	//	bool bSrcRead = true, bool bSrcWrite = true, bool bMifRead = false, bool bMifWrite = false, HtdFile::ERamType ramType = HtdFile::eDistRam, int atomicMask = 0);
 
 	void AddEntryParam(CCxrEntry * pEntry, string hostType, CType * pType, string paramName, bool bIsUsed) { pEntry->AddParam(hostType, pType, paramName, bIsUsed); }
 	void AddReturnParam(CCxrReturn * pReturn, string hostType, CType * pType, string paramName, bool bIsUsed) { pReturn->AddParam(hostType, pType, paramName, bIsUsed); }

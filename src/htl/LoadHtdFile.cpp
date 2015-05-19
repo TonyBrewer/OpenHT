@@ -213,6 +213,7 @@ CStage * CDsnInfo::AddStage(CModule * pModule, string privWrStg, string execStg)
 {
 	CStage & stage = pModule->m_stage;
 
+	stage.m_bStageNums = true;
 	stage.m_privWrStg = privWrStg;
 	stage.m_execStg = execStg;
 	stage.m_lineInfo = CPreProcess::m_lineInfo;
@@ -348,15 +349,15 @@ void CDsnInfo::AddGlobalVar(vector<CRam *> * pGlobalList, CType * pType, string 
 void CDsnInfo::AddStageField(CStage * pStage, CType * pType, string name, string dimen1, string dimen2,
 	string *pRange, bool bInit, bool bConn, bool bReset, bool bZero)
 {
-	bool bStageNums = pStage->AddStageField(pType, name, dimen1, dimen2, pRange, bInit, bConn, bReset, bZero);
-	pStage->m_bStageNums |= bStageNums;
+	/*bool bStageNums = */pStage->AddStageField(pType, name, dimen1, dimen2, pRange, bInit, bConn, bReset, bZero);
+	//pStage->m_bStageNums |= bStageNums;
 }
 
-void CDsnInfo::AddStructField(CRecord * pRecord, CType * pType, string const & name, string bitWidth, string base, vector<CHtString> const &dimenList,
-	bool bSrcRead, bool bSrcWrite, bool bMifRead, bool bMifWrite, HtdFile::ERamType ramType, int atomicMask)
-{
-
-}
+//void CDsnInfo::AddStructField(CRecord * pRecord, CType * pType, string const & name, string bitWidth, string base, vector<CHtString> const &dimenList,
+//	bool bSrcRead, bool bSrcWrite, bool bMifRead, bool bMifWrite, HtdFile::ERamType ramType, int atomicMask)
+//{
+//
+//}
 
 
 void * CDsnInfo::AddMsgDst(void * pHandle, string var, string dataLsb, string addr1Lsb, string addr2Lsb,
