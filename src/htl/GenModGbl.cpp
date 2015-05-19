@@ -205,7 +205,7 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 		for (int stgIdx = 1; stgIdx <= pGv->m_wrStg.AsInt(); stgIdx += 1) {
 
 			string varStg;
-			if (pGv->m_rdStg.size() > 0 || pGv->m_wrStg.size() > 0 || mod.m_stage.m_bStageNums)
+			if (/*pGv->m_rdStg.size() > 0 || pGv->m_wrStg.size() > 0 || */mod.m_stage.m_bStageNums)
 				varStg = VA("%d", stgIdx);
 
 			if (stgIdx >= pGv->m_rdStg.AsInt()) {

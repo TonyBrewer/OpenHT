@@ -7,8 +7,8 @@
 void
 CPersAdd::PersAdd()
 {
-	if (PR_htValid) {
-		switch (PR_htInst) {
+	if (PR1_htValid) {
+		switch (PR1_htInst) {
 		case ADD_ENTRY: {
 			// P_ia, P_ib, P_ic valid on entry
 			S_vld = false;
@@ -44,9 +44,9 @@ CPersAdd::PersAdd()
 	T1_bVld = S_vld;
 
 	if (T1_bVld == true) {
-		T1_a = P_ia;
-		T1_b = P_ib;
-		T1_c = P_ic;
+		T1_a = P1_ia;
+		T1_b = P1_ib;
+		T1_c = P1_ic;
 
 		S_vld = false;
 	}

@@ -11,23 +11,23 @@ CPersPipe::PersPipe()
 	T1_operation = (ht_uint12)0;
 	T1_scalar = (uint64_t)0;
 
-	if (PR_htValid) {
-		switch (PR_htInst) {
+	if (PR1_htValid) {
+		switch (PR1_htInst) {
 		case PIPE_ENTRY: {
 			if (SendReturnBusy_read() || S_writeQueue.full(25)) {
 				HtRetry();
 				break;
 			}
-			if (P_flush) {
+			if (P1_flush) {
 				HtContinue(PIPE_DRAIN);
 			} else {
 				// fire off the pipe and return to ctl
 				T1_cmpValid = true;
 				S_cmpValidCnt += 1;
-				T1_addr = P_vtAddr;
-				T1_operation = P_operation;
-				T1_scalar = P_scalar;
-				SendReturn_read(P_idx);
+				T1_addr = P1_vtAddr;
+				T1_operation = P1_operation;
+				T1_scalar = P1_scalar;
+				SendReturn_read(P1_idx);
 			}
 		}
 		break;
@@ -47,7 +47,7 @@ CPersPipe::PersPipe()
 				HtRetry();
 				break;
 			}
-			SendReturn_read(P_idx);
+			SendReturn_read(P1_idx);
 		}
 		break;
 		default:
