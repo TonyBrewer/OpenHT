@@ -4705,7 +4705,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 							}
 							else {
 								identStr += VA("[INT(r_t%d_memReq.m_s%d_f%dIdx%d)]",
-									mod.m_execStg + 2, wrSrcIdx, 1, dimIdx + 1);
+									mod.m_execStg + 2, wrSrcIdx, fldIdx + 1, dimIdx + 1);
 							}
 						}
 
