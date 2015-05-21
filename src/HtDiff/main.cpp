@@ -424,6 +424,12 @@ int main(int argc, char **argv)
 				continue;
 			}
 
+			int fileCnt = (int)(pCurHtProj->m_systemcFiles.size() + pCurHtProj->m_verilogFiles.size());
+			if (num >= (int)fileCnt) {
+				printf("  file number out of range (0-%d)\n", fileCnt - 1);
+				continue;
+			}
+
 			bool bSystemc = num < (int)pCurHtProj->m_systemcFiles.size();
 			CHtFile & htFile = bSystemc ? pCurHtProj->m_systemcFiles[num] : pCurHtProj->m_verilogFiles[num - pCurHtProj->m_systemcFiles.size()];
 
@@ -436,6 +442,59 @@ int main(int argc, char **argv)
 			system(cmdLine);
 
 			ScanProject(*pCurHtProj);
+
+		} else if (strcmp(cmd, "dp") == 0) {
+			if (args == 1) {
+				printf("  project number missing\n");
+				continue;
+			}
+			if (num >= (int)projList.size()) {
+				printf("  project number out of range (0-%d)\n", (int)projList.size() - 1);
+				continue;
+			}
+
+			pCurHtProj = &projList[num];
+
+			printf("Diff files of project %s\n", pCurHtProj->m_projName.c_str());
+			for (size_t i = 0; i < pCurHtProj->m_systemcFiles.size(); i += 1) {
+				CHtFile & htFile = pCurHtProj->m_systemcFiles[i];
+
+				if (GetStatusChar(htFile.m_fileStatus) == ' ')
+					continue;
+
+				if (GetStatusChar(htFile.m_fileStatus) != 'd') {
+					printf("Unable to diff file %s\n", htFile.m_fileName.c_str());
+					continue;
+				}
+
+				printf("Diff file %s\n", htFile.m_fileName.c_str());
+
+				char cmdLine[256];
+				sprintf(cmdLine, "C:/HtGolden/WinDiff.exe \"%s\" \"%s\"",
+					htFile.m_projPath.c_str(), htFile.m_goldPath.c_str());
+
+				system(cmdLine);
+			}
+
+			for (size_t i = 0; i < projList[num].m_verilogFiles.size(); i += 1) {
+				CHtFile & htFile = pCurHtProj->m_verilogFiles[i];
+
+				if (GetStatusChar(htFile.m_fileStatus) == ' ')
+					continue;
+
+				if (GetStatusChar(htFile.m_fileStatus) != 'd') {
+					printf("Unable to diff file %s\n", htFile.m_fileName.c_str());
+					continue;
+				}
+
+				printf("Diff file %s\n", htFile.m_fileName.c_str());
+
+				char cmdLine[256];
+				sprintf(cmdLine, "C:/HtGolden/WinDiff.exe \"%s\" \"%s\"",
+					htFile.m_projPath.c_str(), htFile.m_goldPath.c_str());
+
+				system(cmdLine);
+			}
 
 		} else if (strcmp(cmd, "lo") == 0) {
 			printf("Options:\n");

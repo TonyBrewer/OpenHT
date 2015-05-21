@@ -1160,6 +1160,7 @@ struct CMifWrSrc {
 	bool        m_bMultiQwHostWrMif;
 	bool        m_bMultiQwCoprocWrMif;
 	bool		m_bMultiElemWr;
+	bool		m_bConstDimenList;
 
 	int m_memSize;	// size in bits of write data
 
@@ -1177,6 +1178,7 @@ struct CMifWrSrc {
 	bool m_varAddr1IsIdx;
 	bool m_varAddr2IsIdx;
 	int m_maxElemCnt;
+	string m_wrDataTypeName;
 
 	vector<CFieldRef> m_fieldRefList;
 };
