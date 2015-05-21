@@ -7,16 +7,16 @@
 void CPersMult::PersMult()
 {
 	// Always set S_op1Mem, S_op2Mem to the proper address (every clock cycle)
-	S_op1Mem.read_addr(PR_htId);
-	S_op2Mem.read_addr(PR_htId);
-	S_resMem.read_addr(PR_htId);
+	S_op1Mem.read_addr(PR1_htId);
+	S_op2Mem.read_addr(PR1_htId);
+	S_resMem.read_addr(PR1_htId);
 
 	// Force "Inputs Valid" to default to false unless true in the ADD_PAUSE instruction
-	P_i_vld = false;
+	P1_i_vld = false;
 
 	// Work to be done on Cycle 1
-	if (PR_htValid) {
-		switch (PR_htInst) {
+	if (PR1_htValid) {
+		switch (PR1_htInst) {
 		case MULT_LD1: {
 			if (ReadMemBusy()) {
 				HtRetry();
@@ -24,8 +24,8 @@ void CPersMult::PersMult()
 			}
 
 			// Memory read request - Op1
-			MemAddr_t memRdAddr = (ht_uint48)(SR_maBase + (PR_rowIdx << 3) + ((SR_mcRow*PR_calcIdx) << 3));
-			ReadMem_op1Mem(memRdAddr, PR_htId, 1);
+			MemAddr_t memRdAddr = (ht_uint48)(SR_maBase + (PR1_rowIdx << 3) + ((SR_mcRow * PR1_calcIdx) << 3));
+			ReadMem_op1Mem(memRdAddr, PR1_htId, 1);
 			HtContinue(MULT_LD2);
 			break;
 		}
@@ -36,8 +36,8 @@ void CPersMult::PersMult()
 			}
 
 			// Memory read request - Op2
-			MemAddr_t memRdAddr = (ht_uint48)(SR_mbBase + (PR_eleIdx << 3) + ((SR_mcCol*PR_calcIdx) << 3));
-			ReadMem_op2Mem(memRdAddr, PR_htId, 1);
+			MemAddr_t memRdAddr = (ht_uint48)(SR_mbBase + (PR1_eleIdx << 3) + ((SR_mcCol * PR1_calcIdx) << 3));
+			ReadMem_op2Mem(memRdAddr, PR1_htId, 1);
 			ReadMemPause(MULT_CALC);
 			break;
 		}
@@ -45,12 +45,12 @@ void CPersMult::PersMult()
 
 			// Setup private variables, always reflect 32-bit copy of op1 and op2
 			// Used as inputs to the black box multiplier
-			P_op1 = (uint32_t)S_op1Mem.read_mem();
-			P_op2 = (uint32_t)S_op2Mem.read_mem();
+			P1_op1 = (uint32_t)S_op1Mem.read_mem();
+			P1_op2 = (uint32_t)S_op2Mem.read_mem();
 
 			// Mark inputs as valid, set htId
-			P_i_htId = PR_htId;
-			P_i_vld = true;
+			P1_i_htId = PR1_htId;
+			P1_i_vld = true;
 
 			// Pause thread and wait for primitive to calculate the result...
 			// (will return to MULT_RTN)
@@ -79,7 +79,7 @@ void CPersMult::PersMult()
 	bool o_vld;
 
 	// Instantiate clocked primitive
-	mult_wrap(P_op1, P_op2, P_i_htId, P_i_vld, o_res, o_htId, o_vld, mult_prm_state1);
+	mult_wrap(P1_op1, P1_op2, P1_i_htId, P1_i_vld, o_res, o_htId, o_vld, mult_prm_state1);
 
 	// Check for valid outputs from the primitive
 	if (o_vld) {

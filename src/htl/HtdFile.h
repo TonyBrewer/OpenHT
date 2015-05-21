@@ -173,9 +173,9 @@ private:
 	void ParseFunctionMethods();
 	void ParseEntryMethods();
 	void ParseReturnMethods();
-	void ParseNewGlobalMethods();
+	void ParseGlobalMethods();
 	void ParsePrivateMethods();
-	void ParseStructMethods();
+	//void ParseStructMethods();
 	void ParseStageMethods();
 	void ParseSharedMethods();
 	void ParseMifRdMethods();

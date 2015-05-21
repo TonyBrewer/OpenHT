@@ -5,17 +5,17 @@ void CPersT2::PersT2()
 {
 	T1_cmdQueSize = m_htCmdQue.size();
 
-	if (PR_htValid) {
+	if (PR1_htValid) {
 
 #ifndef _HTV
 		if (HT_CYCLE() >= 14870)
 			bool stop = true;
 #endif
-		switch (PR_htInst) {
+		switch (PR1_htInst) {
 		case T2_INIT:
 		{
-			P_loopCnt = 0;
-			S_totalCnt[INT(PR_htId)] = 0;
+			P1_loopCnt = 0;
+			S_totalCnt[INT(PR1_htId)] = 0;
 
 			HtContinue(T2_CALL);
 		}
@@ -29,11 +29,11 @@ void CPersT2::PersT2()
 
 			SendCallFork_sum(T2_JOIN);
 
-			P_loopCnt += 1;
+			P1_loopCnt += 1;
 
-			printf("   P_loopCnt = %d\n", (int)P_loopCnt);
+			printf("   P_loopCnt = %d\n", (int)P1_loopCnt);
 
-			if (P_loopCnt == T2_LOOP_CNT)
+			if (P1_loopCnt == T2_LOOP_CNT)
 				RecvReturnPause_sum(T2_RTN);
 			else
 				HtContinue(T2_CALL);
@@ -41,7 +41,7 @@ void CPersT2::PersT2()
 		break;
 		case T2_JOIN:
 		{
-			S_totalCnt[INT(PR_htId)] += P_sumCnt;
+			S_totalCnt[INT(PR1_htId)] += P1_sumCnt;
 
 			RecvReturnJoin_sum();
 		}
@@ -53,7 +53,7 @@ void CPersT2::PersT2()
 				break;
 			}
 
-			SendReturn_t2(S_totalCnt[INT(PR_htId)]);
+			SendReturn_t2(S_totalCnt[INT(PR1_htId)]);
 		}
 		break;
 		default:

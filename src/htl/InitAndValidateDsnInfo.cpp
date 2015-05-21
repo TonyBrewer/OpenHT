@@ -70,8 +70,8 @@ void CDsnInfo::ValidateDesignInfo()
 		mod.m_stage.m_privWrStg.InitValue(mod.m_stage.m_lineInfo, false, 1);
 		mod.m_stage.m_execStg.InitValue(mod.m_stage.m_lineInfo, false, 1);
 
-		if (mod.m_stage.m_privWrStg.AsInt() > 1 || mod.m_stage.m_execStg.AsInt() > 1)
-			mod.m_stage.m_bStageNums = true;
+		//if (mod.m_stage.m_privWrStg.AsInt() > 1 || mod.m_stage.m_execStg.AsInt() > 1)
+		//	mod.m_stage.m_bStageNums = true;
 
 		for (size_t callIdx = 0; callIdx < mod.m_cxrCallList.size(); callIdx += 1) {
 			CCxrCall & cxrCall = mod.m_cxrCallList[callIdx];

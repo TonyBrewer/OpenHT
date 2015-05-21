@@ -6,21 +6,21 @@
 void
 CPersStencil::PersStencil()
 {
-	if (PR_htValid) {
-		switch (PR_htInst) {
+	if (PR1_htValid) {
+		switch (PR1_htInst) {
 		case STENCIL_ENTER: {
 			S_bStart = true;
-			S_rdAddr = PR_rdAddr;
-			S_wrAddr = PR_wrAddr + (2 * (PR_cols + STENCIL_RADIUS*2) + STENCIL_RADIUS) * sizeof(uint32_t);
+			S_rdAddr = PR1_rdAddr;
+			S_wrAddr = PR1_wrAddr + (2 * (PR1_cols + STENCIL_RADIUS*2) + STENCIL_RADIUS) * sizeof(uint32_t);
 			S_rdRowIdx = 0;
 			S_wrRowIdx = STENCIL_RADIUS;
-			S_cols = PR_cols;
-			S_rows = PR_rows;
+			S_cols = PR1_cols;
+			S_rows = PR1_rows;
 			S_coef0 = 0x80;
 			S_coef1 = 0x18;
 			S_coef2 = 0x08;
 
-			StencilBufferInit_5x5r2(PR_rows, PR_cols);
+			StencilBufferInit_5x5r2(PR1_rows, PR1_cols);
 
 			HtContinue(STENCIL_WAIT);
 		}
