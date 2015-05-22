@@ -3081,6 +3081,13 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 				if (wrSrcTypeIdx == wrSrcTypeList.size())
 					wrSrcTypeList.push_back(wrSrc.m_pSrcType);
 
+				if (mif.m_mifReqStgCnt == 2 && wrSrc.m_wrDataTypeName != wrSrc.m_pSrcType->m_typeName) {
+					if (wrSrc.m_pSrcType->m_clangMinAlign == 1)
+						wrTypeUnion.AddStructField(&g_uint64, VA("m_%s", wrSrc.m_pSrcType->m_typeName.c_str()), VA("%d", wrSrc.m_pSrcType->m_clangBitWidth));
+					else
+						wrTypeUnion.AddStructField(wrSrc.m_pSrcType, VA("m_%s", wrSrc.m_pSrcType->m_typeName.c_str()));
+				}
+
 				if (wrSrc.m_pSrcType->m_clangMinAlign == 1)
 					wrTypeUnion.AddStructField(&g_uint64, VA("m_%s", wrSrc.m_wrDataTypeName.c_str()), VA("%d", wrSrc.m_pSrcType->m_clangBitWidth));
 				else
@@ -4308,6 +4315,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 				string addrVar;
 				string addrFld;
 				bool bPrivGblAndNoAddr = false;
+				bool bPrivVarIdx = false;
 
 				if (wrSrc.m_pGblVar) {
 					bPrivGblAndNoAddr = wrSrc.m_pGblVar->m_bPrivGbl && wrSrc.m_pGblVar->m_addrW == mod.m_threads.m_htIdW.AsInt();
@@ -4340,8 +4348,10 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 							else if (refDimen.m_size == 1)
 								varIdx += "[0]";
 
-							else
+							else {
 								varIdx += VA("[INT(r_t%d_memReq.m_vIdx%d)]", mod.m_execStg + 1, dimIdx + 1);
+								bPrivVarIdx = true;
+							}
 						}
 					}
 
@@ -4353,7 +4363,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 				} else
 					HtlAssert(0);
 
-				if ((bPrivGblAndNoAddr || wrSrc.m_pPrivVar || wrSrc.m_pType != 0) && mif.m_mifReqStgCnt == 2) continue;
+				if ((bPrivGblAndNoAddr || wrSrc.m_pPrivVar && !bPrivVarIdx || wrSrc.m_pType != 0) && mif.m_mifReqStgCnt == 2) continue;
 
 				mifPostInstr.Append("%s\tcase %d:\n", tabs.c_str(), wrSrcIdx);
 				tabs += "\t";
