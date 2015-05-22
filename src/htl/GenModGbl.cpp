@@ -4261,7 +4261,7 @@ void CDsnInfo::GenerateNgvFiles()
 
 						if (bNeedIfStg && stgIdx > 0 || bNeedIfStg && idW > 0 || bNeedCompStg && imIdx == 0) {
 							string tabs = "\t";
-							CLoopInfo loopInfo(ngvPreRegWrData, tabs, pGv->m_dimenList, 1);
+							CLoopInfo loopInfo(ngvPreRegWrData, tabs, pGv->m_dimenList, 3);
 							do {
 								string dimIdx = loopInfo.IndexStr();
 

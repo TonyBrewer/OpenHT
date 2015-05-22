@@ -1,0 +1,85 @@
+typedef sc_uint<48> MemAddr_t;
+
+union test00_0_dst_u1_data_union {
+  int64_t test00_0_dst_v3_data[2][3];
+};
+
+union test00_0_dst_u0_data_union {
+  uint64_t test00_0_dst_v0_data;
+  int32_t test00_0_dst_v1_data[5];
+  int8_t test00_0_dst_v2_data[5];
+  test00_0_dst_u1_data_union test00_0_dst_u1_data;
+};
+
+
+
+/////////////////////////////////////
+// CTL
+
+dsnInfo.AddModule(name=Ctl, htIdW=0);
+
+Ctl.AddInstr(name=CTL_TEST00);
+Ctl.AddInstr(name=CTL_RTN);
+
+Ctl.AddEntry(func=main, inst=CTL_TEST00, host=true)
+	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=memAddr)
+	;
+
+Ctl.AddReturn(func=main)
+	;
+
+Ctl.AddCall(func=test00);
+
+Ctl.AddPrivate()
+	.AddVar(type=MemAddr_t, name=memAddr)
+	;
+
+
+/////////////////////////////////////
+// TEST00
+
+#define TEST00_HTID_W 5
+dsnInfo.AddModule(name=Test00, htIdW=TEST00_HTID_W);
+
+Test00.AddInstr(name=TEST00_ENTRY);
+Test00.AddInstr(name=TEST00_WR);
+Test00.AddInstr(name=TEST00_ST0);
+Test00.AddInstr(name=TEST00_ST1);
+Test00.AddInstr(name=TEST00_LD0);
+Test00.AddInstr(name=TEST00_LD1);
+Test00.AddInstr(name=TEST00_CHK);
+Test00.AddInstr(name=TEST00_RTN);
+
+Test00.AddEntry(func=test00, inst=TEST00_ENTRY)
+	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=memAddr)
+	;
+
+Test00.AddReturn(func=test00)
+	;
+
+Test00.AddStage(execStg=2, privWrStg=2)
+	;
+
+Test00.AddPrivate()
+	.AddVar(type=MemAddr_t, name=memAddr)
+	.AddVar(type=int32_t, name=test00_0_src_v0_data, dimen1=5, dimen2=1)
+	.AddVar(type=ht_uint1, name=test00_1_src_v0_data_RdAddr1)
+	.AddVar(type=ht_uint3, name=test00_1_src_v0_data_RdAddr2)
+	;
+
+Test00.AddGlobal()
+	.AddVar(type=test00_0_dst_u0_data_union, name=test00_0_dst_u0_data, rdStg=1, wrStg=2)
+	.AddVar(type=uint64_t, name=test00_1_src_v0_data, addr1=test00_1_src_v0_data_RdAddr1, addr2=test00_1_src_v0_data_RdAddr2)
+	;
+
+Test00.AddReadMem()
+	.AddDst(var=test00_0_dst_u0_data.test00_0_dst_v1_data[3], name=test00_0_dst_v1_data, memSrc=host)
+	.AddDst(var=test00_1_src_v0_data, name=test00_1_src_v0_data, memSrc=host)
+	;
+
+Test00.AddWriteMem()
+	.AddSrc(var=test00_0_src_v0_data[][], name=test00_0_src_v0_data, memDst=host)
+	.AddSrc(var=test00_1_src_v0_data, name=test00_1_src_v0_data, memDst=host)
+	;
+
+
