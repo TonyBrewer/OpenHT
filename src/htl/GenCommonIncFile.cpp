@@ -843,18 +843,18 @@ void CDsnInfo::GenGlobalVarWriteTypes(CHtFile & htFile, CType * pType, int &atom
 		switch (atomicMask) {
 		case ATOMIC_INC:
 			fprintf(htFile, "\tvoid AtomicInc() { m_bInc = true; }\n");
-			fprintf(htFile, "\tbool GetIncEn() { return m_bInc; }\n");
+			fprintf(htFile, "\tbool GetIncEn() const { return m_bInc; }\n");
 			break;
 		case ATOMIC_SET:
 			fprintf(htFile, "\tvoid AtomicSet() { m_bSet = true; }\n");
-			fprintf(htFile, "\tbool GetSetEn() { return m_bSet; }\n");
+			fprintf(htFile, "\tbool GetSetEn() const { return m_bSet; }\n");
 			break;
 		case ATOMIC_ADD:
 			fprintf(htFile, "\tvoid AtomicAdd(%s rhs) {\n", pType->m_typeName.c_str());
 			fprintf(htFile, "\t\tm_bAdd = true;\n");
 			fprintf(htFile, "\t\tm_data = rhs;\n");
 			fprintf(htFile, "\t}\n");
-			fprintf(htFile, "\tbool GetAddEn() { return m_bAdd; }\n");
+			fprintf(htFile, "\tbool GetAddEn() const { return m_bAdd; }\n");
 			break;
 		default: break;
 		}

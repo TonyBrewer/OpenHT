@@ -33,7 +33,6 @@ CDsnInfo::GenerateModuleFiles(CModule &mod)
 		GenModBarStatements(mod);
 		GenModOhmStatements(mod);
 		GenModCxrStatements(mod, modInstIdx);
-		//GenModRamStatements(modInst);
 		GenModIhdStatements(mod);
 		GenModOhdStatements(mod);
 		GenModMifStatements(mod);
