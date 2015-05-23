@@ -2400,7 +2400,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 
 						string fldName = fldIdx == 0 ? "var" : VA("fld%d", (int)fldIdx);
 
-						if (wrSrc.m_pPrivVar && !wrSrc.m_bConstDimenList && fldIdx == wrSrc.m_fieldRefList.size() - 1)
+						if (wrSrc.m_pPrivVar && !wrSrc.m_bConstDimenList && fldIdx == (int)wrSrc.m_fieldRefList.size() - 1)
 							break;
 
 						for (int dimIdx = 0; dimIdx < (int)fieldRef.m_refDimenList.size(); dimIdx += 1) {
@@ -3082,10 +3082,13 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 					wrSrcTypeList.push_back(wrSrc.m_pSrcType);
 
 				if (mif.m_mifReqStgCnt == 2 && wrSrc.m_wrDataTypeName != wrSrc.m_pSrcType->m_typeName) {
+
 					if (wrSrc.m_pSrcType->m_clangMinAlign == 1)
 						wrTypeUnion.AddStructField(&g_uint64, VA("m_%s", wrSrc.m_pSrcType->m_typeName.c_str()), VA("%d", wrSrc.m_pSrcType->m_clangBitWidth));
 					else
 						wrTypeUnion.AddStructField(wrSrc.m_pSrcType, VA("m_%s", wrSrc.m_pSrcType->m_typeName.c_str()));
+
+					wrDataTypeList.push_back(wrSrc.m_pSrcType->m_typeName);
 				}
 
 				if (wrSrc.m_pSrcType->m_clangMinAlign == 1)
@@ -3258,7 +3261,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 		mifPreInstr.Append("\tbool c_%sToMif_rdRspFull = ", mod.m_modName.Lc().c_str());
 
 		string separator;
-		if (mod.m_threads.m_htIdW.AsInt() > 0 || bMultiQwRdMif) {
+		//if (mod.m_threads.m_htIdW.AsInt() > 0 || bMultiQwRdMif) {
 			for (size_t gvIdx = 0; gvIdx < mod.m_ngvList.size(); gvIdx += 1) {
 				CRam * pGv = mod.m_ngvList[gvIdx];
 
@@ -3275,7 +3278,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 					separator = " || ";
 				} while (DimenIter(pGv->m_dimenList, refList));
 			}
-		}
+		//}
 
 		if (separator.size() == 0)
 			mifPreInstr.Append("false");
@@ -4349,7 +4352,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 								varIdx += "[0]";
 
 							else {
-								varIdx += VA("[INT(r_t%d_memReq.m_vIdx%d)]", mod.m_execStg + 1, dimIdx + 1);
+								varIdx += VA("[INT(r_t%d_memReq.m_vIdx%d(%d, 0))]", mod.m_execStg + 1, dimIdx + 1, FindLg2(refDimen.m_size - 1) - 1);
 								bPrivVarIdx = true;
 							}
 						}
@@ -4679,7 +4682,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 					addrVar = VA("%s%s", wrSrc.m_pGblVar->m_gblName.c_str(), wrSrc.m_pGblVar->m_addrW > 0 ? "Mr" : "");
 				} else if (wrSrc.m_pSharedVar) {
 					ramType = wrSrc.m_pSharedVar->m_ramType;
-					addrVar = VA("__SHR__%s", wrSrc.m_pSharedVar->m_name.c_str());
+					addrVar = VA("_SHR__%s", wrSrc.m_pSharedVar->m_name.c_str());
 				}
 
 				if (ramType != eBlockRam) continue;
@@ -5800,8 +5803,37 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 					if (mod.m_clkRate == eClk2x && !rdDstNgvRamList[0]->m_pNgvInfo->m_bNgvWrCompClk2x)
 						phase = " & r_phase";
 
-					mifPostInstr.Append("\tbool c_rdCompRdy = i_%sTo%s_mwCompRdy%s.read()%s;\n",
-						rdDstNgvRamList[0]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), varIdx.c_str(), phase.c_str());
+					int wrCompDly = 0;
+					if (mod.m_clkRate == eClk2x && !rdDstNgvRamList[0]->m_pNgvInfo->m_bNgvWrCompClk2x && !rdDstNgvRamList[0]->m_pNgvInfo->m_bNgvWrDataClk2x)
+						wrCompDly = (rdDstNgvRamList[0]->m_pNgvInfo->m_wrDataStg - rdDstNgvRamList[0]->m_pNgvInfo->m_wrCompStg - 1) * 2;
+
+					if (wrCompDly > 0) {
+						for (int stg = 0; stg < wrCompDly; stg += 1) {
+							GenModDecl(eVcdAll, m_mifDecl, vcdModName, "bool",
+								VA("r_c%d_%s_mwCompRdy%s", stg + 1, rdDstNgvRamList[0]->m_gblName.Lc().c_str(), varIdx.c_str()));
+
+							mifReg.Append("\tr_c%d_%s_mwCompRdy%s = c_c%d_%s_mwCompRdy%s;\n",
+								stg + 1, rdDstNgvRamList[0]->m_gblName.Lc().c_str(), varIdx.c_str(),
+								stg, rdDstNgvRamList[0]->m_gblName.Lc().c_str(), varIdx.c_str());
+						}
+
+						mifPostInstr.Append("\tbool c_c0_%s_mwCompRdy%s = i_%sTo%s_mwCompRdy%s.read()%s;\n",
+							rdDstNgvRamList[0]->m_gblName.Lc().c_str(), varIdx.c_str(),
+							rdDstNgvRamList[0]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), varIdx.c_str(), phase.c_str());
+
+						for (int stg = 1; stg < wrCompDly; stg += 1) {
+							mifPostInstr.Append("\tbool c_c%d_%s_mwCompRdy%s = r_c%d_%s_mwCompRdy%s;\n",
+								stg, rdDstNgvRamList[0]->m_gblName.Lc().c_str(), varIdx.c_str(),
+								stg, rdDstNgvRamList[0]->m_gblName.Lc().c_str(), varIdx.c_str());
+						}
+
+						mifPostInstr.Append("\tbool c_rdCompRdy = r_c%d_%s_mwCompRdy%s;\n",
+							wrCompDly, rdDstNgvRamList[0]->m_gblName.Lc().c_str(), varIdx.c_str());
+					}
+					else {
+						mifPostInstr.Append("\tbool c_rdCompRdy = i_%sTo%s_mwCompRdy%s.read()%s;\n",
+							rdDstNgvRamList[0]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), varIdx.c_str(), phase.c_str());
+					}
 				} else {
 					mifPostInstr.Append("\tbool c_rdCompRdy = false;\n");
 				}

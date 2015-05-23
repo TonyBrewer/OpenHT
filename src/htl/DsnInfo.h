@@ -648,6 +648,8 @@ struct CNgvInfo {
 	bool m_bNgvMaxSel;
 	int m_ngvFieldCnt;
 	int m_ngvReplCnt;
+	int m_wrCompStg;
+	int m_wrDataStg;
 };
 
 struct CQueIntf : CRecord {
