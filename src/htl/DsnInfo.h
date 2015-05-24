@@ -96,6 +96,7 @@ public:
 
 	bool IsRecord() { return m_eType == eRecord; }
 	bool IsInt() { return m_eType == eClang || m_eType == eHtInt; }
+	bool IsEmbeddedUnion();
 
 public:
 	EType m_eType;
@@ -300,7 +301,6 @@ private:
 	{
 		m_lineInfo = CPreProcess::m_lineInfo;
 
-		m_pPrivGbl = 0;
 		m_atomicMask = 0;
 
 		m_bIfDefHtv = false;
@@ -356,8 +356,6 @@ public:
 	int			m_rdAddr2W;
 
 	bool		m_bIhmReadOnly;
-
-	CRam *		m_pPrivGbl;
 
 	CLineInfo	m_lineInfo;
 

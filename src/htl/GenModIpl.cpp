@@ -342,12 +342,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 		m_iplRegDecl.Append("\n");
 
 		// if no private variables then declare one to avoid zero width struct
-		bool bFoundField = false;
-		for (size_t fldIdx = 0; fldIdx < mod.m_threads.m_htPriv.m_fieldList.size(); fldIdx += 1)
-			if (mod.m_threads.m_htPriv.m_fieldList[fldIdx]->m_pPrivGbl == 0) {
-			bFoundField = true;
-			break;
-			}
+		bool bFoundField = mod.m_threads.m_htPriv.m_fieldList.size() > 0;
 
 		if (bFoundField == false) {
 			string name = "null";
@@ -355,7 +350,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 			mod.m_threads.m_htPriv.AddStructField(&g_bool, name);
 			mod.m_threads.m_htPriv.m_fieldList.back()->InitDimen(mod.m_threads.m_lineInfo);
 		}
-		//string htPrivName = "CHtPriv";
+
 		mod.m_threads.m_htPriv.m_typeName = "CHtPriv";
 		mod.m_threads.m_htPriv.m_bCStyle = false;
 		GenUserStructs(m_iplRegDecl, &mod.m_threads.m_htPriv, "\t");
@@ -2787,11 +2782,17 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 		if (mod.m_threads.m_htPriv.m_fieldList.size() == 0) continue;
 
 		// PR variables
-		bool bWriteOnly = false;
 		for (size_t privIdx = 0; privIdx < mod.m_threads.m_htPriv.m_fieldList.size(); privIdx += 1) {
 			CField * pPriv = mod.m_threads.m_htPriv.m_fieldList[privIdx];
 
 			g_appArgs.GetDsnRpt().AddItem("%s PR%s_%s%s\n", pPriv->m_pType->m_typeName.c_str(), privIdxStr, pPriv->m_name.c_str(), pPriv->m_dimenDecl.c_str());
+
+			GenModVar(eVcdUser, vcdModName, bFirstModVar,
+				VA("%s const", pPriv->m_pType->m_typeName.c_str()),
+				pPriv->m_dimenDecl,
+				VA("PR%s_%s", privIdxStr, pPriv->m_name.c_str()),
+				VA("r_t%d_htPriv.m_%s", privStg, pPriv->m_name.c_str()),
+				pPriv->m_dimenList);
 		}
 
 		for (size_t ngvIdx = 0; ngvIdx < mod.m_ngvList.size(); ngvIdx += 1) {
@@ -2799,13 +2800,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 
 			if (!pNgv->m_bPrivGbl) continue;
 
-			g_appArgs.GetDsnRpt().AddItem("%s PR%s_%s%s\n", pNgv->m_type.c_str(), privIdxStr, pNgv->m_typeName.c_str(), pNgv->m_dimenDecl.c_str());
-		}
-
-		for (size_t ngvIdx = 0; ngvIdx < mod.m_ngvList.size(); ngvIdx += 1) {
-			CRam * pNgv = mod.m_ngvList[ngvIdx];
-
-			if (!pNgv->m_bPrivGbl) continue;
+			g_appArgs.GetDsnRpt().AddItem("%s PR%s_%s%s\n", pNgv->m_type.c_str(), privIdxStr, pNgv->m_gblName.c_str(), pNgv->m_dimenDecl.c_str());
 
 			GenModVar(eVcdUser, vcdModName, bFirstModVar,
 				VA("%s const", (privWrIdx == 1 || pNgv->m_addrW > mod.m_threads.m_htIdW.AsInt())
@@ -2824,12 +2819,24 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 			CField * pPriv = mod.m_threads.m_htPriv.m_fieldList[privIdx];
 
 			g_appArgs.GetDsnRpt().AddItem("%s P%s_%s%s\n", pPriv->m_pType->m_typeName.c_str(), privIdxStr, pPriv->m_name.c_str(), pPriv->m_dimenDecl.c_str());
+
+			GenModVar(eVcdNone, vcdModName, bFirstModVar,
+				VA("%s", pPriv->m_pType->m_typeName.c_str()),
+				pPriv->m_dimenDecl,
+				VA("P%s_%s", privIdxStr, pPriv->m_name.c_str()),
+				VA("c_t%d_htPriv.m_%s", privStg, pPriv->m_name.c_str()),
+				pPriv->m_dimenList);
 		}
 
+		bool bWriteOnly = false;
 		for (size_t ngvIdx = 0; ngvIdx < mod.m_ngvList.size(); ngvIdx += 1) {
 			CRam * pNgv = mod.m_ngvList[ngvIdx];
 
-			if (!pNgv->m_bPrivGbl || pNgv->m_addrW > mod.m_threads.m_htIdW.AsInt()) continue;
+			if (!pNgv->m_bPrivGbl) continue;
+
+			bool bVarWriteOnly = pNgv->m_addrW > mod.m_threads.m_htIdW.AsInt() || pNgv->m_pType->IsEmbeddedUnion();
+			bWriteOnly |= bVarWriteOnly;
+			if (bVarWriteOnly) continue;
 
 			GenModVar(eVcdNone, vcdModName, bFirstModVar,
 				VA("CGW_%s", pNgv->m_pNgvInfo->m_ngvWrType.c_str()),
@@ -2843,128 +2850,33 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 
 		if (bWriteOnly) {
 			g_appArgs.GetDsnRpt().AddLevel("Write Only (PW_)\n");
-			m_iplFuncDecl.NewLine();
 
-			for (size_t privIdx = 0; privIdx < mod.m_threads.m_htPriv.m_fieldList.size(); privIdx += 1) {
-				CField * pPriv = mod.m_threads.m_htPriv.m_fieldList[privIdx];
+			for (size_t ngvIdx = 0; ngvIdx < mod.m_ngvList.size(); ngvIdx += 1) {
+				CRam * pNgv = mod.m_ngvList[ngvIdx];
 
-				if (pPriv->m_pPrivGbl == 0)
-					continue;
+				if (!pNgv->m_bPrivGbl) continue;
 
-				CRam * pGbl = pPriv->m_pPrivGbl;
-				CField * pField = pGbl->m_fieldList[0];
+				bWriteOnly = pNgv->m_addrW > mod.m_threads.m_htIdW.AsInt() || pNgv->m_pType->IsEmbeddedUnion();
+				if (!bWriteOnly) continue;
 
-				int wrStg = mod.m_tsStg + pGbl->m_wrStg.AsInt() - 1;
+				g_appArgs.GetDsnRpt().AddItem("%s PW%s_%s%s\n", pNgv->m_type.c_str(), privIdxStr, pNgv->m_gblName.c_str(), pNgv->m_dimenDecl.c_str());
 
-				char varWrStg[64] = { '\0' };
-				if (mod.m_stage.m_privWrStg.AsInt() > 1)
-					sprintf(varWrStg, "%d", pGbl->m_wrStg.AsInt());
-				string apiAddrParams;
-				string addrParams;
-				string addrValue;
-				char tmp[128];
-
-				char htIdStr[32];
-				sprintf(htIdStr, "r_t%d_htId", wrStg);
-
-				if (pGbl->m_addr0W.AsInt() > 0 && pGbl->m_addr1W.AsInt() > 0 ||
-					pGbl->m_addr1W.AsInt() > 0 && pGbl->m_addr2W.AsInt() > 0)
-					addrValue += "(";
-				if (pGbl->m_addr0W.AsInt() > 0)
-					addrValue += htIdStr;
-
-				if (pGbl->m_addr1W.AsInt() > 0) {
-					sprintf(tmp, "ht_uint%d wrAddr1, ", pGbl->m_addr1W.AsInt());
-					apiAddrParams += tmp;
-
-					addrParams += "wrAddr1, ";
-					if (pGbl->m_addr0W.AsInt() > 0)
-						addrValue += ", ";
-					addrValue += "wrAddr1";
-				}
-				if (pGbl->m_addr2W.AsInt() > 0) {
-					sprintf(tmp, "ht_uint%d wrAddr2, ", pGbl->m_addr2W.AsInt());
-					apiAddrParams += tmp;
-
-					addrParams += "wrAddr2, ";
-					addrValue += ", wrAddr2";
-				}
-
-				if (pGbl->m_addr0W.AsInt() > 0 && pGbl->m_addr1W.AsInt() > 0 ||
-					pGbl->m_addr1W.AsInt() > 0 && pGbl->m_addr2W.AsInt() > 0)
-					addrValue += ")";
-
-				string apiFldIdxParams;
-				const char *pFldIndexes;
-				HtlAssert(pField->m_dimenList.size() <= 2);
-				if (pField->m_dimenList.size() == 2) {
-					sprintf(tmp, "ht_uint%d fldIdx1, ht_uint%d fldIdx2, ",
-						FindLg2(pField->m_dimenList[0].AsInt()), FindLg2(pField->m_dimenList[1].AsInt()));
-					apiFldIdxParams += tmp;
-
-					pFldIndexes = "[fldIdx1][fldIdx2]";
-				} else if (pField->m_dimenList.size() == 1) {
-					sprintf(tmp, "ht_uint%d fldIdx1, ",
-						FindLg2(pField->m_dimenList[0].AsInt()));
-					apiFldIdxParams += tmp;
-
-					pFldIndexes = "[fldIdx]";
-				} else {
-					pFldIndexes = "";
-				}
-
-				g_appArgs.GetDsnRpt().AddItem("void PW%s_%s(%s%s%s %s)\n",
-					varWrStg, pPriv->m_name.c_str(),
-					apiAddrParams.c_str(), apiFldIdxParams.c_str(), pField->m_pType->m_typeName.c_str(), pField->m_name.c_str());
-
-				m_iplFuncDecl.Append("\tvoid PW%s_%s(%s%s%s %s);\n",
-					varWrStg, pPriv->m_name.c_str(),
-					apiAddrParams.c_str(), apiFldIdxParams.c_str(), pField->m_pType->m_typeName.c_str(), pField->m_name.c_str());
-
-				m_iplMacros.Append("void CPers%s%s::PW%s_%s(%s%s%s %s)\n",
-					mod.m_modName.Uc().c_str(), instIdStr.c_str(), varWrStg, pPriv->m_name.c_str(),
-					apiAddrParams.c_str(), apiFldIdxParams.c_str(), pField->m_pType->m_typeName.c_str(), pField->m_name.c_str());
-				m_iplMacros.Append("{\n");
-				if (addrValue.size() > 0)
-					m_iplMacros.Append("\tc_t%d_%sWrAddr = %s;\n",
-					wrStg, pPriv->m_name.c_str(), addrValue.c_str());
-				m_iplMacros.Append("\tc_t%d_%sWrEn.m_%s%s = true;\n",
-					wrStg, pPriv->m_name.c_str(), pField->m_name.c_str(), pFldIndexes);
-				m_iplMacros.Append("\tc_t%d_%sWrData.m_%s%s = %s;\n",
-					wrStg, pPriv->m_name.c_str(), pField->m_name.c_str(), pFldIndexes, pField->m_name.c_str());
-				m_iplMacros.Append("}\n");
-				m_iplMacros.Append("\n");
+				GenModVar(eVcdNone, vcdModName, bFirstModVar,
+					VA("CGW_%s", pNgv->m_pNgvInfo->m_ngvWrType.c_str()),
+					pNgv->m_dimenDecl,
+					VA("PW%s_%s", privIdxStr, pNgv->m_privName.c_str()),
+					VA("c_t%d_%sIwData", privStg, pNgv->m_gblName.c_str()),
+					pNgv->m_dimenList);
 			}
+
 			g_appArgs.GetDsnRpt().EndLevel();
 		}
 
-		int privPos = 0;
-		for (size_t privIdx = 0; privIdx < mod.m_threads.m_htPriv.m_fieldList.size(); privIdx += 1) {
-			CField * pPriv = mod.m_threads.m_htPriv.m_fieldList[privIdx];
+		if (g_appArgs.IsVariableReportEnabled()) {
+			int privPos = 0;
+			for (size_t privIdx = 0; privIdx < mod.m_threads.m_htPriv.m_fieldList.size(); privIdx += 1) {
+				CField * pPriv = mod.m_threads.m_htPriv.m_fieldList[privIdx];
 
-			if (pPriv->m_pPrivGbl == 0) {
-				GenModVar(eVcdUser, vcdModName, bFirstModVar,
-					VA("%s const", pPriv->m_pType->m_typeName.c_str()),
-					pPriv->m_dimenDecl,
-					VA("PR%s_%s", privIdxStr, pPriv->m_name.c_str()),
-					VA("r_t%d_htPriv.m_%s", privStg, pPriv->m_name.c_str()),
-					pPriv->m_dimenList);
-				GenModVar(eVcdNone, vcdModName, bFirstModVar,
-					VA("%s", pPriv->m_pType->m_typeName.c_str()),
-					pPriv->m_dimenDecl,
-					VA("P%s_%s", privIdxStr, pPriv->m_name.c_str()),
-					VA("c_t%d_htPriv.m_%s", privStg, pPriv->m_name.c_str()),
-					pPriv->m_dimenList);
-			} else {
-				GenModVar(eVcdUser, vcdModName, bFirstModVar,
-					VA("%s const", pPriv->m_pType->m_typeName.c_str()),
-					pPriv->m_dimenDecl,
-					VA("PR%s_%s", privIdxStr, pPriv->m_name.c_str()),
-					VA("r_t%d_%sRdData.m_data", privStg, pPriv->m_name.c_str()),
-					pPriv->m_dimenList);
-			}
-
-			if (g_appArgs.IsVariableReportEnabled()) {
 
 				int privWidth = FindTypeWidth(pPriv);
 
@@ -2982,22 +2894,9 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 					privPos += privWidth;
 
 				} while (DimenIter(pPriv->m_dimenList, refList));
+
+				//m_iplDefines.Append("\n");
 			}
-
-			m_iplDefines.Append("\n");
-		}
-
-		for (size_t ngvIdx = 0; ngvIdx < mod.m_ngvList.size(); ngvIdx += 1) {
-			CRam * pNgv = mod.m_ngvList[ngvIdx];
-
-			if (!pNgv->m_bPrivGbl || pNgv->m_addrW == mod.m_threads.m_htIdW.AsInt()) continue;
-
-			GenModVar(eVcdNone, vcdModName, bFirstModVar,
-				VA("CGW_%s", pNgv->m_pNgvInfo->m_ngvWrType.c_str()),
-				pNgv->m_dimenDecl,
-				VA("PW%s_%s", privIdxStr, pNgv->m_privName.c_str()),
-				VA("c_t%d_%sIwData", privStg, pNgv->m_gblName.c_str()),
-				pNgv->m_dimenList);
 		}
 
 		g_appArgs.GetDsnRpt().EndLevel();

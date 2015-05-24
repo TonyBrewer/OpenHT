@@ -352,9 +352,6 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 	for (size_t fieldIdx = 0; fieldIdx < fieldList.size(); fieldIdx += 1) {
 		CField * pField = fieldList[fieldIdx];
 
-		if (pField->m_pPrivGbl != 0)
-			continue;
-
 		if (structType == eStructAll || structType == eStructRamRdData && (pField->m_bSrcRead || pField->m_bMifRead)
 			|| structType != eStructRamRdData && (pField->m_bSrcWrite || pField->m_bMifWrite)) {
 
@@ -1629,4 +1626,20 @@ void CLoopInfo::LoopEnd(bool bNewLine)
 	}
 	if (bNewLine)
 		m_htCode.NewLine();
+}
+
+bool CType::IsEmbeddedUnion() {
+	// check if there is a union in the type
+	if (IsRecord()) {
+		CRecord * pRecord = AsRecord();
+		if (pRecord->m_bUnion)
+			return true;
+		for (size_t i = 0; i < pRecord->m_fieldList.size(); i += 1) {
+			CField * pField = pRecord->m_fieldList[i];
+			if (pField->m_pType->IsEmbeddedUnion())
+				return true;
+		}
+	}
+
+	return false;
 }
