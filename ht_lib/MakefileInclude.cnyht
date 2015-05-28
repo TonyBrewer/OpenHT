@@ -90,8 +90,8 @@ PLAT_hc-1ex_ARCH  = 2
 PLAT_hc-2ex_ARCH  = 2
 PLAT_wx-2000_ARCH = 4
 PLAT_wx-690_ARCH  = 5
-PLAT_ma-100_ARCH  = 16
-PLAT_ma-400_ARCH  = 17
+PLAT_ma-100_ARCH  = 8
+PLAT_ma-400_ARCH  = 9
 PLAT_ARCH = ${PLAT_${CNY_PDK_PLATFORM}_ARCH}
 
 ifneq (,$(findstring wx,$(CNY_PDK_PLATFORM)))

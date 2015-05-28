@@ -95,7 +95,11 @@ CXXFLAGS = $(CFLAGS)
 vsim libvsim app libapp:LDLIBS += -L $(CNY_PATH)/lib
 ifneq ($(findstring Driver,$(HT_HOST_API)),)
 app libapp  :LDLIBS += -lwx_runtime
+ifneq ($(findstring ma,$(CNY_PDK_PLATFORM)),)
+vsim libvsim:LDLIBS += -lwx_sim_runtime_sl
+else
 vsim libvsim:LDLIBS += -lwx_sim_runtime -lcpSimLib2_wx
+endif
 else
 vsim libvsim app libapp:LDLIBS += $(CNY_PATH)/lib/cny_initruntime.o
 vsim libvsim app libapp:LDLIBS += -lcny_utils -lPersSupport
