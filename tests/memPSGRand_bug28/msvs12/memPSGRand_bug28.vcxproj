@@ -23,7 +23,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{5fd95d74-7440-4131-a8a0-9ced6fb3b2bc}</ProjectGuid>
+    <ProjectGuid>{5FD95D74-7440-4131-A8A0-9CED6FB3B2BC}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>dsn2_new</RootNamespace>
   </PropertyGroup>

@@ -121,6 +121,7 @@ public:
 	bool IsGlobalReadParanEnabled() { return m_bGlobalReadParan; }
 	bool IsVcdUserEnabled() { return m_bVcdUser; }
 	bool IsVcdAllEnabled() { return m_bVcdAll; }
+	bool IsOgv() { return m_bOgv; }
 	FILE * GetVarRptFp() { return m_pVarRptFp; }
 	int GetAeCnt() { return m_aeCnt; }
 	int GetAeUnitCnt() { return m_aeUnitCnt; }
@@ -206,6 +207,7 @@ private:
 	int				m_vcdStartCycle;
 	string			m_vcdFilterFile;
 	vector<string>	m_vcdFilterList;
+	bool			m_bOgv;
 
 	FILE *			m_pVarRptFp;
 

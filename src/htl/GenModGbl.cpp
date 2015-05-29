@@ -17,24 +17,9 @@ void CDsnInfo::InitAndValidateModNgv()
 
 		if (!mod.m_bIsUsed || mod.m_ngvList.size() == 0) continue;
 
-		mod.m_bGvIwComp = false;
-		mod.m_gvIwCompStg = max(mod.m_stage.m_execStg.AsInt(), mod.m_stage.m_privWrStg.AsInt());
-
 		// create unique list of global variables for entire unit
 		for (size_t mgvIdx = 0; mgvIdx < mod.m_ngvList.size(); mgvIdx += 1) {
 			CRam * pMgv = mod.m_ngvList[mgvIdx];
-
-			mod.m_bGvIwComp |= pMgv->m_bWriteForInstrWrite;
-
-			int lastStg = 1;
-			if (pMgv->m_wrStg.size() > 0)
-				lastStg = pMgv->m_wrStg.AsInt();
-			else {
-				lastStg = mod.m_stage.m_execStg.AsInt();
-				pMgv->m_wrStg.SetValue(lastStg);
-			}
-
-			mod.m_gvIwCompStg = max(mod.m_gvIwCompStg, lastStg);
 		
 			// verify that ram name is unique in module
 			for (size_t mgv2Idx = mgvIdx + 1; mgv2Idx < mod.m_ngvList.size(); mgv2Idx += 1) {
@@ -101,7 +86,7 @@ void CDsnInfo::InitAndValidateModNgv()
 
 	for (size_t gvIdx = 0; gvIdx < m_ngvList.size(); gvIdx += 1) {
 		CNgvInfo * pNgvInfo = m_ngvList[gvIdx];
-		CRam * pGv = pNgvInfo->m_modInfoList[0].m_pNgv;
+		CRam * pGv0 = pNgvInfo->m_modInfoList[0].m_pNgv;
 
 		vector<CNgvModInfo> &ngvModInfoList = m_ngvList[gvIdx]->m_modInfoList;
 
@@ -134,11 +119,11 @@ void CDsnInfo::InitAndValidateModNgv()
 		int ngvFieldCnt = 0;
 		bool bNgvAtomicFast = false;
 		bool bNgvAtomicSlow = false;
-		for (CStructElemIter iter(this, pGv->m_pType); !iter.end(); iter++) {
+		for (CStructElemIter iter(this, pGv0->m_pType); !iter.end(); iter++) {
 			if (iter.IsStructOrUnion()) continue;
 
 			ngvFieldCnt += 1;
-			if (pGv->m_pType->m_eType != eRecord) continue;
+			if (pGv0->m_pType->m_eType != eRecord) continue;
 
 			bNgvAtomicFast |= (iter->m_atomicMask & (ATOMIC_INC | ATOMIC_SET)) != 0;
 			bNgvAtomicSlow |= (iter->m_atomicMask & ATOMIC_ADD) != 0;
@@ -150,60 +135,60 @@ void CDsnInfo::InitAndValidateModNgv()
 		pNgvInfo->m_bNgvAtomicSlow = bNgvAtomicSlow;
 
 		// determine type of ram
-		bool bNgvReg = pGv->m_addrW == 0;
-		bool bNgvDist = !bNgvReg && pGv->m_pNgvInfo->m_ramType != eBlockRam;
+		bool bNgvReg = pGv0->m_addrW == 0;
+		bool bNgvDist = !bNgvReg && pGv0->m_pNgvInfo->m_ramType != eBlockRam;
 		bool bNgvBlock = !bNgvReg && !bNgvDist;
 
-		bNgvMaxSel &= bNgvDist && (!bAllModClk1x || ngvPortList.size() > 1) && bNgvAtomicSlow ||
+		int ngvPortCnt = (int)ngvPortList.size();
+
+		bNgvMaxSel &= bNgvDist && (!bAllModClk1x || ngvPortCnt > 1) && bNgvAtomicSlow ||
 			bNgvBlock && (bNgvAtomic || ngvFieldCnt > 1);
 
 		pNgvInfo->m_bNgvMaxSel = bNgvMaxSel;
 
-		int ngvPortCnt = (int)ngvPortList.size();
-
-		pNgvInfo->m_bNgvWrCompClk2x = bNgvReg && (!bAllModClk1x && ngvPortList.size() <= 2 || ngvPortList.size() == 3) ||
-			bNgvDist && ((!bAllModClk1x && ngvPortList.size() <= 2 || ngvPortList.size() == 3) && !bNgvAtomicSlow ||
-			(bNgvAtomicSlow && (!bAllModClk1x || ngvPortList.size() > 1) && bNgvMaxSel)) ||
-			bNgvBlock && ((!bNgvAtomic && ngvFieldCnt == 1) && (!bAllModClk1x && ngvPortList.size() <= 2 || ngvPortList.size() == 3) ||
+		pNgvInfo->m_bNgvWrCompClk2x = bNgvReg && (!bAllModClk1x && ngvPortCnt <= 2 || ngvPortCnt == 3) ||
+			bNgvDist && ((!bAllModClk1x && ngvPortCnt <= 2 || ngvPortCnt == 3) && !bNgvAtomicSlow ||
+			(bNgvAtomicSlow && (!bAllModClk1x || ngvPortCnt > 1) && bNgvMaxSel)) ||
+			bNgvBlock && ((!bNgvAtomic && ngvFieldCnt == 1) && (!bAllModClk1x && ngvPortCnt <= 2 || ngvPortCnt == 3) ||
 			(bNgvAtomic || ngvFieldCnt > 1) && bNgvMaxSel);
 
-		pNgvInfo->m_bNgvWrDataClk2x = bNgvReg && (!bAllModClk1x || ngvPortList.size() > 1) ||
-			bNgvDist && ((!bAllModClk1x || ngvPortList.size() > 1) && !bNgvAtomicSlow ||
-			(bNgvAtomicSlow && (!bAllModClk1x || ngvPortList.size() > 1) && bNgvMaxSel)) ||
-			bNgvBlock && ((!bNgvAtomic && ngvFieldCnt == 1) && (!bAllModClk1x || ngvPortList.size() > 1) ||
+		pNgvInfo->m_bNgvWrDataClk2x = bNgvReg && (!bAllModClk1x || ngvPortCnt > 1) ||
+			bNgvDist && ((!bAllModClk1x || ngvPortCnt > 1) && !bNgvAtomicSlow ||
+			(bNgvAtomicSlow && (!bAllModClk1x || ngvPortCnt > 1) && bNgvMaxSel)) ||
+			bNgvBlock && ((!bNgvAtomic && ngvFieldCnt == 1) && (!bAllModClk1x || ngvPortCnt > 1) ||
 			(bNgvAtomic || ngvFieldCnt > 1) && bNgvMaxSel);
 
-		pNgvInfo->m_bNeedQue = bNgvReg && (ngvPortList.size() == 2 && !bAllModClk1x || ngvPortList.size() >= 3) ||
-			bNgvDist && ((ngvPortList.size() == 2 && !bAllModClk1x || ngvPortList.size() >= 3) && !bNgvAtomicSlow ||
-			((ngvPortList.size() >= 2 || !bAllModClk1x) && bNgvAtomicSlow)) ||
-			bNgvBlock && ((!bNgvAtomic && ngvFieldCnt == 1) && (ngvPortList.size() == 2 && !bAllModClk1x || ngvPortList.size() >= 3) ||
+		pNgvInfo->m_bNeedQue = bNgvReg && (ngvPortCnt == 2 && !bAllModClk1x || ngvPortCnt >= 3) ||
+			bNgvDist && ((ngvPortCnt == 2 && !bAllModClk1x || ngvPortCnt >= 3) && !bNgvAtomicSlow ||
+			((ngvPortCnt >= 2 || !bAllModClk1x) && bNgvAtomicSlow)) ||
+			bNgvBlock && ((!bNgvAtomic && ngvFieldCnt == 1) && (ngvPortCnt == 2 && !bAllModClk1x || ngvPortCnt >= 3) ||
 			(bNgvAtomic || ngvFieldCnt > 1));
 
 		// 2x RR selection - one level, 2 or 3 ports, 2x wrData
-		bool bRrSel2x = bNgvReg && (ngvPortList.size() == 2 && !bAllModClk1x || ngvPortList.size() == 3) ||
-			bNgvDist && (ngvPortList.size() == 2 && !bAllModClk1x && !bNgvAtomicSlow || ngvPortList.size() == 3 && !bNgvAtomicSlow) ||
-			bNgvBlock && (ngvPortList.size() == 2 && !bAllModClk1x && !bNgvAtomic && ngvFieldCnt == 1
-			|| ngvPortList.size() == 3 && !bNgvAtomic && ngvFieldCnt == 1);
+		bool bRrSel2x = bNgvReg && (ngvPortCnt == 2 && !bAllModClk1x || ngvPortCnt == 3) ||
+			bNgvDist && (ngvPortCnt == 2 && !bAllModClk1x && !bNgvAtomicSlow || ngvPortCnt == 3 && !bNgvAtomicSlow) ||
+			bNgvBlock && (ngvPortCnt == 2 && !bAllModClk1x && !bNgvAtomic && ngvFieldCnt == 1
+			|| ngvPortCnt == 3 && !bNgvAtomic && ngvFieldCnt == 1);
 
 		// 1x RR selection - no phase select, 1x wrData
 		bool bRrSel1x = bNgvDist && ngvPortCnt >= 2 && bNgvAtomicSlow && !pNgvInfo->m_bNgvMaxSel ||
 			bNgvBlock && ngvPortCnt >= 2 && (bNgvAtomic || ngvFieldCnt >= 2) && !pNgvInfo->m_bNgvMaxSel;
 
 		// 1x RR selection, ports split using phase, 2x wrData
-		bool bRrSelAB = bNgvReg && ngvPortList.size() >= 4 ||
-			bNgvDist && (ngvPortList.size() >= 4 && !bNgvAtomicSlow) ||
-			bNgvBlock && (ngvPortList.size() >= 4 && !bNgvAtomic && ngvFieldCnt == 1);
+		bool bRrSelAB = bNgvReg && ngvPortCnt >= 4 ||
+			bNgvDist && (ngvPortCnt >= 4 && !bNgvAtomicSlow) ||
+			bNgvBlock && (ngvPortCnt >= 4 && !bNgvAtomic && ngvFieldCnt == 1);
 
-		bool bRrSelEO = bNgvDist && bNgvAtomicSlow && pNgvInfo->m_bNgvMaxSel && (!bAllModClk1x || ngvPortList.size() >= 2) ||
+		bool bRrSelEO = bNgvDist && bNgvAtomicSlow && pNgvInfo->m_bNgvMaxSel && (!bAllModClk1x || ngvPortCnt >= 2) ||
 			bNgvBlock && (bNgvAtomic || ngvFieldCnt > 1) && pNgvInfo->m_bNgvMaxSel;
 
-		bool bNeedAddrComp = bNgvDist && bNgvAtomicSlow && pNgvInfo->m_bNgvMaxSel && (!bAllModClk1x || ngvPortList.size() >= 2) ||
+		bool bNeedAddrComp = bNgvDist && bNgvAtomicSlow && pNgvInfo->m_bNgvMaxSel && (!bAllModClk1x || ngvPortCnt >= 2) ||
 			bNgvBlock && (bNgvAtomic || ngvFieldCnt > 1);
 
-		bool bNeedRamReg = bNgvDist && bNgvAtomicSlow && (ngvPortList.size() >= 2 || !bAllModClk1x) && pNgvInfo->m_bNgvMaxSel ||
+		bool bNeedRamReg = bNgvDist && bNgvAtomicSlow && (ngvPortCnt >= 2 || !bAllModClk1x) && pNgvInfo->m_bNgvMaxSel ||
 			bNgvBlock && (bNgvAtomic || ngvFieldCnt > 1) && pNgvInfo->m_bNgvMaxSel;
 
-		bool bNeedRamWrReg = bNgvDist && bNgvAtomicSlow && (ngvPortList.size() >= 2 || !bAllModClk1x) && pNgvInfo->m_bNgvMaxSel ||
+		bool bNeedRamWrReg = bNgvDist && bNgvAtomicSlow && (ngvPortCnt >= 2 || !bAllModClk1x) && pNgvInfo->m_bNgvMaxSel ||
 			bNgvBlock && (bNgvAtomic || ngvFieldCnt > 1) && pNgvInfo->m_bNgvMaxSel;
 
 		int stgIdx = 0;
@@ -221,22 +206,22 @@ void CDsnInfo::InitAndValidateModNgv()
 			pNgvInfo->m_wrCompStg = 1;
 		}
 		else if (bRrSelEO) {
-			if (ngvPortList.size() != 1) stgIdx += 1;
+			if (ngvPortCnt != 1) stgIdx += 1;
 			stgIdx += 1;
 			pNgvInfo->m_wrCompStg = stgIdx;
 		}
-		else if (ngvPortList.size() == 1 && ngvFieldCnt == 1 && !bNgvAtomic) {
+		else if (ngvPortCnt == 1 && ngvFieldCnt == 1 && !bNgvAtomic) {
 		}
-		else if (ngvPortList.size() == 1 && (ngvFieldCnt > 1 || bNgvAtomic)) {
+		else if (ngvPortCnt == 1 && (ngvFieldCnt > 1 || bNgvAtomic)) {
 			if (bNeedAddrComp)
 				pNgvInfo->m_wrCompStg = stgIdx + 1;
 		}
-		else if (ngvPortList.size() == 2 && bAllModClk1x) {
+		else if (ngvPortCnt == 2 && bAllModClk1x) {
 			if (bNeedAddrComp)
 				pNgvInfo->m_wrCompStg = stgIdx + 1;
 		}
 
-		if (!(ngvFieldCnt > 1 || bNgvAtomic) && ngvPortList.size() > 1) stgIdx += 1;
+		if (!(ngvFieldCnt > 1 || bNgvAtomic) && ngvPortCnt > 1) stgIdx += 1;
 
 		if (ngvFieldCnt > 1 || bNgvAtomic) {
 			if (bNgvBlock) stgIdx += 1;
@@ -246,6 +231,338 @@ void CDsnInfo::InitAndValidateModNgv()
 		if ((ngvFieldCnt > 1 || bNgvAtomic) && !bNeedRamWrReg) stgIdx += 1;
 
 		pNgvInfo->m_wrDataStg = stgIdx;
+
+		// determine if this ram has an optimized implementation
+		pNgvInfo->m_bOgv = //g_appArgs.IsOgv() &&
+			(ngvPortCnt == 1 && ngvFieldCnt == 1 && !bNgvAtomic && pGv0->m_bReadForInstrRead && pGv0->m_bWriteForInstrWrite && !pGv0->m_bReadForMifWrite && !pGv0->m_bWriteForMifRead);
+	}
+
+	for (size_t modIdx = 0; modIdx < m_modList.size(); modIdx += 1) {
+		CModule &mod = *m_modList[modIdx];
+
+		if (!mod.m_bIsUsed || mod.m_ngvList.size() == 0) continue;
+
+		mod.m_bGvIwComp = false;
+		mod.m_gvIwCompStg = max(mod.m_stage.m_execStg.AsInt(), mod.m_stage.m_privWrStg.AsInt());
+
+		// create unique list of global variables for entire unit
+		for (size_t mgvIdx = 0; mgvIdx < mod.m_ngvList.size(); mgvIdx += 1) {
+			CRam * pMgv = mod.m_ngvList[mgvIdx];
+
+			int lastStg = 1;
+			if (pMgv->m_wrStg.size() > 0)
+				lastStg = pMgv->m_wrStg.AsInt();
+			else {
+				lastStg = mod.m_stage.m_execStg.AsInt();
+				pMgv->m_wrStg.SetValue(lastStg);
+			}
+
+			if (pMgv->m_pNgvInfo->m_bOgv) continue;
+
+			mod.m_bGvIwComp |= pMgv->m_bWriteForInstrWrite;
+
+			mod.m_gvIwCompStg = max(mod.m_gvIwCompStg, lastStg);
+		}
+	}
+}
+
+void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
+{
+	CNgvInfo * pNgvInfo = pGv->m_pNgvInfo;
+
+	CHtCode & gblPreInstr = pMod->m_clkRate == eClk2x ? m_gblPreInstr2x : m_gblPreInstr1x;
+	CHtCode & gblPostInstr = pMod->m_clkRate == eClk2x ? m_gblPostInstr2x : m_gblPostInstr1x;
+	CHtCode & gblReg = pMod->m_clkRate == eClk2x ? m_gblReg2x : m_gblReg1x;
+
+	string gblRegReset = pMod->m_clkRate == eClk2x ? "c_reset1x" : "r_reset1x";
+
+	string vcdModName = VA("Pers%s", pMod->m_modName.Uc().c_str());
+
+	bool bFirstModVar = false;
+	for (int stgIdx = 1; stgIdx <= pGv->m_wrStg.AsInt(); stgIdx += 1) {
+
+		string varStg;
+		if (pMod->m_stage.m_bStageNums)
+			varStg = VA("%d", stgIdx);
+
+		if (stgIdx >= pGv->m_rdStg.AsInt()) {
+			if (!pGv->m_bPrivGbl && pGv->m_bReadForInstrRead) {
+				if (pNgvInfo->m_atomicMask != 0) {
+					GenModVar(eVcdUser, vcdModName, bFirstModVar,
+						VA("%s const", pGv->m_type.c_str()),
+						pGv->m_dimenDecl,
+						VA("GF%s_%s", varStg.c_str(), pGv->m_gblName.c_str()),
+						VA("r_t%d_%sIfData", pMod->m_tsStg + stgIdx - 1, pGv->m_gblName.c_str()),
+						pGv->m_dimenList);
+				}
+
+				GenModVar(eVcdUser, vcdModName, bFirstModVar,
+					VA("%s const", pGv->m_type.c_str()),
+					pGv->m_dimenDecl,
+					VA("GR%s_%s", varStg.c_str(), pGv->m_gblName.c_str()),
+					VA("r_t%d_%sIrData", pMod->m_tsStg + stgIdx - 1, pGv->m_gblName.c_str()),
+					pGv->m_dimenList);
+			}
+		}
+
+		if (stgIdx <= pGv->m_wrStg.AsInt()) {
+			if (!pGv->m_bPrivGbl && pGv->m_bWriteForInstrWrite) {
+				GenModVar(eVcdNone, vcdModName, bFirstModVar,
+					VA("CGW_%s", pGv->m_pNgvInfo->m_ngvWrType.c_str()),
+					pGv->m_dimenDecl,
+					VA("GW%s_%s", varStg.c_str(), pGv->m_gblName.c_str()),
+					VA("c_t%d_%sIwData", pMod->m_tsStg + stgIdx - 1, pGv->m_gblName.c_str()),
+					pGv->m_dimenList);
+			}
+		}
+	}
+
+	if (pGv->m_addrW == 0) {
+		if (pGv->m_bWriteForInstrWrite || pGv->m_bWriteForMifRead) {
+			//if (pNgvInfo->m_bNgvWrDataClk2x == (pMod->m_clkRate == eClk2x)) {
+				m_gblRegDecl.Append("\t%s c__GBL__%s%s;\n", 
+					pGv->m_type.c_str(), pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
+
+				GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, pGv->m_type.c_str(),
+					VA("r__GBL__%s", pGv->m_gblName.c_str()), pGv->m_dimenList);
+
+				vector<int> refList(pGv->m_dimenList.size());
+				do {
+					string dimIdx = IndexStr(refList);
+					gblReg.Append("\tr__GBL__%s%s = c__GBL__%s%s;\n",
+						pGv->m_gblName.c_str(), dimIdx.c_str(),
+						pGv->m_gblName.c_str(), dimIdx.c_str());
+
+			} while (DimenIter(pGv->m_dimenList, refList));
+
+		//} else if (pMod->m_clkRate == eClk2x) {
+			//	GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, VA("sc_signal<%s>", pGv->m_type.c_str()),
+			//		VA("r_%s", pGv->m_gblName.c_str()), pGv->m_dimenList);
+			//} else {
+			//	GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, VA("sc_signal<%s>", pGv->m_type.c_str()),
+			//		VA("r_%s_2x", pGv->m_gblName.c_str()), pGv->m_dimenList);
+			//	GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, pGv->m_type.c_str(),
+			//		VA("r_%s", pGv->m_gblName.c_str()), pGv->m_dimenList);
+			//}
+		}
+	} else {
+		m_gblRegDecl.Append("\tht_%s_ram<%s, %d",
+			pGv->m_ramType == eBlockRam ? "block" : "dist",
+			pGv->m_type.c_str(), pGv->m_addrW);
+		m_gblRegDecl.Append("> m__GBL__%s%s;\n", pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
+
+		vector<int> refList(pGv->m_dimenList.size());
+		do {
+			string dimIdx = IndexStr(refList);
+
+			//if (pNgvInfo->m_bNgvWrDataClk2x == (pMod->m_clkRate == eClk2x)) {
+			gblReg.Append("\tm__GBL__%s%s.clock(%s);\n",
+				pGv->m_gblName.c_str(), dimIdx.c_str(),
+				gblRegReset.c_str());
+			//} else {
+			//	gblReg.Append("\tm_%s%s%s.read_clock(%s);\n",
+			//		pGv->m_gblName.c_str(), pImStr, dimIdx.c_str(),
+			//		gblRegReset.c_str());
+			//	gblRegWrData.Append("\tm_%s%s%s.write_clock(%s);\n",
+			//		pGv->m_gblName.c_str(), pImStr, dimIdx.c_str(),
+			//		gblRegWrDataReset.c_str());
+			//}
+		} while (DimenIter(pGv->m_dimenList, refList));
+	}
+
+	bool bPrivGblAndNoAddr = pGv->m_bPrivGbl && pGv->m_addrW == pMod->m_threads.m_htIdW.AsInt();
+
+	if (pGv->m_bReadForInstrRead) {
+		int lastStg = pGv->m_bPrivGbl ? pMod->m_stage.m_privWrStg.AsInt() : pGv->m_wrStg.AsInt();
+		for (int gvRdStg = pGv->m_rdStg.AsInt(); gvRdStg <= lastStg; gvRdStg += 1) {
+			m_gblRegDecl.Append("\t%s c_t%d_%sIrData%s;\n",
+				pGv->m_type.c_str(), pMod->m_tsStg + gvRdStg - 2, pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
+			GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, VA("%s ht_noload", pGv->m_type.c_str()),
+				VA("r_t%d_%sIrData", pMod->m_tsStg + gvRdStg - 1, pGv->m_gblName.c_str()), pGv->m_dimenList);
+		}
+		vector<int> refList(pGv->m_dimenList.size());
+		do {
+			for (int gvRdStg = pGv->m_rdStg.AsInt(); gvRdStg <= lastStg; gvRdStg += 1) {
+				string dimIdx = IndexStr(refList);
+
+				if (gvRdStg > pGv->m_rdStg.AsInt()) {
+					gblPostInstr.Append("\tc_t%d_%sIrData%s = r_t%d_%sIrData%s;\n",
+						pMod->m_tsStg + gvRdStg - 2, pGv->m_gblName.c_str(), dimIdx.c_str(),
+						pMod->m_tsStg + gvRdStg - 2, pGv->m_gblName.c_str(), dimIdx.c_str());
+				}
+
+				gblReg.Append("\tr_t%d_%sIrData%s = c_t%d_%sIrData%s;\n",
+					pMod->m_tsStg + gvRdStg - 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
+					pMod->m_tsStg + gvRdStg - 2, pGv->m_gblName.c_str(), dimIdx.c_str());
+			}
+		} while (DimenIter(pGv->m_dimenList, refList));
+	}
+
+	if (pGv->m_bWriteForInstrWrite) {
+		for (int gvWrStg = pMod->m_tsStg; gvWrStg < pMod->m_tsStg + pGv->m_wrStg.AsInt(); gvWrStg += 1) {
+			GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, VA("CGW_%s", pGv->m_pNgvInfo->m_ngvWrType.c_str()),
+				VA("r_t%d_%sIwData", gvWrStg + 1, pGv->m_gblName.c_str()), pGv->m_dimenList);
+			m_gblRegDecl.Append("\tCGW_%s c_t%d_%sIwData%s;\n",
+				pGv->m_pNgvInfo->m_ngvWrType.c_str(), gvWrStg, pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
+		}
+
+		string htIdStr = (pMod->m_threads.m_htIdW.AsInt() > 0 &&
+			(pGv->m_bPrivGbl || pGv->m_addr1Name == "htId" || pGv->m_addr2Name == "htId")) ? VA("r_t%d_htId", pMod->m_tsStg) : "";
+
+		vector<int> refList(pGv->m_dimenList.size());
+		do {
+			string dimIdx = IndexStr(refList);
+
+			for (int gvWrStg = pMod->m_tsStg; gvWrStg < pMod->m_tsStg + pGv->m_wrStg.AsInt(); gvWrStg += 1) {
+				if (bPrivGblAndNoAddr && gvWrStg == pMod->m_tsStg) {
+					gblPreInstr.Append("\tc_t%d_%sIwData%s.InitData(%s, r_t%d_%sIrData%s);\n",
+						gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
+						htIdStr.c_str(),
+						gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str());
+				} else if (!bPrivGblAndNoAddr && gvWrStg == pMod->m_tsStg) {
+					gblPreInstr.Append("\tc_t%d_%sIwData%s.InitZero(%s);\n",
+						gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
+						htIdStr.c_str());
+				} else {
+					gblPreInstr.Append("\tc_t%d_%sIwData%s = r_t%d_%sIwData%s;\n",
+						gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
+						gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str());
+				}
+				gblReg.Append("\tr_t%d_%sIwData%s = c_t%d_%sIwData%s;\n",
+					gvWrStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
+					gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str());
+			}
+		} while (DimenIter(pGv->m_dimenList, refList));
+	}
+
+	gblPostInstr.NewLine();
+
+	if (pGv->m_bReadForInstrRead) {
+		if (pGv->m_addrW == 0) {
+			vector<int> refList(pGv->m_dimenList.size());
+			do {
+				string dimIdx = IndexStr(refList);
+				gblPostInstr.Append("\tc_t%d_%sIrData%s = r__GBL__%s%s;\n",
+					pMod->m_tsStg - 2 + pGv->m_rdStg.AsInt(), pGv->m_gblName.c_str(), dimIdx.c_str(),
+					pGv->m_gblName.c_str(), dimIdx.c_str());
+			} while (DimenIter(pGv->m_dimenList, refList));
+		} else {
+			int rdAddrStgNum = pMod->m_tsStg + pGv->m_rdStg.AsInt() - (pGv->m_ramType == eBlockRam ? 3 : 2);
+			string rdAddrStg = rdAddrStgNum == 1 ? "c_t1" : VA("r_t%d", rdAddrStgNum);
+
+			string addr1Name;
+			if (pGv->m_addr1IsHtId)
+				addr1Name = VA("%s_htId", rdAddrStg.c_str());
+			else if (pGv->m_addr1IsPrivate)
+				addr1Name = VA("%s_htPriv.m_%s", rdAddrStg.c_str(), pGv->m_addr1Name.c_str());
+			else if (pGv->m_addr1IsStage)
+				addr1Name = VA("%s__STG__%s", rdAddrStg.c_str(), pGv->m_addr1Name.c_str());
+			else if (pGv->m_addr1W.AsInt() > 0)
+				HtlAssert(0);
+
+			string addr2Name;
+			if (pGv->m_addr2IsHtId)
+				addr2Name = VA("%s_htId", rdAddrStg.c_str());
+			else if (pGv->m_addr2IsPrivate)
+				addr2Name = VA("%s_htPriv.m_%s", rdAddrStg.c_str(), pGv->m_addr2Name.c_str());
+			else if (pGv->m_addr1IsStage)
+				addr2Name = VA("%s__STG__%s", rdAddrStg.c_str(), pGv->m_addr2Name.c_str());
+			else if (pGv->m_addr2W.AsInt() > 0)
+				HtlAssert(0);
+
+			bool bNeedParan = ((pGv->m_addr0W.AsInt() > 0 ? 1 : 0) + (pGv->m_addr1W.AsInt() > 0 ? 1 : 0) + (pGv->m_addr2W.AsInt() > 0 ? 1 : 0)) > 1;
+			gblPostInstr.Append("\tht_uint%d c_t%d_%sRdAddr = %s", pGv->m_addrW, rdAddrStgNum, pGv->m_gblName.Lc().c_str(), bNeedParan ? "(" : "");
+			if (pGv->m_addr0W.AsInt() > 0)
+				gblPostInstr.Append("%s_htId", rdAddrStg.c_str());
+			if (pGv->m_addr0W.AsInt() > 0 && pGv->m_addr1W.AsInt() > 0)
+				gblPostInstr.Append(", ");
+			if (pGv->m_addr1W.AsInt() > 0)
+				gblPostInstr.Append("%s", addr1Name.c_str());
+			if (pGv->m_addr2W.AsInt() > 0)
+				gblPostInstr.Append(", %s", addr2Name.c_str());
+			gblPostInstr.Append("%s;\n", bNeedParan ? ")" : "");
+
+			vector<int> refList(pGv->m_dimenList.size());
+			do {
+				string dimIdx = IndexStr(refList);
+
+				gblPostInstr.Append("\tm__GBL__%s%s.read_addr(c_t%d_%sRdAddr);\n",
+					pGv->m_gblName.c_str(), dimIdx.c_str(),
+					rdAddrStgNum, pGv->m_gblName.Lc().c_str());
+
+				bool bNgvReg = pGv->m_addrW == 0;
+				bool bNgvDist = !bNgvReg && pGv->m_ramType != eBlockRam;
+
+				if (bNgvDist || pNgvInfo->m_ngvFieldCnt == 1) {
+					gblPostInstr.Append("\tc_t%d_%sIrData%s = m__GBL__%s%s.read_mem();\n",
+						rdAddrStgNum + (bNgvDist ? 0 : 1), pGv->m_gblName.c_str(), dimIdx.c_str(),
+						pGv->m_gblName.c_str(), dimIdx.c_str());
+				} else {
+
+					gblPostInstr.Append("\tif (r_g1_%sTo%s_wrEn%s && r_g1_%sTo%s_wrAddr%s == r_t%d_%sRdAddr)\n",
+						pGv->m_gblName.Lc().c_str(), pMod->m_modName.Uc().c_str(), dimIdx.c_str(),
+						pGv->m_gblName.Lc().c_str(), pMod->m_modName.Uc().c_str(), dimIdx.c_str(),
+						rdAddrStgNum + 1, pGv->m_gblName.Lc().c_str());
+
+					gblPostInstr.Append("\t\tc_t%d_%sIrData%s = r_g1_%sTo%s_wrData%s;\n",
+						rdAddrStgNum + 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
+						pGv->m_gblName.Lc().c_str(), pMod->m_modName.Uc().c_str(), dimIdx.c_str());
+
+					gblPostInstr.Append("\telse\n");
+
+					gblPostInstr.Append("\t\tc_t%d_%sIrData%s = m__GBL__%s%s.read_mem();\n",
+						rdAddrStgNum + 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
+						pGv->m_gblName.c_str(), dimIdx.c_str());
+				}
+			} while (DimenIter(pGv->m_dimenList, refList));
+		}
+		gblPostInstr.NewLine();
+	}
+
+	if (pGv->m_bWriteForInstrWrite) {
+		int gvWrStg = pMod->m_tsStg + pGv->m_wrStg.AsInt();
+
+		if (pGv->m_addrW == 0) {
+			vector<int> refList(pGv->m_dimenList.size());
+			do {
+				string dimIdx = IndexStr(refList);
+
+				gblPostInstr.Append("\tc__GBL__%s%s = r__GBL__%s%s;\n",
+					pGv->m_gblName.c_str(), dimIdx.c_str(),
+					pGv->m_gblName.c_str(), dimIdx.c_str());
+
+				for (CStructElemIter iter(this, pGv->m_pType); !iter.end(); iter++) {
+					gblPostInstr.Append("\tif (r_t%d_%sIwData%s%s.GetWrEn())\n",
+						gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
+					gblPostInstr.Append("\t\tc__GBL__%s%s%s = r_t%d_%sIwData%s%s.GetData();\n",
+						pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str(),
+						gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
+				}
+				gblPostInstr.NewLine();
+
+			} while (DimenIter(pGv->m_dimenList, refList));
+		} else {
+			vector<int> refList(pGv->m_dimenList.size());
+			do {
+				string dimIdx = IndexStr(refList);
+
+				gblPostInstr.Append("\tm__GBL__%s%s.write_addr(r_t%d_%sIwData%s.GetAddr());\n",
+					pGv->m_gblName.c_str(), dimIdx.c_str(),
+					gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str());
+
+				for (CStructElemIter iter(this, pGv->m_pType); !iter.end(); iter++) {
+
+					gblPostInstr.Append("\tif (r_t%d_%sIwData%s%s.GetWrEn())\n",
+						gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
+					gblPostInstr.Append("\t\tm__GBL__%s%s.write_mem(r_t%d_%sIwData%s.GetData());\n",
+						pGv->m_gblName.c_str(), dimIdx.c_str(),
+						gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str());
+				}
+
+				gblPostInstr.NewLine();
+
+			} while (DimenIter(pGv->m_dimenList, refList));
+		}
 	}
 }
 
@@ -253,6 +570,14 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 {
 	if (mod.m_ngvList.size() == 0)
 		return;
+
+	for (size_t gvIdx = 0; gvIdx < mod.m_ngvList.size(); gvIdx += 1) {
+		CRam * pGv = mod.m_ngvList[gvIdx];
+		CNgvInfo * pNgvInfo = pGv->m_pNgvInfo;
+		if (!pNgvInfo->m_bOgv) continue;
+
+		GenModOptNgvStatements(&mod, pGv);
+	}
 
 	CHtCode & gblPreInstr = mod.m_clkRate == eClk2x ? m_gblPreInstr2x : m_gblPreInstr1x;
 	CHtCode & gblPostInstr = mod.m_clkRate == eClk2x ? m_gblPostInstr2x : m_gblPostInstr1x;
@@ -269,6 +594,7 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 	for (size_t gvIdx = 0; gvIdx < mod.m_ngvList.size(); gvIdx += 1) {
 		CRam * pGv = mod.m_ngvList[gvIdx];
 		CNgvInfo * pNgvInfo = pGv->m_pNgvInfo;
+		if (pNgvInfo->m_bOgv) continue;
 
 		bInstrWrite |= pGv->m_bWriteForInstrWrite;
 
@@ -321,12 +647,13 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 
 		if (mod.m_threads.m_htIdW.AsInt() > 0)
 			htComp.AddStructField(FindHtIntType(eUnsigned, mod.m_threads.m_htIdW.AsInt()), "m_htId");
-		//mod.m_threads.m_htPriv.m_fieldList.back()->InitDimen(mod.m_threads.m_lineInfo);
 
 		htComp.AddStructField(&g_bool, "m_htCmdRdy");
 
 		for (size_t gvIdx = 0; gvIdx < mod.m_ngvList.size(); gvIdx += 1) {
 			CRam * pGv = mod.m_ngvList[gvIdx];
+			CNgvInfo * pNgvInfo = pGv->m_pNgvInfo;
+			if (pNgvInfo->m_bOgv) continue;
 
 			if (pGv->m_bWriteForInstrWrite)
 				htComp.AddStructField(&g_bool, VA("m_%sIwComp", pGv->m_gblName.c_str()), "", "", pGv->m_dimenList);
@@ -357,6 +684,7 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 	for (size_t gvIdx = 0; gvIdx < mod.m_ngvList.size(); gvIdx += 1) {
 		CRam * pGv = mod.m_ngvList[gvIdx];
 		CNgvInfo * pNgvInfo = pGv->m_pNgvInfo;
+		if (pNgvInfo->m_bOgv) continue;
 
 		CHtCode & gblPostInstrWrData = pNgvInfo->m_bNgvWrDataClk2x ? m_gblPostInstr2x : m_gblPostInstr1x;
 		CHtCode & gblPostInstrWrComp = pNgvInfo->m_bNgvWrCompClk2x ? m_gblPostInstr2x : m_gblPostInstr1x;
@@ -1342,6 +1670,8 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 
 			for (size_t gvIdx = 0; gvIdx < mod.m_ngvList.size(); gvIdx += 1) {
 				CRam * pGv = mod.m_ngvList[gvIdx];
+				CNgvInfo * pNgvInfo = pGv->m_pNgvInfo;
+				if (pNgvInfo->m_bOgv) continue;
 
 				if (!pGv->m_bWriteForInstrWrite) continue;
 
@@ -1405,6 +1735,8 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 
 		for (size_t gvIdx = 0; gvIdx < mod.m_ngvList.size(); gvIdx += 1) {
 			CRam * pGv = mod.m_ngvList[gvIdx];
+			CNgvInfo * pNgvInfo = pGv->m_pNgvInfo;
+			if (pNgvInfo->m_bOgv) continue;
 
 			if (pGv->m_bWriteForInstrWrite) {
 				vector<int> refList(pGv->m_dimenList.size());
@@ -1456,6 +1788,8 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 
 		for (size_t gvIdx = 0; gvIdx < mod.m_ngvList.size(); gvIdx += 1) {
 			CRam * pGv = mod.m_ngvList[gvIdx];
+			CNgvInfo * pNgvInfo = pGv->m_pNgvInfo;
+			if (pNgvInfo->m_bOgv) continue;
 
 			if (pGv->m_bWriteForInstrWrite) {
 				vector<int> refList(pGv->m_dimenList.size());
@@ -1479,6 +1813,8 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 
 		for (size_t gvIdx = 0; gvIdx < mod.m_ngvList.size(); gvIdx += 1) {
 			CRam * pGv = mod.m_ngvList[gvIdx];
+			CNgvInfo * pNgvInfo = pGv->m_pNgvInfo;
+			if (pNgvInfo->m_bOgv) continue;
 
 			if (pGv->m_bWriteForInstrWrite) {
 				vector<int> refList(pGv->m_dimenList.size());
@@ -1635,6 +1971,7 @@ void CDsnInfo::GenerateNgvFiles()
 {
 	for (size_t gvIdx = 0; gvIdx < m_ngvList.size(); gvIdx += 1) {
 		CNgvInfo * pNgvInfo = m_ngvList[gvIdx];
+		if (pNgvInfo->m_bOgv) continue;
 		CRam * pGv = pNgvInfo->m_modInfoList[0].m_pNgv;
 
 		vector<CNgvModInfo> &ngvModInfoList = m_ngvList[gvIdx]->m_modInfoList;

@@ -107,6 +107,7 @@ void CDsnInfo::GenMsvsProjectFiles()
 
 		for (size_t gvIdx = 0; gvIdx < m_ngvList.size(); gvIdx += 1) {
 			CNgvInfo * pNgvInfo = m_ngvList[gvIdx];
+			if (pNgvInfo->m_bOgv) continue;
 			CRam * pNgv = pNgvInfo->m_modInfoList[0].m_pNgv;
 			msvs.AddFile(Include, string("..\\ht\\sysc\\PersGbl" + pNgv->m_gblName.Uc() + ".h"), "ht\\sysc");
 		}
@@ -190,6 +191,7 @@ void CDsnInfo::GenMsvsProjectFiles()
 
 		for (size_t gvIdx = 0; gvIdx < m_ngvList.size(); gvIdx += 1) {
 			CNgvInfo * pNgvInfo = m_ngvList[gvIdx];
+			if (pNgvInfo->m_bOgv) continue;
 			CRam * pNgv = pNgvInfo->m_modInfoList[0].m_pNgv;
 			msvs.AddFile(Compile, string("..\\ht\\sysc\\PersGbl" + pNgv->m_gblName.Uc() + ".cpp"), "ht\\sysc");
 		}
@@ -266,6 +268,7 @@ void CDsnInfo::GenMsvsProjectFiles()
 
 		for (size_t gvIdx = 0; gvIdx < m_ngvList.size(); gvIdx += 1) {
 			CNgvInfo * pNgvInfo = m_ngvList[gvIdx];
+			if (pNgvInfo->m_bOgv) continue;
 			CRam * pNgv = pNgvInfo->m_modInfoList[0].m_pNgv;
 			msvs.AddFile(Custom, string("..\\ht\\verilog\\PersGbl" + pNgv->m_gblName.Uc() + ".v_"), "ht\\verilog");
 		}
