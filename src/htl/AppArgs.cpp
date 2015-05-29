@@ -209,6 +209,7 @@ CAppArgs::Parse(int argc, char const **argv)
 	m_bVcdUser = false;
 	m_bVcdAll = false;
 	m_vcdStartCycle = 0;
+	m_bOgv = false;
 
 	int argPos;
 	bool bClFlag = false;
@@ -228,6 +229,8 @@ CAppArgs::Parse(int argc, char const **argv)
 			} else if ((strcmp(argv[argPos], "-ac") == 0)) {
 				argPos += 1;
 				m_aeCnt = atoi(argv[argPos]);
+			} else if ((strcmp(argv[argPos], "-ogv") == 0)) {
+				m_bOgv = true;
 			} else if ((strcmp(argv[argPos], "-mund") == 0)) {
 				m_bModuleUnitNames = false;
 			} else if ((strcmp(argv[argPos], "-grpd") == 0)) {

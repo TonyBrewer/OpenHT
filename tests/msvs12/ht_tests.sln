@@ -313,6 +313,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "memPSGRand_bug67", "..\memP
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "memPSGRand_bug68", "..\memPSGRand_bug68\msvs12\memPSGRand_bug68.vcxproj", "{EADE7E70-8517-46D3-8F05-78F3649B93D3}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ngv_v5", "..\ngv_v5\msvs12\ngv_v5.vcxproj", "{77D8AFC9-2860-4071-80AD-AF3DB0FB181E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -1987,6 +1989,17 @@ Global
 		{EADE7E70-8517-46D3-8F05-78F3649B93D3}.Release|Win32.Build.0 = Release|Win32
 		{EADE7E70-8517-46D3-8F05-78F3649B93D3}.Release|x64.ActiveCfg = Release|x64
 		{EADE7E70-8517-46D3-8F05-78F3649B93D3}.Release|x64.Build.0 = Release|x64
+		{77D8AFC9-2860-4071-80AD-AF3DB0FB181E}.Debug|Win32.ActiveCfg = Debug|Win32
+		{77D8AFC9-2860-4071-80AD-AF3DB0FB181E}.Debug|Win32.Build.0 = Debug|Win32
+		{77D8AFC9-2860-4071-80AD-AF3DB0FB181E}.Debug|x64.ActiveCfg = Debug|x64
+		{77D8AFC9-2860-4071-80AD-AF3DB0FB181E}.Debug|x64.Build.0 = Debug|x64
+		{77D8AFC9-2860-4071-80AD-AF3DB0FB181E}.Htl_Htv|Win32.ActiveCfg = Htl_Htv|x64
+		{77D8AFC9-2860-4071-80AD-AF3DB0FB181E}.Htl_Htv|x64.ActiveCfg = Htl_Htv|x64
+		{77D8AFC9-2860-4071-80AD-AF3DB0FB181E}.Htl_Htv|x64.Build.0 = Htl_Htv|x64
+		{77D8AFC9-2860-4071-80AD-AF3DB0FB181E}.Release|Win32.ActiveCfg = Release|Win32
+		{77D8AFC9-2860-4071-80AD-AF3DB0FB181E}.Release|Win32.Build.0 = Release|Win32
+		{77D8AFC9-2860-4071-80AD-AF3DB0FB181E}.Release|x64.ActiveCfg = Release|x64
+		{77D8AFC9-2860-4071-80AD-AF3DB0FB181E}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

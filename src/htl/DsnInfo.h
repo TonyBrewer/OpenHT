@@ -648,6 +648,8 @@ struct CNgvInfo {
 	int m_ngvReplCnt;
 	int m_wrCompStg;
 	int m_wrDataStg;
+
+	bool m_bOgv;
 };
 
 struct CQueIntf : CRecord {
@@ -2215,6 +2217,7 @@ public:
 	void GenModStrmStatements(CModule &mod);
 	void GenModStBufStatements(CModule * pMod);
 	void GenModNgvStatements(CModule &mod);
+	void GenModOptNgvStatements(CModule * mod, CRam * pGv);
 
 	void GenAeNextMsgIntf(HtiFile::CMsgIntfConn * pMicAeNext);
 	void GenAePrevMsgIntf(HtiFile::CMsgIntfConn * pMicAePrev);
