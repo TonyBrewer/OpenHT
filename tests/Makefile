@@ -50,19 +50,17 @@ REG_ARGS += HT_DIR=$(HT_DIR)
 .PHONY: _regress
 _regress:
 	@echo "Using HT_DIR=$(HT_DIR)"
+	@/bin/echo "Skipping.. $(RSKIP)"
 	@for l in {1..$(LOOPCNT)}; do \
 		if [ $(LOOPCNT) -gt 1 ]; then \
 		    echo LOOP: $$l; \
 		fi; \
 		for d in $(RDIRS); do \
-		    /bin/echo -n "Regressing $$d... "; \
-		    if [ "$(TGT)" = "model" -a ! -d "$$d/src_model" ]; then \
-			echo NO_SRC; \
-		    else \
 		    s=`echo "$(RSKIP)" | grep "$$d "`; \
-		    if [ -n "$$s" ]; then \
-			echo SKIPPED; \
-		    else \
+		    if [ "$(TGT)" != "model" -o "$$d/src_model" ] \
+		         && [ -z "$$s" ]; \
+		    then \
+			/bin/echo -n "Regressing $$d... "; \
 			(cd $$d > /dev/null; \
 			    $(MAKE) $(TGT) $(REG_ARGS) > make.log 2>&1; \
 			    if [ -x app_$(TGT) ]; then \
@@ -78,7 +76,6 @@ _regress:
 			    fi \
 			); \
 		    fi \
-		    fi \
 		done; \
 		if [ $(LOOPCNT) -gt 1 ]; then \
 		    for d in $(DIRS); do \
@@ -90,12 +87,11 @@ _regress:
 	done
 
 _status:
+	@/bin/echo "Skipping.. $(RSKIP)"
 	@for d in $(RDIRS); do \
-	    /bin/echo -n "Regressing $$d... "; \
 	    s=`echo "$(RSKIP)" | grep "$$d "`; \
-	    if [ -n "$$s" ]; then \
-		echo SKIPPED; \
-	    else \
+	    if [ -z "$$s" ]; then \
+		/bin/echo -n "Regressing $$d... "; \
 		(cd $$d > /dev/null; \
 		    pf=`grep -e PASSED -e FAILED regress.log`; \
 		    if [ -z "$$pf" ]; then \
