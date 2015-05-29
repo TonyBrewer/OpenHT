@@ -18,6 +18,8 @@ CCoprocInfo g_coprocInfo[] = {
 	CCoprocInfo(hc2ex, "hc2ex", "hc-2ex", 8, 8, 1, 1, false, 1440),
 	CCoprocInfo(wx690, "wx690", "wx-690", 8, 8, 8, 8, true, 2940),
 	CCoprocInfo(wx2k, "wx2k", "wx-2000", 8, 8, 8, 8, true, 2584/4),
+	CCoprocInfo(ma100, "ma100", "ma-100", 8, 8, 8, 8, true, 2500 /*FIXME*/),
+	CCoprocInfo(ma400, "ma400", "ma-400", 8, 8, 8, 8, true, 2500 /*FIXME*/),
 	CCoprocInfo()
 };
 

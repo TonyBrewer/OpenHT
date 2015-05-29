@@ -21,7 +21,7 @@
 #define VCSREV "unknown"
 #endif
 
-enum ECoproc { hcx, hc1, hc1ex, hc2, hc2ex, wx690, wx2k };
+enum ECoproc { hcx, hc1, hc1ex, hc2, hc2ex, wx690, wx2k, ma100, ma400 };
 
 // platform capabilities
 class CCoprocInfo {
