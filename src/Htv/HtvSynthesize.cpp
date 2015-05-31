@@ -1295,14 +1295,6 @@ void CHtvDesign::FindWriteRefSets(CHtvStatement *pStatement, int synSetId, int s
 
         switch (pStatement2->GetStType()) {
         case st_assign:
-            {
-                //if (!(true || IsTask(pStatement) || synSetSize > 1 || bClockedAlwaysAt)) {
-                //	// set write vars as assigned
-                //	vector<CHtIdentElem> &writeRefSet2 = pStatement2->GetWriteRefSet();
-                //	for (size_t i = 0; i < writeRefSet2.size(); i += 1)
-                //		writeRefSet2[i]->SetIsAssignOutput();
-                //}
-            }
             break;
         case st_compound:
             FindWriteRefSets(pStatement2->GetCompound1(), synSetId, synSetSize, bClockedAlwaysAt);
@@ -1748,9 +1740,27 @@ void CHtvDesign::RemoveWrDataMux(CHtvStatement *pStatement, int synSetSize)
 					return;
 
 				CHtvOperand * pOp1 = (*ppStatement3)->GetExpr()->GetOperand1();
+				if (pOp1 == 0)
+					return; // function call
+
 				CHtvIdent * pIdent = pOp1->GetMember();
 				if (pIdent->IsMemVarWrData() || pIdent->IsMemVarWrEn()) {
 					CHtvIdent * pMemVar = pIdent->GetMemVar();
+
+					size_t k;
+					for (k = 0; k < pOp1->GetIndexList().size(); k += 1) {
+						if (!pOp1->GetIndexList()[k]->IsConstValue())
+							break;
+					}
+
+					if (k < pOp1->GetIndexList().size()) {
+						for (size_t i = 0; i < memVarList.size(); i += 1) {
+							if (memVarList[i].m_pMemVar == pMemVar)
+								memVarList[i].m_bConvert = false;
+						}
+						ppStatement3 = (*ppStatement3)->GetPNext();
+						continue;
+					}
 
 					CMemVarInfo * pMemVarInfo = 0;
 					for (size_t i = 0; i < memVarList.size(); i += 1) {
@@ -3645,18 +3655,19 @@ void CHtvDesign::GenHtAttributes(CHtvIdent * pIdent, string instName)
     for (int i = 0; i < pIdent->GetScAttribCnt(); i += 1) {
         CHtAttrib htAttrib = pIdent->GetScAttrib(i);
 
-	bool skip = false;
-	string name = htAttrib.m_name;
-	string value = htAttrib.m_value;
-	// Quartus hacks FIXME
-	if (g_htvArgs.IsQuartusEnabled()) {
-	    if (!strcmp("keep_hierarchy", name.c_str())) skip = true;
-	    if (!strcmp("equivalent_register_removal", name.c_str())) {
-		name = "syn_preserve";
-		value = "true";
-	    }
-	    if (!strcmp("keep", name.c_str())) name = "noprune";
-	}
+		bool skip = false;
+		string name = htAttrib.m_name;
+		string value = htAttrib.m_value;
+
+		// Quartus hacks FIXME
+		if (g_htvArgs.IsQuartusEnabled()) {
+			if (!strcmp("keep_hierarchy", name.c_str())) skip = true;
+			if (!strcmp("equivalent_register_removal", name.c_str())) {
+				name = "syn_preserve";
+				value = "true";
+			}
+			if (!strcmp("keep", name.c_str())) name = "noprune";
+		}
 
         if ((instName.size() == 0 || instName == htAttrib.m_inst) && !skip)
 	    m_vFile.Print("(* %s = \"%s\" *)\n", name.c_str(), value.c_str());
@@ -5367,8 +5378,6 @@ void CHtvDesign::GenFuncVarDecl(CHtvIdent * pFunc)
 	}
 
     // declare temps
-	if (!g_htvArgs.IsBlockLocalTemps())
-		m_vFile.SetVarDeclLines(true);
     for (identIter.Begin(); !identIter.End(); identIter++) {
         if (identIter->IsVariable() && !identIter->IsRegClkEn() /*&& !identIter->IsScPrimOutput()*/) {
 
@@ -5389,14 +5398,18 @@ void CHtvDesign::GenFuncVarDecl(CHtvIdent * pFunc)
 
 				string identName = identIter->GetVerilogName(elemIdx);
 
-                GenHtAttributes(identIter(), identName);
+				if (!g_htvArgs.IsBlockLocalTemps() || bWire)
+					m_vFile.SetVarDeclLines(true);
+
+				GenHtAttributes(identIter(), identName);
 
                 m_vFile.Print("%s   %-10s %s;\n", bWire ? "wire" : "reg ", bitRange.c_str(), identName.c_str());
-            }
+
+				if (!g_htvArgs.IsBlockLocalTemps() || bWire)
+					m_vFile.SetVarDeclLines(false);
+			}
         }
     }
-	if (!g_htvArgs.IsBlockLocalTemps())
-		m_vFile.SetVarDeclLines(false);
 }
 
 void CHtvDesign::SynBuiltinFunctionCall(CHtvObject * pObj, CHtvObject * pRtnObj, CHtvOperand * pExpr)

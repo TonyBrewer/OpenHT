@@ -294,7 +294,7 @@ int CHtfeDesign::ParseConstantIndexing(CHtfeIdent *pHier, const CHtfeIdent *pIde
 	return elemIdx;
 }
 
-CHtfeStatement * CHtfeDesign::ParseCompoundStatement(CHtfeIdent *pHier, bool bNewNameSpace)
+CHtfeStatement * CHtfeDesign::ParseCompoundStatement(CHtfeIdent *pHier, bool bNewNameSpace, bool bFoldConstants)
 {
 	CHtfeStatement *pStatement = 0;
 	CHtfeStatement **ppStatement = &pStatement;
@@ -318,7 +318,7 @@ CHtfeStatement * CHtfeDesign::ParseCompoundStatement(CHtfeIdent *pHier, bool bNe
 	GetNextToken();
 	while (GetToken() != tk_rbrace && GetToken() != tk_eof) {
 
-		*ppStatement = ParseStatement(pHier);
+		*ppStatement = ParseStatement(pHier, bFoldConstants);
 
 		while (*ppStatement)
 			ppStatement = (*ppStatement)->GetPNext();
@@ -374,7 +374,7 @@ CHtfeStatement * CHtfeDesign::ParseDoStatement(CHtfeIdent *pHier, bool bNewNameS
 	return pStatement;
 }
 
-CHtfeStatement * CHtfeDesign::ParseStatement(CHtfeIdent *pHier)
+CHtfeStatement * CHtfeDesign::ParseStatement(CHtfeIdent *pHier, bool bFoldConstants)
 {
 	CHtfeStatement *pStatement = 0;
 	m_statementCount += 1;
@@ -426,7 +426,7 @@ CHtfeStatement * CHtfeDesign::ParseStatement(CHtfeIdent *pHier)
 			else if (pIdent && pIdent->GetId() == CHtfeIdent::id_variable && pIdent->GetType()->IsHtMemory())
 				pStatement = ParseHtMemoryStatement(pHier);
 			else
-				pStatement = ParseIdentifierStatement(pHier, true, false);
+				pStatement = ParseIdentifierStatement(pHier, true, false, bFoldConstants);
 		}
 		break;
 	case tk_plusPlus:
@@ -528,7 +528,7 @@ CHtfeStatement * CHtfeDesign::ParseStatement(CHtfeIdent *pHier)
 		break;
 	case tk_lbrace:
 		m_statementCount -= 1;  // compound statements are not counted
-		pStatement = ParseCompoundStatement(pHier);
+		pStatement = ParseCompoundStatement(pHier, true, bFoldConstants);
 		break;
 	case tk_rbrace:
 		m_statementCount -= 1;  // compound statements are not counted
@@ -972,7 +972,7 @@ void CHtfeDesign::SkipSwitchStatement()
 	SkipStatement();
 }
 
-CHtfeStatement * CHtfeDesign::ParseIdentifierStatement(CHtfeIdent *pHier, bool bAssignmentAllowed, bool bStaticAllowed)
+CHtfeStatement * CHtfeDesign::ParseIdentifierStatement(CHtfeIdent *pHier, bool bAssignmentAllowed, bool bStaticAllowed, bool bFoldConstants)
 {
 	CHtfeStatement *pStatement = 0;
 	CHtfeTypeAttrib typeAttrib;
@@ -1096,7 +1096,7 @@ CHtfeStatement * CHtfeDesign::ParseIdentifierStatement(CHtfeIdent *pHier, bool b
 	pStatement = HandleNewStatement();
 	pStatement->Init(st_assign, GetLineInfo());
 
-	pStatement->SetExpr(ParseExpression(pHier, false, true, true));
+	pStatement->SetExpr(ParseExpression(pHier, false, bFoldConstants, true));
 
 	// check for trival statement 'var;'
 	CHtfeOperand *pExpr = pStatement->GetExpr();
@@ -1599,7 +1599,10 @@ CHtfeStatement * CHtfeDesign::ParseSwitchStatement(CHtfeIdent *pHier)
 		CHtfeStatement ** ppStmt = &pConstStmt;
 		while (*ppStmt && (*ppStmt)->GetStType() != st_break)
 			ppStmt = (*ppStmt)->GetPNext();
-		Assert(*ppStmt != 0);
+
+		if ((ppStmt == 0 || *ppStmt == 0) && GetErrorCnt() > 0)
+			ParseMsg(PARSE_FATAL, "Previous errors prohibit further parsing");
+
 		*ppStmt = 0;
 		return pConstStmt;
 	} else

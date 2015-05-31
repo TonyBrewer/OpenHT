@@ -1392,24 +1392,16 @@ CHtfeStatement * CHtfeDesign::ParseHtMemoryStatement(CHtfeIdent *pHier)
 				wrDataStr += GetString();
 
 				GetNextToken();
-				while (GetToken() == tk_lbrack) {
-					GetNextToken();
 
-					CConstValue idxValue;
-					if (!ParseConstExpr(idxValue)) {
-						ParseMsg(PARSE_ERROR, "Parsing '[ integer ]', expected contant index");
-						SkipTo(tk_rbrack);
-					}
+				while (GetToken() == tk_lbrack) {
+					CopyTo(tk_rbrack, wrDataStr);
+
 					if (GetToken() != tk_rbrack) {
 						ParseMsg(PARSE_ERROR, "Parsing '[ integer ]', expected ]");
 						SkipTo(tk_rbrack);
 					}
 					GetNextToken();
-
-					char buf[32];
-					sprintf(buf, "[%d]", (int)idxValue.GetSint64());
-					wrDataStr += buf;
-				}			
+				}
 			}
 
 			while (GetToken() == tk_lparen) {
@@ -1493,13 +1485,6 @@ CHtfeStatement * CHtfeDesign::ParseHtMemoryStatement(CHtfeIdent *pHier)
 		int lowBit, width;
 		bool bIsConst = GetSubFieldRange(pStatement->GetExpr()->GetOperand1(), lowBit, width, false);
 
-		if (!bIsConst)
-			ParseMsg(PARSE_FATAL, pStatement->GetExpr()->GetOperand1()->GetLineInfo(), "non-constant bit range in sc_memory");
-
-		int highBit = lowBit + width - 1;
-
-		int dataWidth = pIdent->GetType()->GetType()->GetWidth();
-
 		CHtfeIdent *pWrEn = 0;
 		string wrEnName = cQueName + "_WrEn";
 		const CHtfeIdent *pHier2;
@@ -1510,38 +1495,102 @@ CHtfeStatement * CHtfeDesign::ParseHtMemoryStatement(CHtfeIdent *pHier)
 		}
 		Assert(pWrEn);
 
-		while (lowBit <= highBit) {
+		if (bIsConst) {
 
-			int width;
-			if (pIdent->IsHtBlockRam() || pIdent->IsHtMrdBlockRam() || pIdent->IsHtMwrBlockRam() || dataWidth == 1) {
-				width = highBit - lowBit + 1;
-				sprintf(buf, "{{ %s = 1; }}", wrEnStr.c_str());
-			} else {
-				if (highBit - lowBit + 1 > 64)
-					width = 64;
-				else
+			int highBit = lowBit + width - 1;
+
+			int dataWidth = pIdent->GetType()->GetType()->GetWidth();
+
+			while (lowBit <= highBit) {
+
+				int width;
+				if (pIdent->IsHtBlockRam() || pIdent->IsHtMrdBlockRam() || pIdent->IsHtMwrBlockRam() || dataWidth == 1) {
 					width = highBit - lowBit + 1;
+					sprintf(buf, "{{ %s = 1; }}", wrEnStr.c_str());
+				} else {
+					if (highBit - lowBit + 1 > 64)
+						width = 64;
+					else
+						width = highBit - lowBit + 1;
 
-				sprintf(buf, "{{ %s = true; }}", wrEnStr.c_str());
+					sprintf(buf, "{{ %s = true; }}", wrEnStr.c_str());
 
-				pWrEn->SetHtDistRamWeSubRange(lowBit + width - 1, lowBit);
+					pWrEn->SetHtDistRamWeSubRange(lowBit + width - 1, lowBit);
+				}
+
+				OpenLine(buf);
+				GetNextToken();
+
+				CHtfeStatement *pStatement2 = ParseCompoundStatement(pHier);
+
+				if (!pIdent->IsHtBlockRam() && !pIdent->IsHtMrdBlockRam() && !pIdent->IsHtMwrBlockRam() && dataWidth > 1) {
+					CHtfeOperand *pWrEnOp = pStatement2->GetExpr()->GetOperand1();
+					pWrEnOp->SetDistRamWeWidth(lowBit + width - 1, lowBit);
+				}
+
+				pStatement2->SetNext(pStatement);
+				pStatement = pStatement2;
+
+				lowBit += width;
 			}
 
-			OpenLine(buf);
-			GetNextToken();
+		} else {
+			for (SubFieldRangeIter iter(pStatement->GetExpr()->GetOperand1()); !iter.end(); iter++) {
 
-			CHtfeStatement *pStatement2 = ParseCompoundStatement(pHier);
+				lowBit = iter.GetLowBit();
 
-			if (!pIdent->IsHtBlockRam() && !pIdent->IsHtMrdBlockRam() && !pIdent->IsHtMwrBlockRam() && dataWidth > 1) {
-				CHtfeOperand *pWrEnOp = pStatement2->GetExpr()->GetOperand1();
-				pWrEnOp->SetDistRamWeWidth(lowBit+width-1, lowBit);
+				int highBit = lowBit + iter.GetWidth() - 1;
+
+				int dataWidth = pIdent->GetType()->GetType()->GetWidth();
+
+				while (lowBit <= highBit) {
+
+					string lineBuf;
+
+					int width;
+					if (pIdent->IsHtBlockRam() || pIdent->IsHtMrdBlockRam() || pIdent->IsHtMwrBlockRam() || dataWidth == 1) {
+						width = highBit - lowBit + 1;
+						sprintf(buf, "{{ %s = 1; }}", wrEnStr.c_str());
+					} else {
+						if (highBit - lowBit + 1 > 64)
+							width = 64;
+						else
+							width = highBit - lowBit + 1;
+
+						lineBuf = "{{ " + wrEnStr + " = ";
+
+						string separator = "";
+						for (int idx = 0; idx < iter.GetIdxCnt(); idx += 1) {
+							lineBuf += separator + VA("0x%x == 0x%x", idx, iter.GetIdx(idx)).operator std::string();
+							separator = " && ";
+						}
+						lineBuf += "; }}";
+
+						pWrEn->SetHtDistRamWeSubRange(lowBit + width - 1, lowBit);
+					}
+
+					OpenLine(lineBuf.c_str());
+					GetNextToken();
+
+					CHtfeStatement *pStatement2 = ParseCompoundStatement(pHier, true, false);
+
+					for (int idx = 0; idx < iter.GetIdxCnt(); idx += 1) {
+						bool bFound = ReplaceEqualEqualOp1(pStatement2->GetExpr(), idx, iter.GetIdxExpr(idx));
+						Assert(bFound);
+					}
+
+					if (!pIdent->IsHtBlockRam() && !pIdent->IsHtMrdBlockRam() && !pIdent->IsHtMwrBlockRam() && dataWidth > 1) {
+						CHtfeOperand *pWrEnOp = pStatement2->GetExpr()->GetOperand1();
+						pWrEnOp->SetDistRamWeWidth(lowBit + width - 1, lowBit);
+					}
+
+					pStatement2->SetNext(pStatement);
+					pStatement = pStatement2;
+
+					lowBit += width;
+				}
 			}
-
-			pStatement2->SetNext(pStatement);
-			pStatement = pStatement2;
-
-			lowBit += width;
-		}		
+		}
 
 		// set actual indexing expressions
 		for (CHtfeStatement *pSt = pStatement; pSt; pSt = pSt->GetNext())

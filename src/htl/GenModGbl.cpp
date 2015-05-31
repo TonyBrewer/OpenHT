@@ -2618,9 +2618,10 @@ void CDsnInfo::GenerateNgvFiles()
 								mod.m_modName.Lc().c_str(), imCh, eoStr.c_str(), queRegDataSig.c_str(), dimIdx.c_str(),
 								eoStr.c_str(), dimIdx.c_str());
 						} else if (bNeedAddrComp) {
-							ngvPreRegRrSel.Append("%sc_t0_%s_%cwRrSel%s = r_%s_%cwWrEn%s%s && (!r_t1_wrEn || r_%s_%cwData%s%s.GetAddr() != r_t1_gwData%s.GetAddr());\n", tabs.c_str(),
+							ngvPreRegRrSel.Append("%sc_t0_%s_%cwRrSel%s = r_%s_%cwWrEn%s%s && (!r_t1_wrEn%s || r_%s_%cwData%s%s.GetAddr() != r_t1_gwData%s.GetAddr());\n", tabs.c_str(),
 								mod.m_modName.Lc().c_str(), imCh, dimIdx.c_str(),
 								mod.m_modName.Lc().c_str(), imCh, queRegWrEnSig.c_str(), dimIdx.c_str(),
+								dimIdx.c_str(),
 								mod.m_modName.Lc().c_str(), imCh, queRegDataSig.c_str(), dimIdx.c_str(), 
 								dimIdx.c_str());
 						} else {
