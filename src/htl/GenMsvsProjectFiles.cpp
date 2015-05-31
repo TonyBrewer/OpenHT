@@ -324,6 +324,10 @@ bool CMsvsProject::CheckIfProjFileOkay()
 	m_pLine = "";
 
 	// get next property
+	bool bRtn = true;
+	string pathName;
+	string propName;
+
 	for (;;) {
 		while (*m_pLine != '\0' && *m_pLine != '<') m_pLine += 1;
 		if (*m_pLine == '\0') {
@@ -350,12 +354,51 @@ bool CMsvsProject::CheckIfProjFileOkay()
 
 		EMsvsFile propType = Undefined;
 		if (prop == "AdditionalIncludeDirectories" && !CheckRequiredProperties(additionalIncDirList))
-			return false;
+			bRtn = false;
+
+		if (prop == "CustomBuild" || prop == "ClCompile" || prop == "ClInclude" || prop == "None") {
+
+			propName = prop;
+
+			// parse the filter or path name
+			while (*m_pLine == ' ') m_pLine += 1;
+			if (strncmp(m_pLine, "Include=", 8) != 0)
+				continue;
+
+			m_pLine += 8;
+
+			// parse string with quotes
+			if (*m_pLine++ != '"')
+				return false;
+
+			pStart = m_pLine;
+			while (*m_pLine != '\0' && *m_pLine != '"') m_pLine += 1;
+			if (*m_pLine != '"')
+				return false;
+
+			*m_pLine++ = '\0';
+			pathName = pStart;
+
+		} else if (prop == "ExcludedFromBuild") {
+
+			if (propName != "CustomBuild")
+				continue;
+
+			string conditionStr;
+			if (!ReadCondition(conditionStr)) {
+				printf("Missing condition for ExcludedFromBuild\n");
+				return false;
+			}
+
+			string suffix = pathName.substr(pathName.size()-3);
+			if (suffix == ".v_")
+				printf("Warning - File %s was excluded from build configuration %s\n", pathName.c_str(), conditionStr.c_str());
+		}
 	}
 
 	fclose(fp);
 
-	return true;
+	return bRtn;
 }
 
 bool CMsvsProject::CheckRequiredProperties(vector<string> &reqPropList)
@@ -739,6 +782,8 @@ void CMsvsProject::ReadItemDefinitionGroup()
 		condIdx = 2;
 	else if (conditionStr == "Release|x64")
 		condIdx = 3;
+	else if (conditionStr == "Htl_Htv|x64")
+		condIdx = 4;
 	else {
 		printf("Unknown configuration '%s'\n", conditionStr.c_str());
 		return;
@@ -792,6 +837,8 @@ void CMsvsProject::ReadPropertyGroup()
 		condIdx = CR32;
 	else if (conditionStr == "Release|x64")
 		condIdx = CR64;
+	else if (conditionStr == "Htl_Htv|x64")
+		condIdx = 4;
 	else {
 		printf("Unknown configuration '%s'\n", conditionStr.c_str());
 		return;
@@ -889,6 +936,8 @@ void CMsvsProject::ReadItemGroup()
 							condIdx = 2;
 						else if (conditionStr == "Release|x64")
 							condIdx = 3;
+						else if (conditionStr == "Htl_Htv|x64")
+							condIdx = 4;
 						else {
 							printf("Unknown configuration '%s'\n", conditionStr.c_str());
 							return;
@@ -917,6 +966,8 @@ void CMsvsProject::ReadItemGroup()
 							condIdx = 2;
 						else if (conditionStr == "Release|x64")
 							condIdx = 3;
+						else if (conditionStr == "Htl_Htv|x64")
+							condIdx = 4;
 						else {
 							printf("Unknown configuration '%s'\n", conditionStr.c_str());
 							return;

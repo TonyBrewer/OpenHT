@@ -341,6 +341,133 @@ bool CHtfeDesign::GetSubFieldRange(CHtfeOperand *pOp, int &lowBit, int &width, b
     return bConstRange;
 }
 
+SubFieldRangeIter::SubFieldRangeIter(CHtfeOperand *pOp)
+{
+	// reduce target bit range
+	m_pOp = pOp;
+	m_lowBit = 0;
+	m_width = pOp->GetMember()->GetWidth();
+
+	CScSubField *pSubField = pOp->GetSubField();
+	for (; pSubField; pSubField = pSubField->m_pNext) {
+
+		// check if all indecies are constants
+		int idx = 0;
+		int idxBase = 1;
+		for (int i = (int)(pSubField->m_indexList.size() - 1); i >= 0; i -= 1) {
+			CConstValue value;
+			if (CHtfeDesign::EvalConstantExpr(pSubField->m_indexList[i], value)) {
+				m_constList.push_back(true);
+				m_idxList.push_back(value.GetSint32());
+			} else {
+				m_constList.push_back(false);
+				m_idxList.push_back(0);
+			}
+
+			if (!pSubField->m_indexList[i]->IsLeaf())
+				pSubField->m_indexList[i]->SetIsParenExpr();
+
+			m_exprList.push_back(pSubField->m_indexList[i]);
+			m_dimenList.push_back(pSubField->m_pIdent ? pSubField->m_pIdent->GetDimenList()[i] : 1);
+
+			idx += m_idxList.back() * idxBase;
+			idxBase *= m_dimenList.back();
+		}
+
+		if (pSubField->m_pIdent)
+			m_lowBit += pSubField->m_pIdent->GetStructPos() + pSubField->m_subFieldWidth * idx;
+		else
+			m_lowBit += idx;
+
+		m_width = pSubField->m_subFieldWidth;
+	}
+
+	m_bEnd = false;
+}
+
+bool SubFieldRangeIter::IdxInc()
+{
+	bool bDone;
+
+	if (m_idxList.size() > 0) {
+		bDone = false;
+		int i;
+		for (i = m_dimenList.size() - 1; i >= 0; i -= 1) {
+			if (!m_constList[i])
+				break;
+		}
+
+		m_idxList[i] += 1;
+		while (i >= 0) {
+			if (m_idxList[i] < m_dimenList[i])
+				break;
+			else {
+				m_idxList[i] = 0;
+				for (i -= 1; i >= 0; i -= 1)
+				if (!m_constList[i])
+					break;
+
+				if (i >= 0)
+					m_idxList[i] += 1;
+				else
+					bDone = true;
+			}
+		}
+	} else
+		bDone = true;
+
+	return bDone;
+}
+
+void SubFieldRangeIter::operator++ (int)
+{
+	m_bEnd = IdxInc();
+
+	if (m_bEnd) return;
+
+	// reduce target bit range
+	m_lowBit = 0;
+	int listIdx = 0;
+
+	CScSubField *pSubField = m_pOp->GetSubField();
+	for (; pSubField; pSubField = pSubField->m_pNext) {
+
+		// check if all indecies are constants
+		int idx = 0;
+		int idxBase = 1;
+		for (int i = (int)(pSubField->m_indexList.size() - 1); i >= 0; i -= 1) {
+			idx += m_idxList[listIdx] * idxBase;
+			idxBase *= m_dimenList[listIdx];
+
+			listIdx += 1;
+		}
+
+		if (pSubField->m_pIdent)
+			m_lowBit += pSubField->m_pIdent->GetStructPos() + pSubField->m_subFieldWidth * idx;
+		else
+			m_lowBit += idx;
+	}
+}
+
+bool CHtfeDesign::ReplaceEqualEqualOp1(CHtfeOperand * pExpr, int matchConst, CHtfeOperand * pMatchExpr)
+{
+	// search expression for == operator, if lhs matches opMatch const then replace with pExpr
+	if (pExpr->IsLeaf())
+		return false;
+	else if (pExpr->GetOperator() == tk_equalEqual) {
+		if (pExpr->GetOperand1()->IsConstValue() && pExpr->GetOperand1()->GetConstValue().GetSint32() == matchConst) {
+			pExpr->SetOperand1(pMatchExpr);
+			return true;
+		} else
+			return false;
+	} else if (ReplaceEqualEqualOp1(pExpr->GetOperand1(), matchConst, pMatchExpr) ||
+		ReplaceEqualEqualOp1(pExpr->GetOperand2(), matchConst, pMatchExpr)) 
+	{
+		return true;
+	} else
+		return false;
+}
+
 bool CHtfeDesign::IsTask(CHtfeStatement *pStatement) {
         CHtfeOperand *pExpr = pStatement->GetExpr();
         if (pExpr == 0)

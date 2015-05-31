@@ -1058,7 +1058,6 @@
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </CustomBuild>
     <CustomBuild Include="..\ht\verilog\PersGblTest00_0_src_v0_data.v_">
       <FileType>Document</FileType>

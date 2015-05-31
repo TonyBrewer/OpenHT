@@ -308,7 +308,7 @@ int CHtfeIdent::GetDimenElemIdx(CHtfeOperand * pOperand) {
 	int elemIdx = 0;
 	int idxMul = 1;
 	vector<CHtfeOperand *> &indexList = pOperand->GetIndexList();
-	for (size_t i = 0; i < m_dimenList.size(); i += 1) {
+	for (int i = m_dimenList.size() - 1; i >= 0; i -= 1) {
 		if (!indexList[i]->IsConstValue())
 			return -1;
 		elemIdx += idxMul * indexList[i]->GetConstValue().GetSint32();
@@ -322,7 +322,7 @@ int CHtfeIdent::GetDimenElemIdx(vector<int> const & refList)
 	Assert(m_dimenList.size() == refList.size());
 	int elemIdx = 0;
 	int idxMul = 1;
-	for (size_t i = 0; i < m_dimenList.size(); i += 1) {
+	for (int i = m_dimenList.size() - 1; i >= 0; i -= 1) {
 		elemIdx += idxMul * refList[i];
 		idxMul *= m_dimenList[i];
 	}
@@ -333,9 +333,9 @@ int CHtfeIdent::CalcElemIdx() {
 	vector<int> &dimenList = (GetPrevHier() && GetPrevHier()->IsArrayIdent()) ? GetPrevHier()->GetDimenList() : GetDimenList();
 	int elemIdx = 0;
 	int idxMul = 1;
-	for (size_t dimIdx = 0; dimIdx < dimenList.size(); dimIdx += 1) {
-		elemIdx += idxMul * m_indexList[dimIdx];
-		idxMul *= dimenList[dimIdx];
+	for (int i = dimenList.size() - 1; i >= 0; i -= 1) {
+		elemIdx += idxMul * m_indexList[i];
+		idxMul *= dimenList[i];
 	}
 	return elemIdx;
 }
@@ -756,10 +756,6 @@ void CHtfeIdent::SetIsAssignOutput(CHtfeOperand *pOp)
 
 		do {
 			int idx = GetDimenElemIdx(refList);
-			//for (size_t dimIdx = 0; dimIdx < m_dimenList.size(); dimIdx += 1) {
-			//	idx *= m_dimenList[dimIdx];
-			//	idx += refList[dimIdx];
-			//}
 
 			if (idx < (int)m_refInfo.size()) // can be out of range
 				m_refInfo[idx].m_bIsAssignOutput = true;
@@ -906,14 +902,16 @@ bool CHtfeIdent::DimenIter(vector<int> &refList)
 
 	if (m_dimenList.size() > 0) {
 		bDone = false;
-		refList[0] += 1;
-		for (size_t i = 0; i < m_dimenList.size(); i += 1) {
+		int i = (int)m_dimenList.size() - 1;
+		refList[i] += 1;
+		while (i >= 0) {
 			if (refList[i] < m_dimenList[i])
 				break;
 			else {
 				refList[i] = 0;
-				if (i+1 < m_dimenList.size())
-					refList[i+1] += 1;
+				i -= 1;
+				if (i >= 0)
+					refList[i] += 1;
 				else
 					bDone = true;
 			}
