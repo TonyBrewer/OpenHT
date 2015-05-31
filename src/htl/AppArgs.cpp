@@ -148,14 +148,14 @@ CAppArgs::ParseArgsFile(char const * pFileName)
 	//delete argv;
 }
 
-void CAppArgs::SetHtCoproc(char const * pStr)
+bool CAppArgs::SetHtCoproc(char const * pStr)
 {
 	if (*pStr == '?') {
 		if (m_bRndTest) {
 			int rndIdx = GetRtRndIdx(6);
 			m_coprocId = rndIdx;
 			printf("   Rnd Coproc: %s\n", GetCoprocName());
-			return;
+			return true;
 		}
 		pStr += 1;
 	}
@@ -163,13 +163,11 @@ void CAppArgs::SetHtCoproc(char const * pStr)
 	for (int i = 0; g_coprocInfo[i].GetCoprocName() != 0; i += 1) {
 		if (strcasecmp(pStr, g_coprocInfo[i].GetCoprocName()) == 0) {
 			m_coprocId = i;
-			return;
+			return true;
 		}
 	}
 
-	fprintf(stderr, "Unknown value for -cp\n");
-	Usage();
-	exit(1);
+	return false;
 }
 
 void
@@ -225,7 +223,11 @@ CAppArgs::Parse(int argc, char const **argv)
 				exit(0);
 			} else if ((strcmp(argv[argPos], "-cp") == 0)) {
 				argPos += 1;
-				SetHtCoproc(argv[argPos]);
+				if (!SetHtCoproc(argv[argPos])) {
+					fprintf(stderr, "Unknown value for -cp\n");
+					Usage();
+					exit(1);
+				}
 			} else if ((strcmp(argv[argPos], "-ac") == 0)) {
 				argPos += 1;
 				m_aeCnt = atoi(argv[argPos]);
@@ -497,7 +499,11 @@ CAppArgs::Parse(int argc, char const **argv)
 					char *p = buf + 4;
 					while (*p != '\n' && *p != '\r' && *p != '\0') p += 1;
 					*p = '\0';
-					SetHtCoproc(buf + 4);
+					if (!SetHtCoproc(buf + 4)) {
+						fprintf(stderr, "Unknown value for -cp\n");
+						Usage();
+						exit(1);
+					}
 				} else if (strncmp(buf, "-rt", 3) == 0) {
 					m_bRndTest = true;
 
@@ -529,9 +535,16 @@ CAppArgs::Parse(int argc, char const **argv)
 		}
 	}
 #endif
-	//char buf[256];
-	//getcwd(buf, 256);
-	//printf("cwd = %s\n", buf);
+
+	// check if coproc is specified in environment variable
+	char * pValue = getenv("HTL_FORCE_COPROC");
+	if (pValue) {
+		if (!SetHtCoproc(pValue)) {
+			fprintf(stderr, "Unknown value for HTL_FORCE_COPROC environment variable, %s\n", pValue);
+			exit(1);
+		}
+		printf("Warning - HTL_FORCE_COPROC forced coproc to %s\n", pValue);
+	}
 
 	// validate command line options
 	bool bError = false;

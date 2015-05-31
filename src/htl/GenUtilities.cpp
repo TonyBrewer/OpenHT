@@ -134,7 +134,10 @@ void CDsnInfo::LoadDefineList()
 				str.erase(0, 1);
 				str.erase(str.size() - 1, 1);
 			}
-			g_appArgs.SetHtCoproc(str.c_str());
+			if (!g_appArgs.SetHtCoproc(str.c_str())) {
+				fprintf(stderr, "Unknown value for __PLATFORM__\n");
+				exit(1);
+			}
 		}
 	}
 }

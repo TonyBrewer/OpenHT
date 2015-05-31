@@ -93,7 +93,7 @@ public:
 	}
 
 	void Parse(int argc, char const ** argv);
-	void SetHtCoproc(char const * pStr);
+	bool SetHtCoproc(char const * pStr);
 
 	bool IsGenReportsEnabled() { return m_bGenReports; }
 	int GetInputFileCnt() { return (int)m_inputFileList.size(); }

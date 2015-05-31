@@ -213,6 +213,26 @@ void CHtvArgs::Parse(int argc, char *argv[])
 		argPos += 1;
 	}
 
+#ifdef _WIN32
+#define strcasecmp strcmpi
+#endif
+
+	char * pValue = getenv("HTV_FORCE_VENDOR");
+	if (pValue) {
+		if (strcasecmp(pValue, "Altera")) {
+			SetVivadoEnabled(false);
+			SetQuartusEnabled(true);
+		} else if (strcasecmp(pValue, "Xilinx")) {
+			SetVivadoEnabled(true);
+			SetQuartusEnabled(false);
+		} else {
+			fprintf(stderr, "Unknown value for HTL_FORCE_COPROC environment variable, %s\n", pValue);
+			exit(1);
+		}
+		printf("Warning - HTV_FORCE_VENDOR forced vendor to %s\n", pValue);
+	}
+
+
 	// Two legal file combinations
 	// 1. x.cpp z.v
 	// 2. x.sc y.h z.v
