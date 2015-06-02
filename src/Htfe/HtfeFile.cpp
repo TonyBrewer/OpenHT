@@ -38,6 +38,7 @@ CHtFile::CHtFile()
   m_maxLineCol = 70;
   m_bLineBuffering = false;
   m_lineListIdx = 0;
+  m_bVarInit = false;
 }
 
 bool
@@ -94,13 +95,29 @@ CHtFile::Dup(int srcFd, int startOffset, int endOffset)
   _lseek(srcFd, origOffset, SEEK_SET);
 }
 
-int
-CHtFile::Print(const char *format, ...)
+void CHtFile::PrintVarInit(const char *format, ...)
+{
+	int savedIndentLevel = GetIndentLevel();
+	SetIndentLevel(m_varInitIndentLevel);
+	m_bVarInit = true;
+
+	va_list marker;
+	va_start(marker, format);     /* Initialize variable arguments. */
+	Print_(format, marker);
+
+	m_bVarInit = false;
+	SetIndentLevel(savedIndentLevel);
+}
+
+int CHtFile::Print(const char *format, ...)
 {
 	va_list marker;
+	va_start(marker, format);     /* Initialize variable arguments. */
+	return Print_(format, marker);
+}
 
-	va_start( marker, format );     /* Initialize variable arguments. */
-
+int CHtFile::Print_(const char *format, va_list marker)
+{
 	if (m_indentLevel == -1) {
 		int r = vfprintf(m_dstFp, format, marker);
 		for (const char *pCh = format; *pCh; pCh += 1)
@@ -118,7 +135,7 @@ CHtFile::Print(const char *format, ...)
 		char *pStrStart = buf;
 		for (;;) {
 			if (m_bNewLine) {
-				int level = /*(m_lineList[m_lineListIdx].size() > 0 && !m_bLineBuffering) ? 3 :*/ m_indentLevel;
+				int level = m_indentLevel;
 				for (int i = 0; i < level; i += 1)
 					Putc(' ');
 				m_lineCol = m_indentLevel;
@@ -183,7 +200,13 @@ CHtFile::Print(const char *format, ...)
 
 void CHtFile::Putc(char ch)
 {
-	if (m_bLineBuffering) {
+	if (m_bVarInit) {
+		m_varInitBuffer += ch;
+		if (ch == '\n') {
+			m_varInitLineList.push_back(m_varInitBuffer);
+			m_varInitBuffer.clear();
+		}
+	} else if (m_bLineBuffering) {
 		m_lineBuffer += ch;
 		if (ch == '\n') {
 			m_lineList[m_lineListIdx].push_back(m_lineBuffer);
@@ -195,7 +218,9 @@ void CHtFile::Putc(char ch)
 
 void CHtFile::Puts(char * pStr)
 {
-	if (m_bLineBuffering)
+	if (m_bVarInit)
+		m_varInitBuffer += pStr;
+	else if (m_bLineBuffering)
 		m_lineBuffer += pStr;
 	else
 		fputs(pStr, m_dstFp);
@@ -207,4 +232,11 @@ void CHtFile::FlushLineBuffer()
 		fputs(m_lineList[m_lineListIdx][i].c_str(), m_dstFp);
 
 	m_lineList[m_lineListIdx].clear();
+}
+
+void CHtFile::VarInitClose()
+{
+	m_lineList[m_varInitListIdx].insert(m_lineList[m_varInitListIdx].begin() + m_varInitLineIdx,
+		m_varInitLineList.begin(), m_varInitLineList.end());
+	m_varInitLineList.clear();
 }

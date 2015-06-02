@@ -1141,7 +1141,7 @@ public:
 		return IsFunction() && GetPrevHier() && GetPrevHier()->IsStruct();
 	}
 	bool IsInlinedCall() {
-		return GetGlobalRefSet().size() > 0 || IsMemberFunc();
+		return true || GetGlobalRefSet().size() > 0 || IsMemberFunc();
 	}
 
 	CHtfeIdent * GetNextOverloadedFunc() { return 0; }
@@ -1201,7 +1201,6 @@ private:
     int				m_rdWidth;      // second width for asym block ram read type
 	int				m_opWidth;		// width of integer operation 32, 64 or 256 (sc_biguint)
 	int				m_structPos;	// starting position of member within structure
-	//int				m_fieldVarIdxCnt;
     int             m_declStatementLevel;
     EFuncId         m_funcId;
 	CHtfeLex::EToken m_overloadedOperator;

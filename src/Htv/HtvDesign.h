@@ -305,6 +305,7 @@ private:
 
     bool m_bGenedMinFixtureH;
     bool m_bClockedAlwaysAt;
+	bool m_bInAlwaysAtBlock;
 
 	bool m_bIsHtQueueRamsPresent;
 	bool m_bIsHtDistRamsPresent;

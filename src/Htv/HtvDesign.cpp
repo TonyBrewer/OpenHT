@@ -22,6 +22,7 @@ CHtvDesign::CHtvDesign()
 
 	m_alwaysBlockIdx = 0;
 	m_bClockedAlwaysAt = false;
+	m_bInAlwaysAtBlock = false;
 	m_bIsHtDistRamsPresent = false;
 	m_bIs1CkHtBlockRamsPresent = false;
 	m_bIs2CkHtBlockRamsPresent = false;

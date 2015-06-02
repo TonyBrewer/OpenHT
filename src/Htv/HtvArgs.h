@@ -44,16 +44,11 @@ public:
 	void SetQuartusEnabled(bool bQuartus)
 	{
 		m_bQuartus = bQuartus;
-		SetAlteraDistRams(true);
-		SetBlockLocalTemps(true);
+		SetAlteraDistRams(bQuartus);
 	}
 	void SetAlteraDistRams(bool bAlteraDistRams)
 	{
 		m_bAlteraDistRams = bAlteraDistRams;
-	}
-	void SetBlockLocalTemps(bool bBlockLocalTemps)
-	{
-		m_bBlockLocalTemps = bBlockLocalTemps;
 	}
     void SetGenFixture(bool bGenFixture) {
         m_bGenFixture = bGenFixture;
@@ -74,7 +69,6 @@ public:
     bool IsGenSandbox() { return m_bGenSandbox; }
     bool IsSynXilinxPrims() { return m_bSynXilinxPrims; }
 	bool IsAlteraDistRams() { return m_bAlteraDistRams; }
-	bool IsBlockLocalTemps() { return m_bBlockLocalTemps; }
     bool IsXilinxFdPrims() { return m_bXilinxFdPrims; }
 	bool IsVivadoEnabled() { return m_bVivado; }
 	bool IsQuartusEnabled() { return m_bQuartus; }
@@ -107,7 +101,6 @@ private:
 	bool			m_bVivado;
 	bool			m_bQuartus;
 	bool			m_bAlteraDistRams;
-	bool			m_bBlockLocalTemps;
 };
 
 extern CHtvArgs g_htvArgs;
