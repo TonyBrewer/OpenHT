@@ -21,7 +21,7 @@
 #define VCSREV "unknown"
 #endif
 
-enum ECoproc { hcx, hc1, hc1ex, hc2, hc2ex, wx690, wx2k };
+enum ECoproc { hcx, hc1, hc1ex, hc2, hc2ex, wx690, wx2k, ma100, ma400 };
 
 // platform capabilities
 class CCoprocInfo {
@@ -93,7 +93,7 @@ public:
 	}
 
 	void Parse(int argc, char const ** argv);
-	void SetHtCoproc(char const * pStr);
+	bool SetHtCoproc(char const * pStr);
 
 	bool IsGenReportsEnabled() { return m_bGenReports; }
 	int GetInputFileCnt() { return (int)m_inputFileList.size(); }
@@ -121,6 +121,7 @@ public:
 	bool IsGlobalReadParanEnabled() { return m_bGlobalReadParan; }
 	bool IsVcdUserEnabled() { return m_bVcdUser; }
 	bool IsVcdAllEnabled() { return m_bVcdAll; }
+	bool IsOgv() { return m_bOgv; }
 	FILE * GetVarRptFp() { return m_pVarRptFp; }
 	int GetAeCnt() { return m_aeCnt; }
 	int GetAeUnitCnt() { return m_aeUnitCnt; }
@@ -206,6 +207,7 @@ private:
 	int				m_vcdStartCycle;
 	string			m_vcdFilterFile;
 	vector<string>	m_vcdFilterList;
+	bool			m_bOgv;
 
 	FILE *			m_pVarRptFp;
 

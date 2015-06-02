@@ -814,14 +814,6 @@ public:
     void SetIsScPrimInput(bool bIsScPrimInput=true) { m_bIsScPrimInput |= bIsScPrimInput; }
     bool IsScPrimInput() { return m_bIsScPrimInput; }
 
-    //void SetIsHtPrimOutput(bool bIsScPrimOutput=true);
-    //bool IsScPrimOutput() { return m_bIsHtPrimOutput; }
-
- //   void SetIsAssignOutput(bool bIsAssignOutput=true) {
-	//	m_bIsAssignOutput |= bIsAssignOutput;
-	//}
- //   bool IsAssignOutput() { return m_bIsAssignOutput; }
-
     void SetIsPrimOutput(bool bIsPrimOutput=true) { m_bIsPrimOutput |= bIsPrimOutput; }
     bool IsPrimOutput() { return m_bIsPrimOutput; }
 

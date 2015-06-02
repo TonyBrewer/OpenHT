@@ -54,6 +54,36 @@ private:
 	string m_str;
 };
 
+class SubFieldRangeIter {
+public:
+	SubFieldRangeIter(CHtfeOperand *pOp);
+
+	void operator++ (int);
+
+	bool end() { return m_bEnd; }
+	int GetLowBit() { return m_lowBit; }
+	int GetWidth() { return m_width; }
+
+	int GetIdxCnt() { return (int)m_idxList.size(); }
+	int GetIdx(int i) { return m_idxList[i]; }
+	bool IsIdxConst(int i) { return m_constList[i]; }
+	CHtfeOperand * GetIdxExpr(int i) { return m_exprList[i]; }
+
+private:
+	bool IdxInc();
+
+private:
+	int m_lowBit;
+	int m_width;
+	bool m_bEnd;
+
+	CHtfeOperand * m_pOp;
+	vector<bool> m_constList;
+	vector<int> m_dimenList;
+	vector<int> m_idxList;
+	vector<CHtfeOperand *> m_exprList;
+};
+
 class CHtfeDesign : public CHtfeLex  
 {
 	friend class CHtfeIdentTbl;
@@ -71,6 +101,7 @@ public:
 
 public:
 	static CHtfeIdent * NewIdent() { return m_pHtDesign->HandleNewIdent(); }
+    static bool EvalConstantExpr(CHtfeOperand *pExpr, CConstValue & value, bool bMarkAsRead=true);
 
 #ifndef min
     int min(int i1, int i2) { return i1 < i2 ? i1 : i2; }
@@ -121,13 +152,12 @@ protected:
     void SetOpWidthAndSign(CHtfeOperand *pExpr, EToken prevTk=tk_eof, bool bIsLeftOfEqual=false);
 	void CheckForUnsafeExpression(CHtfeOperand *pExpr, EToken prevTk=tk_eof, bool bLeftOfEqual=false);
 
-    bool EvalConstantExpr(CHtfeOperand *pExpr, CConstValue & value, bool bMarkAsRead=true);
-
 	bool IsConstSubFieldRange(CHtfeOperand *pOp, int &lowBit);
 	bool GetSubFieldRange(CHtfeOperand *pOp, int &lowBit, int &width, bool bErrorIfNotConst);
 	int GetSubFieldLowBit(CHtfeOperand *pOp);
 	int CalcElemIdx(CHtfeIdent * pIdent, vector<CHtfeOperand *> &indexList);
 	int CalcElemIdx(CHtfeIdent * pIdent, vector<int> &refList);
+	bool ReplaceEqualEqualOp1(CHtfeOperand * pExpr, int matchConst, CHtfeOperand * pMatchExpr);
 
     void CheckMissingInstancePorts();
     void CheckConsistentPortTypes();
@@ -142,11 +172,11 @@ private:
     CHtfeIdent *ParseVariableRef(const CHtfeIdent *pHier, const CHtfeIdent *&pHier2, bool bRequired=true, bool bIgnoreIndexing=false, bool bLeftOfEqual=false);
 	void ParseVariableIndexing(CHtfeIdent *pHier, const CHtfeIdent *pIdent, vector<CHtfeOperand *> &indexList);
 	int ParseConstantIndexing(CHtfeIdent *pHier, const CHtfeIdent *pIdent, vector<int> &indexList);
-    CHtfeStatement *ParseCompoundStatement(CHtfeIdent *pHier, bool bNewNameSpace=true);
+	CHtfeStatement *ParseCompoundStatement(CHtfeIdent *pHier, bool bNewNameSpace = true, bool bFoldConstants = true);
     CHtfeStatement *ParseDoStatement(CHtfeIdent *pHier, bool bNewNameSpace=true);
-    CHtfeStatement *ParseStatement(CHtfeIdent *pHier);
+	CHtfeStatement *ParseStatement(CHtfeIdent *pHier, bool bFoldConstants = true);
     void SkipStatement(CHtfeIdent *pHier);
-    CHtfeStatement *ParseIdentifierStatement(CHtfeIdent *pHier, bool bAssignmentAllowed, bool bStaticAllowed);
+	CHtfeStatement *ParseIdentifierStatement(CHtfeIdent *pHier, bool bAssignmentAllowed, bool bStaticAllowed, bool bFoldConstants = true);
     CHtfeStatement *ParseIfStatement(CHtfeIdent *pHier);
 	void ParseForStatement();
 	void SkipStatement();

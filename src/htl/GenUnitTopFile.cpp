@@ -62,6 +62,7 @@ void CDsnInfo::GenerateUnitTopFile()
 	fprintf(scFile, "#include \"Pers%sHta.h\"\n", m_unitName.Uc().c_str());
 	for (size_t gvIdx = 0; gvIdx < m_ngvList.size(); gvIdx += 1) {
 		CNgvInfo * pNgvInfo = m_ngvList[gvIdx];
+		if (pNgvInfo->m_bOgv) continue;
 		CRam * pNgv = pNgvInfo->m_modInfoList[0].m_pNgv;
 		fprintf(scFile, "#include \"PersGbl%s.h\"\n", pNgv->m_gblName.Uc().c_str());
 	}
@@ -114,6 +115,7 @@ void CDsnInfo::GenerateUnitTopFile()
 		m_unitName.Uc().c_str(), m_unitName.Uc().c_str());
 	for (size_t gvIdx = 0; gvIdx < m_ngvList.size(); gvIdx += 1) {
 		CNgvInfo * pNgvInfo = m_ngvList[gvIdx];
+		if (pNgvInfo->m_bOgv) continue;
 		CRam * pNgv = pNgvInfo->m_modInfoList[0].m_pNgv;
 		string replStr = pNgvInfo->m_ngvReplCnt > 1 ? VA("[%d]", pNgvInfo->m_ngvReplCnt) : "";
 		fprintf(scFile, "\tCPersGbl%s * pPersGbl%s%s;\n",
@@ -316,6 +318,7 @@ void CDsnInfo::GenerateUnitTopFile()
 			for (size_t ngvIdx = 0; ngvIdx < mod.m_ngvList.size(); ngvIdx += 1) {
 				CRam * pNgv = mod.m_ngvList[ngvIdx];
 				CNgvInfo * pNgvInfo = pNgv->m_pNgvInfo;
+				if (pNgvInfo->m_bOgv) continue;
 
 				if (pNgvInfo->m_ngvReplCnt == 1) continue;
 
@@ -923,6 +926,7 @@ void CDsnInfo::GenerateUnitTopFile()
 	for (size_t gvIdx = 0; gvIdx < m_ngvList.size(); gvIdx += 1) {
 		vector<CNgvModInfo> &ngvModInfoList = m_ngvList[gvIdx]->m_modInfoList;
 		CNgvInfo * pNgvInfo = m_ngvList[gvIdx];
+		if (pNgvInfo->m_bOgv) continue;
 		CRam * pNgv = pNgvInfo->m_modInfoList[0].m_pNgv;
 
 		string modName = VA("PersGbl%s", pNgv->m_gblName.Uc().c_str());

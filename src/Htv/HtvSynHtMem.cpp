@@ -875,16 +875,13 @@ void CHtvDesign::SynHtDistRamWe(CHtvIdent *pHier, CHtvObject * pObj, CHtvObject 
 	//   syntax is: variable = value
 	//   write variable as single bit wide value per dist ram section
 
-	if (!bIsAlwaysAt)
-		m_vFile.Print("assign ");
-
 	CHtvIdent *pWeIdent = pExpr->GetOperand1()->GetMember();
 	vector<CHtDistRamWeWidth> *pWeWidth = pWeIdent->GetHtDistRamWeWidth();
 
-	CHtvOperand *pOp2 = pExpr->GetOperand2();
-	Assert(pOp2->IsConstValue());
-
 	if ( (*pWeWidth).size() == 1) {
+
+		if (!bIsAlwaysAt)
+			m_vFile.Print("assign ");
 
 		bool bFoundSubExpr;
 		bool bWriteIndex;
@@ -917,6 +914,9 @@ void CHtvDesign::SynHtDistRamWe(CHtvIdent *pHier, CHtvObject * pObj, CHtvObject 
 
 			string weName = VA("%s_%d_%d", origIdent.c_str(), highBit, lowBit);
 			pOp1Ident->SetName(weName);
+
+			if (!bIsAlwaysAt)
+				m_vFile.Print("assign ");
 
 			bool bFoundSubExpr;
 			bool bWriteIndex;

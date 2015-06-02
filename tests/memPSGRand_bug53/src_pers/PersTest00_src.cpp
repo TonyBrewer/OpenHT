@@ -9,7 +9,7 @@ void CPersTest00::PersTest00() {
 			break;
 		}
 		case TEST00_WR: {
-			P_test00_0_dst_s0_data.test00_0_dst_u0_data[0][0].test00_0_dst_v3_data = ((uint64_t)0x000612cd9aa914c0LL);
+			PW_test00_0_dst_s0_data.test00_0_dst_u0_data[0][0].test00_0_dst_v3_data = ((uint64_t)0x000612cd9aa914c0LL);
 			HtContinue(TEST00_ST0);
 			break;
 		}
@@ -18,7 +18,7 @@ void CPersTest00::PersTest00() {
 				HtRetry();
 				break;
 			}
-			WriteMem_test00_0_dst_u0_data_union(PR_memAddr + 0, P_test00_0_dst_s0_data.test00_0_dst_u0_data[0][0]);
+			WriteMem_test00_0_dst_u0_data_union(PR_memAddr + 0, PR_test00_0_dst_s0_data.test00_0_dst_u0_data[0][0]);
 			WriteMemPause(TEST00_LD0);
 			break;
 		}

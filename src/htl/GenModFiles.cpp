@@ -33,7 +33,6 @@ CDsnInfo::GenerateModuleFiles(CModule &mod)
 		GenModBarStatements(mod);
 		GenModOhmStatements(mod);
 		GenModCxrStatements(mod, modInstIdx);
-		//GenModRamStatements(modInst);
 		GenModIhdStatements(mod);
 		GenModOhdStatements(mod);
 		GenModMifStatements(mod);
@@ -1027,21 +1026,41 @@ CDsnInfo::DimenIter(vector<CHtString> const &dimenList, vector<int> &refList)
 
 	bool bMore;
 
+	//if (dimenList.size() > 0) {
+	//	bMore = true;
+	//	refList[0] += 1;
+	//	for (size_t i = 0; i < dimenList.size(); i += 1) {
+	//		if (refList[i] < dimenList[i].AsInt())
+	//			break;
+	//		else {
+	//			refList[i] = 0;
+	//			if (i + 1 < dimenList.size())
+	//				refList[i + 1] += 1;
+	//			else
+	//				bMore = false;
+	//		}
+	//	}
+	//}
+	//else
+	//	bMore = false;
+
 	if (dimenList.size() > 0) {
+		int dimens = (int)dimenList.size();
 		bMore = true;
-		refList[0] += 1;
-		for (size_t i = 0; i < dimenList.size(); i += 1) {
+		refList[dimens - 1] += 1;
+		for (int i = dimens - 1; i >= 0; i -= 1) {
 			if (refList[i] < dimenList[i].AsInt())
 				break;
 			else {
 				refList[i] = 0;
-				if (i + 1 < dimenList.size())
-					refList[i + 1] += 1;
+				if (i - 1 >= 0)
+					refList[i - 1] += 1;
 				else
 					bMore = false;
 			}
 		}
-	} else
+	}
+	else
 		bMore = false;
 
 	return bMore;

@@ -882,8 +882,8 @@ void CHtfeDesign::CheckWidthRules(CHtfeOperand *pExpr, bool bForceBoolean)
                     if (((op1Value-1) & op1Value) == 0)
                         op1Width -= 1;	// Power of 2 multiply is really a shift
 
-                    pExpr->SetMinWidth(pOp1->GetMinWidth() + op1Width);
-                    pExpr->SetSigWidth(pOp1->GetSigWidth() + op1Width);
+                    pExpr->SetMinWidth(pOp2->GetMinWidth() + op1Width);
+                    pExpr->SetSigWidth(pOp2->GetSigWidth() + op1Width);
                     break;
                 }
 

@@ -13,6 +13,8 @@
 
 enum EMsvsFile { Undefined, Include, Compile, Custom, CustomHtLib, NonBuild, Filter };
 
+#define MAX_PROJ_CONFIGS 5
+
 struct CMsvsFilter {
 	CMsvsFilter(string filterName, string extensions, bool bFound)
 		: m_filterName(filterName), m_extensions(extensions), m_bFound(bFound)
@@ -35,8 +37,8 @@ struct CMsvsFile {
 	string m_filterName;
 	string m_dependencies;
 	vector<string> m_excludeFromBuild;
-	vector<string> m_extraDefines[4];
-	vector<string> m_forcedIncludeFiles[4];
+	vector<string> m_extraDefines[MAX_PROJ_CONFIGS];
+	vector<string> m_forcedIncludeFiles[MAX_PROJ_CONFIGS];
 	bool m_bGenFx;
 	bool m_bFound;
 };
@@ -136,7 +138,7 @@ public:
 		vector<string> m_forcedIncludeFiles;
 		vector<string> m_disableSpecificWarnings;
 		vector<string> m_configurationType;
-	} m_idg[4];
+	} m_idg[MAX_PROJ_CONFIGS];
 
 	// xml parsing variables
 	FILE *	m_fp;
