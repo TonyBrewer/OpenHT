@@ -1087,7 +1087,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 		else if (modMemSize != rdDst.m_memSize)
 			bSingleMemSize = false;
 
-		if (rdDst.m_pGblVar == 0) {
+		if (rdDst.m_pGblVar == 0 || rdDst.m_pGblVar->m_pNgvInfo->m_bOgv) {
 			if (!bRdDstNonNgv)
 				rdDstRdyCnt += 1;
 			bRdDstNonNgv = true;

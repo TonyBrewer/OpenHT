@@ -234,7 +234,8 @@ void CDsnInfo::InitAndValidateModNgv()
 
 		// determine if this ram has an optimized implementation
 		pNgvInfo->m_bOgv = //g_appArgs.IsOgv() &&
-			(ngvPortCnt == 1 && ngvFieldCnt == 1 && !bNgvAtomic && pGv0->m_bReadForInstrRead && pGv0->m_bWriteForInstrWrite && !pGv0->m_bReadForMifWrite && !pGv0->m_bWriteForMifRead);
+			(ngvPortCnt == 1 && ngvFieldCnt == 1 && !bNgvAtomic && pGv0->m_bReadForInstrRead && pGv0->m_bWriteForInstrWrite && !pGv0->m_bReadForMifWrite && !pGv0->m_bWriteForMifRead) ||
+			(ngvPortCnt == 1 && ngvFieldCnt == 1 && !bNgvAtomic && pGv0->m_bReadForInstrRead && !pGv0->m_bWriteForInstrWrite && !pGv0->m_bReadForMifWrite && pGv0->m_bWriteForMifRead);
 	}
 
 	for (size_t modIdx = 0; modIdx < m_modList.size(); modIdx += 1) {
@@ -435,6 +436,30 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 		} while (DimenIter(pGv->m_dimenList, refList));
 	}
 
+	if (pGv->m_bWriteForMifRead) {
+		GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, VA("CGW_%s", pGv->m_pNgvInfo->m_ngvWrType.c_str()),
+			VA("r_m2_%sMwData", pGv->m_gblName.c_str()), pGv->m_dimenList);
+		m_gblRegDecl.Append("\tCGW_%s c_m1_%sMwData%s;\n",
+			pGv->m_pNgvInfo->m_ngvWrType.c_str(), pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
+
+		string htIdStr = (pMod->m_threads.m_htIdW.AsInt() > 0 &&
+			(pGv->m_bPrivGbl || pGv->m_addr1Name == "htId" || pGv->m_addr2Name == "htId")) ? "r_m1_rdRspInfo.m_htId" : "";
+
+		vector<int> refList(pGv->m_dimenList.size());
+		do {
+			string dimIdx = IndexStr(refList);
+
+			gblPreInstr.Append("\tc_m1_%sMwData%s.InitZero(%s);\n",
+					pGv->m_gblName.c_str(), dimIdx.c_str(),
+					htIdStr.c_str());
+
+			gblReg.Append("\tr_m2_%sMwData%s = c_m1_%sMwData%s;\n",
+				pGv->m_gblName.c_str(), dimIdx.c_str(),
+				pGv->m_gblName.c_str(), dimIdx.c_str());
+
+		} while (DimenIter(pGv->m_dimenList, refList));
+	}
+
 	gblPostInstr.NewLine();
 
 	if (pGv->m_bReadForInstrRead) {
@@ -557,6 +582,51 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 					gblPostInstr.Append("\t\tm__GBL__%s%s.write_mem(r_t%d_%sIwData%s.GetData());\n",
 						pGv->m_gblName.c_str(), dimIdx.c_str(),
 						gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str());
+				}
+
+				gblPostInstr.NewLine();
+
+			} while (DimenIter(pGv->m_dimenList, refList));
+		}
+	}
+
+	if (pGv->m_bWriteForMifRead) {
+
+		if (pGv->m_addrW == 0) {
+			vector<int> refList(pGv->m_dimenList.size());
+			do {
+				string dimIdx = IndexStr(refList);
+
+				gblPostInstr.Append("\tc__GBL__%s%s = r__GBL__%s%s;\n",
+					pGv->m_gblName.c_str(), dimIdx.c_str(),
+					pGv->m_gblName.c_str(), dimIdx.c_str());
+
+				for (CStructElemIter iter(this, pGv->m_pType); !iter.end(); iter++) {
+					gblPostInstr.Append("\tif (r_m2_%sMwData%s%s.GetWrEn())\n",
+						pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
+					gblPostInstr.Append("\t\tc__GBL__%s%s%s = r_m2_%sMwData%s%s.GetData();\n",
+						pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str(),
+						pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
+				}
+				gblPostInstr.NewLine();
+
+			} while (DimenIter(pGv->m_dimenList, refList));
+		} else {
+			vector<int> refList(pGv->m_dimenList.size());
+			do {
+				string dimIdx = IndexStr(refList);
+
+				gblPostInstr.Append("\tm__GBL__%s%s.write_addr(r_m2_%sMwData%s.GetAddr());\n",
+					pGv->m_gblName.c_str(), dimIdx.c_str(),
+					pGv->m_gblName.c_str(), dimIdx.c_str());
+
+				for (CStructElemIter iter(this, pGv->m_pType); !iter.end(); iter++) {
+
+					gblPostInstr.Append("\tif (r_m2_%sMwData%s%s.GetWrEn())\n",
+						pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
+					gblPostInstr.Append("\t\tm__GBL__%s%s.write_mem(r_m2_%sMwData%s.GetData());\n",
+						pGv->m_gblName.c_str(), dimIdx.c_str(),
+						pGv->m_gblName.c_str(), dimIdx.c_str());
 				}
 
 				gblPostInstr.NewLine();
