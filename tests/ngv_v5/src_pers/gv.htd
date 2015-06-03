@@ -1,0 +1,114 @@
+struct Data16 {
+	uint16_t	data;
+};
+
+
+////////////////////////////////////////////////////
+// Ctl Module
+
+dsnInfo.AddModule(name=ctl, htIdW=0, clock=1x);
+ctl.AddInst(name=ENTRY);
+ctl.AddInst(name=CALL_GV2);
+ctl.AddInst(name=CALL_GV3);
+ctl.AddInst(name=RETURN);
+
+ctl.AddPrivate()
+	.AddVar(type=ht_uint48, name=addr)
+	;
+	
+ctl.AddEntry(func=htmain, inst=ENTRY, host=true)
+	.AddParam(hostType=void * , type=ht_uint48, name=addr)
+	;
+
+ctl.AddReturn(func=htmain)
+	;
+
+ctl.AddCall(func=gv1)
+	;
+
+ctl.AddCall(func=gv2)
+	;
+
+ctl.AddCall(func=gv3)
+	;
+
+
+////////////////////////////////////////////////////
+// Gv1 Module - 1x, 1F, Iw, Ir
+
+dsnInfo.AddModule(name=gv1, htIdW=3, clock=1x);
+gv1.AddInst(name=GV1_ENTRY);
+gv1.AddInst(name=GV1_WR);
+gv1.AddInst(name=GV1_RD);
+gv1.AddInst(name=GV1_RETURN);
+
+gv1.AddEntry(func=gv1, inst=GV1_ENTRY)
+	;
+
+gv1.AddPrivate()
+	.AddVar(type=ht_uint4, name=gvAddr1)
+	;
+
+gv1.AddReturn(func=gv1)
+	;
+
+gv1.AddGlobal()
+	.AddVar(type=uint16_t, name=Gv1, addr1=gvAddr1, blockRam=true)
+	;
+
+////////////////////////////////////////////////////
+// Gv2 Module - 2x, 1F, Iw, Ir
+
+dsnInfo.AddModule(name=gv2, htIdW=3, clock=2x);
+gv2.AddInst(name=GV2_ENTRY);
+gv2.AddInst(name=GV2_WR);
+gv2.AddInst(name=GV2_RD);
+gv2.AddInst(name=GV2_RETURN);
+
+gv2.AddEntry(func=gv2, inst=GV2_ENTRY)
+	;
+
+gv2.AddPrivate()
+	.AddVar(type=ht_uint4, name=gvAddr1)
+	;
+
+gv2.AddReturn(func=gv2)
+	;
+
+gv2.AddGlobal()
+	.AddVar(type=uint16_t, name=Gv2, addr1=gvAddr1, blockRam=false)
+	;
+
+////////////////////////////////////////////////////
+// Gv3 Module - 1x, 1F, Mw, Ir
+
+dsnInfo.AddModule(name=gv3, htIdW=3, clock=1x);
+gv3.AddInst(name=GV3_ENTRY);
+gv3.AddInst(name=GV3_WR);
+gv3.AddInst(name=GV3_RD);
+gv3.AddInst(name=GV3_TST);
+gv3.AddInst(name=GV3_RETURN);
+
+gv3.AddEntry(func=gv3, inst=GV3_ENTRY)
+	.AddParam(type=ht_uint48, name=addr)
+	;
+
+gv3.AddPrivate()
+	.AddVar(type=ht_uint4, name=gvAddr1)
+	.AddVar(type=ht_uint48, name=addr)
+	;
+
+gv3.AddReturn(func=gv3)
+	;
+
+gv3.AddGlobal()
+	.AddVar(type=Data16, name=Gv3, addr1=gvAddr1, write=false, blockRam=true)
+	;
+
+gv3.AddReadMem()
+	.AddDst(var=Gv3)
+	;
+
+gv3.AddWriteMem()
+	.AddSrc(type=uint16_t)
+	;
