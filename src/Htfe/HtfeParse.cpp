@@ -3822,15 +3822,6 @@ CHtfeStatement * CHtfeDesign::ParseVariableDecl(CHtfeIdent *pHier, CHtfeIdent *p
 						pStatement = pStatement->GetNext();
 					ppStatement = pStatement->GetPNext();
 
-					//if (m_statementNestLevel > 0) {
-					//	// variable is declared in a conditional statement, initialize
-					//	CHtfeIdent *pHier2 = pHier->FindHierMethod();
-					//	if (pHier2) {
-					//		CHtfeStatement *pUnknownStatement = InitializeToUnknown(pHier, pIdent);
-					//		pHier2->InsertStatementList(pUnknownStatement);
-					//	}
-					//}
-
 					if (GetToken() == tk_semicolon)
 						return pHeadStatement;
 
@@ -3921,7 +3912,6 @@ bool CHtfeDesign::ParseFunctionDecl(CHtfeIdent *pHier, const CHtfeIdent *pHier2,
 		pIdent->SetIsBodyDefined();
 		pIdent->SetPrevHier(const_cast<CHtfeIdent*>(pHier2));
 		pIdent->SetIsLocal();
-		//if (!pIdent->IsMethod())
 		pIdent->NewFlatTable(); // functions and tasks have a local flat table (methods do not)
 
 		// add parameters as local variables
@@ -4112,14 +4102,6 @@ CHtfeStatement * CHtfeDesign::ParseVarDeclInitializer(CHtfeIdent * pHier, CHtfeI
 		} else {
 
 			CHtfeOperand * pExpr = ParseExpression(pHier, true);
-
-			//if (pIdent->GetType()->IsStruct() && pExpr->GetSubField() == 0 && (!pExpr->IsConstValue() || pExpr->GetConstValue().GetSint64() != 0)) {
-			//    ParseMsg(PARSE_ERROR, "struct initialization to non-zero value");
-			//    SkipTo(tk_semicolon);
-			//    if (bAutoSizeLeadingDimen)
-			//       pIdent->SetDimen(0, refList[0]+1);
-			//    return pStatement;
-			//}
 
 			pStatement = InsertVarDeclInitializer(pHier, pIdent, refList, pExpr);
 
@@ -5554,6 +5536,9 @@ void CHtfeDesign::ParseEvaluateExpression(CHtfeIdent *pHier, EToken tk, vector<C
 					} else if (stackTk != tk_typeCast) {
 						CHtfeIdent * pOp1Type = pOp1->GetType();
 						CHtfeIdent * pOp2Type = pOp2->GetType();
+
+						if (pOp2->GetLineInfo().m_lineNum == 154)
+							bool stop = true;
 
 						Assert(pOp1Type);
 						Assert(pOp2Type);

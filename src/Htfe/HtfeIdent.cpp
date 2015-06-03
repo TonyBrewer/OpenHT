@@ -789,10 +789,6 @@ void CHtfeIdent::SetIsHtPrimOutput(CHtfeOperand *pOp)
 
 		do {
 			int idx = GetDimenElemIdx(refList);
-			//for (size_t dimIdx = 0; dimIdx < m_dimenList.size(); dimIdx += 1) {
-			//	idx *= m_dimenList[dimIdx];
-			//	idx += refList[dimIdx];
-			//}
 
 			if (idx < (int)m_refInfo.size()) // can be out of range
 				m_refInfo[idx].m_bIsHtPrimOutput = true;
@@ -826,10 +822,6 @@ void CHtfeIdent::SetReadRef(CHtfeOperand *pOp)
 
 		do {
 			int idx = GetDimenElemIdx(refList);
-			//for (size_t dimIdx = 0; dimIdx < m_dimenList.size(); dimIdx += 1) {
-			//	idx *= m_dimenList[dimIdx];
-			//	idx += refList[dimIdx];
-			//}
 
 			if (idx < (int)m_refInfo.size()) // can be out of range
 				m_refInfo[idx].m_bIsRead = true;
@@ -863,10 +855,6 @@ void CHtfeIdent::SetWriteRef(CHtfeOperand *pOp)
 
 		do {
 			int idx = GetDimenElemIdx(refList);
-			//for (size_t dimIdx = 0; dimIdx < m_dimenList.size(); dimIdx += 1) {
-			//	idx *= m_dimenList[dimIdx];
-			//	idx += refList[dimIdx];
-			//}
 
 			if (idx < (int)m_refInfo.size())    // can be out of range
 				m_refInfo[idx].m_bIsWritten = true;
