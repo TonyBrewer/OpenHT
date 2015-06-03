@@ -25,6 +25,8 @@ public:
 	void Delete();
 	void Dup(int srcFd, int startOffset, int endOffset);
 	int Print(const char *format, ...);
+	void PrintVarInit(const char *format, ...);
+	int Print_(const char *format, va_list marker);
 	void SetDoNotSplitLine() { m_bDoNotSplitLine = true; }
 	void Flush() { fflush(m_dstFp); }
 	void SetIndentLevel(int lvl) { m_indentLevel = lvl; }
@@ -39,6 +41,14 @@ public:
 	void SetLineBuffering(bool bEnable) { m_bLineBuffering = bEnable; }
 	bool GetLineBuffering() { return m_bLineBuffering; }
 	void FlushLineBuffer();
+
+	void VarInitOpen() {
+		m_varInitListIdx = m_lineListIdx;
+		m_varInitLineIdx = m_lineList[m_lineListIdx].size();
+		m_varInitIndentLevel = m_indentLevel;
+	}
+
+	void VarInitClose();
 
 	void SetHtPrimLines(bool bPrimBuffering) {
 		if (bPrimBuffering) {
@@ -80,4 +90,11 @@ private:
 	string			m_lineBuffer;
 	int				m_lineListIdx;
 	vector<string>	m_lineList[2];
+
+	bool m_bVarInit;
+	string m_varInitBuffer;
+	vector<string> m_varInitLineList;
+	int m_varInitListIdx;
+	size_t m_varInitLineIdx;
+	int m_varInitIndentLevel;
 };

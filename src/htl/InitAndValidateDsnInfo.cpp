@@ -1115,7 +1115,7 @@ void CDsnInfo::InitAndValidateRecord(CRecord * pRecord)
 
 			if (clangBitPos + fieldWidth > clangBitWidth) {
 
-				if (clangBitWidth % pType->m_clangMinAlign > 0)
+				if (!pRecord->m_bUnion && clangBitWidth % pType->m_clangMinAlign > 0)
 					clangBitPos = clangBitWidth = clangBitWidth + pType->m_clangMinAlign - clangBitWidth % pType->m_clangMinAlign;
 
 				if (pRecord->m_bUnion)
@@ -1128,7 +1128,7 @@ void CDsnInfo::InitAndValidateRecord(CRecord * pRecord)
 			packedFieldWidth = pType->m_packedBitWidth;
 			prevTypeWidth = 0;
 
-			if (clangBitWidth % pType->m_clangMinAlign > 0)
+			if (!pRecord->m_bUnion && clangBitWidth % pType->m_clangMinAlign > 0)
 				clangBitPos = clangBitWidth = clangBitWidth + pType->m_clangMinAlign - clangBitWidth % pType->m_clangMinAlign;
 
 			if (pRecord->m_bUnion)

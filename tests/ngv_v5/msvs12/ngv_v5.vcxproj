@@ -23,7 +23,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{94DDE067-27EB-41A2-8CB1-90D4FC2FA85A}</ProjectGuid>
+    <ProjectGuid>{77D8AFC9-2860-4071-80AD-AF3DB0FB181E}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>dsn2_new</RootNamespace>
   </PropertyGroup>
@@ -96,16 +96,16 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <MinimalRebuild>false</MinimalRebuild>
-      <ForcedIncludeFiles>../../msvs12/linux/linux.h</ForcedIncludeFiles>
-      <DisableSpecificWarnings>
-      </DisableSpecificWarnings>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
+      <DisableSpecificWarnings>4996</DisableSpecificWarnings>
       <AdditionalOptions>/bigobj</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>C:/Ht/tests/msvs10/win32/Debug;C:/Ht/tests/msvs12/win32/Debug;C:/Ht/systemc-2.3.1/win_x86_32/Debug;C:/ht/pthread-win32-2.9.0/win_x86_32/Debug;./win32/Debug;./win32/Debug;$(HtToolsPath)/systemc-2.3.1/win_x86_32/Debug;$(HtToolsPath)/pthread-win32-2.9.0/win_x86_32/Debug</AdditionalLibraryDirectories>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;linux.lib;pthread.lib;systemc.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;pthread.lib;systemc.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -121,14 +121,14 @@
       <MinimalRebuild>false</MinimalRebuild>
       <ForcedIncludeFiles>
       </ForcedIncludeFiles>
-      <DisableSpecificWarnings>4800;4996</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4244;4996</DisableSpecificWarnings>
       <AdditionalOptions>/bigobj</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:/Ht/tests/msvs12/x64/Debug;C:/Ht/systemc-2.3.1/win_x86_64/Debug;C:/ht/pthread-win32-2.9.0/win_x86_64/Debug;./x64/Debug;./x64/Debug;$(HtToolsPath)/systemc-2.3.1/win_x86_64/Debug;$(HtToolsPath)/pthread-win32-2.9.0/win_x86_64/Debug</AdditionalLibraryDirectories>
-      <AdditionalDependencies>pthread.lib;systemc.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:/Ht/tests/msvs10/x64/Debug;C:/Ht/tests/msvs12/x64/Debug;C:/Ht/systemc-2.3.1/win_x86_64/Debug;C:/ht/pthread-win32-2.9.0/win_x86_64/Debug;./x64/Debug;./x64/Debug;$(HtToolsPath)/systemc-2.3.1/win_x86_64/Debug;$(HtToolsPath)/pthread-win32-2.9.0/win_x86_64/Debug</AdditionalLibraryDirectories>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;pthread.lib;systemc.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -194,33 +194,23 @@
     </ClInclude>
     <ClInclude Include="..\ht\sysc\PersAeTop.h">
     </ClInclude>
-    <ClInclude Include="..\ht\sysc\PersSuTop.h">
+    <ClInclude Include="..\ht\sysc\PersAuTop.h">
     </ClInclude>
     <ClInclude Include="..\ht\sysc\PersHif.h">
     </ClInclude>
-    <ClInclude Include="..\ht\sysc\PersSuHti.h">
+    <ClInclude Include="..\ht\sysc\PersAuHti.h">
     </ClInclude>
-    <ClInclude Include="..\ht\sysc\PersSuHta.h">
+    <ClInclude Include="..\ht\sysc\PersAuHta.h">
     </ClInclude>
-    <ClInclude Include="..\ht\sysc\PersSuMif0.h">
+    <ClInclude Include="..\ht\sysc\PersAuMif0.h">
     </ClInclude>
-    <ClInclude Include="..\ht\sysc\PersPause.h">
+    <ClInclude Include="..\ht\sysc\PersCtl.h">
     </ClInclude>
-    <ClInclude Include="..\ht\sysc\PersRd1.h">
+    <ClInclude Include="..\ht\sysc\PersGv1.h">
     </ClInclude>
-    <ClInclude Include="..\ht\sysc\PersRd2.h">
+    <ClInclude Include="..\ht\sysc\PersGv2.h">
     </ClInclude>
-    <ClInclude Include="..\ht\sysc\PersRd3.h">
-    </ClInclude>
-    <ClInclude Include="..\ht\sysc\PersRd4.h">
-    </ClInclude>
-    <ClInclude Include="..\ht\sysc\PersWr1.h">
-    </ClInclude>
-    <ClInclude Include="..\ht\sysc\PersWr2.h">
-    </ClInclude>
-    <ClInclude Include="..\ht\sysc\PersWr3.h">
-    </ClInclude>
-    <ClInclude Include="..\ht\sysc\PersWr4.h">
+    <ClInclude Include="..\ht\sysc\PersGv3.h">
     </ClInclude>
     <ClInclude Include="..\ht\sysc\SyscAeTop.h">
     </ClInclude>
@@ -276,67 +266,37 @@
     <ClCompile Include="..\ht\sysc\PersHif.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\ht\sysc\PersSuHti.cpp">
+    <ClCompile Include="..\ht\sysc\PersAuHti.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\ht\sysc\PersSuHta.cpp">
+    <ClCompile Include="..\ht\sysc\PersAuHta.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\ht\sysc\PersSuMif0.cpp">
+    <ClCompile Include="..\ht\sysc\PersAuMif0.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\ht\sysc\PersPause.cpp">
+    <ClCompile Include="..\ht\sysc\PersCtl.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\src_pers\PersPause_src.cpp">
+    <ClCompile Include="..\src_pers\PersCtl_src.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\ht\sysc\PersRd1.cpp">
+    <ClCompile Include="..\ht\sysc\PersGv1.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\src_pers\PersRd1_src.cpp">
+    <ClCompile Include="..\src_pers\PersGv1_src.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\ht\sysc\PersRd2.cpp">
+    <ClCompile Include="..\ht\sysc\PersGv2.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\src_pers\PersRd2_src.cpp">
+    <ClCompile Include="..\src_pers\PersGv2_src.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\ht\sysc\PersRd3.cpp">
+    <ClCompile Include="..\ht\sysc\PersGv3.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\src_pers\PersRd3_src.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\ht\sysc\PersRd4.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\src_pers\PersRd4_src.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\ht\sysc\PersWr1.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\src_pers\PersWr1_src.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\ht\sysc\PersWr2.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\src_pers\PersWr2_src.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\ht\sysc\PersWr3.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\src_pers\PersWr3_src.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\ht\sysc\PersWr4.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\src_pers\PersWr4_src.cpp">
+    <ClCompile Include="..\src_pers\PersGv3_src.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\ht\sysc\SyscMon.cpp">
@@ -386,25 +346,26 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\src_pers\memPause.htl">
+    <CustomBuild Include="..\src_pers\gv.htl">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(HtToolsPath)\bin\htl -cl ..\src_pers\memPause.htl</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(HtToolsPath)\bin\htl -cl ..\src_pers\memPause.htl</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">$(HtToolsPath)\bin\htl -cl ..\src_pers\memPause.htl</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(HtToolsPath)\bin\htl -cl ..\src_pers\memPause.htl</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(HtToolsPath)\bin\htl -cl ..\src_pers\memPause.htl</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(HtToolsPath)\bin\htl -cl ..\src_pers\gv.htl</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(HtToolsPath)\bin\htl -cl ..\src_pers\gv.htl</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">$(HtToolsPath)\bin\htl -cl ..\src_pers\gv.htl</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(HtToolsPath)\bin\htl -cl ..\src_pers\gv.htl</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(HtToolsPath)\bin\htl -cl ..\src_pers\gv.htl</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">htl %(Filename) ...</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">htl %(Filename) ...</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">htl %(Filename) ...</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">htl %(Filename) ...</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">htl %(Filename) ...</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\ht\sysc\HostIntf.h</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\ht\sysc\HostIntf.h;..\ht\sysc\UnitIntf.h;..\ht\sysc\PersCommon.h;..\ht\sysc\PersAeTop.h;..\ht\sysc\PersSuTop.h;..\ht\sysc\PersHif.h;..\ht\sysc\PersSuHti.h;..\ht\sysc\PersSuHta.h;..\ht\sysc\PersSuMif0.h;..\ht\sysc\PersPause.h;..\ht\sysc\PersRd1.h;..\ht\sysc\PersRd2.h;..\ht\sysc\PersRd3.h;..\ht\sysc\PersRd4.h;..\ht\sysc\PersWr1.h;..\ht\sysc\PersWr2.h;..\ht\sysc\PersWr3.h;..\ht\sysc\PersWr4.h;..\ht\sysc\SyscAeTop.h;..\ht\sysc\SyscTop.h;..\ht\sysc\UnitIntf.cpp;..\ht\sysc\PersHif.cpp;..\ht\sysc\PersSuHti.cpp;..\ht\sysc\PersSuHta.cpp;..\ht\sysc\PersSuMif0.cpp;..\ht\sysc\PersPause.cpp;..\ht\sysc\PersRd1.cpp;..\ht\sysc\PersRd2.cpp;..\ht\sysc\PersRd3.cpp;..\ht\sysc\PersRd4.cpp;..\ht\sysc\PersWr1.cpp;..\ht\sysc\PersWr2.cpp;..\ht\sysc\PersWr3.cpp;..\ht\sysc\PersWr4.cpp;..\ht\sysc\SyscMon.cpp;..\ht\sysc\PersSuTop.sc;..\ht\sysc\PersAeTop.sc;..\ht\verilog\PersHif.v_;..\ht\verilog\PersSuHti.v_;..\ht\verilog\PersSuHta.v_;..\ht\verilog\PersSuMif0.v_;..\ht\verilog\PersPause.v_;..\ht\verilog\PersRd1.v_;..\ht\verilog\PersRd2.v_;..\ht\verilog\PersRd3.v_;..\ht\verilog\PersRd4.v_;..\ht\verilog\PersWr1.v_;..\ht\verilog\PersWr2.v_;..\ht\verilog\PersWr3.v_;..\ht\verilog\PersWr4.v_;..\ht\verilog\PersUnitCnt.v_;..\ht\verilog\PersXbarStub.v_;..\ht\verilog\PersMiStub.v_;..\ht\verilog\PersMoStub.v_</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">..\ht\sysc\HostIntf.h;..\ht\sysc\UnitIntf.h;..\ht\sysc\PersCommon.h;..\ht\sysc\PersAeTop.h;..\ht\sysc\PersSuTop.h;..\ht\sysc\PersHif.h;..\ht\sysc\PersSuHti.h;..\ht\sysc\PersSuHta.h;..\ht\sysc\PersSuMif0.h;..\ht\sysc\PersPause.h;..\ht\sysc\PersRd1.h;..\ht\sysc\PersRd2.h;..\ht\sysc\PersRd3.h;..\ht\sysc\PersRd4.h;..\ht\sysc\PersWr1.h;..\ht\sysc\PersWr2.h;..\ht\sysc\PersWr3.h;..\ht\sysc\PersWr4.h;..\ht\sysc\SyscAeTop.h;..\ht\sysc\SyscTop.h;..\ht\sysc\UnitIntf.cpp;..\ht\sysc\PersHif.cpp;..\ht\sysc\PersSuHti.cpp;..\ht\sysc\PersSuHta.cpp;..\ht\sysc\PersSuMif0.cpp;..\ht\sysc\PersPause.cpp;..\ht\sysc\PersRd1.cpp;..\ht\sysc\PersRd2.cpp;..\ht\sysc\PersRd3.cpp;..\ht\sysc\PersRd4.cpp;..\ht\sysc\PersWr1.cpp;..\ht\sysc\PersWr2.cpp;..\ht\sysc\PersWr3.cpp;..\ht\sysc\PersWr4.cpp;..\ht\sysc\SyscMon.cpp;..\ht\sysc\PersSuTop.sc;..\ht\sysc\PersAeTop.sc;..\ht\verilog\PersHif.v_;..\ht\verilog\PersSuHti.v_;..\ht\verilog\PersSuHta.v_;..\ht\verilog\PersSuMif0.v_;..\ht\verilog\PersPause.v_;..\ht\verilog\PersRd1.v_;..\ht\verilog\PersRd2.v_;..\ht\verilog\PersRd3.v_;..\ht\verilog\PersRd4.v_;..\ht\verilog\PersWr1.v_;..\ht\verilog\PersWr2.v_;..\ht\verilog\PersWr3.v_;..\ht\verilog\PersWr4.v_;..\ht\verilog\PersUnitCnt.v_;..\ht\verilog\PersXbarStub.v_;..\ht\verilog\PersMiStub.v_;..\ht\verilog\PersMoStub.v_</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\ht\sysc\HostIntf.h;..\ht\sysc\UnitIntf.h;..\ht\sysc\PersCommon.h;..\ht\sysc\PersAeTop.h;..\ht\sysc\PersAuTop.h;..\ht\sysc\PersHif.h;..\ht\sysc\PersAuHti.h;..\ht\sysc\PersAuHta.h;..\ht\sysc\PersAuMif0.h;..\ht\sysc\PersCtl.h;..\ht\sysc\PersGv1.h;..\ht\sysc\PersGv2.h;..\ht\sysc\PersGv3.h;..\ht\sysc\SyscAeTop.h;..\ht\sysc\SyscTop.h;..\ht\sysc\UnitIntf.cpp;..\ht\sysc\PersHif.cpp;..\ht\sysc\PersAuHti.cpp;..\ht\sysc\PersAuHta.cpp;..\ht\sysc\PersAuMif0.cpp;..\ht\sysc\PersCtl.cpp;..\ht\sysc\PersGv1.cpp;..\ht\sysc\PersGv2.cpp;..\ht\sysc\PersGv3.cpp;..\ht\sysc\SyscMon.cpp;..\ht\sysc\PersAuTop.sc;..\ht\sysc\PersAeTop.sc;..\ht\verilog\PersHif.v_;..\ht\verilog\PersAuHti.v_;..\ht\verilog\PersAuHta.v_;..\ht\verilog\PersAuMif0.v_;..\ht\verilog\PersCtl.v_;..\ht\verilog\PersGv1.v_;..\ht\verilog\PersGv2.v_;..\ht\verilog\PersGv3.v_;..\ht\verilog\PersUnitCnt.v_;..\ht\verilog\PersXbarStub.v_;..\ht\verilog\PersMiStub.v_;..\ht\verilog\PersMoStub.v_</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">..\ht\sysc\HostIntf.h;..\ht\sysc\UnitIntf.h;..\ht\sysc\PersCommon.h;..\ht\sysc\PersAeTop.h;..\ht\sysc\PersAuTop.h;..\ht\sysc\PersHif.h;..\ht\sysc\PersAuHti.h;..\ht\sysc\PersAuHta.h;..\ht\sysc\PersAuMif0.h;..\ht\sysc\PersCtl.h;..\ht\sysc\PersGv1.h;..\ht\sysc\PersGv2.h;..\ht\sysc\PersGv3.h;..\ht\sysc\SyscAeTop.h;..\ht\sysc\SyscTop.h;..\ht\sysc\UnitIntf.cpp;..\ht\sysc\PersHif.cpp;..\ht\sysc\PersAuHti.cpp;..\ht\sysc\PersAuHta.cpp;..\ht\sysc\PersAuMif0.cpp;..\ht\sysc\PersCtl.cpp;..\ht\sysc\PersGv1.cpp;..\ht\sysc\PersGv2.cpp;..\ht\sysc\PersGv3.cpp;..\ht\sysc\SyscMon.cpp;..\ht\sysc\PersAuTop.sc;..\ht\sysc\PersAeTop.sc;..\ht\verilog\PersHif.v_;..\ht\verilog\PersAuHti.v_;..\ht\verilog\PersAuHta.v_;..\ht\verilog\PersAuMif0.v_;..\ht\verilog\PersCtl.v_;..\ht\verilog\PersGv1.v_;..\ht\verilog\PersGv2.v_;..\ht\verilog\PersGv3.v_;..\ht\verilog\PersUnitCnt.v_;..\ht\verilog\PersXbarStub.v_;..\ht\verilog\PersMiStub.v_;..\ht\verilog\PersMoStub.v_</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\ht\sysc\HostIntf.h</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\ht\sysc\HostIntf.h</Outputs>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </CustomBuild>
-    <CustomBuild Include="..\ht\sysc\PersSuTop.sc">
+    <CustomBuild Include="..\ht\sysc\PersAuTop.sc">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(HtToolsPath)\bin\htv -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc -DHT_SYSC ..\ht\sysc\%(Filename).sc ..\ht\sysc\%(Filename).h ..\ht\verilog\%(Filename).v</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(HtToolsPath)\bin\htv -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc -DHT_SYSC ..\ht\sysc\%(Filename).sc ..\ht\sysc\%(Filename).h ..\ht\verilog\%(Filename).v</Command>
@@ -439,11 +400,11 @@
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">..\ht\sysc\%(Filename).h</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\ht\sysc\%(Filename).h</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\ht\sysc\%(Filename).h</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\ht\sysc\PersSuTop.h</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\ht\sysc\PersSuTop.h</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">..\ht\sysc\PersSuTop.h</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\ht\sysc\PersSuTop.h</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\ht\sysc\PersSuTop.h</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\ht\sysc\PersAuTop.h</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\ht\sysc\PersAuTop.h</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">..\ht\sysc\PersAuTop.h</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\ht\sysc\PersAuTop.h</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\ht\sysc\PersAuTop.h</AdditionalInputs>
     </CustomBuild>
     <CustomBuild Include="..\ht\verilog\PersHif.v_">
       <FileType>Document</FileType>
@@ -468,7 +429,7 @@
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
     </CustomBuild>
-    <CustomBuild Include="..\ht\verilog\PersSuHti.v_">
+    <CustomBuild Include="..\ht\verilog\PersAuHti.v_">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
@@ -491,7 +452,7 @@
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
     </CustomBuild>
-    <CustomBuild Include="..\ht\verilog\PersSuHta.v_">
+    <CustomBuild Include="..\ht\verilog\PersAuHta.v_">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
@@ -514,7 +475,7 @@
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
     </CustomBuild>
-    <CustomBuild Include="..\ht\verilog\PersSuMif0.v_">
+    <CustomBuild Include="..\ht\verilog\PersAuMif0.v_">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
@@ -537,7 +498,7 @@
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
     </CustomBuild>
-    <CustomBuild Include="..\ht\verilog\PersPause.v_">
+    <CustomBuild Include="..\ht\verilog\PersCtl.v_">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
@@ -560,7 +521,7 @@
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
     </CustomBuild>
-    <CustomBuild Include="..\ht\verilog\PersRd1.v_">
+    <CustomBuild Include="..\ht\verilog\PersGv1.v_">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
@@ -583,7 +544,7 @@
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
     </CustomBuild>
-    <CustomBuild Include="..\ht\verilog\PersRd2.v_">
+    <CustomBuild Include="..\ht\verilog\PersGv2.v_">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
@@ -606,122 +567,7 @@
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
     </CustomBuild>
-    <CustomBuild Include="..\ht\verilog\PersRd3.v_">
-      <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">htv %(Filename) ...</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">htv %(Filename) ...</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">htv %(Filename) ...</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">htv %(Filename) ...</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">htv %(Filename) ...</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\ht\verilog\%(Filename).v</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\ht\verilog\%(Filename).v</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">..\ht\verilog\%(Filename).v</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\ht\verilog\%(Filename).v</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\ht\verilog\%(Filename).v</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
-    </CustomBuild>
-    <CustomBuild Include="..\ht\verilog\PersRd4.v_">
-      <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">htv %(Filename) ...</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">htv %(Filename) ...</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">htv %(Filename) ...</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">htv %(Filename) ...</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">htv %(Filename) ...</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\ht\verilog\%(Filename).v</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\ht\verilog\%(Filename).v</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">..\ht\verilog\%(Filename).v</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\ht\verilog\%(Filename).v</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\ht\verilog\%(Filename).v</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
-    </CustomBuild>
-    <CustomBuild Include="..\ht\verilog\PersWr1.v_">
-      <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">htv %(Filename) ...</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">htv %(Filename) ...</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">htv %(Filename) ...</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">htv %(Filename) ...</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">htv %(Filename) ...</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\ht\verilog\%(Filename).v</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\ht\verilog\%(Filename).v</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">..\ht\verilog\%(Filename).v</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\ht\verilog\%(Filename).v</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\ht\verilog\%(Filename).v</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
-    </CustomBuild>
-    <CustomBuild Include="..\ht\verilog\PersWr2.v_">
-      <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">htv %(Filename) ...</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">htv %(Filename) ...</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">htv %(Filename) ...</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">htv %(Filename) ...</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">htv %(Filename) ...</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\ht\verilog\%(Filename).v</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\ht\verilog\%(Filename).v</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">..\ht\verilog\%(Filename).v</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\ht\verilog\%(Filename).v</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\ht\verilog\%(Filename).v</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
-    </CustomBuild>
-    <CustomBuild Include="..\ht\verilog\PersWr3.v_">
-      <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">htv %(Filename) ...</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">htv %(Filename) ...</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">htv %(Filename) ...</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">htv %(Filename) ...</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">htv %(Filename) ...</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\ht\verilog\%(Filename).v</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\ht\verilog\%(Filename).v</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">..\ht\verilog\%(Filename).v</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\ht\verilog\%(Filename).v</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\ht\verilog\%(Filename).v</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\ht\sysc\%(Filename).cpp;..\ht\sysc\%(Filename).h</AdditionalInputs>
-    </CustomBuild>
-    <CustomBuild Include="..\ht\verilog\PersWr4.v_">
+    <CustomBuild Include="..\ht\verilog\PersGv3.v_">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
@@ -886,9 +732,9 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\src_pers\memPause.htd">
+    <None Include="..\src_pers\gv.htd">
     </None>
-    <None Include="..\ht\verilog\PersSuTop.v">
+    <None Include="..\ht\verilog\PersAuTop.v">
     </None>
     <None Include="..\ht\verilog\PersAeTop.v">
     </None>
@@ -898,29 +744,19 @@
     </None>
     <None Include="..\ht\verilog\PersHif.v">
     </None>
-    <None Include="..\ht\verilog\PersSuHti.v">
+    <None Include="..\ht\verilog\PersAuHti.v">
     </None>
-    <None Include="..\ht\verilog\PersSuHta.v">
+    <None Include="..\ht\verilog\PersAuHta.v">
     </None>
-    <None Include="..\ht\verilog\PersSuMif0.v">
+    <None Include="..\ht\verilog\PersAuMif0.v">
     </None>
-    <None Include="..\ht\verilog\PersPause.v">
+    <None Include="..\ht\verilog\PersCtl.v">
     </None>
-    <None Include="..\ht\verilog\PersRd1.v">
+    <None Include="..\ht\verilog\PersGv1.v">
     </None>
-    <None Include="..\ht\verilog\PersRd2.v">
+    <None Include="..\ht\verilog\PersGv2.v">
     </None>
-    <None Include="..\ht\verilog\PersRd3.v">
-    </None>
-    <None Include="..\ht\verilog\PersRd4.v">
-    </None>
-    <None Include="..\ht\verilog\PersWr1.v">
-    </None>
-    <None Include="..\ht\verilog\PersWr2.v">
-    </None>
-    <None Include="..\ht\verilog\PersWr3.v">
-    </None>
-    <None Include="..\ht\verilog\PersWr4.v">
+    <None Include="..\ht\verilog\PersGv3.v">
     </None>
     <None Include="..\ht\verilog\PersUnitCnt.v">
     </None>

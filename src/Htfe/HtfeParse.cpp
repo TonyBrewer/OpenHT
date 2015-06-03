@@ -3822,6 +3822,15 @@ CHtfeStatement * CHtfeDesign::ParseVariableDecl(CHtfeIdent *pHier, CHtfeIdent *p
 						pStatement = pStatement->GetNext();
 					ppStatement = pStatement->GetPNext();
 
+					//if (m_statementNestLevel > 0) {
+					//	// variable is declared in a conditional statement, initialize
+					//	CHtfeIdent *pHier2 = pHier->FindHierMethod();
+					//	if (pHier2) {
+					//		CHtfeStatement *pUnknownStatement = InitializeToUnknown(pHier, pIdent);
+					//		pHier2->InsertStatementList(pUnknownStatement);
+					//	}
+					//}
+
 					if (GetToken() == tk_semicolon)
 						return pHeadStatement;
 

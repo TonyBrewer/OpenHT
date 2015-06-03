@@ -207,6 +207,9 @@ void CDsnInfo::InitAndValidateModMif()
 						rdDst.m_pDstType->m_clangMinAlign != 1 && rdDst.m_pDstType->m_clangBitWidth != rdDst.m_pDstType->m_clangMinAlign)
 						ParseMsg(Error, pField->m_lineInfo, "memory read to shared variable with read type that requires multiple block ram writes not supported");
 
+					if (rdDst.m_pSharedVar->m_ramType == eBlockRam && rdDst.m_varAddr1W >= 0 &&
+						rdDst.m_pDstType->m_clangBitWidth != rdDst.m_pSharedVar->m_pType->m_clangBitWidth)
+						ParseMsg(Error, pField->m_lineInfo, "memory read to shared variable implemented as a block ram with read type that requires a partial write not supported");
 				}
 				else if (bFoundPrivate) {
 
@@ -1087,7 +1090,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 		else if (modMemSize != rdDst.m_memSize)
 			bSingleMemSize = false;
 
-		if (rdDst.m_pGblVar == 0) {
+		if (rdDst.m_pGblVar == 0 || rdDst.m_pGblVar->m_pNgvInfo->m_bOgv) {
 			if (!bRdDstNonNgv)
 				rdDstRdyCnt += 1;
 			bRdDstNonNgv = true;

@@ -1,0 +1,21 @@
+// -cl $(HtToolsPath)/tests/ngv_v5/src_pers/gv.htl
+-wd $(HtToolsPath)/tests/ngv_v5/msvs12/
+
+-cp wx-690
+//-mt
+-ac 1
+-uc 1
+-df 150
+//-ri
+//-rr
+//-it
+//-vr
+-ogv
+-pn ngv_v5
+-vcd_all
+-I ../src
+-I ../src_pers
+//-D_HTL
+-ml 0.6
+../src_pers/gv.htd
+../ht/sysc

@@ -1395,21 +1395,12 @@ void CHtvDesign::SynIndividualStatements(CHtvIdent *pHier, CHtvObject * pObj, CH
 			RemoveWrDataMux(pStatement, synSetSize);
         }
 
-        //m_vFile.SetLineBuffering(true);
-        //m_vFile.SetLineBuffer(0);
-
         SynIndividualStatements(pHier, pObj, pRtnObj, pStatement, synSetSize);
-
-       // m_vFile.FlushLineBuffer();
-       // m_vFile.SetLineBuffering(false);
 
         if (m_bClockedAlwaysAt || synSetSize > 1)
             GenAlwaysAtTrailer(true);
 
         m_bClockedAlwaysAt = false;
-
-       // m_vFile.SetLineBuffer(1);
-       // m_vFile.FlushLineBuffer();
     }
 }
 
@@ -2123,8 +2114,7 @@ void CHtvDesign::SynAssignmentStatement(CHtvIdent *pHier, CHtvObject * pObj, CHt
 
     bool bFoundSubExpr = false;
     bool bWriteIndex = false;
-	//if (pExpr->IsLeaf() || pExpr->GetOperator() != tk_period || !pExpr->GetOperand2()->IsFunction())
-		FindSubExpr(pObj, pRtnObj, pExpr, bFoundSubExpr, bWriteIndex);
+	FindSubExpr(pObj, pRtnObj, pExpr, bFoundSubExpr, bWriteIndex);
 
     if (!pExpr->IsLeaf() && pExpr->GetOperator() != tk_period && !bWriteIndex || !bFoundSubExpr)
         GenSubExpr(pObj, pRtnObj, pExpr, false, false);
@@ -2587,8 +2577,7 @@ void CHtvDesign::FindSubExpr(CHtvObject * pObj, CHtvObject * pRtnObj, CHtvOperan
     }
 
     if (bFoundSubExpr) {
-		if (!g_htvArgs.IsBlockLocalTemps())
-			m_vFile.SetVarDeclLines(true);
+		m_vFile.SetVarDeclLines(true);
  
         for (size_t i = 0; i < tempVarList.size(); i += 1) {
 
@@ -2604,6 +2593,8 @@ void CHtvDesign::FindSubExpr(CHtvObject * pObj, CHtvObject * pRtnObj, CHtvOperan
  					tempVarList[i].m_declWidth = width;
 
 					m_vFile.Print("reg    %-10s %s;\n", bitRange.c_str(), tempVarList[i].m_name.c_str());
+
+					m_vFile.PrintVarInit("%s = 32'h0;\n", tempVarList[i].m_name.c_str());
                 }
                 break;
             case eTempArrIdx:
@@ -2631,7 +2622,9 @@ void CHtvDesign::FindSubExpr(CHtvObject * pObj, CHtvObject * pRtnObj, CHtvOperan
                         bitRange = VA("[%d:0] ", idxBits-1);
 
                     m_vFile.Print("reg    %-10s %s;\n", bitRange.c_str(), tempVarList[i].m_name.c_str());
-                }
+
+					m_vFile.PrintVarInit("%s = 32'h0;\n", tempVarList[i].m_name.c_str());
+				}
                 break;
             case eTempFldIdx:
                 {
@@ -2645,16 +2638,17 @@ void CHtvDesign::FindSubExpr(CHtvObject * pObj, CHtvObject * pRtnObj, CHtvOperan
 
  					tempVarList[i].m_declWidth = width;
 
-                   m_vFile.Print("reg    %-10s %s;\n", bitRange.c_str(), tempVarList[i].m_name.c_str());
-                }
+					m_vFile.Print("reg    %-10s %s;\n", bitRange.c_str(), tempVarList[i].m_name.c_str());
+
+					m_vFile.PrintVarInit("%s = 32'h0;\n", tempVarList[i].m_name.c_str());
+				}
                 break;
             }
 
 			m_tempVarMap.insert(TempVarMap_ValuePair(tempVarList[i].m_name, tempVarList[i].m_declWidth) );
         }
 
-		if (!g_htvArgs.IsBlockLocalTemps())
-			m_vFile.SetVarDeclLines(false);
+		m_vFile.SetVarDeclLines(false);
     }
 
     // generate sub expressions
@@ -3661,16 +3655,18 @@ void CHtvDesign::GenHtAttributes(CHtvIdent * pIdent, string instName)
 
 		// Quartus hacks FIXME
 		if (g_htvArgs.IsQuartusEnabled()) {
-			if (!strcmp("keep_hierarchy", name.c_str())) skip = true;
-			if (!strcmp("equivalent_register_removal", name.c_str())) {
+			if (name == "keep_hierarchy") 
+				skip = true;
+			if (name == "equivalent_register_removal") {
 				name = "syn_preserve";
 				value = "true";
 			}
-			if (!strcmp("keep", name.c_str())) name = "noprune";
+			if (name == "keep")
+				name = "noprune";
 		}
 
         if ((instName.size() == 0 || instName == htAttrib.m_inst) && !skip)
-	    m_vFile.Print("(* %s = \"%s\" *)\n", name.c_str(), value.c_str());
+			m_vFile.Print("(* %s = \"%s\" *)\n", name.c_str(), value.c_str());
     }
 }
 
@@ -3941,7 +3937,7 @@ void CHtvDesign::GenFunction(CHtvIdent *pFunction, CHtvObject * pObj, CHtvObject
     if (!pFunction->IsBodyDefined())
         return;
 
-    if (pFunction->GetGlobalRefSet().size() > 0 )
+    if (pFunction->IsInlinedCall())
         return;
 
     m_vFile.Print("\ntask %s;\n", pFunction->GetName().c_str());
@@ -4026,6 +4022,9 @@ void CHtvDesign::GenFunction(CHtvIdent *pFunction, CHtvObject * pObj, CHtvObject
     m_vFile.Print("begin : %s$\n", pFunction->GetName().c_str());
     m_vFile.IncIndentLevel();
 
+	m_vFile.VarInitOpen();
+	m_bInAlwaysAtBlock = true;
+
     // gen input parameter assignments
     for (int paramId = 0; paramId < pFunction->GetParamCnt(); paramId += 1) {
 
@@ -4050,7 +4049,10 @@ void CHtvDesign::GenFunction(CHtvIdent *pFunction, CHtvObject * pObj, CHtvObject
         }
     }
 
-    m_vFile.DecIndentLevel();
+	m_vFile.VarInitClose();
+	m_bInAlwaysAtBlock = false;
+
+	m_vFile.DecIndentLevel();
     m_vFile.Print("end\n");
 
     m_vFile.DecIndentLevel();
@@ -4071,6 +4073,8 @@ void CHtvDesign::GenAlwaysAtHeader(bool bBeginEnd)
     if (bBeginEnd) {
 		m_vFile.Print("begin : Always$%d\n", GetNextAlwaysBlockIdx());
         m_vFile.IncIndentLevel(); // begin
+		m_vFile.VarInitOpen();
+		m_bInAlwaysAtBlock = true;
     }
 }
 
@@ -4080,15 +4084,19 @@ void CHtvDesign::GenAlwaysAtHeader(CHtvIdent *pIdent)
     m_vFile.Print("\nalways @(posedge %s)\n", pIdent->GetName().c_str());
     m_vFile.IncIndentLevel();
 
-    m_vFile.Print("begin : Always$%d\n", GetNextAlwaysBlockIdx());
+	m_vFile.Print("begin : Always$%d\n", GetNextAlwaysBlockIdx());
     m_vFile.IncIndentLevel(); // begin
+	m_vFile.VarInitOpen();
+	m_bInAlwaysAtBlock = true;
 }
 
 void CHtvDesign::GenAlwaysAtTrailer(bool bBeginEnd)
 {
     if (bBeginEnd) {
-        m_vFile.DecIndentLevel(); // begin
+		m_vFile.DecIndentLevel(); // begin
         m_vFile.Print("end\n");
+		m_vFile.VarInitClose();
+		m_bInAlwaysAtBlock = false;
     }
 
     m_vFile.DecIndentLevel(); // always
@@ -5142,12 +5150,11 @@ void CHtvDesign::GenVerilogFunctionCall(CHtvObject * pObj, CHtvObject * pRtnObj,
 {
     CHtvIdent *pIdent = pExpr->GetMember();
 
-    bool bMemberFunc = pIdent->GetPrevHier() && pIdent->GetPrevHier()->IsStruct();
     if (!pIdent->IsBodyDefined() && !pIdent->GetType()->IsUserDefinedType()) {
 
         SynBuiltinFunctionCall(pObj, pRtnObj, pExpr);
 
-    } else if (pIdent->GetGlobalRefSet().size() == 0 && !bMemberFunc ) {
+	} else if (!pIdent->IsInlinedCall()) {
         m_vFile.Print("%s", pIdent->GetName().c_str());
 
         if (pExpr->GetParamCnt() > 0 || pIdent->GetGlobalRefSet().size() > 0 || pExpr->HasFuncTempVar()) {
@@ -5159,10 +5166,6 @@ void CHtvDesign::GenVerilogFunctionCall(CHtvObject * pObj, CHtvObject * pRtnObj,
                 m_vFile.Print("(%s", pExpr->GetFuncTempVar().c_str());
 
                 pSeparater = ", ";
-
-				//CHtvIdent *pFunc = pExpr->GetMember();
-				//if (pFunc->GetType() != GetVoidType() && !pFunc->IsReturnRef())
-				//	pExpr->SetTempOp(CreateTempOp(pExpr, pExpr->GetFuncTempVar()));
 			}
 
             for (int paramId = 0; paramId < pIdent->GetParamCnt(); paramId += 1) {
@@ -5324,27 +5327,29 @@ void CHtvDesign::SynInlineFunctionCall(CHtvObject * pObj, CHtvObject * pRtnObj, 
         }
     }
 
-	//if (pFunc->IsReturnRef())
-	//	pObj->m_rtnFieldTempVar = pExpr->GetFieldTempVar();
-
     SynStatementList(pFunc, pObj, pRtnObj, (CHtvStatement *)pFunc->GetStatementList());
 
     // assign outputs parameters
     for (int paramIdx = 0; paramIdx < pFunc->GetParamCnt(); paramIdx += 1) {
-        CHtvIdent * pParamIdent = pFunc->GetParamIdent(paramIdx);
         if (pFunc->GetParamIsConst(paramIdx))
             continue;
 
-        CHtvOperand *pParam = pExpr->GetParam(paramIdx);
+		CHtvOperand * pOp2 = new CHtvOperand;
+		pOp2->InitAsIdentifier(GetLineInfo(), pFunc->GetParamIdent(paramIdx)->GetFlatIdent());
+
+		CHtvOperand * pEqualOp = new CHtvOperand;
+		pEqualOp->InitAsOperator(GetLineInfo(), tk_equal, pExpr->GetParam(paramIdx), pOp2);
 
         bool bFoundSubExpr;
         bool bWriteIndex;
-        FindSubExpr(0, 0, pParam, bFoundSubExpr, bWriteIndex, false, true);
+		FindSubExpr(pObj, pRtnObj, pEqualOp, bFoundSubExpr, bWriteIndex, false, true);
 
-        PrintSubExpr(0, 0, pParam, true);
+		if (!bWriteIndex || !bFoundSubExpr)
+			GenSubExpr(pObj, pRtnObj, pEqualOp, false, false);
 
-        m_vFile.Print(" = %s;\n", pParamIdent->GetFlatIdent()->GetName().c_str());
-
+		if (!bWriteIndex)
+			m_vFile.Print(";\n");
+ 
         if (bFoundSubExpr) {
             m_vFile.DecIndentLevel();
             m_vFile.Print("end\n");
@@ -5398,15 +5403,16 @@ void CHtvDesign::GenFuncVarDecl(CHtvIdent * pFunc)
 
 				string identName = identIter->GetVerilogName(elemIdx);
 
-				if (!g_htvArgs.IsBlockLocalTemps() || bWire)
-					m_vFile.SetVarDeclLines(true);
+				m_vFile.SetVarDeclLines(true);
 
 				GenHtAttributes(identIter(), identName);
 
                 m_vFile.Print("%s   %-10s %s;\n", bWire ? "wire" : "reg ", bitRange.c_str(), identName.c_str());
 
-				if (!g_htvArgs.IsBlockLocalTemps() || bWire)
-					m_vFile.SetVarDeclLines(false);
+				if (!bWire && m_bInAlwaysAtBlock)
+					m_vFile.PrintVarInit("%s = 32'h0;\n", identName.c_str());
+
+				m_vFile.SetVarDeclLines(false);
 			}
         }
     }
