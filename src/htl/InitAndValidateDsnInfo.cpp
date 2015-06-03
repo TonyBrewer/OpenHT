@@ -109,6 +109,7 @@ void CDsnInfo::ValidateDesignInfo()
 
 			pField->m_rngLow.InitValue(pField->m_lineInfo);
 			pField->m_rngHigh.InitValue(pField->m_lineInfo);
+			pField->m_fieldWidth.InitValue(pField->m_lineInfo, false, 0);
 
 			pField->InitDimen(pField->m_lineInfo);
 		}
@@ -1056,6 +1057,13 @@ void CDsnInfo::InitAndValidateTypes()
 			CField * pPriv = mod.m_threads.m_htPriv.m_fieldList[prIdx];
 
 			pPriv->m_pType = FindType(pPriv->m_type, pPriv->m_lineInfo);
+		}
+
+		// stage variables
+		for (size_t stgIdx = 0; stgIdx < mod.m_stage.m_fieldList.size(); stgIdx += 1) {
+			CField * pStage = mod.m_stage.m_fieldList[stgIdx];
+
+			pStage->m_pType = FindType(pStage->m_type, pStage->m_lineInfo);
 		}
 	}
 }
