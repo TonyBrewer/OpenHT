@@ -1428,9 +1428,10 @@ public:
 			pType = m_pOpType;
 		else if (GetMethod()->IsOverloadedOperator())
 			pType = GetMethod()->GetParamType(0);
-		else if (GetMethod()->IsUserConversion())
+		else if (GetMethod()->IsUserConversion()) {
 			pType = GetMethod()->GetType();
-		else if (GetMethod()->IsConstructor())
+			return pType;
+		} else if (GetMethod()->IsConstructor())
 			pType = GetMethod()->GetParamType(0);
 		else {
 			Assert(0);

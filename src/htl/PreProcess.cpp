@@ -743,7 +743,7 @@ void CPreProcess::PreProcessInclude(string &lineBuf, const char *&pPos)
 	}
 
 	if (!Open(fileName, true))
-		ParseMsg(Error, "Could not open file");
+		ParseMsg(Fatal, "Could not open file '%s'", fileName.c_str());
 	else if (m_fsIdx == 1) {
 		char fullPathName[PATH_MAX];
 
