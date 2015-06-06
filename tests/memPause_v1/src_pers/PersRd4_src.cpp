@@ -186,14 +186,14 @@ void CPersRd4::PersRd4()
 			printf("+");
 #else
 		{
-			m_rdGrpReqState1.read_addr(r_rdCompGrpId);
-			m_rdGrpRspState0.read_addr(r_rdCompGrpId);
-			CRdGrpRspState c_m2_rdGrpRspState = m_rdGrpRspState0.read_mem();
-			CRdGrpReqState c_m2_rdGrpReqState = m_rdGrpReqState1.read_mem();
+			m_rdGrpReqState1.read_addr(r_m1_rdRspInfo.m_grpId);
+			m_rdGrpRspState0.read_addr(r_m1_rdRspInfo.m_grpId);
+			CRdGrpRspState c_m1_rdGrpRspState = m_rdGrpRspState0.read_mem();
+			CRdGrpReqState c_m1_rdGrpReqState = m_rdGrpReqState1.read_mem();
 
-			if (c_m2_rdGrpRspState.m_pause == c_m2_rdGrpReqState.m_pause)
+			if (c_m1_rdGrpRspState.m_pause == c_m1_rdGrpReqState.m_pause)
 				printf("-");
-			else if (c_m2_rdGrpReqState.m_cnt - c_m2_rdGrpRspState.m_cnt == 1)
+			else if (c_m1_rdGrpReqState.m_cnt - c_m1_rdGrpRspState.m_cnt == 1)
 				printf("4");
 			else
 				printf("+");

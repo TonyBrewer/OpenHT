@@ -182,9 +182,9 @@ void CPersRd1::PersRd1()
 			printf("+");
 #else
 #if (RD1_RD_GRP_ID_W <= 3)
-		if (!r_rdGrpState[r_m2_rdRspInfo.m_grpId].m_pause)
+		if (!r_rdGrpState[r_m1_rdRspInfo.m_grpId].m_pause)
 			printf("-");
-		else if (r_rdGrpState[r_m2_rdRspInfo.m_grpId].m_cnt == 1)
+		else if (r_rdGrpState[r_m1_rdRspInfo.m_grpId].m_cnt == 1)
 			printf("1");
 		else
 			printf("+");

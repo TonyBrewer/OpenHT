@@ -90,7 +90,7 @@ void CHtvArgs::Parse(int argc, char *argv[])
 
 		argv2[0] = argv[0];
 
-		SetCurrentDirectory("C:/OpenHT/tests/memPSGRand_bug71/msvs12/");
+		SetCurrentDirectory("C:/OpenHT/tests/math/msvs12/");
 		argv2[argc++] = "-I";
 		argv2[argc++] = "C:/OpenHT/ht_lib";
 		argv2[argc++] = "-I";
@@ -106,9 +106,9 @@ void CHtvArgs::Parse(int argc, char *argv[])
 		//argv2[argc++] = "../ht/sysc/PersAuTop.sc";
 		//argv2[argc++] = "../ht/sysc/PersAuTop.h";
 		//argv2[argc++] = "../ht/verilog/PersAuTop.v";
-		argv2[argc++] = "../ht/sysc/PersTest00.cpp";
+		argv2[argc++] = "../ht/sysc/PersMath.cpp";
 		//argv2[argc++] = "C:/OpenHT_ngv/ht_lib/sysc/PersUnitCnt.cpp";
-		argv2[argc++] = "../ht/verilog/PersTest00.v";
+		argv2[argc++] = "../ht/verilog/PersMath.v";
 
 		argv2[argc] = 0;
 

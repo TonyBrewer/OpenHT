@@ -178,9 +178,9 @@ void CPersRd2::PersRd2()
 			printf("+");
 #else
 #if (RD2_ADDR1_W < 3)
-		if (!r_rdGrpState[r_m2_rdRspInfo.m_grpId].m_pause)
+		if (!r_rdGrpState[r_m1_rdRspInfo.m_grpId].m_pause)
 			printf("-");
-		else if (r_rdGrpState[r_m2_rdRspInfo.m_grpId].m_cnt == 1)
+		else if (r_rdGrpState[r_m1_rdRspInfo.m_grpId].m_cnt == 1)
 			printf("2");
 		else
 			printf("+");

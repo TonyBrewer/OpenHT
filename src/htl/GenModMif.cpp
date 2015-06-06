@@ -3086,12 +3086,20 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 
 				if (mif.m_mifReqStgCnt == 2 && wrSrc.m_wrDataTypeName != wrSrc.m_pSrcType->m_typeName) {
 
-					if (wrSrc.m_pSrcType->m_clangMinAlign == 1)
-						wrTypeUnion.AddStructField(&g_uint64, VA("m_%s", wrSrc.m_pSrcType->m_typeName.c_str()), VA("%d", wrSrc.m_pSrcType->m_clangBitWidth));
-					else
-						wrTypeUnion.AddStructField(wrSrc.m_pSrcType, VA("m_%s", wrSrc.m_pSrcType->m_typeName.c_str()));
+					size_t typeIdx;
+					for (typeIdx = 0; typeIdx < wrDataTypeList.size(); typeIdx += 1) {
+						if (wrSrc.m_pSrcType->m_typeName == wrDataTypeList[typeIdx])
+							break;
+					}
 
-					wrDataTypeList.push_back(wrSrc.m_pSrcType->m_typeName);
+					if (typeIdx == wrSrcTypeList.size()) {
+						if (wrSrc.m_pSrcType->m_clangMinAlign == 1)
+							wrTypeUnion.AddStructField(&g_uint64, VA("m_%s", wrSrc.m_pSrcType->m_typeName.c_str()), VA("%d", wrSrc.m_pSrcType->m_clangBitWidth));
+						else
+							wrTypeUnion.AddStructField(wrSrc.m_pSrcType, VA("m_%s", wrSrc.m_pSrcType->m_typeName.c_str()));
+
+						wrDataTypeList.push_back(wrSrc.m_pSrcType->m_typeName);
+					}
 				}
 
 				if (wrSrc.m_pSrcType->m_clangMinAlign == 1)
@@ -5162,7 +5170,13 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 					if (rdDst.m_pRdType == 0 && pDstType->m_clangBitWidth > reqSize) {
 						tabs.erase(0, 1);
 						mifPostInstr.Append("%s\t\tcase %d:\n", tabs.c_str(), bitPos / reqSize);
+						mifPostInstr.Append("%s\t\t{\n", tabs.c_str());
 						tabs += "\t";
+					}
+
+					if (pDstType->IsRecord() && bMemVar && ramType == eBlockRam) {
+						mifPostInstr.Append("%s\t\t%s recData;\n", tabs.c_str(),
+							pDstType->m_typeName.c_str());
 					}
 
 					for (CStructElemIter iter(this, pDstType); !iter.end(); iter++) {
@@ -5179,7 +5193,6 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 
 						string typeCast;
 						if (rdTypeWidth < dstTypeWidth)
-						//if (rdDst.m_pRdType)
 							typeCast = rdDst.m_pRdType->m_typeName;
 						else if (width < 64 || bIsSigned) {
 							if (minAlign != width) {
@@ -5203,9 +5216,8 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 										rdRspStg,
 										pos % reqSize);
 								} else {
-									mifPostInstr.Append("\t\t%s%s%s.write_mem((%s)(c_m%d_rdRspData >> %d));\n",
+									mifPostInstr.Append("\t\t%srecData%s = (%s)(c_m%d_rdRspData >> %d);\n",
 										tabs.c_str(),
-										baseVar.c_str(),
 										iter.GetHeirFieldName().c_str(),
 										typeCast.c_str(),
 										rdRspStg,
@@ -5229,11 +5241,9 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 										addrFld.c_str(),
 										iter.GetHeirFieldName().c_str(),
 										rdRspStg);
-								}
-								else {
-									mifPostInstr.Append("\t\t%s%s%s.write_mem(c_m%d_rdRspData);\n",
+								} else {
+									mifPostInstr.Append("\t\t%srecData%s = c_m%d_rdRspData;\n",
 										tabs.c_str(),
-										baseVar.c_str(),
 										iter.GetHeirFieldName().c_str(),
 										rdRspStg);
 								}
@@ -5260,8 +5270,15 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 						}
 					}
 
+					if (pDstType->IsRecord() && bMemVar && ramType == eBlockRam) {
+						mifPostInstr.Append("%s\t\t%s.write_mem(recData);\n",
+							tabs.c_str(),
+							baseVar.c_str());
+					}
+
 					if (rdDst.m_pRdType == 0 && pDstType->m_clangBitWidth > reqSize) {
 						mifPostInstr.Append("%s\t\tbreak;\n", tabs.c_str());
+						mifPostInstr.Append("%s\t}\n", tabs.c_str());
 					}
 				}
 

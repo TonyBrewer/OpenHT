@@ -397,7 +397,7 @@ public:
 		uint64_t wrAddr = (wrIdx1 + (wrIdx2 << AW1)) & ((1<<AW1) * (1<<AW2) - 1);
 		return m_mem[wrAddr];
 	}
-	void read_clock(bool bReset=false) {
+	void read_clock(bool bReset = false) {
 		m_bReset = bReset;
 		if (!m_bReset && r_bRdAddr)
 			r_doReg = (r_bRdAddr && r_bWrData && r_rdAddr == r_wrAddr) ? ht_bad_data(r_doReg) : m_mem[r_rdAddr];
@@ -455,6 +455,7 @@ template <typename T, int SW, int AW1, int AW2=0, bool bDoReg=false>
 class ht_mrd_block_ram {
 public:
 	ht_mrd_block_ram() {
+		m_bReset = true;
 		m_bWrAddr = false;
 		m_bWrData = false;
 		r_bWrData = false;
@@ -468,7 +469,7 @@ public:
 		m_rdAddr = (rdIdx1 + (rdIdx2 << AW1)) & ((1<<AW1) * (1<<AW2) - 1);
 	}
 	void read_addr(uint64_t rdIdx1, uint64_t rdIdx2=0) {
-		ht_assert(!m_bRdAddr);
+		ht_assert(m_bReset || !m_bRdAddr);
 		m_bRdAddr = true;
 		m_rdAddr = (rdIdx1 + (rdIdx2 << AW1)) & ((1<<AW1) * (1<<AW2) - 1);
 	}
@@ -479,20 +480,21 @@ public:
 		m_bWrAddr = true;
 		m_wrAddr = (wrIdx1 + (wrIdx2 << AW1)) & ((1<<AW1) * (1<<AW2) - 1);
 		m_wrSel = wrSel;
-		m_wrData = m_mem[m_wrAddr][m_wrSel];
+		m_wrData = m_bReset ? m_mem[0][0] : m_mem[m_wrAddr][m_wrSel];
 	}
 	const T & read_mem_debug(uint64_t rdSel, uint64_t rdIdx1, uint64_t rdIdx2=0) {
 		ht_assert(rdSel < (1<<SW));
 		return m_mem[(rdIdx1 + (rdIdx2 << AW1)) & ((1<<AW1) * (1<<AW2) - 1)][rdSel];
 	}
 	T read_mem(uint64_t rdSel) {
-		ht_assert(rdSel < (1<<SW));
+		if (m_bReset) return m_mem[0][0];
+		ht_assert(rdSel < (1 << SW));
 		ht_assert(bDoReg ? r_bRdAddr2 : r_bRdAddr);
 		return bDoReg ? r_doReg[rdSel] : ((r_bRdAddr && r_bWrData && r_rdAddr == r_wrAddr) ? ht_bad_data(r_doReg[0]) : m_mem[r_rdAddr][rdSel]);
 	}
 	T & write_mem() { ht_assert(m_bWrAddr); return m_wrData; }
 	void write_mem(const T &wrData) {
-		ht_assert(m_bWrAddr);
+		ht_assert(m_bReset || m_bWrAddr);
 		m_bWrData = true;
 		m_wrData = wrData;
 	}
@@ -501,8 +503,9 @@ public:
 		uint64_t wrAddr = (wrIdx1 + (wrIdx2 << AW1)) & ((1<<AW1) * (1<<AW2) - 1);
 		return m_mem[wrAddr][wrSel];
 	}
-	void read_clock() {
-		if (r_bRdAddr) {
+	void read_clock(bool bReset = false) {
+		m_bReset = bReset;
+		if (!m_bReset && r_bRdAddr) {
 			for (uint64_t rdSel = 0; rdSel < (1<<SW); rdSel += 1)
 				r_doReg[rdSel] = (r_bRdAddr && r_bWrData && r_rdAddr == r_wrAddr) ? ht_bad_data(r_doReg[0]) : m_mem[r_rdAddr][rdSel];
 		}
@@ -513,8 +516,9 @@ public:
 
 		r_rdAddr = m_rdAddr;
 	}
-	void write_clock() {
-		if (m_bWrData)
+	void write_clock(bool bReset = false) {
+		m_bReset = bReset;
+		if (!m_bReset && m_bWrData)
 			m_mem[m_wrAddr][m_wrSel] = m_wrData;
 
 		r_bWrData = m_bWrData;
@@ -522,16 +526,17 @@ public:
 		m_bWrAddr = false;
 		m_bWrData = false;
 	}
-	void clock() {
-		read_clock();
-		write_clock();
+	void clock(bool bReset = false) {
+		read_clock(bReset);
+		write_clock(bReset);
 	}
 
 	friend void sc_trace(sc_trace_file *tf, const ht_mrd_block_ram & v, const std::string & NAME ) {
 	}
 
 private:
-	T m_mem[(1<<AW1)*(1<<AW2)][1<<SW];
+	bool m_bReset;
+	T m_mem[(1 << AW1)*(1 << AW2)][1 << SW];
 	T r_doReg[1<<SW];
 	bool m_bRdAddr;
 	uint64_t m_rdAddr;
@@ -551,6 +556,7 @@ template <typename T, int SW, int AW1, int AW2=0, bool bDoReg=false>
 class ht_mwr_block_ram {
 public:
 	ht_mwr_block_ram() {
+		m_bReset = true;
 		m_bWrAddr = false;
 		m_bWrData = false;
 		r_bWrData = false;
@@ -567,15 +573,15 @@ public:
 		m_rdAddr = (rdIdx1 + (rdIdx2 << AW1)) & ((1<<AW1) * (1<<AW2) - 1);
 	}
 	void read_addr(uint64_t rdSel, uint64_t rdIdx1, uint64_t rdIdx2=0) {
-		ht_assert(rdSel < (1<<SW));
-		ht_assert(!m_bRdAddr);
+		ht_assert(m_bReset || rdSel < (1 << SW));
+		ht_assert(m_bReset || !m_bRdAddr);
 		m_bRdAddr = true;
 		m_rdSel = rdSel;
 		m_rdAddr = (rdIdx1 + (rdIdx2 << AW1)) & ((1<<AW1) * (1<<AW2) - 1);
 	}
 	uint64_t read_addr() { return m_rdAddr; }
 	void write_addr(uint64_t wrIdx1, uint64_t wrIdx2=0) {
-		ht_assert(!m_bWrAddr);
+		ht_assert(m_bReset || !m_bWrAddr);
 		m_bWrAddr = true;
 		m_wrAddr = (wrIdx1 + (wrIdx2 << AW1)) & ((1<<AW1) * (1<<AW2) - 1);
 		for (uint64_t wrSel = 0; wrSel < (1<<SW); wrSel += 1)
@@ -586,23 +592,25 @@ public:
 		return m_mem[(rdIdx1 + (rdIdx2 << AW1)) & ((1<<AW1) * (1<<AW2) - 1)][rdSel];
 	}
 	T read_mem() {
+		if (m_bReset) return m_mem[0][0];
 		ht_assert(bDoReg ? r_bRdAddr2 : r_bRdAddr);
 		return bDoReg ? r_doReg : ((r_bRdAddr && r_bWrData && r_rdAddr == r_wrAddr) ? ht_bad_data(r_doReg) : m_mem[r_rdAddr][r_rdSel]);
 	}
 	T & write_mem() { ht_assert(m_bWrAddr); return m_wrData; }
 	void write_mem(uint64_t wrSel, const T &wrData) {
-		ht_assert(wrSel < (1<<SW));
-		ht_assert(m_bWrAddr);
+		ht_assert(m_bReset || wrSel < (1 << SW));
+		ht_assert(m_bReset || m_bWrAddr);
 		m_bWrData = true;
-		m_wrData[wrSel] = wrData;
+		m_wrData[m_bReset ? 0 : wrSel] = wrData;
 	}
 	T & write_mem_debug(uint64_t wrSel, uint64_t wrIdx1, uint64_t wrIdx2=0) {
 		ht_assert(wrSel < (1<<SW));
 		uint64_t wrAddr = (wrIdx1 + (wrIdx2 << AW1)) & ((1<<AW1) * (1<<AW2) - 1);
 		return m_mem[wrAddr][wrSel];
 	}
-	void read_clock() {
-		if (r_bRdAddr)
+	void read_clock(bool bReset = false) {
+		m_bReset = bReset;
+		if (!m_bReset && r_bRdAddr)
 			r_doReg = (r_bRdAddr && r_bWrData && r_rdAddr == r_wrAddr) ? ht_bad_data(r_doReg) : m_mem[r_rdAddr][r_rdSel];
 
 		r_bRdAddr2 = r_bRdAddr;
@@ -612,8 +620,9 @@ public:
 		r_rdSel = m_rdSel;
 		r_rdAddr = m_rdAddr;
 	}
-	void write_clock() {
-		if (m_bWrData) {
+	void write_clock(bool bReset = false) {
+		m_bReset = bReset;
+		if (!m_bReset && m_bWrData) {
 			for (int wrSel = 0; wrSel < (1<<SW); wrSel += 1)
 				m_mem[m_wrAddr][wrSel] = m_wrData[wrSel];
 		}
@@ -623,16 +632,17 @@ public:
 		m_bWrAddr = false;
 		m_bWrData = false;
 	}
-	void clock() {
-		read_clock();
-		write_clock();
+	void clock(bool bReset = false) {
+		read_clock(bReset);
+		write_clock(bReset);
 	}
 
 	friend void sc_trace(sc_trace_file *tf, const ht_mwr_block_ram & v, const std::string & NAME ) {
 	}
 
 private:
-	T m_mem[(1<<AW1)*(1<<AW2)][1<<SW];
+	bool m_bReset;
+	T m_mem[(1 << AW1)*(1 << AW2)][1 << SW];
 	T r_doReg;
 	bool m_bRdAddr;
 	uint64_t m_rdSel;

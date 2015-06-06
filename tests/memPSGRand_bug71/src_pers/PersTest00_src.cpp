@@ -32,7 +32,7 @@ void CPersTest00::PersTest00() {
 			break;
 		}
 		case TEST00_CHK: {
-			if ((ht_int48)PR4_test00_0_src_v0_data != ((ht_int48)0x0005e9b4c8fece20LL)) {
+			if (PR4_test00_0_src_v0_data != (int64_t)0xffffe9b4c8fece20LL) {
 				HtAssert(0, 0);
 			}
 			HtContinue(TEST00_RTN);

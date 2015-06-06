@@ -840,6 +840,11 @@ void CDsnInfo::GenGlobalVarWriteTypes(CHtFile & htFile, CType * pType, int &atom
 			fprintf(htFile, "\t}\n");
 		}
 
+		//fprintf(htFile, "\tbool operator == (%s const &rhs) const { return m_data == rhs; }\n",
+		//	pType->m_typeName.c_str());
+		//fprintf(htFile, "\tbool operator != (%s const &rhs) const { return m_data != rhs; }\n",
+		//	pType->m_typeName.c_str());
+
 		switch (atomicMask) {
 		case ATOMIC_INC:
 			fprintf(htFile, "\tvoid AtomicInc() { m_bInc = true; }\n");
@@ -865,17 +870,20 @@ void CDsnInfo::GenGlobalVarWriteTypes(CHtFile & htFile, CType * pType, int &atom
 			fprintf(htFile, "\tht_uint%d GetAddr() const { return m_addr; }\n", pGv->m_addrW);
 		}
 		fprintf(htFile, "\t%s GetData() const { return m_data; }\n", pType->m_typeName.c_str());
-		fprintf(htFile, "\toperator %s () const { return m_data; }\n", pType->m_typeName.c_str());
+		//fprintf(htFile, "\toperator %s () const { return m_data; }\n", pType->m_typeName.c_str());
 
-		if (pType->IsInt() && pType->AsInt()->m_clangMinAlign == 1) {
-			string typePrefix = pType->m_typeName.substr(0, 4);
+		if (pType->IsInt()) {
 			string typeName;
-			if (typePrefix == "ht_u")
-				typeName = "uint64_t";
-			else if (typePrefix == "ht_i")
-				typeName = "int64_t";
-			else
-				HtlAssert(0);
+			if (pType->AsInt()->m_clangMinAlign == 1) {
+				string typePrefix = pType->m_typeName.substr(0, 4);
+				if (typePrefix == "ht_u")
+					typeName = "uint64_t";
+				else if (typePrefix == "ht_i")
+					typeName = "int64_t";
+				else
+					HtlAssert(0);
+			} else
+				typeName = pType->m_typeName;
 
 			fprintf(htFile, "\toperator %s () const { return m_data; }\n", typeName.c_str());
 		}
