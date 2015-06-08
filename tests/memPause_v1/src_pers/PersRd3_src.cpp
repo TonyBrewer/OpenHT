@@ -178,9 +178,9 @@ void CPersRd3::PersRd3()
 			printf("+");
 #else
 #if (RD3_HTID_W <= 2)
-		if (!r_rdGrpState[r_m2_rdRspInfo.m_grpId].m_pause)
+		if (!r_rdGrpState[r_m1_rdRspInfo.m_grpId].m_pause)
 			printf("-");
-		else if (r_rdGrpState[r_m2_rdRspInfo.m_grpId].m_cnt == 1)
+		else if (r_rdGrpState[r_m1_rdRspInfo.m_grpId].m_cnt == 1)
 			printf("3");
 		else
 			printf("+");

@@ -1392,6 +1392,7 @@ private:
 
 class CHtfeOperatorIter {
 public:
+	CHtfeOperatorIter() {}
 	CHtfeOperatorIter(CHtfeIdent * pOpType, bool bHier = false) : m_pOpType(pOpType), m_bHier(bHier), m_bFirst(true) {}
 	void Begin() { m_bFirst = true; m_pMethod = 0; }
 	bool End() { return !m_bFirst && m_iter == m_pOpType->GetIdentTbl().GetIdentTblMap().end(); }
@@ -1426,9 +1427,10 @@ public:
 		CHtfeIdent * pType = 0;
 		if (m_bFirst)
 			pType = m_pOpType;
-		else if (GetMethod()->IsOverloadedOperator())
+		else if (GetMethod()->IsOverloadedOperator()) {
 			pType = GetMethod()->GetParamType(0);
-		else if (GetMethod()->IsUserConversion()) {
+			return pType;
+		} else if (GetMethod()->IsUserConversion()) {
 			pType = GetMethod()->GetType();
 			return pType;
 		} else if (GetMethod()->IsConstructor())
@@ -1438,6 +1440,7 @@ public:
 			pType = 0;
 		}
 		// Conv ht_uint, ht_int, sc_in, sc_out to an int type
+		return pType;
 		return pType->GetConvType();
 	}
 	int GetConvCnt() { return m_bFirst ? 0 : 1; }

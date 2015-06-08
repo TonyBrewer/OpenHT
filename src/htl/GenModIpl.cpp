@@ -141,6 +141,8 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 	CHtCode	& iplOut = mod.m_clkRate == eClk1x ? m_iplOut1x : m_iplOut2x;
 	CHtCode & iplReset = mod.m_clkRate == eClk1x ? m_iplReset1x : m_iplReset2x;
 
+	string reset = mod.m_clkRate == eClk1x ? "r_reset1x" : "c_reset1x";
+
 	bool bMultiThread = mod.m_threads.m_htIdW.AsInt() > 0;
 
 	int maxInstrLen = 0;
@@ -3610,7 +3612,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 		if (pField->m_queueW.size() > 0)
 			iplReg.Append("\tm__SHR__%s%s.clock(c_reset1x);\n", pField->m_name.c_str(), pField->m_dimenIndex.c_str());
 		else if (pField->m_addr1W.size() > 0)
-			iplReg.Append("\tm__SHR__%s%s.clock();\n", pField->m_name.c_str(), pField->m_dimenIndex.c_str());
+			iplReg.Append("\tm__SHR__%s%s.clock(%s);\n", pField->m_name.c_str(), pField->m_dimenIndex.c_str(), reset.c_str());
 	}
 
 	if (mod.m_threads.m_htIdW.AsInt() == 0) {

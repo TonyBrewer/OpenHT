@@ -3077,7 +3077,7 @@ void CDsnInfo::GenerateNgvFiles()
 									ngvPreRegModIn.Append("%sc_%sTo%s_%cwWrEn%s%s = (r_phase && r_%sTo%s_%cwWrEn%s%s) ?\n", tabs.c_str(),
 										mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), imCh, ngvClkModIn.c_str(), dimIdx.c_str(),
 										mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), imCh, ngvClkModIn.c_str(), dimIdx.c_str());
-									ngvPreRegModIn.Append("%s\tr_%sTo%s_%cwWrEn%s.read()%s : c_%sTo%s_%cwWrEn%s%s;\n", tabs.c_str(),
+									ngvPreRegModIn.Append("%s\tr_%sTo%s_%cwWrEn%s%s.read() : c_%sTo%s_%cwWrEn%s%s;\n", tabs.c_str(),
 										mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), imCh, ngvClkModIn.c_str(), dimIdx.c_str(),
 										mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), imCh, ngvClkModIn.c_str(), dimIdx.c_str());
 
@@ -3085,7 +3085,7 @@ void CDsnInfo::GenerateNgvFiles()
 										ngvPreRegModIn.Append("%sc_%sTo%s_%cw%sId%s%s = (r_phase && r_%sTo%s_%cwWrEn%s%s) ?\n", tabs.c_str(),
 											mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), imCh, idStr.c_str(), ngvClkModIn.c_str(), dimIdx.c_str(),
 											mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), imCh, ngvClkModIn.c_str(), dimIdx.c_str());
-										ngvPreRegModIn.Append("%s\tr_%sTo%s_%cw%sId%s.read()%s : i_%sTo%s_%cw%sId%s) ?\n", tabs.c_str(),
+										ngvPreRegModIn.Append("%s\tr_%sTo%s_%cw%sId%s%s.read() : i_%sTo%s_%cw%sId%s.read()) ?\n", tabs.c_str(),
 											mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), imCh, idStr.c_str(), ngvClkModIn.c_str(), dimIdx.c_str(),
 											mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), imCh, idStr.c_str(), dimIdx.c_str());
 									}
@@ -3093,14 +3093,14 @@ void CDsnInfo::GenerateNgvFiles()
 										ngvPreRegModIn.Append("%sc_%sTo%s_%cwComp%s%s = (r_phase && r_%sTo%s_%cwWrEn%s%s) ?\n", tabs.c_str(),
 											mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), imCh, ngvClkModIn.c_str(), dimIdx.c_str(),
 											mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), imCh, ngvClkModIn.c_str(), dimIdx.c_str());
-										ngvPreRegModIn.Append("%s\tr_%sTo%s_%cwComp%s.read()%s : i_%sTo%s_%cwComp%s;\n", tabs.c_str(),
+										ngvPreRegModIn.Append("%s\tr_%sTo%s_%cwComp%s%s.read() : i_%sTo%s_%cwComp%s.read();\n", tabs.c_str(),
 											mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), imCh, ngvClkModIn.c_str(), dimIdx.c_str(),
 											mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), imCh, dimIdx.c_str());
 									}
 									ngvPreRegModIn.Append("%sc_%sTo%s_%cwData%s%s = (r_phase && r_%sTo%s_%cwWrEn%s%s) ?\n", tabs.c_str(),
 										mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), imCh, ngvClkModIn.c_str(), dimIdx.c_str(),
 										mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), imCh, ngvClkModIn.c_str(), dimIdx.c_str());
-									ngvPreRegModIn.Append("%s\tr_%sTo%s_%cwData%s.read()%s : i_%sTo%s_%cwData%s;\n", tabs.c_str(),
+									ngvPreRegModIn.Append("%s\tr_%sTo%s_%cwData%s%s.read() : i_%sTo%s_%cwData%s.read();\n", tabs.c_str(),
 										mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), imCh, ngvClkModIn.c_str(), dimIdx.c_str(),
 										mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), imCh, dimIdx.c_str());
 								}
