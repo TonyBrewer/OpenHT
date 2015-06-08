@@ -88,7 +88,7 @@ void CPersTest02::PersTest02() {
 			break;
 		}
 		case TEST02_CHK: {
-			if ((int16_t)P1_test02_0_dst_s0_data.test02_0_dst_v0_data != ((int16_t)0x00102586b946bdc0LL)) {
+			if ((int16_t)PR1_test02_0_dst_s0_data.test02_0_dst_v0_data != ((int16_t)0x00102586b946bdc0LL)) {
 				HtAssert(0, 0);
 			}
 			if ((int16_t)PR1_test02_0_dst_s0_data.test02_0_dst_v1_data != ((int16_t)0x0004dbed0c8b8ba0LL)) {
@@ -170,9 +170,9 @@ void CPersTest02::PersTest02() {
 			break;
 		}
 		case TEST02_WR: {
-			P3_test02_0_dst_s0_data.test02_0_dst_v0_data = ((int16_t)0x00102586b946bdc0LL);
-			P3_test02_0_dst_s0_data.test02_0_dst_v1_data = ((int16_t)0x0004dbed0c8b8ba0LL);
-			P3_test02_0_dst_s0_data.test02_0_dst_s1_data[0].test02_0_dst_v3_data = ((int32_t)0x00097da2cf0219e0LL);
+			PW3_test02_0_dst_s0_data.test02_0_dst_v0_data = ((int16_t)0x00102586b946bdc0LL);
+			PW3_test02_0_dst_s0_data.test02_0_dst_v1_data = ((int16_t)0x0004dbed0c8b8ba0LL);
+			PW3_test02_0_dst_s0_data.test02_0_dst_s1_data[0].test02_0_dst_v3_data = ((int32_t)0x00097da2cf0219e0LL);
 			P3_test02_3_src_v0_data_RdAddr1 = (ht_uint3)0;
 			break;
 		}

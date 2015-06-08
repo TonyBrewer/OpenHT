@@ -5224,15 +5224,18 @@ CHtfeOperand * CHtfeDesign::ParseExpression(CHtfeIdent *pHier,
 
 							if (convList[0].m_pArgConvList[i] == 0) continue;
 
-							CHtfeOperand *pConvMethodOp = HandleNewOperand();
-							pConvMethodOp->InitAsIdentifier(GetLineInfo(), convList[0].m_pArgConvList[i]);
-							pConvMethodOp->SetType(convList[0].m_pArgConvList[i]->GetType());
+							if (convList[0].m_pArgConvList[i]->IsNullConvOperator()) {
 
-							CHtfeOperand *pConvRslt = HandleNewOperand();
-							pConvRslt->InitAsOperator(GetLineInfo(), tk_period, argsList[i], pConvMethodOp);
-							pConvRslt->SetType(convList[0].m_pArgConvList[i]->GetType());
+							} else {
+								CHtfeOperand *pConvMethodOp = HandleNewOperand();
+								pConvMethodOp->InitAsIdentifier(GetLineInfo(), convList[0].m_pArgConvList[i]);
+								pConvMethodOp->SetType(convList[0].m_pArgConvList[i]->GetType());
 
-							argsList[i] = pConvRslt;
+								CHtfeOperand *pConvRslt = HandleNewOperand();
+								pConvRslt->InitAsOperator(GetLineInfo(), tk_period, argsList[i], pConvMethodOp);
+								pConvRslt->SetType(convList[0].m_pArgConvList[i]->GetType());
+								argsList[i] = pConvRslt;
+							}
 						}
 
 						for (int paramId = (int)argsList.size(); paramId < pFunc->GetParamCnt(); paramId += 1) {

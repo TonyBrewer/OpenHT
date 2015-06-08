@@ -33,7 +33,7 @@ void CPersTest02::PersTest02() {
 			break;
 		}
 		case TEST02_CHK: {
-			if ((uint16_t)P_test02_0_u0_data.test02_0_v3_data != (uint16_t)0x0014dbeb2dde6760LL) {
+			if (PR_test02_0_u0_data.test02_0_v3_data != (uint16_t)0x0014dbeb2dde6760LL) {
 				HtAssert(0, (uint32_t)0x00020000);
 			}
 			HtContinue(TEST02_RTN);

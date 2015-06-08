@@ -32,7 +32,27 @@ void CPersCtl::PersCtl()
 							 break;
 						 }
 
-						 SendCall_gv3(RETURN, PR_addr);
+						 SendCall_gv3(CALL_GV4, PR_addr);
+						 break;
+		}
+		case CALL_GV4:
+		{
+						 if (SendCallBusy_gv4()) {
+							 HtRetry();
+							 break;
+						 }
+
+						 SendCall_gv4(CALL_GV5, PR_addr);
+						 break;
+		}
+		case CALL_GV5:
+		{
+						 if (SendCallBusy_gv5()) {
+							 HtRetry();
+							 break;
+						 }
+
+						 SendCall_gv5(RETURN, PR_addr);
 						 break;
 		}
 		case RETURN:

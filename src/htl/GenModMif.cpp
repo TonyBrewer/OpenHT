@@ -2443,9 +2443,15 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 						} while (loopInfo.Iter());
 					}
 					else {
-						m_mifMacros.Append("\tc_t%d_memReq.m_wrData.m_%s = r_t%d_%sI%cData%s;\n",
-							mod.m_execStg, wrSrc.m_pSrcType->m_typeName.c_str(),
-							mod.m_execStg, wrSrc.m_pGblVar->m_gblName.c_str(), mod.m_execStg > mod.m_tsStg ? 'w' : 'r', varName.c_str());
+						if (wrSrc.m_pGblVar->m_addrW == 0) {
+							m_mifMacros.Append("\tc_t%d_memReq.m_wrData.m_%s = r__GBL__%s%s;\n",
+								mod.m_execStg, wrSrc.m_pSrcType->m_typeName.c_str(),
+								wrSrc.m_pGblVar->m_gblName.c_str(), varName.c_str());
+						} else {
+							m_mifMacros.Append("\tc_t%d_memReq.m_wrData.m_%s = r_t%d_%sI%cData%s;\n",
+								mod.m_execStg, wrSrc.m_pSrcType->m_typeName.c_str(),
+								mod.m_execStg, wrSrc.m_pGblVar->m_gblName.c_str(), mod.m_execStg > mod.m_tsStg ? 'w' : 'r', varName.c_str());
+						}
 					}
 				}
 			}
@@ -2587,21 +2593,34 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 					}
 					else if (wrSrc.m_pGblVar && wrSrc.m_pGblVar->m_bPrivGbl) {
 						if (!wrSrc.m_pSrcType->IsRecord()) {
-							m_mifMacros.Append("\tc_t%d_%sToMif_req.m_data = r_t%d_%sI%cData%s;\n",
-							mod.m_execStg, mod.m_modName.Lc().c_str(),
-							mod.m_execStg, wrSrc.m_pGblVar->m_gblName.c_str(), mod.m_execStg > mod.m_tsStg ? 'w' : 'r', varName.c_str());
+							if (wrSrc.m_pGblVar->m_addrW == 0) {
+								m_mifMacros.Append("\tc_t%d_%sToMif_req.m_data = r__GBL__%s%s;\n",
+									mod.m_execStg, mod.m_modName.Lc().c_str(),
+									wrSrc.m_pGblVar->m_gblName.c_str(), varName.c_str());
+							} else {
+								m_mifMacros.Append("\tc_t%d_%sToMif_req.m_data = r_t%d_%sI%cData%s;\n",
+									mod.m_execStg, mod.m_modName.Lc().c_str(),
+									mod.m_execStg, wrSrc.m_pGblVar->m_gblName.c_str(), mod.m_execStg > mod.m_tsStg ? 'w' : 'r', varName.c_str());
+							}
 						} else {
 							for (CStructElemIter iter(this, wrSrc.m_pSrcType); !iter.end(); iter++) {
-								m_mifMacros.Append("\tc_t%d_%sToMif_req.m_data |= (uint64_t)(r_t%d_%sI%cData%s%s << %dLL);\n",
-									mod.m_execStg, mod.m_modName.Lc().c_str(),
-									mod.m_execStg, wrSrc.m_pGblVar->m_gblName.c_str(), mod.m_execStg > mod.m_tsStg ? 'w' : 'r', varName.c_str(), iter.GetHeirFieldName().c_str(),
-									iter.GetHeirFieldPos());
+								if (wrSrc.m_pGblVar->m_addrW == 0) {
+									m_mifMacros.Append("\tc_t%d_%sToMif_req.m_data |= (uint64_t)(r__GBL__%s%s%s << %dLL);\n",
+										mod.m_execStg, mod.m_modName.Lc().c_str(),
+										wrSrc.m_pGblVar->m_gblName.c_str(), varName.c_str(), iter.GetHeirFieldName().c_str(),
+										iter.GetHeirFieldPos());
+								} else {
+									m_mifMacros.Append("\tc_t%d_%sToMif_req.m_data |= (uint64_t)(r_t%d_%sI%cData%s%s << %dLL);\n",
+										mod.m_execStg, mod.m_modName.Lc().c_str(),
+										mod.m_execStg, wrSrc.m_pGblVar->m_gblName.c_str(), mod.m_execStg > mod.m_tsStg ? 'w' : 'r', varName.c_str(), iter.GetHeirFieldName().c_str(),
+										iter.GetHeirFieldPos());
+								}
 							}
 						}
 					}
 					else {
 						if (!wrSrc.m_pSrcType->IsRecord()) {
-							m_mifMacros.Append("\tc_t%d_%sToMif_req.m_data = r_%s%s;\n",
+							m_mifMacros.Append("\tc_t%d_%sToMif_req.m_data = r__GBL__%s%s;\n",
 							mod.m_execStg, mod.m_modName.Lc().c_str(),
 							wrSrc.m_pGblVar->m_gblName.c_str(), varName.c_str());
 						} else {
@@ -4339,8 +4358,8 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 							mod.m_execStg + 1, wrSrc.m_pSrcType->m_typeName.c_str());
 					} else {
 						ramType = wrSrc.m_pGblVar->m_ramType;
-						varName = VA("%s%s%s", ramType == eRegRam ? "r_" : "", wrSrc.m_pGblVar->m_gblName.c_str(), ramType == eRegRam ? "" : "Mr");
-						addrVar = VA("%s%s", wrSrc.m_pGblVar->m_gblName.c_str(), wrSrc.m_pGblVar->m_addrW > 0 ? "Mr" : "");
+						varName = VA("%s_GBL__%s%s", ramType == eRegRam ? "r_" : "", wrSrc.m_pGblVar->m_gblName.c_str(), ramType == eRegRam ? "" : "Mr");
+						addrVar = VA("_GBL__%s%s", wrSrc.m_pGblVar->m_gblName.c_str(), wrSrc.m_pGblVar->m_addrW > 0 ? "Mr" : "");
 					}
 				} else if (wrSrc.m_pSharedVar) {
 					ramType = wrSrc.m_pSharedVar->m_ramType;
@@ -4690,7 +4709,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 
 				if (wrSrc.m_pGblVar) {
 					ramType = wrSrc.m_pGblVar->m_ramType;
-					addrVar = VA("%s%s", wrSrc.m_pGblVar->m_gblName.c_str(), wrSrc.m_pGblVar->m_addrW > 0 ? "Mr" : "");
+					addrVar = VA("_GBL__%s%s", wrSrc.m_pGblVar->m_gblName.c_str(), wrSrc.m_pGblVar->m_addrW > 0 ? "Mr" : "");
 				} else if (wrSrc.m_pSharedVar) {
 					ramType = wrSrc.m_pSharedVar->m_ramType;
 					addrVar = VA("_SHR__%s", wrSrc.m_pSharedVar->m_name.c_str());
@@ -5061,7 +5080,11 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 				bool bQueVar = false;
 				if (rdDst.m_pGblVar) {
 					pDstType = rdDst.m_pDstType;
-					baseVar = VA("c_m%d_%sMwData", rdRspStg, rdDst.m_pGblVar->m_gblName.c_str());
+					if (rdDst.m_pGblVar->m_addrW == 0)
+						baseVar = VA("c__GBL__%s", rdDst.m_pGblVar->m_gblName.c_str());
+					else
+						baseVar = VA("c_m%d_%sMwData", rdRspStg, rdDst.m_pGblVar->m_gblName.c_str());
+
 					ramType = rdDst.m_pGblVar->m_ramType;
 				}
 				else if (rdDst.m_pSharedVar) {
@@ -5769,7 +5792,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 			for (size_t rdDstIdx = 0; rdDstIdx < mif.m_mifRd.m_rdDstList.size(); rdDstIdx += 1) {
 				CMifRdDst &rdDst = mif.m_mifRd.m_rdDstList[rdDstIdx];
 
-				if (rdDst.m_pGblVar == 0) continue;
+				if (rdDst.m_pGblVar == 0 || rdDst.m_pGblVar->m_pNgvInfo->m_bOgv) continue;
 
 				gblVarList += VA(" && r_m%d_rdRspInfo.m_dst != %d", rdRspStg, (int)rdDstIdx);
 			}
