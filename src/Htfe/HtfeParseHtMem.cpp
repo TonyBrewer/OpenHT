@@ -595,22 +595,35 @@ CHtfeStatement * CHtfeDesign::ParseHtQueueStatement(CHtfeIdent *pHier)
 		}
 
 		GetNextToken();
-		CHtfeOperand *pOperand = ParseExpression(pHier);
+		CHtfeOperand *pOperand2 = ParseExpression(pHier);
+		//pOperand2->GetMember()->SetIsConstVar(false);
 
-		sprintf(buf, "{{ %s_WrData%s = 0; %s_WrEn%s = true; %s_WrAddr%s = %s_WrAddr%s + 1; }}",
-			cQueName.c_str(), refDimStr.c_str(),
+		OpenLine(VA("%s_WrData%s;", cQueName.c_str(), refDimStr.c_str()));
+		GetNextToken();
+		CHtfeOperand *pOperand1 = ParseExpression(pHier);
+		GetNextToken();
+
+		CHtfeOperand * pRslt = HandleBinaryOperatorConversions(pHier, tk_equal, pOperand1, pOperand2);
+
+		if (pOperand1->GetMember() && pOperand1->GetMember()->IsVariable()) {
+			pOperand1->GetMember()->AddWriter(pHier);
+		}
+		if (pOperand2->GetMember() && pOperand2->GetMember()->IsVariable()) {
+			pOperand2->GetMember()->AddReader(pHier);
+		}
+
+		pStatement = HandleNewStatement();
+		pStatement->Init(st_assign, GetLineInfo());
+		pStatement->SetExpr(pRslt);
+
+		sprintf(buf, "{{ %s_WrEn%s = true; %s_WrAddr%s = %s_WrAddr%s + 1; }}",
 			cQueName.c_str(), refDimStr.c_str(),
 			cQueName.c_str(), refDimStr.c_str(), rQueName.c_str(), refDimStr.c_str() );
 
 		OpenLine(buf);
 		GetNextToken();
 
-		pStatement = ParseCompoundStatement(pHier);
-
-		if (pStatement) {
-			delete pStatement->GetExpr()->GetOperand2();
-			pStatement->GetExpr()->SetOperand2( pOperand );
-		}
+		pStatement->SetNext(ParseCompoundStatement(pHier));
 
 		// set actual indexing expressions
 		for (CHtfeStatement *pSt = pStatement; pSt; pSt = pSt->GetNext()) {

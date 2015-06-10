@@ -979,7 +979,7 @@ CHtfeStatement * CHtfeDesign::ParseIdentifierStatement(CHtfeIdent *pHier, bool b
 	CHtfeIdent *pType;
 
 #ifdef _WIN32
-	if (GetLineInfo().m_lineNum == 15)
+	if (GetLineInfo().m_lineNum == 119)
 		bool stop = true;
 #endif
 
@@ -1109,7 +1109,7 @@ CHtfeStatement * CHtfeDesign::ParseIdentifierStatement(CHtfeIdent *pHier, bool b
 		&& tk != tk_postInc && tk != tk_postDec && !(tk == tk_period && pExpr->GetOperand2()->IsFunction()))
 		ParseMsg(PARSE_ERROR, "Unsupported statement / declaration");
 
-	HandleOverloadedAssignment(pHier, pStatement);
+	//HandleOverloadedAssignment(pHier, pStatement);
 
 	HandleUserDefinedConversion(pHier, pStatement);
 
@@ -5140,7 +5140,7 @@ CHtfeOperand * CHtfeDesign::ParseExpression(CHtfeIdent *pHier,
 				}
 
 #ifdef _WIN32
-				if (GetLineInfo().m_lineNum == 15)
+				if (GetLineInfo().m_lineNum == 74)
 					bool stop = true;
 #endif
 
@@ -5577,219 +5577,31 @@ void CHtfeDesign::ParseEvaluateExpression(CHtfeIdent *pHier, EToken tk, vector<C
 						ParseMsg(PARSE_INFO, "(using other than simple variables / type casts in systemc produces unexpected results)");
 					}
 
-					CHtfeIdent * pRsltType = 0;
-
 					if (stackTk == tk_period) {
-						pRsltType = pOp2->GetType();
+
+						pRslt = HandleNewOperand();
+						pRslt->InitAsOperator(GetLineInfo(), stackTk, pOp1, pOp2);
+						pRslt->SetType(pOp2->GetType());
+
 					} else if (stackTk != tk_typeCast) {
-						CHtfeIdent * pOp1Type = pOp1->GetType();
-						CHtfeIdent * pOp2Type = pOp2->GetType();
 
-						Assert(pOp1Type);
-						Assert(pOp2Type);
+						pRslt = HandleBinaryOperatorConversions(pHier, stackTk, pOp1, pOp2);
 
-						// iterate through op1 options
-						int minConvCnt = 100;
-						vector<CConvPair> convList;
+					} else {
 
-#ifdef _WIN32
-						if (GetLineInfo().m_lineNum == 15)
-							bool stop = true;
-#endif
-
-						CHtfeOperatorIter memberIter(pHier, true);
-						for (memberIter.Begin(); !memberIter.End(); memberIter++) {
-
-							if (memberIter.IsOverloadedOperator() && memberIter.GetOverloadedOperator() != stackTk) continue;
-							if (memberIter.IsOverloadedOperator() && memberIter.GetMethod()->GetParamCnt() != 2) continue;
-
-							CHtfeOperatorIter op1Iter(pOp1Type);
-							for (op1Iter.Begin(); !op1Iter.End(); op1Iter++) {
-
-								if (op1Iter.IsConstructor()) continue;
-								if (op1Iter.IsUserConversion() && CHtfeLex::IsEqualOperator(stackTk)) continue;
-								if (memberIter.IsOverloadedOperator() && op1Iter.IsOverloadedOperator()) continue;
-								if (op1Iter.IsOverloadedOperator() && op1Iter.GetOverloadedOperator() != stackTk) continue;
-
-								// iterate through op2 options
-								CHtfeOperatorIter op2Iter(pOp2Type);
-								for (op2Iter.Begin(); !op2Iter.End(); op2Iter++) {
-
-									if (op2Iter.IsConstructor()) continue;
-									if (op2Iter.IsOverloadedOperator()) continue;
-
-									// check if op1Conv and op2Conv work for operation
-									if (memberIter.GetMethod() == 0 && op1Iter.GetType()->GetId() == CHtfeIdent::id_intType && op2Iter.GetType()->GetId() == CHtfeIdent::id_intType ||
-										memberIter.GetMethod() == 0 && op1Iter.GetType()->GetId() == CHtfeIdent::id_enumType && op1Iter.GetType() == op2Iter.GetType() ||
-										memberIter.GetMethod() == 0 && stackTk == tk_equal && op1Iter.GetType() == op2Iter.GetType() ||
-										memberIter.GetMethod() == 0 && op1Iter.IsOverloadedOperator() && op1Iter.GetMethod()->GetParamType(0) == op2Iter.GetType() ||
-										memberIter.GetMethod() == 0 && stackTk == tk_equal && pOp2->IsConstValue() && pOp2->GetConstValue().IsZero() ||
-										memberIter.IsOverloadedOperator() &&
-										(memberIter.GetMethod()->GetParamType(0)->GetConvType()->GetId() == CHtfeIdent::id_intType &&
-										op1Iter.GetType()->GetId() == CHtfeIdent::id_intType || memberIter.GetMethod()->GetParamType(0)->GetConvType() == op1Iter.GetType()) &&
-										(memberIter.GetMethod()->GetParamType(1)->GetConvType()->GetId() == CHtfeIdent::id_intType &&
-										op2Iter.GetType()->GetId() == CHtfeIdent::id_intType || memberIter.GetMethod()->GetParamType(1)->GetConvType() == op2Iter.GetType()))
-									{
-										int convCnt = memberIter.GetConvCnt() + op1Iter.GetConvCnt() + op2Iter.GetConvCnt();
-										if (convCnt > minConvCnt) continue;
-										if (convCnt < minConvCnt)
-											convList.clear();
-										convList.push_back(CConvPair(memberIter.GetMethod(), op1Iter.GetMethod(), op2Iter.GetMethod()));
-										minConvCnt = convCnt;
-									}
-								}
-
-								if (op1Iter.IsConstructor()) continue;
-								if (op1Iter.GetMethod() == 0) continue;
-								if (op1Iter.GetType()->GetId() != CHtfeIdent::id_class) continue;
-
-								CHtfeOperatorIter op1cIter(op1Iter.GetType());
-								CHtfeOperatorIter op2cIter(pOp2Type);
-								for (op1cIter.Begin(); !op1cIter.End(); op1cIter++) {
-
-									if (op1cIter.GetMethod() == 0) continue;
-									if (op1Iter.IsOverloadedOperator() && op1cIter.IsOverloadedOperator()) continue;
-									if (op1cIter.IsOverloadedOperator() && op1cIter.GetOverloadedOperator() != stackTk) continue;
-
-									// check if op1Conv and op2Conv work for operation
-									if (/*memberIter.GetMethod() == 0 && op1cIter.GetType()->GetId() == CHtfeIdent::id_intType && op2cIter.GetType()->GetId() == CHtfeIdent::id_intType ||
-										memberIter.GetMethod() == 0 && stackTk == tk_equal && op1cIter.GetType() == op2cIter.GetType() ||*/
-										memberIter.GetMethod() == 0 && op1cIter.IsOverloadedOperator() && op1cIter.GetMethod()->GetParamType(0) == op2cIter.GetType() ||
-										memberIter.GetMethod() == 0 && op1cIter.IsConstructor() && op1cIter.GetMethod()->GetParamType(0) == op2cIter.GetType() ||
-										memberIter.GetMethod() == 0 && op1cIter.IsConstructor() && op1cIter.GetMethod()->GetParamType(0)->GetId() == CHtfeIdent::id_intType && op2cIter.GetType()->GetId() == CHtfeIdent::id_intType /*||
-										memberIter.GetMethod() == 0 && stackTk == tk_equal && pOp2->IsConstValue() && pOp2->GetConstValue().IsZero() ||
-										memberIter.IsOverloadedOperator() &&
-										(memberIter.GetMethod()->GetParamType(0)->GetConvType()->GetId() == CHtfeIdent::id_intType &&
-										op1cIter.GetType()->GetId() == CHtfeIdent::id_intType || memberIter.GetMethod()->GetParamType(0)->GetConvType() == op1cIter.GetType()) &&
-										(memberIter.GetMethod()->GetParamType(1)->GetConvType()->GetId() == CHtfeIdent::id_intType &&
-										op2cIter.GetType()->GetId() == CHtfeIdent::id_intType || memberIter.GetMethod()->GetParamType(1)->GetConvType() == op2cIter.GetType())*/)
-									{
-										int convCnt = memberIter.GetConvCnt() + op1Iter.GetConvCnt() + op1cIter.GetConvCnt();
-										if (convCnt > minConvCnt) continue;
-										if (convCnt < minConvCnt)
-											convList.clear();
-										convList.push_back(CConvPair(memberIter.GetMethod(), op1Iter.GetMethod(), op1cIter.GetMethod()));
-										minConvCnt = convCnt;
-									}
-								}
-							}
-						}
-
-						if (minConvCnt == 100) {
-							ParseMsg(PARSE_ERROR, "Incompatible operands for expression");
-							operandStack.push_back(g_pErrOp);
-							break;
-						} else if (minConvCnt > 0) {
-							if (convList.size() == 1) {
-								// apply conversions to expression
-								if (convList[0].m_pOp2Conv) {
-									if (convList[0].m_pOp2Conv->IsNullConvOperator()) {
-										pOp2Type = convList[0].m_pOp2Conv->GetType();
-									} else {
-										CHtfeOperand *pConvMethodOp = HandleNewOperand();
-										pConvMethodOp->InitAsIdentifier(GetLineInfo(), convList[0].m_pOp2Conv);
-										pConvMethodOp->SetType(convList[0].m_pOp2Conv->GetType());
-
-										CHtfeOperand *pConvRslt = HandleNewOperand();
-										pConvRslt->InitAsOperator(GetLineInfo(), tk_period, pOp2, pConvMethodOp);
-										pConvRslt->SetType(convList[0].m_pOp2Conv->GetType());
-										pOp2 = pConvRslt;
-										pOp2Type = pOp2->GetType();
-									}
-								}
-
-								if (convList[0].m_pOp1Conv) {
-									if (convList[0].m_pOp1Conv->IsNullConvOperator()) {
-										pOp1Type = convList[0].m_pOp1Conv->GetType();
-									} else {
-										if (convList[0].m_pOp1Conv->IsUserConversion()) {
-											CHtfeOperand *pConvMethodOp = HandleNewOperand();
-											pConvMethodOp->InitAsIdentifier(GetLineInfo(), convList[0].m_pOp1Conv);
-											pConvMethodOp->SetType(convList[0].m_pOp1Conv->GetType());
-
-											CHtfeOperand *pConvRslt = HandleNewOperand();
-											pConvRslt->InitAsOperator(GetLineInfo(), tk_period, pOp1, pConvMethodOp);
-											pConvRslt->SetType(convList[0].m_pOp1Conv->GetType());
-											pOp1 = pConvRslt;
-											pOp1Type = pOp1->GetType();
-										} else if (convList[0].m_pOp1Conv->IsOverloadedOperator()) {
-											CHtfeOperand *pConvMethodOp = HandleNewOperand();
-											pConvMethodOp->InitAsFunction(GetLineInfo(), convList[0].m_pOp1Conv);
-											pConvMethodOp->SetType(convList[0].m_pOp1Conv->GetType());
-
-											vector<CHtfeOperand *> paramList;
-											paramList.push_back(pOp2);
-											pConvMethodOp->SetParamList(paramList);
-
-											CHtfeOperand *pConvRslt = HandleNewOperand();
-											pConvRslt->InitAsOperator(GetLineInfo(), tk_period, pOp1, pConvMethodOp);
-											pConvRslt->SetType(convList[0].m_pOp1Conv->GetType());
-
-											operandStack.push_back(pConvRslt);
-											break;
-										} else
-											Assert(0);
-									}
-								}
-							} else {
-								// ambiguous conversion solutions
-								ParseMsg(PARSE_ERROR, "ambiguous expression for operator %s, possible solutions are:", 
-									CHtfeLex::GetTokenString(stackTk).c_str());
-
-								for (size_t i = 0; i < convList.size(); i += 1) {
-									string memberConv;
-									if (convList[i].m_pMemberConv) {
-										memberConv = VA("operator%s ( ", CHtfeLex::GetTokenString(convList[i].m_pMemberConv->GetOverloadedOperator()).c_str());
-										memberConv += VA(" %s, %s ), ", convList[i].m_pMemberConv->GetParamType(0)->GetName().c_str(),
-											convList[i].m_pMemberConv->GetParamType(1)->GetName().c_str());
-									}
-									string op1Conv;
-									if (convList[i].m_pOp1Conv == 0)
-										op1Conv = pOp1Type->GetName();
-									else if (convList[i].m_pOp1Conv->IsOverloadedOperator()) {
-										op1Conv = "operator" + CHtfeLex::GetTokenString(convList[i].m_pOp1Conv->GetOverloadedOperator()) + " (" +
-											convList[i].m_pOp1Conv->GetParamType(0)->GetName() + ")";
-									} else if (convList[i].m_pOp1Conv->IsUserConversion()) {
-										op1Conv = "operator " + convList[i].m_pOp1Conv->GetType()->GetName() + " ()";
-									} else if (convList[i].m_pOp1Conv->IsConstructor()) {
-										op1Conv = VA("%s ( %s )",
-											convList[i].m_pOp1Conv->GetPrevHier()->GetName().c_str(),
-											convList[i].m_pOp1Conv->GetParamType(0)->GetName().c_str());
-									} else
-										Assert(0);
-
-									string op2Conv;
-									if (convList[i].m_pOp2Conv == 0)
-										op2Conv = pOp2Type->GetName();
-									else if (convList[i].m_pOp2Conv->IsOverloadedOperator()) {
-										op2Conv = "operator " + CHtfeLex::GetTokenString(convList[i].m_pOp2Conv->GetOverloadedOperator()) + " (" +
-											convList[i].m_pOp2Conv->GetParamType(0)->GetName() + ")";
-									} else if (convList[i].m_pOp2Conv->IsUserConversion()) {
-										op2Conv = "operator " + convList[i].m_pOp2Conv->GetType()->GetName() + " ()";
-									} else if (convList[i].m_pOp2Conv->IsConstructor()) {
-										op2Conv = VA("%s ( %s )",
-											convList[i].m_pOp2Conv->GetPrevHier()->GetName().c_str(),
-											convList[i].m_pOp2Conv->GetParamType(0)->GetName().c_str());
-									} else
-										Assert(0);
-
-									ParseMsg(PARSE_INFO, "%s%s, %s", memberConv.c_str(), op1Conv.c_str(), op2Conv.c_str());
-								}
-							}
-						}
-
-						pRsltType = pOp1Type;
+						pRslt = HandleNewOperand();
+						pRslt->InitAsOperator(GetLineInfo(), stackTk, pOp1, pOp2);
+						pRslt->SetType(0);
 					}
 
-					pRslt = HandleNewOperand();
-					pRslt->InitAsOperator(GetLineInfo(), stackTk, pOp1, pOp2);
-					pRslt->SetType(pRsltType);
 					operandStack.push_back(pRslt);
 
 					if (pOp1->GetMember() && pOp1->GetMember()->IsReference() &&
 						!pOp2->IsLeaf() && pOp2->GetOperator() == tk_new && pOp2->GetOperand1()->GetMember() &&
 						pOp2->GetOperand1()->GetMember()->GetId() == CHtfeIdent::id_class)
+					{
 						pOp1->GetMember()->SetInstanceName(pOp2->GetOperand1()->GetMember()->GetInstanceName());
+					}
 
 					if (pOp1->GetMember() && pOp1->GetMember()->IsVariable()) {
 						if (bIsEqual)
@@ -5797,8 +5609,9 @@ void CHtfeDesign::ParseEvaluateExpression(CHtfeIdent *pHier, EToken tk, vector<C
 						else
 							pOp1->GetMember()->AddReader(pHier);
 					}
-					if (pOp2->GetMember() && pOp2->GetMember()->IsVariable())
+					if (pOp2->GetMember() && pOp2->GetMember()->IsVariable()) {
 						pOp2->GetMember()->AddReader(pHier);
+					}
 				}
 				break;
 
@@ -5839,6 +5652,207 @@ void CHtfeDesign::ParseEvaluateExpression(CHtfeIdent *pHier, EToken tk, vector<C
 			break;
 		}
 	}
+}
+
+CHtfeOperand * CHtfeDesign::HandleBinaryOperatorConversions(CHtfeIdent *pHier, EToken stackTk, CHtfeOperand * pOp1, CHtfeOperand * pOp2)
+{
+
+	CHtfeIdent * pOp1Type = pOp1->GetType();
+	CHtfeIdent * pOp2Type = pOp2->GetType();
+
+	Assert(pOp1Type);
+	Assert(pOp2Type);
+
+	// iterate through op1 options
+	int minConvCnt = 100;
+	vector<CConvPair> convList;
+
+#ifdef _WIN32
+	if (GetLineInfo().m_lineNum == 74)
+		bool stop = true;
+#endif
+
+	CHtfeOperatorIter memberIter(pHier, true);
+	for (memberIter.Begin(); !memberIter.End(); memberIter++) {
+
+		if (memberIter.IsOverloadedOperator() && memberIter.GetOverloadedOperator() != stackTk) continue;
+		if (memberIter.IsOverloadedOperator() && memberIter.GetMethod()->GetParamCnt() != 2) continue;
+
+		CHtfeOperatorIter op1Iter(pOp1Type);
+		for (op1Iter.Begin(); !op1Iter.End(); op1Iter++) {
+
+			if (op1Iter.IsConstructor()) continue;
+			if (op1Iter.IsUserConversion() && CHtfeLex::IsEqualOperator(stackTk)) continue;
+			if (memberIter.IsOverloadedOperator() && op1Iter.IsOverloadedOperator()) continue;
+			if (op1Iter.IsOverloadedOperator() && op1Iter.GetOverloadedOperator() != stackTk) continue;
+
+			// iterate through op2 options
+			CHtfeOperatorIter op2Iter(pOp2Type);
+			for (op2Iter.Begin(); !op2Iter.End(); op2Iter++) {
+
+				if (op2Iter.IsConstructor()) continue;
+				if (op2Iter.IsOverloadedOperator()) continue;
+
+				// check if op1Conv and op2Conv work for operation
+				if (memberIter.GetMethod() == 0 && op1Iter.GetType()->GetId() == CHtfeIdent::id_intType && op2Iter.GetType()->GetId() == CHtfeIdent::id_intType ||
+					memberIter.GetMethod() == 0 && op1Iter.GetType()->GetId() == CHtfeIdent::id_enumType && op1Iter.GetType() == op2Iter.GetType() ||
+					memberIter.GetMethod() == 0 && stackTk == tk_equal && op1Iter.GetType() == op2Iter.GetType() ||
+					memberIter.GetMethod() == 0 && op1Iter.IsOverloadedOperator() && op1Iter.GetMethod()->GetParamType(0) == op2Iter.GetType() ||
+					//memberIter.GetMethod() == 0 && stackTk == tk_equal && pOp2->IsConstValue() && pOp2->GetConstValue().IsZero() ||
+					memberIter.IsOverloadedOperator() &&
+					(memberIter.GetMethod()->GetParamType(0)->GetConvType()->GetId() == CHtfeIdent::id_intType &&
+					op1Iter.GetType()->GetId() == CHtfeIdent::id_intType || memberIter.GetMethod()->GetParamType(0)->GetConvType() == op1Iter.GetType()) &&
+					(memberIter.GetMethod()->GetParamType(1)->GetConvType()->GetId() == CHtfeIdent::id_intType &&
+					op2Iter.GetType()->GetId() == CHtfeIdent::id_intType || memberIter.GetMethod()->GetParamType(1)->GetConvType() == op2Iter.GetType()))
+				{
+					int convCnt = memberIter.GetConvCnt() + op1Iter.GetConvCnt() + op2Iter.GetConvCnt();
+					if (convCnt > minConvCnt) continue;
+					if (convCnt < minConvCnt)
+						convList.clear();
+					convList.push_back(CConvPair(memberIter.GetMethod(), op1Iter.GetMethod(), op2Iter.GetMethod()));
+					minConvCnt = convCnt;
+				}
+			}
+
+			if (op1Iter.IsConstructor()) continue;
+			if (op1Iter.GetMethod() == 0) continue;
+			if (op1Iter.GetType()->GetId() != CHtfeIdent::id_class) continue;
+
+			CHtfeOperatorIter op1cIter(op1Iter.GetType());
+			CHtfeOperatorIter op2cIter(pOp2Type);
+			for (op1cIter.Begin(); !op1cIter.End(); op1cIter++) {
+
+				if (op1cIter.GetMethod() == 0) continue;
+				if (op1Iter.IsOverloadedOperator() && op1cIter.IsOverloadedOperator()) continue;
+				if (op1cIter.IsOverloadedOperator() && op1cIter.GetOverloadedOperator() != stackTk) continue;
+
+				// check if op1Conv and op2Conv work for operation
+				if (memberIter.GetMethod() == 0 && op1cIter.IsOverloadedOperator() && op1cIter.GetMethod()->GetParamType(0) == op2cIter.GetType() ||
+					memberIter.GetMethod() == 0 && op1cIter.IsConstructor() && op1cIter.GetMethod()->GetParamType(0) == op2cIter.GetType() ||
+					memberIter.GetMethod() == 0 && op1cIter.IsConstructor() && op1cIter.GetMethod()->GetParamType(0)->GetId() == CHtfeIdent::id_intType && op2cIter.GetType()->GetId() == CHtfeIdent::id_intType)
+				{
+					int convCnt = memberIter.GetConvCnt() + op1Iter.GetConvCnt() + op1cIter.GetConvCnt();
+					if (convCnt > minConvCnt) continue;
+					if (convCnt < minConvCnt)
+						convList.clear();
+					convList.push_back(CConvPair(memberIter.GetMethod(), op1Iter.GetMethod(), op1cIter.GetMethod()));
+					minConvCnt = convCnt;
+				}
+			}
+		}
+	}
+
+	if (minConvCnt == 100 && stackTk == tk_equal && pOp2->IsConstValue() && pOp2->GetConstValue().IsZero()) {
+		convList.push_back(CConvPair(0, 0, 0));
+		minConvCnt = 0;
+	}
+
+	if (minConvCnt == 100) {
+		ParseMsg(PARSE_ERROR, "Incompatible operands for expression");
+		return g_pErrOp;
+	} else if (minConvCnt > 0) {
+		if (convList.size() == 1) {
+			// apply conversions to expression
+			if (convList[0].m_pOp2Conv) {
+				if (convList[0].m_pOp2Conv->IsNullConvOperator()) {
+					pOp2Type = convList[0].m_pOp2Conv->GetType();
+				} else {
+					CHtfeOperand *pConvMethodOp = HandleNewOperand();
+					pConvMethodOp->InitAsIdentifier(GetLineInfo(), convList[0].m_pOp2Conv);
+					pConvMethodOp->SetType(convList[0].m_pOp2Conv->GetType());
+
+					CHtfeOperand *pConvRslt = HandleNewOperand();
+					pConvRslt->InitAsOperator(GetLineInfo(), tk_period, pOp2, pConvMethodOp);
+					pConvRslt->SetType(convList[0].m_pOp2Conv->GetType());
+					pOp2 = pConvRslt;
+					pOp2Type = pOp2->GetType();
+				}
+			}
+
+			if (convList[0].m_pOp1Conv) {
+				if (convList[0].m_pOp1Conv->IsNullConvOperator()) {
+					pOp1Type = convList[0].m_pOp1Conv->GetType();
+				} else {
+					if (convList[0].m_pOp1Conv->IsUserConversion()) {
+						CHtfeOperand *pConvMethodOp = HandleNewOperand();
+						pConvMethodOp->InitAsIdentifier(GetLineInfo(), convList[0].m_pOp1Conv);
+						pConvMethodOp->SetType(convList[0].m_pOp1Conv->GetType());
+
+						CHtfeOperand *pConvRslt = HandleNewOperand();
+						pConvRslt->InitAsOperator(GetLineInfo(), tk_period, pOp1, pConvMethodOp);
+						pConvRslt->SetType(convList[0].m_pOp1Conv->GetType());
+						pOp1 = pConvRslt;
+						pOp1Type = pOp1->GetType();
+					} else if (convList[0].m_pOp1Conv->IsOverloadedOperator()) {
+						CHtfeOperand *pConvMethodOp = HandleNewOperand();
+						pConvMethodOp->InitAsFunction(GetLineInfo(), convList[0].m_pOp1Conv);
+						pConvMethodOp->SetType(convList[0].m_pOp1Conv->GetType());
+
+						vector<CHtfeOperand *> paramList;
+						paramList.push_back(pOp2);
+						pConvMethodOp->SetParamList(paramList);
+
+						CHtfeOperand *pConvRslt = HandleNewOperand();
+						pConvRslt->InitAsOperator(GetLineInfo(), tk_period, pOp1, pConvMethodOp);
+						pConvRslt->SetType(convList[0].m_pOp1Conv->GetType());
+
+						return pConvRslt;
+					} else
+						Assert(0);
+				}
+			}
+		} else {
+			// ambiguous conversion solutions
+			ParseMsg(PARSE_ERROR, "ambiguous expression for operator %s, possible solutions are:",
+				CHtfeLex::GetTokenString(stackTk).c_str());
+
+			for (size_t i = 0; i < convList.size(); i += 1) {
+				string memberConv;
+				if (convList[i].m_pMemberConv) {
+					memberConv = VA("operator%s ( ", CHtfeLex::GetTokenString(convList[i].m_pMemberConv->GetOverloadedOperator()).c_str());
+					memberConv += VA(" %s, %s ), ", convList[i].m_pMemberConv->GetParamType(0)->GetName().c_str(),
+						convList[i].m_pMemberConv->GetParamType(1)->GetName().c_str());
+				}
+				string op1Conv;
+				if (convList[i].m_pOp1Conv == 0)
+					op1Conv = pOp1Type->GetName();
+				else if (convList[i].m_pOp1Conv->IsOverloadedOperator()) {
+					op1Conv = "operator" + CHtfeLex::GetTokenString(convList[i].m_pOp1Conv->GetOverloadedOperator()) + " (" +
+						convList[i].m_pOp1Conv->GetParamType(0)->GetName() + ")";
+				} else if (convList[i].m_pOp1Conv->IsUserConversion()) {
+					op1Conv = "operator " + convList[i].m_pOp1Conv->GetType()->GetName() + " ()";
+				} else if (convList[i].m_pOp1Conv->IsConstructor()) {
+					op1Conv = VA("%s ( %s )",
+						convList[i].m_pOp1Conv->GetPrevHier()->GetName().c_str(),
+						convList[i].m_pOp1Conv->GetParamType(0)->GetName().c_str());
+				} else
+					Assert(0);
+
+				string op2Conv;
+				if (convList[i].m_pOp2Conv == 0)
+					op2Conv = pOp2Type->GetName();
+				else if (convList[i].m_pOp2Conv->IsOverloadedOperator()) {
+					op2Conv = "operator " + CHtfeLex::GetTokenString(convList[i].m_pOp2Conv->GetOverloadedOperator()) + " (" +
+						convList[i].m_pOp2Conv->GetParamType(0)->GetName() + ")";
+				} else if (convList[i].m_pOp2Conv->IsUserConversion()) {
+					op2Conv = "operator " + convList[i].m_pOp2Conv->GetType()->GetName() + " ()";
+				} else if (convList[i].m_pOp2Conv->IsConstructor()) {
+					op2Conv = VA("%s ( %s )",
+						convList[i].m_pOp2Conv->GetPrevHier()->GetName().c_str(),
+						convList[i].m_pOp2Conv->GetParamType(0)->GetName().c_str());
+				} else
+					Assert(0);
+
+				ParseMsg(PARSE_INFO, "%s%s, %s", memberConv.c_str(), op1Conv.c_str(), op2Conv.c_str());
+			}
+		}
+	}
+
+	CHtfeOperand * pRslt = HandleNewOperand();
+	pRslt->InitAsOperator(GetLineInfo(), stackTk, pOp1, pOp2);
+	pRslt->SetType(pOp1Type);
+
+	return pRslt;
 }
 
 void CHtfeDesign::CheckForUnsafeExpression(CHtfeOperand *pExpr, EToken prevTk, bool bIsLeftOfEqual)

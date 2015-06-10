@@ -197,6 +197,7 @@ private:
 	CHtfeStatement * InitializeToUnknown(CHtfeIdent * pHier, CHtfeIdent * pIdent);
     CHtfeOperand *ParseExpression(CHtfeIdent *pHier, bool bCommaAsSeparator=false, bool bFoldConst=true, bool bAllowOpEqual=false);
     void ParseEvaluateExpression(CHtfeIdent *pHier, EToken tk, vector<CHtfeOperand *> &operandStack, vector<EToken> &operatorStack);
+	CHtfeOperand * HandleBinaryOperatorConversions(CHtfeIdent *pHier, EToken stackTk, CHtfeOperand * pOp1, CHtfeOperand * pOp2);
 	bool ParseSizeofFunction(CHtfeIdent *pHier, uint64_t &bytes);
     void ParsePortDecl(CHtfeIdent *pHier, EPortDir portDir);
 	void ParseMemberArrayDecl(CHtfeIdent *pIdent, int structBitPos);

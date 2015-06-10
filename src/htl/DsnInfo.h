@@ -369,13 +369,17 @@ struct CRecord : CType {
 		m_bCStyle(false), m_bUnion(false), m_bShared(false), m_bInclude(false), m_bNeedIntf(false), m_atomicMask(0)
 	{
 		m_lineInfo = CPreProcess::m_lineInfo;
+		m_bConstructors = true;
 	}
-	CRecord(string const & typeName, bool bUnion) : CType(eRecord, typeName, -1, 0, -1), m_bCStyle(true), m_bUnion(bUnion) {}
+	CRecord(string const & typeName, bool bUnion) : CType(eRecord, typeName, -1, 0, -1), m_bCStyle(true), m_bUnion(bUnion) {
+		m_bConstructors = true;
+	}
 	CRecord(string recordName, bool bCStyle, bool bUnion, EScope scope, bool bInclude, string modName)
 		: CType(eRecord, recordName, -1, 0, -1), m_bCStyle(bCStyle), m_bUnion(bUnion), m_bShared(false), m_scope(scope), m_bInclude(bInclude),
 		m_bNeedIntf(false), m_modName(modName), m_atomicMask(0)
 	{
 		m_lineInfo = CPreProcess::m_lineInfo;
+		m_bConstructors = true;
 	}
 	CRecord * AsRecord()
 	{
@@ -481,6 +485,7 @@ public:
 	EScope				m_scope;
 	bool				m_bInclude;
 	bool				m_bNeedIntf;
+	bool				m_bConstructors;
 
 	string				m_modName;
 	int					m_atomicMask;
