@@ -2,6 +2,11 @@ struct Data16 {
 	uint16_t	data;
 };
 
+struct Data16x2 {
+	uint16_t	data1;
+	uint16_t	data2;
+};
+
 
 ////////////////////////////////////////////////////
 // Ctl Module
@@ -10,6 +15,8 @@ dsnInfo.AddModule(name=ctl, htIdW=0, clock=1x);
 ctl.AddInst(name=ENTRY);
 ctl.AddInst(name=CALL_GV2);
 ctl.AddInst(name=CALL_GV3);
+ctl.AddInst(name=CALL_GV4);
+ctl.AddInst(name=CALL_GV5);
 ctl.AddInst(name=RETURN);
 
 ctl.AddPrivate()
@@ -30,6 +37,12 @@ ctl.AddCall(func=gv2)
 	;
 
 ctl.AddCall(func=gv3)
+	;
+
+ctl.AddCall(func=gv4)
+	;
+
+ctl.AddCall(func=gv5)
 	;
 
 
@@ -111,4 +124,72 @@ gv3.AddReadMem()
 
 gv3.AddWriteMem()
 	.AddSrc(type=uint16_t)
+	;
+
+////////////////////////////////////////////////////
+// Gv4 Module - 2x, 1F, Mw, Ir
+
+dsnInfo.AddModule(name=gv4, htIdW=3, clock=2x);
+gv4.AddInst(name=GV4_ENTRY);
+gv4.AddInst(name=GV4_WR);
+gv4.AddInst(name=GV4_RD);
+gv4.AddInst(name=GV4_TST);
+gv4.AddInst(name=GV4_RETURN);
+
+gv4.AddEntry(func=gv4, inst=GV4_ENTRY)
+	.AddParam(type=ht_uint48, name=addr)
+	;
+
+gv4.AddPrivate()
+	.AddVar(type=ht_uint4, name=gvAddr1)
+	.AddVar(type=ht_uint48, name=addr)
+	;
+
+gv4.AddReturn(func=gv4)
+	;
+
+gv4.AddGlobal()
+	.AddVar(type=Data16, name=Gv4, addr1=gvAddr1, write=false, blockRam=false)
+	;
+
+gv4.AddReadMem()
+	.AddDst(var=Gv4)
+	;
+
+gv4.AddWriteMem()
+	.AddSrc(type=uint16_t)
+	;
+
+////////////////////////////////////////////////////
+// Gv5 Module - 1x, 2F, Iw, Mr, Mw, Ir
+
+dsnInfo.AddModule(name=gv5, htIdW=0, clock=1x);
+gv5.AddInst(name=GV5_ENTRY);
+gv5.AddInst(name=GV5_WR);
+gv5.AddInst(name=GV5_RD);
+gv5.AddInst(name=GV5_TST);
+gv5.AddInst(name=GV5_RETURN);
+
+gv5.AddEntry(func=gv5, inst=GV5_ENTRY)
+	.AddParam(type=ht_uint48, name=addr)
+	;
+
+gv5.AddPrivate()
+	.AddVar(type=ht_uint48, name=addr)
+	;
+
+gv5.AddReturn(func=gv5)
+	;
+
+gv5.AddGlobal()
+	.AddVar(type=Data16x2, name=Gv5a)
+	.AddVar(type=Data16x2, name=Gv5b)
+	;
+
+gv5.AddWriteMem()
+	.AddSrc(var=Gv5a)
+	;
+
+gv5.AddReadMem()
+	.AddDst(var=Gv5b)
 	;

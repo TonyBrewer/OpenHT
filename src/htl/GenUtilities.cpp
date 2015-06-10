@@ -1170,7 +1170,7 @@ CDsnInfo::GenUserStructs(CHtCode &htFile, CRecord * pUserRecord, char const * pT
 		htFile.Append("%sstruct %s {\n", pTabs, structName.c_str());
 
 	htFile.Append("#%s\tifndef _HTV\n", pTabs);
-	if (!pUserRecord->m_bUnion) {
+	if (!pUserRecord->m_bUnion && pUserRecord->m_bConstructors) {
 		htFile.Append("%s\t%s() {}\n", pTabs, structName.c_str());
 		htFile.Append("%s\t%s(int zero)\n", pTabs, structName.c_str());
 		htFile.Append("%s\t{\n", pTabs);

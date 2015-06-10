@@ -2804,13 +2804,23 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 
 			g_appArgs.GetDsnRpt().AddItem("%s PR%s_%s%s\n", pNgv->m_type.c_str(), privIdxStr, pNgv->m_gblName.c_str(), pNgv->m_dimenDecl.c_str());
 
-			GenModVar(eVcdUser, vcdModName, bFirstModVar,
-				VA("%s const", (privWrIdx == 1 || pNgv->m_addrW > mod.m_threads.m_htIdW.AsInt())
-				? pNgv->m_type.c_str() : VA("CGW_%s", pNgv->m_pNgvInfo->m_ngvWrType.c_str()).c_str()),
-				pNgv->m_dimenDecl,
-				VA("PR%s_%s", privIdxStr, pNgv->m_privName.c_str()),
-				VA("r_t%d_%sI%cData", privStg, pNgv->m_gblName.c_str(), (privWrIdx == 1 || pNgv->m_addrW > mod.m_threads.m_htIdW.AsInt()) ? 'r' : 'w'),
-				pNgv->m_dimenList);
+			if (pNgv->m_addrW == 0) {
+				GenModVar(eVcdUser, vcdModName, bFirstModVar,
+					VA("%s const", /*(privWrIdx == 1 || pNgv->m_addrW > mod.m_threads.m_htIdW.AsInt())
+					? */pNgv->m_type.c_str()/* : VA("CGW_%s", pNgv->m_pNgvInfo->m_ngvWrType.c_str()).c_str()*/),
+					pNgv->m_dimenDecl,
+					VA("PR%s_%s", privIdxStr, pNgv->m_privName.c_str()),
+					VA("r__GBL__%s", pNgv->m_gblName.c_str()),
+					pNgv->m_dimenList);
+			} else {
+				GenModVar(eVcdUser, vcdModName, bFirstModVar,
+					VA("%s const", (privWrIdx == 1 || pNgv->m_addrW > mod.m_threads.m_htIdW.AsInt())
+					? pNgv->m_type.c_str() : VA("CGW_%s", pNgv->m_pNgvInfo->m_ngvWrType.c_str()).c_str()),
+					pNgv->m_dimenDecl,
+					VA("PR%s_%s", privIdxStr, pNgv->m_privName.c_str()),
+					VA("r_t%d_%sI%cData", privStg, pNgv->m_gblName.c_str(), (privWrIdx == 1 || pNgv->m_addrW > mod.m_threads.m_htIdW.AsInt()) ? 'r' : 'w'),
+					pNgv->m_dimenList);
+			}
 		}
 
 		g_appArgs.GetDsnRpt().EndLevel();
