@@ -5273,10 +5273,17 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 										typeCast.c_str(),
 										rdRspStg,
 										pos % reqSize);
-								} else {
+								} else if (pDstType->IsRecord()) {
 									mifPostInstr.Append("\t\t%srecData%s = (%s)(c_m%d_rdRspData >> %d);\n",
 										tabs.c_str(),
 										iter.GetHeirFieldName().c_str(),
+										typeCast.c_str(),
+										rdRspStg,
+										pos % reqSize);
+								} else {
+									mifPostInstr.Append("\t\t%s%s.write_mem((%s)(c_m%d_rdRspData >> %d));\n",
+										tabs.c_str(),
+										addrVar.c_str(),
 										typeCast.c_str(),
 										rdRspStg,
 										pos % reqSize);
@@ -5299,10 +5306,15 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 										addrFld.c_str(),
 										iter.GetHeirFieldName().c_str(),
 										rdRspStg);
-								} else {
+								} else if (pDstType->IsRecord()) {
 									mifPostInstr.Append("\t\t%srecData%s = c_m%d_rdRspData;\n",
 										tabs.c_str(),
 										iter.GetHeirFieldName().c_str(),
+										rdRspStg);
+								} else {
+									mifPostInstr.Append("\t\t%s%s.write_mem(c_m%d_rdRspData);\n",
+										tabs.c_str(),
+										addrVar.c_str(),
 										rdRspStg);
 								}
 							} else if (bQueVar) {
