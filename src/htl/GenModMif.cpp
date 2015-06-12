@@ -3892,6 +3892,8 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 			mod.m_execStg + 1,
 			mod.m_execStg + 1,
 			mod.m_execStg + 1);
+		mifReset.Append("\t\tc_t%d_memReq.m_valid = false;\n", mod.m_execStg);
+
 		mifPostInstr.NewLine();
 
 		mifPostInstr.Append("\tbool c_t%d_memReqLasHold = r_t%d_memReqLas.m_valid && c_t%d_memReqHold;\n",
