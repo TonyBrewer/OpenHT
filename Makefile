@@ -113,7 +113,7 @@ endif
 	chmod 755 $(PREFIX)/bin/* $(PREFIX)/local_systemc/lib*/*.a
 
 REL_RPM  = convey-ht-tools-$(VERSION)-$(VCSREV).x86_64.rpm
-REL_PATH = /work/ht_releases/$(REL_DIR)
+REL_PATH = /usr/local/ht_releases/$(REL_DIR)
 
 release: prefix
 	find $(PREFIX) -type d | xargs chmod 775
