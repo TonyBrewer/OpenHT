@@ -101,7 +101,7 @@ ifneq (,$(wildcard ../../.git))
  VCSREV = $(shell head -1 ../../.git/refs/heads/master | cut -c 1-7)
 endif
 REL_DIR = $(VERSION)-$(VCSREV)
-REL_PATH = /work/htc_releases/$(REL_DIR)
+REL_PATH = /usr/local/htc_releases/$(REL_DIR)
 
 release: prefix
 	rsync -av --delete rpm/prefix/ $(REL_PATH)
