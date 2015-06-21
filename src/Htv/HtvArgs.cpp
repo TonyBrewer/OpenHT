@@ -90,7 +90,7 @@ void CHtvArgs::Parse(int argc, char *argv[])
 
 		argv2[0] = argv[0];
 
-		SetCurrentDirectory("C:/OpenHT/tests/ngv_v1/msvs12/");
+		SetCurrentDirectory("C:/OpenHT/tests/memPSGRand_bug82/msvs12/");
 		argv2[argc++] = "-I";
 		argv2[argc++] = "C:/OpenHT/ht_lib";
 		argv2[argc++] = "-I";
@@ -101,14 +101,14 @@ void CHtvArgs::Parse(int argc, char *argv[])
 		argv2[argc++] = "../src_pers";
 		argv2[argc++] = "-I";
 		argv2[argc++] = "../ht/sysc";
-		//argv2[argc++] = "-TkDump";
-		//argv2[argc++] = "-vivado";
+		argv2[argc++] = "-DHT_ASSERT";
+		argv2[argc++] = "-vivado";
 		//argv2[argc++] = "../ht/sysc/PersAuTop.sc";
 		//argv2[argc++] = "../ht/sysc/PersAuTop.h";
 		//argv2[argc++] = "../ht/verilog/PersAuTop.v";
-		argv2[argc++] = "../ht/sysc/PersGv.cpp";
+		argv2[argc++] = "../ht/sysc/PersTest00.cpp";
 		//argv2[argc++] = "C:/OpenHT_ngv/ht_lib/sysc/PersUnitCnt.cpp";
-		argv2[argc++] = "../ht/verilog/PersGv.v";
+		argv2[argc++] = "../ht/verilog/PersTest00.v";
 
 		argv2[argc] = 0;
 
