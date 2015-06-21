@@ -840,10 +840,12 @@ void CDsnInfo::GenGlobalVarWriteTypes(CHtFile & htFile, CType * pType, int &atom
 			fprintf(htFile, "\t}\n");
 		}
 
-		//fprintf(htFile, "\tbool operator == (%s const &rhs) const { return m_data == rhs; }\n",
-		//	pType->m_typeName.c_str());
-		//fprintf(htFile, "\tbool operator != (%s const &rhs) const { return m_data != rhs; }\n",
-		//	pType->m_typeName.c_str());
+		if (pType->IsInt() && pType->AsInt()->m_clangMinAlign == 1) {
+			fprintf(htFile, "\tbool operator == (%s const &rhs) const { return m_data == rhs; }\n",
+				pType->m_typeName.c_str());
+			fprintf(htFile, "\tbool operator != (%s const &rhs) const { return m_data != rhs; }\n",
+				pType->m_typeName.c_str());
+		}
 
 		switch (atomicMask) {
 		case ATOMIC_INC:
@@ -882,10 +884,12 @@ void CDsnInfo::GenGlobalVarWriteTypes(CHtFile & htFile, CType * pType, int &atom
 					typeName = "int64_t";
 				else
 					HtlAssert(0);
+
+				fprintf(htFile, "\toperator %s () const { return m_data; }\n", typeName.c_str());
 			} else
 				typeName = pType->m_typeName;
 
-			fprintf(htFile, "\toperator %s () const { return m_data; }\n", typeName.c_str());
+			fprintf(htFile, "\toperator %s () const { return m_data; }\n", pType->m_typeName.c_str());
 		}
 
 		fprintf(htFile, "private:\n");

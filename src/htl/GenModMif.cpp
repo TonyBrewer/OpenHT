@@ -2454,9 +2454,15 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 					}
 					else {
 						if (wrSrc.m_pGblVar->m_addrW == 0) {
-							m_mifMacros.Append("\tc_t%d_memReq.m_wrData.m_%s = r__GBL__%s%s;\n",
-								mod.m_execStg, wrSrc.m_pSrcType->m_typeName.c_str(),
-								wrSrc.m_pGblVar->m_gblName.c_str(), varName.c_str());
+							if (wrSrc.m_pSrcType->m_clangMinAlign == 1) {
+								m_mifMacros.Append("\tc_t%d_memReq.m_wrData.m_%s.m_data = r__GBL__%s%s;\n",
+									mod.m_execStg, wrSrc.m_pSrcType->m_typeName.c_str(),
+									wrSrc.m_pGblVar->m_gblName.c_str(), varName.c_str());
+							} else {
+								m_mifMacros.Append("\tc_t%d_memReq.m_wrData.m_%s = r__GBL__%s%s;\n",
+									mod.m_execStg, wrSrc.m_pSrcType->m_typeName.c_str(),
+									wrSrc.m_pGblVar->m_gblName.c_str(), varName.c_str());
+							}
 						} else {
 							m_mifMacros.Append("\tc_t%d_memReq.m_wrData.m_%s = r_t%d_%sI%cData%s;\n",
 								mod.m_execStg, wrSrc.m_pSrcType->m_typeName.c_str(),
@@ -3325,6 +3331,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 
 				if (!pGv->m_bWriteForMifRead) continue;
 				if (!pGv->m_pNgvInfo->m_bNeedQue) continue;
+				if (pGv->m_pNgvInfo->m_bOgv) continue;
 
 				vector<int> refList(pGv->m_dimenList.size());
 				do {
@@ -6042,13 +6049,18 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 			mifPostInstr.NewLine();
 
 			for (size_t i = 0; i < rdDstNgvRamList.size(); i += 1) {
-				CHtCode & mifPostInstrMwComp = rdDstNgvRamList[i]->m_pNgvInfo->m_bNgvWrCompClk2x ? m_mifPostInstr2x : m_mifPostInstr1x;
+				CHtCode & mifPostInstrMwComp = (rdDstNgvRamList[i]->m_pNgvInfo->m_bNgvWrCompClk2x || mod.m_clkRate == eClk2x) ? m_mifPostInstr2x : m_mifPostInstr1x;
 				vector<int> refList(rdDstNgvRamList[i]->m_dimenList.size());
 				do {
 					string dimIdx = IndexStr(refList);
 
-					mifPostInstrMwComp.Append("\tif (i_%sTo%s_mwCompRdy%s)\n",
-						rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+					if (mod.m_clkRate == eClk2x && !rdDstNgvRamList[i]->m_pNgvInfo->m_bNgvWrCompClk2x) {
+						mifPostInstrMwComp.Append("\tif (i_%sTo%s_mwCompRdy%s && r_phase)\n",
+							rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+					} else {
+						mifPostInstrMwComp.Append("\tif (i_%sTo%s_mwCompRdy%s)\n",
+							rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+					}
 					if (rdRspGrpIdW > 0) {
 						mifPostInstrMwComp.Append("\t\tm_%sTo%s_mwCompQue%s.push(i_%sTo%s_mwCompGrpId%s);\n",
 							rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
@@ -6057,8 +6069,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 						if (mod.m_clkRate == eClk1x && rdDstNgvRamList[i]->m_pNgvInfo->m_bNgvWrCompClk2x) {
 							mifPostInstrMwComp.Append("\t\tc_%sTo%s_mwCompCnt_2x%s += 1u;\n",
 								rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
-						}
-						else {
+						} else {
 							mifPostInstrMwComp.Append("\t\tc_%sTo%s_mwCompCnt%s += 1u;\n",
 								rdDstNgvRamList[i]->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
 						}

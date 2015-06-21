@@ -2204,7 +2204,7 @@ void CHtfeDesign::UpdateVarArrayDecl(CHtfeIdent *pIdent, vector<int> &dimenList)
 
 CHtfeIdent * CHtfeDesign::CreateUniquePortTemplateType(string portName, CHtfeIdent * pBaseType, bool bIsConst)
 {
-	string typeName = portName + "<" + pBaseType->GetName() + "> ";
+	string typeName = portName + "<" + pBaseType->GetSignalName() + "> ";
 	CHtfeIdent *pType = m_pTopHier->InsertType(typeName);
 	pType->SetType(pBaseType);
 
@@ -3308,7 +3308,7 @@ CHtfeIdent * CHtfeDesign::CreateUniqueScIntType(CHtfeIdent *pBaseType, int width
 
 	char widthName[16];
 	sprintf(widthName, "%d", width);
-	string typeName = pBaseType->GetName() + "<" + widthName + "> ";
+	string typeName = pBaseType->GetName() + "<" + widthName + ">";
 	CHtfeIdent * pType = m_pTopHier->InsertType(typeName);
 
 	if (pType->GetId() == CHtfeIdent::id_new) {
