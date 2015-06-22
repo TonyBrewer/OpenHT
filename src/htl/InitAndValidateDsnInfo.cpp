@@ -1119,18 +1119,22 @@ void CDsnInfo::InitAndValidateRecord(CRecord * pRecord)
 
 			fieldWidth = pField->m_fieldWidth.AsInt();
 			packedFieldWidth = pField->m_fieldWidth.AsInt();
-			prevTypeWidth = pType->m_clangBitWidth;
 
-			if (clangBitPos + fieldWidth > clangBitWidth) {
+			if (prevTypeWidth != pType->m_clangBitWidth || clangBitPos + fieldWidth > clangBitWidth) {
 
 				if (!pRecord->m_bUnion && clangBitWidth % pType->m_clangMinAlign > 0)
 					clangBitPos = clangBitWidth = clangBitWidth + pType->m_clangMinAlign - clangBitWidth % pType->m_clangMinAlign;
+				else
+					clangBitPos = clangBitWidth;
 
 				if (pRecord->m_bUnion)
 					clangBitWidth = max(clangBitWidth, pType->m_clangBitWidth * (int)pField->m_elemCnt);
 				else
 					clangBitWidth += pType->m_clangBitWidth * pField->m_elemCnt;
 			}
+
+			prevTypeWidth = pType->m_clangBitWidth;
+
 		} else {
 			fieldWidth = pType->m_clangBitWidth;
 			packedFieldWidth = pType->m_packedBitWidth;

@@ -2,14 +2,14 @@
 #include "PersTest00.h"
 
 void CPersTest00::PersTest00() {
-	if (PR4_htValid) {
-		switch (PR4_htInst) {
+	if (PR_htValid) {
+		switch (PR_htInst) {
 		case TEST00_ENTRY: {
-			HtContinue(TEST00_WR);
+			HtContinue(TEST00_WR0);
 			break;
 		}
-		case TEST00_WR: {
-			P4_test00_0_src_v0_data = ((ht_int48)0x0005e9b4c8fece20LL);
+		case TEST00_WR0: {
+			P_test00_0_src_v0_data = ((ht_uint21)0x000bee4da53c6fe0LL);
 			HtContinue(TEST00_ST0);
 			break;
 		}
@@ -18,7 +18,7 @@ void CPersTest00::PersTest00() {
 				HtRetry();
 				break;
 			}
-			WriteMem_test00_0_src_v0_data(PR4_memAddr + 0);
+			WriteMem_ht_uint21(PR_memAddr + 0, P_test00_0_src_v0_data);
 			WriteMemPause(TEST00_LD0);
 			break;
 		}
@@ -27,12 +27,12 @@ void CPersTest00::PersTest00() {
 				HtRetry();
 				break;
 			}
-			ReadMem_test00_0_src_v0_data(PR4_memAddr + 0);
-			ReadMemPause(TEST00_CHK);
+			ReadMem_test00_0_src_v0_data(PR_memAddr + 0);
+			ReadMemPause(TEST00_CHK0);
 			break;
 		}
-		case TEST00_CHK: {
-			if (PR4_test00_0_src_v0_data != (ht_int48)0xffffe9b4c8fece20LL) {
+		case TEST00_CHK0: {
+			if ((ht_uint21)PR_test00_0_src_v0_data != ((ht_uint21)0x000bee4da53c6fe0LL)) {
 				HtAssert(0, 0);
 			}
 			HtContinue(TEST00_RTN);

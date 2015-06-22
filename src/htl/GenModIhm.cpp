@@ -259,7 +259,7 @@ void CDsnInfo::GenModIhmStatements(CModule &mod)
 				addrs += "addr2";
 			}
 
-			ihmPostInstr.Append("\t\tm_%s%s.write_addr(%s);\n",
+			ihmPostInstr.Append("\t\tm__SHR__%s%s.write_addr(%s);\n",
 				msgDst.m_var.c_str(), indexes.c_str(), addrs.c_str());
 
 			ihmPostInstr.Append("\t}\n");

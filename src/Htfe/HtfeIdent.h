@@ -229,7 +229,12 @@ public:
 	const string GetName(CHtfeOperand *pOp = 0) const {
 		return m_inlineName.size() > 0 ? m_inlineName : m_name;
 	}
-	void SetInlineName( string const & inlineName ) {
+	const string GetSignalName(CHtfeOperand *pOp = 0) const {
+		string name = m_inlineName.size() > 0 ? m_inlineName : m_name;
+		if (name[name.size() - 1] == '>') name += " ";
+		return name;
+	}
+	void SetInlineName(string const & inlineName) {
 		m_inlineName = inlineName;
 	}
 

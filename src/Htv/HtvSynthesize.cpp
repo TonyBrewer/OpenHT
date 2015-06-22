@@ -766,7 +766,7 @@ void CHtvDesign::GenScModuleWritePortAndSignalList(CHtvIdent *pClass)
             } 
 
             Assert(hierIdentIter->GetType() && hierIdentIter->GetType()->GetType());
-            string inDecl = VA("sc_in<%s>", hierIdentIter->GetType()->GetType()->GetName().c_str());
+            string inDecl = VA("sc_in<%s>", hierIdentIter->GetType()->GetType()->GetSignalName().c_str());
             m_incFile.Print("  %-24s %s", inDecl.c_str(), hierIdentIter->GetName().c_str());
 
             for (size_t i = 0; i < hierIdentIter->GetDimenCnt(); i += 1)
@@ -804,7 +804,7 @@ void CHtvDesign::GenScModuleWritePortAndSignalList(CHtvIdent *pClass)
             }
 
             Assert(hierIdentIter->GetType() && hierIdentIter->GetType()->GetType());
-            string outDecl = VA("sc_out<%s>", hierIdentIter->GetType()->GetType()->GetName().c_str());
+			string outDecl = VA("sc_out<%s>", hierIdentIter->GetType()->GetType()->GetSignalName().c_str());
             m_incFile.Print("  %-24s %s", outDecl.c_str(), hierIdentIter->GetName().c_str());
 
             for (size_t i = 0; i < hierIdentIter->GetDimenCnt(); i += 1)
@@ -839,7 +839,7 @@ void CHtvDesign::GenScModuleWritePortAndSignalList(CHtvIdent *pClass)
                 continue;
 
             Assert(hierIdentIter->GetType() && hierIdentIter->GetType()->GetType());
-			string signalDecl = VA("sc_signal<%s>", hierIdentIter->GetType()->GetType()->GetName().c_str());
+			string signalDecl = VA("sc_signal<%s>", hierIdentIter->GetType()->GetType()->GetSignalName().c_str());
             m_incFile.Print("  %-24s %s", signalDecl.c_str(), hierIdentIter->GetName().c_str());
 
             for (size_t i = 0; i < hierIdentIter->GetDimenCnt(); i += 1)
@@ -2535,7 +2535,7 @@ void CHtvDesign::FindSubExpr(CHtvObject * pObj, CHtvObject * pRtnObj, CHtvOperan
 	vector<CHtvDesign::CTempVar> tempVarList;
 
 #ifdef WIN32
-	if (pExpr->GetLineInfo().m_lineNum == 16)// || pExpr->GetLineInfo().m_lineNum == 18)
+	if (pExpr->GetLineInfo().m_lineNum == 37)// || pExpr->GetLineInfo().m_lineNum == 18)
 		bool stop = true;
 #endif
 
@@ -2550,7 +2550,7 @@ void CHtvDesign::FindSubExpr(CHtvObject * pObj, CHtvObject * pRtnObj, CHtvOperan
     if (bFoundSubExpr) {
         string exprBlockId = GetNextExprBlockId(pExpr);
 #ifdef WIN32
-        if (exprBlockId == "23$360b")
+        if (exprBlockId == "20$37")
             bool stop = true;
 #endif
 
@@ -3949,7 +3949,7 @@ void CHtvDesign::GenFunction(CHtvIdent *pFunction, CHtvObject * pObj, CHtvObject
         if (pFunction->GetWidth() > 1)
             bitRange = VA("[%d:0] ", pFunction->GetWidth()-1);
 
-        m_vFile.Print("output %s%s$Rtn;\n", bitRange.c_str(), pFunction->GetName().c_str());
+        m_vFile.Print("output %s\\%s$Rtn;\n", bitRange.c_str(), pFunction->GetName().c_str());
     }
 
     // list parameters
@@ -5045,7 +5045,7 @@ CHtvDesign::EIdentFmt CHtvDesign::FindIdentFmt(CHtvObject * pObj, CHtvObject * p
 	}
 
 	if (!pExpr->IsSubExprGenerated() && pIdent->IsFunction() && bIsLeftOfEqual)
-		name += "$Rtn";
+		name = "\\" + name + "$Rtn";
 
     if (bTempVar && pExpr->IsExprTempVarWidth() && pExpr->GetExprTempVarWidth() < subFieldWidth) {
         bSubField = true;
@@ -5275,7 +5275,7 @@ void CHtvDesign::SynInlineFunctionCall(CHtvObject * pObj, CHtvObject * pRtnObj, 
         if (pFunc->GetWidth() > 1)
             bitRange = VA("[%d:0] ", pFunc->GetWidth()-1);
 
-        m_vFile.Print("reg %s%s$Rtn;\n", bitRange.c_str(), pFunc->GetName().c_str());
+        m_vFile.Print("reg %s\\%s$Rtn ;\n", bitRange.c_str(), pFunc->GetName().c_str());
 		m_vFile.Print("\n");
     }
 
@@ -5357,7 +5357,7 @@ void CHtvDesign::SynInlineFunctionCall(CHtvObject * pObj, CHtvObject * pRtnObj, 
     }
 
 	if (pFunc->GetType() != GetVoidType() && !pFunc->IsReturnRef()) {
-		m_vFile.Print("%s = %s$Rtn;\n", pExpr->GetFuncTempVar().c_str(), pFunc->GetName().c_str());
+		m_vFile.Print("%s = \\%s$Rtn ;\n", pExpr->GetFuncTempVar().c_str(), pFunc->GetName().c_str());
 		pExpr->SetTempOp(CreateTempOp(pExpr, pExpr->GetFuncTempVar()));
 	}
 
