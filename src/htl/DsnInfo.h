@@ -653,6 +653,10 @@ struct CNgvInfo {
 	int m_ngvReplCnt;
 	int m_wrCompStg;
 	int m_wrDataStg;
+	vector<pair<int, int> > m_wrPortList;
+	bool m_bAllWrPortClk1x;
+	CModule * m_pRdMod;
+	int m_ngvRdModCnt;
 
 	bool m_bOgv;
 };

@@ -91,14 +91,13 @@ void CDsnInfo::InitAndValidateModNgv()
 		vector<CNgvModInfo> &ngvModInfoList = m_ngvList[gvIdx]->m_modInfoList;
 
 		// create ngv port list of instruction and memory writes
-		vector<pair<int, int> > ngvWrPortList;
-		bool bAllWrPortClk1x = true;
+		pNgvInfo->m_bAllWrPortClk1x = true;
 		bool bAllRdPortClk1x = true;
 		bool bNgvMaxSel = false;
 		int ngvRdPortCnt = 0;
 		pNgvInfo->m_ramType = eUnknownRam;
-		CModule * pRdMod = 0;
-		int ngvRdModCnt = 0;
+		pNgvInfo->m_pRdMod = 0;
+		pNgvInfo->m_ngvRdModCnt = 0;
 		for (size_t modIdx = 0; modIdx < ngvModInfoList.size(); modIdx += 1) {
 			CModule * pMod = ngvModInfoList[modIdx].m_pMod;
 			CRam * pModNgv = ngvModInfoList[modIdx].m_pNgv;
@@ -107,8 +106,8 @@ void CDsnInfo::InitAndValidateModNgv()
 				if (imIdx == 0 && !pModNgv->m_bWriteForInstrWrite) continue;
 				if (imIdx == 1 && !pModNgv->m_bWriteForMifRead) continue;
 
-				ngvWrPortList.push_back(pair<int, int>(modIdx, imIdx));
-				bAllWrPortClk1x &= pMod->m_clkRate == eClk1x;
+				pNgvInfo->m_wrPortList.push_back(pair<int, int>(modIdx, imIdx));
+				pNgvInfo->m_bAllWrPortClk1x &= pMod->m_clkRate == eClk1x;
 			}
 
 			for (int imIdx = 0; imIdx < 2; imIdx += 1) {
@@ -118,9 +117,9 @@ void CDsnInfo::InitAndValidateModNgv()
 				ngvRdPortCnt += 1;
 				bAllRdPortClk1x &= pMod->m_clkRate == eClk1x;
 
-				if (pMod != pRdMod) {
-					pRdMod = pMod;
-					ngvRdModCnt += 1;
+				if (pMod != pNgvInfo->m_pRdMod) {
+					pNgvInfo->m_pRdMod = pMod;
+					pNgvInfo->m_ngvRdModCnt += 1;
 				}
 			}
 
@@ -156,35 +155,35 @@ void CDsnInfo::InitAndValidateModNgv()
 		bool bNgvDist = !bNgvReg && pGv0->m_pNgvInfo->m_ramType != eBlockRam;
 		bool bNgvBlock = !bNgvReg && !bNgvDist;
 
-		int ngvPortCnt = (int)ngvWrPortList.size();
+		int ngvPortCnt = (int)pNgvInfo->m_wrPortList.size();
 
-		bNgvMaxSel &= bNgvDist && (!bAllWrPortClk1x || ngvPortCnt > 1) && bNgvAtomicSlow ||
+		bNgvMaxSel &= bNgvDist && (!pNgvInfo->m_bAllWrPortClk1x || ngvPortCnt > 1) && bNgvAtomicSlow ||
 			bNgvBlock && (bNgvAtomic || ngvFieldCnt > 1);
 
 		pNgvInfo->m_bNgvMaxSel = bNgvMaxSel;
 
-		pNgvInfo->m_bNgvWrCompClk2x = bNgvReg && (!bAllWrPortClk1x && ngvPortCnt <= 2 || ngvPortCnt == 3) ||
-			bNgvDist && ((!bAllWrPortClk1x && ngvPortCnt <= 2 || ngvPortCnt == 3) && !bNgvAtomicSlow ||
-			(bNgvAtomicSlow && (!bAllWrPortClk1x || ngvPortCnt > 1) && bNgvMaxSel)) ||
-			bNgvBlock && ((!bNgvAtomic && ngvFieldCnt == 1) && (!bAllWrPortClk1x && ngvPortCnt <= 2 || ngvPortCnt == 3) ||
+		pNgvInfo->m_bNgvWrCompClk2x = bNgvReg && (!pNgvInfo->m_bAllWrPortClk1x && ngvPortCnt <= 2 || ngvPortCnt == 3) ||
+			bNgvDist && ((!pNgvInfo->m_bAllWrPortClk1x && ngvPortCnt <= 2 || ngvPortCnt == 3) && !bNgvAtomicSlow ||
+			(bNgvAtomicSlow && (!pNgvInfo->m_bAllWrPortClk1x || ngvPortCnt > 1) && bNgvMaxSel)) ||
+			bNgvBlock && ((!bNgvAtomic && ngvFieldCnt == 1) && (!pNgvInfo->m_bAllWrPortClk1x && ngvPortCnt <= 2 || ngvPortCnt == 3) ||
 			(bNgvAtomic || ngvFieldCnt > 1) && bNgvMaxSel);
 
-		pNgvInfo->m_bNgvWrDataClk2x = bNgvReg && (!bAllWrPortClk1x || ngvPortCnt > 1) ||
-			bNgvDist && ((!bAllWrPortClk1x || ngvPortCnt > 1) && !bNgvAtomicSlow ||
-			(bNgvAtomicSlow && (!bAllWrPortClk1x || ngvPortCnt > 1) && bNgvMaxSel)) ||
-			bNgvBlock && ((!bNgvAtomic && ngvFieldCnt == 1) && (!bAllWrPortClk1x || ngvPortCnt > 1) ||
+		pNgvInfo->m_bNgvWrDataClk2x = bNgvReg && (!pNgvInfo->m_bAllWrPortClk1x || ngvPortCnt > 1) ||
+			bNgvDist && ((!pNgvInfo->m_bAllWrPortClk1x || ngvPortCnt > 1) && !bNgvAtomicSlow ||
+			(bNgvAtomicSlow && (!pNgvInfo->m_bAllWrPortClk1x || ngvPortCnt > 1) && bNgvMaxSel)) ||
+			bNgvBlock && ((!bNgvAtomic && ngvFieldCnt == 1) && (!pNgvInfo->m_bAllWrPortClk1x || ngvPortCnt > 1) ||
 			(bNgvAtomic || ngvFieldCnt > 1) && bNgvMaxSel);
 
-		pNgvInfo->m_bNeedQue = bNgvReg && (ngvPortCnt == 2 && !bAllWrPortClk1x || ngvPortCnt >= 3) ||
-			bNgvDist && ((ngvPortCnt == 2 && !bAllWrPortClk1x || ngvPortCnt >= 3) && !bNgvAtomicSlow ||
-			((ngvPortCnt >= 2 || !bAllWrPortClk1x) && bNgvAtomicSlow)) ||
-			bNgvBlock && ((!bNgvAtomic && ngvFieldCnt == 1) && (ngvPortCnt == 2 && !bAllWrPortClk1x || ngvPortCnt >= 3) ||
+		pNgvInfo->m_bNeedQue = bNgvReg && (ngvPortCnt == 2 && !pNgvInfo->m_bAllWrPortClk1x || ngvPortCnt >= 3) ||
+			bNgvDist && ((ngvPortCnt == 2 && !pNgvInfo->m_bAllWrPortClk1x || ngvPortCnt >= 3) && !bNgvAtomicSlow ||
+			((ngvPortCnt >= 2 || !pNgvInfo->m_bAllWrPortClk1x) && bNgvAtomicSlow)) ||
+			bNgvBlock && ((!bNgvAtomic && ngvFieldCnt == 1) && (ngvPortCnt == 2 && !pNgvInfo->m_bAllWrPortClk1x || ngvPortCnt >= 3) ||
 			(bNgvAtomic || ngvFieldCnt > 1));
 
 		// 2x RR selection - one level, 2 or 3 ports, 2x wrData
-		bool bRrSel2x = bNgvReg && (ngvPortCnt == 2 && !bAllWrPortClk1x || ngvPortCnt == 3) ||
-			bNgvDist && (ngvPortCnt == 2 && !bAllWrPortClk1x && !bNgvAtomicSlow || ngvPortCnt == 3 && !bNgvAtomicSlow) ||
-			bNgvBlock && (ngvPortCnt == 2 && !bAllWrPortClk1x && !bNgvAtomic && ngvFieldCnt == 1
+		bool bRrSel2x = bNgvReg && (ngvPortCnt == 2 && !pNgvInfo->m_bAllWrPortClk1x || ngvPortCnt == 3) ||
+			bNgvDist && (ngvPortCnt == 2 && !pNgvInfo->m_bAllWrPortClk1x && !bNgvAtomicSlow || ngvPortCnt == 3 && !bNgvAtomicSlow) ||
+			bNgvBlock && (ngvPortCnt == 2 && !pNgvInfo->m_bAllWrPortClk1x && !bNgvAtomic && ngvFieldCnt == 1
 			|| ngvPortCnt == 3 && !bNgvAtomic && ngvFieldCnt == 1);
 
 		// 1x RR selection - no phase select, 1x wrData
@@ -196,16 +195,16 @@ void CDsnInfo::InitAndValidateModNgv()
 			bNgvDist && (ngvPortCnt >= 4 && !bNgvAtomicSlow) ||
 			bNgvBlock && (ngvPortCnt >= 4 && !bNgvAtomic && ngvFieldCnt == 1);
 
-		bool bRrSelEO = bNgvDist && bNgvAtomicSlow && pNgvInfo->m_bNgvMaxSel && (!bAllWrPortClk1x || ngvPortCnt >= 2) ||
+		bool bRrSelEO = bNgvDist && bNgvAtomicSlow && pNgvInfo->m_bNgvMaxSel && (!pNgvInfo->m_bAllWrPortClk1x || ngvPortCnt >= 2) ||
 			bNgvBlock && (bNgvAtomic || ngvFieldCnt > 1) && pNgvInfo->m_bNgvMaxSel;
 
-		bool bNeedAddrComp = bNgvDist && bNgvAtomicSlow && pNgvInfo->m_bNgvMaxSel && (!bAllWrPortClk1x || ngvPortCnt >= 2) ||
+		bool bNeedAddrComp = bNgvDist && bNgvAtomicSlow && pNgvInfo->m_bNgvMaxSel && (!pNgvInfo->m_bAllWrPortClk1x || ngvPortCnt >= 2) ||
 			bNgvBlock && (bNgvAtomic || ngvFieldCnt > 1);
 
-		bool bNeedRamReg = bNgvDist && bNgvAtomicSlow && (ngvPortCnt >= 2 || !bAllWrPortClk1x) && pNgvInfo->m_bNgvMaxSel ||
+		bool bNeedRamReg = bNgvDist && bNgvAtomicSlow && (ngvPortCnt >= 2 || !pNgvInfo->m_bAllWrPortClk1x) && pNgvInfo->m_bNgvMaxSel ||
 			bNgvBlock && (bNgvAtomic || ngvFieldCnt > 1) && pNgvInfo->m_bNgvMaxSel;
 
-		bool bNeedRamWrReg = bNgvDist && bNgvAtomicSlow && (ngvPortCnt >= 2 || !bAllWrPortClk1x) && pNgvInfo->m_bNgvMaxSel ||
+		bool bNeedRamWrReg = bNgvDist && bNgvAtomicSlow && (ngvPortCnt >= 2 || !pNgvInfo->m_bAllWrPortClk1x) && pNgvInfo->m_bNgvMaxSel ||
 			bNgvBlock && (bNgvAtomic || ngvFieldCnt > 1) && pNgvInfo->m_bNgvMaxSel;
 
 		int stgIdx = 0;
@@ -233,7 +232,7 @@ void CDsnInfo::InitAndValidateModNgv()
 			if (bNeedAddrComp)
 				pNgvInfo->m_wrCompStg = stgIdx + 1;
 		}
-		else if (ngvPortCnt == 2 && bAllWrPortClk1x) {
+		else if (ngvPortCnt == 2 && pNgvInfo->m_bAllWrPortClk1x) {
 			if (bNeedAddrComp)
 				pNgvInfo->m_wrCompStg = stgIdx + 1;
 		}
@@ -255,12 +254,15 @@ void CDsnInfo::InitAndValidateModNgv()
 		pNgvInfo->m_bOgv = //g_appArgs.IsOgv() &&
 			(modCnt == 1 && ngvFieldCnt == 1 && !bNgvAtomic && pGv0->m_bReadForInstrRead && pGv0->m_bWriteForInstrWrite && !pGv0->m_bReadForMifWrite && !pGv0->m_bWriteForMifRead) ||
 			(modCnt == 1 && ngvFieldCnt == 1 && !bNgvAtomic && pGv0->m_bReadForInstrRead && !pGv0->m_bWriteForInstrWrite && !pGv0->m_bReadForMifWrite && pGv0->m_bWriteForMifRead) ||
+			(modCnt == 1 && ngvFieldCnt == 1 && !bNgvAtomic && bAllRdPortClk1x && pNgvInfo->m_bAllWrPortClk1x && pGv0->m_bReadForInstrRead && pGv0->m_bWriteForInstrWrite && !pGv0->m_bReadForMifWrite && pGv0->m_bWriteForMifRead) ||
+			//(modCnt == 1 && ngvFieldCnt == 1 && !bNgvAtomic && bAllRdPortClk1x && pNgvInfo->m_bAllWrPortClk1x && pGv0->m_bReadForInstrRead && pGv0->m_bWriteForInstrWrite && pGv0->m_bReadForMifWrite && !pGv0->m_bWriteForMifRead) ||
+			(ngvFieldCnt == 1 && !bNgvAtomic && bAllRdPortClk1x && pNgvInfo->m_bAllWrPortClk1x && pNgvInfo->m_wrPortList.size() <= 2 && ngvRdPortCnt == 1) ||
 			(modCnt == 1 && !bNgvAtomic && bNgvReg);
 
 #ifdef WIN32
 		bool bPossibleOgv = !pNgvInfo->m_bOgv && ngvFieldCnt == 1 && !bNgvAtomic &&
-			(bAllWrPortClk1x && ngvWrPortList.size() <= 2 || ngvWrPortList.size() == 1) &&
-			ngvRdModCnt == 1 && (bAllRdPortClk1x || ngvRdPortCnt == 1);
+			(pNgvInfo->m_bAllWrPortClk1x && pNgvInfo->m_wrPortList.size() <= 2 || pNgvInfo->m_wrPortList.size() == 1) &&
+			pNgvInfo->m_ngvRdModCnt == 1 && (bAllRdPortClk1x || ngvRdPortCnt == 1);
 
 		if (!pNgvInfo->m_bOgv && ngvFieldCnt == 1 && !bNgvAtomic)
 		{
@@ -324,10 +326,22 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 	CHtCode & gblPreInstr = pMod->m_clkRate == eClk2x ? m_gblPreInstr2x : m_gblPreInstr1x;
 	CHtCode & gblPostInstr = pMod->m_clkRate == eClk2x ? m_gblPostInstr2x : m_gblPostInstr1x;
 	CHtCode & gblReg = pMod->m_clkRate == eClk2x ? m_gblReg2x : m_gblReg1x;
+	CHtCode & gblOut = pMod->m_clkRate == eClk2x ? m_gblOut2x : m_gblOut1x;
 
 	string gblRegReset = pMod->m_clkRate == eClk2x ? "c_reset1x" : "r_reset1x";
 
 	string vcdModName = VA("Pers%s", pMod->m_modName.Uc().c_str());
+
+	// find read module
+	CModule * pRdMod = 0;
+	for (size_t i = 0; i < pNgvInfo->m_modInfoList.size(); i += 1) {
+		CNgvModInfo * pInfo = & pNgvInfo->m_modInfoList[i];
+		if (pInfo->m_pNgv->m_bReadForInstrRead || pInfo->m_pNgv->m_bReadForMifWrite) {
+			pRdMod = pInfo->m_pMod;
+			break;
+		}
+	}
+	HtlAssert(pRdMod != 0);
 
 	bool bFirstModVar = false;
 	for (int stgIdx = 1; stgIdx <= pGv->m_wrStg.AsInt(); stgIdx += 1) {
@@ -377,6 +391,133 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 		}
 	}
 
+	bool bPrivGblAndNoAddr = pGv->m_bPrivGbl && pGv->m_addrW == pMod->m_threads.m_htIdW.AsInt();
+
+	if (pGv->m_bWriteForInstrWrite) {
+		for (int gvWrStg = pMod->m_tsStg; gvWrStg < pMod->m_tsStg + pGv->m_wrStg.AsInt(); gvWrStg += 1) {
+
+			string typeName;
+			if (gvWrStg == pMod->m_tsStg + pGv->m_wrStg.AsInt() - 1 &&
+				pNgvInfo->m_wrPortList.size() > 1 && pGv->m_addrW > 0 && pGv->m_pNgvInfo->m_pRdMod == pMod)
+			{
+				typeName = VA("sc_signal<CGW_%s>", pGv->m_pNgvInfo->m_ngvWrType.c_str());
+			} else
+				typeName = VA("CGW_%s", pGv->m_pNgvInfo->m_ngvWrType.c_str());
+
+			GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, typeName,
+				VA("r_t%d_%sIwData", gvWrStg + 1, pGv->m_gblName.c_str()), pGv->m_dimenList);
+			m_gblRegDecl.Append("\tCGW_%s c_t%d_%sIwData%s;\n",
+				pGv->m_pNgvInfo->m_ngvWrType.c_str(), gvWrStg, pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
+		}
+
+		string htIdStr = (pMod->m_threads.m_htIdW.AsInt() > 0 &&
+			(pGv->m_bPrivGbl || pGv->m_addr1Name == "htId" || pGv->m_addr2Name == "htId")) ? VA("r_t%d_htId", pMod->m_tsStg) : "";
+
+		vector<int> refList(pGv->m_dimenList.size());
+		do {
+			string dimIdx = IndexStr(refList);
+
+			for (int gvWrStg = pMod->m_tsStg; gvWrStg < pMod->m_tsStg + pGv->m_wrStg.AsInt(); gvWrStg += 1) {
+				if (bPrivGblAndNoAddr && gvWrStg == pMod->m_tsStg) {
+					if (pMod->m_threads.m_htIdW.AsInt() == 0) {
+						gblPreInstr.Append("\tc_t%d_%sIwData%s.InitData(%s%sr__GBL__%s%s);\n",
+							gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
+							htIdStr.c_str(), htIdStr.size() > 0 ? ", " : "",
+							pGv->m_gblName.c_str(), dimIdx.c_str());
+					} else {
+						gblPreInstr.Append("\tc_t%d_%sIwData%s.InitData(%s%sr_t%d_%sIrData%s);\n",
+							gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
+							htIdStr.c_str(), htIdStr.size() > 0 ? ", " : "",
+							gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str());
+					}
+				} else if (!bPrivGblAndNoAddr && gvWrStg == pMod->m_tsStg) {
+					gblPreInstr.Append("\tc_t%d_%sIwData%s.InitZero(%s);\n",
+						gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
+						htIdStr.c_str());
+				} else {
+					gblPreInstr.Append("\tc_t%d_%sIwData%s = r_t%d_%sIwData%s;\n",
+						gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
+						gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str());
+				}
+				gblReg.Append("\tr_t%d_%sIwData%s = c_t%d_%sIwData%s;\n",
+					gvWrStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
+					gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str());
+			}
+		} while (DimenIter(pGv->m_dimenList, refList));
+	}
+
+	if (pGv->m_bWriteForMifRead) {
+		int rdRspStg = pMod->m_mif.m_mifRd.m_bNeedRdRspInfoRam ? 2 : 1;
+
+		string typeName;
+		if (pGv->m_bWriteForMifRead && pGv->m_bWriteForInstrWrite && pGv->m_addrW > 0 && pGv->m_pNgvInfo->m_pRdMod == pMod)
+			typeName = VA("sc_signal<CGW_%s>", pGv->m_pNgvInfo->m_ngvWrType.c_str());
+		else
+			typeName = VA("CGW_%s", pGv->m_pNgvInfo->m_ngvWrType.c_str());
+
+		GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, typeName,
+			VA("r_m%d_%sMwData", rdRspStg + 1, pGv->m_gblName.c_str()), pGv->m_dimenList);
+		m_gblRegDecl.Append("\tCGW_%s c_m%d_%sMwData%s;\n",
+			pGv->m_pNgvInfo->m_ngvWrType.c_str(),
+			rdRspStg, pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
+
+		string htIdStr = (pMod->m_threads.m_htIdW.AsInt() > 0 &&
+			(pGv->m_bPrivGbl || pGv->m_addr1Name == "htId" || pGv->m_addr2Name == "htId")) ? VA("r_m%d_rdRspInfo.m_htId", rdRspStg) : "";
+
+		vector<int> refList(pGv->m_dimenList.size());
+		do {
+			string dimIdx = IndexStr(refList);
+
+			gblPreInstr.Append("\tc_m%d_%sMwData%s.InitZero(%s);\n",
+				rdRspStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
+				htIdStr.c_str());
+
+			gblReg.Append("\tr_m%d_%sMwData%s = c_m%d_%sMwData%s;\n",
+				rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
+				rdRspStg, pGv->m_gblName.c_str(), dimIdx.c_str());
+
+		} while (DimenIter(pGv->m_dimenList, refList));
+	}
+
+	// write outputs
+	if (!pGv->m_bReadForInstrRead && !pGv->m_bReadForMifWrite) {
+		if (pGv->m_bWriteForInstrWrite) {
+			int gvWrStg = pMod->m_tsStg + pGv->m_wrStg.AsInt();
+
+			{
+				m_gblIoDecl.Append("\tsc_out<CGW_%s> o_%sTo%s_%sIwData%s;\n",
+					pGv->m_pNgvInfo->m_ngvWrType.c_str(),
+					pMod->m_modName.Lc().c_str(), pRdMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
+				vector<int> refList(pGv->m_dimenList.size());
+				do {
+					string dimIdx = IndexStr(refList);
+					gblOut.Append("\to_%sTo%s_%sIwData%s = r_t%d_%sIwData%s;\n",
+						pMod->m_modName.Lc().c_str(), pRdMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(),
+						gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str());
+				} while (DimenIter(pGv->m_dimenList, refList));
+			}
+		}
+
+		if (pGv->m_bWriteForMifRead) { // Memory
+			int rdRspStg = pMod->m_mif.m_mifRd.m_bNeedRdRspInfoRam ? 2 : 1;
+
+			{
+				m_gblIoDecl.Append("\tsc_out<CGW_%s> o_%sTo%s_%sMwData%s;\n",
+					pGv->m_pNgvInfo->m_ngvWrType.c_str(),
+					pMod->m_modName.Lc().c_str(), pRdMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
+				vector<int> refList(pGv->m_dimenList.size());
+				do {
+					string dimIdx = IndexStr(refList);
+					gblOut.Append("\to_%sTo%s_%sMwData%s = r_m%d_%sMwData%s;\n",
+						pMod->m_modName.Lc().c_str(), pRdMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(),
+						rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str());
+				} while (DimenIter(pGv->m_dimenList, refList));
+			}
+		}
+
+		return;
+	}
+
 	if (pGv->m_addrW == 0) {
 		m_gblRegDecl.Append("\t%s c__GBL__%s%s;\n",
 			pGv->m_type.c_str(), pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
@@ -408,22 +549,111 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 		do {
 			string dimIdx = IndexStr(refList);
 
-			//if (pNgvInfo->m_bNgvWrDataClk2x == (pMod->m_clkRate == eClk2x)) {
-			gblReg.Append("\tm__GBL__%s%s.clock(%s);\n",
-				pGv->m_gblName.c_str(), dimIdx.c_str(),
-				gblRegReset.c_str());
-			//} else {
-			//	gblReg.Append("\tm_%s%s%s.read_clock(%s);\n",
-			//		pGv->m_gblName.c_str(), pImStr, dimIdx.c_str(),
-			//		gblRegReset.c_str());
-			//	gblRegWrData.Append("\tm_%s%s%s.write_clock(%s);\n",
-			//		pGv->m_gblName.c_str(), pImStr, dimIdx.c_str(),
-			//		gblRegWrDataReset.c_str());
-			//}
+			if (pNgvInfo->m_wrPortList.size() == 2 && pGv->m_addrW > 0) {
+
+				m_gblReg1x.Append("\tm__GBL__%s%s.read_clock(r_reset1x);\n",
+					pGv->m_gblName.c_str(), dimIdx.c_str());
+				m_gblReg2x.Append("\tm__GBL__%s%s.write_clock(c_reset1x);\n",
+					pGv->m_gblName.c_str(), dimIdx.c_str());
+
+			} else {
+				gblReg.Append("\tm__GBL__%s%s.clock(%s);\n",
+					pGv->m_gblName.c_str(), dimIdx.c_str(),
+					gblRegReset.c_str());
+			}
 		} while (DimenIter(pGv->m_dimenList, refList));
+
+		m_gblReg2x.NewLine();
 	}
 
-	bool bPrivGblAndNoAddr = pGv->m_bPrivGbl && pGv->m_addrW == pMod->m_threads.m_htIdW.AsInt();
+	if (pNgvInfo->m_modInfoList.size() > 1) {
+		for (size_t i = 0; i < pNgvInfo->m_modInfoList.size(); i += 1) {
+			CNgvModInfo * pModInfo = &pNgvInfo->m_modInfoList[i];
+			if (pModInfo->m_pNgv->m_bWriteForInstrWrite && pModInfo->m_pMod != pMod) {
+				m_gblIoDecl.Append("\tsc_in<CGW_%s> i_%sTo%s_%sIwData%s;\n",
+					pGv->m_pNgvInfo->m_ngvWrType.c_str(),
+					pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
+
+				if (pGv->m_addrW == 0) {
+					vector<int> refList(pGv->m_dimenList.size());
+					do {
+						string dimIdx = IndexStr(refList);
+
+						for (CStructElemIter iter(this, pGv->m_pType); !iter.end(); iter++) {
+							gblPostInstr.Append("\tif (i_%sTo%s_%sIwData%s.read()%s.GetWrEn())\n",
+								pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
+							gblPostInstr.Append("\t\tc__GBL__%s%s%s = i_%sTo%s_%sIwData%s.read()%s.GetData();\n",
+								pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str(),
+								pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
+						}
+						gblPostInstr.NewLine();
+
+					} while (DimenIter(pGv->m_dimenList, refList));
+
+				} else if (pNgvInfo->m_wrPortList.size() == 1) {
+					vector<int> refList(pGv->m_dimenList.size());
+					do {
+						string dimIdx = IndexStr(refList);
+
+						for (CStructElemIter iter(this, pGv->m_pType); !iter.end(); iter++) {
+							gblPostInstr.Append("\tm__GBL__%s%s.write_addr(i_%sTo%s_%sIwData%s.read().GetAddr());\n",
+								pGv->m_gblName.c_str(), dimIdx.c_str(),
+								pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str());
+							gblPostInstr.Append("\tif (i_%sTo%s_%sIwData%s.read()%s.GetWrEn())\n",
+								pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
+							gblPostInstr.Append("\t\tm__GBL__%s%s.write_mem(i_%sTo%s_%sIwData%s.read().GetData());\n",
+								pGv->m_gblName.c_str(), dimIdx.c_str(),
+								pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str());
+						}
+						gblPostInstr.NewLine();
+
+					} while (DimenIter(pGv->m_dimenList, refList));
+				}
+			}
+
+			if (pModInfo->m_pNgv->m_bWriteForMifRead && pModInfo->m_pMod != pMod) { // Memory
+				m_gblIoDecl.Append("\tsc_in<CGW_%s> i_%sTo%s_%sMwData%s;\n",
+					pGv->m_pNgvInfo->m_ngvWrType.c_str(),
+					pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
+
+				if (pGv->m_addrW == 0) {
+					vector<int> refList(pGv->m_dimenList.size());
+					do {
+						string dimIdx = IndexStr(refList);
+
+						for (CStructElemIter iter(this, pGv->m_pType); !iter.end(); iter++) {
+							gblPostInstr.Append("\tif (i_%sTo%s_%sMwData%s.read()%s.GetWrEn())\n",
+								pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
+							gblPostInstr.Append("\t\tc__GBL__%s%s%s = i_%sTo%s_%sMwData%s.read()%s.GetData();\n",
+								pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str(),
+								pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
+						}
+						gblPostInstr.NewLine();
+
+					} while (DimenIter(pGv->m_dimenList, refList));
+
+				} else if (pNgvInfo->m_wrPortList.size() == 1) {
+					vector<int> refList(pGv->m_dimenList.size());
+					do {
+						string dimIdx = IndexStr(refList);
+
+						for (CStructElemIter iter(this, pGv->m_pType); !iter.end(); iter++) {
+							gblPostInstr.Append("\tm__GBL__%s%s.write_addr(i_%sTo%s_%sMwData%s.read().GetAddr());\n",
+								pGv->m_gblName.c_str(), dimIdx.c_str(),
+								pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str());
+							gblPostInstr.Append("\tif (i_%sTo%s_%sMwData%s.read()%s.GetWrEn())\n",
+								pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
+							gblPostInstr.Append("\t\tm__GBL__%s%s.write_mem(i_%sTo%s_%sMwData%s.read().GetData());\n",
+								pGv->m_gblName.c_str(), dimIdx.c_str(),
+								pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str());
+						}
+						gblPostInstr.NewLine();
+
+					} while (DimenIter(pGv->m_dimenList, refList));
+				}
+			}
+		}
+	}
 
 	if (pGv->m_bReadForInstrRead) {
 		int addr0Skip = pGv->m_addrW == 0 ? 1 : 0;
@@ -452,65 +682,12 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 		} while (DimenIter(pGv->m_dimenList, refList));
 	}
 
-	if (pGv->m_bWriteForInstrWrite) {
-		for (int gvWrStg = pMod->m_tsStg; gvWrStg < pMod->m_tsStg + pGv->m_wrStg.AsInt(); gvWrStg += 1) {
-			GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, VA("CGW_%s", pGv->m_pNgvInfo->m_ngvWrType.c_str()),
-				VA("r_t%d_%sIwData", gvWrStg + 1, pGv->m_gblName.c_str()), pGv->m_dimenList);
-			m_gblRegDecl.Append("\tCGW_%s c_t%d_%sIwData%s;\n",
-				pGv->m_pNgvInfo->m_ngvWrType.c_str(), gvWrStg, pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
-		}
+	if (pNgvInfo->m_wrPortList.size() > 1 && pGv->m_addrW > 0) {
 
-		string htIdStr = (pMod->m_threads.m_htIdW.AsInt() > 0 &&
-			(pGv->m_bPrivGbl || pGv->m_addr1Name == "htId" || pGv->m_addr2Name == "htId")) ? VA("r_t%d_htId", pMod->m_tsStg) : "";
-
-		vector<int> refList(pGv->m_dimenList.size());
-		do {
-			string dimIdx = IndexStr(refList);
-
-			for (int gvWrStg = pMod->m_tsStg; gvWrStg < pMod->m_tsStg + pGv->m_wrStg.AsInt(); gvWrStg += 1) {
-				if (bPrivGblAndNoAddr && gvWrStg == pMod->m_tsStg) {
-					gblPreInstr.Append("\tc_t%d_%sIwData%s.InitData(%s%sr__GBL__%s%s);\n",
-						gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
-						htIdStr.c_str(), htIdStr.size() > 0 ? ", " : "",
-						pGv->m_gblName.c_str(), dimIdx.c_str());
-				} else if (!bPrivGblAndNoAddr && gvWrStg == pMod->m_tsStg) {
-					gblPreInstr.Append("\tc_t%d_%sIwData%s.InitZero(%s);\n",
-						gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
-						htIdStr.c_str());
-				} else {
-					gblPreInstr.Append("\tc_t%d_%sIwData%s = r_t%d_%sIwData%s;\n",
-						gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
-						gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str());
-				}
-				gblReg.Append("\tr_t%d_%sIwData%s = c_t%d_%sIwData%s;\n",
-					gvWrStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
-					gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str());
-			}
-		} while (DimenIter(pGv->m_dimenList, refList));
-	}
-
-	if (pGv->m_bWriteForMifRead) {
-		GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, VA("CGW_%s", pGv->m_pNgvInfo->m_ngvWrType.c_str()),
-			VA("r_m2_%sMwData", pGv->m_gblName.c_str()), pGv->m_dimenList);
-		m_gblRegDecl.Append("\tCGW_%s c_m1_%sMwData%s;\n",
+		m_gblRegDecl.Append("\tCGW_%s c__GBL__%sPwData%s;\n",
 			pGv->m_pNgvInfo->m_ngvWrType.c_str(), pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
-
-		string htIdStr = (pMod->m_threads.m_htIdW.AsInt() > 0 &&
-			(pGv->m_bPrivGbl || pGv->m_addr1Name == "htId" || pGv->m_addr2Name == "htId")) ? "r_m1_rdRspInfo.m_htId" : "";
-
-		vector<int> refList(pGv->m_dimenList.size());
-		do {
-			string dimIdx = IndexStr(refList);
-
-			gblPreInstr.Append("\tc_m1_%sMwData%s.InitZero(%s);\n",
-					pGv->m_gblName.c_str(), dimIdx.c_str(),
-					htIdStr.c_str());
-
-			gblReg.Append("\tr_m2_%sMwData%s = c_m1_%sMwData%s;\n",
-				pGv->m_gblName.c_str(), dimIdx.c_str(),
-				pGv->m_gblName.c_str(), dimIdx.c_str());
-
-		} while (DimenIter(pGv->m_dimenList, refList));
+		GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, VA("CGW_%s", pGv->m_pNgvInfo->m_ngvWrType.c_str()),
+			VA("r__GBL__%sPwData", pGv->m_gblName.c_str()), pGv->m_dimenList);
 	}
 
 	gblPostInstr.NewLine();
@@ -617,7 +794,9 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 				gblPostInstr.NewLine();
 
 			} while (DimenIter(pGv->m_dimenList, refList));
-		} else {
+
+		} else if (pNgvInfo->m_wrPortList.size() == 1) {
+
 			vector<int> refList(pGv->m_dimenList.size());
 			do {
 				string dimIdx = IndexStr(refList);
@@ -642,6 +821,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 	}
 
 	if (pGv->m_bWriteForMifRead) {
+		int rdRspStg = pMod->m_mif.m_mifRd.m_bNeedRdRspInfoRam ? 2 : 1;
 
 		if (pGv->m_addrW == 0) {
 			vector<int> refList(pGv->m_dimenList.size());
@@ -649,29 +829,105 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 				string dimIdx = IndexStr(refList);
 
 				for (CStructElemIter iter(this, pGv->m_pType); !iter.end(); iter++) {
-					gblPostInstr.Append("\tif (r_m2_%sMwData%s%s.GetWrEn())\n",
+					gblPostInstr.Append("\tif (r_m%d_%sMwData%s%s.GetWrEn())\n",
+						rdRspStg + 1,
 						pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
-					gblPostInstr.Append("\t\tc__GBL__%s%s%s = r_m2_%sMwData%s%s.GetData();\n",
+					gblPostInstr.Append("\t\tc__GBL__%s%s%s = r_m%d_%sMwData%s%s.GetData();\n",
 						pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str(),
-						pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
+						rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
 				}
 				gblPostInstr.NewLine();
 
 			} while (DimenIter(pGv->m_dimenList, refList));
-		} else {
+
+		} else if (pNgvInfo->m_wrPortList.size() == 1) {
+
 			vector<int> refList(pGv->m_dimenList.size());
 			do {
 				string dimIdx = IndexStr(refList);
 
-				gblPostInstr.Append("\tm__GBL__%s%s.write_addr(r_m2_%sMwData%s.GetAddr());\n",
+				gblPostInstr.Append("\tm__GBL__%s%s.write_addr(r_m%d_%sMwData%s.GetAddr());\n",
+					pGv->m_gblName.c_str(), dimIdx.c_str(),
+					rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str());
+
+				for (CStructElemIter iter(this, pGv->m_pType); !iter.end(); iter++) {
+
+					gblPostInstr.Append("\tif (r_m%d_%sMwData%s%s.GetWrEn())\n",
+						rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
+					gblPostInstr.Append("\t\tm__GBL__%s%s.write_mem(r_m%d_%sMwData%s.GetData());\n",
+						pGv->m_gblName.c_str(), dimIdx.c_str(),
+						rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str());
+				}
+
+				gblPostInstr.NewLine();
+
+			} while (DimenIter(pGv->m_dimenList, refList));
+		}
+	}
+
+	if (pNgvInfo->m_wrPortList.size() == 2 && pGv->m_addrW > 0) {
+		int rdRspStg = pMod->m_mif.m_mifRd.m_bNeedRdRspInfoRam ? 2 : 1;
+		int gvWrStg = pMod->m_tsStg + pGv->m_wrStg.AsInt();
+
+		{
+			string wrPort[2];
+
+			for (size_t i = 0; i < pNgvInfo->m_wrPortList.size(); i += 1) {
+				int modIdx = pNgvInfo->m_wrPortList[i].first;
+				CModule * pWrMod = pNgvInfo->m_modInfoList[modIdx].m_pMod;
+				int imIdx = pNgvInfo->m_wrPortList[i].second;
+
+				if (pWrMod == pNgvInfo->m_pRdMod) {
+					if (imIdx == 0) {
+						wrPort[i] = VA("r_t%d_%sIwData%%s.read()", gvWrStg, pGv->m_gblName.c_str());
+					} else {
+						wrPort[i] = VA("r_m%d_%sMwData%%s.read()", rdRspStg + 1, pGv->m_gblName.c_str());
+					}
+				} else {
+					if (imIdx == 0) {
+						wrPort[i] = VA("i_%sTo%s_%sIwData%%s.read()",
+							pWrMod->m_modName.Lc().c_str(), pNgvInfo->m_pRdMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str());
+					} else {
+						wrPort[i] = VA("i_%sTo%s_%sMwData%%s.read()", 
+							pWrMod->m_modName.Lc().c_str(), pNgvInfo->m_pRdMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str());
+					}
+				}
+			}
+
+			vector<int> refList(pGv->m_dimenList.size());
+			do {
+				string dimIdx = IndexStr(refList);
+
+				m_gblPostInstr2x.Append("\tc__GBL__%sPwData%s = r_phase ? %s : %s;\n",
+					pGv->m_gblName.c_str(), dimIdx.c_str(),
+					VA(wrPort[0].c_str(), dimIdx.c_str()).c_str(),
+					VA(wrPort[1].c_str(), dimIdx.c_str()).c_str(),
+					rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str());
+
+				m_gblReg2x.Append("\tr__GBL__%sPwData%s = c__GBL__%sPwData%s;\n",
+					pGv->m_gblName.c_str(), dimIdx.c_str(),
+					pGv->m_gblName.c_str(), dimIdx.c_str());
+
+			} while (DimenIter(pGv->m_dimenList, refList));
+
+			m_gblPostInstr2x.NewLine();
+			m_gblReg2x.NewLine();
+		}
+
+		{
+			vector<int> refList(pGv->m_dimenList.size());
+			do {
+				string dimIdx = IndexStr(refList);
+
+				m_gblPostInstr2x.Append("\tm__GBL__%s%s.write_addr(r__GBL__%sPwData%s.GetAddr());\n",
 					pGv->m_gblName.c_str(), dimIdx.c_str(),
 					pGv->m_gblName.c_str(), dimIdx.c_str());
 
 				for (CStructElemIter iter(this, pGv->m_pType); !iter.end(); iter++) {
 
-					gblPostInstr.Append("\tif (r_m2_%sMwData%s%s.GetWrEn())\n",
+					m_gblPostInstr2x.Append("\tif (r__GBL__%sPwData%s%s.GetWrEn())\n",
 						pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
-					gblPostInstr.Append("\t\tm__GBL__%s%s.write_mem(r_m2_%sMwData%s.GetData());\n",
+					m_gblPostInstr2x.Append("\t\tm__GBL__%s%s.write_mem(r__GBL__%sPwData%s.GetData());\n",
 						pGv->m_gblName.c_str(), dimIdx.c_str(),
 						pGv->m_gblName.c_str(), dimIdx.c_str());
 				}
@@ -940,24 +1196,26 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 				vector<int> refList(pGv->m_dimenList.size());
 				do {
 					string dimIdx = IndexStr(refList);
-					gblRegWrData.Append("\tif (r_%sTo%s_wrEn%s)\n",
-						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
 
 					if (pNgvInfo->m_bNgvWrDataClk2x && (mod.m_clkRate == eClk1x)) {
-						gblRegWrData.Append("\t\tr_%s_2x%s = r_%sTo%s_wrData%s;\n",
+						gblRegWrData.Append("\tif (r_%sTo%s_wrEn_2x%s)\n",
+							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+						gblRegWrData.Append("\t\tr__GBL__%s_2x%s = r_%sTo%s_wrData_2x%s;\n",
 							pGv->m_gblName.c_str(), dimIdx.c_str(),
 							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
-						gblReg.Append("\tr_%s%s = r_%s_2x%s;\n",
+						gblReg.Append("\tr__GBL__%s%s = r__GBL__%s_2x%s;\n",
 							pGv->m_gblName.c_str(), dimIdx.c_str(),
 							pGv->m_gblName.c_str(), dimIdx.c_str());
 					} else {
-						gblRegWrData.Append("\t\tr_%s%s = r_%sTo%s_wrData%s;\n",
+						gblRegWrData.Append("\tif (r_%sTo%s_wrEn%s)\n",
+							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+						gblRegWrData.Append("\t\tr__GBL__%s%s = r_%sTo%s_wrData%s;\n",
 							pGv->m_gblName.c_str(), dimIdx.c_str(),
 							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
 					}
+					gblRegWrData.NewLine();
 
 				} while (DimenIter(pGv->m_dimenList, refList));
-				gblRegWrData.NewLine();
 			}
 		} else {
 			for (int imIdx = 0; imIdx < 2; imIdx += 1) {
@@ -1017,18 +1275,18 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 		}
 
 		if (pGv->m_addrW == 0) {
-			if (pGv->m_bWriteForInstrWrite || pGv->m_bWriteForMifRead) {
+			if (pGv->m_bReadForInstrRead || pGv->m_bReadForMifWrite) {
 				if (pNgvInfo->m_bNgvWrDataClk2x == (mod.m_clkRate == eClk2x)) {
 					GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, pGv->m_type.c_str(),
-						VA("r_%s", pGv->m_gblName.c_str()), pGv->m_dimenList);
+						VA("r__GBL__%s", pGv->m_gblName.c_str()), pGv->m_dimenList);
 				} else if (mod.m_clkRate == eClk2x) {
 					GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, VA("sc_signal<%s>", pGv->m_type.c_str()),
-						VA("r_%s", pGv->m_gblName.c_str()), pGv->m_dimenList);
+						VA("r__GBL__%s", pGv->m_gblName.c_str()), pGv->m_dimenList);
 				} else {
 					GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, VA("sc_signal<%s>", pGv->m_type.c_str()),
-						VA("r_%s_2x", pGv->m_gblName.c_str()), pGv->m_dimenList);
+						VA("r__GBL__%s_2x", pGv->m_gblName.c_str()), pGv->m_dimenList);
 					GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, pGv->m_type.c_str(),
-						VA("r_%s", pGv->m_gblName.c_str()), pGv->m_dimenList);
+						VA("r__GBL__%s", pGv->m_gblName.c_str()), pGv->m_dimenList);
 				}
 			}
 		} else {
@@ -1205,15 +1463,26 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 		if (pGv->m_bReadForInstrRead || pGv->m_bReadForMifWrite) {
 			;
 			{
-				GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, "bool",
-					VA("r_%sTo%s_wrEn", pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str()), pGv->m_dimenList);
+				if (pNgvInfo->m_bNgvWrDataClk2x && (mod.m_clkRate == eClk1x) && pGv->m_addrW == 0) {
+					GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, "bool",
+						VA("r_%sTo%s_wrEn_2x", pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str()), pGv->m_dimenList);
+				} else {
+					GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, "bool",
+						VA("r_%sTo%s_wrEn", pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str()), pGv->m_dimenList);
+				}
 
 				vector<int> refList(pGv->m_dimenList.size());
 				do {
 					string dimIdx = IndexStr(refList);
-					gblRegWrData.Append("\tr_%sTo%s_wrEn%s = i_%sTo%s_wrEn%s;\n",
-						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
-						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+					if (pNgvInfo->m_bNgvWrDataClk2x && (mod.m_clkRate == eClk1x) && pGv->m_addrW == 0) {
+						gblRegWrData.Append("\tr_%sTo%s_wrEn_2x%s = i_%sTo%s_wrEn%s;\n",
+							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
+							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+					} else {
+						gblRegWrData.Append("\tr_%sTo%s_wrEn%s = i_%sTo%s_wrEn%s;\n",
+							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
+							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+					}
 				} while (DimenIter(pGv->m_dimenList, refList));
 			}
 
@@ -1231,15 +1500,26 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 			}
 
 			{
-				GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, pGv->m_type,
-					VA("r_%sTo%s_wrData", pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str()), pGv->m_dimenList);
+				if (pNgvInfo->m_bNgvWrDataClk2x && (mod.m_clkRate == eClk1x) && pGv->m_addrW == 0) {
+					GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, pGv->m_type,
+						VA("r_%sTo%s_wrData_2x", pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str()), pGv->m_dimenList);
+				} else {
+					GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, pGv->m_type,
+						VA("r_%sTo%s_wrData", pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str()), pGv->m_dimenList);
+				}
 
 				vector<int> refList(pGv->m_dimenList.size());
 				do {
 					string dimIdx = IndexStr(refList);
-					gblRegWrData.Append("\tr_%sTo%s_wrData%s = i_%sTo%s_wrData%s;\n",
-						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
-						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+					if (pNgvInfo->m_bNgvWrDataClk2x && (mod.m_clkRate == eClk1x) && pGv->m_addrW == 0) {
+						gblRegWrData.Append("\tr_%sTo%s_wrData_2x%s = i_%sTo%s_wrData%s;\n",
+							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
+							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+					} else {
+						gblRegWrData.Append("\tr_%sTo%s_wrData%s = i_%sTo%s_wrData%s;\n",
+							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
+							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+					}
 				} while (DimenIter(pGv->m_dimenList, refList));
 			}
 		}
@@ -1532,7 +1812,7 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 				vector<int> refList(pGv->m_dimenList.size());
 				do {
 					string dimIdx = IndexStr(refList);
-					gblPostInstr.Append("\tc_t%d_%sIrData%s = r_%s%s;\n",
+					gblPostInstr.Append("\tc_t%d_%sIrData%s = r__GBL__%s%s;\n",
 						mod.m_tsStg - 2 + pGv->m_rdStg.AsInt(), pGv->m_gblName.c_str(), dimIdx.c_str(),
 						pGv->m_gblName.c_str(), dimIdx.c_str());
 				} while (DimenIter(pGv->m_dimenList, refList));
@@ -2101,22 +2381,7 @@ void CDsnInfo::GenerateNgvFiles()
 
 		vector<CNgvModInfo> &ngvModInfoList = m_ngvList[gvIdx]->m_modInfoList;
 
-		// create ngv port list of instruction and memory writes
-		vector<pair<int, int> > ngvWrPortList;
-		bool bAllWrPortClk1x = true;
-		for (size_t modIdx = 0; modIdx < ngvModInfoList.size(); modIdx += 1) {
-			CModule * pMod = ngvModInfoList[modIdx].m_pMod;
-			CRam * pModNgv = ngvModInfoList[modIdx].m_pNgv;
-
-			for (int imIdx = 0; imIdx < 2; imIdx += 1) {
-				if (imIdx == 0 && !pModNgv->m_bWriteForInstrWrite) continue;
-				if (imIdx == 1 && !pModNgv->m_bWriteForMifRead) continue;
-
-				ngvWrPortList.push_back(pair<int, int>(modIdx, imIdx));
-				bAllWrPortClk1x &= pMod->m_clkRate == eClk1x;
-			}
-		}
-		int ngvPortCnt = (int)ngvWrPortList.size();
+		int ngvPortCnt = (int)pNgvInfo->m_wrPortList.size();
 
 		int ngvFieldCnt = pNgvInfo->m_ngvFieldCnt;
 		bool bNgvAtomicFast = pNgvInfo->m_bNgvAtomicFast;
@@ -2128,11 +2393,11 @@ void CDsnInfo::GenerateNgvFiles()
 		bool bNgvDist = !bNgvReg && pNgvInfo->m_ramType != eBlockRam;
 		bool bNgvBlock = !bNgvReg && !bNgvDist;
 
-		bool bNgvSelGwClk2x = bNgvReg && (!bAllWrPortClk1x && ngvPortCnt <= 2 || ngvPortCnt == 3) ||
-			bNgvDist && (!bAllWrPortClk1x && ngvPortCnt <= 2 || ngvPortCnt == 3) && !bNgvAtomicSlow ||
-			bNgvBlock && ((!bAllWrPortClk1x && ngvPortCnt <= 2 || ngvPortCnt == 3) && !bNgvAtomic && ngvFieldCnt == 1);
+		bool bNgvSelGwClk2x = bNgvReg && (!pNgvInfo->m_bAllWrPortClk1x && ngvPortCnt <= 2 || ngvPortCnt == 3) ||
+			bNgvDist && (!pNgvInfo->m_bAllWrPortClk1x && ngvPortCnt <= 2 || ngvPortCnt == 3) && !bNgvAtomicSlow ||
+			bNgvBlock && ((!pNgvInfo->m_bAllWrPortClk1x && ngvPortCnt <= 2 || ngvPortCnt == 3) && !bNgvAtomic && ngvFieldCnt == 1);
 
-		bool bNeed2x = pNgvInfo->m_bNgvWrDataClk2x || pNgvInfo->m_bNgvWrCompClk2x || !bAllWrPortClk1x || bNgvSelGwClk2x;
+		bool bNeed2x = pNgvInfo->m_bNgvWrDataClk2x || pNgvInfo->m_bNgvWrCompClk2x || !pNgvInfo->m_bAllWrPortClk1x || bNgvSelGwClk2x;
 
 		string incName = VA("PersGbl%s.h", pGv->m_gblName.Uc().c_str());
 		string incPath = g_appArgs.GetOutputFolder() + "/" + incName;
@@ -2164,47 +2429,47 @@ void CDsnInfo::GenerateNgvFiles()
 
 		bool bNgvMaxSel = pNgvInfo->m_bNgvMaxSel;
 
-		bool bNeedQue = bNgvReg && (ngvWrPortList.size() == 2 && !bAllWrPortClk1x || ngvWrPortList.size() >= 3) ||
-			bNgvDist && ((ngvWrPortList.size() == 2 && !bAllWrPortClk1x || ngvWrPortList.size() >= 3) && !bNgvAtomicSlow ||
-			((ngvWrPortList.size() >= 2 || !bAllWrPortClk1x) && bNgvAtomicSlow)) ||
-			bNgvBlock && ((!bNgvAtomic && ngvFieldCnt == 1) && (ngvWrPortList.size() == 2 && !bAllWrPortClk1x || ngvWrPortList.size() >= 3) ||
+		bool bNeedQue = bNgvReg && (pNgvInfo->m_wrPortList.size() == 2 && !pNgvInfo->m_bAllWrPortClk1x || pNgvInfo->m_wrPortList.size() >= 3) ||
+			bNgvDist && ((pNgvInfo->m_wrPortList.size() == 2 && !pNgvInfo->m_bAllWrPortClk1x || pNgvInfo->m_wrPortList.size() >= 3) && !bNgvAtomicSlow ||
+			((pNgvInfo->m_wrPortList.size() >= 2 || !pNgvInfo->m_bAllWrPortClk1x) && bNgvAtomicSlow)) ||
+			bNgvBlock && ((!bNgvAtomic && ngvFieldCnt == 1) && (pNgvInfo->m_wrPortList.size() == 2 && !pNgvInfo->m_bAllWrPortClk1x || pNgvInfo->m_wrPortList.size() >= 3) ||
 			(bNgvAtomic || ngvFieldCnt > 1));
 
 		assert(bNeedQue == pNgvInfo->m_bNeedQue);
 
-		bool bNeedQueRegWrEnSig = bNgvReg && (ngvWrPortList.size() == 2 && bAllWrPortClk1x) ||
-			bNgvDist && ((ngvWrPortList.size() == 2 && bAllWrPortClk1x) && !bNgvAtomicSlow ||
-			ngvWrPortList.size() == 1 && !bAllWrPortClk1x && bNgvAtomicSlow && pNgvInfo->m_bNgvMaxSel) ||
-			bNgvBlock && ((ngvWrPortList.size() == 2 && bAllWrPortClk1x) && (!bNgvAtomic && ngvFieldCnt == 1) ||
+		bool bNeedQueRegWrEnSig = bNgvReg && (pNgvInfo->m_wrPortList.size() == 2 && pNgvInfo->m_bAllWrPortClk1x) ||
+			bNgvDist && ((pNgvInfo->m_wrPortList.size() == 2 && pNgvInfo->m_bAllWrPortClk1x) && !bNgvAtomicSlow ||
+			pNgvInfo->m_wrPortList.size() == 1 && !pNgvInfo->m_bAllWrPortClk1x && bNgvAtomicSlow && pNgvInfo->m_bNgvMaxSel) ||
+			bNgvBlock && ((pNgvInfo->m_wrPortList.size() == 2 && pNgvInfo->m_bAllWrPortClk1x) && (!bNgvAtomic && ngvFieldCnt == 1) ||
 			ngvPortCnt == 1 && (ngvFieldCnt > 1 || bNgvAtomic) && pNgvInfo->m_bNgvMaxSel);
 
 		bool bNeedQueRegWrEnNonSig = !bNeedQueRegWrEnSig || !bNgvSelGwClk2x && !pNgvInfo->m_bNgvWrCompClk2x;
 		string queRegWrEnSig = bNeedQueRegWrEnSig ? "_sig" : "";
 
-		bool bNeedQueRegHtIdSig = bNgvReg && (ngvPortCnt == 2 && bAllWrPortClk1x && bNgvAtomic) ||
-			bNgvDist && (ngvPortCnt == 1 && !bAllWrPortClk1x && bNgvAtomicSlow && pNgvInfo->m_bNgvMaxSel ||
-			ngvPortCnt == 2 && bAllWrPortClk1x && bNgvAtomicFast) ||
+		bool bNeedQueRegHtIdSig = bNgvReg && (ngvPortCnt == 2 && pNgvInfo->m_bAllWrPortClk1x && bNgvAtomic) ||
+			bNgvDist && (ngvPortCnt == 1 && !pNgvInfo->m_bAllWrPortClk1x && bNgvAtomicSlow && pNgvInfo->m_bNgvMaxSel ||
+			ngvPortCnt == 2 && pNgvInfo->m_bAllWrPortClk1x && bNgvAtomicFast) ||
 			bNgvBlock && ngvPortCnt == 1 && (ngvFieldCnt > 1 || bNgvAtomic) && pNgvInfo->m_bNgvMaxSel;
 
-		bool bNeedQueRegHtIdNonSig = !(bNgvReg && (ngvPortCnt == 2 && bAllWrPortClk1x && (bNgvAtomic || ngvFieldCnt >= 2)) ||
-			bNgvDist && (ngvPortCnt == 1 && !bAllWrPortClk1x && bNgvAtomicSlow && pNgvInfo->m_bNgvMaxSel) ||
+		bool bNeedQueRegHtIdNonSig = !(bNgvReg && (ngvPortCnt == 2 && pNgvInfo->m_bAllWrPortClk1x && (bNgvAtomic || ngvFieldCnt >= 2)) ||
+			bNgvDist && (ngvPortCnt == 1 && !pNgvInfo->m_bAllWrPortClk1x && bNgvAtomicSlow && pNgvInfo->m_bNgvMaxSel) ||
 			bNgvBlock && ngvPortCnt == 1 && (ngvFieldCnt > 1 || bNgvAtomic) && pNgvInfo->m_bNgvMaxSel) ||
-			bNgvReg && (ngvPortCnt == 2 && bAllWrPortClk1x && (bNgvAtomic || ngvFieldCnt >= 2));
+			bNgvReg && (ngvPortCnt == 2 && pNgvInfo->m_bAllWrPortClk1x && (bNgvAtomic || ngvFieldCnt >= 2));
 
 		string queRegHtIdSig = bNeedQueRegHtIdSig ? "_sig" : "";
 
-		bool bNeedQueRegCompSig = bNgvDist && ngvPortCnt == 1 && !bAllWrPortClk1x && bNgvAtomicSlow && pNgvInfo->m_bNgvMaxSel ||
+		bool bNeedQueRegCompSig = bNgvDist && ngvPortCnt == 1 && !pNgvInfo->m_bAllWrPortClk1x && bNgvAtomicSlow && pNgvInfo->m_bNgvMaxSel ||
 			bNgvBlock && ngvPortCnt == 1 && (ngvFieldCnt > 1 || bNgvAtomic) && pNgvInfo->m_bNgvMaxSel;
 
 		string queRegCompSig = bNeedQueRegCompSig ? "_sig" : "";
 
-		bool bNeedQueRegDataSig = bNgvReg && (ngvWrPortList.size() == 2 && bAllWrPortClk1x) ||
-			bNgvDist && ((ngvWrPortList.size() == 2 && bAllWrPortClk1x) && !bNgvAtomicSlow ||
-			ngvWrPortList.size() == 1 && !bAllWrPortClk1x && bNgvAtomicSlow && pNgvInfo->m_bNgvMaxSel) ||
-			bNgvBlock && ((ngvWrPortList.size() == 2 && bAllWrPortClk1x) && (!bNgvAtomic && ngvFieldCnt == 1) ||
+		bool bNeedQueRegDataSig = bNgvReg && (pNgvInfo->m_wrPortList.size() == 2 && pNgvInfo->m_bAllWrPortClk1x) ||
+			bNgvDist && ((pNgvInfo->m_wrPortList.size() == 2 && pNgvInfo->m_bAllWrPortClk1x) && !bNgvAtomicSlow ||
+			pNgvInfo->m_wrPortList.size() == 1 && !pNgvInfo->m_bAllWrPortClk1x && bNgvAtomicSlow && pNgvInfo->m_bNgvMaxSel) ||
+			bNgvBlock && ((pNgvInfo->m_wrPortList.size() == 2 && pNgvInfo->m_bAllWrPortClk1x) && (!bNgvAtomic && ngvFieldCnt == 1) ||
 			ngvPortCnt == 1 && (ngvFieldCnt > 1 || bNgvAtomic) && pNgvInfo->m_bNgvMaxSel);
 
-		bool bNeedAddrComp = bNgvDist && bNgvAtomicSlow && pNgvInfo->m_bNgvMaxSel && (!bAllWrPortClk1x || ngvWrPortList.size() >= 2) ||
+		bool bNeedAddrComp = bNgvDist && bNgvAtomicSlow && pNgvInfo->m_bNgvMaxSel && (!pNgvInfo->m_bAllWrPortClk1x || pNgvInfo->m_wrPortList.size() >= 2) ||
 			bNgvBlock && (bNgvAtomic || ngvFieldCnt > 1);
 
 		string queRegDataSig = bNeedQueRegDataSig ? "_sig" : "";
@@ -2289,21 +2554,21 @@ void CDsnInfo::GenerateNgvFiles()
 		}
 
 		// 2x RR selection - one level, 2 or 3 ports, 2x wrData
-		bool bRrSel2x = bNgvReg && (ngvWrPortList.size() == 2 && !bAllWrPortClk1x || ngvWrPortList.size() == 3) ||
-			bNgvDist && (ngvWrPortList.size() == 2 && !bAllWrPortClk1x && !bNgvAtomicSlow || ngvWrPortList.size() == 3 && !bNgvAtomicSlow) ||
-			bNgvBlock && (ngvWrPortList.size() == 2 && !bAllWrPortClk1x && !bNgvAtomic && ngvFieldCnt == 1
-			|| ngvWrPortList.size() == 3 && !bNgvAtomic && ngvFieldCnt == 1);
+		bool bRrSel2x = bNgvReg && (pNgvInfo->m_wrPortList.size() == 2 && !pNgvInfo->m_bAllWrPortClk1x || pNgvInfo->m_wrPortList.size() == 3) ||
+			bNgvDist && (pNgvInfo->m_wrPortList.size() == 2 && !pNgvInfo->m_bAllWrPortClk1x && !bNgvAtomicSlow || pNgvInfo->m_wrPortList.size() == 3 && !bNgvAtomicSlow) ||
+			bNgvBlock && (pNgvInfo->m_wrPortList.size() == 2 && !pNgvInfo->m_bAllWrPortClk1x && !bNgvAtomic && ngvFieldCnt == 1
+			|| pNgvInfo->m_wrPortList.size() == 3 && !bNgvAtomic && ngvFieldCnt == 1);
 
 		// 1x RR selection - no phase select, 1x wrData
 		bool bRrSel1x = bNgvDist && ngvPortCnt >= 2 && bNgvAtomicSlow && !pNgvInfo->m_bNgvMaxSel ||
 			bNgvBlock && ngvPortCnt >= 2 && (bNgvAtomic || ngvFieldCnt >= 2) && !pNgvInfo->m_bNgvMaxSel;
 
 		// 1x RR selection, ports split using phase, 2x wrData
-		bool bRrSelAB = bNgvReg && ngvWrPortList.size() >= 4 ||
-			bNgvDist && (ngvWrPortList.size() >= 4 && !bNgvAtomicSlow) ||
-			bNgvBlock && (ngvWrPortList.size() >= 4 && !bNgvAtomic && ngvFieldCnt == 1);
+		bool bRrSelAB = bNgvReg && pNgvInfo->m_wrPortList.size() >= 4 ||
+			bNgvDist && (pNgvInfo->m_wrPortList.size() >= 4 && !bNgvAtomicSlow) ||
+			bNgvBlock && (pNgvInfo->m_wrPortList.size() >= 4 && !bNgvAtomic && ngvFieldCnt == 1);
 
-		bool bRrSelEO = bNgvDist && bNgvAtomicSlow && pNgvInfo->m_bNgvMaxSel && (!bAllWrPortClk1x || ngvWrPortList.size() >= 2) ||
+		bool bRrSelEO = bNgvDist && bNgvAtomicSlow && pNgvInfo->m_bNgvMaxSel && (!pNgvInfo->m_bAllWrPortClk1x || pNgvInfo->m_wrPortList.size() >= 2) ||
 			bNgvBlock && (bNgvAtomic || ngvFieldCnt > 1) && pNgvInfo->m_bNgvMaxSel;
 
 		//
@@ -2317,14 +2582,14 @@ void CDsnInfo::GenerateNgvFiles()
 			CHtCode & ngvRegRrSel = bNgvSelGwClk2x ? ngvReg_2x : ngvReg_1x;
 
 			ngvRegDecl.Append("\tht_uint%d c_rrSel%s%s;\n",
-				(int)ngvWrPortList.size(), ngvClkRrSel.c_str(), pGv->m_dimenDecl.c_str());
-			GenVcdDecl(ngvSosCode, eVcdAll, ngvRegDecl, vcdModName, VA("ht_uint%d", (int)ngvWrPortList.size()),
+				(int)pNgvInfo->m_wrPortList.size(), ngvClkRrSel.c_str(), pGv->m_dimenDecl.c_str());
+			GenVcdDecl(ngvSosCode, eVcdAll, ngvRegDecl, vcdModName, VA("ht_uint%d", (int)pNgvInfo->m_wrPortList.size()),
 				VA("r_rrSel%s", ngvClkRrSel.c_str()), pGv->m_dimenList);
 			ngvRegDecl.NewLine();
 
 			for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
-				CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-				char imCh = ngvWrPortList[ngvIdx].second == 0 ? 'i' : 'm';
+				CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+				char imCh = pNgvInfo->m_wrPortList[ngvIdx].second == 0 ? 'i' : 'm';
 
 				ngvRegDecl.Append("\tbool c_t0_%s_%cwRrRdy%s%s;\n",
 					mod.m_modName.Lc().c_str(), imCh, ngvClkRrSel.c_str(), pGv->m_dimenDecl.c_str());
@@ -2348,8 +2613,8 @@ void CDsnInfo::GenerateNgvFiles()
 					string rrSelReset = pNgvInfo->m_bNgvWrCompClk2x ? "c_reset1x" : "r_reset1x";
 
 					for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
-						CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-						char imCh = ngvWrPortList[ngvIdx].second == 0 ? 'i' : 'm';
+						CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+						char imCh = pNgvInfo->m_wrPortList[ngvIdx].second == 0 ? 'i' : 'm';
 
 						if (bNgvBlock && (bNgvAtomic || ngvFieldCnt > 1)) {
 							ngvPreRegRrSel.Append("%sc_t0_%s_%cwRrRdy%s%s = r_%s_%cwWrEn%s%s && (!r_t1_gwWrEn%s%s || r_t1_gwData%s%s.GetAddr() != r_%s_%cwData%s%s.GetAddr());\n", tabs.c_str(),
@@ -2368,8 +2633,8 @@ void CDsnInfo::GenerateNgvFiles()
 					ngvPreRegRrSel.NewLine();
 
 					for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
-						CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-						char imCh = ngvWrPortList[ngvIdx].second == 0 ? 'i' : 'm';
+						CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+						char imCh = pNgvInfo->m_wrPortList[ngvIdx].second == 0 ? 'i' : 'm';
 
 						ngvPreRegRrSel.Append("%sc_t0_%s_%cwRrSel%s%s = c_t0_%s_%cwRrRdy%s%s && ((r_rrSel%s%s & 0x%lx) != 0 || !(\n", tabs.c_str(),
 							mod.m_modName.Lc().c_str(), imCh, ngvClkRrSel.c_str(), dimIdx.c_str(),
@@ -2384,10 +2649,10 @@ void CDsnInfo::GenerateNgvFiles()
 							uint32_t mask2 = ((1ul << j) - 1) << (ngvIdx + 1);
 							uint32_t mask3 = (mask2 & mask1) | (mask2 >> ngvPortCnt);
 
-							char kCh = ngvWrPortList[k].second == 0 ? 'i' : 'm';
+							char kCh = pNgvInfo->m_wrPortList[k].second == 0 ? 'i' : 'm';
 
 							ngvPreRegRrSel.Append("%s\t(c_t0_%s_%cwRrRdy%s%s && (r_rrSel%s%s & 0x%x) != 0)%s\n", tabs.c_str(),
-								ngvModInfoList[ngvWrPortList[k].first].m_pMod->m_modName.Lc().c_str(), kCh, ngvClkRrSel.c_str(), dimIdx.c_str(),
+								ngvModInfoList[pNgvInfo->m_wrPortList[k].first].m_pMod->m_modName.Lc().c_str(), kCh, ngvClkRrSel.c_str(), dimIdx.c_str(),
 								ngvClkRrSel.c_str(), dimIdx.c_str(),
 								mask3,
 								j == ngvPortCnt - 1 ? "));\n" : " ||");
@@ -2407,7 +2672,7 @@ void CDsnInfo::GenerateNgvFiles()
 					ngvRegRrSel.Append("%sr_rrSel%s%s = %s ? (ht_uint%d)0x1 : c_rrSel%s%s;\n", tabs.c_str(),
 						ngvWrDataClk.c_str(), dimIdx.c_str(),
 						rrSelReset.c_str(),
-						(int)ngvWrPortList.size(),
+						(int)pNgvInfo->m_wrPortList.size(),
 						ngvWrDataClk.c_str(), dimIdx.c_str());
 
 				} while (loopInfo.Iter());
@@ -2433,8 +2698,8 @@ void CDsnInfo::GenerateNgvFiles()
 				ngvRegDecl.NewLine();
 
 				for (int ngvIdx = ngvPortLo; ngvIdx < ngvPortHi; ngvIdx += 1) {
-					CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-					int imIdx = ngvWrPortList[ngvIdx].second;
+					CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+					int imIdx = pNgvInfo->m_wrPortList[ngvIdx].second;
 					char imCh = imIdx == 0 ? 'i' : 'm';
 					string idStr = imIdx == 0 ? "Ht" : "Grp";
 					int idW = imIdx == 0 ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
@@ -2485,8 +2750,8 @@ void CDsnInfo::GenerateNgvFiles()
 						ngvPreRegRrSel.NewLine();
 
 						for (int ngvIdx = ngvPortLo; ngvIdx < ngvPortHi; ngvIdx += 1) {
-							CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-							char imCh = ngvWrPortList[ngvIdx].second == 0 ? 'i' : 'm';
+							CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+							char imCh = pNgvInfo->m_wrPortList[ngvIdx].second == 0 ? 'i' : 'm';
 
 							ngvPreRegRrSel.Append("%sc_t0_%s_%cwRrRdy%s%s = r_%s_%cwWrEn%s%s%s;\n", tabs.c_str(),
 								mod.m_modName.Lc().c_str(), imCh, ngvClkRrSel.c_str(), dimIdx.c_str(),
@@ -2496,8 +2761,8 @@ void CDsnInfo::GenerateNgvFiles()
 						ngvPreRegRrSel.NewLine();
 
 						for (int ngvIdx = ngvPortLo; ngvIdx < ngvPortHi; ngvIdx += 1) {
-							CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-							int imIdx = ngvWrPortList[ngvIdx].second;
+							CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+							int imIdx = pNgvInfo->m_wrPortList[ngvIdx].second;
 							char imCh = imIdx == 0 ? 'i' : 'm';
 							string idStr = imIdx == 0 ? "Ht" : "Grp";
 
@@ -2514,10 +2779,10 @@ void CDsnInfo::GenerateNgvFiles()
 								uint32_t mask2 = ((1ul << j) - 1) << (ngvIdx + 1 - ngvPortLo);
 								uint32_t mask3 = (mask2 & mask1) | (mask2 >> ngvPortRngCnt);
 
-								char kCh = ngvWrPortList[k].second == 0 ? 'i' : 'm';
+								char kCh = pNgvInfo->m_wrPortList[k].second == 0 ? 'i' : 'm';
 
 								ngvPreRegRrSel.Append("%s\t(c_t0_%s_%cwRrRdy%s%s && (r_rrSel%c%s & 0x%x) != 0)%s\n", tabs.c_str(),
-									ngvModInfoList[ngvWrPortList[k].first].m_pMod->m_modName.Lc().c_str(), kCh, ngvClkRrSel.c_str(), dimIdx.c_str(),
+									ngvModInfoList[pNgvInfo->m_wrPortList[k].first].m_pMod->m_modName.Lc().c_str(), kCh, ngvClkRrSel.c_str(), dimIdx.c_str(),
 									rngCh, dimIdx.c_str(),
 									mask3,
 									j == ngvPortRngCnt - 1 ? "));\n" : " ||");
@@ -2540,8 +2805,8 @@ void CDsnInfo::GenerateNgvFiles()
 						ngvRegRrSel.NewLine();
 
 						for (int ngvIdx = ngvPortLo; ngvIdx < ngvPortHi; ngvIdx += 1) {
-							CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-							int imIdx = ngvWrPortList[ngvIdx].second;
+							CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+							int imIdx = pNgvInfo->m_wrPortList[ngvIdx].second;
 							char imCh = imIdx == 0 ? 'i' : 'm';
 							string idStr = imIdx == 0 ? "Ht" : "Grp";
 							int idW = imIdx == 0 ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
@@ -2599,8 +2864,8 @@ void CDsnInfo::GenerateNgvFiles()
 				ngvRegDecl.NewLine();
 
 				for (int ngvIdx = ngvPortLo; ngvIdx < ngvPortHi; ngvIdx += 1) {
-					CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-					int imIdx = ngvWrPortList[ngvIdx].second;
+					CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+					int imIdx = pNgvInfo->m_wrPortList[ngvIdx].second;
 					char imCh = imIdx == 0 ? 'i' : 'm';
 					string idStr = imIdx == 0 ? "Ht" : "Grp";
 					int idW = imIdx == 0 ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
@@ -2636,9 +2901,9 @@ void CDsnInfo::GenerateNgvFiles()
 						ngvPreRegRrSel.NewLine();
 
 						for (int ngvIdx = ngvPortLo; ngvIdx < ngvPortHi; ngvIdx += 1) {
-							CRam * pModNgv = ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pNgv;
-							CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-							int imIdx = ngvWrPortList[ngvIdx].second;
+							CRam * pModNgv = ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pNgv;
+							CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+							int imIdx = pNgvInfo->m_wrPortList[ngvIdx].second;
 							char imCh = imIdx == 0 ? 'i' : 'm';
 							int idW = imIdx == 0 ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
 							bool bMaxWr = pNgvInfo->m_bNgvMaxSel && (imCh == 'i' ? (pModNgv->m_bMaxIw && idW > 0) : pModNgv->m_bMaxMw);
@@ -2662,8 +2927,8 @@ void CDsnInfo::GenerateNgvFiles()
 						ngvPreRegRrSel.NewLine();
 
 						for (int ngvIdx = ngvPortLo; ngvIdx < ngvPortHi; ngvIdx += 1) {
-							CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-							char imCh = ngvWrPortList[ngvIdx].second == 0 ? 'i' : 'm';
+							CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+							char imCh = pNgvInfo->m_wrPortList[ngvIdx].second == 0 ? 'i' : 'm';
 
 							ngvPreRegRrSel.Append("%sc_t0_%s_%cwRrSel%c%s%s = c_t0_%s_%cwRrRdy%c%s%s && ((r_rrSel%c%s & 0x%lx) != 0 || !(\n", tabs.c_str(),
 								mod.m_modName.Lc().c_str(), imCh, eoCh, ngvClkRrSel.c_str(), dimIdx.c_str(),
@@ -2678,10 +2943,10 @@ void CDsnInfo::GenerateNgvFiles()
 								uint32_t mask2 = ((1ul << j) - 1) << (ngvIdx + 1 - ngvPortLo);
 								uint32_t mask3 = (mask2 & mask1) | (mask2 >> ngvPortRngCnt);
 
-								char kCh = ngvWrPortList[k].second == 0 ? 'i' : 'm';
+								char kCh = pNgvInfo->m_wrPortList[k].second == 0 ? 'i' : 'm';
 
 								ngvPreRegRrSel.Append("%s\t(c_t0_%s_%cwRrRdy%c%s%s && (r_rrSel%c%s & 0x%x) != 0)%s\n", tabs.c_str(),
-									ngvModInfoList[ngvWrPortList[k].first].m_pMod->m_modName.Lc().c_str(), kCh, eoCh, ngvClkRrSel.c_str(), dimIdx.c_str(),
+									ngvModInfoList[pNgvInfo->m_wrPortList[k].first].m_pMod->m_modName.Lc().c_str(), kCh, eoCh, ngvClkRrSel.c_str(), dimIdx.c_str(),
 									eoCh, dimIdx.c_str(),
 									mask3,
 									j == ngvPortRngCnt - 1 ? "));" : " ||");
@@ -2714,9 +2979,9 @@ void CDsnInfo::GenerateNgvFiles()
 			CHtCode & ngvPreRegRrSel = bNgvSelGwClk2x ? ngvPreReg_2x : ngvPreReg_1x;
 
 			for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
-				CRam * pModNgv = ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pNgv;
-				CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-				int imIdx = ngvWrPortList[ngvIdx].second;
+				CRam * pModNgv = ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pNgv;
+				CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+				int imIdx = pNgvInfo->m_wrPortList[ngvIdx].second;
 				char imCh = imIdx == 0 ? 'i' : 'm';
 				int idW = imIdx == 0 ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
 				bool bMaxWr = pNgvInfo->m_bNgvMaxSel && (imCh == 'i' ? (pModNgv->m_bMaxIw/* && idW > 0*/) : pModNgv->m_bMaxMw);
@@ -2942,9 +3207,9 @@ void CDsnInfo::GenerateNgvFiles()
 			}
 		} else {
 			for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
-				CRam * pModNgv = ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pNgv;
-				CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-				int imIdx = ngvWrPortList[ngvIdx].second;
+				CRam * pModNgv = ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pNgv;
+				CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+				int imIdx = pNgvInfo->m_wrPortList[ngvIdx].second;
 				char imCh = imIdx == 0 ? 'i' : 'm';
 				string idStr = imIdx == 0 ? "Ht" : "Grp";
 				int idW = imIdx == 0 ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
@@ -3532,8 +3797,8 @@ void CDsnInfo::GenerateNgvFiles()
 				pGv->m_dimenDecl.c_str());
 
 			for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
-				CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-				int imIdx = ngvWrPortList[ngvIdx].second;
+				CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+				int imIdx = pNgvInfo->m_wrPortList[ngvIdx].second;
 				char imCh = imIdx == 0 ? 'i' : 'm';
 				string idStr = imIdx == 0 ? "Ht" : "Grp";
 				int idW = imIdx == 0 ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
@@ -3576,8 +3841,8 @@ void CDsnInfo::GenerateNgvFiles()
 					ngvPreRegRrSel.NewLine();
 
 					for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
-						CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-						int imIdx = ngvWrPortList[ngvIdx].second;
+						CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+						int imIdx = pNgvInfo->m_wrPortList[ngvIdx].second;
 						char imCh = imIdx == 0 ? 'i' : 'm';
 						string idStr = imIdx == 0 ? "Ht" : "Grp";
 						int idW = imIdx == 0 ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
@@ -3600,8 +3865,8 @@ void CDsnInfo::GenerateNgvFiles()
 					}
 
 					for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
-						CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-						char imCh = ngvWrPortList[ngvIdx].second == 0 ? 'i' : 'm';
+						CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+						char imCh = pNgvInfo->m_wrPortList[ngvIdx].second == 0 ? 'i' : 'm';
 
 						ngvPreRegRrSel.Append("%sif (c_t0_%s_%cwRrSel%s) {\n", tabs.c_str(),
 							mod.m_modName.Lc().c_str(), imCh, dimIdx.c_str());
@@ -3650,8 +3915,8 @@ void CDsnInfo::GenerateNgvFiles()
 					ngvRegRrSel.NewLine();
 
 					for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
-						CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-						int imIdx = ngvWrPortList[ngvIdx].second;
+						CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+						int imIdx = pNgvInfo->m_wrPortList[ngvIdx].second;
 						char imCh = imIdx == 0 ? 'i' : 'm';
 						string idStr = imIdx == 0 ? "Ht" : "Grp";
 						int idW = imIdx == 0 ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
@@ -3709,8 +3974,8 @@ void CDsnInfo::GenerateNgvFiles()
 			ngvRegDecl.NewLine();
 
 			for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
-				CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-				int imIdx = ngvWrPortList[ngvIdx].second;
+				CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+				int imIdx = pNgvInfo->m_wrPortList[ngvIdx].second;
 				char imCh = imIdx == 0 ? 'i' : 'm';
 				string idStr = imIdx == 0 ? "Ht" : "Grp";
 				int idW = imIdx == 0 ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
@@ -3758,8 +4023,8 @@ void CDsnInfo::GenerateNgvFiles()
 					ngvPreReg_2x.NewLine();
 
 					for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
-						CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-						int imIdx = ngvWrPortList[ngvIdx].second;
+						CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+						int imIdx = pNgvInfo->m_wrPortList[ngvIdx].second;
 						char imCh = imIdx == 0 ? 'i' : 'm';
 						string idStr = imIdx == 0 ? "Ht" : "Grp";
 						int idW = imIdx == 0 ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
@@ -3778,14 +4043,14 @@ void CDsnInfo::GenerateNgvFiles()
 						ngvPreReg_2x.NewLine();
 					}
 
-					for (size_t ngvIdx = 0; ngvIdx < ngvWrPortList.size(); ngvIdx += 1) {
-						CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-						char imCh = ngvWrPortList[ngvIdx].second == 0 ? 'i' : 'm';
+					for (size_t ngvIdx = 0; ngvIdx < pNgvInfo->m_wrPortList.size(); ngvIdx += 1) {
+						CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+						char imCh = pNgvInfo->m_wrPortList[ngvIdx].second == 0 ? 'i' : 'm';
 
 						ngvPreReg_2x.Append("%sif (c_t0_%s_%cwRrSel_2x%s) {\n", tabs.c_str(),
 							mod.m_modName.Lc().c_str(), imCh, dimIdx.c_str());
 						ngvPreReg_2x.Append("%s\tc_rrSel_2x%s = 0x%x;\n", tabs.c_str(),
-							dimIdx.c_str(), 1 << (int)((ngvIdx + 1) % ngvWrPortList.size()));
+							dimIdx.c_str(), 1 << (int)((ngvIdx + 1) % pNgvInfo->m_wrPortList.size()));
 						ngvPreReg_2x.Append("%s\tc_t%d_gwWrEn_2x%s = true;\n", tabs.c_str(), stgIdx, dimIdx.c_str());
 
 						ngvPreReg_2x.Append("%s\tc_t%d_gwData_2x%s = r_%s_%cwData_2x%s;\n", tabs.c_str(),
@@ -3835,8 +4100,8 @@ void CDsnInfo::GenerateNgvFiles()
 					string dimIdx = loopInfo.IndexStr();
 
 					for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
-						CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-						int imIdx = ngvWrPortList[ngvIdx].second;
+						CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+						int imIdx = pNgvInfo->m_wrPortList[ngvIdx].second;
 						char imCh = imIdx == 0 ? 'i' : 'm';
 						string idStr = imIdx == 0 ? "Ht" : "Grp";
 						int idW = imIdx == 0 ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
@@ -3913,8 +4178,8 @@ void CDsnInfo::GenerateNgvFiles()
 						ngvPreRegRrSel.NewLine();
 
 						for (int ngvIdx = ngvPortLo; ngvIdx < ngvPortHi; ngvIdx += 1) {
-							CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-							int imIdx = ngvWrPortList[ngvIdx].second;
+							CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+							int imIdx = pNgvInfo->m_wrPortList[ngvIdx].second;
 							char imCh = imIdx == 0 ? 'i' : 'm';
 							string idStr = imIdx == 0 ? "Ht" : "Grp";
 							int idW = imIdx == 0 ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
@@ -3933,8 +4198,8 @@ void CDsnInfo::GenerateNgvFiles()
 						}
 
 						for (int ngvIdx = ngvPortLo; ngvIdx < ngvPortHi; ngvIdx += 1) {
-							CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-							char imCh = ngvWrPortList[ngvIdx].second == 0 ? 'i' : 'm';
+							CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+							char imCh = pNgvInfo->m_wrPortList[ngvIdx].second == 0 ? 'i' : 'm';
 
 							ngvPreRegRrSel.Append("%sif (c_t0_%s_%cwRrSel%s) {\n", tabs.c_str(),
 								mod.m_modName.Lc().c_str(), imCh, dimIdx.c_str());
@@ -4038,13 +4303,13 @@ void CDsnInfo::GenerateNgvFiles()
 			wrCompStg = "t1_";
 
 		} else if (bRrSelEO) {
-			if (ngvWrPortList.size() == 1) {
+			if (pNgvInfo->m_wrPortList.size() == 1) {
 				// no RR, just prepare for next stage inputs
 
 				for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
-					CRam * pModNgv = ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pNgv;
-					CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-					int imIdx = ngvWrPortList[ngvIdx].second;
+					CRam * pModNgv = ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pNgv;
+					CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+					int imIdx = pNgvInfo->m_wrPortList[ngvIdx].second;
 					char imCh = imIdx == 0 ? 'i' : 'm';
 					int idW = imIdx == 0 ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
 
@@ -4130,8 +4395,8 @@ void CDsnInfo::GenerateNgvFiles()
 				// generate phase selection
 				{
 					for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
-						CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-						char imCh = ngvWrPortList[ngvIdx].second == 0 ? 'i' : 'm';
+						CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+						char imCh = pNgvInfo->m_wrPortList[ngvIdx].second == 0 ? 'i' : 'm';
 						int idW = imCh == 'i' ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
 
 						ngvRegDecl.Append("\tbool c_t0_%s_%cwRrSelE_2x%s;\n",
@@ -4189,8 +4454,8 @@ void CDsnInfo::GenerateNgvFiles()
 						pNgvInfo->m_ngvWrType.c_str(), pGv->m_dimenDecl.c_str());
 
 					for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
-						CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-						int imIdx = ngvWrPortList[ngvIdx].second;
+						CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+						int imIdx = pNgvInfo->m_wrPortList[ngvIdx].second;
 						char imCh = imIdx == 0 ? 'i' : 'm';
 						string idStr = imIdx == 0 ? "Ht" : "Grp";
 						int idW = imIdx == 0 ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
@@ -4220,8 +4485,8 @@ void CDsnInfo::GenerateNgvFiles()
 							ngvPreReg_2x.Append("%sif (r_phase) {\n", tabs.c_str());
 
 							for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
-								CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-								int imIdx = ngvWrPortList[ngvIdx].second;
+								CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+								int imIdx = pNgvInfo->m_wrPortList[ngvIdx].second;
 								char imCh = imIdx == 0 ? 'i' : 'm';
 								string idStr = imIdx == 0 ? "Ht" : "Grp";
 								int idW = imIdx == 0 ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
@@ -4265,8 +4530,8 @@ void CDsnInfo::GenerateNgvFiles()
 							ngvPreReg_2x.Append("%s} else {\n", tabs.c_str());
 
 							for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
-								CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-								int imIdx = ngvWrPortList[ngvIdx].second;
+								CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+								int imIdx = pNgvInfo->m_wrPortList[ngvIdx].second;
 								char imCh = imIdx == 0 ? 'i' : 'm';
 								string idStr = imIdx == 0 ? "Ht" : "Grp";
 								int idW = imIdx == 0 ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
@@ -4327,8 +4592,8 @@ void CDsnInfo::GenerateNgvFiles()
 						pNgvInfo->m_ngvWrType.c_str(), pGv->m_dimenDecl.c_str());
 
 					for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
-						CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-						int imIdx = ngvWrPortList[ngvIdx].second;
+						CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+						int imIdx = pNgvInfo->m_wrPortList[ngvIdx].second;
 						char imCh = imIdx == 0 ? 'i' : 'm';
 						string idStr = imIdx == 0 ? "Ht" : "Grp";
 						int idW = imIdx == 0 ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
@@ -4362,8 +4627,8 @@ void CDsnInfo::GenerateNgvFiles()
 							ngvReg_2x.NewLine();
 
 							for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
-								CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-								int imIdx = ngvWrPortList[ngvIdx].second;
+								CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+								int imIdx = pNgvInfo->m_wrPortList[ngvIdx].second;
 								char imCh = imIdx == 0 ? 'i' : 'm';
 								string idStr = imIdx == 0 ? "Ht" : "Grp";
 								int idW = imIdx == 0 ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
@@ -4427,9 +4692,9 @@ void CDsnInfo::GenerateNgvFiles()
 							ngvPreReg_1x.NewLine();
 
 							for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
-								CRam * pModNgv = ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pNgv;
-								CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-								int imIdx = ngvWrPortList[ngvIdx].second;
+								CRam * pModNgv = ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pNgv;
+								CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+								int imIdx = pNgvInfo->m_wrPortList[ngvIdx].second;
 								char imCh = imIdx == 0 ? 'i' : 'm';
 								string idStr = imIdx == 0 ? "Ht" : "Grp";
 								int idW = imIdx == 0 ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
@@ -4460,9 +4725,9 @@ void CDsnInfo::GenerateNgvFiles()
 							string dimIdx = loopInfo.IndexStr();
 
 							for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
-								CRam * pModNgv = ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pNgv;
-								CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-								int imIdx = ngvWrPortList[ngvIdx].second;
+								CRam * pModNgv = ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pNgv;
+								CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+								int imIdx = pNgvInfo->m_wrPortList[ngvIdx].second;
 								char imCh = imIdx == 0 ? 'i' : 'm';
 								int idW = imIdx == 0 ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
 								bool bMaxWr = pNgvInfo->m_bNgvMaxSel && (imCh == 'i' ? (pModNgv->m_bMaxIw && idW > 0) : pModNgv->m_bMaxMw);
@@ -4501,8 +4766,8 @@ void CDsnInfo::GenerateNgvFiles()
 					ngvRegDecl.NewLine();
 
 					for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
-						CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-						int imIdx = ngvWrPortList[ngvIdx].second;
+						CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+						int imIdx = pNgvInfo->m_wrPortList[ngvIdx].second;
 						char imCh = imIdx == 0 ? 'i' : 'm';
 						string idStr = imIdx == 0 ? "Ht" : "Grp";
 						int idW = imIdx == 0 ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
@@ -4537,8 +4802,8 @@ void CDsnInfo::GenerateNgvFiles()
 							ngvReg_1x.NewLine();
 
 							for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
-								CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-								int imIdx = ngvWrPortList[ngvIdx].second;
+								CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+								int imIdx = pNgvInfo->m_wrPortList[ngvIdx].second;
 								char imCh = imIdx == 0 ? 'i' : 'm';
 								string idStr = imIdx == 0 ? "Ht" : "Grp";
 								int idW = imIdx == 0 ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
@@ -4575,8 +4840,8 @@ void CDsnInfo::GenerateNgvFiles()
 							pNgvInfo->m_ngvWrType.c_str(), pGv->m_dimenDecl.c_str());
 
 						for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
-							CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-							int imIdx = ngvWrPortList[ngvIdx].second;
+							CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+							int imIdx = pNgvInfo->m_wrPortList[ngvIdx].second;
 							char imCh = imIdx == 0 ? 'i' : 'm';
 							string idStr = imIdx == 0 ? "Ht" : "Grp";
 							int idW = imIdx == 0 ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
@@ -4619,8 +4884,8 @@ void CDsnInfo::GenerateNgvFiles()
 								ngvPreReg_2x.NewLine();
 
 								for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
-									CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-									int imIdx = ngvWrPortList[ngvIdx].second;
+									CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+									int imIdx = pNgvInfo->m_wrPortList[ngvIdx].second;
 									char imCh = imIdx == 0 ? 'i' : 'm';
 									string idStr = imIdx == 0 ? "Ht" : "Grp";
 									int idW = imIdx == 0 ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
@@ -4662,8 +4927,8 @@ void CDsnInfo::GenerateNgvFiles()
 							pNgvInfo->m_ngvWrType.c_str(), pGv->m_dimenDecl.c_str());
 
 						for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
-							CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-							int imIdx = ngvWrPortList[ngvIdx].second;
+							CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+							int imIdx = pNgvInfo->m_wrPortList[ngvIdx].second;
 							char imCh = imIdx == 0 ? 'i' : 'm';
 							string idStr = imIdx == 0 ? "Ht" : "Grp";
 							int idW = imIdx == 0 ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
@@ -4697,8 +4962,8 @@ void CDsnInfo::GenerateNgvFiles()
 								ngvReg_2x.NewLine();
 
 								for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
-									CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-									int imIdx = ngvWrPortList[ngvIdx].second;
+									CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+									int imIdx = pNgvInfo->m_wrPortList[ngvIdx].second;
 									char imCh = imIdx == 0 ? 'i' : 'm';
 									string idStr = imIdx == 0 ? "Ht" : "Grp";
 									int idW = imIdx == 0 ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
@@ -4743,9 +5008,9 @@ void CDsnInfo::GenerateNgvFiles()
 			stgIdx += 1;
 			wrCompStg = VA("t%d_", stgIdx);
 
-		} else if (ngvWrPortList.size() == 1 && ngvFieldCnt == 1 && !bNgvAtomic) {
-			CModule &mod = *ngvModInfoList[ngvWrPortList[0].first].m_pMod;
-			char imCh = ngvWrPortList[0].second == 0 ? 'i' : 'm';
+		} else if (pNgvInfo->m_wrPortList.size() == 1 && ngvFieldCnt == 1 && !bNgvAtomic) {
+			CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[0].first].m_pMod;
+			char imCh = pNgvInfo->m_wrPortList[0].second == 0 ? 'i' : 'm';
 
 			CHtCode &ngvPreRegMod = mod.m_clkRate == eClk2x ? ngvPreReg_2x : ngvPreReg_1x;
 			string ngvModClk = mod.m_clkRate == eClk2x ? "_2x" : "";
@@ -4776,9 +5041,9 @@ void CDsnInfo::GenerateNgvFiles()
 				} while (loopInfo.Iter());
 			}
 
-		} else if (ngvWrPortList.size() == 1 && (ngvFieldCnt > 1 || bNgvAtomic)) {
-			CModule &mod = *ngvModInfoList[ngvWrPortList[0].first].m_pMod;
-			char imCh = ngvWrPortList[0].second == 0 ? 'i' : 'm';
+		} else if (pNgvInfo->m_wrPortList.size() == 1 && (ngvFieldCnt > 1 || bNgvAtomic)) {
+			CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[0].first].m_pMod;
+			char imCh = pNgvInfo->m_wrPortList[0].second == 0 ? 'i' : 'm';
 
 			CHtCode &ngvPreRegMod = pNgvInfo->m_bNgvWrDataClk2x ? ngvPreReg_2x : ngvPreReg_1x;
 			string ngvModClk = pNgvInfo->m_bNgvWrDataClk2x ? "_2x" : "";
@@ -4814,7 +5079,7 @@ void CDsnInfo::GenerateNgvFiles()
 				} while (loopInfo.Iter());
 			}
 
-		} else if (ngvWrPortList.size() == 2 && bAllWrPortClk1x) {
+		} else if (pNgvInfo->m_wrPortList.size() == 2 && pNgvInfo->m_bAllWrPortClk1x) {
 
 			if (ngvFieldCnt > 1 || bNgvAtomic) {
 				ngvRegDecl.Append("\tbool c_t%d_gwWrEn%s%s;\n",
@@ -4832,8 +5097,8 @@ void CDsnInfo::GenerateNgvFiles()
 				else
 					ngvPreReg_2x.Append("\t} else {\n");
 
-				CModule &mod = *ngvModInfoList[ngvWrPortList[phaseIdx].first].m_pMod;
-				char imCh = ngvWrPortList[phaseIdx].second == 0 ? 'i' : 'm';
+				CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[phaseIdx].first].m_pMod;
+				char imCh = pNgvInfo->m_wrPortList[phaseIdx].second == 0 ? 'i' : 'm';
 
 				{
 					string tabs = "\t\t";
@@ -4904,8 +5169,8 @@ void CDsnInfo::GenerateNgvFiles()
 
 				if (ngvFieldCnt > 1 || bNgvAtomic) {
 					for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
-						CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-						int imIdx = ngvWrPortList[ngvIdx].second;
+						CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+						int imIdx = pNgvInfo->m_wrPortList[ngvIdx].second;
 						char imCh = imIdx == 0 ? 'i' : 'm';
 						string idStr = imIdx == 0 ? "Ht" : "Grp";
 						int idW = imIdx == 0 ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
@@ -4953,8 +5218,8 @@ void CDsnInfo::GenerateNgvFiles()
 				;
 				if (ngvFieldCnt > 1 || bNgvAtomic) {
 					for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
-						CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-						int imIdx = ngvWrPortList[ngvIdx].second;
+						CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+						int imIdx = pNgvInfo->m_wrPortList[ngvIdx].second;
 						char imCh = imIdx == 0 ? 'i' : 'm';
 						string idStr = imIdx == 0 ? "Ht" : "Grp";
 						int idW = imIdx == 0 ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
@@ -5012,8 +5277,8 @@ void CDsnInfo::GenerateNgvFiles()
 
 						if (ngvFieldCnt > 1 || bNgvAtomic) {
 							for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
-								CModule &mod = *ngvModInfoList[ngvWrPortList[ngvIdx].first].m_pMod;
-								int imIdx = ngvWrPortList[ngvIdx].second;
+								CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
+								int imIdx = pNgvInfo->m_wrPortList[ngvIdx].second;
 								char imCh = imIdx == 0 ? 'i' : 'm';
 								string idStr = imIdx == 0 ? "Ht" : "Grp";
 								int idW = imIdx == 0 ? mod.m_threads.m_htIdW.AsInt() : mod.m_mif.m_mifRd.m_rspGrpW.AsInt();
@@ -5051,7 +5316,7 @@ void CDsnInfo::GenerateNgvFiles()
 			ngvRegDecl.Append("\tbool c_t%d_wrEn%s%s;\n",
 				stgIdx, ngvWrDataClk.c_str(), pGv->m_dimenDecl.c_str());
 
-			if (ngvWrPortList.size() > 1) {
+			if (pNgvInfo->m_wrPortList.size() > 1) {
 				GenVcdDecl(ngvSosCode, eVcdAll, ngvRegDecl, vcdModName, "bool",
 					VA("r_t%d_wrEn%s", stgIdx + 1, ngvWrDataClk.c_str()), pGv->m_dimenList);
 			}
@@ -5060,7 +5325,7 @@ void CDsnInfo::GenerateNgvFiles()
 				ngvRegDecl.Append("\tht_uint%d c_t%d_wrAddr%s%s;\n",
 					pGv->m_addrW,
 					stgIdx, ngvWrDataClk.c_str(), pGv->m_dimenDecl.c_str());
-				if (ngvWrPortList.size() > 1) {
+				if (pNgvInfo->m_wrPortList.size() > 1) {
 					GenVcdDecl(ngvSosCode, eVcdAll, ngvRegDecl, vcdModName, VA("ht_uint%d", pGv->m_addrW),
 						VA("r_t%d_wrAddr%s", stgIdx + 1, ngvWrDataClk.c_str()), pGv->m_dimenList);
 				}
@@ -5069,7 +5334,7 @@ void CDsnInfo::GenerateNgvFiles()
 			ngvRegDecl.Append("\t%s c_t%d_wrData%s%s;\n",
 				pGv->m_type.c_str(),
 				stgIdx, ngvWrDataClk.c_str(), pGv->m_dimenDecl.c_str());
-			if (ngvWrPortList.size() > 1) {
+			if (pNgvInfo->m_wrPortList.size() > 1) {
 				GenVcdDecl(ngvSosCode, eVcdAll, ngvRegDecl, vcdModName, pGv->m_type,
 					VA("r_t%d_wrData%s", stgIdx + 1, ngvWrDataClk.c_str()), pGv->m_dimenList);
 			}
@@ -5077,7 +5342,7 @@ void CDsnInfo::GenerateNgvFiles()
 
 			CHtCode & ngvReg = pNgvInfo->m_bNgvWrDataClk2x ? ngvReg_2x : ngvReg_1x;
 
-			if (ngvWrPortList.size() > 1) {
+			if (pNgvInfo->m_wrPortList.size() > 1) {
 				string tabs = "\t";
 				CLoopInfo loopInfo(ngvReg, tabs, pGv->m_dimenList, 3);
 				do {
@@ -5401,7 +5666,7 @@ void CDsnInfo::GenerateNgvFiles()
 								ngvPreRegWrData.Append("%sc_t%d_%s_ifWrEn%s%s = r_t%d_%s_iwWrEn_2x%s;\n", tabs.c_str(),
 									stgIdx, mod.m_modName.Lc().c_str(), ngvWrDataClk.c_str(), dimIdx.c_str(),
 									stgIdx, mod.m_modName.Lc().c_str(), dimIdx.c_str());
-							} else if (ngvWrPortList.size() == 2 && bAllWrPortClk1x) {
+							} else if (pNgvInfo->m_wrPortList.size() == 2 && pNgvInfo->m_bAllWrPortClk1x) {
 								if (bNgvBlock) {
 									ngvPreRegWrData.Append("%sc_t%d_%s_ifWrEn%s%s = r_t%d_%s_iwWrEn%s%s;\n", tabs.c_str(),
 										stgIdx, mod.m_modName.Lc().c_str(), ngvWrDataClk.c_str(), dimIdx.c_str(),
@@ -5431,7 +5696,7 @@ void CDsnInfo::GenerateNgvFiles()
 									ngvPreRegWrData.Append("%sc_t%d_%s_ifHtId%s%s = r_t%d_%s_iwHtId_2x%s;\n", tabs.c_str(),
 										stgIdx, mod.m_modName.Lc().c_str(), ngvWrDataClk.c_str(), dimIdx.c_str(),
 										stgIdx, mod.m_modName.Lc().c_str(), dimIdx.c_str());
-								} else if (ngvWrPortList.size() == 2 && bAllWrPortClk1x) {
+								} else if (pNgvInfo->m_wrPortList.size() == 2 && pNgvInfo->m_bAllWrPortClk1x) {
 									if (bNgvBlock) {
 										ngvPreRegWrData.Append("%sc_t%d_%s_ifHtId%s%s = r_t%d_%s_iwHtId%s%s;\n", tabs.c_str(),
 											stgIdx, mod.m_modName.Lc().c_str(), ngvWrDataClk.c_str(), dimIdx.c_str(),
@@ -5480,7 +5745,7 @@ void CDsnInfo::GenerateNgvFiles()
 				}
 			}
 
-			bool bNeedRamReg = bNgvDist && bNgvAtomicSlow && (ngvWrPortList.size() >= 2 || !bAllWrPortClk1x) && pNgvInfo->m_bNgvMaxSel ||
+			bool bNeedRamReg = bNgvDist && bNgvAtomicSlow && (pNgvInfo->m_wrPortList.size() >= 2 || !pNgvInfo->m_bAllWrPortClk1x) && pNgvInfo->m_bNgvMaxSel ||
 				bNgvBlock && (bNgvAtomic || ngvFieldCnt > 1) && pNgvInfo->m_bNgvMaxSel;
 
 			if (bNeedRamReg) {
@@ -5632,7 +5897,7 @@ void CDsnInfo::GenerateNgvFiles()
 			}
 		}
 
-		bool bNeedRamWrReg = bNgvDist && bNgvAtomicSlow && (ngvWrPortList.size() >= 2 || !bAllWrPortClk1x) && pNgvInfo->m_bNgvMaxSel ||
+		bool bNeedRamWrReg = bNgvDist && bNgvAtomicSlow && (pNgvInfo->m_wrPortList.size() >= 2 || !pNgvInfo->m_bAllWrPortClk1x) && pNgvInfo->m_bNgvMaxSel ||
 			bNgvBlock && (bNgvAtomic || ngvFieldCnt > 1) && pNgvInfo->m_bNgvMaxSel;
 
 		if (bNeedRamWrReg) {
@@ -5778,7 +6043,7 @@ void CDsnInfo::GenerateNgvFiles()
 
 		// Write data output
 		{
-			string varPrefix = (ngvWrPortList.size() == 1 && ngvFieldCnt == 1 && !bNgvAtomic) ? VA("c_t%d", stgIdx) : VA("r_t%d", stgIdx);
+			string varPrefix = (pNgvInfo->m_wrPortList.size() == 1 && ngvFieldCnt == 1 && !bNgvAtomic) ? VA("c_t%d", stgIdx) : VA("r_t%d", stgIdx);
 			assert(pNgvInfo->m_wrDataStg == stgIdx);
 
 			for (size_t modIdx = 0; modIdx < ngvModInfoList.size(); modIdx += 1) {
