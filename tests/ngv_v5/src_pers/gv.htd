@@ -17,6 +17,8 @@ ctl.AddInst(name=CALL_GV2);
 ctl.AddInst(name=CALL_GV3);
 ctl.AddInst(name=CALL_GV4);
 ctl.AddInst(name=CALL_GV5);
+ctl.AddInst(name=CALL_GV6);
+ctl.AddInst(name=CALL_GV7);
 ctl.AddInst(name=RETURN);
 
 ctl.AddPrivate()
@@ -43,6 +45,12 @@ ctl.AddCall(func=gv4)
 	;
 
 ctl.AddCall(func=gv5)
+	;
+
+ctl.AddCall(func=gv6)
+	;
+
+ctl.AddCall(func=gv7)
 	;
 
 
@@ -192,4 +200,171 @@ gv5.AddWriteMem()
 
 gv5.AddReadMem()
 	.AddDst(var=Gv5b)
+	;
+
+////////////////////////////////////////////////////
+// Gv6 Module - 1x, 2F, Iw, Mr, Mw, Ir
+
+dsnInfo.AddModule(name=gv6, htIdW=0, clock=1x);
+gv6.AddInst(name=GV6_ENTRY);
+gv6.AddInst(name=GV6_WR);
+gv6.AddInst(name=GV6_MRD);
+gv6.AddInst(name=GV6_MRD_TST);
+gv6.AddInst(name=GV6_IWR);
+gv6.AddInst(name=GV6_IWR_TST);
+gv6.AddInst(name=GV6_RETURN);
+
+gv6.AddEntry(func=gv6, inst=GV6_ENTRY)
+	.AddParam(type=ht_uint48, name=addr)
+	;
+
+gv6.AddPrivate()
+	.AddVar(type=ht_uint48, name=addr)
+	.AddVar(type=ht_uint3, name=addr1)
+	;
+
+gv6.AddReturn(func=gv6)
+	;
+
+gv6.AddGlobal()
+	.AddVar(type=Data16, name=Gv6a, addr1=addr1)
+	.AddVar(type=Data16, name=Gv6b, addr1=addr1)
+	;
+
+gv6.AddWriteMem()
+	.AddSrc(var=Gv6a)
+	;
+
+gv6.AddReadMem()
+	.AddDst(var=Gv6b)
+	;
+
+////////////////////////////////////////////////////
+// Gv7 Module
+//   Gv8a: Gv7 Iw -> Gv8 Ir, addrW = 0
+//   Gv8a: Gv7 Iw -> Gv8 Ir, addrW > 0
+//   Gv8c: Gv7 Mw -> Gv8 Ir, addrW = 0
+
+dsnInfo.AddModule(name=gv7, htIdW=0, clock=1x);
+gv7.AddInstr(name=GV7_ENTRY);
+gv7.AddInstr(name=GV7_gv8b);
+gv7.AddInstr(name=GV7_gv8c_WR);
+gv7.AddInstr(name=GV7_gv8c_RD);
+gv7.AddInstr(name=GV7_gv8c);
+gv7.AddInstr(name=GV7_gv8d_WR);
+gv7.AddInstr(name=GV7_gv8d_RD);
+gv7.AddInstr(name=GV7_gv8d);
+gv7.AddInstr(name=GV7_gv8eIw);
+gv7.AddInstr(name=GV7_gv8e_WR);
+gv7.AddInstr(name=GV7_gv8e_RD);
+gv7.AddInstr(name=GV7_gv8eMw);
+gv7.AddInstr(name=GV7_gv8fIw);
+gv7.AddInstr(name=GV7_gv8f_WR);
+gv7.AddInstr(name=GV7_gv8f_RD);
+gv7.AddInstr(name=GV7_gv8fMw);
+gv7.AddInstr(name=GV7_RETURN);
+
+gv7.AddEntry(func=gv7, inst=GV7_ENTRY)
+	.AddParam(type=ht_uint48, name=addr)
+	;
+
+gv7.AddPrivate()
+	.AddVar(type=ht_uint48, name=addr)
+	.AddVar(type=ht_uint3, name=addr1)
+	;
+
+gv7.AddReturn(func=gv7);
+
+gv7.AddCall(func=gv8a);
+gv7.AddCall(func=gv8b);
+gv7.AddCall(func=gv8c);
+gv7.AddCall(func=gv8d);
+gv7.AddCall(func=gv8eIw);
+gv7.AddCall(func=gv8eMw);
+gv7.AddCall(func=gv8fIw);
+gv7.AddCall(func=gv8fMw);
+
+gv7.AddGlobal()
+	.AddVar(type=Data16, name=Gv8a, read=false)
+	.AddVar(type=Data16, name=Gv8b, addr1=addr1, read=false)
+	.AddVar(type=Data16, name=Gv8c, read=false, write=false)
+	.AddVar(type=Data16, name=Gv8d, addr1=addr1, read=false, write=false)
+	.AddVar(type=Data16, name=Gv8e, read=false)
+	.AddVar(type=Data16, name=Gv8f, addr1=addr1, read=false)
+	;
+
+gv7.AddWriteMem()
+	.AddSrc(type=uint16_t)
+	;
+
+gv7.AddReadMem()
+	.AddDst(var=Gv8c)
+	.AddDst(var=Gv8d)
+	.AddDst(var=Gv8e)
+	.AddDst(var=Gv8f)
+	;
+
+////////////////////////////////////////////////////
+// Gv8 Module
+
+dsnInfo.AddModule(name=gv8, htIdW=0, clock=1x);
+gv8.AddInstr(name=GV8_ENTRYa);
+gv8.AddInstr(name=GV8_ENTRYb);
+gv8.AddInstr(name=GV8_ENTRYc);
+gv8.AddInstr(name=GV8_ENTRYd);
+gv8.AddInstr(name=GV8_ENTRYeIw);
+gv8.AddInstr(name=GV8_ENTRYeMw);
+gv8.AddInstr(name=GV8_ENTRYfIw);
+gv8.AddInstr(name=GV8_ENTRYfMw);
+gv8.AddInstr(name=GV8_RETURN);
+
+gv8.AddEntry(func=gv8a, inst=GV8_ENTRYa)
+	.AddParam(type=ht_uint48, name=addr)
+	;
+
+gv8.AddEntry(func=gv8b, inst=GV8_ENTRYb)
+	.AddParam(type=ht_uint3, name=addr1)
+	;
+
+gv8.AddEntry(func=gv8c, inst=GV8_ENTRYc)
+	.AddParam(type=ht_uint48, name=addr)
+	;
+
+gv8.AddEntry(func=gv8d, inst=GV8_ENTRYd)
+	.AddParam(type=ht_uint3, name=addr1)
+	;
+
+gv8.AddEntry(func=gv8eIw, inst=GV8_ENTRYeIw)
+	;
+gv8.AddEntry(func=gv8eMw, inst=GV8_ENTRYeMw)
+	;
+
+gv8.AddEntry(func=gv8fIw, inst=GV8_ENTRYfIw)
+	.AddParam(type=ht_uint3, name=addr1)
+	;
+gv8.AddEntry(func=gv8fMw, inst=GV8_ENTRYfMw)
+	.AddParam(type=ht_uint3, name=addr1)
+	;
+
+gv8.AddPrivate()
+	.AddVar(type=ht_uint48, name=addr)
+	.AddVar(type=ht_uint3, name=addr1)
+	;
+
+gv8.AddReturn(func=gv8a);
+gv8.AddReturn(func=gv8b);
+gv8.AddReturn(func=gv8c);
+gv8.AddReturn(func=gv8d);
+gv8.AddReturn(func=gv8eIw);
+gv8.AddReturn(func=gv8eMw);
+gv8.AddReturn(func=gv8fIw);
+gv8.AddReturn(func=gv8fMw);
+
+gv8.AddGlobal()
+	.AddVar(type=Data16, name=Gv8a, write=false)
+	.AddVar(type=Data16, name=Gv8b, addr1=addr1, write=false)
+	.AddVar(type=Data16, name=Gv8c, write=false)
+	.AddVar(type=Data16, name=Gv8d, addr1=addr1, write=false)
+	.AddVar(type=Data16, name=Gv8e, write=false)
+	.AddVar(type=Data16, name=Gv8f, addr1=addr1, write=false)
 	;

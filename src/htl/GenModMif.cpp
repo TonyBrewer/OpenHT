@@ -2395,7 +2395,6 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 				} else if (wrSrc.m_pPrivVar || wrSrc.m_pGblVar && wrSrc.m_pGblVar->m_bPrivGbl &&
 					wrSrc.m_pGblVar->m_addrW == mod.m_threads.m_htIdW.AsInt())
 				{
-
 					string varName;
 					for (int fldIdx = 0; fldIdx < (int)wrSrc.m_fieldRefList.size(); fldIdx += 1) {
 						CFieldRef & fieldRef = wrSrc.m_fieldRefList[fldIdx];
@@ -5124,7 +5123,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 				bool bQueVar = false;
 				if (rdDst.m_pGblVar) {
 					pDstType = rdDst.m_pDstType;
-					if (rdDst.m_pGblVar->m_addrW == 0)
+					if (rdDst.m_pGblVar->m_pNgvInfo->m_bOgv && rdDst.m_pGblVar->m_addrW == 0 && rdDst.m_pGblVar->m_pNgvInfo->m_pRdMod == &mod)
 						baseVar = VA("c__GBL__%s", rdDst.m_pGblVar->m_gblName.c_str());
 					else
 						baseVar = VA("c_m%d_%sMwData", rdRspStg, rdDst.m_pGblVar->m_gblName.c_str());
