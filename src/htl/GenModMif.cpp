@@ -50,7 +50,7 @@ void CDsnInfo::InitAndValidateModMif()
 				ParseMsg(Error, mif.m_mifRd.m_lineInfo, "expected queueW parameter for AddReadMem and AddWriteMem to have the same value");
 		}
 
-		mif.m_mifReqStgCnt = 0;
+		//mif.m_mifReqStgCnt = 0;
 		mif.m_maxElemCnt = 1;
 
 		int maxRdElemQwCnt = 1;
@@ -78,8 +78,8 @@ void CDsnInfo::InitAndValidateModMif()
 
 					int rdRspInfoW = 20;	// need to calculate this value
 
-					if (rdDst.m_bMultiQwRdReq || rdRspInfoW > 0)
-						mif.m_mifReqStgCnt = max(mif.m_mifReqStgCnt, 1);
+					//if (rdDst.m_bMultiQwRdReq || rdRspInfoW > 0)
+					//	mif.m_mifReqStgCnt = max(mif.m_mifReqStgCnt, 1);
 
 					mif.m_mifRd.m_bRdRspCallBack = true;
 
@@ -279,8 +279,8 @@ void CDsnInfo::InitAndValidateModMif()
 
 				int rdRspInfoW = 20;	// need to calculate this value
 
-				if (rdDst.m_bMultiQwRdReq || rdRspInfoW > 0)
-					mif.m_mifReqStgCnt = max(mif.m_mifReqStgCnt, 1);
+				//if (rdDst.m_bMultiQwRdReq || rdRspInfoW > 0)
+				//	mif.m_mifReqStgCnt = max(mif.m_mifReqStgCnt, 1);
 
 				// find maxRdElemQwCnt and maxElemCnt
 				int elemQwCnt = rdDst.m_pDstType->m_clangMinAlign == 1 ? 1 :
@@ -358,12 +358,10 @@ void CDsnInfo::InitAndValidateModMif()
 					else
 						wrSrc.m_memSize = wrSrc.m_pSrcType->m_clangMinAlign;
 
-					wrSrc.m_bMultiElemWr = false;
+					wrSrc.m_bMultiElemWr = wrSrc.m_pSrcType->m_clangBitWidth > wrSrc.m_pSrcType->m_clangMinAlign && wrSrc.m_pSrcType->m_clangMinAlign > 1;
 
-					wrSrc.m_bMultiQwWrReq = wrSrc.m_pSrcType->m_clangBitWidth > 64 && wrSrc.m_pSrcType->m_clangMinAlign == 64;
+					wrSrc.m_bMultiQwWrReq = wrSrc.m_bMultiElemWr || wrSrc.m_pSrcType->m_clangBitWidth > 64 && wrSrc.m_pSrcType->m_clangMinAlign == 64;
 					mif.m_mifWr.m_bMultiQwWrReq |= wrSrc.m_bMultiQwWrReq;
-
-					mif.m_mifReqStgCnt = max(mif.m_mifReqStgCnt, 1);
 
 					wrSrc.m_maxElemCnt = 1;
 
@@ -562,11 +560,6 @@ void CDsnInfo::InitAndValidateModMif()
 
 				mif.m_mifWr.m_bDistRamAccessReq |= wrSrc.m_varAddr1W > 0 && ramType == eDistRam;
 				mif.m_mifWr.m_bBlockRamAccessReq |= wrSrc.m_varAddr1W > 0 && ramType == eBlockRam;
-
-				if (wrSrc.m_varAddr1W > 0)
-					mif.m_mifReqStgCnt = max(mif.m_mifReqStgCnt, 2);
-				else
-					mif.m_mifReqStgCnt = max(mif.m_mifReqStgCnt, 1);
 
 				// find maxWrelemQwCnt and maxElemCnt
 				int elemQwCnt = wrSrc.m_pSrcType->m_clangMinAlign == 1 ? 1 :
@@ -1436,15 +1429,15 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 			m_mifMacros.Append("\tassert_msg(c_t%d_bReadMemAvail, \"Runtime check failed in CPers%s::%sMem%s(...) - ReadMemBusy was not called\\n\");\n",
 				mod.m_execStg, mod.m_modName.Uc().c_str(), pMemOpName, dstName);
 
-			if (rdRspGrpIdW == 0) {
-				m_mifMacros.Append("\t//assert_msg(!c_rdGrpState.m_pause, \"Runtime check failed in CPers%s::%sMem%s(...) - expected ReadMem_%s() to be called before ReadMemPause()\\n\");\n",
-					mod.m_modName.Uc().c_str(), pMemOpName, dstName, dstName);
-			} else if (rdRspGrpIdW <= 2) {
-				m_mifMacros.Append("\t//assert_msg(!c_rdGrpState[%s].m_pause, \"Runtime check failed in CPers%s::%sMem%s(...) - expected ReadMem_%s() to be called before ReadMemPause()\\n\");\n",
-					rdRspGrpName.c_str(), mod.m_modName.Uc().c_str(), pMemOpName, dstName, dstName);
-			} else {
-				;
-			}
+			//if (rdRspGrpIdW == 0) {
+			//	m_mifMacros.Append("\t//assert_msg(!c_rdGrpState.m_pause, \"Runtime check failed in CPers%s::%sMem%s(...) - expected ReadMem_%s() to be called before ReadMemPause()\\n\");\n",
+			//		mod.m_modName.Uc().c_str(), pMemOpName, dstName, dstName);
+			//} else if (rdRspGrpIdW <= 2) {
+			//	m_mifMacros.Append("\t//assert_msg(!c_rdGrpState[%s].m_pause, \"Runtime check failed in CPers%s::%sMem%s(...) - expected ReadMem_%s() to be called before ReadMemPause()\\n\");\n",
+			//		rdRspGrpName.c_str(), mod.m_modName.Uc().c_str(), pMemOpName, dstName, dstName);
+			//} else {
+			//	;
+			//}
 
 			for (size_t fldIdx = 0; fldIdx < rdDst.m_fieldRefList.size(); fldIdx += 1) {
 				string fldName = fldIdx == 0 ? "var" : VA("fld%d", (int)fldIdx);
@@ -1656,7 +1649,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 					mod.m_execStg, mod.m_modName.Lc().c_str());
 			}
 
-			if (rdDst.m_bMultiQwRdReq) {
+			if (rdDst.m_bMultiQwRdReq && rdDst.m_memSize == 64) {
 				if (rdDst.m_memSrc.size() == 0 && bMultiElemDst)
 					m_mifMacros.Append("\tc_t%d_%sToMif_req.m_host = bHost;\n", mod.m_execStg, mod.m_modName.Lc().c_str());
 				else {
@@ -2214,17 +2207,17 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 				" - expected WriteMemBusy() to have been called and not busy\");\n",
 				mod.m_execStg, mod.m_modName.Uc().c_str(), routineName.c_str());
 
-			if (wrRspGrpIdW == 0) {
-				m_mifMacros.Append("\t//assert_msg(!c_wrGrpState.m_pause, \"Runtime check failed in CPers%s::%s() - expected %s() to be called before WriteMemPause()\");\n",
-					mod.m_modName.Uc().c_str(), routineName.c_str(), routineName.c_str());
-			} else if (wrRspGrpIdW <= 2) {
-				m_mifMacros.Append("\t//assert_msg(!c_wrGrpState[%s].m_pause, \"Runtime check failed in CPers%s::%s() - expected %s() to be called before WriteMemPause()\");\n",
-					wrGrpId.c_str(), mod.m_modName.Uc().c_str(), routineName.c_str(), routineName.c_str());
+			//if (wrRspGrpIdW == 0) {
+			//	m_mifMacros.Append("\t//assert_msg(!c_wrGrpState.m_pause, \"Runtime check failed in CPers%s::%s() - expected %s() to be called before WriteMemPause()\");\n",
+			//		mod.m_modName.Uc().c_str(), routineName.c_str(), routineName.c_str());
+			//} else if (wrRspGrpIdW <= 2) {
+			//	m_mifMacros.Append("\t//assert_msg(!c_wrGrpState[%s].m_pause, \"Runtime check failed in CPers%s::%s() - expected %s() to be called before WriteMemPause()\");\n",
+			//		wrGrpId.c_str(), mod.m_modName.Uc().c_str(), routineName.c_str(), routineName.c_str());
 
-			} else {
-				m_mifMacros.Append("\t//assert_msg(c_t%d_wrGrpReqState.m_pause == c_t%d_wrGrpRspState.m_pause, \"Runtime check failed in CPers%s::%s() - expected %s() to be called before WriteMemPause()\");\n",
-					mod.m_execStg, mod.m_execStg, mod.m_modName.Uc().c_str(), routineName.c_str(), routineName.c_str());
-			}
+			//} else {
+			//	m_mifMacros.Append("\t//assert_msg(c_t%d_wrGrpReqState.m_pause == c_t%d_wrGrpRspState.m_pause, \"Runtime check failed in CPers%s::%s() - expected %s() to be called before WriteMemPause()\");\n",
+			//		mod.m_execStg, mod.m_execStg, mod.m_modName.Uc().c_str(), routineName.c_str(), routineName.c_str());
+			//}
 
 			for (size_t fldIdx = 0; fldIdx < wrSrc.m_fieldRefList.size(); fldIdx += 1) {
 				string fldName = fldIdx == 0 ? "var" : VA("fld%d", (int)fldIdx);
@@ -2295,13 +2288,6 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 				break;
 			}
 
-			if (wrSrc.m_bMultiQwWrReq && wrSrc.m_pGblVar == 0) {
-				m_mifMacros.Append("\t//assert_msg(qwCnt > 0 && qwCnt <= 8, \"Runtime check failed in CPers%s::WriteMem%s()"
-					" - expected multi-qw access to be within 64B memory line\");\n", mod.m_modName.Uc().c_str(), srcName);
-				m_mifMacros.Append("\t//assert_msg(((memAddr >> 3) & 7) + qwCnt <= 8, \"Runtime check failed in CPers%s::WriteMem%s()"
-					" - expected multi-qw access to be within 64B memory line\");\n", mod.m_modName.Uc().c_str(), srcName);
-				m_mifMacros.NewLine();
-			}
 			m_mifMacros.NewLine();
 
 			int qwCnt = wrSrc.m_pSrcType->m_clangMinAlign == 1 ? 1 :
@@ -2498,7 +2484,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 					mod.m_execStg, mod.m_modName.Lc().c_str());
 			}
 
-			if (wrSrc.m_bMultiQwWrReq) {
+			if (wrSrc.m_bMultiQwWrReq && wrSrc.m_memSize == 64) {
 				if (wrSrc.m_memDst.size() == 0 && bMultiElemDst)
 					m_mifMacros.Append("\tc_t%d_%sToMif_req.m_host = bHost;\n", mod.m_execStg, mod.m_modName.Lc().c_str());
 				else {
@@ -2640,7 +2626,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 							wrSrc.m_pGblVar->m_gblName.c_str(), varName.c_str());
 						} else {
 							for (CStructElemIter iter(this, wrSrc.m_pSrcType); !iter.end(); iter++) {
-								m_mifMacros.Append("\tc_t%d_%sToMif_req.m_data |= (uint64_t)(r_%s%s%s << %dLL);\n",
+								m_mifMacros.Append("\tc_t%d_%sToMif_req.m_data |= (uint64_t)(r__GBL__%s%s%s << %dLL);\n",
 									mod.m_execStg, mod.m_modName.Lc().c_str(),
 									wrSrc.m_pGblVar->m_gblName.c_str(), varName.c_str(), iter.GetHeirFieldName().c_str(),
 									iter.GetHeirFieldPos());
@@ -3025,7 +3011,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 		CRecord wrUnion;
 		CRecord wrTypeUnion;
 		vector<CRecord> srcRecordList;
-		vector<CRecord> wrFieldStruct;
+		vector<CRecord *> wrFieldStruct;
 		uint64_t wrFieldMask = 0;
 		CRecord * wrFieldList[64];
 
@@ -3142,17 +3128,19 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 				if (wrSrc.m_pSrcType->m_clangMinAlign == 1) {
 
 					if ((wrFieldMask & (1ULL << (wrSrc.m_pSrcType->m_clangBitWidth - 1))) == 0) {
-						wrFieldStruct.push_back(CRecord());
-						CRecord &wrField = wrFieldStruct.back();
-						wrFieldList[wrSrc.m_pSrcType->m_clangBitWidth] = &wrField;
+						wrFieldMask |= (1ULL << (wrSrc.m_pSrcType->m_clangBitWidth - 1));
 
-						wrField.m_typeName = VA("CWrField%d", wrSrc.m_pSrcType->m_clangBitWidth);
-						wrField.m_bCStyle = true;
-						wrField.m_bUnion = false;
-						wrField.m_bConstructors = false;
-						wrField.AddStructField(&g_uint64, "m_data", VA("%d", wrSrc.m_pSrcType->m_clangBitWidth));
+						wrFieldStruct.push_back(new CRecord());
+						CRecord * pWrField = wrFieldStruct.back();
+						wrFieldList[wrSrc.m_pSrcType->m_clangBitWidth] = pWrField;
 
-						GenUserStructs(m_mifDecl, &wrField, "\t");
+						pWrField->m_typeName = VA("CWrField%d", wrSrc.m_pSrcType->m_clangBitWidth);
+						pWrField->m_bCStyle = true;
+						pWrField->m_bUnion = false;
+						pWrField->m_bConstructors = false;
+						pWrField->AddStructField(&g_uint64, "m_data", VA("%d", wrSrc.m_pSrcType->m_clangBitWidth));
+
+						GenUserStructs(m_mifDecl, pWrField, "\t");
 					}
 
 					wrTypeUnion.AddStructField(wrFieldList[wrSrc.m_pSrcType->m_clangBitWidth], VA("m_%s", wrSrc.m_wrDataTypeName.c_str()), "", "", dimenList);
@@ -3171,6 +3159,9 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 			GenUserStructs(m_mifDecl, &wrTypeUnion, "\t");
 
 		GenUserStructs(m_mifDecl, &memReq, "\t");
+
+		for (size_t i = 0; i < wrFieldStruct.size(); i += 1)
+			delete wrFieldStruct[i];
 	}
 
 	if (bMultiQwReq) {
@@ -4599,9 +4590,15 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 								mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
 								addrVar.c_str(), varIdx.c_str(), addrFld.c_str());
 						} else {
-							mifPostInstr.Append("%s\tc_t%d_memReq.m_wrData.m_%s = m_%s%s.read_mem()%s;\n", tabs.c_str(),
-								mod.m_execStg + 1, wrSrc.m_pSrcType->m_typeName.c_str(),
-								addrVar.c_str(), varIdx.c_str(), addrFld.c_str());
+							if (wrSrc.m_pSrcType->m_clangMinAlign == 1) {
+								mifPostInstr.Append("%s\tc_t%d_memReq.m_wrData.m_%s.m_data = m_%s%s.read_mem()%s;\n", tabs.c_str(),
+									mod.m_execStg + 1, wrSrc.m_pSrcType->m_typeName.c_str(),
+									addrVar.c_str(), varIdx.c_str(), addrFld.c_str());
+							} else {
+								mifPostInstr.Append("%s\tc_t%d_memReq.m_wrData.m_%s = m_%s%s.read_mem()%s;\n", tabs.c_str(),
+									mod.m_execStg + 1, wrSrc.m_pSrcType->m_typeName.c_str(),
+									addrVar.c_str(), varIdx.c_str(), addrFld.c_str());
+							}
 						}
 					}
 				}
