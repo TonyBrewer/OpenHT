@@ -20,8 +20,8 @@ void CPersRd3::PersRd3()
 			P_arrayMemRd1Ptr = PR_HTID;
 
 			HtContinue(RD3_READ1);
+			break;
 		}
-		break;
 		case RD3_READ1:
 		{
 			if (ReadMemBusy() || SendReturnBusy_rd3()) {
@@ -44,8 +44,8 @@ void CPersRd3::PersRd3()
 
 				HtContinue(RD3_READ2);
 			}
+			break;
 		}
-		break;
 		case RD3_READ2:
 		{
 			if (ReadMemBusy()) {
@@ -60,8 +60,8 @@ void CPersRd3::PersRd3()
 			ReadMem_rd3Mem(memRdAddr, PR_HTID, 1);
 
 			HtContinue(RD3_READ3);
+			break;
 		}
-		break;
 		case RD3_READ3:
 		{
 			if (ReadMemBusy()) {
@@ -76,8 +76,8 @@ void CPersRd3::PersRd3()
 			ReadMem_rd3Mem(memRdAddr, PR_HTID, 2);
 
 			HtContinue(RD3_READ4);
+			break;
 		}
-		break;
 		case RD3_READ4:
 		{
 			if (ReadMemBusy()) {
@@ -92,8 +92,8 @@ void CPersRd3::PersRd3()
 			ReadMem_rd3Mem(memRdAddr, PR_HTID, 3);
 
 			HtContinue(RD3_LOOP);
+			break;
 		}
-		break;
 		case RD3_LOOP:
 		{
 			if (ReadMemBusy()) {
@@ -106,15 +106,25 @@ void CPersRd3::PersRd3()
 				P_pauseLoopCnt = 0;
 				P_arrayMemRd2Ptr = 0;
 
-				ReadMemPause(RD3_TEST1);
+				if (PR_pauseDst)
+					ReadMemPause(RD3_TEST1a);
+				else
+					ReadMemPause(RD3_TEST1b);
 			} else {
 				P_pauseLoopCnt += 1;
 				HtContinue(RD3_LOOP);
 			}
+			break;
 		}
-		break;
-		case RD3_TEST1:
+		case RD3_TEST1a:
+		case RD3_TEST1b:
 		{
+			if (PR_htInst != (PR_pauseDst ? RD3_TEST1a : RD3_TEST1b)) {
+				HtAssert(0, 0);
+				P_err += 1;
+			}
+			P_pauseDst ^= 1;
+
 			if (GR_rd3Mem.data != (P_loopCnt & 0xf)) {
 				HtAssert(0, 0);
 				P_err += 1;
@@ -123,8 +133,8 @@ void CPersRd3::PersRd3()
 			P_arrayMemRd2Ptr = 1;
 
 			HtContinue(RD3_TEST2);
+			break;
 		}
-		break;
 		case RD3_TEST2:
 		{
 			if (GR_rd3Mem.data != ((P_loopCnt + 1) & 0xf)) {
@@ -135,8 +145,8 @@ void CPersRd3::PersRd3()
 			P_arrayMemRd2Ptr = 2;
 
 			HtContinue(RD3_TEST3);
+			break;
 		}
-		break;
 		case RD3_TEST3:
 		{
 			if (GR_rd3Mem.data != ((P_loopCnt + 2) & 0xf)) {
@@ -147,8 +157,8 @@ void CPersRd3::PersRd3()
 			P_arrayMemRd2Ptr = 3;
 
 			HtContinue(RD3_TEST4);
+			break;
 		}
-		break;
 		case RD3_TEST4:
 		{
 			if (GR_rd3Mem.data != ((P_loopCnt + 3) & 0xf)) {
@@ -160,8 +170,8 @@ void CPersRd3::PersRd3()
 			P_loopCnt = P_loopCnt + 1;
 
 			HtContinue(RD3_READ1);
+			break;
 		}
-		break;
 		default:
 			assert(0);
 		}

@@ -106,15 +106,25 @@ void CPersRd4::PersRd4()
 				P_pauseLoopCnt = 0;
 				P_arrayMemRd2Ptr = 0;
 
-				ReadMemPause(RD4_TEST1);
+				if (PR_pauseDst)
+					ReadMemPause(RD4_TEST1a);
+				else
+					ReadMemPause(RD4_TEST1b);
 			} else {
 				P_pauseLoopCnt += 1;
 				HtContinue(RD4_LOOP);
 			}
 		}
 		break;
-		case RD4_TEST1:
+		case RD4_TEST1a:
+		case RD4_TEST1b:
 		{
+			if (PR_htInst != (PR_pauseDst ? RD4_TEST1a : RD4_TEST1b)) {
+				HtAssert(0, 0);
+			    P_err += 1;
+			}
+			P_pauseDst ^= 1;
+
 			if (GR_rd4Mem.data != (P_loopCnt & 0xf)) {
 				HtAssert(0, 0);
 				P_err += 1;
