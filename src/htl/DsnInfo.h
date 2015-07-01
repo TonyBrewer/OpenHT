@@ -656,7 +656,8 @@ struct CNgvInfo {
 	vector<pair<int, int> > m_wrPortList;
 	bool m_bAllWrPortClk1x;
 	CModule * m_pRdMod;
-	int m_ngvRdModCnt;
+	int m_rdModCnt;
+	int m_rdPortCnt;
 
 	bool m_bOgv;
 };

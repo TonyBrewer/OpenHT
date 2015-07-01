@@ -76,7 +76,7 @@ void CDsnInfo::InitAndValidateModMif()
 					rdDst.m_varAddr2W = -1;
 					rdDst.m_memSize = 64;
 
-					int rdRspInfoW = 20;	// need to calculate this value
+					//int rdRspInfoW = 20;	// need to calculate this value
 
 					//if (rdDst.m_bMultiQwRdReq || rdRspInfoW > 0)
 					//	mif.m_mifReqStgCnt = max(mif.m_mifReqStgCnt, 1);
@@ -277,7 +277,7 @@ void CDsnInfo::InitAndValidateModMif()
 				mif.m_mifRd.m_bMultiQwHostRdMif |= rdDst.m_bMultiQwHostRdMif;
 				mif.m_mifRd.m_bMultiQwCoprocRdMif |= rdDst.m_bMultiQwCoprocRdMif;
 
-				int rdRspInfoW = 20;	// need to calculate this value
+				//int rdRspInfoW = 20;	// need to calculate this value
 
 				//if (rdDst.m_bMultiQwRdReq || rdRspInfoW > 0)
 				//	mif.m_mifReqStgCnt = max(mif.m_mifReqStgCnt, 1);
@@ -4523,83 +4523,75 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 						mifPostInstr.Append("%s\t}\n", tabs.c_str());
 					}
 				} else if (ramType == eRegRam) {
+
 					mifPostInstr.Append("%s\tc_t%d_memReq.m_wrData.m_%s = %s%s;\n", tabs.c_str(),
 						mod.m_execStg + 1, wrSrc.m_pSrcType->m_typeName.c_str(),
 						varName.c_str(), varIdx.c_str());
+
 				} else {
 
+					string readAddr;
+
 					if (wrSrc.m_varAddr2W <= 0) {
-						if (wrSrc.m_varAddr1IsIdx) {
-							mifPostInstr.Append("%s\tm_%s%s.read_addr(r_t%d_memReq.m_vIdx1(%d, 0));\n", tabs.c_str(),
-								addrVar.c_str(), varIdx.c_str(),
-								mod.m_execStg + 1, wrSrc.m_varAddr1W - 1);
-						} else {
-							mifPostInstr.Append("%s\tm_%s%s.read_addr(r_t%d_memReq.m_s%d_f1Addr1);\n", tabs.c_str(),
-								addrVar.c_str(), varIdx.c_str(),
-								mod.m_execStg + 1, wrSrcIdx);
-						}
-					}
-					else if (wrSrc.m_pSharedVar) {
-						mifPostInstr.Append("%s\tm_%s%s.read_addr(", tabs.c_str(),
-							addrVar.c_str(), varIdx.c_str());
 
-						if (wrSrc.m_varAddr1IsIdx) {
-							mifPostInstr.Append("r_t%d_memReq.m_vIdx1(%d, 0), ",
-								mod.m_execStg + 1, wrSrc.m_varAddr1W - 1);
-						}
-						else {
-							mifPostInstr.Append("r_t%d_memReq.m_s%d_f1Addr1, ",
-								mod.m_execStg + 1, wrSrcIdx);
-						}
+						if (wrSrc.m_varAddr1IsIdx)
+							readAddr = VA("r_t%d_memReq.m_vIdx1(%d, 0)", mod.m_execStg + 1, wrSrc.m_varAddr1W - 1);
+						else
+							readAddr = VA("r_t%d_memReq.m_s%d_f1Addr1", mod.m_execStg + 1, wrSrcIdx);
 
-						if (wrSrc.m_varAddr2IsIdx) {
-							mifPostInstr.Append("r_t%d_memReq.m_vIdx2(%d, 0));\n",
-								mod.m_execStg + 1, wrSrc.m_varAddr2W - 1);
-						}
-						else {
-							mifPostInstr.Append("r_t%d_memReq.m_s%d_f1Addr2);\n",
-								mod.m_execStg + 1, wrSrcIdx);
-						}
-					}
-					else {
-						mifPostInstr.Append("%s\tm_%s%s.read_addr((", tabs.c_str(),
-							addrVar.c_str(), varIdx.c_str());
+					} else if (wrSrc.m_pSharedVar) {
 
-						if (wrSrc.m_varAddr1IsIdx) {
-							mifPostInstr.Append("r_t%d_memReq.m_vIdx1(%d, 0), ",
-								mod.m_execStg + 1, wrSrc.m_varAddr1W - 1);
-						}
-						else {
-							mifPostInstr.Append("(ht_uint%d)r_t%d_memReq.m_s%d_f1Addr1, ",
-								wrSrc.m_varAddr1W, mod.m_execStg + 1, wrSrcIdx);
-						}
+						if (wrSrc.m_varAddr1IsIdx) 
+							readAddr = VA("r_t%d_memReq.m_vIdx1(%d, 0), ", mod.m_execStg + 1, wrSrc.m_varAddr1W - 1);
+						else
+							readAddr = VA("r_t%d_memReq.m_s%d_f1Addr1, ", mod.m_execStg + 1, wrSrcIdx);
 
-						if (wrSrc.m_varAddr2IsIdx) {
-							mifPostInstr.Append("r_t%d_memReq.m_vIdx2(%d, 0)));\n",
-								mod.m_execStg + 1, wrSrc.m_varAddr2W - 1);
-						}
-						else {
-							mifPostInstr.Append("(ht_uint%d)r_t%d_memReq.m_s%d_f1Addr2));\n",
-								wrSrc.m_varAddr2W, mod.m_execStg + 1, wrSrcIdx);
-						}
+						if (wrSrc.m_varAddr2IsIdx)
+							readAddr += VA("r_t%d_memReq.m_vIdx2(%d, 0)", mod.m_execStg + 1, wrSrc.m_varAddr2W - 1);
+						else
+							readAddr += VA("r_t%d_memReq.m_s%d_f1Addr2", mod.m_execStg + 1, wrSrcIdx);
+
+					} else {
+
+						if (wrSrc.m_varAddr1IsIdx)
+							readAddr = VA("(r_t%d_memReq.m_vIdx1(%d, 0), ", mod.m_execStg + 1, wrSrc.m_varAddr1W - 1);
+						else
+							readAddr = VA("((ht_uint%d)r_t%d_memReq.m_s%d_f1Addr1, ", wrSrc.m_varAddr1W, mod.m_execStg + 1, wrSrcIdx);
+
+						if (wrSrc.m_varAddr2IsIdx)
+							readAddr += VA("r_t%d_memReq.m_vIdx2(%d, 0))", mod.m_execStg + 1, wrSrc.m_varAddr2W - 1);
+						else
+							readAddr += VA("(ht_uint%d)r_t%d_memReq.m_s%d_f1Addr2)", wrSrc.m_varAddr2W, mod.m_execStg + 1, wrSrcIdx);
 					}
 
-					if (ramType == eDistRam) {
-						if (mif.m_mifReqStgCnt < 2) {
-							mifPostInstr.Append("%s\tc_t%d_%sToMif_req.m_data = m_%s%s.read_mem()%s;\n", tabs.c_str(),
-								mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
-								addrVar.c_str(), varIdx.c_str(), addrFld.c_str());
-						} else {
-							if (wrSrc.m_pSrcType->m_clangMinAlign == 1) {
-								mifPostInstr.Append("%s\tc_t%d_memReq.m_wrData.m_%s.m_data = m_%s%s.read_mem()%s;\n", tabs.c_str(),
-									mod.m_execStg + 1, wrSrc.m_pSrcType->m_typeName.c_str(),
+					if (wrSrc.m_pGblVar == 0 || !wrSrc.m_pGblVar->m_pNgvInfo->m_bOgv || wrSrc.m_pGblVar->m_pNgvInfo->m_rdPortCnt != 2) {
+						mifPostInstr.Append("%s\tm_%s%s.read_addr(%s);\n",
+							tabs.c_str(),
+							addrVar.c_str(), varIdx.c_str(),
+							readAddr.c_str());
+
+						if (ramType == eDistRam) {
+							if (mif.m_mifReqStgCnt < 2) {
+								mifPostInstr.Append("%s\tc_t%d_%sToMif_req.m_data = m_%s%s.read_mem()%s;\n", tabs.c_str(),
+									mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
 									addrVar.c_str(), varIdx.c_str(), addrFld.c_str());
 							} else {
-								mifPostInstr.Append("%s\tc_t%d_memReq.m_wrData.m_%s = m_%s%s.read_mem()%s;\n", tabs.c_str(),
-									mod.m_execStg + 1, wrSrc.m_pSrcType->m_typeName.c_str(),
-									addrVar.c_str(), varIdx.c_str(), addrFld.c_str());
+								if (wrSrc.m_pSrcType->m_clangMinAlign == 1) {
+									mifPostInstr.Append("%s\tc_t%d_memReq.m_wrData.m_%s.m_data = m_%s%s.read_mem()%s;\n", tabs.c_str(),
+										mod.m_execStg + 1, wrSrc.m_pSrcType->m_typeName.c_str(),
+										addrVar.c_str(), varIdx.c_str(), addrFld.c_str());
+								} else {
+									mifPostInstr.Append("%s\tc_t%d_memReq.m_wrData.m_%s = m_%s%s.read_mem()%s;\n", tabs.c_str(),
+										mod.m_execStg + 1, wrSrc.m_pSrcType->m_typeName.c_str(),
+										addrVar.c_str(), varIdx.c_str(), addrFld.c_str());
+								}
 							}
 						}
+
+					} else {
+						m_mifOut1x.Append("\tc_t%d_%sRdAddr = %s;\n",
+							mod.m_execStg + 1, wrSrc.m_pGblVar->m_gblName.c_str(),
+							readAddr.c_str());
 					}
 				}
 
@@ -5750,7 +5742,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 							mifPostInstr.Append("\t\t\trdRsm.m_htId = r_rdGrpState[%s].m_rsmHtId;\n", rdRspGrpId.c_str());
 					}
 
-					mifPostInstr.Append("\t\t\trdRsm.m_htInstr = c_rdGrpCollision ? r_t%d_memReq.m_rsmInstr : r_rdGrpState[%s].m_rsmInstr;\n",
+					mifPostInstr.Append("\t\t\trdRsm.m_htInstr = c_rdGrpCollision ? r_t%d_memReq.m_rsmInstr : r_rdGrpState[%s].m_rsmInstr;\n", 
 						mod.m_execStg + 1, rdRspGrpId.c_str());
 					mifPostInstr.Append("\t\t\tm_mifRdRsmQue.push(rdRsm);\n");
 				}
@@ -5791,7 +5783,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 
 				if (mod.m_threads.m_htIdW.AsInt() == 0) {
 					mifPostInstr.Append("\t\t\tc_t0_rsmHtRdy = true;\n");
-					mifPostInstr.Append("\t\t\tc_t0_rsmHtInstr = c_rdGrpCollision ? r_t%d_memReq.m_rsmInstr : c_m%d_rdGrpReqState.m_rsmInstr;\n", 
+					mifPostInstr.Append("\t\t\tc_t0_rsmHtInstr = c_rdGrpCollision ? r_t%d_memReq.m_rsmInstr : c_m%d_rdGrpReqState.m_rsmInstr;\n",
 						mod.m_execStg + 1, rdRspStg);
 
 				} else {
@@ -5806,7 +5798,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 							mifPostInstr.Append("\t\t\trdRsm.m_htId = c_m%d_rdGrpReqState.m_rsmHtId;\n", rdRspStg);
 					}
 
-					mifPostInstr.Append("\t\t\trdRsm.m_htInstr = c_rdGrpCollision ? r_t%d_memReq.m_rsmInstr : c_m%d_rdGrpReqState.m_rsmInstr;\n", 
+					mifPostInstr.Append("\t\t\trdRsm.m_htInstr = c_rdGrpCollision ? r_t%d_memReq.m_rsmInstr : c_m%d_rdGrpReqState.m_rsmInstr;\n",
 						mod.m_execStg + 1, rdRspStg);
 					mifPostInstr.Append("\t\t\tm_mifRdRsmQue.push(rdRsm);\n");
 				}
