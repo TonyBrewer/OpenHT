@@ -344,7 +344,8 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 	HtlAssert(pRdMod != 0);
 
 	bool bFirstModVar = false;
-	for (int stgIdx = 1; stgIdx <= pGv->m_wrStg.AsInt(); stgIdx += 1) {
+	int stgLast = max(pGv->m_wrStg.AsInt(), pMod->m_stage.m_privWrStg.AsInt());
+	for (int stgIdx = 1; stgIdx <= stgLast; stgIdx += 1) {
 
 		string varStg;
 		if (pMod->m_stage.m_bStageNums)
@@ -670,7 +671,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 
 	if (pGv->m_bReadForInstrRead) {
 		int addr0Skip = pGv->m_addrW == 0 ? 1 : 0;
-		int lastStg = pGv->m_bPrivGbl ? pMod->m_stage.m_privWrStg.AsInt() : pGv->m_wrStg.AsInt();
+		int lastStg = pGv->m_bPrivGbl ? pMod->m_stage.m_privWrStg.AsInt() : max(pGv->m_wrStg.AsInt(), pMod->m_stage.m_privWrStg.AsInt());
 		for (int gvRdStg = pGv->m_rdStg.AsInt() + addr0Skip; gvRdStg <= lastStg; gvRdStg += 1) {
 			m_gblRegDecl.Append("\t%s c_t%d_%sIrData%s;\n",
 				pGv->m_type.c_str(), pMod->m_tsStg + gvRdStg - 2, pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
@@ -706,8 +707,9 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 	gblPostInstr.NewLine();
 
 	if (pGv->m_bReadForInstrRead) {
+		int lastStg = pGv->m_bPrivGbl ? pMod->m_stage.m_privWrStg.AsInt() : max(pGv->m_wrStg.AsInt(), pMod->m_stage.m_privWrStg.AsInt());
 		if (pGv->m_addrW == 0) {
-			if (pGv->m_rdStg.AsInt() < pGv->m_wrStg.AsInt()) {
+			if (pGv->m_rdStg.AsInt() < lastStg) {
 				vector<int> refList(pGv->m_dimenList.size());
 				do {
 					string dimIdx = IndexStr(refList);
@@ -1048,7 +1050,8 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 
 		bInstrWrite |= pGv->m_bWriteForInstrWrite;
 
-		for (int stgIdx = 1; stgIdx <= pGv->m_wrStg.AsInt(); stgIdx += 1) {
+		int stgLast = max(pGv->m_wrStg.AsInt(), mod.m_stage.m_privWrStg.AsInt());
+		for (int stgIdx = 1; stgIdx <= stgLast; stgIdx += 1) {
 
 			string varStg;
 			if (/*pGv->m_rdStg.size() > 0 || pGv->m_wrStg.size() > 0 || */mod.m_stage.m_bStageNums)
@@ -1744,7 +1747,7 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 		bool bPrivGblAndNoAddr = pGv->m_bPrivGbl && pGv->m_addrW == mod.m_threads.m_htIdW.AsInt();
 
 		if (pGv->m_bReadForInstrRead) {
-			int lastStg = pGv->m_bPrivGbl ? mod.m_stage.m_privWrStg.AsInt() : pGv->m_wrStg.AsInt();
+			int lastStg = pGv->m_bPrivGbl ? mod.m_stage.m_privWrStg.AsInt() : max(pGv->m_wrStg.AsInt(), mod.m_stage.m_privWrStg.AsInt());
 			for (int gvRdStg = pGv->m_rdStg.AsInt(); gvRdStg <= lastStg; gvRdStg += 1) {
 				m_gblRegDecl.Append("\t%s c_t%d_%sIrData%s;\n",
 					pGv->m_type.c_str(), mod.m_tsStg + gvRdStg - 2, pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());

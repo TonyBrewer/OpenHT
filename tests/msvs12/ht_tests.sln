@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.21005.1
+VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{73376C93-7C78-48D9-9C74-BD68279427BF}"
 	ProjectSection(SolutionItems) = preProject
@@ -354,6 +354,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "memPSGRand_bug87", "..\memPSGRand_bug87\msvs12\memPSGRand_bug87.vcxproj", "{0576B021-5AB7-4BC4-AB9E-3AA167927F58}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "memPSGRand_bug88", "..\memPSGRand_bug88\msvs12\memPSGRand_bug88.vcxproj", "{A6E6EEBD-31B0-464E-BDA8-A2566BD2CC6A}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mdj_glbRdStg_bug", "..\mdj_glbRdStg_bug\msvs12\mdj_glbRdStg_bug.vcxproj", "{CDE554F4-90FF-4FF4-B0BC-A24D830D16E4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -2260,6 +2262,17 @@ Global
 		{A6E6EEBD-31B0-464E-BDA8-A2566BD2CC6A}.Release|Win32.Build.0 = Release|Win32
 		{A6E6EEBD-31B0-464E-BDA8-A2566BD2CC6A}.Release|x64.ActiveCfg = Release|x64
 		{A6E6EEBD-31B0-464E-BDA8-A2566BD2CC6A}.Release|x64.Build.0 = Release|x64
+		{CDE554F4-90FF-4FF4-B0BC-A24D830D16E4}.Debug|Win32.ActiveCfg = Debug|Win32
+		{CDE554F4-90FF-4FF4-B0BC-A24D830D16E4}.Debug|Win32.Build.0 = Debug|Win32
+		{CDE554F4-90FF-4FF4-B0BC-A24D830D16E4}.Debug|x64.ActiveCfg = Debug|x64
+		{CDE554F4-90FF-4FF4-B0BC-A24D830D16E4}.Debug|x64.Build.0 = Debug|x64
+		{CDE554F4-90FF-4FF4-B0BC-A24D830D16E4}.Htl_Htv|Win32.ActiveCfg = Htl_Htv|x64
+		{CDE554F4-90FF-4FF4-B0BC-A24D830D16E4}.Htl_Htv|x64.ActiveCfg = Htl_Htv|x64
+		{CDE554F4-90FF-4FF4-B0BC-A24D830D16E4}.Htl_Htv|x64.Build.0 = Htl_Htv|x64
+		{CDE554F4-90FF-4FF4-B0BC-A24D830D16E4}.Release|Win32.ActiveCfg = Release|Win32
+		{CDE554F4-90FF-4FF4-B0BC-A24D830D16E4}.Release|Win32.Build.0 = Release|Win32
+		{CDE554F4-90FF-4FF4-B0BC-A24D830D16E4}.Release|x64.ActiveCfg = Release|x64
+		{CDE554F4-90FF-4FF4-B0BC-A24D830D16E4}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
