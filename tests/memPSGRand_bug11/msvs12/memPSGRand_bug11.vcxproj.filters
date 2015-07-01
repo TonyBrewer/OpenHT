@@ -2,36 +2,36 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="ht_lib">
-      <UniqueIdentifier>{1b023b8e-0968-423d-9e02-9aaaab10b81f}</UniqueIdentifier>
+      <UniqueIdentifier>{6aaddb0f-0327-4eeb-8e2c-7d0692b1e965}</UniqueIdentifier>
     </Filter>
     <Filter Include="ht">
-      <UniqueIdentifier>{19117e9a-c9a5-4f8c-84b4-8e1be72708dd}</UniqueIdentifier>
+      <UniqueIdentifier>{2bd7eeed-1161-40d2-89b5-ea0d0c21922b}</UniqueIdentifier>
     </Filter>
     <Filter Include="ht_lib\host">
-      <UniqueIdentifier>{d7fd9695-84b1-467d-b66f-7ef7ca8b074a}</UniqueIdentifier>
+      <UniqueIdentifier>{f48417fa-9719-4874-acaa-6584791b8a43}</UniqueIdentifier>
       <Extensions>h;cpp;c</Extensions>
     </Filter>
     <Filter Include="ht_lib\sysc">
-      <UniqueIdentifier>{cf7f4e40-4dba-4e82-b54f-9a8edaa366cd}</UniqueIdentifier>
+      <UniqueIdentifier>{c1ce5767-d971-48b7-8561-b162c8853868}</UniqueIdentifier>
       <Extensions>h;cpp;c</Extensions>
     </Filter>
     <Filter Include="ht\verilog">
-      <UniqueIdentifier>{208b6fd8-7fa9-4cea-a088-febb199c708a}</UniqueIdentifier>
+      <UniqueIdentifier>{be52fccc-9ad5-4852-84c8-7a7be4f20123}</UniqueIdentifier>
     </Filter>
     <Filter Include="ht\sysc">
-      <UniqueIdentifier>{add96182-1344-46a0-a0bc-ac0c22d859f7}</UniqueIdentifier>
+      <UniqueIdentifier>{4d23c43e-cf38-4179-aef3-b3b1d169cf82}</UniqueIdentifier>
       <Extensions>h;cpp;c</Extensions>
     </Filter>
     <Filter Include="src">
-      <UniqueIdentifier>{173b1fde-6c14-4648-9987-ca174ce4908c}</UniqueIdentifier>
+      <UniqueIdentifier>{aad8e018-777f-40a8-bbc8-59fb9287fcad}</UniqueIdentifier>
       <Extensions>h;cpp;c</Extensions>
     </Filter>
     <Filter Include="src_pers">
-      <UniqueIdentifier>{c30fbe9d-73ed-4468-9e82-e52e919959ff}</UniqueIdentifier>
+      <UniqueIdentifier>{5eb1ec1d-9524-4b43-a659-8c7fd2248e42}</UniqueIdentifier>
       <Extensions>h;cpp;c</Extensions>
     </Filter>
     <Filter Include="src_model">
-      <UniqueIdentifier>{bad0290e-1a8a-4522-af18-244aadfaf441}</UniqueIdentifier>
+      <UniqueIdentifier>{a9e0c337-9c14-4c4f-a44c-ca64594fd1ae}</UniqueIdentifier>
       <Extensions>h;cpp;c</Extensions>
     </Filter>
   </ItemGroup>
@@ -67,9 +67,6 @@
       <Filter>ht\sysc</Filter>
     </ClInclude>
     <ClInclude Include="..\ht\sysc\PersTest00.h">
-      <Filter>ht\sysc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ht\sysc\PersGblTest00__test00_0_p_1_data.h">
       <Filter>ht\sysc</Filter>
     </ClInclude>
     <ClInclude Include="..\ht\sysc\SyscAeTop.h">
@@ -170,9 +167,6 @@
     <ClCompile Include="..\src_pers\PersTest00_src.cpp">
       <Filter>src_pers</Filter>
     </ClCompile>
-    <ClCompile Include="..\ht\sysc\PersGblTest00__test00_0_p_1_data.cpp">
-      <Filter>ht\sysc</Filter>
-    </ClCompile>
     <ClCompile Include="..\ht\sysc\SyscMon.cpp">
       <Filter>ht\sysc</Filter>
     </ClCompile>
@@ -247,9 +241,6 @@
     <CustomBuild Include="..\ht\verilog\PersTest00.v_">
       <Filter>ht\verilog</Filter>
     </CustomBuild>
-    <CustomBuild Include="..\ht\verilog\PersGblTest00__test00_0_p_1_data.v_">
-      <Filter>ht\verilog</Filter>
-    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="$(HtToolsPath)\ht_lib\sysc\SyscAeTop.sc">
@@ -303,9 +294,6 @@
       <Filter>ht\verilog</Filter>
     </None>
     <None Include="..\ht\verilog\PersTest00.v">
-      <Filter>ht\verilog</Filter>
-    </None>
-    <None Include="..\ht\verilog\PersGblTest00__test00_0_p_1_data.v">
       <Filter>ht\verilog</Filter>
     </None>
     <None Include="..\ht\verilog\PersUnitCnt.v">

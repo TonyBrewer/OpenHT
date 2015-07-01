@@ -59,7 +59,8 @@ rd1.AddInst(name=RD1_READ2);
 rd1.AddInst(name=RD1_READ3);
 rd1.AddInst(name=RD1_READ4);
 rd1.AddInst(name=RD1_LOOP);
-rd1.AddInst(name=RD1_TEST1);
+rd1.AddInst(name=RD1_TEST1a);
+rd1.AddInst(name=RD1_TEST1b);
 rd1.AddInst(name=RD1_TEST2);
 rd1.AddInst(name=RD1_TEST3);
 rd1.AddInst(name=RD1_TEST4);
@@ -71,6 +72,7 @@ rd1.AddPrivate()
 	.AddVar(type=Rd1Addr1_t, name=arrayMemRd1Ptr)
 	.AddVar(type=ht_uint2, name=arrayMemRd2Ptr)
 	.AddVar(type=MemAddr_t, name=arrayAddr)
+	.AddVar(type=bool, name=pauseDst)
 	;
 
 rd1.AddEntry(func=rd1, inst=RD1_INIT)
@@ -105,7 +107,8 @@ rd2.AddInst(name=RD2_READ2);
 rd2.AddInst(name=RD2_READ3);
 rd2.AddInst(name=RD2_READ4);
 rd2.AddInst(name=RD2_LOOP);
-rd2.AddInst(name=RD2_TEST1);
+rd2.AddInst(name=RD2_TEST1a);
+rd2.AddInst(name=RD2_TEST1b);
 rd2.AddInst(name=RD2_TEST2);
 rd2.AddInst(name=RD2_TEST3);
 rd2.AddInst(name=RD2_TEST4);
@@ -117,6 +120,7 @@ rd2.AddPrivate()
 	.AddVar(type=Rd2Addr1_t, name=arrayMemRd1Ptr)
 	.AddVar(type=ht_uint2, name=arrayMemRd2Ptr)
 	.AddVar(type=MemAddr_t, name=arrayAddr)
+	.AddVar(type=bool, name=pauseDst)
 	;
 
 rd2.AddEntry(func=rd2, inst=RD2_INIT)
@@ -153,7 +157,8 @@ rd3.AddInst(name=RD3_READ2);
 rd3.AddInst(name=RD3_READ3);
 rd3.AddInst(name=RD3_READ4);
 rd3.AddInst(name=RD3_LOOP);
-rd3.AddInst(name=RD3_TEST1);
+rd3.AddInst(name=RD3_TEST1a);
+rd3.AddInst(name=RD3_TEST1b);
 rd3.AddInst(name=RD3_TEST2);
 rd3.AddInst(name=RD3_TEST3);
 rd3.AddInst(name=RD3_TEST4);
@@ -165,6 +170,7 @@ rd3.AddPrivate()
 	.AddVar(type=Rd3Addr1_t, name=arrayMemRd1Ptr)
 	.AddVar(type=ht_uint2, name=arrayMemRd2Ptr)
 	.AddVar(type=MemAddr_t, name=arrayAddr)
+	.AddVar(type=bool, name=pauseDst)
 	;
 
 rd3.AddEntry(func=rd3, inst=RD3_INIT)
@@ -200,7 +206,8 @@ rd4.AddInst(name=RD4_READ2);
 rd4.AddInst(name=RD4_READ3);
 rd4.AddInst(name=RD4_READ4);
 rd4.AddInst(name=RD4_LOOP);
-rd4.AddInst(name=RD4_TEST1);
+rd4.AddInst(name=RD4_TEST1a);
+rd4.AddInst(name=RD4_TEST1b);
 rd4.AddInst(name=RD4_TEST2);
 rd4.AddInst(name=RD4_TEST3);
 rd4.AddInst(name=RD4_TEST4);
@@ -212,6 +219,7 @@ rd4.AddPrivate()
 	.AddVar(type=Rd4Addr1_t, name=arrayMemRd1Ptr)
 	.AddVar(type=ht_uint2, name=arrayMemRd2Ptr)
 	.AddVar(type=MemAddr_t, name=arrayAddr)
+	.AddVar(type=bool, name=pauseDst)
 	;
 
 rd4.AddEntry(func=rd4, inst=RD4_INIT)
@@ -241,7 +249,8 @@ rd4.AddGlobal()
 
 dsnInfo.AddModule(name=wr1, htIdW=WR1_HTID_W);
 wr1.AddInst(name=WR1_INIT);
-wr1.AddInst(name=WR1_WRITE1);
+wr1.AddInst(name=WR1_WRITE1a);
+wr1.AddInst(name=WR1_WRITE1b);
 wr1.AddInst(name=WR1_WRITE2);
 wr1.AddInst(name=WR1_WRITE3);
 wr1.AddInst(name=WR1_WRITE4);
@@ -253,6 +262,7 @@ wr1.AddPrivate()
 	.AddVar(type=uint16_t, name=loopCnt)
 	.AddVar(type=ht_uint5, name=pauseLoopCnt)
 	.AddVar(type=MemAddr_t, name=arrayAddr)
+	.AddVar(type=bool, name=pauseDst)
 	;
 
 wr1.AddEntry(func=wr1, inst=WR1_INIT)
@@ -271,7 +281,8 @@ wr1.AddWriteMem();
 
 dsnInfo.AddModule(name=wr2, htIdW=WR2_HTID_W);
 wr2.AddInst(name=WR2_INIT);
-wr2.AddInst(name=WR2_WRITE1);
+wr2.AddInst(name=WR2_WRITE1a);
+wr2.AddInst(name=WR2_WRITE1b);
 wr2.AddInst(name=WR2_WRITE2);
 wr2.AddInst(name=WR2_WRITE3);
 wr2.AddInst(name=WR2_WRITE4);
@@ -283,6 +294,7 @@ wr2.AddPrivate()
 	.AddVar(type=uint16_t, name=loopCnt)
 	.AddVar(type=ht_uint5, name=pauseLoopCnt)
 	.AddVar(type=MemAddr_t, name=arrayAddr)
+	.AddVar(type=bool, name=pauseDst)
 	;
 
 wr2.AddEntry(func=wr2, inst=WR2_INIT)
@@ -301,7 +313,8 @@ wr2.AddWriteMem();
 
 dsnInfo.AddModule(name=wr3, htIdW=WR3_HTID_W);
 wr3.AddInst(name=WR3_INIT);
-wr3.AddInst(name=WR3_WRITE1);
+wr3.AddInst(name=WR3_WRITE1a);
+wr3.AddInst(name=WR3_WRITE1b);
 wr3.AddInst(name=WR3_WRITE2);
 wr3.AddInst(name=WR3_WRITE3);
 wr3.AddInst(name=WR3_WRITE4);
@@ -313,6 +326,7 @@ wr3.AddPrivate()
 	.AddVar(type=uint16_t, name=loopCnt)
 	.AddVar(type=ht_uint5, name=pauseLoopCnt)
 	.AddVar(type=MemAddr_t, name=arrayAddr)
+	.AddVar(type=bool, name=pauseDst)
 	;
 
 wr3.AddEntry(func=wr3, inst=WR3_INIT)
@@ -331,7 +345,8 @@ wr3.AddWriteMem();
 
 dsnInfo.AddModule(name=wr4, htIdW=WR4_HTID_W);
 wr4.AddInst(name=WR4_INIT);
-wr4.AddInst(name=WR4_WRITE1);
+wr4.AddInst(name=WR4_WRITE1a);
+wr4.AddInst(name=WR4_WRITE1b);
 wr4.AddInst(name=WR4_WRITE2);
 wr4.AddInst(name=WR4_WRITE3);
 wr4.AddInst(name=WR4_WRITE4);
@@ -343,6 +358,7 @@ wr4.AddPrivate()
 	.AddVar(type=uint16_t, name=loopCnt)
 	.AddVar(type=ht_uint5, name=pauseLoopCnt)
 	.AddVar(type=MemAddr_t, name=arrayAddr)
+	.AddVar(type=bool, name=pauseDst)
 	;
 
 wr4.AddEntry(func=wr4, inst=WR4_INIT)

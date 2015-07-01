@@ -11,11 +11,18 @@ void CPersWr2::PersWr2()
 			P_err = 0;
 			P_pauseLoopCnt = 0;
 
-			HtContinue(WR2_WRITE1);
+			HtContinue(WR2_WRITE1b);
 		}
 		break;
-		case WR2_WRITE1:
+		case WR2_WRITE1a:
+		case WR2_WRITE1b:
 		{
+			if (PR_htInst != (PR_pauseDst ? WR2_WRITE1a : WR2_WRITE1b)) {
+				HtAssert(0, 0);
+				P_err += 1;
+			}
+			P_pauseDst ^= 1;
+
 			if (WriteMemBusy() || SendReturnBusy_wr2()) {
 				HtRetry();
 				break;
@@ -98,7 +105,10 @@ void CPersWr2::PersWr2()
 				P_pauseLoopCnt = 0;
 				P_loopCnt += 1;
 
-				WriteMemPause(WR2_WRITE1);
+				if (PR_pauseDst)
+					WriteMemPause(WR2_WRITE1a);
+				else
+					WriteMemPause(WR2_WRITE1b);
 			} else {
 				P_pauseLoopCnt += 1;
 				HtContinue(WR2_LOOP);
