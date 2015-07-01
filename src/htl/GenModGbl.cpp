@@ -3297,7 +3297,7 @@ void CDsnInfo::GenerateNgvFiles()
 				CHtCode & ngvRegModIn = (mod.m_clkRate == eClk2x || bNgvSelGwClk2x) ? ngvReg_2x : ngvReg_1x;
 				CHtCode & ngvRegSelGw = bNgvSelGwClk2x ? ngvReg_2x : ngvReg_1x;
 
-				CHtCode & ngvOutModIn = mod.m_clkRate == eClk2x ? ngvOut_2x : ngvOut_1x;
+				CHtCode & ngvOutModIn = (mod.m_clkRate == eClk2x || bNgvSelGwClk2x) ? ngvOut_2x : ngvOut_1x;
 
 				string ngvRegSelGwReset = pNgvInfo->m_bNgvWrCompClk2x ? "c_reset1x" : "r_reset1x";
 
