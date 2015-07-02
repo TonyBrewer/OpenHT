@@ -4541,7 +4541,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 
 					} else if (wrSrc.m_pSharedVar) {
 
-						if (wrSrc.m_varAddr1IsIdx) 
+						if (wrSrc.m_varAddr1IsIdx)
 							readAddr = VA("r_t%d_memReq.m_vIdx1(%d, 0), ", mod.m_execStg + 1, wrSrc.m_varAddr1W - 1);
 						else
 							readAddr = VA("r_t%d_memReq.m_s%d_f1Addr1, ", mod.m_execStg + 1, wrSrcIdx);
@@ -4564,34 +4564,27 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 							readAddr += VA("(ht_uint%d)r_t%d_memReq.m_s%d_f1Addr2)", wrSrc.m_varAddr2W, mod.m_execStg + 1, wrSrcIdx);
 					}
 
-					if (wrSrc.m_pGblVar == 0 || !wrSrc.m_pGblVar->m_pNgvInfo->m_bOgv || wrSrc.m_pGblVar->m_pNgvInfo->m_rdPortCnt != 2) {
-						mifPostInstr.Append("%s\tm_%s%s.read_addr(%s);\n",
-							tabs.c_str(),
-							addrVar.c_str(), varIdx.c_str(),
-							readAddr.c_str());
+					mifPostInstr.Append("%s\tm_%s%s.read_addr(%s);\n",
+						tabs.c_str(),
+						addrVar.c_str(), varIdx.c_str(),
+						readAddr.c_str());
 
-						if (ramType == eDistRam) {
-							if (mif.m_mifReqStgCnt < 2) {
-								mifPostInstr.Append("%s\tc_t%d_%sToMif_req.m_data = m_%s%s.read_mem()%s;\n", tabs.c_str(),
-									mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
+					if (ramType == eDistRam) {
+						if (mif.m_mifReqStgCnt < 2) {
+							mifPostInstr.Append("%s\tc_t%d_%sToMif_req.m_data = m_%s%s.read_mem()%s;\n", tabs.c_str(),
+								mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
+								addrVar.c_str(), varIdx.c_str(), addrFld.c_str());
+						} else {
+							if (wrSrc.m_pSrcType->m_clangMinAlign == 1) {
+								mifPostInstr.Append("%s\tc_t%d_memReq.m_wrData.m_%s.m_data = m_%s%s.read_mem()%s;\n", tabs.c_str(),
+									mod.m_execStg + 1, wrSrc.m_pSrcType->m_typeName.c_str(),
 									addrVar.c_str(), varIdx.c_str(), addrFld.c_str());
 							} else {
-								if (wrSrc.m_pSrcType->m_clangMinAlign == 1) {
-									mifPostInstr.Append("%s\tc_t%d_memReq.m_wrData.m_%s.m_data = m_%s%s.read_mem()%s;\n", tabs.c_str(),
-										mod.m_execStg + 1, wrSrc.m_pSrcType->m_typeName.c_str(),
-										addrVar.c_str(), varIdx.c_str(), addrFld.c_str());
-								} else {
-									mifPostInstr.Append("%s\tc_t%d_memReq.m_wrData.m_%s = m_%s%s.read_mem()%s;\n", tabs.c_str(),
-										mod.m_execStg + 1, wrSrc.m_pSrcType->m_typeName.c_str(),
-										addrVar.c_str(), varIdx.c_str(), addrFld.c_str());
-								}
+								mifPostInstr.Append("%s\tc_t%d_memReq.m_wrData.m_%s = m_%s%s.read_mem()%s;\n", tabs.c_str(),
+									mod.m_execStg + 1, wrSrc.m_pSrcType->m_typeName.c_str(),
+									addrVar.c_str(), varIdx.c_str(), addrFld.c_str());
 							}
 						}
-
-					} else {
-						m_mifOut1x.Append("\tc_t%d_%sRdAddr = %s;\n",
-							mod.m_execStg + 1, wrSrc.m_pGblVar->m_gblName.c_str(),
-							readAddr.c_str());
 					}
 				}
 
