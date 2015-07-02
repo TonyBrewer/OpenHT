@@ -355,8 +355,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "memPSGRand_bug87", "..\memP
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "memPSGRand_bug88", "..\memPSGRand_bug88\msvs12\memPSGRand_bug88.vcxproj", "{A6E6EEBD-31B0-464E-BDA8-A2566BD2CC6A}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mdj_glbRdStg_bug", "..\mdj_glbRdStg_bug\msvs12\mdj_glbRdStg_bug.vcxproj", "{CDE554F4-90FF-4FF4-B0BC-A24D830D16E4}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -2262,17 +2260,6 @@ Global
 		{A6E6EEBD-31B0-464E-BDA8-A2566BD2CC6A}.Release|Win32.Build.0 = Release|Win32
 		{A6E6EEBD-31B0-464E-BDA8-A2566BD2CC6A}.Release|x64.ActiveCfg = Release|x64
 		{A6E6EEBD-31B0-464E-BDA8-A2566BD2CC6A}.Release|x64.Build.0 = Release|x64
-		{CDE554F4-90FF-4FF4-B0BC-A24D830D16E4}.Debug|Win32.ActiveCfg = Debug|Win32
-		{CDE554F4-90FF-4FF4-B0BC-A24D830D16E4}.Debug|Win32.Build.0 = Debug|Win32
-		{CDE554F4-90FF-4FF4-B0BC-A24D830D16E4}.Debug|x64.ActiveCfg = Debug|x64
-		{CDE554F4-90FF-4FF4-B0BC-A24D830D16E4}.Debug|x64.Build.0 = Debug|x64
-		{CDE554F4-90FF-4FF4-B0BC-A24D830D16E4}.Htl_Htv|Win32.ActiveCfg = Htl_Htv|x64
-		{CDE554F4-90FF-4FF4-B0BC-A24D830D16E4}.Htl_Htv|x64.ActiveCfg = Htl_Htv|x64
-		{CDE554F4-90FF-4FF4-B0BC-A24D830D16E4}.Htl_Htv|x64.Build.0 = Htl_Htv|x64
-		{CDE554F4-90FF-4FF4-B0BC-A24D830D16E4}.Release|Win32.ActiveCfg = Release|Win32
-		{CDE554F4-90FF-4FF4-B0BC-A24D830D16E4}.Release|Win32.Build.0 = Release|Win32
-		{CDE554F4-90FF-4FF4-B0BC-A24D830D16E4}.Release|x64.ActiveCfg = Release|x64
-		{CDE554F4-90FF-4FF4-B0BC-A24D830D16E4}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
