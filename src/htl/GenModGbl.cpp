@@ -251,13 +251,9 @@ void CDsnInfo::InitAndValidateModNgv()
 		// determine if this ram has an optimized implementation
 		int modCnt = pNgvInfo->m_modInfoList.size();
 
-		pNgvInfo->m_bOgv = //g_appArgs.IsOgv() &&
-			(modCnt == 1 && ngvFieldCnt == 1 && !bNgvAtomic && pGv0->m_bReadForInstrRead && pGv0->m_bWriteForInstrWrite && !pGv0->m_bReadForMifWrite && !pGv0->m_bWriteForMifRead) ||
-			(modCnt == 1 && ngvFieldCnt == 1 && !bNgvAtomic && pGv0->m_bReadForInstrRead && !pGv0->m_bWriteForInstrWrite && !pGv0->m_bReadForMifWrite && pGv0->m_bWriteForMifRead) ||
-			(modCnt == 1 && ngvFieldCnt == 1 && !bNgvAtomic && bAllRdPortClk1x && pNgvInfo->m_bAllWrPortClk1x && pGv0->m_bReadForInstrRead && pGv0->m_bWriteForInstrWrite && !pGv0->m_bReadForMifWrite && pGv0->m_bWriteForMifRead) ||
-			//(modCnt == 1 && ngvFieldCnt == 1 && !bNgvAtomic && bAllRdPortClk1x && pNgvInfo->m_bAllWrPortClk1x && pGv0->m_bReadForInstrRead && pGv0->m_bWriteForInstrWrite && pGv0->m_bReadForMifWrite && !pGv0->m_bWriteForMifRead) ||
-			(ngvFieldCnt == 1 && !bNgvAtomic && bAllRdPortClk1x && pNgvInfo->m_bAllWrPortClk1x && pNgvInfo->m_wrPortList.size() <= 2 && pNgvInfo->m_rdPortCnt <= 2 && pNgvInfo->m_rdModCnt == 1) ||
-			(modCnt == 1 && !bNgvAtomic && bNgvReg);
+		pNgvInfo->m_bOgv = (pNgvInfo->m_rdModCnt == 1 && !bNgvAtomic && bNgvReg) ||
+			(ngvFieldCnt == 1 && !bNgvAtomic && (pNgvInfo->m_wrPortList.size() == 1 || pNgvInfo->m_bAllWrPortClk1x && pNgvInfo->m_wrPortList.size() == 2) &&
+			pNgvInfo->m_rdModCnt == 1 && (pNgvInfo->m_rdPortCnt == 1 || pNgvInfo->m_rdPortCnt == 2 && bAllRdPortClk1x));
 
 #ifdef WIN32
 		bool bPossibleOgv = !pNgvInfo->m_bOgv && ngvFieldCnt == 1 && !bNgvAtomic &&
@@ -611,6 +607,9 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 
 				} else if (pNgvInfo->m_wrPortList.size() == 1) {
 
+					bool bWrClk1x = pNgvInfo->m_wrPortList.size() == 1 && pNgvInfo->m_bAllWrPortClk1x;
+					CHtCode & wrCode = bWrClk1x ? m_gblPostInstr1x : m_gblPostInstr2x;
+
 					for (int imIdx = 0; imIdx < 2; imIdx += 1) {
 						if (imIdx == 0 && !pGv->m_bReadForInstrRead) continue;
 						if (imIdx == 1 && !pGv->m_bReadForMifWrite) continue;
@@ -621,16 +620,16 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 							string dimIdx = IndexStr(refList);
 
 							for (CStructElemIter iter(this, pGv->m_pType); !iter.end(); iter++) {
-								gblPostInstr.Append("\tm__GBL__%s%s%s.write_addr(i_%sTo%s_%sIwData%s.read().GetAddr());\n",
+								wrCode.Append("\tm__GBL__%s%s%s.write_addr(i_%sTo%s_%sIwData%s.read().GetAddr());\n",
 									pGv->m_gblName.c_str(), pImStr, dimIdx.c_str(),
 									pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str());
-								gblPostInstr.Append("\tif (i_%sTo%s_%sIwData%s.read()%s.GetWrEn())\n",
+								wrCode.Append("\tif (i_%sTo%s_%sIwData%s.read()%s.GetWrEn())\n",
 									pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
-								gblPostInstr.Append("\t\tm__GBL__%s%s%s.write_mem(i_%sTo%s_%sIwData%s.read().GetData());\n",
+								wrCode.Append("\t\tm__GBL__%s%s%s.write_mem(i_%sTo%s_%sIwData%s.read().GetData());\n",
 									pGv->m_gblName.c_str(), pImStr, dimIdx.c_str(),
 									pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str());
 							}
-							gblPostInstr.NewLine();
+							wrCode.NewLine();
 
 						} while (DimenIter(pGv->m_dimenList, refList));
 					}
@@ -660,6 +659,9 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 
 				} else if (pNgvInfo->m_wrPortList.size() == 1) {
 
+					bool bWrClk1x = pNgvInfo->m_wrPortList.size() == 1 && pNgvInfo->m_bAllWrPortClk1x;
+					CHtCode & wrCode = bWrClk1x ? m_gblPostInstr1x : m_gblPostInstr2x;
+
 					for (int imIdx = 0; imIdx < 2; imIdx += 1) {
 						if (imIdx == 0 && !pGv->m_bReadForInstrRead) continue;
 						if (imIdx == 1 && !pGv->m_bReadForMifWrite) continue;
@@ -670,12 +672,12 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 							string dimIdx = IndexStr(refList);
 
 							for (CStructElemIter iter(this, pGv->m_pType); !iter.end(); iter++) {
-								gblPostInstr.Append("\tm__GBL__%s%s%s.write_addr(i_%sTo%s_%sMwData%s.read().GetAddr());\n",
+								wrCode.Append("\tm__GBL__%s%s%s.write_addr(i_%sTo%s_%sMwData%s.read().GetAddr());\n",
 									pGv->m_gblName.c_str(), pImStr, dimIdx.c_str(),
 									pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str());
-								gblPostInstr.Append("\tif (i_%sTo%s_%sMwData%s.read()%s.GetWrEn())\n",
+								wrCode.Append("\tif (i_%sTo%s_%sMwData%s.read()%s.GetWrEn())\n",
 									pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
-								gblPostInstr.Append("\t\tm__GBL__%s%s%s.write_mem(i_%sTo%s_%sMwData%s.read().GetData());\n",
+								wrCode.Append("\t\tm__GBL__%s%s%s.write_mem(i_%sTo%s_%sMwData%s.read().GetData());\n",
 									pGv->m_gblName.c_str(), pImStr, dimIdx.c_str(),
 									pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str());
 							}
@@ -4360,7 +4362,7 @@ void CDsnInfo::GenerateNgvFiles()
 				// no RR, just prepare for next stage inputs
 
 				for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
-					CRam * pModNgv = ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pNgv;
+					//CRam * pModNgv = ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pNgv;
 					CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
 					int imIdx = pNgvInfo->m_wrPortList[ngvIdx].second;
 					char imCh = imIdx == 0 ? 'i' : 'm';

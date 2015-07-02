@@ -59,7 +59,15 @@ void CPersCtl::PersCtl()
 				break;
 			}
 
-			SendCall_gv7(RETURN, PR_addr);
+			SendCall_gv7(CALL_GV9, PR_addr);
+			break;
+		case CALL_GV9:
+			if (SendCallBusy_gv9()) {
+				HtRetry();
+				break;
+			}
+
+			SendCall_gv9(RETURN, PR_addr);
 			break;
 		case RETURN:
 			if (SendReturnBusy_htmain()) {
