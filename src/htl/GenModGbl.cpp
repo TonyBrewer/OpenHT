@@ -98,6 +98,8 @@ void CDsnInfo::InitAndValidateModNgv()
 		pNgvInfo->m_ramType = eUnknownRam;
 		pNgvInfo->m_pRdMod = 0;
 		pNgvInfo->m_rdModCnt = 0;
+		pNgvInfo->m_bUserSpanningWrite = false;
+
 		for (size_t modIdx = 0; modIdx < ngvModInfoList.size(); modIdx += 1) {
 			CModule * pMod = ngvModInfoList[modIdx].m_pMod;
 			CRam * pModNgv = ngvModInfoList[modIdx].m_pNgv;
@@ -125,20 +127,26 @@ void CDsnInfo::InitAndValidateModNgv()
 
 			bNgvMaxSel |= pModNgv->m_bMaxIw || pModNgv->m_bMaxMw;
 
+			pNgvInfo->m_bUserSpanningWrite |= pModNgv->m_bSpanningWrite;
+
 			if (pNgvInfo->m_ramType == eUnknownRam)
 				pNgvInfo->m_ramType = pModNgv->m_ramType;
 			else if (pNgvInfo->m_ramType != pModNgv->m_ramType)
 				pNgvInfo->m_ramType = eAutoRam;
 		}
 
+		FindSpanningWriteFields(pNgvInfo, pNgvInfo->m_bUserSpanningWrite);
+
 		// determine if a single field in ngv
 		int ngvFieldCnt = 0;
 		bool bNgvAtomicFast = false;
 		bool bNgvAtomicSlow = false;
+
 		for (CStructElemIter iter(this, pGv0->m_pType); !iter.end(); iter++) {
 			if (iter.IsStructOrUnion()) continue;
 
 			ngvFieldCnt += 1;
+
 			if (pGv0->m_pType->m_eType != eRecord) continue;
 
 			bNgvAtomicFast |= (iter->m_atomicMask & (ATOMIC_INC | ATOMIC_SET)) != 0;
@@ -249,40 +257,52 @@ void CDsnInfo::InitAndValidateModNgv()
 		pNgvInfo->m_wrDataStg = stgIdx;
 
 		// determine if this ram has an optimized implementation
-		int modCnt = pNgvInfo->m_modInfoList.size();
-
 		pNgvInfo->m_bOgv = (pNgvInfo->m_rdModCnt == 1 && !bNgvAtomic && bNgvReg) ||
-			(ngvFieldCnt == 1 && !bNgvAtomic && (pNgvInfo->m_wrPortList.size() == 1 || pNgvInfo->m_bAllWrPortClk1x && pNgvInfo->m_wrPortList.size() == 2) &&
+			(pNgvInfo->m_bAutoSpanningWrite /*ngvFieldCnt == 1*/ && !bNgvAtomic && (pNgvInfo->m_wrPortList.size() == 1 || pNgvInfo->m_bAllWrPortClk1x && pNgvInfo->m_wrPortList.size() == 2) &&
 			pNgvInfo->m_rdModCnt == 1 && (pNgvInfo->m_rdPortCnt == 1 || pNgvInfo->m_rdPortCnt == 2 && bAllRdPortClk1x));
 
 #ifdef WIN32
-		bool bPossibleOgv = !pNgvInfo->m_bOgv && ngvFieldCnt == 1 && !bNgvAtomic &&
-			(pNgvInfo->m_bAllWrPortClk1x && pNgvInfo->m_wrPortList.size() <= 2 || pNgvInfo->m_wrPortList.size() == 1) &&
-			pNgvInfo->m_rdModCnt == 1 && (bAllRdPortClk1x || pNgvInfo->m_rdPortCnt == 1);
+		//printf("%s: m_bOgv = %d\n", pGv0->m_gblName.c_str(), pNgvInfo->m_bOgv);
+		//if (pNgvInfo->m_bOgv) {
+		//	printf("  Auto=%d, User=%d\n", pNgvInfo->m_bAutoSpanningWrite, pNgvInfo->m_bUserSpanningWrite);
 
-		if (!pNgvInfo->m_bOgv && ngvFieldCnt == 1 && !bNgvAtomic)
-		{
-			printf("** %s %s\n", pGv0->m_gblName.c_str(), bPossibleOgv ? "yes" : "no");
+		//	for (size_t idx1 = 0; idx1 < pNgvInfo->m_spanningFieldList.size(); idx1 += 1) {
+		//		CSpanningField & fld1 = pNgvInfo->m_spanningFieldList[idx1];
 
-			for (size_t modIdx = 0; modIdx < ngvModInfoList.size(); modIdx += 1) {
-				CModule * pMod = ngvModInfoList[modIdx].m_pMod;
-				CRam * pModNgv = ngvModInfoList[modIdx].m_pNgv;
+		//		printf("    %s   p=%d, w=%d, f=%d, i=%d s=%d\n", fld1.m_heirName.c_str(),
+		//			fld1.m_pos, fld1.m_width,
+		//			fld1.m_bForced, fld1.m_bIgnore, fld1.m_bSpanning);
+		//	}
+		//}
 
-				for (int imIdx = 0; imIdx < 2; imIdx += 1) {
-					if (imIdx == 0 && !pModNgv->m_bWriteForInstrWrite) continue;
-					if (imIdx == 1 && !pModNgv->m_bWriteForMifRead) continue;
+		//bool bPossibleOgv = !pNgvInfo->m_bOgv && pNgvInfo->m_bAutoSpanningWrite && 
+		//	(!bNgvAtomic && (pNgvInfo->m_wrPortList.size() == 1 || pNgvInfo->m_bAllWrPortClk1x && pNgvInfo->m_wrPortList.size() == 2) &&
+		//	pNgvInfo->m_rdModCnt == 1 && (pNgvInfo->m_rdPortCnt == 1 || pNgvInfo->m_rdPortCnt == 2 && bAllRdPortClk1x));
 
-					printf("**   Wr Mod %s, %s\n", pMod->m_modName.c_str(), pMod->m_clkRate == eClk1x ? "1x" : "2x");
-				}
+		//if (!pNgvInfo->m_bOgv && !bNgvAtomic)
+		//{
+		//	printf("** %s %s\n", pGv0->m_gblName.c_str(), bPossibleOgv ? "yes" : "no");
+		//	printf("**   spanning fields %d\n", (int)pNgvInfo->m_spanningFieldList.size());
 
-				for (int imIdx = 0; imIdx < 2; imIdx += 1) {
-					if (imIdx == 0 && !pModNgv->m_bReadForInstrRead) continue;
-					if (imIdx == 1 && !pModNgv->m_bReadForMifWrite) continue;
+		//	for (size_t modIdx = 0; modIdx < ngvModInfoList.size(); modIdx += 1) {
+		//		CModule * pMod = ngvModInfoList[modIdx].m_pMod;
+		//		CRam * pModNgv = ngvModInfoList[modIdx].m_pNgv;
 
-					printf("**   Rd Mod %s, %s\n", pMod->m_modName.c_str(), pMod->m_clkRate == eClk1x ? "1x" : "2x");
-				}
-			}
-		}
+		//		for (int imIdx = 0; imIdx < 2; imIdx += 1) {
+		//			if (imIdx == 0 && !pModNgv->m_bWriteForInstrWrite) continue;
+		//			if (imIdx == 1 && !pModNgv->m_bWriteForMifRead) continue;
+
+		//			printf("**   Wr Mod %s, %s\n", pMod->m_modName.c_str(), pMod->m_clkRate == eClk1x ? "1x" : "2x");
+		//		}
+
+		//		for (int imIdx = 0; imIdx < 2; imIdx += 1) {
+		//			if (imIdx == 0 && !pModNgv->m_bReadForInstrRead) continue;
+		//			if (imIdx == 1 && !pModNgv->m_bReadForMifWrite) continue;
+
+		//			printf("**   Rd Mod %s, %s\n", pMod->m_modName.c_str(), pMod->m_clkRate == eClk1x ? "1x" : "2x");
+		//		}
+		//	}
+		//}
 #endif
 	}
 
@@ -313,6 +333,320 @@ void CDsnInfo::InitAndValidateModNgv()
 			mod.m_gvIwCompStg = max(mod.m_gvIwCompStg, lastStg);
 		}
 	}
+}
+
+struct CRange { int m_start, m_end; };
+
+void CDsnInfo::FindSpanningWriteFields(CNgvInfo * pNgvInfo, bool bUserEnabled)
+{
+	CRam * pNgv = pNgvInfo->m_modInfoList[0].m_pNgv;
+
+	if (pNgv->m_pType->IsInt()) {
+		pNgvInfo->m_spanningFieldList.push_back(CSpanningField());
+
+		CSpanningField & fld = pNgvInfo->m_spanningFieldList.back();
+		fld.m_lineInfo = pNgv->m_lineInfo;
+		fld.m_ramName = pNgv->m_gblName;
+		fld.m_heirName = "";
+		fld.m_pos = 0;
+		fld.m_width = pNgv->m_pType->m_clangBitWidth;
+		fld.m_bForced = false;
+		fld.m_pType = pNgv->m_pType;
+		fld.m_bSpanning = true;
+
+		pNgvInfo->m_bAutoSpanningWrite = true;
+
+		return;
+	}
+
+	pNgvInfo->m_bAutoSpanningWrite = false;
+
+	{ // first step is mark all fields where a forced spanning fields overlaps
+		for (CStructElemIter iter(this, pNgv->m_pType); !iter.end(); iter++) {
+
+			pNgvInfo->m_spanningFieldList.push_back(CSpanningField());
+
+			CSpanningField & fld = pNgvInfo->m_spanningFieldList.back();
+			fld.m_lineInfo = iter->m_lineInfo;
+			fld.m_heirName = iter.GetHeirFieldName();
+			fld.m_pos = iter.GetHeirFieldPos();
+			fld.m_width = iter.GetWidth();
+			fld.m_bForced = iter->m_bSpanningFieldForced;
+			fld.m_pType = iter->m_pType;
+		}
+	}
+
+	{ // first step is mark all fields where a forced spanning fields overlaps
+		for (size_t idx1 = 0; idx1 < pNgvInfo->m_spanningFieldList.size(); idx1 += 1) {
+			CSpanningField & fld1 = pNgvInfo->m_spanningFieldList[idx1];
+
+			if (!fld1.m_bForced) continue;
+
+			int fp1 = fld1.m_pos;
+			int fw1 = fld1.m_width;
+
+			for (size_t idx2 = 0; idx2 < pNgvInfo->m_spanningFieldList.size(); idx2 += 1) {
+				CSpanningField & fld2 = pNgvInfo->m_spanningFieldList[idx2];
+
+				if (&fld1 == &fld2) continue;
+
+				int fp2 = fld2.m_pos;
+				int fw2 = fld2.m_width;
+
+				if (fp1 + fw1 <= fp2 || fp2 + fw2 <= fp1)
+					continue;
+
+				// some overlap found
+				if (fld2.m_bForced) {
+					if (!bUserEnabled) return;
+					ParseMsg(Error, fld1.m_lineInfo, "Overlapping forced spanning fields");
+					ParseMsg(Info, fld1.m_lineInfo, "  %s", fld1.m_heirName.c_str());
+					ParseMsg(Info, fld2.m_lineInfo, "  %s", fld2.m_heirName.c_str());
+					return;
+				}
+
+				fld2.m_bIgnore = true;
+			}
+		}
+	}
+
+	{ // second step is to mark spanning fields
+		for (size_t idx1 = 0; idx1 < pNgvInfo->m_spanningFieldList.size(); idx1 += 1) {
+			CSpanningField & fld1 = pNgvInfo->m_spanningFieldList[idx1];
+
+			int fp1 = fld1.m_pos;
+			int fw1 = fld1.m_width;
+
+			fld1.m_bSpanning = !fld1.m_bIgnore;
+
+			if (fld1.m_bForced || fld1.m_bIgnore) continue;
+
+			for (size_t idx2 = 0; idx2 < pNgvInfo->m_spanningFieldList.size(); idx2 += 1) {
+				CSpanningField & fld2 = pNgvInfo->m_spanningFieldList[idx2];
+
+				if (&fld1 == &fld2) continue;
+				if (fld2.m_bIgnore) continue;
+
+				int fp2 = fld2.m_pos;
+				int fw2 = fld2.m_width;
+
+				if (fp1 + fw1 <= fp2 || fp2 + fw2 <= fp1)
+					continue;
+
+				if (fld2.m_bForced) {
+					fld1.m_bSpanning = false;
+					break;
+				}
+
+				// mark spanning field
+				if (fp1 == fp2 && fw1 == fw2) {
+					// iter and iter2 have same bit ranges
+				} else if (fp1 <= fp2 && fp1 + fw1 >= fp2 + fw2) {
+					// iter2 is subrange of iter
+				} else if (fp2 <= fp1 && fp2 + fw2 >= fp1 + fw1) {
+					// iter is subrange of iter2
+					fld1.m_bSpanning = false;
+				} else {
+					// one field is not subrange of other
+					fld1.m_bSpanning = false;
+				}
+			}
+		}
+	}
+
+	{ // verify all fields are covered by one or more spanning fields
+		vector<CRange> rangeList;
+
+		// create list of bit ranges that spanning fields cover
+		for (size_t idx1 = 0; idx1 < pNgvInfo->m_spanningFieldList.size(); idx1 += 1) {
+			CSpanningField & fld1 = pNgvInfo->m_spanningFieldList[idx1];
+
+			if (!fld1.m_bSpanning) continue;
+
+			int fs = fld1.m_pos;
+			int fe = fs + fld1.m_width;
+
+			bool bFound = false;
+			for (size_t idx2 = 0; idx2 < rangeList.size(); idx2 += 1) {
+				int rs = rangeList[idx2].m_start;
+				int re = rangeList[idx2].m_end;
+
+				if (rs <= fs && fe <= re) {
+					bFound = true;
+					break;
+				}
+
+				if (re == fs) {
+					rangeList[idx2].m_end = fe;
+					if (rangeList.size() - 1 > idx2 && rangeList[idx2 + 1].m_start == fe) {
+						rangeList[idx2].m_end = rangeList[idx2 + 1].m_end;
+						rangeList.erase(rangeList.begin() + idx2 + 1);
+					}
+					bFound = true;
+					break;
+				}
+			}
+
+			if (!bFound) {
+				rangeList.push_back(CRange());
+				rangeList.back().m_start = fs;
+				rangeList.back().m_end = fe;
+			}
+		}
+
+		// verify that all fields are covered by range list
+		bool bErrorPrinted = false;
+		for (size_t idx1 = 0; idx1 < pNgvInfo->m_spanningFieldList.size(); idx1 += 1) {
+			CSpanningField & fld1 = pNgvInfo->m_spanningFieldList[idx1];
+
+			int fs = fld1.m_pos;
+			int fe = fs + fld1.m_width;
+
+			bool bFound = false;
+			for (size_t idx2 = 0; idx2 < rangeList.size(); idx2 += 1) {
+				int rs = rangeList[idx2].m_start;
+				int re = rangeList[idx2].m_end;
+
+				if (rs <= fs && fe <= re) {
+					bFound = true;
+					break;
+				}
+			}
+
+			if (!bFound) {
+				if (!bUserEnabled) return;
+				if (!bErrorPrinted) {
+					ParseMsg(Error, pNgv->m_lineInfo, "One or more fields within global variable were not covered by identified spanning fields");
+					ParseMsg(Info, pNgv->m_lineInfo, "  List of spanning fields:");
+
+					for (size_t idx3 = 0; idx3 < pNgvInfo->m_spanningFieldList.size(); idx3 += 1) {
+						CSpanningField & fld3 = pNgvInfo->m_spanningFieldList[idx3];
+						if (!fld3.m_bSpanning) continue;
+						ParseMsg(Info, fld3.m_lineInfo, "    %s", fld3.m_heirName.c_str());
+					}
+
+					ParseMsg(Info, pNgv->m_lineInfo, "  List of fields not covered:");
+				}
+
+				ParseMsg(Info, fld1.m_lineInfo, "    %s", fld1.m_heirName.c_str());
+			}
+		}
+	}
+
+	if (!bUserEnabled && pNgvInfo->m_rdModCnt == 1) { // check for overlapping fields
+
+		bool bOverlappingFields = false;
+
+		for (size_t idx1 = 0; idx1 < pNgvInfo->m_spanningFieldList.size(); idx1 += 1) {
+			CSpanningField & fld1 = pNgvInfo->m_spanningFieldList[idx1];
+
+			int fp1 = fld1.m_pos;
+			int fw1 = fld1.m_width;
+
+			for (size_t idx2 = 0; idx2 < pNgvInfo->m_spanningFieldList.size(); idx2 += 1) {
+				CSpanningField & fld2 = pNgvInfo->m_spanningFieldList[idx2];
+
+				if (&fld1 == &fld2) continue;
+
+				int fp2 = fld2.m_pos;
+				int fw2 = fld2.m_width;
+
+				if (fp1 == fp2 && fw1 == fw2) continue;	// exact overlap is allowed
+				if (fp1 + fw1 <= fp2 || fp2 + fw2 <= fp1) continue; // no overlap
+
+				// some overlap found
+				bOverlappingFields = true;
+			}
+		}
+
+		// check if we can auto enable spanning writes
+		if (!bOverlappingFields) {
+			int rdModIdx;
+			for (rdModIdx = 0; pNgvInfo->m_modInfoList[rdModIdx].m_pMod != pNgvInfo->m_pRdMod; rdModIdx += 1);
+			ERamType ramType = pNgvInfo->m_modInfoList[rdModIdx].m_pNgv->m_ramType;
+
+			if (ramType == eBlockRam) {
+				// calculate number of block rams for both implementations (centralized and local)
+				int bramWidth = 0;
+				if (pNgv->m_addrW <= 9)
+					bramWidth = 36;
+				else if (pNgv->m_addrW == 10)
+					bramWidth = 18;
+				else
+					bramWidth = 9;
+
+				int centralizedCopies = pNgvInfo->m_rdPortCnt + 1;
+				int centralizedBramCnt = centralizedCopies * ((pNgv->m_pType->m_packedBitWidth + bramWidth - 1) / bramWidth);
+
+				int localBramCnt = 0;
+
+				for (size_t idx1 = 0; idx1 < pNgvInfo->m_spanningFieldList.size(); idx1 += 1) {
+					CSpanningField & fld1 = pNgvInfo->m_spanningFieldList[idx1];
+
+					if (!fld1.m_bSpanning) continue;
+
+					int localCopies = pNgvInfo->m_rdPortCnt;
+					localBramCnt += localCopies * ((fld1.m_width + bramWidth - 1) / bramWidth);
+				}
+
+				pNgvInfo->m_bAutoSpanningWrite = localBramCnt <= centralizedBramCnt;
+			}
+
+			if (ramType == eDistRam) {
+				// calculate number of distributed rams for both implementations (centralized and local)
+				int dramWidth = 0;
+				if (pNgv->m_addrW <= 5)
+					dramWidth = 6;
+				else
+					dramWidth = 3;
+
+				int centralizedCopies = pNgvInfo->m_rdPortCnt + 1;
+				int centralizedSliceCnt = centralizedCopies * ((pNgv->m_pType->m_packedBitWidth + dramWidth - 1) / dramWidth);
+
+				int localSliceCnt = 0;
+
+				for (size_t idx1 = 0; idx1 < pNgvInfo->m_spanningFieldList.size(); idx1 += 1) {
+					CSpanningField & fld1 = pNgvInfo->m_spanningFieldList[idx1];
+
+					if (!fld1.m_bSpanning) continue;
+
+					int localCopies = pNgvInfo->m_rdPortCnt;
+					localSliceCnt += localCopies * ((fld1.m_width + dramWidth - 1) / dramWidth);
+				}
+
+				pNgvInfo->m_bAutoSpanningWrite = localSliceCnt <= centralizedSliceCnt;
+			}
+		}
+	}
+
+	// set ram name for each spanning field
+	if (pNgvInfo->m_bUserSpanningWrite || pNgvInfo->m_bAutoSpanningWrite) {
+		if (pNgvInfo->m_spanningFieldList.size() == 0) {
+			HtlAssert(0);	// this should be handled at entry of routine
+			pNgvInfo->m_spanningFieldList.push_back(CSpanningField());
+			CSpanningField & fld1 = pNgvInfo->m_spanningFieldList[0];
+			fld1.m_ramName = pNgv->m_gblName;
+			fld1.m_pType = pNgv->m_pType;
+		} else if (pNgvInfo->m_spanningFieldList.size() == 1) {
+			CSpanningField & fld1 = pNgvInfo->m_spanningFieldList[0];
+			fld1.m_ramName = pNgv->m_gblName;
+		} else {
+			int spanningFldIdx = 1;
+			for (size_t idx1 = 0; idx1 < pNgvInfo->m_spanningFieldList.size(); idx1 += 1) {
+				CSpanningField & fld1 = pNgvInfo->m_spanningFieldList[idx1];
+				if (!fld1.m_bSpanning) continue;
+				fld1.m_ramName = VA("%sFld%d", pNgv->m_gblName.c_str(), spanningFldIdx++);
+			}
+		}
+	}
+
+	//for (size_t idx1 = 0; idx1 < pNgvInfo->m_spanningFieldList.size(); idx1 += 1) {
+	//	CSpanningField & fld1 = pNgvInfo->m_spanningFieldList[idx1];
+
+	//	printf("  %s   p=%d, w=%d, f=%d, i=%d s=%d\n", fld1.m_heirName.c_str(),
+	//		fld1.m_pos, fld1.m_width,
+	//		fld1.m_bForced, fld1.m_bIgnore, fld1.m_bSpanning);
+	//}
 }
 
 void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
@@ -542,40 +876,46 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 			if (imIdx == 1 && !pGv->m_bReadForMifWrite) continue;
 			char const * pImStr = imIdx == 0 ? "Ir" : "Mr";
 
-			m_gblRegDecl.Append("\tht_%s_ram<%s, %d",
-				pGv->m_ramType == eBlockRam ? "block" : "dist",
-				pGv->m_type.c_str(), pGv->m_addrW);
-			m_gblRegDecl.Append("> m__GBL__%s%s%s;\n", pGv->m_gblName.c_str(), pImStr, pGv->m_dimenDecl.c_str());
+			for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
+				CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
 
-			EClkRate rdClk = pMod->m_clkRate;
-			EClkRate wrClk = pNgvInfo->m_wrPortList.size() == 1 && pNgvInfo->m_bAllWrPortClk1x ? eClk1x : eClk2x;
+				if (!fld.m_bSpanning) continue;
 
-			vector<int> refList(pGv->m_dimenList.size());
-			do {
-				string dimIdx = IndexStr(refList);
+				m_gblRegDecl.Append("\tht_%s_ram<%s, %d",
+					pGv->m_ramType == eBlockRam ? "block" : "dist",
+					fld.m_pType->m_typeName.c_str(), pGv->m_addrW);
+				m_gblRegDecl.Append("> m__GBL__%s%s%s;\n", fld.m_ramName.c_str(), pImStr, pGv->m_dimenDecl.c_str());
 
-				if (rdClk == wrClk) {
+				EClkRate rdClk = pMod->m_clkRate;
+				EClkRate wrClk = pNgvInfo->m_wrPortList.size() == 1 && pNgvInfo->m_bAllWrPortClk1x ? eClk1x : eClk2x;
 
-					gblReg.Append("\tm__GBL__%s%s%s.clock(%s);\n",
-						pGv->m_gblName.c_str(), pImStr, dimIdx.c_str(),
-						gblRegReset.c_str());
+				vector<int> refList(pGv->m_dimenList.size());
+				do {
+					string dimIdx = IndexStr(refList);
 
-				} else if (rdClk == eClk1x) {
+					if (rdClk == wrClk) {
 
-					m_gblReg1x.Append("\tm__GBL__%s%s%s.read_clock(r_reset1x);\n",
-						pGv->m_gblName.c_str(), pImStr, dimIdx.c_str());
-					m_gblReg2x.Append("\tm__GBL__%s%s%s.write_clock(c_reset1x);\n",
-						pGv->m_gblName.c_str(), pImStr, dimIdx.c_str());
+						gblReg.Append("\tm__GBL__%s%s%s.clock(%s);\n",
+							fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
+							gblRegReset.c_str());
 
-				} else {
+					} else if (rdClk == eClk1x) {
 
-					m_gblReg2x.Append("\tm__GBL__%s%s%s.read_clock(c_reset1x);\n",
-						pGv->m_gblName.c_str(), pImStr, dimIdx.c_str());
+						m_gblReg1x.Append("\tm__GBL__%s%s%s.read_clock(r_reset1x);\n",
+							fld.m_ramName.c_str(), pImStr, dimIdx.c_str());
+						m_gblReg2x.Append("\tm__GBL__%s%s%s.write_clock(c_reset1x);\n",
+							fld.m_ramName.c_str(), pImStr, dimIdx.c_str());
 
-					m_gblReg1x.Append("\tm__GBL__%s%s%s.write_clock(r_reset1x);\n",
-						pGv->m_gblName.c_str(), pImStr, dimIdx.c_str());
-				}
-			} while (DimenIter(pGv->m_dimenList, refList));
+					} else {
+
+						m_gblReg2x.Append("\tm__GBL__%s%s%s.read_clock(c_reset1x);\n",
+							fld.m_ramName.c_str(), pImStr, dimIdx.c_str());
+
+						m_gblReg1x.Append("\tm__GBL__%s%s%s.write_clock(r_reset1x);\n",
+							fld.m_ramName.c_str(), pImStr, dimIdx.c_str());
+					}
+				} while (DimenIter(pGv->m_dimenList, refList));
+			}
 		}
 		m_gblReg1x.NewLine();
 		m_gblReg2x.NewLine();
@@ -615,23 +955,29 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 						if (imIdx == 1 && !pGv->m_bReadForMifWrite) continue;
 						char const * pImStr = imIdx == 0 ? "Ir" : "Mr";
 
-						vector<int> refList(pGv->m_dimenList.size());
-						do {
-							string dimIdx = IndexStr(refList);
+						for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
+							CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
 
-							for (CStructElemIter iter(this, pGv->m_pType); !iter.end(); iter++) {
-								wrCode.Append("\tm__GBL__%s%s%s.write_addr(i_%sTo%s_%sIwData%s.read().GetAddr());\n",
-									pGv->m_gblName.c_str(), pImStr, dimIdx.c_str(),
-									pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str());
-								wrCode.Append("\tif (i_%sTo%s_%sIwData%s.read()%s.GetWrEn())\n",
-									pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
-								wrCode.Append("\t\tm__GBL__%s%s%s.write_mem(i_%sTo%s_%sIwData%s.read().GetData());\n",
-									pGv->m_gblName.c_str(), pImStr, dimIdx.c_str(),
-									pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str());
-							}
-							wrCode.NewLine();
+							if (!fld.m_bSpanning) continue;
 
-						} while (DimenIter(pGv->m_dimenList, refList));
+							vector<int> refList(pGv->m_dimenList.size());
+							do {
+								string dimIdx = IndexStr(refList);
+
+								for (CStructElemIter iter(this, pGv->m_pType); !iter.end(); iter++) {
+									wrCode.Append("\tm__GBL__%s%s%s.write_addr(i_%sTo%s_%sIwData%s.read().GetAddr());\n",
+										fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
+										pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str());
+									wrCode.Append("\tif (i_%sTo%s_%sIwData%s.read()%s.GetWrEn())\n",
+										pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
+									wrCode.Append("\t\tm__GBL__%s%s%s.write_mem(i_%sTo%s_%sIwData%s.read().GetData()%s);\n",
+										fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
+										pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
+								}
+								wrCode.NewLine();
+
+							} while (DimenIter(pGv->m_dimenList, refList));
+						}
 					}
 				}
 			}
@@ -667,23 +1013,28 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 						if (imIdx == 1 && !pGv->m_bReadForMifWrite) continue;
 						char const * pImStr = imIdx == 0 ? "Ir" : "Mr";
 
-						vector<int> refList(pGv->m_dimenList.size());
-						do {
-							string dimIdx = IndexStr(refList);
+						for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
+							CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
 
-							for (CStructElemIter iter(this, pGv->m_pType); !iter.end(); iter++) {
+							if (!fld.m_bSpanning) continue;
+
+							vector<int> refList(pGv->m_dimenList.size());
+							do {
+								string dimIdx = IndexStr(refList);
+
 								wrCode.Append("\tm__GBL__%s%s%s.write_addr(i_%sTo%s_%sMwData%s.read().GetAddr());\n",
-									pGv->m_gblName.c_str(), pImStr, dimIdx.c_str(),
+									fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
 									pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str());
 								wrCode.Append("\tif (i_%sTo%s_%sMwData%s.read()%s.GetWrEn())\n",
-									pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
-								wrCode.Append("\t\tm__GBL__%s%s%s.write_mem(i_%sTo%s_%sMwData%s.read().GetData());\n",
-									pGv->m_gblName.c_str(), pImStr, dimIdx.c_str(),
-									pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str());
-							}
-							gblPostInstr.NewLine();
+									pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str());
+								wrCode.Append("\t\tm__GBL__%s%s%s.write_mem(i_%sTo%s_%sMwData%s.read().GetData()%s);\n",
+									fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
+									pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str());
 
-						} while (DimenIter(pGv->m_dimenList, refList));
+							} while (DimenIter(pGv->m_dimenList, refList));
+						}
+
+						gblPostInstr.NewLine();
 					}
 				}
 			}
@@ -775,40 +1126,46 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 				gblPostInstr.Append(", %s", addr2Name.c_str());
 			gblPostInstr.Append("%s;\n", bNeedParan ? ")" : "");
 
-			vector<int> refList(pGv->m_dimenList.size());
-			do {
-				string dimIdx = IndexStr(refList);
+			for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
+				CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
 
-				gblPostInstr.Append("\tm__GBL__%sIr%s.read_addr(c_t%d_%sRdAddr);\n",
-					pGv->m_gblName.c_str(), dimIdx.c_str(),
-					rdAddrStgNum, pGv->m_gblName.Lc().c_str());
+				if (!fld.m_bSpanning) continue;
 
-				bool bNgvReg = pGv->m_addrW == 0;
-				bool bNgvDist = !bNgvReg && pGv->m_ramType != eBlockRam;
+				vector<int> refList(pGv->m_dimenList.size());
+				do {
+					string dimIdx = IndexStr(refList);
 
-				if (bNgvDist || pNgvInfo->m_ngvFieldCnt == 1) {
+					gblPostInstr.Append("\tm__GBL__%sIr%s.read_addr(c_t%d_%sRdAddr);\n",
+						fld.m_ramName.c_str(), dimIdx.c_str(),
+						rdAddrStgNum, pGv->m_gblName.Lc().c_str());
 
-					gblPostInstr.Append("\tc_t%d_%sIrData%s = m__GBL__%sIr%s.read_mem();\n",
-						rdAddrStgNum + (bNgvDist ? 0 : 1), pGv->m_gblName.c_str(), dimIdx.c_str(),
-						pGv->m_gblName.c_str(), dimIdx.c_str());
-				} else {
+					bool bNgvReg = pGv->m_addrW == 0;
+					bool bNgvDist = !bNgvReg && pGv->m_ramType != eBlockRam;
 
-					gblPostInstr.Append("\tif (r_g1_%sTo%s_wrEn%s && r_g1_%sTo%s_wrAddr%s == r_t%d_%sRdAddr)\n",
-						pGv->m_gblName.Lc().c_str(), pMod->m_modName.Uc().c_str(), dimIdx.c_str(),
-						pGv->m_gblName.Lc().c_str(), pMod->m_modName.Uc().c_str(), dimIdx.c_str(),
-						rdAddrStgNum + 1, pGv->m_gblName.Lc().c_str());
+					//if (bNgvDist || pNgvInfo->m_ngvFieldCnt == 1) {
 
-					gblPostInstr.Append("\t\tc_t%d_%sIrData%s = r_g1_%sTo%s_wrData%s;\n",
-						rdAddrStgNum + 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
-						pGv->m_gblName.Lc().c_str(), pMod->m_modName.Uc().c_str(), dimIdx.c_str());
+						gblPostInstr.Append("\tc_t%d_%sIrData%s%s = m__GBL__%sIr%s.read_mem();\n",
+							rdAddrStgNum + (bNgvDist ? 0 : 1), pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str(),
+							fld.m_ramName.c_str(), dimIdx.c_str());
+					//} else {
 
-					gblPostInstr.Append("\telse\n");
+					//	gblPostInstr.Append("\tif (r_g1_%sTo%s_wrEn%s && r_g1_%sTo%s_wrAddr%s == r_t%d_%sRdAddr)\n",
+					//		pGv->m_gblName.Lc().c_str(), pMod->m_modName.Uc().c_str(), dimIdx.c_str(),
+					//		pGv->m_gblName.Lc().c_str(), pMod->m_modName.Uc().c_str(), dimIdx.c_str(),
+					//		rdAddrStgNum + 1, pGv->m_gblName.Lc().c_str());
 
-					gblPostInstr.Append("\t\tc_t%d_%sIrData%s = m__GBL__%sIr%s.read_mem();\n",
-						rdAddrStgNum + 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
-						pGv->m_gblName.c_str(), dimIdx.c_str());
-				}
-			} while (DimenIter(pGv->m_dimenList, refList));
+					//	gblPostInstr.Append("\t\tc_t%d_%sIrData%s = r_g1_%sTo%s_wrData%s;\n",
+					//		rdAddrStgNum + 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
+					//		pGv->m_gblName.Lc().c_str(), pMod->m_modName.Uc().c_str(), dimIdx.c_str());
+
+					//	gblPostInstr.Append("\telse\n");
+
+					//	gblPostInstr.Append("\t\tc_t%d_%sIrData%s = m__GBL__%sIr%s.read_mem();\n",
+					//		rdAddrStgNum + 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
+					//		fld.m_ramName.c_str(), dimIdx.c_str());
+					//}
+				} while (DimenIter(pGv->m_dimenList, refList));
+			}
 		}
 		gblPostInstr.NewLine();
 	}
@@ -839,26 +1196,29 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 				if (imIdx == 1 && !pGv->m_bReadForMifWrite) continue;
 				char const * pImStr = imIdx == 0 ? "Ir" : "Mr";
 
-				vector<int> refList(pGv->m_dimenList.size());
-				do {
-					string dimIdx = IndexStr(refList);
+				for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
+					CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
 
-					gblPostInstr.Append("\tm__GBL__%s%s%s.write_addr(r_t%d_%sIwData%s.GetAddr());\n",
-						pGv->m_gblName.c_str(), pImStr, dimIdx.c_str(),
-						gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str());
+					if (!fld.m_bSpanning) continue;
 
-					for (CStructElemIter iter(this, pGv->m_pType); !iter.end(); iter++) {
+					vector<int> refList(pGv->m_dimenList.size());
+					do {
+						string dimIdx = IndexStr(refList);
+
+						gblPostInstr.Append("\tm__GBL__%s%s%s.write_addr(r_t%d_%sIwData%s.GetAddr());\n",
+							fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
+							gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str());
 
 						gblPostInstr.Append("\tif (r_t%d_%sIwData%s%s.GetWrEn())\n",
-							gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
-						gblPostInstr.Append("\t\tm__GBL__%s%s%s.write_mem(r_t%d_%sIwData%s.GetData());\n",
-							pGv->m_gblName.c_str(), pImStr, dimIdx.c_str(),
-							gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str());
-					}
+							gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str());
+						gblPostInstr.Append("\t\tm__GBL__%s%s%s.write_mem(r_t%d_%sIwData%s.GetData()%s);\n",
+							fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
+							gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str());
 
-					gblPostInstr.NewLine();
+						gblPostInstr.NewLine();
 
-				} while (DimenIter(pGv->m_dimenList, refList));
+					} while (DimenIter(pGv->m_dimenList, refList));
+				}
 			}
 		}
 	}
@@ -890,27 +1250,29 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 				if (imIdx == 1 && !pGv->m_bReadForMifWrite) continue;
 				char const * pImStr = imIdx == 0 ? "Ir" : "Mr";
 
+				for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
+					CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
 
-				vector<int> refList(pGv->m_dimenList.size());
-				do {
-					string dimIdx = IndexStr(refList);
+					if (!fld.m_bSpanning) continue;
 
-					gblPostInstr.Append("\tm__GBL__%s%s%s.write_addr(r_m%d_%sMwData%s.GetAddr());\n",
-						pGv->m_gblName.c_str(), pImStr, dimIdx.c_str(),
-						rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str());
+					vector<int> refList(pGv->m_dimenList.size());
+					do {
+						string dimIdx = IndexStr(refList);
 
-					for (CStructElemIter iter(this, pGv->m_pType); !iter.end(); iter++) {
+						gblPostInstr.Append("\tm__GBL__%s%s%s.write_addr(r_m%d_%sMwData%s.GetAddr());\n",
+							fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
+							rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str());
 
 						gblPostInstr.Append("\tif (r_m%d_%sMwData%s%s.GetWrEn())\n",
-							rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
-						gblPostInstr.Append("\t\tm__GBL__%s%s%s.write_mem(r_m%d_%sMwData%s.GetData());\n",
-							pGv->m_gblName.c_str(), pImStr, dimIdx.c_str(),
-							rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str());
-					}
+							rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str());
+						gblPostInstr.Append("\t\tm__GBL__%s%s%s.write_mem(r_m%d_%sMwData%s.GetData()%s);\n",
+							fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
+							rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str());
 
-					gblPostInstr.NewLine();
+						gblPostInstr.NewLine();
 
-				} while (DimenIter(pGv->m_dimenList, refList));
+					} while (DimenIter(pGv->m_dimenList, refList));
+				}
 			}
 		}
 	}
@@ -971,26 +1333,29 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 				if (imIdx == 1 && !pGv->m_bReadForMifWrite) continue;
 				char const * pImStr = imIdx == 0 ? "Ir" : "Mr";
 
-				vector<int> refList(pGv->m_dimenList.size());
-				do {
-					string dimIdx = IndexStr(refList);
+				for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
+					CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
 
-					m_gblPostInstr2x.Append("\tm__GBL__%s%s%s.write_addr(r__GBL__%sPwData%s.GetAddr());\n",
-						pGv->m_gblName.c_str(), pImStr, dimIdx.c_str(),
-						pGv->m_gblName.c_str(), dimIdx.c_str());
+					if (!fld.m_bSpanning) continue;
 
-					for (CStructElemIter iter(this, pGv->m_pType); !iter.end(); iter++) {
+					vector<int> refList(pGv->m_dimenList.size());
+					do {
+						string dimIdx = IndexStr(refList);
+
+						m_gblPostInstr2x.Append("\tm__GBL__%s%s%s.write_addr(r__GBL__%sPwData%s.GetAddr());\n",
+							fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
+							pGv->m_gblName.c_str(), dimIdx.c_str());
 
 						m_gblPostInstr2x.Append("\tif (r__GBL__%sPwData%s%s.GetWrEn())\n",
-							pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
-						m_gblPostInstr2x.Append("\t\tm__GBL__%s%s%s.write_mem(r__GBL__%sPwData%s.GetData());\n",
-							pGv->m_gblName.c_str(), pImStr, dimIdx.c_str(),
-							pGv->m_gblName.c_str(), dimIdx.c_str());
-					}
+							pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str());
+						m_gblPostInstr2x.Append("\t\tm__GBL__%s%s%s.write_mem(r__GBL__%sPwData%s.GetData()%s);\n",
+							fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
+							pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str());
 
-					gblPostInstr.NewLine();
+						gblPostInstr.NewLine();
 
-				} while (DimenIter(pGv->m_dimenList, refList));
+					} while (DimenIter(pGv->m_dimenList, refList));
+				}
 			}
 		}
 	}

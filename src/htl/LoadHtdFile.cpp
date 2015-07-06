@@ -340,10 +340,10 @@ void CDsnInfo::AddHostData(void * pHandle, HtdFile::EHostMsgDir msgDir, bool bMa
 
 void CDsnInfo::AddGlobalVar(vector<CRam *> * pGlobalList, CType * pType, string name, string dimen1, string dimen2,
 	string addr1W, string addr2W, string addr1, string addr2, string rdStg, string wrStg,
-	bool bMaxIw, bool bMaxMw, ERamType ramType, bool bRead, bool bWrite)
+	bool bMaxIw, bool bMaxMw, ERamType ramType, bool bRead, bool bWrite, bool bSpanningWrite)
 {
 	(*pGlobalList).push_back(new CRam(pType, name, dimen1, dimen2, addr1, addr2,
-		addr1W, addr2W, rdStg, wrStg, bMaxIw, bMaxMw, ramType, bRead, bWrite));
+		addr1W, addr2W, rdStg, wrStg, bMaxIw, bMaxMw, ramType, bRead, bWrite, bSpanningWrite));
 }
 
 void CDsnInfo::AddStageField(CStage * pStage, CType * pType, string name, string dimen1, string dimen2,

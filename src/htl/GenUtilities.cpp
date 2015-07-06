@@ -1324,6 +1324,7 @@ CField & CStructElemIter::operator()()
 CField * CStructElemIter::operator -> ()
 {
 	CStack &stack = m_stack.back();
+	if (stack.m_pRecord == 0) return 0;
 	CField * pField = stack.m_pRecord->m_fieldList[stack.m_fieldIdx];
 	return pField;
 }

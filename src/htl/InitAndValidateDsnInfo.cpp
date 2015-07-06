@@ -527,9 +527,6 @@ void CDsnInfo::InitBramUsage()
 		for (size_t shIdx = 0; shIdx < mod.m_shared.m_fieldList.size(); shIdx += 1) {
 			CField * pShared = mod.m_shared.m_fieldList[shIdx];
 
-			//if (pShared->m_queueW.AsInt() == 0)
-			//	continue;
-
 			CBramTarget target;
 			target.m_name = pShared->m_name;
 			target.m_pRamType = &pShared->m_ramType;

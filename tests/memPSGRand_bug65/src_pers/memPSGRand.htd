@@ -8,6 +8,7 @@ union test00_0_src_u1_data_union {
 union test00_0_src_u0_data_union {
   test00_0_src_u1_data_union test00_0_src_u1_data;
   int8_t test00_0_src_v5_data;
+#pragma htl spanning_field
   uint32_t test00_0_src_v6_data;
   int32_t test00_0_src_v7_data[5];
 };
@@ -79,7 +80,7 @@ Test00.AddPrivate()
 	;
 
 Test00.AddGlobal()
-	.AddVar(type=test00_0_src_s0_data_struct, name=test00_0_src_s0_data, addr1=test00_0_src_s0_data_RdAddr1, addr2=test00_0_src_s0_data_RdAddr2)
+	.AddVar(type=test00_0_src_s0_data_struct, name=test00_0_src_s0_data, addr1=test00_0_src_s0_data_RdAddr1, addr2=test00_0_src_s0_data_RdAddr2, spanningWrite=true)
 	;
 
 Test00.AddReadMem()

@@ -166,7 +166,8 @@ public:
 struct CField : CDimenList {
 
 	CField(CType * pType, string name, string bitWidth, string base, vector<CHtString> const &dimenList, bool bSrcRead,
-		bool bSrcWrite, bool bMifRead, bool bMifWrite, HtdFile::ERamType ramType, int atomicMask)
+		bool bSrcWrite, bool bMifRead, bool bMifWrite, HtdFile::ERamType ramType, int atomicMask,
+		bool bSpanningFieldForced = false)
 	{
 		Init();
 
@@ -182,6 +183,7 @@ struct CField : CDimenList {
 		m_bMifWrite = bMifWrite;
 		m_ramType = ramType;
 		m_atomicMask = atomicMask;
+		m_bSpanningFieldForced = bSpanningFieldForced;
 	}
 
 	CField(CType * pType, string fieldName, bool bIfDefHtv = false)
@@ -344,6 +346,9 @@ public:
 	int			m_atomicMask;
 	int			m_cLangFieldPos;
 
+	// spanning field flags for global variable writes
+	bool		m_bSpanningFieldForced;
+
 	CHtString	m_rngLow;	// instruction stage low
 	CHtString	m_rngHigh;	// instruction stage high
 	bool		m_bInit;	// initialize first stage register
@@ -396,11 +401,12 @@ struct CRecord : CType {
 	}
 
 	CField * AddStructField(CType * pType, string const & name, string bitWidth = "", string base = "", vector<CHtString> const &dimenList = g_nullHtStringVec,
-		bool bSrcRead = true, bool bSrcWrite = true, bool bMifRead = false, bool bMifWrite = false, HtdFile::ERamType ramType = HtdFile::eDistRam, int atomicMask = 0)
+		bool bSrcRead = true, bool bSrcWrite = true, bool bMifRead = false, bool bMifWrite = false, HtdFile::ERamType ramType = HtdFile::eDistRam, int atomicMask = 0,
+		bool bSpanningFieldForced = false)
 	{
 
 
-		m_fieldList.push_back(new CField(pType, name, bitWidth, base, dimenList, bSrcRead, bSrcWrite, bMifRead, bMifWrite, ramType, atomicMask));
+		m_fieldList.push_back(new CField(pType, name, bitWidth, base, dimenList, bSrcRead, bSrcWrite, bMifRead, bMifWrite, ramType, atomicMask, bSpanningFieldForced));
 		m_fieldList.back()->InitDimen(CPreProcess::m_lineInfo);
 		m_fieldList.back()->m_fieldWidth.InitValue(CPreProcess::m_lineInfo, false);
 
@@ -486,6 +492,7 @@ public:
 	bool				m_bInclude;
 	bool				m_bNeedIntf;
 	bool				m_bConstructors;
+	bool				m_bSpanningWrite;
 
 	string				m_modName;
 	int					m_atomicMask;
@@ -538,7 +545,7 @@ struct CRam : CRecord, CDimenList {
 
 	CRam(CType * pType, string &name, string &dimen1, string &dimen2, string &addr1, string &addr2,
 		string &addr1W, string &addr2W, string &rdStg, string &wrStg, bool bMaxIw, bool bMaxMw,
-		HtdFile::ERamType ramType, bool bRead, bool bWrite)
+		HtdFile::ERamType ramType, bool bRead, bool bWrite, bool bSpanningWrite)
 	{
 		Init();
 		m_pType = pType;
@@ -560,6 +567,7 @@ struct CRam : CRecord, CDimenList {
 		m_ramType = ramType;
 		m_bReadForInstrRead = bRead;
 		m_bWriteForInstrWrite = bWrite;
+		m_bSpanningWrite = bSpanningWrite;
 	}
 
 	CRam(string &type, string &name, vector<CHtString> & dimenList, string &addr1, string &addr2,
@@ -595,6 +603,7 @@ struct CRam : CRecord, CDimenList {
 		m_addr2IsHtId = false;
 		m_addr2IsPrivate = false;
 		m_addr2IsStage = false;
+		m_bSpanningWrite = false;
 	}
 
 public:
@@ -637,9 +646,29 @@ struct CNgvModInfo {
 	CRam * m_pNgv;
 };
 
+struct CSpanningField {
+	CSpanningField() {
+		m_bIgnore = false;
+		m_bForced = false;
+		m_bSpanning = false;
+	}
+
+public:
+	CLineInfo m_lineInfo;
+	string m_ramName;
+	CType * m_pType;
+	string m_heirName;
+	int m_pos;
+	int m_width;
+	bool m_bForced;
+	bool m_bIgnore;
+	bool m_bSpanning;
+};
+
 struct CNgvInfo {
 	CNgvInfo() : m_atomicMask(0), m_ngvReplCnt(0) {}
 	vector<CNgvModInfo> m_modInfoList;
+	vector<CSpanningField> m_spanningFieldList;
 	int m_atomicMask;
 	string m_ngvWrType;
 	HtdFile::ERamType m_ramType;
@@ -648,6 +677,8 @@ struct CNgvInfo {
 	bool m_bNgvWrCompClk2x;
 	bool m_bNgvAtomicFast;
 	bool m_bNgvAtomicSlow;
+	bool m_bUserSpanningWrite;
+	bool m_bAutoSpanningWrite;
 	bool m_bNgvMaxSel;
 	int m_ngvFieldCnt;
 	int m_ngvReplCnt;
@@ -1931,7 +1962,7 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 	void AddHostData(void * pModule, HtdFile::EHostMsgDir msgDir, bool bMaxBw);
 	void AddGlobalVar(vector<CRam *> * pGlobalList, CType * pType, string name, string dimen1, string dimen2,
 		string addr1W, string addr2W, string addr1, string addr2, string rdStg, string wrStg,
-		bool bMaxIw, bool bMaxMw, ERamType ramType, bool bRead, bool bWrite);
+		bool bMaxIw, bool bMaxMw, ERamType ramType, bool bRead, bool bWrite, bool bSpanningWrite);
 	void AddBarrier(void * pModule, string name, string barIdW);
 	void AddStream(void * pStruct, bool bRead, string &name, CType * pType, string &strmBw, string &elemCntW, string &strmCnt,
 		string &memSrc, vector<int> &memPort, string &access, string &reserve, bool paired, bool bClose, CType * pTag, string &rspGrpW);
@@ -2228,6 +2259,8 @@ public:
 	void GenModStBufStatements(CModule * pMod);
 	void GenModNgvStatements(CModule &mod);
 	void GenModOptNgvStatements(CModule * mod, CRam * pGv);
+
+	void FindSpanningWriteFields(CNgvInfo * pNgvInfo, bool bUserEnabled);
 
 	void GenAeNextMsgIntf(HtiFile::CMsgIntfConn * pMicAeNext);
 	void GenAePrevMsgIntf(HtiFile::CMsgIntfConn * pMicAePrev);

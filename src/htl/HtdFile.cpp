@@ -203,14 +203,17 @@ void HtdFile::ParseFieldList()
 		bool bAtomicInc = false;
 		bool bAtomicSet = false;
 		bool bAtomicAdd = false;
+		bool bSpanningFieldForced = false;
+
 		if (m_pLex->GetTk() == eTkPound && m_pLex->GetNextTk() == eTkIdent && m_pLex->GetTkString() == "pragma") {
 			if (m_pLex->GetNextTk() != eTkIdent || m_pLex->GetTkString() != "htl" ||
 				m_pLex->GetNextTk() != eTkIdent ||
 				!((bAtomicInc = (m_pLex->GetTkString() == "atomic_inc")) ||
 				(bAtomicSet = (m_pLex->GetTkString() == "atomic_set")) ||
-				(bAtomicAdd = (m_pLex->GetTkString() == "atomic_add"))) ||
+				(bAtomicAdd = (m_pLex->GetTkString() == "atomic_add")) ||
+				(bSpanningFieldForced = (m_pLex->GetTkString() == "spanning_field"))) ||
 				m_pLex->GetNextTk() != eTkPound) {
-				CPreProcess::ParseMsg(Error, "expected #pragma htl {atomic_inc | atomic_set | atomic_add}");
+				CPreProcess::ParseMsg(Error, "expected #pragma htl {atomic_inc | atomic_set | atomic_add | spanning_field}");
 				SkipTo(eTkSemi);
 				m_pLex->GetNextTk();
 				continue;
@@ -311,7 +314,7 @@ void HtdFile::ParseFieldList()
 					m_pDsn->m_structFieldList.insert(name);
 					string base;
 					m_pOpenRecord->AddStructField(m_pDsnInfo->FindType(type), name, bitWidth, base, dimenList,
-						true, true, false, false, HtdFile::eDistRam, atomicMask);
+						true, true, false, false, HtdFile::eDistRam, atomicMask, bSpanningFieldForced);
 				}
 
 				if (m_pLex->GetTk() == eTkComma)
@@ -995,58 +998,16 @@ void HtdFile::ParseModuleMethods()
 
 	} else if (m_pLex->GetTkString() == "AddGlobal") {
 
-		//string var;
-		//string dimen1;
-		//string dimen2;
-		//string addr1W;
-		//string addr2W;
-		//string addr1;
-		//string addr2;
-		//string rdStg;
-		//string wrStg;
-		//bool bExtern = false;
-
 		CParamList params[] = {
-			/*           { "var",		&var,		true,	ePrmIdent , 0, 0 },
-			{ "dimen1",		&dimen1,	false,	ePrmInteger , 0, 0 },
-			{ "dimen2",		&dimen2,	false,	ePrmInteger , 0, 0 },
-			{ "addr1W",		&addr1W,	false,	ePrmInteger , 0, 0 },
-			{ "addr2W",		&addr2W,	false,	ePrmInteger , 0, 0 },
-			{ "addr1",		&addr1,		false,	ePrmIdentRef , 0, 0 },
-			{ "addr2",		&addr2,		false,	ePrmIdentRef , 0, 0 },
-			{ "rdStg",		&rdStg,		false,	ePrmInteger , 0, 0 },
-			{ "wrStg",		&wrStg,		false,	ePrmInteger, 0, 0 },
-			{ "extern",		&bExtern,	false,	ePrmBoolean , 0, 0 },*/
 				{ 0, 0, 0, ePrmUnknown, 0, 0 }
 		};
 
-		//bool newGlobal = g_appArgs.IsNewGlobalVarEnabled();
 		if (!ParseParameters(params)) {
 			CPreProcess::ParseMsg(Error, "expected <mod>.AddGlobal()");
 		}
 
-		//if (newGlobal) {
-
 		m_pOpenGlobal = m_pOpenMod->m_pModule->AddGlobal();
 		m_pParseMethod = &HtdFile::ParseGlobalMethods;
-
-		//} else {
-
-		//	if (addr2W.size() > 0 && addr1W.size() == 0)
-		//		CPreProcess::ParseMsg(Error, "unsupported parameter combination, addr2W is specified but addr1W is not");
-
-		//	if (dimen2.size() > 0 && dimen1.size() == 0)
-		//		CPreProcess::ParseMsg(Error, "unsupported parameter combination, dimen2 is specified but dimen1 is not");
-
-		//	if (m_pOpenMod->m_globalList.isInList(var))
-		//		CPreProcess::ParseMsg(Error, "duplicate global variable name '%s'", var.c_str());
-		//	else {
-		//		m_pOpenMod->m_globalList.insert(var);
-		//		m_pOpenRecord = AddGlobalRam(m_pOpenMod->m_pModule, var, dimen1, dimen2, addr1W, addr2W, addr1, addr2, rdStg, wrStg, bExtern);
-		//		m_pParseMethod = &HtdFile::ParseGlobalMethods;
-		//		m_pDsn->m_globalFieldList.clear();
-		//	}
-		//}
 
 		m_pLex->GetNextTk();
 
@@ -1744,6 +1705,7 @@ void HtdFile::ParseGlobalMethods()
 		string blockRam;
 		bool bRead = true;
 		bool bWrite = true;
+		bool bSpanningWrite = false;
 
 		CParamList params[] =
 		{
@@ -1763,6 +1725,7 @@ void HtdFile::ParseGlobalMethods()
 			{ "blockRam", &blockRam, false, ePrmIdent, 0, 0 },
 			{ "read", &bRead, false, ePrmBoolean, 0, 0 },
 			{ "write", &bWrite, false, ePrmBoolean, 0, 0 },
+			{ "spanningWrite", &bSpanningWrite, false, ePrmBoolean, 0, 0 },
 			{ 0, 0, 0, ePrmUnknown, 0, 0 }
 		};
 
@@ -1795,7 +1758,7 @@ void HtdFile::ParseGlobalMethods()
 			CPreProcess::ParseMsg(Error, "addr2W is specified but a shared or private variable for addr2 was not specified");
 
 		m_pDsnInfo->AddGlobalVar(m_pOpenGlobal, pType, name, dimen1, dimen2, addr1W, addr2W,
-			addr1, addr2, rdStg, wrStg, bMaxIw, bMaxMw, ramType, bRead, bWrite);
+			addr1, addr2, rdStg, wrStg, bMaxIw, bMaxMw, ramType, bRead, bWrite, bSpanningWrite);
 
 		m_pLex->GetNextTk();
 
