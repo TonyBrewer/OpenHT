@@ -8,8 +8,8 @@ union test00_0_src_u1_data_union {
 union test00_0_src_u0_data_union {
   test00_0_src_u1_data_union test00_0_src_u1_data;
   int8_t test00_0_src_v5_data;
-#pragma htl spanning_field
   uint32_t test00_0_src_v6_data;
+#pragma htl spanning_field
   int32_t test00_0_src_v7_data[5];
 };
 

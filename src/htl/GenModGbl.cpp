@@ -393,13 +393,14 @@ void CDsnInfo::FindSpanningWriteFields(CNgvInfo * pNgvInfo, bool bUserEnabled)
 
 	pNgvInfo->m_bAutoSpanningWrite = false;
 
-	{ // first step is mark all fields where a forced spanning fields overlaps
+	{ // create list of all fields
 		for (CStructElemIter iter(this, pNgv->m_pType); !iter.end(); iter++) {
 
 			pNgvInfo->m_spanningFieldList.push_back(CSpanningField());
 
 			CSpanningField & fld = pNgvInfo->m_spanningFieldList.back();
 			fld.m_lineInfo = iter->m_lineInfo;
+			fld.m_pField = &iter();
 			fld.m_heirName = iter.GetHeirFieldName();
 			fld.m_pos = iter.GetHeirFieldPos();
 			fld.m_width = iter.GetWidth();
@@ -508,6 +509,18 @@ void CDsnInfo::FindSpanningWriteFields(CNgvInfo * pNgvInfo, bool bUserEnabled)
 					break;
 				}
 
+				if (fs < rs) {
+					rangeList.insert(rangeList.begin()+idx2, CRange());
+					rangeList[idx2].m_start = fs;
+					rangeList[idx2].m_end = fe;
+					if (rangeList.size() - 1 > idx2 && rangeList[idx2 + 1].m_start == fe) {
+						rangeList[idx2].m_end = rangeList[idx2 + 1].m_end;
+						rangeList.erase(rangeList.begin() + idx2 + 1);
+					}
+					bFound = true;
+					break;
+				}
+
 				if (re == fs) {
 					rangeList[idx2].m_end = fe;
 					if (rangeList.size() - 1 > idx2 && rangeList[idx2 + 1].m_start == fe) {
@@ -561,6 +574,32 @@ void CDsnInfo::FindSpanningWriteFields(CNgvInfo * pNgvInfo, bool bUserEnabled)
 				}
 
 				ParseMsg(Info, fld1.m_lineInfo, "    %s", fld1.m_heirName.c_str());
+			}
+		}
+	}
+
+	{ // verify that elements of an array have same spanning flag value
+		vector<CSpanningField *> fieldList;
+		vector<bool> errorList;
+
+		for (size_t idx1 = 0; idx1 < pNgvInfo->m_spanningFieldList.size(); idx1 += 1) {
+			CSpanningField & fld1 = pNgvInfo->m_spanningFieldList[idx1];
+
+			size_t fldIdx;
+			for (fldIdx = 0; fldIdx < fieldList.size(); fldIdx += 1) {
+				if (fld1.m_pField == fieldList[fldIdx]->m_pField) {
+					if (fld1.m_bSpanning != fieldList[fldIdx]->m_bSpanning && !errorList[fldIdx]) {
+						if (!bUserEnabled) return;
+						ParseMsg(Error, fld1.m_lineInfo, "array elements have inconsistent write spanning");
+						errorList[fldIdx] = true;
+					}
+					break;
+				}
+			}
+
+			if (fldIdx == fieldList.size()) {
+				fieldList.push_back(&fld1);
+				errorList.push_back(false);
 			}
 		}
 	}

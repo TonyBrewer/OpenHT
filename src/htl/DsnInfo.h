@@ -656,6 +656,7 @@ struct CSpanningField {
 public:
 	CLineInfo m_lineInfo;
 	string m_ramName;
+	CField * m_pField;
 	CType * m_pType;
 	string m_heirName;
 	int m_pos;
