@@ -136,8 +136,8 @@ void CDsnInfo::InitAndValidateModMif()
 
 					ParseMsg(Fatal, rdDst.m_lineInfo, "unable to find private, shared or global destination variable, '%s'", varName.c_str());
 
-				}
-				else if (bFoundNewGbl + bFoundShared + bFoundPrivate > 1) {
+				} else if (bFoundNewGbl + bFoundShared + bFoundPrivate > 1) {
+
 					string msg;
 					if (bFoundNewGbl)
 						msg += "global";
@@ -181,8 +181,7 @@ void CDsnInfo::InitAndValidateModMif()
 					ParseVarRefSpec(rdDst.m_lineInfo, pRam->m_gblName, pRam->m_dimenList, varAddrList,
 						pRam->m_type, rdDst.m_var, rdDst.m_fieldRefList, rdDst.m_pDstType);
 
-				}
-				else if (bFoundShared) {
+				} else if (bFoundShared) {
 
 					// found a shared variable
 					rdDst.m_pSharedVar = pField;
@@ -203,15 +202,15 @@ void CDsnInfo::InitAndValidateModMif()
 					if (pField->m_queueW.AsInt() > 0)
 						ParseMsg(Error, pField->m_lineInfo, "memory read to shared queue variable not supported");
 
-					if (rdDst.m_pSharedVar->m_ramType == eBlockRam && rdDst.m_varAddr1W >= 0 &&
-						rdDst.m_pDstType->m_clangMinAlign != 1 && rdDst.m_pDstType->m_clangBitWidth != rdDst.m_pDstType->m_clangMinAlign)
-						ParseMsg(Error, pField->m_lineInfo, "memory read to shared variable with read type that requires multiple block ram writes not supported");
+					//if (rdDst.m_pSharedVar->m_ramType == eBlockRam && rdDst.m_varAddr1W >= 0 &&
+					//	rdDst.m_pDstType->m_clangMinAlign != 1 && rdDst.m_pDstType->m_clangBitWidth != rdDst.m_pDstType->m_clangMinAlign)
+					//	ParseMsg(Error, pField->m_lineInfo, "memory read to shared variable with read type that requires multiple block ram writes not supported");
 
-					if (rdDst.m_pSharedVar->m_ramType == eBlockRam && rdDst.m_varAddr1W >= 0 &&
-						rdDst.m_pDstType->m_clangBitWidth != rdDst.m_pSharedVar->m_pType->m_clangBitWidth)
-						ParseMsg(Error, pField->m_lineInfo, "memory read to shared variable implemented as a block ram with read type that requires a partial write not supported");
-				}
-				else if (bFoundPrivate) {
+					//if (rdDst.m_pSharedVar->m_ramType == eBlockRam && rdDst.m_varAddr1W >= 0 &&
+					//	rdDst.m_pDstType->m_clangBitWidth != rdDst.m_pSharedVar->m_pType->m_clangBitWidth)
+					//	ParseMsg(Error, pField->m_lineInfo, "memory read to shared variable implemented as a block ram with read type that requires a partial write not supported");
+
+				} else if (bFoundPrivate) {
 
 					// found a private variable
 					rdDst.m_pPrivVar = pField;
@@ -229,8 +228,7 @@ void CDsnInfo::InitAndValidateModMif()
 					ParseVarRefSpec(rdDst.m_lineInfo, pField->m_name, pField->m_dimenList, varAddrList,
 						pField->m_type, rdDst.m_var, rdDst.m_fieldRefList, rdDst.m_pDstType);
 
-				}
-				else
+				} else
 					HtlAssert(0);
 
 				if (rdDst.m_pRdType)
@@ -241,12 +239,10 @@ void CDsnInfo::InitAndValidateModMif()
 						if (rdDst.m_pDstType->m_clangBitWidth == 8 || rdDst.m_pDstType->m_clangBitWidth == 16 ||
 							rdDst.m_pDstType->m_clangBitWidth == 32 || rdDst.m_pDstType->m_clangBitWidth == 64) {
 							rdDst.m_memSize = rdDst.m_pDstType->m_clangBitWidth;
-						}
-						else
+						} else
 							ParseMsg(Error, rdDst.m_lineInfo, "rdType parameter must be specified when type is an ht_uint or ht_int");
 					}
-				}
-				else
+				} else
 					rdDst.m_memSize = 64;
 
 				int rdDstSize = 1;
@@ -291,8 +287,7 @@ void CDsnInfo::InitAndValidateModMif()
 				if (rdDst.m_fieldRefList.size() == 1 && rdDst.m_varAddr1W > 0) {
 					rdDst.m_maxElemCnt *= 1 << (rdDst.m_varAddr1W >= 0 ? rdDst.m_varAddr1W : 0);
 					rdDst.m_maxElemCnt *= 1 << (rdDst.m_varAddr2W >= 0 ? rdDst.m_varAddr2W : 0);
-				}
-				else if (rdDst.m_fieldRefList.back().m_refDimenList.size() > 0) {
+				} else if (rdDst.m_fieldRefList.back().m_refDimenList.size() > 0) {
 					vector<CRefDimen> & refDimen = rdDst.m_fieldRefList.back().m_refDimenList;
 					for (size_t i = 0; i < refDimen.size(); i += 1)
 						rdDst.m_maxElemCnt *= refDimen[i].m_size;
@@ -321,8 +316,7 @@ void CDsnInfo::InitAndValidateModMif()
 							else
 								mif.m_vIdxWList[1] = max(mif.m_vIdxWList[1], addr2W);
 						}
-					}
-					else {
+					} else {
 						for (size_t dimIdx = 0; dimIdx < rdDst.m_fieldRefList.back().m_refDimenList.size(); dimIdx += 1) {
 							CRefDimen & refDimen = rdDst.m_fieldRefList.back().m_refDimenList[dimIdx];
 							int vIdxW = refDimen.m_value >= 0 ? 0 : FindLg2(refDimen.m_size - 1, false);
@@ -354,8 +348,7 @@ void CDsnInfo::InitAndValidateModMif()
 							wrSrc.m_memSize = wrSrc.m_pWrType->m_clangBitWidth;
 						else
 							ParseMsg(Error, wrSrc.m_lineInfo, "wrType parameter must be specified when type is an ht_uint or ht_int");
-					}
-					else
+					} else
 						wrSrc.m_memSize = wrSrc.m_pSrcType->m_clangMinAlign;
 
 					wrSrc.m_bMultiElemWr = wrSrc.m_pSrcType->m_clangBitWidth > wrSrc.m_pSrcType->m_clangMinAlign && wrSrc.m_pSrcType->m_clangMinAlign > 1;
@@ -425,8 +418,8 @@ void CDsnInfo::InitAndValidateModMif()
 
 					ParseMsg(Fatal, wrSrc.m_lineInfo, "unable to find private, shared or global variable, '%s'", varName.c_str());
 
-				}
-				else if (bFoundNewGbl + bFoundShared + bFoundPrivate > 1) {
+				} else if (bFoundNewGbl + bFoundShared + bFoundPrivate > 1) {
+
 					string msg;
 					if (bFoundNewGbl)
 						msg += "global";
@@ -470,8 +463,7 @@ void CDsnInfo::InitAndValidateModMif()
 					ParseVarRefSpec(wrSrc.m_lineInfo, pRam->m_gblName, pRam->m_dimenList, varAddrList,
 						pRam->m_type, wrSrc.m_var, wrSrc.m_fieldRefList, wrSrc.m_pSrcType);
 
-				}
-				else if (bFoundShared) {
+				} else if (bFoundShared) {
 
 					// found a shared variable
 					wrSrc.m_pSharedVar = pField;
@@ -489,8 +481,7 @@ void CDsnInfo::InitAndValidateModMif()
 					ParseVarRefSpec(wrSrc.m_lineInfo, pField->m_name, pField->m_dimenList, varAddrList,
 						pField->m_type, wrSrc.m_var, wrSrc.m_fieldRefList, wrSrc.m_pSrcType);
 
-				}
-				else if (bFoundPrivate) {
+				} else if (bFoundPrivate) {
 
 					// found a shared variable
 					wrSrc.m_pPrivVar = pField;
@@ -507,8 +498,7 @@ void CDsnInfo::InitAndValidateModMif()
 					// check if ram has field specified in AddSrc
 					ParseVarRefSpec(wrSrc.m_lineInfo, pField->m_name, pField->m_dimenList, varAddrList,
 						pField->m_type, wrSrc.m_var, wrSrc.m_fieldRefList, wrSrc.m_pSrcType);
-				}
-				else
+				} else
 					HtlAssert(0);
 
 				if (wrSrc.m_pWrType)
@@ -517,8 +507,7 @@ void CDsnInfo::InitAndValidateModMif()
 					wrSrc.m_memSize = wrSrc.m_pSrcType->m_clangMinAlign;
 					if (wrSrc.m_memSize == 1)
 						ParseMsg(Error, wrSrc.m_lineInfo, "AddSrc type of ht_uint or ht_int not supported");
-				}
-				else
+				} else
 					wrSrc.m_memSize = 64;
 
 				int wrSrcSize = 1;
@@ -527,14 +516,14 @@ void CDsnInfo::InitAndValidateModMif()
 						wrSrcSize *= wrSrc.m_fieldRefList.back().m_refDimenList[i].m_size;
 				}
 
-				ERamType ramType = eRegRam;
+				//ERamType ramType = eRegRam;
 
-				if (wrSrc.m_pGblVar) {
-					bool bPrivGblAndNoAddr = wrSrc.m_pGblVar->m_bPrivGbl && wrSrc.m_pGblVar->m_addrW == mod.m_threads.m_htIdW.AsInt();
-					if (!bPrivGblAndNoAddr)
-						ramType = wrSrc.m_pGblVar->m_ramType;
-				} else if (wrSrc.m_pSharedVar)
-					ramType = wrSrc.m_pSharedVar->m_ramType;
+				//if (wrSrc.m_pGblVar) {
+				//	bool bPrivGblAndNoAddr = wrSrc.m_pGblVar->m_bPrivGbl && wrSrc.m_pGblVar->m_addrW == mod.m_threads.m_htIdW.AsInt();
+				//	if (!bPrivGblAndNoAddr)
+				//		ramType = wrSrc.m_pGblVar->m_ramType;
+				//} else if (wrSrc.m_pSharedVar)
+				//	ramType = wrSrc.m_pSharedVar->m_ramType;
 
 				wrSrc.m_bMultiElemWr = (wrSrc.m_elemCntW.size() == 0 || wrSrc.m_elemCntW.AsInt() > 0) &&
 					(wrSrc.m_fieldRefList.size() == 1 && wrSrc.m_varAddr1W > 0 ||
@@ -558,8 +547,8 @@ void CDsnInfo::InitAndValidateModMif()
 				mif.m_mifWr.m_bMultiQwHostWrMif |= wrSrc.m_bMultiQwHostWrMif;
 				mif.m_mifWr.m_bMultiQwCoprocWrMif |= wrSrc.m_bMultiQwCoprocWrMif;
 
-				mif.m_mifWr.m_bDistRamAccessReq |= wrSrc.m_varAddr1W > 0 && ramType == eDistRam;
-				mif.m_mifWr.m_bBlockRamAccessReq |= wrSrc.m_varAddr1W > 0 && ramType == eBlockRam;
+				//mif.m_mifWr.m_bDistRamAccessReq |= wrSrc.m_varAddr1W > 0 && ramType == eDistRam;
+				//mif.m_mifWr.m_bBlockRamAccessReq |= wrSrc.m_varAddr1W > 0 && ramType == eBlockRam;
 
 				// find maxWrelemQwCnt and maxElemCnt
 				int elemQwCnt = wrSrc.m_pSrcType->m_clangMinAlign == 1 ? 1 :
@@ -569,12 +558,10 @@ void CDsnInfo::InitAndValidateModMif()
 				wrSrc.m_maxElemCnt = 1;
 				if (wrSrc.m_pType != 0) {
 					;
-				}
-				else if (wrSrc.m_fieldRefList.size() == 1 && wrSrc.m_varAddr1W > 0) {
+				} else if (wrSrc.m_fieldRefList.size() == 1 && wrSrc.m_varAddr1W > 0) {
 					wrSrc.m_maxElemCnt *= 1 << (wrSrc.m_varAddr1W >= 0 ? wrSrc.m_varAddr1W : 0);
 					wrSrc.m_maxElemCnt *= 1 << (wrSrc.m_varAddr2W >= 0 ? wrSrc.m_varAddr2W : 0);
-				}
-				else if (wrSrc.m_fieldRefList.back().m_refDimenList.size() > 0) {
+				} else if (wrSrc.m_fieldRefList.back().m_refDimenList.size() > 0) {
 					vector<CRefDimen> & refDimen = wrSrc.m_fieldRefList.back().m_refDimenList;
 					for (size_t i = 0; i < refDimen.size(); i += 1)
 						wrSrc.m_maxElemCnt *= refDimen[i].m_size;
@@ -604,8 +591,7 @@ void CDsnInfo::InitAndValidateModMif()
 							else
 								mif.m_vIdxWList[1] = max(mif.m_vIdxWList[1], addr2W);
 						}
-					}
-					else {
+					} else {
 						for (size_t dimIdx = 0; dimIdx < wrSrc.m_fieldRefList.back().m_refDimenList.size(); dimIdx += 1) {
 							CRefDimen & refDimen = wrSrc.m_fieldRefList.back().m_refDimenList[dimIdx];
 							int vIdxW = refDimen.m_value >= 0 ? 0 : FindLg2(refDimen.m_size - 1, false);
@@ -648,7 +634,7 @@ void CDsnInfo::InitAndValidateModMif()
 					if (rdDst.m_varAddr1W > 0 && bMultiElemDst && rdDst.m_fieldRefList.size() == 1)
 						rdDst.m_varAddr1IsIdx = true;
 
-					if (rdDst.m_varAddr2W > 0 && bMultiElemDst && rdDst.m_fieldRefList.size() == 1) 
+					if (rdDst.m_varAddr2W > 0 && bMultiElemDst && rdDst.m_fieldRefList.size() == 1)
 						rdDst.m_varAddr2IsIdx = true;
 
 					if (rdDst.m_varAddr1W <= 0 || rdDst.m_fieldRefList.size() > 1) {
@@ -754,18 +740,18 @@ void CDsnInfo::InitAndValidateModMif()
 			}
 		}
 
-		mif.m_mifReqStgCnt = 0;
+		//mif.m_mifReqStgCnt = 0;
 
-		if (mif.m_mifRd.m_bRdRspCallBack || mif.m_mifRd.m_bNeedRdRspInfoRam)
-			mif.m_mifReqStgCnt = max(mif.m_mifReqStgCnt, 1);
+		//if (mif.m_mifRd.m_bRdRspCallBack || mif.m_mifRd.m_bNeedRdRspInfoRam)
+		//	mif.m_mifReqStgCnt = max(mif.m_mifReqStgCnt, 1);
 
-		if (mif.m_mifRd.m_bMultiQwRdReq)
-			mif.m_mifReqStgCnt = max(mif.m_mifReqStgCnt, 1);
+		//if (mif.m_mifRd.m_bMultiQwRdReq)
+		//	mif.m_mifReqStgCnt = max(mif.m_mifReqStgCnt, 1);
 
-		if (mif.m_mifWr.m_bBlockRamAccessReq || mif.m_mifWr.m_bDistRamAccessReq && mif.m_mifWr.m_bMultiQwWrReq)
-			mif.m_mifReqStgCnt = max(mif.m_mifReqStgCnt, 2);
-		else if (mif.m_mifWr.m_bDistRamAccessReq || mif.m_mifWr.m_bMultiQwWrReq)
-			mif.m_mifReqStgCnt = max(mif.m_mifReqStgCnt, 1);
+		//if (mif.m_mifWr.m_bBlockRamAccessReq || mif.m_mifWr.m_bDistRamAccessReq && mif.m_mifWr.m_bMultiQwWrReq)
+		//	mif.m_mifReqStgCnt = max(mif.m_mifReqStgCnt, 2);
+		//else if (mif.m_mifWr.m_bDistRamAccessReq || mif.m_mifWr.m_bMultiQwWrReq)
+		//	mif.m_mifReqStgCnt = max(mif.m_mifReqStgCnt, 1);
 
 		mod.m_memPortList[0]->m_queueW = mif.m_queueW;
 		mod.m_memPortList[0]->m_bMultiQwRdReq |= mif.m_mifRd.m_bMultiQwRdReq;
@@ -782,7 +768,7 @@ void CDsnInfo::InitAndValidateModMif()
 			ParseMsg(Error, mif.m_mifRd.m_lineInfo, "AddReadMem rspCntW parameter must be greater or equal to 3");
 
 		if ((coprocInfo.GetMaxHostQwWriteCnt() > 1 || coprocInfo.GetMaxCoprocQwWriteCnt() > 1)
-			&& mif.m_mifWr.m_bMultiQwWrReq) 
+			&& mif.m_mifWr.m_bMultiQwWrReq)
 		{
 			if (mif.m_bMifWr && mif.m_mifWr.m_rspCntW.AsInt() < 4)
 				ParseMsg(Error, mif.m_mifWr.m_lineInfo, "AddWriteMem rspCntW parameter must be greater or equal to 4 for multi-cycle memory requests");
@@ -826,6 +812,67 @@ void CDsnInfo::InitAndValidateModMif()
 			(int)(m_mifInstList.size() * g_appArgs.GetAeUnitCnt()));
 		ParseMsg(Info, "   required memory interface ports is product of Unit count (%d) and memory ports per Unit (%d)",
 			(int)g_appArgs.GetAeUnitCnt(), (int)m_mifInstList.size());
+	}
+}
+
+void CDsnInfo::InitMifRamType()
+{
+	for (size_t modIdx = 0; modIdx < m_modList.size(); modIdx += 1) {
+		CModule &mod = *m_modList[modIdx];
+		CMif &mif = mod.m_mif;
+
+		if (!mif.m_bMif) continue;
+
+		ERamType ramType = eRegRam;
+
+		if (mif.m_bMifWr) {
+
+			for (size_t wrSrcIdx = 0; wrSrcIdx < mif.m_mifWr.m_wrSrcList.size(); wrSrcIdx += 1) {
+				CMifWrSrc & wrSrc = mif.m_mifWr.m_wrSrcList[wrSrcIdx];
+
+				if (wrSrc.m_pGblVar) {
+					bool bPrivGblAndNoAddr = wrSrc.m_pGblVar->m_bPrivGbl && wrSrc.m_pGblVar->m_addrW == mod.m_threads.m_htIdW.AsInt();
+					if (!bPrivGblAndNoAddr)
+						ramType = wrSrc.m_pGblVar->m_ramType;
+				} else if (wrSrc.m_pSharedVar)
+					ramType = wrSrc.m_pSharedVar->m_ramType;
+
+				mif.m_mifWr.m_bDistRamAccessReq |= wrSrc.m_varAddr1W > 0 && ramType == eDistRam;
+				mif.m_mifWr.m_bBlockRamAccessReq |= wrSrc.m_varAddr1W > 0 && ramType == eBlockRam;
+			}
+		}
+
+		if (mif.m_bMifRd) {
+
+			mif.m_mifRd.m_maxRsmDly = 0;
+			for (size_t rdDstIdx = 0; rdDstIdx < mif.m_mifRd.m_rdDstList.size(); rdDstIdx += 1) {
+				CMifRdDst & rdDst = mif.m_mifRd.m_rdDstList[rdDstIdx];
+
+				if (rdDst.m_pSharedVar) {
+
+					if (rdDst.m_pSharedVar->m_ramType == eBlockRam && rdDst.m_varAddr1W >= 0 &&
+						rdDst.m_pDstType->m_clangMinAlign != 1 && rdDst.m_pDstType->m_clangBitWidth != rdDst.m_pDstType->m_clangMinAlign)
+						ParseMsg(Error, rdDst.m_pSharedVar->m_lineInfo, "memory read to shared variable with read type that requires multiple block ram writes not supported");
+
+					if (rdDst.m_pSharedVar->m_ramType == eBlockRam && rdDst.m_varAddr1W >= 0 &&
+						rdDst.m_pDstType->m_clangBitWidth != rdDst.m_pSharedVar->m_pType->m_clangBitWidth)
+						ParseMsg(Error, rdDst.m_pSharedVar->m_lineInfo, "memory read to shared variable implemented as a block ram with read type that requires a partial write not supported");
+				}
+			}
+		}
+				
+		mif.m_mifReqStgCnt = 0;
+
+		if (mif.m_mifRd.m_bRdRspCallBack || mif.m_mifRd.m_bNeedRdRspInfoRam)
+			mif.m_mifReqStgCnt = max(mif.m_mifReqStgCnt, 1);
+
+		if (mif.m_mifRd.m_bMultiQwRdReq)
+			mif.m_mifReqStgCnt = max(mif.m_mifReqStgCnt, 1);
+
+		if (mif.m_mifWr.m_bBlockRamAccessReq || mif.m_mifWr.m_bDistRamAccessReq && mif.m_mifWr.m_bMultiQwWrReq)
+			mif.m_mifReqStgCnt = max(mif.m_mifReqStgCnt, 2);
+		else if (mif.m_mifWr.m_bDistRamAccessReq || mif.m_mifWr.m_bMultiQwWrReq)
+			mif.m_mifReqStgCnt = max(mif.m_mifReqStgCnt, 1);
 	}
 }
 
@@ -4797,8 +4844,15 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 				string addrFld;
 
 				if (wrSrc.m_pGblVar) {
-					ramType = wrSrc.m_pGblVar->m_ramType;
-					addrVar = VA("_GBL__%s%s", wrSrc.m_pGblVar->m_gblName.c_str(), wrSrc.m_pGblVar->m_addrW > 0 ? "Mr" : "");
+					if (wrSrc.m_pGblVar->m_pNgvInfo->m_bOgv &&
+						(wrSrc.m_pGblVar->m_pNgvInfo->m_bUserSpanningWrite || wrSrc.m_pGblVar->m_pNgvInfo->m_bAutoSpanningWrite))
+					{
+						ramType = wrSrc.m_pGblVar->m_ramType;
+						addrVar = VA("_GBL__%%s%s", wrSrc.m_pGblVar->m_addrW > 0 ? "Mr" : "");
+					} else {
+						ramType = wrSrc.m_pGblVar->m_ramType;
+						addrVar = VA("_GBL__%s%s", wrSrc.m_pGblVar->m_gblName.c_str(), wrSrc.m_pGblVar->m_addrW > 0 ? "Mr" : "");
+					}
 				} else if (wrSrc.m_pSharedVar) {
 					ramType = wrSrc.m_pSharedVar->m_ramType;
 					addrVar = VA("_SHR__%s", wrSrc.m_pSharedVar->m_name.c_str());
@@ -4841,12 +4895,34 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 							}
 						}
 
-						//varName += identStr;
-
 						if (fldIdx == 0)
 							addrVar += identStr;
 						else
 							addrFld += identStr;
+					}
+				}
+
+				bool bOptGv = false;
+
+				if (wrSrc.m_pGblVar && wrSrc.m_pGblVar->m_pNgvInfo->m_bOgv &&
+					(wrSrc.m_pGblVar->m_pNgvInfo->m_bUserSpanningWrite || wrSrc.m_pGblVar->m_pNgvInfo->m_bAutoSpanningWrite))
+				{
+					bOptGv = true;
+					mifPostInstr.Append("%s{\n", tabs.c_str());
+
+					mifPostInstr.Append("%s\t%s c_%s;\n", tabs.c_str(),
+					wrSrc.m_pGblVar->m_pType->m_typeName.c_str(), wrSrc.m_pGblVar->m_pType->m_typeName.c_str());
+
+					for (size_t fldIdx = 0; fldIdx < wrSrc.m_pGblVar->m_pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
+						CSpanningField &fld = wrSrc.m_pGblVar->m_pNgvInfo->m_spanningFieldList[fldIdx];
+
+						if (!fld.m_bSpanning) continue;
+
+						string addrVarFld = VA(addrVar.c_str(), fld.m_ramName.c_str());
+
+						mifPostInstr.Append("%s\tc_%s%s = m_%s%s.read_mem();\n", tabs.c_str(),
+							wrSrc.m_pGblVar->m_pType->m_typeName.c_str(), fld.m_heirName.c_str(),
+							addrVarFld.c_str(), varIdx.c_str());
 					}
 				}
 
@@ -4873,17 +4949,34 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 
 						if (pos < qwIdx * reqSize || pos >= (qwIdx + 1) * reqSize) continue;
 
-						if (width < 64) {
-							mifPostInstr.Append("%s\tc_t%d_%sToMif_req.m_data |= (uint64_t)((m_%s%s.read_mem()%s%s & ((1LL << %d) - 1)) << %d);\n",
-								tabs.c_str(),
-								mod.m_execStg + 2, mod.m_modName.Lc().c_str(),
-								addrVar.c_str(), varIdx.c_str(), addrFld.c_str(), iter.GetHeirFieldName().c_str(),
-								width, pos % reqSize);
+						if (bOptGv) {
+
+							if (width < 64) {
+								mifPostInstr.Append("%s\tc_t%d_%sToMif_req.m_data |= (uint64_t)((c_%s%s%s & ((1LL << %d) - 1)) << %d);\n",
+									tabs.c_str(),
+									mod.m_execStg + 2, mod.m_modName.Lc().c_str(),
+									wrSrc.m_pGblVar->m_pType->m_typeName.c_str(), addrFld.c_str(), iter.GetHeirFieldName().c_str(),
+									width, pos % reqSize);
+							} else {
+								mifPostInstr.Append("%s\tc_t%d_%sToMif_req.m_data |= c_%s%s%s;\n",
+									tabs.c_str(),
+									mod.m_execStg + 2, mod.m_modName.Lc().c_str(),
+									wrSrc.m_pGblVar->m_pType->m_typeName.c_str(), addrFld.c_str(), iter.GetHeirFieldName().c_str());
+							}
+
 						} else {
-							mifPostInstr.Append("%s\tc_t%d_%sToMif_req.m_data |= m_%s%s.read_mem()%s%s;\n",
-								tabs.c_str(),
-								mod.m_execStg + 2, mod.m_modName.Lc().c_str(),
-								addrVar.c_str(), varIdx.c_str(), addrFld.c_str(), iter.GetHeirFieldName().c_str());
+							if (width < 64) {
+								mifPostInstr.Append("%s\tc_t%d_%sToMif_req.m_data |= (uint64_t)((m_%s%s.read_mem()%s%s & ((1LL << %d) - 1)) << %d);\n",
+									tabs.c_str(),
+									mod.m_execStg + 2, mod.m_modName.Lc().c_str(),
+									addrVar.c_str(), varIdx.c_str(), addrFld.c_str(), iter.GetHeirFieldName().c_str(),
+									width, pos % reqSize);
+							} else {
+								mifPostInstr.Append("%s\tc_t%d_%sToMif_req.m_data |= m_%s%s.read_mem()%s%s;\n",
+									tabs.c_str(),
+									mod.m_execStg + 2, mod.m_modName.Lc().c_str(),
+									addrVar.c_str(), varIdx.c_str(), addrFld.c_str(), iter.GetHeirFieldName().c_str());
+							}
 						}
 					}
 
@@ -4901,6 +4994,9 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 
 				mifPostInstr.Append("%s\tbreak;\n", tabs.c_str());
 				tabs.erase(0, 1);
+
+				if (bOptGv)
+					mifPostInstr.Append("%s\t}\n", tabs.c_str());
 			}
 
 			mifPostInstr.Append("%s\tdefault:\n", tabs.c_str());

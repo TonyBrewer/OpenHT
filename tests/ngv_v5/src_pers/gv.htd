@@ -22,6 +22,7 @@ ctl.AddInst(name=CALL_GV7);
 ctl.AddInst(name=CALL_GV9);
 ctl.AddInst(name=CALL_GV11);
 ctl.AddInst(name=CALL_GV13);
+ctl.AddInst(name=CALL_GV15);
 ctl.AddInst(name=RETURN);
 
 ctl.AddPrivate()
@@ -45,6 +46,7 @@ ctl.AddCall(func=gv7);
 ctl.AddCall(func=gv9);
 ctl.AddCall(func=gv11);
 ctl.AddCall(func=gv13);
+ctl.AddCall(func=gv15);
 
 ////////////////////////////////////////////////////
 // Gv1 Module - 1x, 1F, Iw, Ir
@@ -665,3 +667,39 @@ gv14.AddGlobal()
 	.AddVar(type=Data16, name=Gv14c, write=false)
 	.AddVar(type=Data16, name=Gv14d, addr1=addr1, write=false)
 	;
+
+////////////////////////////////////////////////////
+// Gv15 Module
+
+union CUnion {
+	struct {
+		uint64_t	m_u64;
+		uint16_t	m_u16;
+	};
+	uint8_t m_u8[10];
+};
+
+dsnInfo.AddModule(name=gv15, htIdW=3, clock=1x);
+gv15.AddInst(name=GV15_ENTRY);
+gv15.AddInst(name=GV15_WR);
+gv15.AddInst(name=GV15_RD);
+gv15.AddInst(name=GV15_RETURN);
+
+gv15.AddEntry(func=gv15, inst=GV15_ENTRY)
+	;
+
+gv15.AddPrivate()
+	.AddVar(type=ht_uint4, name=gvAddr1)
+	;
+
+gv15.AddReturn(func=gv15)
+	;
+
+gv15.AddGlobal()
+	.AddVar(type=CUnion, name=Gv15, addr1=gvAddr1, spanningWrite=true, blockRam=true)
+	;
+
+gv15.AddReadMem()
+	.AddDst(var=Gv15.m_u64)
+	;
+

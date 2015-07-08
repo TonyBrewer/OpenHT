@@ -10,7 +10,7 @@
 #include "CnyHt.h"
 #include "DsnInfo.h"
 
-void CDsnInfo::InitAndValidateModNgv()
+void CDsnInfo::InitOptNgv()
 {
 	for (size_t modIdx = 0; modIdx < m_modList.size(); modIdx += 1) {
 		CModule &mod = *m_modList[modIdx];
@@ -20,7 +20,7 @@ void CDsnInfo::InitAndValidateModNgv()
 		// create unique list of global variables for entire unit
 		for (size_t mgvIdx = 0; mgvIdx < mod.m_ngvList.size(); mgvIdx += 1) {
 			CRam * pMgv = mod.m_ngvList[mgvIdx];
-		
+
 			// verify that ram name is unique in module
 			for (size_t mgv2Idx = mgvIdx + 1; mgv2Idx < mod.m_ngvList.size(); mgv2Idx += 1) {
 				CRam * pMgv2 = mod.m_ngvList[mgv2Idx];
@@ -84,6 +84,7 @@ void CDsnInfo::InitAndValidateModNgv()
 		}
 	}
 
+	// determine which ngv can be optimized (i.e. without centralized module)
 	for (size_t gvIdx = 0; gvIdx < m_ngvList.size(); gvIdx += 1) {
 		CNgvInfo * pNgvInfo = m_ngvList[gvIdx];
 		CRam * pGv0 = pNgvInfo->m_modInfoList[0].m_pNgv;
@@ -93,9 +94,8 @@ void CDsnInfo::InitAndValidateModNgv()
 		// create ngv port list of instruction and memory writes
 		pNgvInfo->m_bAllWrPortClk1x = true;
 		bool bAllRdPortClk1x = true;
-		bool bNgvMaxSel = false;
 		pNgvInfo->m_rdPortCnt = 0;
-		pNgvInfo->m_ramType = eUnknownRam;
+		//pNgvInfo->m_ramType = eUnknownRam;
 		pNgvInfo->m_pRdMod = 0;
 		pNgvInfo->m_rdModCnt = 0;
 		pNgvInfo->m_bUserSpanningWrite = false;
@@ -125,14 +125,12 @@ void CDsnInfo::InitAndValidateModNgv()
 				}
 			}
 
-			bNgvMaxSel |= pModNgv->m_bMaxIw || pModNgv->m_bMaxMw;
-
 			pNgvInfo->m_bUserSpanningWrite |= pModNgv->m_bSpanningWrite;
 
-			if (pNgvInfo->m_ramType == eUnknownRam)
-				pNgvInfo->m_ramType = pModNgv->m_ramType;
-			else if (pNgvInfo->m_ramType != pModNgv->m_ramType)
-				pNgvInfo->m_ramType = eAutoRam;
+			//if (pNgvInfo->m_ramType == eUnknownRam)
+			//	pNgvInfo->m_ramType = pModNgv->m_ramType;
+			//else if (pNgvInfo->m_ramType != pModNgv->m_ramType)
+			//	pNgvInfo->m_ramType = eAutoRam;
 		}
 
 		FindSpanningWriteFields(pNgvInfo, pNgvInfo->m_bUserSpanningWrite);
@@ -158,62 +156,101 @@ void CDsnInfo::InitAndValidateModNgv()
 		pNgvInfo->m_bNgvAtomicFast = bNgvAtomicFast;
 		pNgvInfo->m_bNgvAtomicSlow = bNgvAtomicSlow;
 
+		bool bNgvReg = pGv0->m_addrW == 0;
+
+		// determine if this ram has an optimized implementation
+		pNgvInfo->m_bOgv = (pNgvInfo->m_rdModCnt == 1 && !bNgvAtomic && bNgvReg) ||
+			((pNgvInfo->m_bUserSpanningWrite || pNgvInfo->m_bAutoSpanningWrite) &&
+			!bNgvAtomic && (pNgvInfo->m_wrPortList.size() == 1 || pNgvInfo->m_bAllWrPortClk1x && pNgvInfo->m_wrPortList.size() == 2) &&
+			pNgvInfo->m_rdModCnt == 1 && (pNgvInfo->m_rdPortCnt == 1 || pNgvInfo->m_rdPortCnt == 2 && bAllRdPortClk1x));
+	}
+}
+
+void CDsnInfo::InitAndValidateModNgv()
+{
+	//InitOptNgv();
+
+	for (size_t gvIdx = 0; gvIdx < m_ngvList.size(); gvIdx += 1) {
+		CNgvInfo * pNgvInfo = m_ngvList[gvIdx];
+		CRam * pGv0 = pNgvInfo->m_modInfoList[0].m_pNgv;
+
+		pNgvInfo->m_ramType = eUnknownRam;
+
+		for (size_t modIdx = 0; modIdx < pNgvInfo->m_modInfoList.size(); modIdx += 1) {
+			CRam * pModNgv = pNgvInfo->m_modInfoList[modIdx].m_pNgv;
+
+			if (pNgvInfo->m_ramType == eUnknownRam)
+				pNgvInfo->m_ramType = pModNgv->m_ramType;
+			else if (pNgvInfo->m_ramType != pModNgv->m_ramType)
+				pNgvInfo->m_ramType = eAutoRam;
+		}
+
 		// determine type of ram
 		bool bNgvReg = pGv0->m_addrW == 0;
 		bool bNgvDist = !bNgvReg && pGv0->m_pNgvInfo->m_ramType != eBlockRam;
 		bool bNgvBlock = !bNgvReg && !bNgvDist;
 
 		int ngvPortCnt = (int)pNgvInfo->m_wrPortList.size();
+		bool bNgvAtomicSlow = pNgvInfo->m_bNgvAtomicSlow;
+		bool bNgvAtomic = pNgvInfo->m_bNgvAtomicFast || bNgvAtomicSlow;
+
+		bool bNgvMaxSel = false;
+
+		for (size_t modIdx = 0; modIdx < pNgvInfo->m_modInfoList.size(); modIdx += 1) {
+			CRam * pModNgv = pNgvInfo->m_modInfoList[modIdx].m_pNgv;
+
+			bNgvMaxSel |= pModNgv->m_bMaxIw || pModNgv->m_bMaxMw;
+		}
 
 		bNgvMaxSel &= bNgvDist && (!pNgvInfo->m_bAllWrPortClk1x || ngvPortCnt > 1) && bNgvAtomicSlow ||
-			bNgvBlock && (bNgvAtomic || ngvFieldCnt > 1);
+			bNgvBlock && (bNgvAtomic || pNgvInfo->m_ngvFieldCnt > 1);
 
 		pNgvInfo->m_bNgvMaxSel = bNgvMaxSel;
 
 		pNgvInfo->m_bNgvWrCompClk2x = bNgvReg && (!pNgvInfo->m_bAllWrPortClk1x && ngvPortCnt <= 2 || ngvPortCnt == 3) ||
 			bNgvDist && ((!pNgvInfo->m_bAllWrPortClk1x && ngvPortCnt <= 2 || ngvPortCnt == 3) && !bNgvAtomicSlow ||
 			(bNgvAtomicSlow && (!pNgvInfo->m_bAllWrPortClk1x || ngvPortCnt > 1) && bNgvMaxSel)) ||
-			bNgvBlock && ((!bNgvAtomic && ngvFieldCnt == 1) && (!pNgvInfo->m_bAllWrPortClk1x && ngvPortCnt <= 2 || ngvPortCnt == 3) ||
-			(bNgvAtomic || ngvFieldCnt > 1) && bNgvMaxSel);
+			bNgvBlock && ((!bNgvAtomic && pNgvInfo->m_ngvFieldCnt == 1) && (!pNgvInfo->m_bAllWrPortClk1x && ngvPortCnt <= 2 || ngvPortCnt == 3) ||
+			(bNgvAtomic || pNgvInfo->m_ngvFieldCnt > 1) && bNgvMaxSel);
 
 		pNgvInfo->m_bNgvWrDataClk2x = bNgvReg && (!pNgvInfo->m_bAllWrPortClk1x || ngvPortCnt > 1) ||
 			bNgvDist && ((!pNgvInfo->m_bAllWrPortClk1x || ngvPortCnt > 1) && !bNgvAtomicSlow ||
 			(bNgvAtomicSlow && (!pNgvInfo->m_bAllWrPortClk1x || ngvPortCnt > 1) && bNgvMaxSel)) ||
-			bNgvBlock && ((!bNgvAtomic && ngvFieldCnt == 1) && (!pNgvInfo->m_bAllWrPortClk1x || ngvPortCnt > 1) ||
-			(bNgvAtomic || ngvFieldCnt > 1) && bNgvMaxSel);
+			bNgvBlock && ((!bNgvAtomic && pNgvInfo->m_ngvFieldCnt == 1) && (!pNgvInfo->m_bAllWrPortClk1x || ngvPortCnt > 1) ||
+			(bNgvAtomic || pNgvInfo->m_ngvFieldCnt > 1) && bNgvMaxSel);
 
 		pNgvInfo->m_bNeedQue = bNgvReg && (ngvPortCnt == 2 && !pNgvInfo->m_bAllWrPortClk1x || ngvPortCnt >= 3) ||
 			bNgvDist && ((ngvPortCnt == 2 && !pNgvInfo->m_bAllWrPortClk1x || ngvPortCnt >= 3) && !bNgvAtomicSlow ||
 			((ngvPortCnt >= 2 || !pNgvInfo->m_bAllWrPortClk1x) && bNgvAtomicSlow)) ||
-			bNgvBlock && ((!bNgvAtomic && ngvFieldCnt == 1) && (ngvPortCnt == 2 && !pNgvInfo->m_bAllWrPortClk1x || ngvPortCnt >= 3) ||
-			(bNgvAtomic || ngvFieldCnt > 1));
+			bNgvBlock && ((!bNgvAtomic && pNgvInfo->m_ngvFieldCnt == 1) && (ngvPortCnt == 2 && !pNgvInfo->m_bAllWrPortClk1x || ngvPortCnt >= 3) ||
+			(bNgvAtomic || pNgvInfo->m_ngvFieldCnt > 1));
 
 		// 2x RR selection - one level, 2 or 3 ports, 2x wrData
 		bool bRrSel2x = bNgvReg && (ngvPortCnt == 2 && !pNgvInfo->m_bAllWrPortClk1x || ngvPortCnt == 3) ||
 			bNgvDist && (ngvPortCnt == 2 && !pNgvInfo->m_bAllWrPortClk1x && !bNgvAtomicSlow || ngvPortCnt == 3 && !bNgvAtomicSlow) ||
-			bNgvBlock && (ngvPortCnt == 2 && !pNgvInfo->m_bAllWrPortClk1x && !bNgvAtomic && ngvFieldCnt == 1
-			|| ngvPortCnt == 3 && !bNgvAtomic && ngvFieldCnt == 1);
+			bNgvBlock && (ngvPortCnt == 2 && !pNgvInfo->m_bAllWrPortClk1x && !bNgvAtomic && pNgvInfo->m_ngvFieldCnt == 1
+			|| ngvPortCnt == 3 && !bNgvAtomic && pNgvInfo->m_ngvFieldCnt == 1);
 
 		// 1x RR selection - no phase select, 1x wrData
 		bool bRrSel1x = bNgvDist && ngvPortCnt >= 2 && bNgvAtomicSlow && !pNgvInfo->m_bNgvMaxSel ||
-			bNgvBlock && ngvPortCnt >= 2 && (bNgvAtomic || ngvFieldCnt >= 2) && !pNgvInfo->m_bNgvMaxSel;
+			bNgvBlock && ngvPortCnt >= 2 && (bNgvAtomic || pNgvInfo->m_ngvFieldCnt >= 2) && !pNgvInfo->m_bNgvMaxSel;
 
 		// 1x RR selection, ports split using phase, 2x wrData
 		bool bRrSelAB = bNgvReg && ngvPortCnt >= 4 ||
 			bNgvDist && (ngvPortCnt >= 4 && !bNgvAtomicSlow) ||
-			bNgvBlock && (ngvPortCnt >= 4 && !bNgvAtomic && ngvFieldCnt == 1);
+			bNgvBlock && (ngvPortCnt >= 4 && !bNgvAtomic && pNgvInfo->m_ngvFieldCnt == 1);
 
 		bool bRrSelEO = bNgvDist && bNgvAtomicSlow && pNgvInfo->m_bNgvMaxSel && (!pNgvInfo->m_bAllWrPortClk1x || ngvPortCnt >= 2) ||
-			bNgvBlock && (bNgvAtomic || ngvFieldCnt > 1) && pNgvInfo->m_bNgvMaxSel;
+			bNgvBlock && (bNgvAtomic || pNgvInfo->m_ngvFieldCnt > 1) && pNgvInfo->m_bNgvMaxSel;
 
 		bool bNeedAddrComp = bNgvDist && bNgvAtomicSlow && pNgvInfo->m_bNgvMaxSel && (!pNgvInfo->m_bAllWrPortClk1x || ngvPortCnt >= 2) ||
-			bNgvBlock && (bNgvAtomic || ngvFieldCnt > 1);
+			bNgvBlock && (bNgvAtomic || pNgvInfo->m_ngvFieldCnt > 1);
 
 		bool bNeedRamReg = bNgvDist && bNgvAtomicSlow && (ngvPortCnt >= 2 || !pNgvInfo->m_bAllWrPortClk1x) && pNgvInfo->m_bNgvMaxSel ||
-			bNgvBlock && (bNgvAtomic || ngvFieldCnt > 1) && pNgvInfo->m_bNgvMaxSel;
+			bNgvBlock && (bNgvAtomic || pNgvInfo->m_ngvFieldCnt > 1) && pNgvInfo->m_bNgvMaxSel;
 
 		bool bNeedRamWrReg = bNgvDist && bNgvAtomicSlow && (ngvPortCnt >= 2 || !pNgvInfo->m_bAllWrPortClk1x) && pNgvInfo->m_bNgvMaxSel ||
-			bNgvBlock && (bNgvAtomic || ngvFieldCnt > 1) && pNgvInfo->m_bNgvMaxSel;
+			bNgvBlock && (bNgvAtomic || pNgvInfo->m_ngvFieldCnt > 1) && pNgvInfo->m_bNgvMaxSel;
 
 		int stgIdx = 0;
 		pNgvInfo->m_wrCompStg = -1;
@@ -222,7 +259,7 @@ void CDsnInfo::InitAndValidateModNgv()
 			pNgvInfo->m_wrCompStg = 1;
 		}
 		else if (bRrSel2x) {
-			if ((ngvFieldCnt != 1 || bNgvAtomic) && !bNgvReg) stgIdx += 1;
+			if ((pNgvInfo->m_ngvFieldCnt != 1 || bNgvAtomic) && !bNgvReg) stgIdx += 1;
 			pNgvInfo->m_wrCompStg = 1;
 		}
 		else if (bRrSelAB) {
@@ -234,9 +271,9 @@ void CDsnInfo::InitAndValidateModNgv()
 			stgIdx += 1;
 			pNgvInfo->m_wrCompStg = stgIdx;
 		}
-		else if (ngvPortCnt == 1 && ngvFieldCnt == 1 && !bNgvAtomic) {
+		else if (ngvPortCnt == 1 && pNgvInfo->m_ngvFieldCnt == 1 && !bNgvAtomic) {
 		}
-		else if (ngvPortCnt == 1 && (ngvFieldCnt > 1 || bNgvAtomic)) {
+		else if (ngvPortCnt == 1 && (pNgvInfo->m_ngvFieldCnt > 1 || bNgvAtomic)) {
 			if (bNeedAddrComp)
 				pNgvInfo->m_wrCompStg = stgIdx + 1;
 		}
@@ -245,21 +282,16 @@ void CDsnInfo::InitAndValidateModNgv()
 				pNgvInfo->m_wrCompStg = stgIdx + 1;
 		}
 
-		if (!(ngvFieldCnt > 1 || bNgvAtomic) && ngvPortCnt > 1) stgIdx += 1;
+		if (!(pNgvInfo->m_ngvFieldCnt > 1 || bNgvAtomic) && ngvPortCnt > 1) stgIdx += 1;
 
-		if (ngvFieldCnt > 1 || bNgvAtomic) {
+		if (pNgvInfo->m_ngvFieldCnt > 1 || bNgvAtomic) {
 			if (bNgvBlock) stgIdx += 1;
 			if (bNeedRamReg) stgIdx += 1;
 		}
 		if (bNeedRamWrReg) stgIdx += 1;
-		if ((ngvFieldCnt > 1 || bNgvAtomic) && !bNeedRamWrReg) stgIdx += 1;
+		if ((pNgvInfo->m_ngvFieldCnt > 1 || bNgvAtomic) && !bNeedRamWrReg) stgIdx += 1;
 
 		pNgvInfo->m_wrDataStg = stgIdx;
-
-		// determine if this ram has an optimized implementation
-		pNgvInfo->m_bOgv = (pNgvInfo->m_rdModCnt == 1 && !bNgvAtomic && bNgvReg) ||
-			(pNgvInfo->m_bAutoSpanningWrite /*ngvFieldCnt == 1*/ && !bNgvAtomic && (pNgvInfo->m_wrPortList.size() == 1 || pNgvInfo->m_bAllWrPortClk1x && pNgvInfo->m_wrPortList.size() == 2) &&
-			pNgvInfo->m_rdModCnt == 1 && (pNgvInfo->m_rdPortCnt == 1 || pNgvInfo->m_rdPortCnt == 2 && bAllRdPortClk1x));
 
 #ifdef WIN32
 		//printf("%s: m_bOgv = %d\n", pGv0->m_gblName.c_str(), pNgvInfo->m_bOgv);
@@ -559,8 +591,10 @@ void CDsnInfo::FindSpanningWriteFields(CNgvInfo * pNgvInfo, bool bUserEnabled)
 			}
 		}
 
+		pNgvInfo->m_bAutoSpanningWrite = !bOverlappingFields;
+
 		// check if we can auto enable spanning writes
-		if (!bOverlappingFields) {
+		if (false && !bOverlappingFields) {
 			int rdModIdx;
 			for (rdModIdx = 0; pNgvInfo->m_modInfoList[rdModIdx].m_pMod != pNgvInfo->m_pRdMod; rdModIdx += 1);
 			ERamType ramType = pNgvInfo->m_modInfoList[rdModIdx].m_pNgv->m_ramType;
@@ -810,6 +844,51 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 		} while (DimenIter(pGv->m_dimenList, refList));
 	}
 
+	if (pGv->m_bWriteForInstrWrite && pGv->m_ramType != eRegRam) {
+
+		vector<int> refList(pGv->m_dimenList.size());
+		do {
+			string dimIdx = IndexStr(refList);
+
+			for (size_t idx1 = 0; idx1 < pNgvInfo->m_spanningFieldList.size(); idx1 += 1) {
+				CSpanningField & fld1 = pNgvInfo->m_spanningFieldList[idx1];
+
+				if (fld1.m_bSpanning) continue;
+
+				gblPostInstr.Append("\tassert_msg(!c_t%d_%sIwData%s%s.GetWrEn(), \"Runtime check failed in CPers%s::Pers%s_%dx() - instruction write to non-spanning field %s%s\");\n",
+					pMod->m_tsStg, pGv->m_gblName.c_str(), dimIdx.c_str(), fld1.m_heirName.c_str(),
+					pMod->m_modName.Uc().c_str(), pMod->m_modName.Uc().c_str(), pMod->m_clkRate == eClk1x ? 1 : 2,
+					pGv->m_gblName.c_str(), fld1.m_heirName.c_str());
+			}
+
+		} while (DimenIter(pGv->m_dimenList, refList));
+
+		gblPostInstr.NewLine();
+	}
+
+	if (pGv->m_bWriteForMifRead && pGv->m_ramType != eRegRam) {
+		int rdRspStg = pMod->m_mif.m_mifRd.m_bNeedRdRspInfoRam ? 2 : 1;
+
+		vector<int> refList(pGv->m_dimenList.size());
+		do {
+			string dimIdx = IndexStr(refList);
+
+			for (size_t idx1 = 0; idx1 < pNgvInfo->m_spanningFieldList.size(); idx1 += 1) {
+				CSpanningField & fld1 = pNgvInfo->m_spanningFieldList[idx1];
+
+				if (fld1.m_bSpanning) continue;
+
+				gblPostInstr.Append("\tassert_msg(!c_m%d_%sMwData%s%s.GetWrEn(), \"Runtime check failed in CPers%s::Pers%s_%dx() - memory response write to non-spanning field %s%s\");\n",
+					rdRspStg, pGv->m_gblName.c_str(), dimIdx.c_str(), fld1.m_heirName.c_str(),
+					pMod->m_modName.Uc().c_str(), pMod->m_modName.Uc().c_str(), pMod->m_clkRate == eClk1x ? 1 : 2,
+					pGv->m_gblName.c_str(), fld1.m_heirName.c_str());
+			}
+
+		} while (DimenIter(pGv->m_dimenList, refList));
+
+		gblPostInstr.NewLine();
+	}
+
 	// write outputs
 	if (!pGv->m_bReadForInstrRead && !pGv->m_bReadForMifWrite) {
 		if (pGv->m_bWriteForInstrWrite) {
@@ -930,6 +1009,13 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 					pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
 
 				if (pGv->m_addrW == 0) {
+
+					if (pModInfo->m_pMod->m_clkRate == eClk2x && pMod->m_clkRate == eClk1x) {
+
+						GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, VA("sc_signal<CGW_%s>", pGv->m_type.c_str()),
+							VA("r_%sTo%s_%sIwData_2x", pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str()), pGv->m_dimenList);
+					}
+
 					vector<int> refList(pGv->m_dimenList.size());
 					do {
 						string dimIdx = IndexStr(refList);
@@ -940,8 +1026,21 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 							gblPostInstr.Append("\t\tc__GBL__%s%s%s = i_%sTo%s_%sIwData%s.read()%s.GetData();\n",
 								pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str(),
 								pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
+
+							if (pModInfo->m_pMod->m_clkRate == eClk2x && pMod->m_clkRate == eClk1x) {
+								gblPostInstr.Append("\telse if (r_%sTo%s_%sIwData_2x%s.read()%s.GetWrEn())\n",
+									pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
+								gblPostInstr.Append("\t\tc__GBL__%s%s%s = r_%sTo%s_%sIwData_2x%s.read()%s.GetData();\n",
+									pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str(),
+									pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
+
+								m_gblReg2x.Append("\tr_%sTo%s_%sIwData_2x%s = i_%sTo%s_%sIwData%s;\n",
+									pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(),
+									pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str());
+							}
 						}
 						gblPostInstr.NewLine();
+						m_gblReg2x.NewLine();
 
 					} while (DimenIter(pGv->m_dimenList, refList));
 
@@ -1348,7 +1447,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 
 						m_gblPostInstr2x.Append("\tif (r__GBL__%sPwData%s%s.GetWrEn())\n",
 							pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str());
-						m_gblPostInstr2x.Append("\t\tm__GBL__%s%s%s.write_mem(r__GBL__%sPwData%s.GetData()%s);\n",
+						m_gblPostInstr2x.Append("\t\tm__GBL__%s%s%s.write_mem(r__GBL__%sPwData%s%s.GetData());\n",
 							fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
 							pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str());
 

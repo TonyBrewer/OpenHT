@@ -2011,7 +2011,9 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 	bool GetThreadGroups(string &name, string &groupW, string &resetInstr) { return false; }
 	bool NeedClk2x();
 
+	void InitOptNgv();
 	void InitBramUsage();
+	void InitMifRamType();
 	void ReportRamFieldUsage();
 	void DrawModuleCmdRelationships();
 

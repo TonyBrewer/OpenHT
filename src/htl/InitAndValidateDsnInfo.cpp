@@ -28,10 +28,12 @@ void CDsnInfo::InitializeAndValidate()
 	InitAddrWFromAddrName();
 
 	InitPrivateAsGlobal();
-
-	InitBramUsage();
-
 	InitAndValidateModMif();
+
+	InitOptNgv();	// determine if NGV ram has optimized implementation
+	InitBramUsage();
+	InitMifRamType();
+
 	InitAndValidateModNgv();
 	InitAndValidateModIpl();
 	InitAndValidateModIhm();
