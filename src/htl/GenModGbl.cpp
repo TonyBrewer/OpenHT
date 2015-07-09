@@ -1230,7 +1230,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 			}
 		} else {
 			int rdAddrStgNum = pMod->m_tsStg + pGv->m_rdStg.AsInt() - (pGv->m_ramType == eBlockRam ? 3 : 2);
-			string rdAddrStg = rdAddrStgNum == 1 ? "c_t1" : VA("r_t%d", rdAddrStgNum);
+			string rdAddrStg = (rdAddrStgNum == 1 || pGv->m_ramType == eBlockRam) ? VA("c_t%d", rdAddrStgNum) : VA("r_t%d", rdAddrStgNum);
 
 			string addr1Name;
 			if (pGv->m_addr1IsHtId)
@@ -2379,7 +2379,7 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 				} while (DimenIter(pGv->m_dimenList, refList));
 			} else {
 				int rdAddrStgNum = mod.m_tsStg + pGv->m_rdStg.AsInt() - (pGv->m_ramType == eBlockRam ? 3 : 2);
-				string rdAddrStg = rdAddrStgNum == 1 ? "c_t1" : VA("r_t%d", rdAddrStgNum);
+				string rdAddrStg = (rdAddrStgNum == 1 || pGv->m_ramType == eBlockRam) ? VA("c_t%d", rdAddrStgNum) : VA("r_t%d", rdAddrStgNum);
 
 				string addr1Name;
 				if (pGv->m_addr1IsHtId)

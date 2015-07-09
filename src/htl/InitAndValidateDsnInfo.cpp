@@ -485,6 +485,28 @@ void CDsnInfo::InitBramUsage()
 	//    Entire set of private variables per group
 	//    Individual fields of global rams
 
+	for (size_t ngvIdx = 0; ngvIdx < m_ngvList.size(); ngvIdx += 1) {
+		CNgvInfo * pNgvInfo = m_ngvList[ngvIdx];
+		CRam * pRam = pNgvInfo->m_modInfoList[0].m_pNgv;
+
+		if (pRam->m_pNgvInfo->m_bOgv) continue;
+
+		CBramTarget target;
+		target.m_name = pRam->m_gblName;
+		target.m_pRamType = &pNgvInfo->m_ramType;
+		target.m_depth = 1 << pRam->m_addrW;
+		target.m_width = pRam->m_pType->m_clangBitWidth;
+		target.m_copies = pNgvInfo->m_ngvReplCnt;
+		target.m_copies *= pRam->m_elemCnt;
+		target.m_slices = FindSliceCnt(target.m_depth, target.m_width);
+		target.m_brams = FindBramCnt(target.m_depth, target.m_width);
+		target.m_slicePerBramRatio = (float)target.m_slices / (float)target.m_brams;
+		target.m_varType = pRam->m_bPrivGbl ? "Private" : "Global";
+		target.m_modName = "";
+
+		m_bramTargetList.push_back(target);
+	}
+
 	for (size_t modIdx = 0; modIdx < m_modList.size(); modIdx += 1) {
 		CModule &mod = *m_modList[modIdx];
 
@@ -499,8 +521,9 @@ void CDsnInfo::InitBramUsage()
 			target.m_depth = 1 << mod.m_threads.m_htIdW.AsInt();
 			target.m_width = FindFieldListWidth("", mod.m_threads.m_lineInfo, mod.m_threads.m_htPriv.m_fieldList);
 			target.m_copies = (int)mod.m_modInstList.size();
+			target.m_slices = FindSliceCnt(target.m_depth, target.m_width);
 			target.m_brams = FindBramCnt(target.m_depth, target.m_width);
-			target.m_slicePerBramRatio = FindSlicePerBramRatio(target.m_depth, target.m_width) / target.m_brams;
+			target.m_slicePerBramRatio = (float)target.m_slices / (float)target.m_brams;
 			target.m_varType = "Private";
 			target.m_modName = mod.m_modName.AsStr();
 
@@ -511,17 +534,44 @@ void CDsnInfo::InitBramUsage()
 			CRam * pRam = mod.m_ngvList[ngvIdx];
 
 			CBramTarget target;
-			target.m_name = pRam->m_gblName;
-			target.m_pRamType = &pRam->m_ramType;
-			target.m_depth = 1 << pRam->m_addrW;
-			target.m_width = pRam->m_pType->m_clangBitWidth;
-			target.m_copies = (int)mod.m_modInstList.size();
-			target.m_copies *= pRam->m_elemCnt;
-			target.m_copies *= (pRam->m_bReadForInstrRead ? 1 : 0) + (pRam->m_bReadForMifWrite ? 1 : 0);
-			target.m_brams = FindBramCnt(target.m_depth, target.m_width);
-			target.m_slicePerBramRatio = FindSlicePerBramRatio(target.m_depth, target.m_width) / target.m_brams;
-			target.m_varType = pRam->m_bPrivGbl ? "Private" : "Global";
-			target.m_modName = mod.m_modName.AsStr();
+			if (pRam->m_pNgvInfo->m_bOgv && pRam->m_addrW > 0) {
+				target.m_name = pRam->m_gblName;
+				target.m_pRamType = &pRam->m_ramType;
+				target.m_depth = 1 << pRam->m_addrW;
+				target.m_width = pRam->m_pType->m_packedBitWidth;
+				target.m_copies = (int)mod.m_modInstList.size();
+				target.m_copies *= pRam->m_elemCnt;
+				target.m_copies *= (pRam->m_bReadForInstrRead ? 1 : 0) + (pRam->m_bReadForMifWrite ? 1 : 0);
+
+				target.m_slices = 0;
+				target.m_brams = 0;
+				int fldWidths = 0;
+				for (size_t idx1 = 0; idx1 < pRam->m_pNgvInfo->m_spanningFieldList.size(); idx1 += 1) {
+					CSpanningField & fld1 = pRam->m_pNgvInfo->m_spanningFieldList[idx1];
+					if (!fld1.m_bSpanning) continue;
+					target.m_slices += FindSliceCnt(target.m_depth, fld1.m_width);
+					target.m_brams += FindBramCnt(target.m_depth, fld1.m_width);
+					fldWidths += fld1.m_width;
+				}
+				HtlAssert(fldWidths == target.m_width);
+
+				target.m_slicePerBramRatio = (float)target.m_slices / (float)target.m_brams;
+				target.m_varType = pRam->m_bPrivGbl ? "Private" : "Global";
+				target.m_modName = mod.m_modName.AsStr();
+			} else {
+				target.m_name = pRam->m_gblName;
+				target.m_pRamType = &pRam->m_ramType;
+				target.m_depth = 1 << pRam->m_addrW;
+				target.m_width = pRam->m_pType->m_packedBitWidth;
+				target.m_copies = (int)mod.m_modInstList.size();
+				target.m_copies *= pRam->m_elemCnt;
+				target.m_copies *= (pRam->m_bReadForInstrRead ? 1 : 0) + (pRam->m_bReadForMifWrite ? 1 : 0);
+				target.m_slices = FindSliceCnt(target.m_depth, target.m_width);
+				target.m_brams = FindBramCnt(target.m_depth, target.m_width);
+				target.m_slicePerBramRatio = (float)target.m_slices / (float)target.m_brams;
+				target.m_varType = pRam->m_bPrivGbl ? "Private" : "Global";
+				target.m_modName = mod.m_modName.AsStr();
+			}
 
 			m_bramTargetList.push_back(target);
 		}
@@ -544,8 +594,9 @@ void CDsnInfo::InitBramUsage()
 			target.m_width *= pShared->m_elemCnt;
 			target.m_copies = (int)mod.m_modInstList.size();
 			target.m_copies *= pShared->m_elemCnt;
+			target.m_slices = FindSliceCnt(target.m_depth, target.m_width);
 			target.m_brams = FindBramCnt(target.m_depth, target.m_width);
-			target.m_slicePerBramRatio = FindSlicePerBramRatio(target.m_depth, target.m_width) / target.m_brams;
+			target.m_slicePerBramRatio = (float)target.m_slices / (float)target.m_brams;
 			target.m_varType = "Shared";
 			target.m_modName = mod.m_modName.AsStr();
 
@@ -582,7 +633,7 @@ void CDsnInfo::InitBramUsage()
 		if (*target.m_pRamType != eAutoRam) continue;
 		if (target.m_varType == "Shared") continue;
 
-		if (target.m_slicePerBramRatio > g_appArgs.GetMinLutToBramRatio() && target.m_brams * target.m_copies <= brams18KbAvailCnt) {
+		if (target.m_slicePerBramRatio > g_appArgs.GetMinSliceToBramRatio() && target.m_brams * target.m_copies <= brams18KbAvailCnt) {
 			*target.m_pRamType = eBlockRam;
 			brams18KbAvailCnt -= target.m_brams * target.m_copies;
 		} else
@@ -601,6 +652,17 @@ float CDsnInfo::FindSlicePerBramRatio(int depth, int width)
 		ratio = (float)((depth + 127) / 128 * width);
 
 	return ratio;
+}
+
+int CDsnInfo::FindSliceCnt(int depth, int width)
+{
+	int slices;
+	if (depth <= 32)
+		slices = (width + 5) / 6;
+	else
+		slices = (width + 2) / 3 * ((depth + 63) / 64);
+
+	return slices;
 }
 
 int CDsnInfo::FindBramCnt(int depth, int width)
@@ -1565,8 +1627,8 @@ void CDsnInfo::ReportRamFieldUsage()
 	fprintf(fp, "%s      <dd>BRAM usage limit: 50%%</dd>\n", ws);
 	fprintf(fp, "%s      <dd>Max 18Kb BRAMs per Unit (use -ub to override): %d (%d BRAMs * 50%% / %d units)</dd>\n\n",
 		ws, g_appArgs.GetMax18KbBramPerUnit(), g_appArgs.GetBramsPerAE(), g_appArgs.GetAeUnitCnt());
-	fprintf(fp, "%s      <dd>Min Slice to BRAM ratio<sup>1</sup> (use -lb to override): %d</dd>\n",
-		ws, g_appArgs.GetMinLutToBramRatio());
+	fprintf(fp, "%s      <dd>Min Slice to BRAM ratio<sup>1</sup> (use -sb to override): %d</dd>\n",
+		ws, g_appArgs.GetMinSliceToBramRatio());
 	fprintf(fp, "%s      <dd><dl><dd><sup>1</sup> The ratio is used to determine how many FPGA slices are required\n", ws);
 	fprintf(fp, "%s      when implementing a memory as a BRAM versus a distributed ram.</dd></dl></dd>\n", ws);
 	fprintf(fp, "%s    <br/>\n", ws);
@@ -1586,7 +1648,7 @@ void CDsnInfo::ReportRamFieldUsage()
 	fprintf(fp, "%s        <th rowspan=2>Selected</th>\n", ws);
 	fprintf(fp, "%s      </tr>\n", ws);
 	fprintf(fp, "%s      <tr>\n", ws);
-	fprintf(fp, "%s        <th># LUTs</th>\n", ws);
+	fprintf(fp, "%s        <th># Slices</th>\n", ws);
 	fprintf(fp, "%s        <th>Total</th>\n", ws);
 	fprintf(fp, "%s        <th># 18Kb</th>\n", ws);
 	fprintf(fp, "%s        <th>Total</th>\n", ws);
@@ -1597,13 +1659,11 @@ void CDsnInfo::ReportRamFieldUsage()
 
 		if (target.m_depth == 1) continue;
 
-		int num_luts = target.m_width * (int)((target.m_depth + 31) / 32);
-
 		fprintf(fp, "%s      <tr>\n", ws);
 		fprintf(fp, "%s        <td>%-17s</td><td>%-17s</td><td>%-16s</td><td>%2d</td><td>%2d</td><td>%2d</td><td>%2d</td><td>%2d</td><td>%2d</td><td>%2d</td><td>%6.2f</td><td>%s</td>\n",
 			ws, target.m_modName.c_str(), target.m_varType.c_str(),
 			target.m_name.c_str(), target.m_depth, target.m_width,
-			target.m_copies, num_luts, num_luts * target.m_copies,
+			target.m_copies, target.m_slices, target.m_slices * target.m_copies,
 			target.m_brams, target.m_brams * target.m_copies,
 			(double)target.m_slicePerBramRatio,
 			*target.m_pRamType == eDistRam ? "Dist" : "Block");

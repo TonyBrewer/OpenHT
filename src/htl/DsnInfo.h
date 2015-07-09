@@ -1851,6 +1851,7 @@ struct CBramTarget {
 	int			m_depth;
 	int			m_width;
 	int			m_copies;
+	int			m_slices;
 	int			m_brams;
 	float		m_slicePerBramRatio;
 	HtdFile::ERamType *	m_pRamType;
@@ -2052,6 +2053,7 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 	bool FindVariableWidth(CLineInfo const &lineInfo, CModule &mod, string name, bool &bHtId, bool &bPrivate, bool &bShared, bool &bStage, int &addr1W);
 	bool FindFieldRefWidth(CLineInfo const &lineInfo, string const &fieldRef, vector<CField *> const &fieldList, int &varW);
 	float FindSlicePerBramRatio(int depth, int width);
+	int FindSliceCnt(int depth, int width);
 	int FindBramCnt(int depth, int width);
 	void InitNativeCTypes();
 	bool IsNativeCType(string &type, bool bAllowHostPtr = false);
