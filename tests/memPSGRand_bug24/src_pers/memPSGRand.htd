@@ -57,7 +57,7 @@ Test00.AddShared()
 	;
 
 Test00.AddReadMem()
-	.AddDst(var=test00_0_v1_data, name=test00_0_v1_data, memSrc=host)
+	.AddDst(var=test00_0_v1_data(#), name=test00_0_v1_data, memSrc=host)
 	;
 
 Test00.AddWriteMem()
@@ -96,11 +96,11 @@ Test01.AddShared()
 	;
 
 Test01.AddReadMem()
-	.AddDst(var=test01_0_v1_data, name=test01_0_v1_data, memSrc=host)
+	.AddDst(var=test01_0_v1_data(#), name=test01_0_v1_data, memSrc=host)
 	;
 
 Test01.AddWriteMem()
-	.AddSrc(var=test01_0_v0_data, name=test01_0_v0_data, memDst=host)
+	.AddSrc(var=test01_0_v0_data(#,#), name=test01_0_v0_data, memDst=host)
 	;
 
 

@@ -52,7 +52,7 @@ inc.AddCall(func=inc2)
 #endif
 
 inc.AddReadMem()
-	.AddDst(var=arrayMem.data);
+	.AddDst(var=arrayMem().data);
 inc.AddWriteMem();
 
 inc.AddGlobal()

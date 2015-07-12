@@ -88,8 +88,8 @@ Test03.AddGlobal()
 	;
 
 Test03.AddReadMem()
-	.AddDst(var=test03_0_1_data, name=test03_0_1_data, memSrc=host)
-	.AddDst(var=test03_1_9_data, name=test03_1_9_data, memSrc=host)
+	.AddDst(var=test03_0_1_data(#), name=test03_0_1_data, memSrc=host)
+	.AddDst(var=test03_1_9_data(#), name=test03_1_9_data, memSrc=host)
 	.AddDst(var=test03_2_10_data.test03_2_10_data[2], name=test03_2_10_data, memSrc=host)
 	;
 

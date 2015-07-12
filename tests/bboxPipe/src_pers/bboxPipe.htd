@@ -106,8 +106,8 @@ read.AddGlobal()
 	.AddVar(type=COpMem, name=opMem, addr1W=THREAD_W, read=false, write=false);
 
 read.AddReadMem(pause=true, poll=true)
-	.AddDst(name=opAMem, var=opMem.opA)
-	.AddDst(name=opBMem, var=opMem.opB)
+	.AddDst(name=opAMem, var=opMem().opA)
+	.AddDst(name=opBMem, var=opMem().opB)
 	;
 
 /////////////////////////////////////

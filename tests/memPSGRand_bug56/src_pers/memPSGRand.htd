@@ -58,11 +58,11 @@ Test00.AddPrivate()
 	;
 
 Test00.AddReadMem()
-	.AddDst(var=test00_0_src_u0_data[0].test00_0_src_v2_data[][0], name=test00_0_src_v2_data, memSrc=host)
+	.AddDst(var=test00_0_src_u0_data[0](,).test00_0_src_v2_data[][0], name=test00_0_src_v2_data, memSrc=host)
 	;
 
 Test00.AddWriteMem()
-	.AddSrc(var=test00_0_src_u0_data[0].test00_0_src_v1_data, name=test00_0_src_v1_data, memDst=host)
+	.AddSrc(var=test00_0_src_u0_data[0](,).test00_0_src_v1_data, name=test00_0_src_v1_data, memDst=host)
 	;
 
 

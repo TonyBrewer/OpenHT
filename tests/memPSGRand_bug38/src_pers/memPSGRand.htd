@@ -93,7 +93,7 @@ Test00.AddReadMem()
 	;
 
 Test00.AddWriteMem()
-	.AddSrc(var=test00_0_src_u0_data.test00_0_src_u1_data[][].test00_0_src_v4_data[0][], name=test00_0_src_v4_data, memDst=host)
+	.AddSrc(var=test00_0_src_u0_data(,).test00_0_src_u1_data[][].test00_0_src_v4_data[0][], name=test00_0_src_v4_data, memDst=host)
 	;
 
 

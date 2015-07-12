@@ -23,6 +23,7 @@ ctl.AddInst(name=CALL_GV9);
 ctl.AddInst(name=CALL_GV11);
 ctl.AddInst(name=CALL_GV13);
 ctl.AddInst(name=CALL_GV15);
+ctl.AddInst(name=CALL_GV16);
 ctl.AddInst(name=RETURN);
 
 ctl.AddPrivate()
@@ -47,6 +48,7 @@ ctl.AddCall(func=gv9);
 ctl.AddCall(func=gv11);
 ctl.AddCall(func=gv13);
 ctl.AddCall(func=gv15);
+ctl.AddCall(func=gv16);
 
 ////////////////////////////////////////////////////
 // Gv1 Module - 1x, 1F, Iw, Ir
@@ -121,7 +123,7 @@ gv3.AddGlobal()
 	;
 
 gv3.AddReadMem()
-	.AddDst(var=Gv3)
+	.AddDst(var=Gv3(#))
 	;
 
 gv3.AddWriteMem()
@@ -155,7 +157,7 @@ gv4.AddGlobal()
 	;
 
 gv4.AddReadMem()
-	.AddDst(var=Gv4)
+	.AddDst(var=Gv4(#))
 	;
 
 gv4.AddWriteMem()
@@ -226,11 +228,11 @@ gv6.AddGlobal()
 	;
 
 gv6.AddWriteMem()
-	.AddSrc(var=Gv6a)
+	.AddSrc(var=Gv6a(#))
 	;
 
 gv6.AddReadMem()
-	.AddDst(var=Gv6b)
+	.AddDst(var=Gv6b(#))
 	;
 
 ////////////////////////////////////////////////////
@@ -293,9 +295,9 @@ gv7.AddWriteMem()
 
 gv7.AddReadMem()
 	.AddDst(var=Gv8c)
-	.AddDst(var=Gv8d)
+	.AddDst(var=Gv8d(#))
 	.AddDst(var=Gv8e)
-	.AddDst(var=Gv8f)
+	.AddDst(var=Gv8f(#))
 	;
 
 ////////////////////////////////////////////////////
@@ -420,9 +422,9 @@ gv9.AddWriteMem()
 
 gv9.AddReadMem()
 	.AddDst(var=Gv10c)
-	.AddDst(var=Gv10d)
+	.AddDst(var=Gv10d(#))
 	.AddDst(var=Gv10e)
-	.AddDst(var=Gv10f)
+	.AddDst(var=Gv10f(#))
 	;
 
 ////////////////////////////////////////////////////
@@ -533,7 +535,7 @@ gv11.AddWriteMem()
 
 gv11.AddReadMem()
 	.AddDst(var=Gv12c)
-	.AddDst(var=Gv12d)
+	.AddDst(var=Gv12d(#))
 	;
 
 ////////////////////////////////////////////////////
@@ -622,7 +624,7 @@ gv13.AddWriteMem()
 
 gv13.AddReadMem()
 	.AddDst(var=Gv14c)
-	.AddDst(var=Gv14d)
+	.AddDst(var=Gv14d(#))
 	;
 
 ////////////////////////////////////////////////////
@@ -700,6 +702,38 @@ gv15.AddGlobal()
 	;
 
 gv15.AddReadMem()
-	.AddDst(var=Gv15.m_u64)
+	.AddDst(var=Gv15().m_u64)
 	;
 
+////////////////////////////////////////////////////
+// Gv16 Module
+
+dsnInfo.AddModule(name=gv16, htIdW=3, clock=1x);
+gv16.AddInst(name=GV16_ENTRY);
+gv16.AddInst(name=GV16_WR);
+gv16.AddInst(name=GV16_RD);
+gv16.AddInst(name=GV16_RETURN);
+
+gv16.AddEntry(func=gv16, inst=GV16_ENTRY)
+	.AddParam(type=ht_uint48, name=addr)
+	;
+
+gv16.AddGlobal()
+	.AddVar(type=uint64_t, name=Gv16, dimen1=6, addr1=gvAddr1, write=false, blockRam=true)
+	;
+
+gv16.AddPrivate()
+	.AddVar(type=ht_uint48, name=addr)
+	.AddVar(type=ht_uint7, name=gvAddr1)
+	;
+
+gv16.AddReturn(func=gv16)
+	;
+
+gv16.AddReadMem()
+	.AddDst(var=Gv16[#](), memSrc=host)
+	;
+
+gv16.AddWriteMem()
+	.AddSrc(type=uint64_t)
+	;

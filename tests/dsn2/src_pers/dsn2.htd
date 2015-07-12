@@ -36,7 +36,7 @@ inc.AddReturn(func=htmain)
 	;
 
 inc.AddReadMem()
-	.AddDst(name=arrayMem, var=arrayMem.data)
+	.AddDst(name=arrayMem, var=arrayMem(,).data)
 	;
 
 inc.AddGlobal()

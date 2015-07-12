@@ -58,9 +58,9 @@ Test10.AddGlobal()
 	;
 
 Test10.AddReadMem()
-	.AddDst(var=test10_0_1_data[], name=test10_0_1_data, memSrc=host)
+	.AddDst(var=test10_0_1_data[#], name=test10_0_1_data, memSrc=host)
 	;
 
 Test10.AddWriteMem()
-	.AddSrc(var=test10_0_0_data[1], name=test10_0_0_data, memDst=host)
+	.AddSrc(var=test10_0_0_data[1](#), name=test10_0_0_data, memDst=host)
 	;

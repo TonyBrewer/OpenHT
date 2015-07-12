@@ -370,17 +370,16 @@ void * CDsnInfo::AddMsgDst(void * pHandle, string var, string dataLsb, string ad
 }
 
 CMifWr * CDsnInfo::AddSrc(CMifWr * pMifWr, string const & name, CType * pType,
-	string const & var, string const & memDst, CType * pWrType, string const & elemCntW)
+	string const & var, string const & memDst, CType * pWrType)
 {
-	pMifWr->m_wrSrcList.push_back(CMifWrSrc(name, pType, var, memDst, pWrType, elemCntW));
+	pMifWr->m_wrSrcList.push_back(CMifWrSrc(name, pType, var, memDst, pWrType));
 	return pMifWr;
 }
 
 void CDsnInfo::AddDst(CMifRd * pMifRd, string const & name, string const & var,
-	string const & field, string const & dataLsb, bool bMultiRd, string const & dstIdx,
-	string const & memSrc, string const & atomic, CType * pRdType, string const & elemCntW)
+	string const & memSrc, string const & atomic, CType * pRdType)
 {
-	pMifRd->m_rdDstList.push_back(CMifRdDst(name, var, field, dataLsb, bMultiRd, dstIdx, memSrc, atomic, pRdType, elemCntW));
+	pMifRd->m_rdDstList.push_back(CMifRdDst(name, var, memSrc, atomic, pRdType));
 }
 
 void CDsnInfo::AddDst(CMifRd * pMifRd, string name, string infoW, string stgCnt,

@@ -9,8 +9,8 @@ int main(int argc, char **argv)
 	printf("ngv_v5\n");
 	fflush(stdout);
 		
-	uint64_t data;
-	pUnit->SendCall_htmain(&data);
+	uint64_t data[4];
+	pUnit->SendCall_htmain(data);
 
 	while (!pUnit->RecvReturn_htmain())
 		usleep(1);

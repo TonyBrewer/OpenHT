@@ -49,10 +49,6 @@ gv1.AddPrivate()
 	.AddVar(type=ht_uint5, name=gvAddr)
 	;
 
-//gv1.AddShared()
-//	.AddVar(type=uint64_t, name=sharr, addr1W=5)
-//	;
-
 gv1.AddReturn(func=gv1)
 	;
 
@@ -61,10 +57,7 @@ gv1.AddGlobal()
 	;
 
 gv1.AddWriteMem()
-	//.AddSrc(name=mwgv1, var=gvar, field=m_c[].m_sc)
-	//.AddSrc(name=mwgv2, var=gvar, field=m_e[4-11] )
-	.AddSrc(name=mwgv3, var=gvar, memDst=host)
-	//.AddSrc(var=sharr, multiWr=true, srcIdx=varAddr1)
+	.AddSrc(name=mwgv3, var=gvar(#), memDst=host)
 	;
 
 ////////////////////////////////////////////////////

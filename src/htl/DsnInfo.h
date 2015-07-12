@@ -1018,10 +1018,9 @@ struct CFieldRef {
 };
 
 struct CMifRdDst {
-	CMifRdDst(string const & name, string const & var, string const & field, string const & dataLsb, bool bMultiRd,
-		string const & dstIdx, string const & memSrc, string const & atomic, CType * pRdType, string const & elemCntW) :
-		m_name(name), m_var(var), m_field(field), m_dataLsb(dataLsb), m_bMultiQwRdReq(bMultiRd),
-		m_dstIdx(dstIdx), m_memSrc(memSrc), m_atomic(atomic), m_elemCntW(elemCntW), m_pRdType(pRdType)
+	CMifRdDst(string const & name, string const & var, 
+		string const & memSrc, string const & atomic, CType * pRdType) :
+		m_name(name), m_var(var), m_memSrc(memSrc), m_atomic(atomic), m_pRdType(pRdType)
 	{
 		m_lineInfo = CPreProcess::m_lineInfo;
 		m_pSharedVar = 0;
@@ -1035,8 +1034,6 @@ struct CMifRdDst {
 		m_varAddr2W = 0;
 		m_varAddr1IsHtId = false;
 		m_varAddr2IsHtId = false;
-		m_varAddr1IsIdx = false;
-		m_varAddr2IsIdx = false;
 		m_varDimen1 = 0;
 		m_varDimen2 = 0;
 		m_fldDimen1 = 0;
@@ -1051,7 +1048,6 @@ struct CMifRdDst {
 		m_pPrivVar = 0;
 		m_pGblVar = 0;
 		m_atomic = "read";
-		m_dstIdx = "rspIdx";
 
 		m_fldW = 0;
 		m_dstW = 0;
@@ -1060,8 +1056,6 @@ struct CMifRdDst {
 		m_varAddr2W = 0;
 		m_varAddr1IsHtId = false;
 		m_varAddr2IsHtId = false;
-		m_varAddr1IsIdx = false;
-		m_varAddr2IsIdx = false;
 		m_varDimen1 = 0;
 		m_varDimen2 = 0;
 		m_fldDimen1 = 0;
@@ -1070,8 +1064,6 @@ struct CMifRdDst {
 
 	CHtString	m_name;
 	string		m_var;
-	string		m_field;
-	CHtString	m_dataLsb;
 	CHtString	m_infoW;
 	CHtString	m_rsmDly;
 	bool        m_bMultiQwRdReq;
@@ -1080,10 +1072,8 @@ struct CMifRdDst {
 	bool		m_bMultiQwHostRdMif;
 	bool		m_bMultiQwCoprocRdMif;
 	bool		m_bMultiElemRd;
-	string      m_dstIdx;
 	string      m_memSrc;
 	string      m_atomic;
-	CHtString	m_elemCntW;
 
 	CLineInfo	m_lineInfo;
 
@@ -1106,8 +1096,6 @@ struct CMifRdDst {
 	int m_fldDimen2;
 	bool m_varAddr1IsHtId;
 	bool m_varAddr2IsHtId;
-	bool m_varAddr1IsIdx;
-	bool m_varAddr2IsIdx;
 	int m_maxElemCnt;
 
 	vector<CFieldRef> m_fieldRefList;
@@ -1161,8 +1149,8 @@ public:
 
 struct CMifWrSrc {
 	CMifWrSrc(string const & name, CType * pType, string const & var, string const & memDst,
-		CType * pWrType, string const & elemCntW) :
-		m_name(name), m_pType(pType), m_var(var), m_memDst(memDst), m_elemCntW(elemCntW), m_pWrType(pWrType)
+		CType * pWrType) :
+		m_name(name), m_pType(pType), m_var(var), m_memDst(memDst), m_pWrType(pWrType)
 	{
 		m_lineInfo = CPreProcess::m_lineInfo;
 		m_pSharedVar = 0;
@@ -1188,7 +1176,6 @@ struct CMifWrSrc {
 	CType *		m_pType;
 	string		m_var;
 	string      m_memDst;
-	CHtString	m_elemCntW;
 
 	CLineInfo	m_lineInfo;
 
@@ -1983,9 +1970,9 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 		string idx1Lsb, string idx2Lsb, string field, string fldIdx1Lsb, string fldIdx2Lsb, bool bReadOnly);
 
 	CMifWr * AddSrc(CMifWr * pMifWr, string const & name, CType * pType,
-		string const & var, string const & memDst, CType * pWrType, string const & elemCntW);
-	void AddDst(CMifRd * pOpenMifRd, string const & name, string const & var, string const & field, string const & dataLsb,
-		bool bMultiRd, string const & dstIdx, string const & memSrc, string const & atomic, CType * pRdType, string const & elemCntW);
+		string const & var, string const & memDst, CType * pWrType);
+	void AddDst(CMifRd * pOpenMifRd, string const & name, string const & var,
+		string const & memSrc, string const & atomic, CType * pRdType);
 	void AddDst(CMifRd * pOpenMifRd, string name, string infoW, string stgCnt,
 		bool bMultiRd, string memSrc, CType * pRdType);
 

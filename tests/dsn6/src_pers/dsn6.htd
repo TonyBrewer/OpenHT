@@ -40,10 +40,10 @@ inc.AddReturn(func=htmain)
 	;
 
 inc.AddReadMem()
-	.AddDst(name=arrayMem1Fld1, var=arrayMem1.fld1)
-	.AddDst(name=arrayMem1Fld2, var=arrayMem1.fld2)
-	.AddDst(name=arrayMem2Fld1, var=arrayMem2.fld1)
-	.AddDst(name=arrayMem2Fld2, var=arrayMem2.fld2)
+	.AddDst(name=arrayMem1Fld1, var=arrayMem1().fld1)
+	.AddDst(name=arrayMem1Fld2, var=arrayMem1().fld2)
+	.AddDst(name=arrayMem2Fld1, var=arrayMem2().fld1)
+	.AddDst(name=arrayMem2Fld2, var=arrayMem2().fld2)
 	;
 
 inc.AddWriteMem();

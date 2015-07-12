@@ -21,7 +21,6 @@ tst.AddEntry(func=htmain, inst=TST_READ, host=true)
 	;
 
 tst.AddReturn(func=htmain)
-//.AddParam(hostType=uint16_t, type=ht_uint9, name=err)
 	.AddParam(hostType=unsigned short, type=ht_uint9, name=err)
 	;
 
@@ -32,13 +31,11 @@ tst.AddPrivate()
 	;
 
 tst.AddReadMem()
-	.AddDst(var=gvar[].data);
+	.AddDst(var=gvar[](,).data);
 
 tst.AddGlobal()
 	.AddVar(type=CData, name=gvar, addr1=gvarAddr, addr2=gvarAddr, dimen1=1, read=true, write=false)
 	;
-//tst.AddGlobal(var=gvar, addr1W=2, addr1=gvarAddr, addr2W=2, addr2=gvarAddr, dimen1=1)
-//	.AddField(type=uint64_t, name=data, read=true);
 
 tst.AddCall(func=tst2)
 	;
@@ -73,11 +70,8 @@ tst2.AddGlobal()
 	.AddVar(type=CData, name=gvar, addr1=gvarAddr, addr2=gvarAddr, dimen1=1, read=true, write=false)
 	;
 
-//tst2.AddGlobal(var=gvar, addr1W=2, addr1=gvarAddr, addr2W=2, addr2=gvarAddr, dimen1=1, extern=true)
-//	.AddField(type=uint64_t, name=data, read=true);
-
 tst2.AddReadMem()
-	.AddDst(var=gvar[].data);
+	.AddDst(var=gvar[](,).data);
 
 
 // tst3
@@ -107,4 +101,4 @@ tst3.AddGlobal()
 	;
 
 tst3.AddReadMem()
-	.AddDst(var=gvar31.data);
+	.AddDst(var=gvar31().data);

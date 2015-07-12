@@ -856,10 +856,9 @@ void HtdFile::ParseModuleMethods()
 			CType * pType = &g_uint64;
 			string var;
 			string memDst;
-			string elemCntW;
 
 			m_pDsn->m_mifWrSrcList.insert(name);
-			m_pDsnInfo->AddSrc(m_pOpenMifWr, name, pType, var, memDst, 0, elemCntW);
+			m_pDsnInfo->AddSrc(m_pOpenMifWr, name, pType, var, memDst, 0);
 		}
 
 		m_pParseMethod = &HtdFile::ParseMifWrMethods;
@@ -2000,14 +1999,9 @@ void HtdFile::ParseMifRdMethods()
 
 		string name;
 		string var;
-		string dataLsb = "0";
-		string field;
-		bool bMultiRd = false;
-		string dstIdx;
 		string memSrc;// = "coproc";
 		string atomic = "read";
 		CType * pRdType = 0;
-		string elemCntW;
 
 		CParamList pavars[] = {
 				{ "name", &name, false, ePrmIdent, 0, 0 },
@@ -2015,19 +2009,11 @@ void HtdFile::ParseMifRdMethods()
 				{ "memSrc", &memSrc, false, ePrmIdent, 0, 0 },
 				{ "rdType", &pRdType, false, ePrmType, 0, 0 },
 				{ "atomic", &atomic, false, ePrmIdent, 0, 0 },
-				{ "elemCntW", &elemCntW, false, ePrmInteger, 0, 0 },
-
-				// depricated
-				{ "field", &field, false, ePrmIdent, true, 0 },
-				{ "dataLsb", &dataLsb, false, ePrmInteger, true, 0 },
-				{ "multiRd", &bMultiRd, false, ePrmBoolean, true, 0 },
-				{ "dstIdx", &dstIdx, false, ePrmIdent, true, 0 },
-
 				{ 0, 0, 0, ePrmUnknown, 0, 0 }
 		};
 
 		if (!ParseParameters(pavars))
-			CPreProcess::ParseMsg(Error, "expected AddReadMem(...).AddDst( name, var {, memSrc=host|coproc }{, rdType=<int type> }{, elemCntW=<int> )");
+			CPreProcess::ParseMsg(Error, "expected AddReadMem(...).AddDst( name, var {, memSrc=host|coproc }{, rdType=<int type> }");
 
 		if (pRdType && pRdType != &g_uint64 && pRdType != &g_uint32 && pRdType != &g_uint16 && pRdType != &g_uint8 &&
 			pRdType != &g_int64 && pRdType != &g_int32 && pRdType != &g_int16 && pRdType != &g_int8)
@@ -2049,7 +2035,7 @@ void HtdFile::ParseMifRdMethods()
 			CPreProcess::ParseMsg(Error, "duplicate memory read interface destination name '%s'", name.c_str());
 		else {
 			m_pDsn->m_mifRdDstList.insert(name);
-			m_pDsnInfo->AddDst(m_pOpenMifRd, name, var, field, dataLsb, bMultiRd, dstIdx, memSrc, atomic, pRdType, elemCntW);
+			m_pDsnInfo->AddDst(m_pOpenMifRd, name, var, memSrc, atomic, pRdType);
 		}
 
 		m_pLex->GetNextTk();
@@ -2102,12 +2088,7 @@ void HtdFile::ParseMifWrMethods()
 
 		string name;
 		string var;
-		string field;
-		bool bMultiWr = false;
-		string srcIdx;
-		string memDst;// = "coproc";
-		string cntW;
-		string elemCntW;
+		string memDst;
 		CType * pWrType = 0;
 		CType * pType = 0;
 
@@ -2117,13 +2098,6 @@ void HtdFile::ParseMifWrMethods()
 				{ "var", &var, false, ePrmIdentRef, 0, 0 },
 				{ "memDst", &memDst, false, ePrmIdent, 0, 0 },
 				{ "wrType", &pWrType, false, ePrmType, 0, 0 },
-				{ "elemCntW", &elemCntW, false, ePrmInteger, 0, 0 },
-
-				// depricated parameters
-				{ "field", &field, false, ePrmIdentRef, true, 0 },
-				{ "multiWr", &bMultiWr, false, ePrmBoolean, true, 0 },
-				{ "srcIdx", &srcIdx, false, ePrmIdent, true, 0 },
-				{ "cntW", &cntW, false, ePrmInteger, true, 0 },
 				{ 0, 0, 0, ePrmUnknown, 0, 0 }
 		};
 
@@ -2150,7 +2124,7 @@ void HtdFile::ParseMifWrMethods()
 			CPreProcess::ParseMsg(Error, "duplicate memory write interface source name '%s'", name.c_str());
 		else {
 			m_pDsn->m_mifWrSrcList.insert(name);
-			m_pDsnInfo->AddSrc(m_pOpenMifWr, name, pType, var, memDst, pWrType, elemCntW);
+			m_pDsnInfo->AddSrc(m_pOpenMifWr, name, pType, var, memDst, pWrType);
 		}
 
 		m_pLex->GetNextTk();

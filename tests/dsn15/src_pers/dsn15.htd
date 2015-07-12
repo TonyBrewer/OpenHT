@@ -39,7 +39,7 @@ echo.AddReturn(func=echo)
 	;
 
 echo.AddReadMem()
-	.AddDst(name=arrayMem, var=arrayMem.data)
+	.AddDst(name=arrayMem, var=arrayMem().data)
 	;
 
 echo.AddGlobal()

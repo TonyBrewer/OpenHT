@@ -101,7 +101,7 @@ inc0.AddReturn(func=inc0)
 	;
 
 inc0.AddReadMem()
-	.AddDst(var=arrayMem0.data);
+	.AddDst(var=arrayMem0().data);
 
 inc0.AddWriteMem();
 
@@ -148,7 +148,7 @@ inc1.AddReturn(func=inc1)
 	;
 
 inc1.AddReadMem()
-	.AddDst(var=arrayMem1.data);
+	.AddDst(var=arrayMem1().data);
 
 inc1.AddWriteMem();
 
@@ -198,7 +198,7 @@ inc2.AddReturn(func=inc2)
 	;
 
 inc2.AddReadMem()
-	.AddDst(var=arrayMem2.data);
+	.AddDst(var=arrayMem2().data);
 
 inc2.AddWriteMem();
 
@@ -247,7 +247,7 @@ inc3.AddReturn(func=inc3)
 	;
 
 inc3.AddReadMem()
-	.AddDst(var=arrayMem3.data);
+	.AddDst(var=arrayMem3().data);
 
 inc3.AddWriteMem();
 
@@ -293,7 +293,7 @@ inc4.AddReturn(func=inc4)
 	;
 
 inc4.AddReadMem()
-	.AddDst(var=arrayMem4.data);
+	.AddDst(var=arrayMem4().data);
 
 inc4.AddWriteMem();
 
@@ -342,7 +342,7 @@ inc5.AddReturn(func=inc5)
 	;
 
 inc5.AddReadMem(rspGrpW=INC5_RD_GRP_W)
-	.AddDst(var=arrayMem5.data);
+	.AddDst(var=arrayMem5().data);
 
 inc5.AddWriteMem();
 
@@ -391,7 +391,7 @@ inc6.AddReturn(func=inc6)
 	;
 
 inc6.AddReadMem(rspGrpW=INC6_RD_GRP_W)
-	.AddDst(var=arrayMem6.data);
+	.AddDst(var=arrayMem6().data);
 
 inc6.AddWriteMem();
 
@@ -440,7 +440,7 @@ inc7.AddReturn(func=inc7)
 	;
 
 inc7.AddReadMem(rspGrpW=INC7_RD_GRP_W)
-	.AddDst(var=arrayMem7.data);
+	.AddDst(var=arrayMem7().data);
 
 inc7.AddWriteMem();
 
@@ -489,7 +489,7 @@ inc8.AddReturn(func=inc8)
 	;
 
 inc8.AddReadMem(rspGrpW=INC8_RD_GRP_W)
-	.AddDst(var=arrayMem8.data);
+	.AddDst(var=arrayMem8().data);
 
 inc8.AddWriteMem();
 
@@ -538,7 +538,7 @@ inc9.AddReturn(func=inc9)
 	;
 
 inc9.AddReadMem()
-	.AddDst(var=arrayMem9.data);
+	.AddDst(var=arrayMem9().data);
 
 inc9.AddWriteMem(rspGrpW=INC9_WR_GRP_W);
 
@@ -587,7 +587,7 @@ inc10.AddReturn(func=inc10)
 	;
 
 inc10.AddReadMem()
-	.AddDst(var=arrayMem10.data);
+	.AddDst(var=arrayMem10().data);
 
 inc10.AddWriteMem(rspGrpW=INC10_WR_GRP_W);
 	
@@ -638,7 +638,7 @@ inc11.AddReturn(func=inc11)
 	;
 
 inc11.AddReadMem()
-	.AddDst(var=arrayMem11.data);
+	.AddDst(var=arrayMem11().data);
 
 inc11.AddWriteMem(rspGrpW=INC11_WR_GRP_W);
 	
@@ -689,7 +689,7 @@ inc12.AddReturn(func=inc12)
 	;
 
 inc12.AddReadMem()
-	.AddDst(var=arrayMem12.data);
+	.AddDst(var=arrayMem12().data);
 
 inc12.AddWriteMem(rspGrpW=INC12_WR_GRP_W);
 	

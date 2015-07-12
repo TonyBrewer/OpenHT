@@ -278,11 +278,11 @@ Test00.AddGlobal()
 	;
 
 Test00.AddReadMem()
-	.AddDst(var=test00_0_dst_s0_data[][].test00_0_dst_v1_data, name=test00_0_dst_v1_data, memSrc=host)
+	.AddDst(var=test00_0_dst_s0_data[][]().test00_0_dst_v1_data, name=test00_0_dst_v1_data, memSrc=host)
 	;
 
 Test00.AddWriteMem()
-	.AddSrc(var=test00_0_src_v0_data[], name=test00_0_src_v0_data, memDst=host)
+	.AddSrc(var=test00_0_src_v0_data[#], name=test00_0_src_v0_data, memDst=host)
 	;
 
 
@@ -376,13 +376,13 @@ Test02.AddReadMem()
 	.AddDst(var=test02_0_dst_s0_data, name=test02_0_dst_s0_data, memSrc=host)
 	.AddDst(var=test02_1_dst_v0_data[0], name=test02_1_dst_v0_data, memSrc=host)
 	.AddDst(var=test02_2_dst_v0_data, name=test02_2_dst_v0_data, memSrc=host)
-	.AddDst(var=test02_3_dst_v0_data, name=test02_3_dst_v0_data, memSrc=host)
+	.AddDst(var=test02_3_dst_v0_data(#,#), name=test02_3_dst_v0_data, memSrc=host)
 	;
 
 Test02.AddWriteMem()
 	.AddSrc(var=test02_0_dst_s0_data, name=test02_0_dst_s0_data, memDst=host)
 	.AddSrc(var=test02_1_src_v0_data[2], name=test02_1_src_v0_data, memDst=host)
-	.AddSrc(var=test02_2_src_s0_data[].test02_2_src_v2_data[], name=test02_2_src_v2_data, memDst=host)
+	.AddSrc(var=test02_2_src_s0_data[].test02_2_src_v2_data[#], name=test02_2_src_v2_data, memDst=host)
 	.AddSrc(type=uint16_t, memDst=host)
 	;
 
@@ -420,7 +420,7 @@ Test03.AddGlobal()
 	;
 
 Test03.AddReadMem()
-	.AddDst(var=test03_0_src_v0_data[][], name=test03_0_src_v0_data, memSrc=host)
+	.AddDst(var=test03_0_src_v0_data[][](#), name=test03_0_src_v0_data, memSrc=host)
 	;
 
 Test03.AddWriteMem()
@@ -485,18 +485,18 @@ Test04.AddGlobal()
 	;
 
 Test04.AddReadMem()
-	.AddDst(var=test04_0_dst_v0_data[], name=test04_0_dst_v0_data, memSrc=host)
-	.AddDst(var=test04_1_src_v0_data, name=test04_1_src_v0_data, memSrc=host)
-	.AddDst(var=test04_2_dst_v0_data[][], name=test04_2_dst_v0_data, memSrc=host)
-	.AddDst(var=test04_3_dst_v0_data, name=test04_3_dst_v0_data, memSrc=host)
+	.AddDst(var=test04_0_dst_v0_data[#], name=test04_0_dst_v0_data, memSrc=host)
+	.AddDst(var=test04_1_src_v0_data(#), name=test04_1_src_v0_data, memSrc=host)
+	.AddDst(var=test04_2_dst_v0_data[][](#,#), name=test04_2_dst_v0_data, memSrc=host)
+	.AddDst(var=test04_3_dst_v0_data(#,#), name=test04_3_dst_v0_data, memSrc=host)
 	.AddDst(var=test04_4_dst_v0_data, name=test04_4_dst_v0_data, memSrc=host)
 	;
 
 Test04.AddWriteMem()
 	.AddSrc(type=uint64_t, memDst=host)
 	.AddSrc(type=uint32_t, memDst=host)
-	.AddSrc(var=test04_2_src_v0_data[0][2], name=test04_2_src_v0_data, memDst=host)
-	.AddSrc(var=test04_3_src_u0_data[][0].test04_3_src_v0_data[1][0], name=test04_3_src_v0_data, memDst=host)
+	.AddSrc(var=test04_2_src_v0_data[0][2](#), name=test04_2_src_v0_data, memDst=host)
+	.AddSrc(var=test04_3_src_u0_data[][0](,).test04_3_src_v0_data[1][0], name=test04_3_src_v0_data, memDst=host)
 	.AddSrc(var=test04_4_src_v0_data[1], name=test04_4_src_v0_data, memDst=host)
 	;
 
@@ -554,15 +554,15 @@ Test05.AddGlobal()
 
 Test05.AddReadMem()
 	.AddDst(var=test05_0_dst_u0_data[].test05_0_dst_v0_data[][1], name=test05_0_dst_v0_data, memSrc=host)
-	.AddDst(var=test05_1_src_v0_data, name=test05_1_src_v0_data, memSrc=host)
-	.AddDst(var=test05_2_dst_v0_data[][], name=test05_2_dst_v0_data, memSrc=host)
-	.AddDst(var=test05_3_dst_s0_data[], name=test05_3_dst_s0_data, memSrc=host)
+	.AddDst(var=test05_1_src_v0_data(#,#), name=test05_1_src_v0_data, memSrc=host)
+	.AddDst(var=test05_2_dst_v0_data[][](#,#), name=test05_2_dst_v0_data, memSrc=host)
+	.AddDst(var=test05_3_dst_s0_data[](#), name=test05_3_dst_s0_data, memSrc=host)
 	;
 
 Test05.AddWriteMem()
 	.AddSrc(type=int16_t, memDst=host)
-	.AddSrc(var=test05_1_src_v0_data, name=test05_1_src_v0_data, memDst=host)
-	.AddSrc(var=test05_2_src_v0_data[][], name=test05_2_src_v0_data, memDst=host)
+	.AddSrc(var=test05_1_src_v0_data(#,#), name=test05_1_src_v0_data, memDst=host)
+	.AddSrc(var=test05_2_src_v0_data[#][#], name=test05_2_src_v0_data, memDst=host)
 	.AddSrc(type=test05_3_dst_s0_data_struct, memDst=host)
 	;
 
@@ -612,17 +612,17 @@ Test06.AddShared()
 	;
 
 Test06.AddReadMem()
-	.AddDst(var=test06_0_src_v0_data[], name=test06_0_src_v0_data, memSrc=host)
-	.AddDst(var=test06_1_dst_v0_data, name=test06_1_dst_v0_data, memSrc=host)
-	.AddDst(var=test06_2_src_s0_data[1], name=test06_2_src_s0_data, memSrc=host)
-	.AddDst(var=test06_3_dst_u0_data, name=test06_3_dst_u0_data, memSrc=host)
+	.AddDst(var=test06_0_src_v0_data[#], name=test06_0_src_v0_data, memSrc=host)
+	.AddDst(var=test06_1_dst_v0_data(#), name=test06_1_dst_v0_data, memSrc=host)
+	.AddDst(var=test06_2_src_s0_data[1](#), name=test06_2_src_s0_data, memSrc=host)
+	.AddDst(var=test06_3_dst_u0_data(#,#), name=test06_3_dst_u0_data, memSrc=host)
 	.AddDst(var=test06_4_dst_v0_data, name=test06_4_dst_v0_data, memSrc=host)
 	;
 
 Test06.AddWriteMem()
 	.AddSrc(type=uint64_t, memDst=host)
 	.AddSrc(type=int64_t, memDst=host)
-	.AddSrc(var=test06_2_src_s0_data[1], name=test06_2_src_s0_data, memDst=host)
+	.AddSrc(var=test06_2_src_s0_data[1](#), name=test06_2_src_s0_data, memDst=host)
 	.AddSrc(type=test06_3_dst_u0_data_union, memDst=host)
 	.AddSrc(type=uint8_t, memDst=host)
 	;
@@ -723,15 +723,15 @@ Test08.AddGlobal()
 	;
 
 Test08.AddReadMem()
-	.AddDst(var=test08_0_dst_v0_data[], name=test08_0_dst_v0_data, memSrc=host)
-	.AddDst(var=test08_1_dst_v0_data, name=test08_1_dst_v0_data, memSrc=host)
-	.AddDst(var=test08_2_src_v0_data[], name=test08_2_src_v0_data, memSrc=host)
-	.AddDst(var=test08_3_src_u0_data[][], name=test08_3_src_u0_data, memSrc=host)
+	.AddDst(var=test08_0_dst_v0_data[](#,#), name=test08_0_dst_v0_data, memSrc=host)
+	.AddDst(var=test08_1_dst_v0_data(#,#), name=test08_1_dst_v0_data, memSrc=host)
+	.AddDst(var=test08_2_src_v0_data[](#,#), name=test08_2_src_v0_data, memSrc=host)
+	.AddDst(var=test08_3_src_u0_data[][](#), name=test08_3_src_u0_data, memSrc=host)
 	;
 
 Test08.AddWriteMem()
 	.AddSrc(var=test08_0_src_s0_data[].test08_0_src_u0_data.test08_0_src_u1_data[0].test08_0_src_v1_data, name=test08_0_src_v1_data, memDst=host)
-	.AddSrc(var=test08_1_src_v0_data, name=test08_1_src_v0_data, memDst=host)
+	.AddSrc(var=test08_1_src_v0_data(#,#), name=test08_1_src_v0_data, memDst=host)
 	.AddSrc(type=uint8_t, memDst=host)
 	.AddSrc(type=test08_3_src_u0_data_union, memDst=host)
 	;
@@ -782,13 +782,13 @@ Test09.AddGlobal()
 
 Test09.AddReadMem()
 	.AddDst(var=test09_0_dst_v0_data, name=test09_0_dst_v0_data, memSrc=host)
-	.AddDst(var=test09_1_dst_v0_data[][2], name=test09_1_dst_v0_data, memSrc=host)
+	.AddDst(var=test09_1_dst_v0_data[][2](#,#), name=test09_1_dst_v0_data, memSrc=host)
 	.AddDst(var=test09_2_dst_s0_data.test09_2_dst_v1_data, name=test09_2_dst_v1_data, memSrc=host)
 	;
 
 Test09.AddWriteMem()
 	.AddSrc(type=int16_t, memDst=host)
-	.AddSrc(var=test09_1_src_v0_data, name=test09_1_src_v0_data, memDst=host)
+	.AddSrc(var=test09_1_src_v0_data(#), name=test09_1_src_v0_data, memDst=host)
 	.AddSrc(type=uint64_t, memDst=host)
 	;
 
@@ -832,8 +832,8 @@ Test10.AddGlobal()
 	;
 
 Test10.AddReadMem()
-	.AddDst(var=test10_0_dst_u0_data[], name=test10_0_dst_u0_data, memSrc=host)
-	.AddDst(var=test10_1_dst_v0_data[][], name=test10_1_dst_v0_data, memSrc=host)
+	.AddDst(var=test10_0_dst_u0_data[](#,#), name=test10_0_dst_u0_data, memSrc=host)
+	.AddDst(var=test10_1_dst_v0_data[][](#), name=test10_1_dst_v0_data, memSrc=host)
 	;
 
 Test10.AddWriteMem()
@@ -878,7 +878,7 @@ Test11.AddShared()
 
 Test11.AddReadMem()
 	.AddDst(var=test11_0_dst_v0_data[0], name=test11_0_dst_v0_data, memSrc=host)
-	.AddDst(var=test11_1_src_v0_data, name=test11_1_src_v0_data, memSrc=host)
+	.AddDst(var=test11_1_src_v0_data(#,#), name=test11_1_src_v0_data, memSrc=host)
 	;
 
 Test11.AddWriteMem()
@@ -930,13 +930,13 @@ Test12.AddGlobal()
 	;
 
 Test12.AddReadMem()
-	.AddDst(var=test12_0_dst_v0_data[], name=test12_0_dst_v0_data, memSrc=host)
-	.AddDst(var=test12_1_dst_s0_data.test12_1_dst_s1_data[].test12_1_dst_s2_data, name=test12_1_dst_s2_data, memSrc=host)
-	.AddDst(var=test12_2_dst_v0_data[], name=test12_2_dst_v0_data, memSrc=host)
+	.AddDst(var=test12_0_dst_v0_data[#], name=test12_0_dst_v0_data, memSrc=host)
+	.AddDst(var=test12_1_dst_s0_data(,).test12_1_dst_s1_data[].test12_1_dst_s2_data, name=test12_1_dst_s2_data, memSrc=host)
+	.AddDst(var=test12_2_dst_v0_data[](#), name=test12_2_dst_v0_data, memSrc=host)
 	;
 
 Test12.AddWriteMem()
-	.AddSrc(var=test12_0_src_v0_data[0], name=test12_0_src_v0_data, memDst=host)
+	.AddSrc(var=test12_0_src_v0_data[0](#,#), name=test12_0_src_v0_data, memDst=host)
 	.AddSrc(type=test12_1_dst_s2_data_struct, memDst=host)
 	.AddSrc(type=uint64_t, memDst=host)
 	;

@@ -29,5 +29,5 @@ ctl.AddReturn(func=htmain)
 	;
 
 ctl.AddWriteMem(rspGrpW=1)
-	.AddSrc(name=data, var=wrBuf[], memDst=host)
+	.AddSrc(name=data, var=wrBuf[#], memDst=host)
 	;
