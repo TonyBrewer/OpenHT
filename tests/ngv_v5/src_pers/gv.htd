@@ -24,6 +24,7 @@ ctl.AddInst(name=CALL_GV11);
 ctl.AddInst(name=CALL_GV13);
 ctl.AddInst(name=CALL_GV15);
 ctl.AddInst(name=CALL_GV16);
+ctl.AddInst(name=CALL_GV17);
 ctl.AddInst(name=RETURN);
 
 ctl.AddPrivate()
@@ -49,6 +50,7 @@ ctl.AddCall(func=gv11);
 ctl.AddCall(func=gv13);
 ctl.AddCall(func=gv15);
 ctl.AddCall(func=gv16);
+ctl.AddCall(func=gv17);
 
 ////////////////////////////////////////////////////
 // Gv1 Module - 1x, 1F, Iw, Ir
@@ -736,4 +738,45 @@ gv16.AddReadMem()
 
 gv16.AddWriteMem()
 	.AddSrc(type=uint64_t)
+	;
+
+////////////////////////////////////////////////////
+// Gv17 Module
+
+dsnInfo.AddModule(name=gv17, htIdW=3, clock=1x);
+gv17.AddInst(name=GV17_ENTRY);
+gv17.AddInst(name=GV17a_WR);
+gv17.AddInst(name=GV17a_RD);
+gv17.AddInst(name=GV17a_TST);
+gv17.AddInst(name=GV17b_INIT);
+gv17.AddInst(name=GV17b_WR);
+gv17.AddInst(name=GV17b_RD);
+gv17.AddInst(name=GV17b_TST);
+gv17.AddInst(name=GV17_RETURN);
+
+gv17.AddEntry(func=gv17, inst=GV17_ENTRY)
+	.AddParam(type=ht_uint48, name=addr)
+	;
+
+gv17.AddGlobal()
+	.AddVar(type=uint64_t, name=Gv17, addr1=addr1, addr2=addr2, write=true, read=true, blockRam=true)
+	;
+
+gv17.AddPrivate()
+	.AddVar(type=ht_uint48, name=addr)
+	.AddVar(type=ht_uint4, name=addr1)
+	.AddVar(type=ht_uint5, name=addr2)
+	;
+
+gv17.AddReturn(func=gv17)
+	;
+
+gv17.AddWriteMem()
+	.AddSrc(name=Gv17a, var=Gv17(,), memDst=host)
+	.AddSrc(name=Gv17b, var=Gv17(1,), memDst=host)
+	;
+
+gv17.AddReadMem()
+	.AddDst(name=Gv17a, var=Gv17(,), memSrc=host)
+	.AddDst(name=Gv17b, var=Gv17(2,), memSrc=host)
 	;

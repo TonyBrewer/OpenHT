@@ -13,6 +13,16 @@ void CPersMath::PersMath()
 			P_cnt = 0;
 
 			{
+				Eabc abc = c;
+				int32_t i = 1;
+
+				if (i != abc) {
+					HtAssert(0, 0);
+					P_errMask = 0x40000000000ull;
+				}
+			}
+
+			{
 				ht_uint6 sh = 33;
 				uint64_t a, b;
 				a = 0xffffffffffffffffull;

@@ -3557,6 +3557,7 @@ void CHtfeDesign::ParseEnumDecl(CHtfeIdent *pHier)
 	CHtfeIdent *pType = pHier->InsertType(GetString());
 	pType->SetId(CHtfeIdent::id_enumType);
 	pType->SetIsType();
+	pType->SetIsSigned();
 	pType->SetWidth(1);
 	pType->SetOpWidth(32);
 	pType->SetUserConvType(m_pIntType);
@@ -5628,8 +5629,10 @@ void CHtfeDesign::ParseEvaluateExpression(CHtfeIdent *pHier, EToken tk, vector<C
 
 				CHtfeOperatorIter op2Iter(pOp2->GetType());
 				CHtfeOperatorIter op3Iter(pOp3->GetType());
-				if (!(op2Iter.GetType()->GetConvType()->GetId() == CHtfeIdent::id_intType && op3Iter.GetType()->GetConvType()->GetId() == CHtfeIdent::id_intType ||
-					op2Iter.GetType() == op3Iter.GetType())) {
+				if (!(op2Iter.GetType()->GetConvType()->GetId() == CHtfeIdent::id_intType &&
+					op3Iter.GetType()->GetConvType()->GetId() == CHtfeIdent::id_intType ||
+					op2Iter.GetType() == op3Iter.GetType()))
+				{
 					ParseMsg(PARSE_ERROR, "Incompatible operands for expression");
 				}
 
@@ -5694,8 +5697,11 @@ CHtfeOperand * CHtfeDesign::HandleBinaryOperatorConversions(CHtfeIdent *pHier, E
 				if (op2Iter.IsOverloadedOperator()) continue;
 
 				// check if op1Conv and op2Conv work for operation
-				if (memberIter.GetMethod() == 0 && op1Iter.GetType()->GetId() == CHtfeIdent::id_intType && op2Iter.GetType()->GetId() == CHtfeIdent::id_intType ||
-					memberIter.GetMethod() == 0 && op1Iter.GetType()->GetId() == CHtfeIdent::id_enumType && op1Iter.GetType() == op2Iter.GetType() ||
+				if (memberIter.GetMethod() == 0 && (op1Iter.GetType()->GetId() == CHtfeIdent::id_intType || op1Iter.GetType()->GetId() == CHtfeIdent::id_enumType) &&
+					(op2Iter.GetType()->GetId() == CHtfeIdent::id_intType || op2Iter.GetType()->GetId() == CHtfeIdent::id_enumType) ||
+					
+					//memberIter.GetMethod() == 0 && op1Iter.GetType()->GetId() == CHtfeIdent::id_intType && op2Iter.GetType()->GetId() == CHtfeIdent::id_intType ||
+					//memberIter.GetMethod() == 0 && op1Iter.GetType()->GetId() == CHtfeIdent::id_enumType && op1Iter.GetType() == op2Iter.GetType() ||
 					memberIter.GetMethod() == 0 && stackTk == tk_equal && op1Iter.GetType() == op2Iter.GetType() ||
 					memberIter.GetMethod() == 0 && op1Iter.IsOverloadedOperator() && op1Iter.GetMethod()->GetParamType(0) == op2Iter.GetType() ||
 					//memberIter.GetMethod() == 0 && stackTk == tk_equal && pOp2->IsConstValue() && pOp2->GetConstValue().IsZero() ||

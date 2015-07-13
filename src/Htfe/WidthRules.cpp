@@ -72,7 +72,7 @@ void CHtfeDesign::CheckWidthRules(CHtfeIdent *pHier, CHtfeStatement *pStatement,
             case st_switch:
                 {
                     CHtfeOperand * pExpr = pStatement->GetExpr();
-					if (pExpr->IsLeaf() ? pExpr->GetType()->IsSigned() : pExpr->IsSigned())
+					if (pExpr->IsLeaf() ? (pExpr->GetType()->IsSigned() && pExpr->GetType()->GetId() != CHtfeIdent::id_enumType) : pExpr->IsSigned())
 						ParseMsg(PARSE_ERROR, pStatement->GetLineInfo(), "Signed switch expression not supported");
 
                     int switchWidth = SetExpressionWidth(pStatement->GetExpr());
