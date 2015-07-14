@@ -46,8 +46,8 @@ inc.AddReturn(func=htmain)
 
 inc.AddReadMem()
 	.AddDst(var=sharedData)
-	.AddDst(var=sharedArray1[])
-	.AddDst(var=sharedArray2[][])
-	.AddDst(var=sharedArray3[][])
+	.AddDst(var=sharedArray1[#])
+	.AddDst(var=sharedArray2[#][#])
+	.AddDst(var=sharedArray3[][](#))
 	;
 inc.AddWriteMem();

@@ -5,6 +5,6 @@
 -uc 1
 -un Au
 -df 150
--pn matrix_mult_bbox
+-pn ex_matrix_mult_bbox
 ../src_pers/matrix_mult.htd
 ../ht/sysc

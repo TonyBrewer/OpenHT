@@ -65,7 +65,7 @@ Test00.AddReadMem()
 	;
 
 Test00.AddWriteMem()
-	.AddSrc(var=test00_0_0_data, name=test00_0_0_data, memDst=host)
+	.AddSrc(var=test00_0_0_data(#,#), name=test00_0_0_data, memDst=host)
 	;
 
 
@@ -98,7 +98,7 @@ Test01.AddGlobal()
 	;
 
 Test01.AddReadMem()
-	.AddDst(var=test01_0_0_data[], name=test01_0_0_data, memSrc=host)
+	.AddDst(var=test01_0_0_data[#], name=test01_0_0_data, memSrc=host)
 	;
 
 Test01.AddWriteMem()
@@ -139,11 +139,11 @@ Test02.AddGlobal()
 	;
 
 Test02.AddReadMem()
-	.AddDst(var=test02_0_1_data[1], name=test02_0_1_data, memSrc=host)
+	.AddDst(var=test02_0_1_data[1](#,#), name=test02_0_1_data, memSrc=host)
 	;
 
 Test02.AddWriteMem()
-	.AddSrc(var=test02_0_0_data[], name=test02_0_0_data, memDst=host)
+	.AddSrc(var=test02_0_0_data[](#), name=test02_0_0_data, memDst=host)
 	;
 
 
@@ -179,7 +179,7 @@ Test03.AddGlobal()
 	;
 
 Test03.AddReadMem()
-	.AddDst(var=test03_0_1_data[], name=test03_0_1_data, memSrc=host)
+	.AddDst(var=test03_0_1_data[](#,#), name=test03_0_1_data, memSrc=host)
 	;
 
 Test03.AddWriteMem()

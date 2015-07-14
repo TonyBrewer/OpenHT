@@ -61,7 +61,7 @@ gv1.AddGlobal()
 	;
 
 gv1.AddWriteMem(reqPause=true)
-	.AddSrc(name=mwgv3, var=gvar1, memDst=host)
+	.AddSrc(name=mwgv3, var=gvar1(#), memDst=host)
 	.AddSrc(type=CGVar, memDst=host)
 	;
 
@@ -96,7 +96,5 @@ gv2.AddGlobal()
 	;
 
 gv2.AddReadMem()
-	.AddDst(name=mrgv, var=gvar2, memSrc=host)
-	//.AddDst(name=mrgv2, var=gvar2[1](,2).m_b[], memSrc=host)
-	//.AddDst(name=mrgv3, var=gvar2[](,).m_b[0], memSrc=host)
+	.AddDst(name=mrgv, var=gvar2(,#), memSrc=host)
 	;

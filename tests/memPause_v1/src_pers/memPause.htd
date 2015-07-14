@@ -84,14 +84,11 @@ rd1.AddReturn(func=rd1)
 	;
 
 rd1.AddReadMem()
-	.AddDst(name=rd1Mem, var=rd1Mem.data);
+	.AddDst(name=rd1Mem, var=rd1Mem(,).data);
 
 rd1.AddGlobal()
 	.AddVar(type=CData, name=rd1Mem, addr1=arrayMemRd1Ptr, addr2=arrayMemRd2Ptr, read=true, write=false)
 	;
-//rd1.AddGlobal(var=rd1Mem, addr1W=RD1_ADDR1_W, addr1=arrayMemRd1Ptr, addr2W=2, addr2=arrayMemRd2Ptr)
-//	.AddField(type=uint64_t, name=data, read=true, write=false)
-//	;
 
 ////////////////////////////////////////////////////
 // rd2 Module
@@ -132,15 +129,11 @@ rd2.AddReturn(func=rd2)
 	;
 
 rd2.AddReadMem()
-	.AddDst(name=rd2Mem, var=rd2Mem.data);
+	.AddDst(name=rd2Mem, var=rd2Mem(,).data);
 
 rd2.AddGlobal()
 	.AddVar(type=CData, name=rd2Mem, addr1=arrayMemRd1Ptr, addr2=arrayMemRd2Ptr, read=true, write=false)
 	;
-
-//rd2.AddGlobal(var=rd2Mem, addr1W=RD2_ADDR1_W, addr1=arrayMemRd1Ptr, addr2W=2, addr2=arrayMemRd2Ptr)
-//	.AddField(type=uint64_t, name=data, read=true, write=false)
-//	;
 
 
 ////////////////////////////////////////////////////
@@ -182,15 +175,11 @@ rd3.AddReturn(func=rd3)
 	;
 
 rd3.AddReadMem()
-	.AddDst(name=rd3Mem, var=rd3Mem.data);
+	.AddDst(name=rd3Mem, var=rd3Mem(,).data);
 
 rd3.AddGlobal()
 	.AddVar(type=CData, name=rd3Mem, addr1=arrayMemRd1Ptr, addr2=arrayMemRd2Ptr, read=true, write=false)
 	;
-
-//rd3.AddGlobal(var=rd3Mem, addr1W=RD3_ADDR1_W, addr1=arrayMemRd1Ptr, addr2W=2, addr2=arrayMemRd2Ptr)
-//	.AddField(type=uint64_t, name=data, read=true, write=false)
-//	;
 
 ////////////////////////////////////////////////////
 // rd4 Module
@@ -231,15 +220,11 @@ rd4.AddReturn(func=rd4)
 	;
 
 rd4.AddReadMem()
-	.AddDst(name=rd4Mem, var=rd4Mem.data);
+	.AddDst(name=rd4Mem, var=rd4Mem(,).data);
 
 rd4.AddGlobal()
 	.AddVar(type=CData, name=rd4Mem, addr1=arrayMemRd1Ptr, addr2=arrayMemRd2Ptr, read=true, write=false)
 	;
-
-//rd4.AddGlobal(var=rd4Mem, addr1W=RD4_ADDR1_W, addr1=arrayMemRd1Ptr, addr2W=2, addr2=arrayMemRd2Ptr)
-//	.AddField(type=uint64_t, name=data, read=true, write=false)
-//	;
 
 
 ////////////////////////////////////////////////////

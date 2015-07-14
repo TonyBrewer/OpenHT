@@ -48,15 +48,15 @@ MemSub.AddReturn(func=MemSub)
 	;
 
 MemSub.AddReadMem()
-	.AddDst(var=array[])
-	.AddDst(var=array2)
-	.AddDst(var=privArray)
+	.AddDst(var=array[#])
+	.AddDst(var=array2(#))
+	.AddDst(var=privArray(#))
 	;
 
 MemSub.AddWriteMem()
-	.AddSrc(var=array[])
-	.AddSrc(var=array2)
-	.AddSrc(var=privArray)
+	.AddSrc(var=array[#])
+	.AddSrc(var=array2(#))
+	.AddSrc(var=privArray(#))
 	;
 
 MemSub.AddStage(execStg=2, privWrStg=4);

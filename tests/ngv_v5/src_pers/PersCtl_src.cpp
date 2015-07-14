@@ -59,7 +59,55 @@ void CPersCtl::PersCtl()
 				break;
 			}
 
-			SendCall_gv7(RETURN, PR_addr);
+			SendCall_gv7(CALL_GV9, PR_addr);
+			break;
+		case CALL_GV9:
+			if (SendCallBusy_gv9()) {
+				HtRetry();
+				break;
+			}
+
+			SendCall_gv9(CALL_GV11, PR_addr);
+			break;
+		case CALL_GV11:
+			if (SendCallBusy_gv11()) {
+				HtRetry();
+				break;
+			}
+
+			SendCall_gv11(CALL_GV13, PR_addr);
+			break;
+		case CALL_GV13:
+			if (SendCallBusy_gv13()) {
+				HtRetry();
+				break;
+			}
+
+			SendCall_gv13(CALL_GV15, PR_addr);
+			break;
+		case CALL_GV15:
+			if (SendCallBusy_gv15()) {
+				HtRetry();
+				break;
+			}
+
+			SendCall_gv15(CALL_GV16);
+			break;
+		case CALL_GV16:
+			if (SendCallBusy_gv16()) {
+				HtRetry();
+				break;
+			}
+
+			SendCall_gv16(CALL_GV17, PR_addr);
+			break;
+		case CALL_GV17:
+			if (SendCallBusy_gv17()) {
+				HtRetry();
+				break;
+			}
+
+			SendCall_gv17(RETURN, PR_addr);
 			break;
 		case RETURN:
 			if (SendReturnBusy_htmain()) {

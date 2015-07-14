@@ -500,7 +500,7 @@
     <CustomBuild Include="..\ht\verilog\PersInc.v_">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(HtToolsPath)\bin\htv -quartus -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(HtToolsPath)\bin\htv -DHT_SYSC -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc ..\ht\sysc\%(Filename).cpp ..\ht\verilog\%(Filename).v</Command>

@@ -86,9 +86,9 @@ Priv2.AddPrivate()
 	;
 
 Priv2.AddReadMem()
-	.AddDst(var=data)
+	.AddDst(var=data(#))
 	;
 
 Priv2.AddWriteMem()
-	.AddSrc(var=data)
+	.AddSrc(var=data(#))
 	;

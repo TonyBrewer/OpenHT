@@ -54,7 +54,7 @@ Test00.AddReadMem()
 	;
 
 Test00.AddWriteMem()
-	.AddSrc(var=test00_0_0_data[0][], name=test00_0_0_data, memDst=host)
+	.AddSrc(var=test00_0_0_data[0][#], name=test00_0_0_data, memDst=host)
 	;
 
 

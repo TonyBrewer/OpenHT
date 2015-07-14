@@ -39,10 +39,10 @@ inc.AddReturn(func=htmain)
 	;
 
 inc.AddReadMem()
-	.AddDst(name=arrayMem1Fld1, var=arrayMem[0].fld[0])
-	.AddDst(name=arrayMem1Fld2, var=arrayMem[].fld[1])
-	.AddDst(name=arrayMem2Fld1, var=arrayMem[1].fld[])
-	.AddDst(name=arrayMem2Fld2, var=arrayMem[].fld[], elemCntW=0)
+	.AddDst(name=arrayMem1Fld1, var=arrayMem[0]().fld[0])
+	.AddDst(name=arrayMem1Fld2, var=arrayMem[]().fld[1])
+	.AddDst(name=arrayMem2Fld1, var=arrayMem[1]().fld[#])
+	.AddDst(name=arrayMem2Fld2, var=arrayMem[]().fld[])
 	;
 
 inc.AddWriteMem();

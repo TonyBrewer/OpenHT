@@ -166,7 +166,8 @@ public:
 struct CField : CDimenList {
 
 	CField(CType * pType, string name, string bitWidth, string base, vector<CHtString> const &dimenList, bool bSrcRead,
-		bool bSrcWrite, bool bMifRead, bool bMifWrite, HtdFile::ERamType ramType, int atomicMask)
+		bool bSrcWrite, bool bMifRead, bool bMifWrite, HtdFile::ERamType ramType, int atomicMask,
+		bool bSpanningFieldForced = false)
 	{
 		Init();
 
@@ -182,6 +183,7 @@ struct CField : CDimenList {
 		m_bMifWrite = bMifWrite;
 		m_ramType = ramType;
 		m_atomicMask = atomicMask;
+		m_bSpanningFieldForced = bSpanningFieldForced;
 	}
 
 	CField(CType * pType, string fieldName, bool bIfDefHtv = false)
@@ -344,6 +346,9 @@ public:
 	int			m_atomicMask;
 	int			m_cLangFieldPos;
 
+	// spanning field flags for global variable writes
+	bool		m_bSpanningFieldForced;
+
 	CHtString	m_rngLow;	// instruction stage low
 	CHtString	m_rngHigh;	// instruction stage high
 	bool		m_bInit;	// initialize first stage register
@@ -396,11 +401,12 @@ struct CRecord : CType {
 	}
 
 	CField * AddStructField(CType * pType, string const & name, string bitWidth = "", string base = "", vector<CHtString> const &dimenList = g_nullHtStringVec,
-		bool bSrcRead = true, bool bSrcWrite = true, bool bMifRead = false, bool bMifWrite = false, HtdFile::ERamType ramType = HtdFile::eDistRam, int atomicMask = 0)
+		bool bSrcRead = true, bool bSrcWrite = true, bool bMifRead = false, bool bMifWrite = false, HtdFile::ERamType ramType = HtdFile::eDistRam, int atomicMask = 0,
+		bool bSpanningFieldForced = false)
 	{
 
 
-		m_fieldList.push_back(new CField(pType, name, bitWidth, base, dimenList, bSrcRead, bSrcWrite, bMifRead, bMifWrite, ramType, atomicMask));
+		m_fieldList.push_back(new CField(pType, name, bitWidth, base, dimenList, bSrcRead, bSrcWrite, bMifRead, bMifWrite, ramType, atomicMask, bSpanningFieldForced));
 		m_fieldList.back()->InitDimen(CPreProcess::m_lineInfo);
 		m_fieldList.back()->m_fieldWidth.InitValue(CPreProcess::m_lineInfo, false);
 
@@ -486,6 +492,7 @@ public:
 	bool				m_bInclude;
 	bool				m_bNeedIntf;
 	bool				m_bConstructors;
+	bool				m_bSpanningWrite;
 
 	string				m_modName;
 	int					m_atomicMask;
@@ -538,7 +545,7 @@ struct CRam : CRecord, CDimenList {
 
 	CRam(CType * pType, string &name, string &dimen1, string &dimen2, string &addr1, string &addr2,
 		string &addr1W, string &addr2W, string &rdStg, string &wrStg, bool bMaxIw, bool bMaxMw,
-		HtdFile::ERamType ramType, bool bRead, bool bWrite)
+		HtdFile::ERamType ramType, bool bRead, bool bWrite, bool bSpanningWrite)
 	{
 		Init();
 		m_pType = pType;
@@ -560,6 +567,7 @@ struct CRam : CRecord, CDimenList {
 		m_ramType = ramType;
 		m_bReadForInstrRead = bRead;
 		m_bWriteForInstrWrite = bWrite;
+		m_bSpanningWrite = bSpanningWrite;
 	}
 
 	CRam(string &type, string &name, vector<CHtString> & dimenList, string &addr1, string &addr2,
@@ -595,6 +603,7 @@ struct CRam : CRecord, CDimenList {
 		m_addr2IsHtId = false;
 		m_addr2IsPrivate = false;
 		m_addr2IsStage = false;
+		m_bSpanningWrite = false;
 	}
 
 public:
@@ -637,9 +646,30 @@ struct CNgvModInfo {
 	CRam * m_pNgv;
 };
 
+struct CSpanningField {
+	CSpanningField() {
+		m_bIgnore = false;
+		m_bForced = false;
+		m_bSpanning = false;
+	}
+
+public:
+	CLineInfo m_lineInfo;
+	string m_ramName;
+	CField * m_pField;
+	CType * m_pType;
+	string m_heirName;
+	int m_pos;
+	int m_width;
+	bool m_bForced;
+	bool m_bIgnore;
+	bool m_bSpanning;
+};
+
 struct CNgvInfo {
 	CNgvInfo() : m_atomicMask(0), m_ngvReplCnt(0) {}
 	vector<CNgvModInfo> m_modInfoList;
+	vector<CSpanningField> m_spanningFieldList;
 	int m_atomicMask;
 	string m_ngvWrType;
 	HtdFile::ERamType m_ramType;
@@ -648,6 +678,8 @@ struct CNgvInfo {
 	bool m_bNgvWrCompClk2x;
 	bool m_bNgvAtomicFast;
 	bool m_bNgvAtomicSlow;
+	bool m_bUserSpanningWrite;
+	bool m_bAutoSpanningWrite;
 	bool m_bNgvMaxSel;
 	int m_ngvFieldCnt;
 	int m_ngvReplCnt;
@@ -986,10 +1018,9 @@ struct CFieldRef {
 };
 
 struct CMifRdDst {
-	CMifRdDst(string const & name, string const & var, string const & field, string const & dataLsb, bool bMultiRd,
-		string const & dstIdx, string const & memSrc, string const & atomic, CType * pRdType, string const & elemCntW) :
-		m_name(name), m_var(var), m_field(field), m_dataLsb(dataLsb), m_bMultiQwRdReq(bMultiRd),
-		m_dstIdx(dstIdx), m_memSrc(memSrc), m_atomic(atomic), m_elemCntW(elemCntW), m_pRdType(pRdType)
+	CMifRdDst(string const & name, string const & var, 
+		string const & memSrc, string const & atomic, CType * pRdType) :
+		m_name(name), m_var(var), m_memSrc(memSrc), m_atomic(atomic), m_pRdType(pRdType)
 	{
 		m_lineInfo = CPreProcess::m_lineInfo;
 		m_pSharedVar = 0;
@@ -1003,8 +1034,6 @@ struct CMifRdDst {
 		m_varAddr2W = 0;
 		m_varAddr1IsHtId = false;
 		m_varAddr2IsHtId = false;
-		m_varAddr1IsIdx = false;
-		m_varAddr2IsIdx = false;
 		m_varDimen1 = 0;
 		m_varDimen2 = 0;
 		m_fldDimen1 = 0;
@@ -1019,7 +1048,6 @@ struct CMifRdDst {
 		m_pPrivVar = 0;
 		m_pGblVar = 0;
 		m_atomic = "read";
-		m_dstIdx = "rspIdx";
 
 		m_fldW = 0;
 		m_dstW = 0;
@@ -1028,8 +1056,6 @@ struct CMifRdDst {
 		m_varAddr2W = 0;
 		m_varAddr1IsHtId = false;
 		m_varAddr2IsHtId = false;
-		m_varAddr1IsIdx = false;
-		m_varAddr2IsIdx = false;
 		m_varDimen1 = 0;
 		m_varDimen2 = 0;
 		m_fldDimen1 = 0;
@@ -1038,8 +1064,6 @@ struct CMifRdDst {
 
 	CHtString	m_name;
 	string		m_var;
-	string		m_field;
-	CHtString	m_dataLsb;
 	CHtString	m_infoW;
 	CHtString	m_rsmDly;
 	bool        m_bMultiQwRdReq;
@@ -1048,10 +1072,8 @@ struct CMifRdDst {
 	bool		m_bMultiQwHostRdMif;
 	bool		m_bMultiQwCoprocRdMif;
 	bool		m_bMultiElemRd;
-	string      m_dstIdx;
 	string      m_memSrc;
 	string      m_atomic;
-	CHtString	m_elemCntW;
 
 	CLineInfo	m_lineInfo;
 
@@ -1074,8 +1096,6 @@ struct CMifRdDst {
 	int m_fldDimen2;
 	bool m_varAddr1IsHtId;
 	bool m_varAddr2IsHtId;
-	bool m_varAddr1IsIdx;
-	bool m_varAddr2IsIdx;
 	int m_maxElemCnt;
 
 	vector<CFieldRef> m_fieldRefList;
@@ -1129,8 +1149,8 @@ public:
 
 struct CMifWrSrc {
 	CMifWrSrc(string const & name, CType * pType, string const & var, string const & memDst,
-		CType * pWrType, string const & elemCntW) :
-		m_name(name), m_pType(pType), m_var(var), m_memDst(memDst), m_elemCntW(elemCntW), m_pWrType(pWrType)
+		CType * pWrType) :
+		m_name(name), m_pType(pType), m_var(var), m_memDst(memDst), m_pWrType(pWrType)
 	{
 		m_lineInfo = CPreProcess::m_lineInfo;
 		m_pSharedVar = 0;
@@ -1156,7 +1176,6 @@ struct CMifWrSrc {
 	CType *		m_pType;
 	string		m_var;
 	string      m_memDst;
-	CHtString	m_elemCntW;
 
 	CLineInfo	m_lineInfo;
 
@@ -1819,6 +1838,7 @@ struct CBramTarget {
 	int			m_depth;
 	int			m_width;
 	int			m_copies;
+	int			m_slices;
 	int			m_brams;
 	float		m_slicePerBramRatio;
 	HtdFile::ERamType *	m_pRamType;
@@ -1931,7 +1951,7 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 	void AddHostData(void * pModule, HtdFile::EHostMsgDir msgDir, bool bMaxBw);
 	void AddGlobalVar(vector<CRam *> * pGlobalList, CType * pType, string name, string dimen1, string dimen2,
 		string addr1W, string addr2W, string addr1, string addr2, string rdStg, string wrStg,
-		bool bMaxIw, bool bMaxMw, ERamType ramType, bool bRead, bool bWrite);
+		bool bMaxIw, bool bMaxMw, ERamType ramType, bool bRead, bool bWrite, bool bSpanningWrite);
 	void AddBarrier(void * pModule, string name, string barIdW);
 	void AddStream(void * pStruct, bool bRead, string &name, CType * pType, string &strmBw, string &elemCntW, string &strmCnt,
 		string &memSrc, vector<int> &memPort, string &access, string &reserve, bool paired, bool bClose, CType * pTag, string &rspGrpW);
@@ -1950,9 +1970,9 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 		string idx1Lsb, string idx2Lsb, string field, string fldIdx1Lsb, string fldIdx2Lsb, bool bReadOnly);
 
 	CMifWr * AddSrc(CMifWr * pMifWr, string const & name, CType * pType,
-		string const & var, string const & memDst, CType * pWrType, string const & elemCntW);
-	void AddDst(CMifRd * pOpenMifRd, string const & name, string const & var, string const & field, string const & dataLsb,
-		bool bMultiRd, string const & dstIdx, string const & memSrc, string const & atomic, CType * pRdType, string const & elemCntW);
+		string const & var, string const & memDst, CType * pWrType);
+	void AddDst(CMifRd * pOpenMifRd, string const & name, string const & var,
+		string const & memSrc, string const & atomic, CType * pRdType);
 	void AddDst(CMifRd * pOpenMifRd, string name, string infoW, string stgCnt,
 		bool bMultiRd, string memSrc, CType * pRdType);
 
@@ -1980,7 +2000,9 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 	bool GetThreadGroups(string &name, string &groupW, string &resetInstr) { return false; }
 	bool NeedClk2x();
 
+	void InitOptNgv();
 	void InitBramUsage();
+	void InitMifRamType();
 	void ReportRamFieldUsage();
 	void DrawModuleCmdRelationships();
 
@@ -2018,6 +2040,7 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 	bool FindVariableWidth(CLineInfo const &lineInfo, CModule &mod, string name, bool &bHtId, bool &bPrivate, bool &bShared, bool &bStage, int &addr1W);
 	bool FindFieldRefWidth(CLineInfo const &lineInfo, string const &fieldRef, vector<CField *> const &fieldList, int &varW);
 	float FindSlicePerBramRatio(int depth, int width);
+	int FindSliceCnt(int depth, int width);
 	int FindBramCnt(int depth, int width);
 	void InitNativeCTypes();
 	bool IsNativeCType(string &type, bool bAllowHostPtr = false);
@@ -2228,6 +2251,8 @@ public:
 	void GenModStBufStatements(CModule * pMod);
 	void GenModNgvStatements(CModule &mod);
 	void GenModOptNgvStatements(CModule * mod, CRam * pGv);
+
+	void FindSpanningWriteFields(CNgvInfo * pNgvInfo, bool bUserEnabled);
 
 	void GenAeNextMsgIntf(HtiFile::CMsgIntfConn * pMicAeNext);
 	void GenAePrevMsgIntf(HtiFile::CMsgIntfConn * pMicAePrev);

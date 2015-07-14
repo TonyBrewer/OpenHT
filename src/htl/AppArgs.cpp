@@ -50,7 +50,7 @@ CAppArgs::Usage()
 	//printf("  -if <file>       Name of module instance file\n");
 	//printf("  -df <freq>       Default module instance frequency (default 150 mhz)\n");
 	printf("  -ub <cnt>        Maximum number of 18Kb block rams per Unit (default: AE BRAM count * 50%% / Units Per AE)\n");
-	printf("  -lb <ratio>      Minimum lutToBram ratio for block rams usage (default 100)\n");
+	printf("  -sb <ratio>      Minimum sliceToBram ratio for block rams usage (default 10)\n");
 	printf("  -ml <scale>      Memory model latency scaling (default 1.0)\n");
 	printf("  -mt              Memory tracing enable\n");
 	printf("  -vr              Variable report generation enabled\n");
@@ -191,7 +191,7 @@ CAppArgs::Parse(int argc, char const **argv)
 	m_hostHtIdW = 0;
 	m_defaultFreqMhz = 150;
 	m_max18KbBramPerUnit = -1;
-	m_minLutToBramRatio = 40;
+	m_minSliceToBramRatio = 12;
 	m_bInstrTrace = false;
 	m_avgMemLatency[0] = 130;	// CP  : 110 min + ~20%
 	m_avgMemLatency[1] = 430;	// Host: 360 min + ~20%
@@ -355,15 +355,15 @@ CAppArgs::Parse(int argc, char const **argv)
 				}
 				m_avgMemLatency[0] = (int)(m_avgMemLatency[0] * latScale);
 				m_avgMemLatency[1] = (int)(m_avgMemLatency[1] * latScale);
-			} else if ((strcmp(argv[argPos], "-lb") == 0)) {
+			} else if ((strcmp(argv[argPos], "-sb") == 0)) {
 				if (argPos == argc - 1) {
-					printf("expected parameter for -lb command line flag\n");
+					printf("expected parameter for -sb command line flag\n");
 					Usage();
 					exit(1);
 				}
 				argPos += 1;
-				if (sscanf(argv[argPos], "%d", &m_minLutToBramRatio) != 1) {
-					printf("expected an integer parameter for -lb command line flag\n");
+				if (sscanf(argv[argPos], "%d", &m_minSliceToBramRatio) != 1) {
+					printf("expected an integer parameter for -sb command line flag\n");
 					Usage();
 					exit(1);
 				}

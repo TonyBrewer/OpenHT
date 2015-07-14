@@ -6,6 +6,7 @@
 -un Au
 -df 150
 -it
+-pn ex_vadd
 -vcd_all
 -if ../src_pers/vadd.hti
 ../src_pers/vadd.htd

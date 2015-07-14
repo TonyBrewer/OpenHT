@@ -57,6 +57,8 @@ bool bIgnoreWhiteSpace = true;
 
 int main(int argc, char **argv)
 {
+	printf("Version 1.05\n");
+
 	string goldDir = "C:/HtGolden";
 
 	// first get list of projects to compare, list is saved in file in C:\HtGolden\ProjList
@@ -144,6 +146,13 @@ int main(int argc, char **argv)
 				printf("  %2d   %s  %s\n", (int)i, projList[i].m_projStatus.c_str(), projList[i].m_projName.c_str());
 
 		} else if (strcmp(cmd, "lad") == 0) {
+			printf("List projects with differences\n");
+			for (size_t i = 0; i < projList.size(); i += 1) {
+				if (projList[i].m_projStatus == "   ") continue;
+				printf("  %2d   %s  %s\n", (int)i, projList[i].m_projStatus.c_str(), projList[i].m_projName.c_str());
+			}
+
+		} else if (strcmp(cmd, "lad") == 0) {
 			for (size_t pi = 0; pi < projList.size(); pi += 1) {
 				CHtProj & htProj = projList[pi];
 
@@ -175,18 +184,43 @@ int main(int argc, char **argv)
 				continue;
 			}
 			if (num >= (int)projList.size()) {
-				printf("  project number out of range (0-%d)\n", (int)projList.size()-1);
+				printf("  project number out of range (0-%d)\n", (int)projList.size() - 1);
 				continue;
 			}
 
 			printf("List files of project %s\n", projList[num].m_projName.c_str());
 			for (size_t i = 0; i < projList[num].m_systemcFiles.size(); i += 1)
 				printf("  %2d   %c %s\n", (int)i,
-					GetStatusChar(projList[num].m_systemcFiles[i].m_fileStatus), projList[num].m_systemcFiles[i].m_fileName.c_str());
+				GetStatusChar(projList[num].m_systemcFiles[i].m_fileStatus), projList[num].m_systemcFiles[i].m_fileName.c_str());
 
 			for (size_t i = 0; i < projList[num].m_verilogFiles.size(); i += 1)
 				printf("  %2d   %c %s\n", (int)(projList[num].m_systemcFiles.size() + i),
-					GetStatusChar(projList[num].m_verilogFiles[i].m_fileStatus), projList[num].m_verilogFiles[i].m_fileName.c_str());
+				GetStatusChar(projList[num].m_verilogFiles[i].m_fileStatus), projList[num].m_verilogFiles[i].m_fileName.c_str());
+
+			pCurHtProj = &projList[num];
+
+		} else if (strcmp(cmd, "lpd") == 0) {
+			if (args == 1) {
+				printf("  project number missing\n");
+				continue;
+			}
+			if (num >= (int)projList.size()) {
+				printf("  project number out of range (0-%d)\n", (int)projList.size() - 1);
+				continue;
+			}
+
+			printf("List files of project %s with differences\n", projList[num].m_projName.c_str());
+			for (size_t i = 0; i < projList[num].m_systemcFiles.size(); i += 1) {
+				char c = GetStatusChar(projList[num].m_systemcFiles[i].m_fileStatus);
+				if (c == ' ') continue;
+				printf("  %2d   %c %s\n", (int)i, c, projList[num].m_systemcFiles[i].m_fileName.c_str());
+			}
+
+			for (size_t i = 0; i < projList[num].m_verilogFiles.size(); i += 1) {
+				char c = GetStatusChar(projList[num].m_verilogFiles[i].m_fileStatus);
+				if (c == ' ') continue;
+				printf("  %2d   %c %s\n", (int)(projList[num].m_systemcFiles.size() + i), c, projList[num].m_verilogFiles[i].m_fileName.c_str());
+			}
 
 			pCurHtProj = &projList[num];
 
@@ -406,6 +440,22 @@ int main(int argc, char **argv)
 
 			ScanProject(htProj);
 
+			printf("Scan project %s and list files with differences\n", projList[num].m_projName.c_str());
+
+			for (size_t i = 0; i < projList[num].m_systemcFiles.size(); i += 1) {
+				char c = GetStatusChar(projList[num].m_systemcFiles[i].m_fileStatus);
+				if (c == ' ') continue;
+				printf("  %2d   %c %s\n", (int)i, c, projList[num].m_systemcFiles[i].m_fileName.c_str());
+			}
+
+			for (size_t i = 0; i < projList[num].m_verilogFiles.size(); i += 1) {
+				char c = GetStatusChar(projList[num].m_verilogFiles[i].m_fileStatus);
+				if (c == ' ') continue;
+				printf("  %2d   %c %s\n", (int)(projList[num].m_systemcFiles.size() + i), c, projList[num].m_verilogFiles[i].m_fileName.c_str());
+			}
+
+			pCurHtProj = &projList[num];
+
 		} else if (strcmp(cmd, "sa") == 0) {
 			for (size_t pi = 0; pi < projList.size(); pi += 1) {
 				CHtProj & htProj = projList[pi];
@@ -520,8 +570,9 @@ int main(int argc, char **argv)
 
 			printf("Help\n");
 			printf("  la             - list all projects\n");
-			printf("  lad            - list different files in all projects\n");
+			printf("  lad            - list projects with differences\n");
 			printf("  lp <proj num>  - list all files of project\n");
+			printf("  lpd <proj num> - list files of project with differences");
 			printf("  lps <proj num> - list systemc files of project\n");
 			printf("  lpv <proj num> - list verilog files of project\n");
 			printf("  df <file num>  - diff file\n");

@@ -6,6 +6,6 @@
 -un Au
 -df 150
 //-vcd_all
--pn matrix_mult_bbox_r2
+-pn ex_matrix_mult_bbox_r2
 ../src_pers/matrix_mult.htd
 ../ht/sysc

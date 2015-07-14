@@ -72,7 +72,7 @@ Test00.AddShared()
 	;
 
 Test00.AddReadMem()
-	.AddDst(var=test00_0_p_1_data[], name=test00_0_p_1_data, memSrc=host)
+	.AddDst(var=test00_0_p_1_data[#], name=test00_0_p_1_data, memSrc=host)
 	.AddDst(var=test00_1_s_7_data[1], name=test00_1_s_7_data, memSrc=host)
 	;
 

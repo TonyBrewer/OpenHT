@@ -88,8 +88,8 @@ add.AddReturn(func=add)
 	;
 
 add.AddReadMem()
-	.AddDst(var=op1Mem)
-	.AddDst(var=op2Mem)
+	.AddDst(var=op1Mem(#))
+	.AddDst(var=op2Mem(#))
 	;
 
 add.AddWriteMem();

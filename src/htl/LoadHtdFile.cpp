@@ -340,10 +340,10 @@ void CDsnInfo::AddHostData(void * pHandle, HtdFile::EHostMsgDir msgDir, bool bMa
 
 void CDsnInfo::AddGlobalVar(vector<CRam *> * pGlobalList, CType * pType, string name, string dimen1, string dimen2,
 	string addr1W, string addr2W, string addr1, string addr2, string rdStg, string wrStg,
-	bool bMaxIw, bool bMaxMw, ERamType ramType, bool bRead, bool bWrite)
+	bool bMaxIw, bool bMaxMw, ERamType ramType, bool bRead, bool bWrite, bool bSpanningWrite)
 {
 	(*pGlobalList).push_back(new CRam(pType, name, dimen1, dimen2, addr1, addr2,
-		addr1W, addr2W, rdStg, wrStg, bMaxIw, bMaxMw, ramType, bRead, bWrite));
+		addr1W, addr2W, rdStg, wrStg, bMaxIw, bMaxMw, ramType, bRead, bWrite, bSpanningWrite));
 }
 
 void CDsnInfo::AddStageField(CStage * pStage, CType * pType, string name, string dimen1, string dimen2,
@@ -370,17 +370,16 @@ void * CDsnInfo::AddMsgDst(void * pHandle, string var, string dataLsb, string ad
 }
 
 CMifWr * CDsnInfo::AddSrc(CMifWr * pMifWr, string const & name, CType * pType,
-	string const & var, string const & memDst, CType * pWrType, string const & elemCntW)
+	string const & var, string const & memDst, CType * pWrType)
 {
-	pMifWr->m_wrSrcList.push_back(CMifWrSrc(name, pType, var, memDst, pWrType, elemCntW));
+	pMifWr->m_wrSrcList.push_back(CMifWrSrc(name, pType, var, memDst, pWrType));
 	return pMifWr;
 }
 
 void CDsnInfo::AddDst(CMifRd * pMifRd, string const & name, string const & var,
-	string const & field, string const & dataLsb, bool bMultiRd, string const & dstIdx,
-	string const & memSrc, string const & atomic, CType * pRdType, string const & elemCntW)
+	string const & memSrc, string const & atomic, CType * pRdType)
 {
-	pMifRd->m_rdDstList.push_back(CMifRdDst(name, var, field, dataLsb, bMultiRd, dstIdx, memSrc, atomic, pRdType, elemCntW));
+	pMifRd->m_rdDstList.push_back(CMifRdDst(name, var, memSrc, atomic, pRdType));
 }
 
 void CDsnInfo::AddDst(CMifRd * pMifRd, string name, string infoW, string stgCnt,

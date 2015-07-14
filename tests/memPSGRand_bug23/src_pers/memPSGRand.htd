@@ -68,5 +68,5 @@ Test02.AddReadMem()
 	;
 
 Test02.AddWriteMem()
-	.AddSrc(var=test02_0_v0_data, name=test02_0_v0_data, memDst=host)
+	.AddSrc(var=test02_0_v0_data(#), name=test02_0_v0_data, memDst=host)
 	;

@@ -36,7 +36,7 @@ xyz.AddReturn(func=htmain)
 	;
 
 xyz.AddReadMem()
-	.AddDst(name=arrayMem, var=arrayMem.data)
+	.AddDst(name=arrayMem, var=arrayMem().data)
 	;
 xyz.AddWriteMem();
 

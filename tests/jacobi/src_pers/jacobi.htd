@@ -107,8 +107,8 @@ stencil.AddWriteMem();
 
 // Set up memory read interface 
 stencil.AddReadMem()
-	.AddDst(name=j0, var=mifRdVal.j0)
-	.AddDst(name=j1, var=mifRdVal.j1)
+	.AddDst(name=j0, var=mifRdVal().j0)
+	.AddDst(name=j1, var=mifRdVal().j1)
 	;
 
 // Ram for reading memory 

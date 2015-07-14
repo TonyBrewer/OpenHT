@@ -175,8 +175,8 @@ mult.AddReturn(func=mult)
 	;
 
 mult.AddReadMem()
-	.AddDst(var=op1Mem)
-	.AddDst(var=op2Mem)
+	.AddDst(var=op1Mem(#))
+	.AddDst(var=op2Mem(#))
 	;
 
 mult.AddPrimState(type=mult_prm_state, name=mult_prm_state1, include="PersMult_prim.h");

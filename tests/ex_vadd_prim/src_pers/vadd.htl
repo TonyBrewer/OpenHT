@@ -5,6 +5,6 @@
 -uc 1
 -un Au
 -df 150
--pn vadd_5stage_r3
+-pn ex_vadd_prim
 ../src_pers/vadd.htd
 ../ht/sysc
