@@ -359,6 +359,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "memPSGRand_bug89", "..\memP
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "memPSGRand_bug90", "..\memPSGRand_bug90\msvs12\memPSGRand_bug90.vcxproj", "{4D07EC43-8850-4B59-9C6B-43221B7723C0}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "memPSGRand_bug91", "..\memPSGRand_bug91\msvs12\memPSGRand_bug91.vcxproj", "{A94377EC-3D2B-4008-ACF5-0DC7BC41C3C2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -2286,6 +2288,17 @@ Global
 		{4D07EC43-8850-4B59-9C6B-43221B7723C0}.Release|Win32.Build.0 = Release|Win32
 		{4D07EC43-8850-4B59-9C6B-43221B7723C0}.Release|x64.ActiveCfg = Release|x64
 		{4D07EC43-8850-4B59-9C6B-43221B7723C0}.Release|x64.Build.0 = Release|x64
+		{A94377EC-3D2B-4008-ACF5-0DC7BC41C3C2}.Debug|Win32.ActiveCfg = Debug|Win32
+		{A94377EC-3D2B-4008-ACF5-0DC7BC41C3C2}.Debug|Win32.Build.0 = Debug|Win32
+		{A94377EC-3D2B-4008-ACF5-0DC7BC41C3C2}.Debug|x64.ActiveCfg = Debug|x64
+		{A94377EC-3D2B-4008-ACF5-0DC7BC41C3C2}.Debug|x64.Build.0 = Debug|x64
+		{A94377EC-3D2B-4008-ACF5-0DC7BC41C3C2}.Htl_Htv|Win32.ActiveCfg = Htl_Htv|x64
+		{A94377EC-3D2B-4008-ACF5-0DC7BC41C3C2}.Htl_Htv|x64.ActiveCfg = Htl_Htv|x64
+		{A94377EC-3D2B-4008-ACF5-0DC7BC41C3C2}.Htl_Htv|x64.Build.0 = Htl_Htv|x64
+		{A94377EC-3D2B-4008-ACF5-0DC7BC41C3C2}.Release|Win32.ActiveCfg = Release|Win32
+		{A94377EC-3D2B-4008-ACF5-0DC7BC41C3C2}.Release|Win32.Build.0 = Release|Win32
+		{A94377EC-3D2B-4008-ACF5-0DC7BC41C3C2}.Release|x64.ActiveCfg = Release|x64
+		{A94377EC-3D2B-4008-ACF5-0DC7BC41C3C2}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
