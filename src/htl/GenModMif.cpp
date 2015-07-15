@@ -596,13 +596,17 @@ void CDsnInfo::InitAndValidateModMif()
 				if (rdDst.m_infoW.AsInt() > 0)
 					rdDstInfoW += rdDst.m_infoW.AsInt();
 
-				if (!rdDst.m_varAddr1IsHtId && rdDst.m_fieldRefList.size() > 0 &&
-					rdDst.m_fieldRefList[0].m_refAddrList.size() > 0 && !rdDst.m_fieldRefList[0].m_refAddrList[0].m_isIdx)
+				if (rdDst.m_varAddr1W > 0 && !rdDst.m_varAddr1IsHtId &&
+					!rdDst.m_fieldRefList[0].m_refAddrList[0].m_isIdx && rdDst.m_fieldRefList[0].m_refAddrList[0].m_value < 0)
+				{
 					rdDstInfoW += rdDst.m_varAddr1W;
+				}
 
-				if (!rdDst.m_varAddr2IsHtId && rdDst.m_fieldRefList.size() > 0 &&
-					rdDst.m_fieldRefList[0].m_refAddrList.size() > 1 && !rdDst.m_fieldRefList[0].m_refAddrList[1].m_isIdx)
+				if (rdDst.m_varAddr2W > 0 && !rdDst.m_varAddr2IsHtId &&
+					!rdDst.m_fieldRefList[0].m_refAddrList[1].m_isIdx && rdDst.m_fieldRefList[0].m_refAddrList[1].m_value < 0)
+				{
 					rdDstInfoW += rdDst.m_varAddr2W;
+				}
 
 				for (size_t fldIdx = 0; fldIdx < rdDst.m_fieldRefList.size(); fldIdx += 1) {
 					for (size_t dimIdx = 0; dimIdx < rdDst.m_fieldRefList[fldIdx].m_refDimenList.size(); dimIdx += 1) {
@@ -782,7 +786,11 @@ void CDsnInfo::InitMifRamType()
 
 					if (rdDst.m_pSharedVar->m_ramType == eBlockRam && rdDst.m_varAddr1W >= 0 &&
 						rdDst.m_pDstType->m_clangMinAlign != 1 && rdDst.m_pDstType->m_clangBitWidth != rdDst.m_pDstType->m_clangMinAlign)
-						ParseMsg(Error, rdDst.m_pSharedVar->m_lineInfo, "memory read to shared variable with read type that requires multiple block ram writes not supported");
+					{
+						ParseMsg(Error, rdDst.m_pSharedVar->m_lineInfo, "memory read to shared variable that may require partial block ram writes is not supported");
+						ParseMsg(Info, rdDst.m_pSharedVar->m_lineInfo, "  shared variable type is %d bytes in size and has %d byte memory alignment",
+							rdDst.m_pDstType->m_clangBitWidth / 8, rdDst.m_pDstType->m_clangMinAlign / 8);
+					}
 
 					if (rdDst.m_pSharedVar->m_ramType == eBlockRam && rdDst.m_varAddr1W >= 0 &&
 						rdDst.m_pDstType->m_clangBitWidth != rdDst.m_pSharedVar->m_pType->m_clangBitWidth)
