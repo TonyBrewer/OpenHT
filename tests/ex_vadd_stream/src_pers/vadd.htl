@@ -5,7 +5,7 @@
 -uc 1
 -un Au
 -df 150
--pn vadd_stream
+-pn ex_vadd_stream
 -it
 -mt
 -vcd_all

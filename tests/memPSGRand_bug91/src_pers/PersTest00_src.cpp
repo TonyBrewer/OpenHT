@@ -19,7 +19,7 @@ void CPersTest00::PersTest00() {
 				HtRetry();
 				break;
 			}
-			WriteMem_test00_0_src_v0_data(PR3_memAddr + 0, 1, 0, 5);
+			WriteMem_test00_0_src_v0_data(PR3_memAddr + 0, 1, 0, 1);
 			WriteMemPause(TEST00_LD0);
 			break;
 		}
