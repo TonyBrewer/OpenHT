@@ -1,11 +1,13 @@
-// -cl "C:\Ht\tests\ex_hello\src_pers\hello.htl"
+// -cl $(HtToolsPath)/tests/ex_hello/src_pers/hello.htl"
+-wd $(HtToolsPath)/tests/ex_hello/msvs12/
+
 -cp hc-2
 -mt				// enable memory tracing
 -uc 1			// unit count
 -un Au			// unit name
 -df 150			// default frequence
--mo
+//-mo
+-pn ex_hello
 
--wd "C:\Ht\tests\ex_hello\msvs12\"		// working directory
-"C:\Ht\tests\ex_hello\src_pers\hello.htd"	// design file location
-../ht/sysc							// location for output files
+../src_pers/hello.htd	// design file location
+../ht/sysc				// location for output files

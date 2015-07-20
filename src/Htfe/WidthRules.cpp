@@ -1025,6 +1025,9 @@ bool CHtfeDesign::FoldConstantExpr(CHtfeOperand *pExpr)
         return pExpr->IsConstValue();
     }
 
+	if (pExpr->GetOperator() == tk_comma)
+		return false;
+
     CHtfeOperand *pOp1 = pExpr->GetOperand1();
     CHtfeOperand *pOp2 = pExpr->GetOperand2();
     CHtfeOperand *pOp3 = pExpr->GetOperand3();
@@ -1157,7 +1160,6 @@ bool CHtfeDesign::FoldConstantExpr(CHtfeOperand *pExpr)
 					return false;
 				case tk_typeCast:
 					Assert(pOp1->GetType() != 0);
-
 					rslt = pOp2->GetConstValue().Cast(pOp1->GetType()->IsSigned(), pOp1->GetType()->GetWidth());
 					break;
 				case tk_comma: // concatenation
