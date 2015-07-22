@@ -474,6 +474,7 @@ void CDsnInfo::FindSpanningWriteFields(CNgvInfo * pNgvInfo, bool bUserEnabled)
 				// mark spanning field
 				if (fp1 == fp2 && fw1 == fw2) {
 					// iter and iter2 have same bit ranges
+					fld2.m_bDupRange = !fld1.m_bDupRange;
 				} else if (fp1 <= fp2 && fp1 + fw1 >= fp2 + fw2) {
 					// iter2 is subrange of iter
 				} else if (fp2 <= fp1 && fp2 + fw2 >= fp1 + fw1) {
