@@ -651,6 +651,7 @@ struct CSpanningField {
 		m_bIgnore = false;
 		m_bForced = false;
 		m_bSpanning = false;
+		m_bDupRange = false;
 	}
 
 public:
@@ -664,6 +665,7 @@ public:
 	bool m_bForced;
 	bool m_bIgnore;
 	bool m_bSpanning;
+	bool m_bDupRange;
 };
 
 struct CNgvInfo {

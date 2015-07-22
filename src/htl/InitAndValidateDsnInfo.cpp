@@ -548,7 +548,7 @@ void CDsnInfo::InitBramUsage()
 				int fldWidths = 0;
 				for (size_t idx1 = 0; idx1 < pRam->m_pNgvInfo->m_spanningFieldList.size(); idx1 += 1) {
 					CSpanningField & fld1 = pRam->m_pNgvInfo->m_spanningFieldList[idx1];
-					if (!fld1.m_bSpanning) continue;
+					if (!fld1.m_bSpanning || fld1.m_bDupRange) continue;
 					target.m_slices += FindSliceCnt(target.m_depth, fld1.m_width);
 					target.m_brams += FindBramCnt(target.m_depth, fld1.m_width);
 					fldWidths += fld1.m_width;
@@ -1183,10 +1183,12 @@ void CDsnInfo::InitAndValidateRecord(CRecord * pRecord)
 
 			if (prevTypeWidth != pType->m_clangBitWidth || clangBitPos + fieldWidth > clangBitWidth) {
 
-				if (!pRecord->m_bUnion && clangBitWidth % pType->m_clangMinAlign > 0)
-					clangBitPos = clangBitWidth = clangBitWidth + pType->m_clangMinAlign - clangBitWidth % pType->m_clangMinAlign;
-				else
-					clangBitPos = clangBitWidth;
+				if (!pRecord->m_bUnion) {
+					if (clangBitWidth % pType->m_clangMinAlign > 0)
+						clangBitPos = clangBitWidth = clangBitWidth + pType->m_clangMinAlign - clangBitWidth % pType->m_clangMinAlign;
+					else
+						clangBitPos = clangBitWidth;
+				}
 
 				if (pRecord->m_bUnion)
 					clangBitWidth = max(clangBitWidth, pType->m_clangBitWidth * (int)pField->m_elemCnt);
@@ -1201,8 +1203,12 @@ void CDsnInfo::InitAndValidateRecord(CRecord * pRecord)
 			packedFieldWidth = pType->m_packedBitWidth;
 			prevTypeWidth = 0;
 
-			if (!pRecord->m_bUnion && clangBitWidth % pType->m_clangMinAlign > 0)
-				clangBitPos = clangBitWidth = clangBitWidth + pType->m_clangMinAlign - clangBitWidth % pType->m_clangMinAlign;
+			if (!pRecord->m_bUnion) {
+				if (clangBitWidth % pType->m_clangMinAlign > 0)
+					clangBitPos = clangBitWidth = clangBitWidth + pType->m_clangMinAlign - clangBitWidth % pType->m_clangMinAlign;
+				else
+					clangBitPos = clangBitWidth;
+			}
 
 			if (pRecord->m_bUnion)
 				clangBitWidth = max(clangBitWidth, pType->m_clangBitWidth * (int)pField->m_elemCnt);
