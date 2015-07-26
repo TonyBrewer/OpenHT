@@ -95,7 +95,6 @@ void CDsnInfo::InitOptNgv()
 		pNgvInfo->m_bAllWrPortClk1x = true;
 		bool bAllRdPortClk1x = true;
 		pNgvInfo->m_rdPortCnt = 0;
-		//pNgvInfo->m_ramType = eUnknownRam;
 		pNgvInfo->m_pRdMod = 0;
 		pNgvInfo->m_rdModCnt = 0;
 		pNgvInfo->m_bUserSpanningWrite = false;
@@ -126,14 +125,9 @@ void CDsnInfo::InitOptNgv()
 			}
 
 			pNgvInfo->m_bUserSpanningWrite |= pModNgv->m_bSpanningWrite;
-
-			//if (pNgvInfo->m_ramType == eUnknownRam)
-			//	pNgvInfo->m_ramType = pModNgv->m_ramType;
-			//else if (pNgvInfo->m_ramType != pModNgv->m_ramType)
-			//	pNgvInfo->m_ramType = eAutoRam;
 		}
 
-		FindSpanningWriteFields(pNgvInfo, pNgvInfo->m_bUserSpanningWrite);
+		FindSpanningWriteFields(pNgvInfo);
 
 		// determine if a single field in ngv
 		int ngvFieldCnt = 0;
@@ -163,13 +157,14 @@ void CDsnInfo::InitOptNgv()
 			((pNgvInfo->m_bUserSpanningWrite || pNgvInfo->m_bAutoSpanningWrite) &&
 			!bNgvAtomic && (pNgvInfo->m_wrPortList.size() == 1 || pNgvInfo->m_bAllWrPortClk1x && pNgvInfo->m_wrPortList.size() == 2) &&
 			pNgvInfo->m_rdModCnt == 1 && (pNgvInfo->m_rdPortCnt == 1 || pNgvInfo->m_rdPortCnt == 2 && bAllRdPortClk1x));
+
+		if (pNgvInfo->m_bOgv)
+			FindMemoryReadSpanningFields(pNgvInfo);
 	}
 }
 
 void CDsnInfo::InitAndValidateModNgv()
 {
-	//InitOptNgv();
-
 	for (size_t gvIdx = 0; gvIdx < m_ngvList.size(); gvIdx += 1) {
 		CNgvInfo * pNgvInfo = m_ngvList[gvIdx];
 		CRam * pGv0 = pNgvInfo->m_modInfoList[0].m_pNgv;
@@ -369,7 +364,7 @@ void CDsnInfo::InitAndValidateModNgv()
 
 struct CRange { int m_start, m_end; };
 
-void CDsnInfo::FindSpanningWriteFields(CNgvInfo * pNgvInfo, bool bUserEnabled)
+void CDsnInfo::FindSpanningWriteFields(CNgvInfo * pNgvInfo)
 {
 	CRam * pNgv = pNgvInfo->m_modInfoList[0].m_pNgv;
 
@@ -431,7 +426,7 @@ void CDsnInfo::FindSpanningWriteFields(CNgvInfo * pNgvInfo, bool bUserEnabled)
 
 				// some overlap found
 				if (fld2.m_bForced) {
-					if (!bUserEnabled) return;
+					if (!pNgvInfo->m_bUserSpanningWrite) return;
 					ParseMsg(Error, fld1.m_lineInfo, "Overlapping forced spanning fields");
 					ParseMsg(Info, fld1.m_lineInfo, "  %s", fld1.m_heirName.c_str());
 					ParseMsg(Info, fld2.m_lineInfo, "  %s", fld2.m_heirName.c_str());
@@ -560,7 +555,7 @@ void CDsnInfo::FindSpanningWriteFields(CNgvInfo * pNgvInfo, bool bUserEnabled)
 			}
 
 			if (!bFound) {
-				if (!bUserEnabled) return;
+				if (!pNgvInfo->m_bUserSpanningWrite) return;
 				if (!bErrorPrinted) {
 					ParseMsg(Error, pNgv->m_lineInfo, "One or more fields within global variable were not covered by identified spanning fields");
 					ParseMsg(Info, pNgv->m_lineInfo, "  List of spanning fields:");
@@ -590,7 +585,7 @@ void CDsnInfo::FindSpanningWriteFields(CNgvInfo * pNgvInfo, bool bUserEnabled)
 			for (fldIdx = 0; fldIdx < fieldList.size(); fldIdx += 1) {
 				if (fld1.m_pField == fieldList[fldIdx]->m_pField) {
 					if (fld1.m_bSpanning != fieldList[fldIdx]->m_bSpanning && !errorList[fldIdx]) {
-						if (!bUserEnabled) return;
+						if (!pNgvInfo->m_bUserSpanningWrite) return;
 						ParseMsg(Error, fld1.m_lineInfo, "array elements have inconsistent write spanning");
 						errorList[fldIdx] = true;
 					}
@@ -605,7 +600,7 @@ void CDsnInfo::FindSpanningWriteFields(CNgvInfo * pNgvInfo, bool bUserEnabled)
 		}
 	}
 
-	if (!bUserEnabled && pNgvInfo->m_rdModCnt == 1) { // check for overlapping fields
+	if (!pNgvInfo->m_bUserSpanningWrite && pNgvInfo->m_rdModCnt == 1) { // check for overlapping fields
 
 		bool bOverlappingFields = false;
 
@@ -721,6 +716,73 @@ void CDsnInfo::FindSpanningWriteFields(CNgvInfo * pNgvInfo, bool bUserEnabled)
 	//		fld1.m_pos, fld1.m_width,
 	//		fld1.m_bForced, fld1.m_bIgnore, fld1.m_bSpanning);
 	//}
+}
+
+void CDsnInfo::FindMemoryReadSpanningFields(CNgvInfo * pNgvInfo)
+{
+	// verify that fields that are the destination of a memory read are marked as spanning fields
+	CModule * pMod = pNgvInfo->m_pRdMod;
+	CRam * pNgv = pNgvInfo->m_modInfoList[0].m_pNgv;
+
+	if (pNgv->m_addrW == 0) return;
+
+	for (size_t wrSrcIdx = 0; wrSrcIdx < pMod->m_mif.m_mifWr.m_wrSrcList.size(); wrSrcIdx += 1) {
+		CMifWrSrc & wrSrc = pMod->m_mif.m_mifWr.m_wrSrcList[wrSrcIdx];
+
+		if (wrSrc.m_pGblVar != pNgv) continue;
+
+		string dstName = wrSrc.m_var;
+
+		// skip to first field name
+		char const * pStr = dstName.c_str();
+		while (*pStr != '.' && *pStr != '\0') pStr += 1;
+
+		dstName = pStr;
+
+		for (size_t idx1 = 0; idx1 < pNgvInfo->m_spanningFieldList.size(); idx1 += 1) {
+			CSpanningField & fld1 = pNgvInfo->m_spanningFieldList[idx1];
+
+			string fldName = fld1.m_heirName;
+
+			// compare strings for match
+			char const * pDst = dstName.c_str();
+			char const * pFld = fldName.c_str();
+
+			while (*pDst && *pFld) {
+				if (*pDst != *pFld)
+					break;
+				
+				if (*pDst == '[') {
+					pDst += 1; pFld += 1;
+
+					if (*pDst == ']' || *pDst == '#') {
+						// match until ']'
+						while (*pDst != ']' && *pDst != '\0') pDst += 1;
+						if (*pDst == ']') pDst += 1;
+						while (*pFld != ']' && *pFld != '\0') pFld += 1;
+						if (*pFld == ']') pFld += 1;
+					} else {
+						// exact match for integer constant index
+						HtlAssert(isdigit(*pDst));
+					}
+					continue;
+				}
+
+				pDst += 1;
+				pFld += 1;
+			}
+
+			if (*pDst != '\0') continue;
+
+			// match - verify field is a spanning field and mark as a memory read destination
+			if (!fld1.m_bSpanning) {
+				ParseMsg(Error, wrSrc.m_lineInfo, "spanning write specified for global variable and destination not a spanning field");
+				HtlAssert(pNgvInfo->m_bUserSpanningWrite);
+			}
+
+			fld1.m_bMrField = true;
+		}
+	}
 }
 
 void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
@@ -998,7 +1060,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 			for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
 				CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
 
-				if (!fld.m_bSpanning) continue;
+				if (!fld.m_bSpanning || imIdx == 1 && !fld.m_bMrField) continue;
 
 				m_gblRegDecl.Append("\tht_%s_ram<%s, %d",
 					pGv->m_ramType == eBlockRam ? "block" : "dist",
@@ -1281,28 +1343,10 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 					bool bNgvReg = pGv->m_addrW == 0;
 					bool bNgvDist = !bNgvReg && pGv->m_ramType != eBlockRam;
 
-					//if (bNgvDist || pNgvInfo->m_ngvFieldCnt == 1) {
+					gblPostInstr.Append("\tc_t%d_%sIrData%s%s = m__GBL__%sIr%s.read_mem();\n",
+						rdAddrStgNum + (bNgvDist ? 0 : 1), pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str(),
+						fld.m_ramName.c_str(), dimIdx.c_str());
 
-						gblPostInstr.Append("\tc_t%d_%sIrData%s%s = m__GBL__%sIr%s.read_mem();\n",
-							rdAddrStgNum + (bNgvDist ? 0 : 1), pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str(),
-							fld.m_ramName.c_str(), dimIdx.c_str());
-					//} else {
-
-					//	gblPostInstr.Append("\tif (r_g1_%sTo%s_wrEn%s && r_g1_%sTo%s_wrAddr%s == r_t%d_%sRdAddr)\n",
-					//		pGv->m_gblName.Lc().c_str(), pMod->m_modName.Uc().c_str(), dimIdx.c_str(),
-					//		pGv->m_gblName.Lc().c_str(), pMod->m_modName.Uc().c_str(), dimIdx.c_str(),
-					//		rdAddrStgNum + 1, pGv->m_gblName.Lc().c_str());
-
-					//	gblPostInstr.Append("\t\tc_t%d_%sIrData%s = r_g1_%sTo%s_wrData%s;\n",
-					//		rdAddrStgNum + 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
-					//		pGv->m_gblName.Lc().c_str(), pMod->m_modName.Uc().c_str(), dimIdx.c_str());
-
-					//	gblPostInstr.Append("\telse\n");
-
-					//	gblPostInstr.Append("\t\tc_t%d_%sIrData%s = m__GBL__%sIr%s.read_mem();\n",
-					//		rdAddrStgNum + 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
-					//		fld.m_ramName.c_str(), dimIdx.c_str());
-					//}
 				} while (DimenIter(pGv->m_dimenList, refList));
 			}
 		}
@@ -1338,7 +1382,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 				for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
 					CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
 
-					if (!fld.m_bSpanning) continue;
+					if (!fld.m_bSpanning || imIdx == 1 && !fld.m_bMrField) continue;
 
 					vector<int> refList(pGv->m_dimenList.size());
 					do {
@@ -1392,7 +1436,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 				for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
 					CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
 
-					if (!fld.m_bSpanning) continue;
+					if (!fld.m_bSpanning || imIdx == 1 && !fld.m_bMrField) continue;
 
 					vector<int> refList(pGv->m_dimenList.size());
 					do {
@@ -1475,7 +1519,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 				for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
 					CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
 
-					if (!fld.m_bSpanning) continue;
+					if (!fld.m_bSpanning || imIdx == 1 && !fld.m_bMrField) continue;
 
 					vector<int> refList(pGv->m_dimenList.size());
 					do {
