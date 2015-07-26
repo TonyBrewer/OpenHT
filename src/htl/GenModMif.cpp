@@ -4178,71 +4178,60 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 		bool bNeedElemQwCntM1 = bNeedElemQwIdx && (bNeedVIdx1 || bNeedVIdx2);
 		bool bNeedVIdx2CntM1 = bNeedVIdx2 && bNeedVIdx1;
 
+		string tabs;
+		bool bNeedElse = false;
 		if (bNeedElemQwIdx) {
-			string tabs;
 			if (bNeedElemQwCntM1) {
 				mifPostInstr.Append("\t\t\tif (r_t%d_memReq.m_elemQwIdx < r_t%d_memReq.m_elemQwCntM1) {\n",
 					mod.m_execStg + 1, mod.m_execStg + 1);
 				tabs = "\t";
+				bNeedElse = true;
 			}
 			mifPostInstr.Append("%s\t\t\tc_t%d_memReq.m_elemQwIdx = r_t%d_memReq.m_elemQwIdx + 1u;\n",
 				tabs.c_str(), mod.m_execStg, mod.m_execStg + 1);
-
-			if (bNeedElemQwCntM1)
-				mifPostInstr.Append("\t\t\t}");
 		}
 
 		if (bNeedVIdx2) {
-			if (bNeedElemQwIdx)
-				mifPostInstr.Append(" else ");
-			else
-				mifPostInstr.Append("\t\t\t");
-
-			string tabs;
 			if (bNeedVIdx2CntM1) {
-				mifPostInstr.Append("if (r_t%d_memReq.m_vIdx2 < r_t%d_memReq.m_vIdx2CntM1) {\n",
-					mod.m_execStg + 1, mod.m_execStg + 1);
-				tabs = "\t";
+				if (bNeedElse) tabs.erase(0, 1);
+				mifPostInstr.Append("%s\t\t\t%sif (r_t%d_memReq.m_vIdx2 < r_t%d_memReq.m_vIdx2CntM1) {\n", tabs.c_str(), bNeedElse ? "} else " : "", mod.m_execStg + 1, mod.m_execStg + 1);
+				bNeedElse = false;
+				tabs += "\t";
+				bNeedElse = true;
 			} else if (bNeedElemQwIdx) {
-				mifPostInstr.Append("{\n");
-				mifPostInstr.Append("\t\t\t\tc_t%d_memReq.m_elemQwIdx = 0;\n",
-					mod.m_execStg);
-				tabs = "\t";
+				if (bNeedElse) { mifPostInstr.Append("%s\t\t} else {\n", tabs.c_str()); bNeedElse = false; }
+				mifPostInstr.Append("%s\t\t\tc_t%d_memReq.m_elemQwIdx = 0;\n", tabs.c_str(), mod.m_execStg);
+				bNeedElse = true;
+			} else if (bNeedElse) {
+				mifPostInstr.Append("%s\t\t} else {\n", tabs.c_str());
+				bNeedElse = false;
 			}
 
-			mifPostInstr.Append("%s\t\t\tc_t%d_memReq.m_vIdx2 = r_t%d_memReq.m_vIdx2 + 1u;\n",
-				tabs.c_str(), mod.m_execStg, mod.m_execStg + 1);
-
-			if (bNeedVIdx2CntM1 || bNeedElemQwIdx) {
-				if (bNeedVIdx1)
-					mifPostInstr.Append("\t\t\t}");
-				else
-					mifPostInstr.Append("\t\t\t}\n");
-			}
+			mifPostInstr.Append("%s\t\t\tc_t%d_memReq.m_vIdx2 = r_t%d_memReq.m_vIdx2 + 1u;\n", tabs.c_str(), mod.m_execStg, mod.m_execStg + 1);
 		}
 
 		if (bNeedVIdx1) {
-			string tabs;
-			if (bNeedElemQwCntM1 || bNeedVIdx2CntM1) {
-				mifPostInstr.Append(" else {\n");
-				tabs = "\t";
-			}
+			if (bNeedElse) { mifPostInstr.Append("%s\t\t} else {\n", tabs.c_str()); bNeedElse = false; }
 
 			if (bNeedElemQwIdx) {
-				mifPostInstr.Append("%s\t\t\tc_t%d_memReq.m_elemQwIdx = 0;\n",
-					tabs.c_str(), mod.m_execStg);
+				mifPostInstr.Append("%s\t\t\tc_t%d_memReq.m_elemQwIdx = 0;\n", tabs.c_str(), mod.m_execStg);
 			}
 
 			if (bNeedVIdx2) {
-				mifPostInstr.Append("%s\t\t\tc_t%d_memReq.m_vIdx2 = 0;\n",
-					tabs.c_str(), mod.m_execStg);
+				mifPostInstr.Append("%s\t\t\tc_t%d_memReq.m_vIdx2 = 0;\n", tabs.c_str(), mod.m_execStg);
 			}
 
-			mifPostInstr.Append("%s\t\t\tc_t%d_memReq.m_vIdx1 = r_t%d_memReq.m_vIdx1 + 1u;\n",
-				tabs.c_str(), mod.m_execStg, mod.m_execStg + 1);
+			mifPostInstr.Append("%s\t\t\tc_t%d_memReq.m_vIdx1 = r_t%d_memReq.m_vIdx1 + 1u;\n", tabs.c_str(), mod.m_execStg, mod.m_execStg + 1);
 
-			if (bNeedElemQwIdx || bNeedVIdx2CntM1)
-				mifPostInstr.Append("\t\t\t}\n");
+			if (bNeedElemQwCntM1 || bNeedVIdx2CntM1) {
+				tabs.erase(0, 1);
+				mifPostInstr.Append("%s\t\t\t}\n", tabs.c_str());
+			}
+		}
+
+		if (bNeedElse) {
+			tabs.erase(0, 1);
+			mifPostInstr.Append("%s\t\t\t}\n", tabs.c_str());
 		}
 
 		mifPostInstr.NewLine();
