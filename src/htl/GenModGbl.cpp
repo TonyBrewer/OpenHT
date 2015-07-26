@@ -880,37 +880,51 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 		string htIdStr = (pMod->m_threads.m_htIdW.AsInt() > 0 &&
 			(pGv->m_bPrivGbl || pGv->m_addr1Name == "htId" || pGv->m_addr2Name == "htId")) ? VA("r_t%d_htId", pMod->m_tsStg) : "";
 
-		vector<int> refList(pGv->m_dimenList.size());
-		do {
-			string dimIdx = IndexStr(refList);
+		{
+			string tabs = "\t";
+			CLoopInfo loopInfo(gblPreInstr, tabs, pGv->m_dimenList, pGv->m_wrStg.AsInt() > 1 ? 2 : 1);
+			do {
+				string dimIdx = loopInfo.IndexStr();
 
-			for (int gvWrStg = pMod->m_tsStg; gvWrStg < pMod->m_tsStg + pGv->m_wrStg.AsInt(); gvWrStg += 1) {
-				if (bPrivGblAndNoAddr && gvWrStg == pMod->m_tsStg) {
-					if (pMod->m_threads.m_htIdW.AsInt() == 0) {
-						gblPreInstr.Append("\tc_t%d_%sIwData%s.InitData(%s%sr__GBL__%s%s);\n",
+				for (int gvWrStg = pMod->m_tsStg; gvWrStg < pMod->m_tsStg + pGv->m_wrStg.AsInt(); gvWrStg += 1) {
+					if (bPrivGblAndNoAddr && gvWrStg == pMod->m_tsStg) {
+						if (pMod->m_threads.m_htIdW.AsInt() == 0) {
+							gblPreInstr.Append("%sc_t%d_%sIwData%s.InitData(%s%sr__GBL__%s%s);\n", tabs.c_str(),
+								gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
+								htIdStr.c_str(), htIdStr.size() > 0 ? ", " : "",
+								pGv->m_gblName.c_str(), dimIdx.c_str());
+						} else {
+							gblPreInstr.Append("%sc_t%d_%sIwData%s.InitData(%s%sr_t%d_%sIrData%s);\n", tabs.c_str(),
+								gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
+								htIdStr.c_str(), htIdStr.size() > 0 ? ", " : "",
+								gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str());
+						}
+					} else if (!bPrivGblAndNoAddr && gvWrStg == pMod->m_tsStg) {
+						gblPreInstr.Append("%sc_t%d_%sIwData%s.InitZero(%s);\n", tabs.c_str(),
 							gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
-							htIdStr.c_str(), htIdStr.size() > 0 ? ", " : "",
-							pGv->m_gblName.c_str(), dimIdx.c_str());
+							htIdStr.c_str());
 					} else {
-						gblPreInstr.Append("\tc_t%d_%sIwData%s.InitData(%s%sr_t%d_%sIrData%s);\n",
+						gblPreInstr.Append("%sc_t%d_%sIwData%s = r_t%d_%sIwData%s;\n", tabs.c_str(),
 							gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
-							htIdStr.c_str(), htIdStr.size() > 0 ? ", " : "",
 							gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str());
 					}
-				} else if (!bPrivGblAndNoAddr && gvWrStg == pMod->m_tsStg) {
-					gblPreInstr.Append("\tc_t%d_%sIwData%s.InitZero(%s);\n",
-						gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
-						htIdStr.c_str());
-				} else {
-					gblPreInstr.Append("\tc_t%d_%sIwData%s = r_t%d_%sIwData%s;\n",
-						gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
+				}
+			} while (loopInfo.Iter());
+		}
+
+		{
+			string tabs = "\t";
+			CLoopInfo loopInfo(gblReg, tabs, pGv->m_dimenList, 3);
+			do {
+				string dimIdx = loopInfo.IndexStr();
+
+				for (int gvWrStg = pMod->m_tsStg; gvWrStg < pMod->m_tsStg + pGv->m_wrStg.AsInt(); gvWrStg += 1) {
+					gblReg.Append("%sr_t%d_%sIwData%s = c_t%d_%sIwData%s;\n", tabs.c_str(),
+						gvWrStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
 						gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str());
 				}
-				gblReg.Append("\tr_t%d_%sIwData%s = c_t%d_%sIwData%s;\n",
-					gvWrStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
-					gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str());
-			}
-		} while (DimenIter(pGv->m_dimenList, refList));
+			} while (loopInfo.Iter());
+		}
 	}
 
 	if (pGv->m_bWriteForMifRead) {
@@ -931,64 +945,80 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 		string htIdStr = (pMod->m_threads.m_htIdW.AsInt() > 0 &&
 			(pGv->m_bPrivGbl || pGv->m_addr1Name == "htId" || pGv->m_addr2Name == "htId")) ? VA("r_m%d_rdRspInfo.m_htId", rdRspStg) : "";
 
-		vector<int> refList(pGv->m_dimenList.size());
-		do {
-			string dimIdx = IndexStr(refList);
+		{
+			string tabs = "\t";
+			CLoopInfo loopInfo(gblPreInstr, tabs, pGv->m_dimenList, 3);
+			do {
+				string dimIdx = loopInfo.IndexStr();
 
-			gblPreInstr.Append("\tc_m%d_%sMwData%s.InitZero(%s);\n",
-				rdRspStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
-				htIdStr.c_str());
+				gblPreInstr.Append("%sc_m%d_%sMwData%s.InitZero(%s);\n", tabs.c_str(),
+					rdRspStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
+					htIdStr.c_str());
+			} while (loopInfo.Iter());
+		}
 
-			gblReg.Append("\tr_m%d_%sMwData%s = c_m%d_%sMwData%s;\n",
-				rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
-				rdRspStg, pGv->m_gblName.c_str(), dimIdx.c_str());
+		{
+			string tabs = "\t";
+			CLoopInfo loopInfo(gblReg, tabs, pGv->m_dimenList, 3);
+			do {
+				string dimIdx = loopInfo.IndexStr();
 
-		} while (DimenIter(pGv->m_dimenList, refList));
+				gblReg.Append("%sr_m%d_%sMwData%s = c_m%d_%sMwData%s;\n", tabs.c_str(),
+					rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
+					rdRspStg, pGv->m_gblName.c_str(), dimIdx.c_str());
+
+			} while (loopInfo.Iter());
+		}
 	}
 
-	if (pGv->m_bWriteForInstrWrite && pGv->m_ramType != eRegRam) {
+	bool bFoundNonSpanning = false;
+	for (size_t idx1 = 0; idx1 < pNgvInfo->m_spanningFieldList.size(); idx1 += 1) {
+		CSpanningField & fld1 = pNgvInfo->m_spanningFieldList[idx1];
 
-		vector<int> refList(pGv->m_dimenList.size());
+		if (!fld1.m_bSpanning) {
+			bFoundNonSpanning = true;
+			break;
+		}
+	}
+
+	if (bFoundNonSpanning && pGv->m_bWriteForInstrWrite && pGv->m_ramType != eRegRam) {
+		string tabs = "\t";
+		CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, 3);
 		do {
-			string dimIdx = IndexStr(refList);
+			string dimIdx = loopInfo.IndexStr();
 
 			for (size_t idx1 = 0; idx1 < pNgvInfo->m_spanningFieldList.size(); idx1 += 1) {
 				CSpanningField & fld1 = pNgvInfo->m_spanningFieldList[idx1];
 
 				if (fld1.m_bSpanning) continue;
 
-				gblPostInstr.Append("\tassert_msg(!c_t%d_%sIwData%s%s.GetWrEn(), \"Runtime check failed in CPers%s::Pers%s_%dx() - instruction write to non-spanning field %s%s\");\n",
+				gblPostInstr.Append("%sassert_msg(!c_t%d_%sIwData%s%s.GetWrEn(), \"Runtime check failed in CPers%s::Pers%s_%dx() - instruction write to non-spanning field %s%s\");\n", tabs.c_str(),
 					pMod->m_tsStg, pGv->m_gblName.c_str(), dimIdx.c_str(), fld1.m_heirName.c_str(),
 					pMod->m_modName.Uc().c_str(), pMod->m_modName.Uc().c_str(), pMod->m_clkRate == eClk1x ? 1 : 2,
 					pGv->m_gblName.c_str(), fld1.m_heirName.c_str());
 			}
-
-		} while (DimenIter(pGv->m_dimenList, refList));
-
-		gblPostInstr.NewLine();
+		} while (loopInfo.Iter());
 	}
 
-	if (pGv->m_bWriteForMifRead && pGv->m_ramType != eRegRam) {
+	if (bFoundNonSpanning && pGv->m_bWriteForMifRead && pGv->m_ramType != eRegRam) {
 		int rdRspStg = pMod->m_mif.m_mifRd.m_bNeedRdRspInfoRam ? 2 : 1;
 
-		vector<int> refList(pGv->m_dimenList.size());
+		string tabs = "\t";
+		CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, 3);
 		do {
-			string dimIdx = IndexStr(refList);
+			string dimIdx = loopInfo.IndexStr();
 
 			for (size_t idx1 = 0; idx1 < pNgvInfo->m_spanningFieldList.size(); idx1 += 1) {
 				CSpanningField & fld1 = pNgvInfo->m_spanningFieldList[idx1];
 
 				if (fld1.m_bSpanning) continue;
 
-				gblPostInstr.Append("\tassert_msg(!c_m%d_%sMwData%s%s.GetWrEn(), \"Runtime check failed in CPers%s::Pers%s_%dx() - memory response write to non-spanning field %s%s\");\n",
+				gblPostInstr.Append("%sassert_msg(!c_m%d_%sMwData%s%s.GetWrEn(), \"Runtime check failed in CPers%s::Pers%s_%dx() - memory response write to non-spanning field %s%s\");\n", tabs.c_str(),
 					rdRspStg, pGv->m_gblName.c_str(), dimIdx.c_str(), fld1.m_heirName.c_str(),
 					pMod->m_modName.Uc().c_str(), pMod->m_modName.Uc().c_str(), pMod->m_clkRate == eClk1x ? 1 : 2,
 					pGv->m_gblName.c_str(), fld1.m_heirName.c_str());
 			}
-
-		} while (DimenIter(pGv->m_dimenList, refList));
-
-		gblPostInstr.NewLine();
+		} while (loopInfo.Iter());
 	}
 
 	// write outputs
@@ -996,35 +1026,39 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 		if (pGv->m_bWriteForInstrWrite) {
 			int gvWrStg = pMod->m_tsStg + pGv->m_wrStg.AsInt();
 
-			{
-				m_gblIoDecl.Append("\tsc_out<CGW_%s> o_%sTo%s_%sIwData%s;\n",
-					pGv->m_pNgvInfo->m_ngvWrType.c_str(),
-					pMod->m_modName.Lc().c_str(), pRdMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
-				vector<int> refList(pGv->m_dimenList.size());
-				do {
-					string dimIdx = IndexStr(refList);
-					gblOut.Append("\to_%sTo%s_%sIwData%s = r_t%d_%sIwData%s;\n",
-						pMod->m_modName.Lc().c_str(), pRdMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(),
-						gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str());
-				} while (DimenIter(pGv->m_dimenList, refList));
-			}
+			m_gblIoDecl.Append("\tsc_out<CGW_%s> o_%sTo%s_%sIwData%s;\n",
+				pGv->m_pNgvInfo->m_ngvWrType.c_str(),
+				pMod->m_modName.Lc().c_str(), pRdMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
+
+			string tabs = "\t";
+			CLoopInfo loopInfo(gblOut, tabs, pGv->m_dimenList, 3);
+			do {
+				string dimIdx = loopInfo.IndexStr();
+
+				gblOut.Append("%so_%sTo%s_%sIwData%s = r_t%d_%sIwData%s;\n", tabs.c_str(),
+					pMod->m_modName.Lc().c_str(), pRdMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(),
+					gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str());
+
+			} while (loopInfo.Iter());
 		}
 
 		if (pGv->m_bWriteForMifRead) { // Memory
 			int rdRspStg = pMod->m_mif.m_mifRd.m_bNeedRdRspInfoRam ? 2 : 1;
 
-			{
-				m_gblIoDecl.Append("\tsc_out<CGW_%s> o_%sTo%s_%sMwData%s;\n",
-					pGv->m_pNgvInfo->m_ngvWrType.c_str(),
-					pMod->m_modName.Lc().c_str(), pRdMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
-				vector<int> refList(pGv->m_dimenList.size());
-				do {
-					string dimIdx = IndexStr(refList);
-					gblOut.Append("\to_%sTo%s_%sMwData%s = r_m%d_%sMwData%s;\n",
-						pMod->m_modName.Lc().c_str(), pRdMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(),
-						rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str());
-				} while (DimenIter(pGv->m_dimenList, refList));
-			}
+			m_gblIoDecl.Append("\tsc_out<CGW_%s> o_%sTo%s_%sMwData%s;\n",
+				pGv->m_pNgvInfo->m_ngvWrType.c_str(),
+				pMod->m_modName.Lc().c_str(), pRdMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
+
+			string tabs = "\t";
+			CLoopInfo loopInfo(gblOut, tabs, pGv->m_dimenList, 3);
+			do {
+				string dimIdx = loopInfo.IndexStr();
+
+				gblOut.Append("%so_%sTo%s_%sMwData%s = r_m%d_%sMwData%s;\n", tabs.c_str(),
+					pMod->m_modName.Lc().c_str(), pRdMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(),
+					rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str());
+
+			} while (loopInfo.Iter());
 		}
 
 		return;
@@ -1037,20 +1071,31 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 		GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, pGv->m_type.c_str(),
 			VA("r__GBL__%s", pGv->m_gblName.c_str()), pGv->m_dimenList);
 
-		vector<int> refList(pGv->m_dimenList.size());
-		do {
-			string dimIdx = IndexStr(refList);
+		{
+			string tabs = "\t";
+			CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, 1);
+			do {
+				string dimIdx = loopInfo.IndexStr();
 
-			gblPostInstr.Append("\tc__GBL__%s%s = r__GBL__%s%s;\n",
-				pGv->m_gblName.c_str(), dimIdx.c_str(),
-				pGv->m_gblName.c_str(), dimIdx.c_str());
+				gblPostInstr.Append("%sc__GBL__%s%s = r__GBL__%s%s;\n", tabs.c_str(),
+					pGv->m_gblName.c_str(), dimIdx.c_str(),
+					pGv->m_gblName.c_str(), dimIdx.c_str());
 
-			gblReg.Append("\tr__GBL__%s%s = c__GBL__%s%s;\n",
-				pGv->m_gblName.c_str(), dimIdx.c_str(),
-				pGv->m_gblName.c_str(), dimIdx.c_str());
+			} while (loopInfo.Iter());
+		}
 
-		} while (DimenIter(pGv->m_dimenList, refList));
+		{
+			string tabs = "\t";
+			CLoopInfo loopInfo(gblReg, tabs, pGv->m_dimenList, 1);
+			do {
+				string dimIdx = loopInfo.IndexStr();
 
+				gblReg.Append("%sr__GBL__%s%s = c__GBL__%s%s;\n", tabs.c_str(),
+					pGv->m_gblName.c_str(), dimIdx.c_str(),
+					pGv->m_gblName.c_str(), dimIdx.c_str());
+
+			} while (loopInfo.Iter());
+		}
 	} else {
 		for (int imIdx = 0; imIdx < 2; imIdx += 1) {
 			if (imIdx == 0 && !pGv->m_bReadForInstrRead) continue;
@@ -1059,47 +1104,100 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 
 			for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
 				CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
-
 				if (!fld.m_bSpanning || imIdx == 1 && !fld.m_bMrField) continue;
 
 				m_gblRegDecl.Append("\tht_%s_ram<%s, %d",
 					pGv->m_ramType == eBlockRam ? "block" : "dist",
 					fld.m_pType->m_typeName.c_str(), pGv->m_addrW);
 				m_gblRegDecl.Append("> m__GBL__%s%s%s;\n", fld.m_ramName.c_str(), pImStr, pGv->m_dimenDecl.c_str());
+			}
 
-				EClkRate rdClk = pMod->m_clkRate;
-				EClkRate wrClk = pNgvInfo->m_wrPortList.size() == 1 && pNgvInfo->m_bAllWrPortClk1x ? eClk1x : eClk2x;
+			EClkRate rdClk = pMod->m_clkRate;
+			EClkRate wrClk = pNgvInfo->m_wrPortList.size() == 1 && pNgvInfo->m_bAllWrPortClk1x ? eClk1x : eClk2x;
 
-				vector<int> refList(pGv->m_dimenList.size());
+			if (rdClk == wrClk) {
+
+				string tabs = "\t";
+				CLoopInfo loopInfo(gblReg, tabs, pGv->m_dimenList, 3);
 				do {
-					string dimIdx = IndexStr(refList);
+					string dimIdx = loopInfo.IndexStr();
 
-					if (rdClk == wrClk) {
+					for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
+						CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
+						if (!fld.m_bSpanning || imIdx == 1 && !fld.m_bMrField) continue;
 
-						gblReg.Append("\tm__GBL__%s%s%s.clock(%s);\n",
+						gblReg.Append("%sm__GBL__%s%s%s.clock(%s);\n", tabs.c_str(),
 							fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
 							gblRegReset.c_str());
-
-					} else if (rdClk == eClk1x) {
-
-						m_gblReg1x.Append("\tm__GBL__%s%s%s.read_clock(r_reset1x);\n",
-							fld.m_ramName.c_str(), pImStr, dimIdx.c_str());
-						m_gblReg2x.Append("\tm__GBL__%s%s%s.write_clock(c_reset1x);\n",
-							fld.m_ramName.c_str(), pImStr, dimIdx.c_str());
-
-					} else {
-
-						m_gblReg2x.Append("\tm__GBL__%s%s%s.read_clock(c_reset1x);\n",
-							fld.m_ramName.c_str(), pImStr, dimIdx.c_str());
-
-						m_gblReg1x.Append("\tm__GBL__%s%s%s.write_clock(r_reset1x);\n",
-							fld.m_ramName.c_str(), pImStr, dimIdx.c_str());
 					}
-				} while (DimenIter(pGv->m_dimenList, refList));
+				} while (loopInfo.Iter());
+
+			} else if (rdClk == eClk1x) {
+				{
+					string tabs = "\t";
+					CLoopInfo loopInfo(m_gblReg1x, tabs, pGv->m_dimenList, 3);
+					do {
+						string dimIdx = loopInfo.IndexStr();
+
+						for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
+							CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
+							if (!fld.m_bSpanning || imIdx == 1 && !fld.m_bMrField) continue;
+
+							m_gblReg1x.Append("%sm__GBL__%s%s%s.read_clock(r_reset1x);\n", tabs.c_str(),
+								fld.m_ramName.c_str(), pImStr, dimIdx.c_str());
+						}
+					} while (loopInfo.Iter());
+				}
+
+				{
+					string tabs = "\t";
+					CLoopInfo loopInfo(m_gblReg2x, tabs, pGv->m_dimenList, 3);
+					do {
+						string dimIdx = loopInfo.IndexStr();
+
+						for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
+							CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
+							if (!fld.m_bSpanning || imIdx == 1 && !fld.m_bMrField) continue;
+
+							m_gblReg2x.Append("%sm__GBL__%s%s%s.write_clock(c_reset1x);\n", tabs.c_str(),
+								fld.m_ramName.c_str(), pImStr, dimIdx.c_str());
+						}
+					} while (loopInfo.Iter());
+				}
+			} else {
+				{
+					string tabs = "\t";
+					CLoopInfo loopInfo(m_gblReg2x, tabs, pGv->m_dimenList, 3);
+					do {
+						string dimIdx = loopInfo.IndexStr();
+
+						for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
+							CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
+							if (!fld.m_bSpanning || imIdx == 1 && !fld.m_bMrField) continue;
+
+							m_gblReg2x.Append("%sm__GBL__%s%s%s.read_clock(c_reset1x);\n", tabs.c_str(),
+								fld.m_ramName.c_str(), pImStr, dimIdx.c_str());
+						}
+					} while (loopInfo.Iter());
+				}
+
+				{
+					string tabs = "\t";
+					CLoopInfo loopInfo(m_gblReg1x, tabs, pGv->m_dimenList, 3);
+					do {
+						string dimIdx = loopInfo.IndexStr();
+
+						for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
+							CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
+							if (!fld.m_bSpanning || imIdx == 1 && !fld.m_bMrField) continue;
+
+							m_gblReg1x.Append("%sm__GBL__%s%s%s.write_clock(r_reset1x);\n", tabs.c_str(),
+							fld.m_ramName.c_str(), pImStr, dimIdx.c_str());
+						}
+					} while (loopInfo.Iter());
+				}
 			}
 		}
-		m_gblReg1x.NewLine();
-		m_gblReg2x.NewLine();
 	}
 
 	if (pNgvInfo->m_modInfoList.size() > 1) {
@@ -1118,33 +1216,50 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 							VA("r_%sTo%s_%sIwData_2x", pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str()), pGv->m_dimenList);
 					}
 
-					vector<int> refList(pGv->m_dimenList.size());
-					do {
-						string dimIdx = IndexStr(refList);
+					bool bFoundReg2x = false;
+					{
+						string tabs = "\t";
+						CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, 3);
+						do {
+							string dimIdx = loopInfo.IndexStr();
 
-						for (CStructElemIter iter(this, pGv->m_pType); !iter.end(); iter++) {
-							gblPostInstr.Append("\tif (i_%sTo%s_%sIwData%s.read()%s.GetWrEn())\n",
-								pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
-							gblPostInstr.Append("\t\tc__GBL__%s%s%s = i_%sTo%s_%sIwData%s.read()%s.GetData();\n",
-								pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str(),
-								pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
-
-							if (pModInfo->m_pMod->m_clkRate == eClk2x && pMod->m_clkRate == eClk1x) {
-								gblPostInstr.Append("\telse if (r_%sTo%s_%sIwData_2x%s.read()%s.GetWrEn())\n",
+							for (CStructElemIter iter(this, pGv->m_pType); !iter.end(); iter++) {
+								gblPostInstr.Append("%sif (i_%sTo%s_%sIwData%s.read()%s.GetWrEn())\n", tabs.c_str(),
 									pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
-								gblPostInstr.Append("\t\tc__GBL__%s%s%s = r_%sTo%s_%sIwData_2x%s.read()%s.GetData();\n",
+								gblPostInstr.Append("%s\tc__GBL__%s%s%s = i_%sTo%s_%sIwData%s.read()%s.GetData();\n", tabs.c_str(),
 									pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str(),
 									pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
 
-								m_gblReg2x.Append("\tr_%sTo%s_%sIwData_2x%s = i_%sTo%s_%sIwData%s;\n",
-									pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(),
-									pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str());
-							}
-						}
-						gblPostInstr.NewLine();
-						m_gblReg2x.NewLine();
+								if (pModInfo->m_pMod->m_clkRate == eClk2x && pMod->m_clkRate == eClk1x) {
+									gblPostInstr.Append("%selse if (r_%sTo%s_%sIwData_2x%s.read()%s.GetWrEn())\n", tabs.c_str(),
+										pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
+									gblPostInstr.Append("%s\tc__GBL__%s%s%s = r_%sTo%s_%sIwData_2x%s.read()%s.GetData();\n", tabs.c_str(),
+										pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str(),
+										pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
 
-					} while (DimenIter(pGv->m_dimenList, refList));
+									bFoundReg2x = true;
+								}
+							}
+						} while (loopInfo.Iter());
+					}
+
+					if (bFoundReg2x) {
+						string tabs = "\t";
+						CLoopInfo loopInfo(m_gblReg2x, tabs, pGv->m_dimenList, 3);
+						do {
+							string dimIdx = loopInfo.IndexStr();
+
+							for (CStructElemIter iter(this, pGv->m_pType); !iter.end(); iter++) {
+
+								if (pModInfo->m_pMod->m_clkRate == eClk2x && pMod->m_clkRate == eClk1x) {
+
+									m_gblReg2x.Append("%sr_%sTo%s_%sIwData_2x%s = i_%sTo%s_%sIwData%s;\n", tabs.c_str(),
+										pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(),
+										pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str());
+								}
+							}
+						} while (loopInfo.Iter());
+					}
 
 				} else if (pNgvInfo->m_wrPortList.size() == 1) {
 
@@ -1156,29 +1271,30 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 						if (imIdx == 1 && !pGv->m_bReadForMifWrite) continue;
 						char const * pImStr = imIdx == 0 ? "Ir" : "Mr";
 
-						for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
-							CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
+						string tabs = "\t";
+						CLoopInfo loopInfo(wrCode, tabs, pGv->m_dimenList, 3);
+						do {
+							string dimIdx = loopInfo.IndexStr();
 
-							if (!fld.m_bSpanning) continue;
+							for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
+								CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
 
-							vector<int> refList(pGv->m_dimenList.size());
-							do {
-								string dimIdx = IndexStr(refList);
+								if (!fld.m_bSpanning) continue;
 
 								for (CStructElemIter iter(this, pGv->m_pType); !iter.end(); iter++) {
-									wrCode.Append("\tm__GBL__%s%s%s.write_addr(i_%sTo%s_%sIwData%s.read().GetAddr());\n",
+									wrCode.Append("%sm__GBL__%s%s%s.write_addr(i_%sTo%s_%sIwData%s.read().GetAddr());\n", tabs.c_str(),
 										fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
 										pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str());
-									wrCode.Append("\tif (i_%sTo%s_%sIwData%s.read()%s.GetWrEn())\n",
+									wrCode.Append("%sif (i_%sTo%s_%sIwData%s.read()%s.GetWrEn())\n", tabs.c_str(),
 										pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
-									wrCode.Append("\t\tm__GBL__%s%s%s.write_mem(i_%sTo%s_%sIwData%s.read().GetData()%s);\n",
+									wrCode.Append("%s\tm__GBL__%s%s%s.write_mem(i_%sTo%s_%sIwData%s.read().GetData()%s);\n", tabs.c_str(),
 										fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
 										pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
 								}
 								wrCode.NewLine();
 
-							} while (DimenIter(pGv->m_dimenList, refList));
-						}
+							}
+						} while (loopInfo.Iter());
 					}
 				}
 			}
@@ -1189,20 +1305,19 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 					pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
 
 				if (pGv->m_addrW == 0) {
-					vector<int> refList(pGv->m_dimenList.size());
+					string tabs = "\t";
+					CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, 3);
 					do {
-						string dimIdx = IndexStr(refList);
+						string dimIdx = loopInfo.IndexStr();
 
 						for (CStructElemIter iter(this, pGv->m_pType); !iter.end(); iter++) {
-							gblPostInstr.Append("\tif (i_%sTo%s_%sMwData%s.read()%s.GetWrEn())\n",
+							gblPostInstr.Append("%sif (i_%sTo%s_%sMwData%s.read()%s.GetWrEn())\n", tabs.c_str(),
 								pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
-							gblPostInstr.Append("\t\tc__GBL__%s%s%s = i_%sTo%s_%sMwData%s.read()%s.GetData();\n",
+							gblPostInstr.Append("%s\tc__GBL__%s%s%s = i_%sTo%s_%sMwData%s.read()%s.GetData();\n", tabs.c_str(),
 								pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str(),
 								pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
 						}
-						gblPostInstr.NewLine();
-
-					} while (DimenIter(pGv->m_dimenList, refList));
+					} while (loopInfo.Iter());
 
 				} else if (pNgvInfo->m_wrPortList.size() == 1) {
 
@@ -1214,28 +1329,26 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 						if (imIdx == 1 && !pGv->m_bReadForMifWrite) continue;
 						char const * pImStr = imIdx == 0 ? "Ir" : "Mr";
 
-						for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
-							CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
+						string tabs = "\t";
+						CLoopInfo loopInfo(wrCode, tabs, pGv->m_dimenList, 3);
+						do {
+							string dimIdx = loopInfo.IndexStr();
 
-							if (!fld.m_bSpanning) continue;
+							for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
+								CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
 
-							vector<int> refList(pGv->m_dimenList.size());
-							do {
-								string dimIdx = IndexStr(refList);
+								if (!fld.m_bSpanning) continue;
 
-								wrCode.Append("\tm__GBL__%s%s%s.write_addr(i_%sTo%s_%sMwData%s.read().GetAddr());\n",
+								wrCode.Append("%sm__GBL__%s%s%s.write_addr(i_%sTo%s_%sMwData%s.read().GetAddr());\n", tabs.c_str(),
 									fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
 									pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str());
-								wrCode.Append("\tif (i_%sTo%s_%sMwData%s.read()%s.GetWrEn())\n",
+								wrCode.Append("%sif (i_%sTo%s_%sMwData%s.read()%s.GetWrEn())\n", tabs.c_str(),
 									pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str());
-								wrCode.Append("\t\tm__GBL__%s%s%s.write_mem(i_%sTo%s_%sMwData%s.read().GetData()%s);\n",
+								wrCode.Append("%s\tm__GBL__%s%s%s.write_mem(i_%sTo%s_%sMwData%s.read().GetData()%s);\n", tabs.c_str(),
 									fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
 									pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str());
-
-							} while (DimenIter(pGv->m_dimenList, refList));
-						}
-
-						gblPostInstr.NewLine();
+							}
+						} while (loopInfo.Iter());
 					}
 				}
 			}
@@ -1245,28 +1358,46 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 	if (pGv->m_bReadForInstrRead) {
 		int addr0Skip = pGv->m_addrW == 0 ? 1 : 0;
 		int lastStg = pGv->m_bPrivGbl ? pMod->m_stage.m_privWrStg.AsInt() : max(pGv->m_wrStg.AsInt(), pMod->m_stage.m_privWrStg.AsInt());
+
 		for (int gvRdStg = pGv->m_rdStg.AsInt() + addr0Skip; gvRdStg <= lastStg; gvRdStg += 1) {
+
 			m_gblRegDecl.Append("\t%s c_t%d_%sIrData%s;\n",
 				pGv->m_type.c_str(), pMod->m_tsStg + gvRdStg - 2, pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
 			GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, VA("%s ht_noload", pGv->m_type.c_str()),
 				VA("r_t%d_%sIrData", pMod->m_tsStg + gvRdStg - 1, pGv->m_gblName.c_str()), pGv->m_dimenList);
 		}
-		vector<int> refList(pGv->m_dimenList.size());
-		do {
-			for (int gvRdStg = pGv->m_rdStg.AsInt() + addr0Skip; gvRdStg <= lastStg; gvRdStg += 1) {
-				string dimIdx = IndexStr(refList);
 
-				if (gvRdStg > pGv->m_rdStg.AsInt() + addr0Skip) {
-					gblPostInstr.Append("\tc_t%d_%sIrData%s = r_t%d_%sIrData%s;\n",
-						pMod->m_tsStg + gvRdStg - 2, pGv->m_gblName.c_str(), dimIdx.c_str(),
+		if (pGv->m_rdStg.AsInt() + addr0Skip + 1 <= lastStg) {
+			string tabs = "\t";
+			CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, 3);
+			do {
+				string dimIdx = loopInfo.IndexStr();
+
+				for (int gvRdStg = pGv->m_rdStg.AsInt() + addr0Skip; gvRdStg <= lastStg; gvRdStg += 1) {
+
+					if (gvRdStg > pGv->m_rdStg.AsInt() + addr0Skip) {
+						gblPostInstr.Append("%sc_t%d_%sIrData%s = r_t%d_%sIrData%s;\n", tabs.c_str(),
+							pMod->m_tsStg + gvRdStg - 2, pGv->m_gblName.c_str(), dimIdx.c_str(),
+							pMod->m_tsStg + gvRdStg - 2, pGv->m_gblName.c_str(), dimIdx.c_str());
+					}
+				}
+			} while (loopInfo.Iter());
+		}
+
+		if (pGv->m_rdStg.AsInt() + addr0Skip <= lastStg) {
+			string tabs = "\t";
+			CLoopInfo loopInfo(gblReg, tabs, pGv->m_dimenList, 3);
+			do {
+				string dimIdx = loopInfo.IndexStr();
+
+				for (int gvRdStg = pGv->m_rdStg.AsInt() + addr0Skip; gvRdStg <= lastStg; gvRdStg += 1) {
+
+					gblReg.Append("%sr_t%d_%sIrData%s = c_t%d_%sIrData%s;\n", tabs.c_str(),
+						pMod->m_tsStg + gvRdStg - 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
 						pMod->m_tsStg + gvRdStg - 2, pGv->m_gblName.c_str(), dimIdx.c_str());
 				}
-
-				gblReg.Append("\tr_t%d_%sIrData%s = c_t%d_%sIrData%s;\n",
-					pMod->m_tsStg + gvRdStg - 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
-					pMod->m_tsStg + gvRdStg - 2, pGv->m_gblName.c_str(), dimIdx.c_str());
-			}
-		} while (DimenIter(pGv->m_dimenList, refList));
+			} while (loopInfo.Iter());
+		}
 	}
 
 	if (pNgvInfo->m_wrPortList.size() > 1 && pGv->m_addrW > 0) {
@@ -1283,13 +1414,16 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 		int lastStg = pGv->m_bPrivGbl ? pMod->m_stage.m_privWrStg.AsInt() : max(pGv->m_wrStg.AsInt(), pMod->m_stage.m_privWrStg.AsInt());
 		if (pGv->m_addrW == 0) {
 			if (pGv->m_rdStg.AsInt() < lastStg) {
-				vector<int> refList(pGv->m_dimenList.size());
+				string tabs = "\t";
+				CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, 3);
 				do {
-					string dimIdx = IndexStr(refList);
-					gblPostInstr.Append("\tc_t%d_%sIrData%s = r__GBL__%s%s;\n",
+					string dimIdx = loopInfo.IndexStr();
+
+					gblPostInstr.Append("%sc_t%d_%sIrData%s = r__GBL__%s%s;\n", tabs.c_str(),
 						pMod->m_tsStg + pGv->m_rdStg.AsInt() - 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
 						pGv->m_gblName.c_str(), dimIdx.c_str());
-				} while (DimenIter(pGv->m_dimenList, refList));
+
+				} while (loopInfo.Iter());
 			}
 		} else {
 			int rdAddrStgNum = pMod->m_tsStg + pGv->m_rdStg.AsInt() - (pGv->m_ramType == eBlockRam ? 3 : 2);
@@ -1327,50 +1461,64 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 				gblPostInstr.Append(", %s", addr2Name.c_str());
 			gblPostInstr.Append("%s;\n", bNeedParan ? ")" : "");
 
-			for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
-				CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
+			bool bNgvReg = pGv->m_addrW == 0;
+			bool bNgvDist = !bNgvReg && pGv->m_ramType != eBlockRam;
 
-				if (!fld.m_bSpanning) continue;
-
-				vector<int> refList(pGv->m_dimenList.size());
+			{
+				string tabs = "\t";
+				CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, 3);
 				do {
-					string dimIdx = IndexStr(refList);
+					string dimIdx = loopInfo.IndexStr();
 
-					gblPostInstr.Append("\tm__GBL__%sIr%s.read_addr(c_t%d_%sRdAddr);\n",
-						fld.m_ramName.c_str(), dimIdx.c_str(),
-						rdAddrStgNum, pGv->m_gblName.Lc().c_str());
+					for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
+						CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
 
-					bool bNgvReg = pGv->m_addrW == 0;
-					bool bNgvDist = !bNgvReg && pGv->m_ramType != eBlockRam;
+						if (!fld.m_bSpanning) continue;
 
-					gblPostInstr.Append("\tc_t%d_%sIrData%s%s = m__GBL__%sIr%s.read_mem();\n",
-						rdAddrStgNum + (bNgvDist ? 0 : 1), pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str(),
-						fld.m_ramName.c_str(), dimIdx.c_str());
+						gblPostInstr.Append("%sm__GBL__%sIr%s.read_addr(c_t%d_%sRdAddr);\n", tabs.c_str(),
+							fld.m_ramName.c_str(), dimIdx.c_str(),
+							rdAddrStgNum, pGv->m_gblName.Lc().c_str());
+					}
+				} while (loopInfo.Iter());
+			}
 
-				} while (DimenIter(pGv->m_dimenList, refList));
+			{
+				string tabs = "\t";
+				CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, 3);
+				do {
+					string dimIdx = loopInfo.IndexStr();
+
+					for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
+						CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
+
+						if (!fld.m_bSpanning) continue;
+
+						gblPostInstr.Append("%sc_t%d_%sIrData%s%s = m__GBL__%sIr%s.read_mem();\n", tabs.c_str(),
+							rdAddrStgNum + (bNgvDist ? 0 : 1), pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str(),
+							fld.m_ramName.c_str(), dimIdx.c_str());
+					}
+				} while (loopInfo.Iter());
 			}
 		}
-		gblPostInstr.NewLine();
 	}
 
 	if (pGv->m_bWriteForInstrWrite) {
 		int gvWrStg = pMod->m_tsStg + pGv->m_wrStg.AsInt();
 
 		if (pGv->m_addrW == 0) {
-			vector<int> refList(pGv->m_dimenList.size());
+			string tabs = "\t";
+			CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, 3);
 			do {
-				string dimIdx = IndexStr(refList);
+				string dimIdx = loopInfo.IndexStr();
 
 				for (CStructElemIter iter(this, pGv->m_pType); !iter.end(); iter++) {
-					gblPostInstr.Append("\tif (r_t%d_%sIwData%s%s.GetWrEn())\n",
+					gblPostInstr.Append("%sif (r_t%d_%sIwData%s%s.GetWrEn())\n", tabs.c_str(),
 						gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
-					gblPostInstr.Append("\t\tc__GBL__%s%s%s = r_t%d_%sIwData%s%s.GetData();\n",
+					gblPostInstr.Append("%s\tc__GBL__%s%s%s = r_t%d_%sIwData%s%s.GetData();\n", tabs.c_str(),
 						pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str(),
 						gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
 				}
-				gblPostInstr.NewLine();
-
-			} while (DimenIter(pGv->m_dimenList, refList));
+			} while (loopInfo.Iter());
 
 		} else if (pNgvInfo->m_wrPortList.size() == 1) {
 
@@ -1379,29 +1527,29 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 				if (imIdx == 1 && !pGv->m_bReadForMifWrite) continue;
 				char const * pImStr = imIdx == 0 ? "Ir" : "Mr";
 
-				for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
-					CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
+				string tabs = "\t";
+				CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, 3);
+				do {
+					string dimIdx = loopInfo.IndexStr();
 
-					if (!fld.m_bSpanning || imIdx == 1 && !fld.m_bMrField) continue;
+					for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
+						CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
 
-					vector<int> refList(pGv->m_dimenList.size());
-					do {
-						string dimIdx = IndexStr(refList);
+						if (!fld.m_bSpanning || imIdx == 1 && !fld.m_bMrField) continue;
 
-						gblPostInstr.Append("\tm__GBL__%s%s%s.write_addr(r_t%d_%sIwData%s.GetAddr());\n",
+						gblPostInstr.Append("%sm__GBL__%s%s%s.write_addr(r_t%d_%sIwData%s.GetAddr());\n", tabs.c_str(),
 							fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
 							gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str());
 
-						gblPostInstr.Append("\tif (r_t%d_%sIwData%s%s.GetWrEn())\n",
+						gblPostInstr.Append("%sif (r_t%d_%sIwData%s%s.GetWrEn())\n", tabs.c_str(),
 							gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str());
-						gblPostInstr.Append("\t\tm__GBL__%s%s%s.write_mem(r_t%d_%sIwData%s.GetData()%s);\n",
+						gblPostInstr.Append("%s\tm__GBL__%s%s%s.write_mem(r_t%d_%sIwData%s.GetData()%s);\n", tabs.c_str(),
 							fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
 							gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str());
 
 						gblPostInstr.NewLine();
-
-					} while (DimenIter(pGv->m_dimenList, refList));
-				}
+					}
+				} while (loopInfo.Iter());
 			}
 		}
 	}
@@ -1410,21 +1558,20 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 		int rdRspStg = pMod->m_mif.m_mifRd.m_bNeedRdRspInfoRam ? 2 : 1;
 
 		if (pGv->m_addrW == 0) {
-			vector<int> refList(pGv->m_dimenList.size());
+			string tabs = "\t";
+			CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, 3);
 			do {
-				string dimIdx = IndexStr(refList);
+				string dimIdx = loopInfo.IndexStr();
 
 				for (CStructElemIter iter(this, pGv->m_pType); !iter.end(); iter++) {
-					gblPostInstr.Append("\tif (r_m%d_%sMwData%s%s.GetWrEn())\n",
+					gblPostInstr.Append("%sif (r_m%d_%sMwData%s%s.GetWrEn())\n", tabs.c_str(),
 						rdRspStg + 1,
 						pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
-					gblPostInstr.Append("\t\tc__GBL__%s%s%s = r_m%d_%sMwData%s%s.GetData();\n",
+					gblPostInstr.Append("%s\tc__GBL__%s%s%s = r_m%d_%sMwData%s%s.GetData();\n", tabs.c_str(),
 						pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str(),
 						rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
 				}
-				gblPostInstr.NewLine();
-
-			} while (DimenIter(pGv->m_dimenList, refList));
+			} while (loopInfo.Iter());
 
 		} else if (pNgvInfo->m_wrPortList.size() == 1) {
 
@@ -1433,29 +1580,30 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 				if (imIdx == 1 && !pGv->m_bReadForMifWrite) continue;
 				char const * pImStr = imIdx == 0 ? "Ir" : "Mr";
 
-				for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
-					CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
+				string tabs = "\t";
+				CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, 3);
+				do {
+					string dimIdx = loopInfo.IndexStr();
 
-					if (!fld.m_bSpanning || imIdx == 1 && !fld.m_bMrField) continue;
+					for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
+						CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
 
-					vector<int> refList(pGv->m_dimenList.size());
-					do {
-						string dimIdx = IndexStr(refList);
+						if (!fld.m_bSpanning || imIdx == 1 && !fld.m_bMrField) continue;
 
-						gblPostInstr.Append("\tm__GBL__%s%s%s.write_addr(r_m%d_%sMwData%s.GetAddr());\n",
+						gblPostInstr.Append("%sm__GBL__%s%s%s.write_addr(r_m%d_%sMwData%s.GetAddr());\n", tabs.c_str(),
 							fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
 							rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str());
 
-						gblPostInstr.Append("\tif (r_m%d_%sMwData%s%s.GetWrEn())\n",
+						gblPostInstr.Append("%sif (r_m%d_%sMwData%s%s.GetWrEn())\n", tabs.c_str(),
 							rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str());
-						gblPostInstr.Append("\t\tm__GBL__%s%s%s.write_mem(r_m%d_%sMwData%s.GetData()%s);\n",
+						gblPostInstr.Append("%s\tm__GBL__%s%s%s.write_mem(r_m%d_%sMwData%s.GetData()%s);\n", tabs.c_str(),
 							fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
 							rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str());
 
 						gblPostInstr.NewLine();
 
-					} while (DimenIter(pGv->m_dimenList, refList));
-				}
+					}
+				} while (loopInfo.Iter());
 			}
 		}
 	}
@@ -1489,24 +1637,33 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 				}
 			}
 
-			vector<int> refList(pGv->m_dimenList.size());
-			do {
-				string dimIdx = IndexStr(refList);
+			{
+				string tabs = "\t";
+				CLoopInfo loopInfo(m_gblPostInstr2x, tabs, pGv->m_dimenList, 1);
+				do {
+					string dimIdx = loopInfo.IndexStr();
 
-				m_gblPostInstr2x.Append("\tc__GBL__%sPwData%s = r_phase ? %s : %s;\n",
-					pGv->m_gblName.c_str(), dimIdx.c_str(),
-					VA(wrPort[0].c_str(), dimIdx.c_str()).c_str(),
-					VA(wrPort[1].c_str(), dimIdx.c_str()).c_str(),
-					rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str());
+					m_gblPostInstr2x.Append("%sc__GBL__%sPwData%s = r_phase ? %s : %s;\n", tabs.c_str(),
+						pGv->m_gblName.c_str(), dimIdx.c_str(),
+						VA(wrPort[0].c_str(), dimIdx.c_str()).c_str(),
+						VA(wrPort[1].c_str(), dimIdx.c_str()).c_str(),
+						rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str());
 
-				m_gblReg2x.Append("\tr__GBL__%sPwData%s = c__GBL__%sPwData%s;\n",
-					pGv->m_gblName.c_str(), dimIdx.c_str(),
-					pGv->m_gblName.c_str(), dimIdx.c_str());
+				} while (loopInfo.Iter());
+			}
 
-			} while (DimenIter(pGv->m_dimenList, refList));
+			{
+				string tabs = "\t";
+				CLoopInfo loopInfo(m_gblReg2x, tabs, pGv->m_dimenList, 1);
+				do {
+					string dimIdx = loopInfo.IndexStr();
 
-			m_gblPostInstr2x.NewLine();
-			m_gblReg2x.NewLine();
+					m_gblReg2x.Append("%sr__GBL__%sPwData%s = c__GBL__%sPwData%s;\n", tabs.c_str(),
+						pGv->m_gblName.c_str(), dimIdx.c_str(),
+						pGv->m_gblName.c_str(), dimIdx.c_str());
+
+				} while (loopInfo.Iter());
+			}
 		}
 
 		{
@@ -1516,29 +1673,30 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 				if (imIdx == 1 && !pGv->m_bReadForMifWrite) continue;
 				char const * pImStr = imIdx == 0 ? "Ir" : "Mr";
 
-				for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
-					CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
+				string tabs = "\t";
+				CLoopInfo loopInfo(m_gblPostInstr2x, tabs, pGv->m_dimenList, 3);
+				do {
+					string dimIdx = loopInfo.IndexStr();
 
-					if (!fld.m_bSpanning || imIdx == 1 && !fld.m_bMrField) continue;
+					for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
+						CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
 
-					vector<int> refList(pGv->m_dimenList.size());
-					do {
-						string dimIdx = IndexStr(refList);
+						if (!fld.m_bSpanning || imIdx == 1 && !fld.m_bMrField) continue;
 
-						m_gblPostInstr2x.Append("\tm__GBL__%s%s%s.write_addr(r__GBL__%sPwData%s.GetAddr());\n",
+						m_gblPostInstr2x.Append("%sm__GBL__%s%s%s.write_addr(r__GBL__%sPwData%s.GetAddr());\n", tabs.c_str(),
 							fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
 							pGv->m_gblName.c_str(), dimIdx.c_str());
 
-						m_gblPostInstr2x.Append("\tif (r__GBL__%sPwData%s%s.GetWrEn())\n",
+						m_gblPostInstr2x.Append("%sif (r__GBL__%sPwData%s%s.GetWrEn())\n", tabs.c_str(),
 							pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str());
-						m_gblPostInstr2x.Append("\t\tm__GBL__%s%s%s.write_mem(r__GBL__%sPwData%s%s.GetData());\n",
+						m_gblPostInstr2x.Append("%s\tm__GBL__%s%s%s.write_mem(r__GBL__%sPwData%s%s.GetData());\n", tabs.c_str(),
 							fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
 							pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str());
 
-						gblPostInstr.NewLine();
+						m_gblPostInstr2x.NewLine();
 
-					} while (DimenIter(pGv->m_dimenList, refList));
-				}
+					}
+				} while (loopInfo.Iter());
 			}
 		}
 	}
@@ -1681,38 +1839,50 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 				m_gblIoDecl.Append("\tsc_out<sc_uint<%s_HTID_W> > o_%sTo%s_iwHtId%s;\n",
 					mod.m_modName.Upper().c_str(),
 					mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), pGv->m_dimenDecl.c_str());
-				vector<int> refList(pGv->m_dimenList.size());
+
+				string tabs = "\t";
+				CLoopInfo loopInfo(gblOut, tabs, pGv->m_dimenList, 1);
 				do {
-					string dimIdx = IndexStr(refList);
-					gblOut.Append("\to_%sTo%s_iwHtId%s = r_t%d_htId;\n",
+					string dimIdx = loopInfo.IndexStr();
+
+					gblOut.Append("%so_%sTo%s_iwHtId%s = r_t%d_htId;\n", tabs.c_str(),
 						mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), dimIdx.c_str(),
 						gvWrStg);
-				} while (DimenIter(pGv->m_dimenList, refList));
+
+				} while (loopInfo.Iter());
 			}
 
 			{
 				m_gblIoDecl.Append("\tsc_out<bool> o_%sTo%s_iwComp%s;\n",
 					mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), pGv->m_dimenDecl.c_str());
-				vector<int> refList(pGv->m_dimenList.size());
+
+				string tabs = "\t";
+				CLoopInfo loopInfo(gblOut, tabs, pGv->m_dimenList, 1);
 				do {
-					string dimIdx = IndexStr(refList);
-					gblOut.Append("\to_%sTo%s_iwComp%s = r_t%d_%sIwComp%s;\n",
+					string dimIdx = loopInfo.IndexStr();
+
+					gblOut.Append("%so_%sTo%s_iwComp%s = r_t%d_%sIwComp%s;\n", tabs.c_str(),
 						mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), dimIdx.c_str(),
 						gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str());
-				} while (DimenIter(pGv->m_dimenList, refList));
+
+				} while (loopInfo.Iter());
 			}
 
 			{
 				m_gblIoDecl.Append("\tsc_out<CGW_%s> o_%sTo%s_iwData%s;\n",
 					pGv->m_pNgvInfo->m_ngvWrType.c_str(),
 					mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), pGv->m_dimenDecl.c_str());
-				vector<int> refList(pGv->m_dimenList.size());
+
+				string tabs = "\t";
+				CLoopInfo loopInfo(gblOut, tabs, pGv->m_dimenList, 1);
 				do {
-					string dimIdx = IndexStr(refList);
-					gblOut.Append("\to_%sTo%s_iwData%s = r_t%d_%sIwData%s;\n",
+					string dimIdx = loopInfo.IndexStr();
+
+					gblOut.Append("%so_%sTo%s_iwData%s = r_t%d_%sIwData%s;\n", tabs.c_str(),
 						mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), dimIdx.c_str(),
 						gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str());
-				} while (DimenIter(pGv->m_dimenList, refList));
+
+				} while (loopInfo.Iter());
 			}
 		}
 
@@ -1761,26 +1931,34 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 				m_gblIoDecl.Append("\tsc_out<sc_uint<%s_RD_GRP_ID_W> > o_%sTo%s_mwGrpId%s;\n",
 					mod.m_modName.Upper().c_str(),
 					mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), pGv->m_dimenDecl.c_str());
-				vector<int> refList(pGv->m_dimenList.size());
+
+				string tabs = "\t";
+				CLoopInfo loopInfo(gblOut, tabs, pGv->m_dimenList, 1);
 				do {
-					string dimIdx = IndexStr(refList);
-					gblOut.Append("\to_%sTo%s_mwGrpId%s = r_m%d_rdRspInfo.m_grpId;\n",
+					string dimIdx = loopInfo.IndexStr();
+
+					gblOut.Append("%so_%sTo%s_mwGrpId%s = r_m%d_rdRspInfo.m_grpId;\n", tabs.c_str(),
 						mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), dimIdx.c_str(),
 						rdRspStg + 1);
-				} while (DimenIter(pGv->m_dimenList, refList));
+
+				} while (loopInfo.Iter());
 			}
 
 			{
 				m_gblIoDecl.Append("\tsc_out<CGW_%s> o_%sTo%s_mwData%s;\n",
 					pGv->m_pNgvInfo->m_ngvWrType.c_str(),
 					mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), pGv->m_dimenDecl.c_str());
-				vector<int> refList(pGv->m_dimenList.size());
+
+				string tabs = "\t";
+				CLoopInfo loopInfo(gblOut, tabs, pGv->m_dimenList, 1);
 				do {
-					string dimIdx = IndexStr(refList);
-					gblOut.Append("\to_%sTo%s_mwData%s = r_m%d_%sMwData%s;\n",
+					string dimIdx = loopInfo.IndexStr();
+
+					gblOut.Append("%so_%sTo%s_mwData%s = r_m%d_%sMwData%s;\n", tabs.c_str(),
 						mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), dimIdx.c_str(),
 						rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str());
-				} while (DimenIter(pGv->m_dimenList, refList));
+
+				} while (loopInfo.Iter());
 			}
 
 			if (pGv->m_pNgvInfo->m_bNeedQue/* && (mod.m_mif.m_mifRd.m_bMultiQwHostRdMif || mod.m_mif.m_mifRd.m_bMultiQwCoprocRdMif)*/) {
@@ -1799,29 +1977,49 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 
 		if (pGv->m_addrW == 0) {
 			if (pGv->m_bReadForInstrRead || pGv->m_bReadForMifWrite) {
-				vector<int> refList(pGv->m_dimenList.size());
-				do {
-					string dimIdx = IndexStr(refList);
 
-					if (pNgvInfo->m_bNgvWrDataClk2x && (mod.m_clkRate == eClk1x)) {
-						gblRegWrData.Append("\tif (r_%sTo%s_wrEn_2x%s)\n",
-							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
-						gblRegWrData.Append("\t\tr__GBL__%s_2x%s = r_%sTo%s_wrData_2x%s;\n",
-							pGv->m_gblName.c_str(), dimIdx.c_str(),
-							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
-						gblReg.Append("\tr__GBL__%s%s = r__GBL__%s_2x%s;\n",
-							pGv->m_gblName.c_str(), dimIdx.c_str(),
-							pGv->m_gblName.c_str(), dimIdx.c_str());
-					} else {
-						gblRegWrData.Append("\tif (r_%sTo%s_wrEn%s)\n",
-							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
-						gblRegWrData.Append("\t\tr__GBL__%s%s = r_%sTo%s_wrData%s;\n",
-							pGv->m_gblName.c_str(), dimIdx.c_str(),
-							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
-					}
-					gblRegWrData.NewLine();
+				bool bFoundGblReg = false;
+				{
+					string tabs = "\t";
+					CLoopInfo loopInfo(gblRegWrData, tabs, pGv->m_dimenList, 1);
+					do {
+						string dimIdx = loopInfo.IndexStr();
 
-				} while (DimenIter(pGv->m_dimenList, refList));
+
+						if (pNgvInfo->m_bNgvWrDataClk2x && (mod.m_clkRate == eClk1x)) {
+							gblRegWrData.Append("%sif (r_%sTo%s_wrEn_2x%s)\n", tabs.c_str(),
+								pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+							gblRegWrData.Append("%s\tr__GBL__%s_2x%s = r_%sTo%s_wrData_2x%s;\n", tabs.c_str(),
+								pGv->m_gblName.c_str(), dimIdx.c_str(),
+								pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+
+							bFoundGblReg = true;
+						} else {
+							gblRegWrData.Append("%sif (r_%sTo%s_wrEn%s)\n", tabs.c_str(),
+								pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+							gblRegWrData.Append("%s\tr__GBL__%s%s = r_%sTo%s_wrData%s;\n", tabs.c_str(),
+								pGv->m_gblName.c_str(), dimIdx.c_str(),
+								pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+						}
+						gblRegWrData.NewLine();
+
+					} while (loopInfo.Iter());
+				}
+
+				if (bFoundGblReg) {
+					string tabs = "\t";
+					CLoopInfo loopInfo(gblReg, tabs, pGv->m_dimenList, 1);
+					do {
+						string dimIdx = loopInfo.IndexStr();
+
+						if (pNgvInfo->m_bNgvWrDataClk2x && (mod.m_clkRate == eClk1x)) {
+							gblReg.Append("%sr__GBL__%s%s = r__GBL__%s_2x%s;\n", tabs.c_str(),
+								pGv->m_gblName.c_str(), dimIdx.c_str(),
+								pGv->m_gblName.c_str(), dimIdx.c_str());
+						}
+
+					} while (loopInfo.Iter());
+				}
 			}
 		} else {
 			for (int imIdx = 0; imIdx < 2; imIdx += 1) {
@@ -1829,19 +2027,22 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 				if (imIdx == 1 && !pGv->m_bReadForMifWrite) continue;
 				char const * pImStr = imIdx == 0 ? "Ir" : "Mr";
 
-				vector<int> refList(pGv->m_dimenList.size());
+				string tabs = "\t";
+				CLoopInfo loopInfo(gblPostInstrWrData, tabs, pGv->m_dimenList, 3);
 				do {
-					string dimIdx = IndexStr(refList);
-					gblPostInstrWrData.Append("\tm__GBL__%s%s%s.write_addr(r_%sTo%s_wrAddr%s);\n",
+					string dimIdx = loopInfo.IndexStr();
+
+					gblPostInstrWrData.Append("%sm__GBL__%s%s%s.write_addr(r_%sTo%s_wrAddr%s);\n", tabs.c_str(),
 						pGv->m_gblName.c_str(), pImStr, dimIdx.c_str(),
 						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
-					gblPostInstrWrData.Append("\tif (r_%sTo%s_wrEn%s)\n",
+					gblPostInstrWrData.Append("%sif (r_%sTo%s_wrEn%s)\n", tabs.c_str(),
 						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
-					gblPostInstrWrData.Append("\t\tm__GBL__%s%s%s.write_mem(r_%sTo%s_wrData%s);\n",
+					gblPostInstrWrData.Append("%s\tm__GBL__%s%s%s.write_mem(r_%sTo%s_wrData%s);\n", tabs.c_str(),
 						pGv->m_gblName.c_str(), pImStr, dimIdx.c_str(),
 						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
 					gblPostInstrWrData.NewLine();
-				} while (DimenIter(pGv->m_dimenList, refList));
+
+				} while (loopInfo.Iter());
 			}
 		}
 
@@ -1860,23 +2061,42 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 					mod.m_modName.Upper().c_str(),
 					pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
 
-				vector<int> refList(pGv->m_dimenList.size());
-				do {
-					string dimIdx = IndexStr(refList);
+				bool bFoundGblRegWrData = false;
+				{
+					string tabs = "\t";
+					CLoopInfo loopInfo(gblReg, tabs, pGv->m_dimenList, 1);
+					do {
+						string dimIdx = loopInfo.IndexStr();
 
-					if (pNgvInfo->m_bNgvWrDataClk2x == (mod.m_clkRate == eClk2x)) {
-						gblReg.Append("\tm__GBL__%sIf%s.clock(%s);\n",
-							pGv->m_gblName.c_str(), dimIdx.c_str(),
-							gblRegReset.c_str());
-					} else {
-						gblReg.Append("\tm__GBL__%sIf%s.read_clock(%s);\n",
-							pGv->m_gblName.c_str(), dimIdx.c_str(),
-							gblRegReset.c_str());
-						gblRegWrData.Append("\tm__GBL__%sIf%s.write_clock(%s);\n",
-							pGv->m_gblName.c_str(), dimIdx.c_str(),
-							gblRegWrDataReset.c_str());
-					}
-				} while (DimenIter(pGv->m_dimenList, refList));
+						if (pNgvInfo->m_bNgvWrDataClk2x == (mod.m_clkRate == eClk2x)) {
+							gblReg.Append("%sm__GBL__%sIf%s.clock(%s);\n", tabs.c_str(),
+								pGv->m_gblName.c_str(), dimIdx.c_str(),
+								gblRegReset.c_str());
+						} else {
+							gblReg.Append("%sm__GBL__%sIf%s.read_clock(%s);\n", tabs.c_str(),
+								pGv->m_gblName.c_str(), dimIdx.c_str(),
+								gblRegReset.c_str());
+
+							bFoundGblRegWrData = true;
+						}
+
+					} while (loopInfo.Iter());
+				}
+
+				if (bFoundGblRegWrData) {
+					string tabs = "\t";
+					CLoopInfo loopInfo(gblRegWrData, tabs, pGv->m_dimenList, 1);
+					do {
+						string dimIdx = loopInfo.IndexStr();
+
+						if (pNgvInfo->m_bNgvWrDataClk2x != (mod.m_clkRate == eClk2x)) {
+							gblRegWrData.Append("%sm__GBL__%sIf%s.write_clock(%s);\n", tabs.c_str(),
+								pGv->m_gblName.c_str(), dimIdx.c_str(),
+								gblRegWrDataReset.c_str());
+						}
+
+					} while (loopInfo.Iter());
+				}
 			}
 		}
 
@@ -1906,24 +2126,37 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 					pGv->m_type.c_str(), pGv->m_addrW);
 				m_gblRegDecl.Append("> m__GBL__%s%s%s;\n", pGv->m_gblName.c_str(), pImStr, pGv->m_dimenDecl.c_str());
 
-				vector<int> refList(pGv->m_dimenList.size());
-				do {
-					string dimIdx = IndexStr(refList);
+				{
+					string tabs = "\t";
+					CLoopInfo loopInfo(gblReg, tabs, pGv->m_dimenList, 1);
+					do {
+						string dimIdx = loopInfo.IndexStr();
 
-					if (pNgvInfo->m_bNgvWrDataClk2x == (mod.m_clkRate == eClk2x)) {
-						gblReg.Append("\tm__GBL__%s%s%s.clock(%s);\n",
+						if (pNgvInfo->m_bNgvWrDataClk2x == (mod.m_clkRate == eClk2x)) {
+							gblReg.Append("%sm__GBL__%s%s%s.clock(%s);\n", tabs.c_str(),
+								pGv->m_gblName.c_str(), pImStr, dimIdx.c_str(),
+								gblRegReset.c_str());
+						} else {
+							gblReg.Append("%sm__GBL__%s%s%s.read_clock(%s);\n", tabs.c_str(),
+								pGv->m_gblName.c_str(), pImStr, dimIdx.c_str(),
+								gblRegReset.c_str());
+						}
+
+					} while (loopInfo.Iter());
+				}
+
+				if (pNgvInfo->m_bNgvWrDataClk2x != (mod.m_clkRate == eClk2x)) {
+					string tabs = "\t";
+					CLoopInfo loopInfo(gblRegWrData, tabs, pGv->m_dimenList, 1);
+					do {
+						string dimIdx = loopInfo.IndexStr();
+
+						gblRegWrData.Append("%sm__GBL__%s%s%s.write_clock(%s);\n", tabs.c_str(),
 							pGv->m_gblName.c_str(), pImStr, dimIdx.c_str(),
-							gblRegReset.c_str());
-					} 
-					else {
-						gblReg.Append("\tm__GBL__%s%s%s.read_clock(%s);\n",
-							pGv->m_gblName.c_str(), pImStr, dimIdx.c_str(), 
-							gblRegReset.c_str());
-						gblRegWrData.Append("\tm__GBL__%s%s%s.write_clock(%s);\n",
-							pGv->m_gblName.c_str(), pImStr, dimIdx.c_str(), 
 							gblRegWrDataReset.c_str());
-					}
-				} while (DimenIter(pGv->m_dimenList, refList));
+
+					} while (loopInfo.Iter());
+				}
 			}
 		}
 
@@ -1942,33 +2175,79 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 				m_gblRegDecl.Append("\tht_dist_ram<bool, %s_HTID_W> m_%sIwComp%s[2];\n",
 					mod.m_modName.Upper().c_str(), pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
 
-				vector<int> refList(pGv->m_dimenList.size());
-				do {
-					string dimIdx = IndexStr(refList);
-					if (pNgvInfo->m_bNgvWrCompClk2x == (mod.m_clkRate == eClk2x)) {
+				CHtCode &gblRegMod = mod.m_clkRate == eClk2x ? m_gblReg2x : m_gblReg1x;
+				string gblRegModReset = mod.m_clkRate == eClk2x ? "c_reset1x" : "r_reset1x";
 
-						gblRegWrComp.Append("\tm_%sIwComp%s[0].clock(%s);\n",
-							pGv->m_gblName.c_str(), dimIdx.c_str(), gblRegWrCompReset.c_str());
-						gblRegWrComp.Append("\tm_%sIwComp%s[1].clock(%s);\n",
-							pGv->m_gblName.c_str(), dimIdx.c_str(), gblRegWrCompReset.c_str());
-					} else {
-						CHtCode &gblRegMod = mod.m_clkRate == eClk2x ? m_gblReg2x : m_gblReg1x;
-						string gblRegModReset = mod.m_clkRate == eClk2x ? "c_reset1x" : "r_reset1x";
+				{
+					string tabs = "\t";
+					CLoopInfo loopInfo(gblRegWrComp, tabs, pGv->m_dimenList, 2);
+					do {
+						string dimIdx = loopInfo.IndexStr();
 
-						gblRegMod.Append("\tm_%sIwComp%s[0].read_clock(%s);\n",
+						if (pNgvInfo->m_bNgvWrCompClk2x == (mod.m_clkRate == eClk2x)) {
+
+							gblRegWrComp.Append("%sm_%sIwComp%s[0].clock(%s);\n", tabs.c_str(),
+								pGv->m_gblName.c_str(), dimIdx.c_str(), gblRegWrCompReset.c_str());
+							gblRegWrComp.Append("%sm_%sIwComp%s[1].clock(%s);\n", tabs.c_str(),
+								pGv->m_gblName.c_str(), dimIdx.c_str(), gblRegWrCompReset.c_str());
+						} else {
+							gblRegWrComp.Append("%sm_%sIwComp%s[0].write_clock(%s);\n", tabs.c_str(),
+								pGv->m_gblName.c_str(), dimIdx.c_str(), gblRegWrCompReset.c_str());
+							gblRegWrComp.Append("%sm_%sIwComp%s[1].write_clock(%s);\n", tabs.c_str(),
+								pGv->m_gblName.c_str(), dimIdx.c_str(), gblRegWrCompReset.c_str());
+						}
+
+					} while (loopInfo.Iter());
+				}
+
+				if (pNgvInfo->m_bNgvWrCompClk2x != (mod.m_clkRate == eClk2x)) {
+					string tabs = "\t";
+					CLoopInfo loopInfo(gblRegMod, tabs, pGv->m_dimenList, 2);
+					do {
+						string dimIdx = loopInfo.IndexStr();
+
+						gblRegMod.Append("%sm_%sIwComp%s[0].read_clock(%s);\n", tabs.c_str(),
 							pGv->m_gblName.c_str(), dimIdx.c_str(), gblRegModReset.c_str());
-						gblRegMod.Append("\tm_%sIwComp%s[1].read_clock(%s);\n",
+						gblRegMod.Append("%sm_%sIwComp%s[1].read_clock(%s);\n", tabs.c_str(),
 							pGv->m_gblName.c_str(), dimIdx.c_str(), gblRegModReset.c_str());
-						gblRegWrComp.Append("\tm_%sIwComp%s[0].write_clock(%s);\n",
-							pGv->m_gblName.c_str(), dimIdx.c_str(), gblRegWrCompReset.c_str());
-						gblRegWrComp.Append("\tm_%sIwComp%s[1].write_clock(%s);\n",
-							pGv->m_gblName.c_str(), dimIdx.c_str(), gblRegWrCompReset.c_str());
-					}
-				} while (DimenIter(pGv->m_dimenList, refList));
 
-				if (pGv->m_dimenList.size() > 0) {
-					gblReg.NewLine();
-					gblRegWrComp.NewLine();
+					} while (loopInfo.Iter());
+				}
+
+				{
+					string tabs = "\t";
+					CLoopInfo loopInfo(gblRegWrComp, tabs, pGv->m_dimenList, 2);
+					do {
+						string dimIdx = loopInfo.IndexStr();
+
+						if (pNgvInfo->m_bNgvWrCompClk2x == (mod.m_clkRate == eClk2x)) {
+
+							gblRegWrComp.Append("%sm_%sIwComp%s[0].clock(%s);\n", tabs.c_str(),
+								pGv->m_gblName.c_str(), dimIdx.c_str(), gblRegWrCompReset.c_str());
+							gblRegWrComp.Append("%sm_%sIwComp%s[1].clock(%s);\n", tabs.c_str(),
+								pGv->m_gblName.c_str(), dimIdx.c_str(), gblRegWrCompReset.c_str());
+						} else {
+							gblRegWrComp.Append("%sm_%sIwComp%s[0].write_clock(%s);\n", tabs.c_str(),
+								pGv->m_gblName.c_str(), dimIdx.c_str(), gblRegWrCompReset.c_str());
+							gblRegWrComp.Append("%sm_%sIwComp%s[1].write_clock(%s);\n", tabs.c_str(),
+								pGv->m_gblName.c_str(), dimIdx.c_str(), gblRegWrCompReset.c_str());
+						}
+
+					} while (loopInfo.Iter());
+				}
+
+				if (pNgvInfo->m_bNgvWrCompClk2x != (mod.m_clkRate == eClk2x)) {
+					string tabs = "\t";
+					CLoopInfo loopInfo(gblRegMod, tabs, pGv->m_dimenList, 2);
+					do {
+						string dimIdx = loopInfo.IndexStr();
+
+						gblRegMod.Append("%sm_%sIwComp%s[0].read_clock(%s);\n", tabs.c_str(),
+							pGv->m_gblName.c_str(), dimIdx.c_str(), gblRegModReset.c_str());
+						gblRegMod.Append("%sm_%sIwComp%s[1].read_clock(%s);\n", tabs.c_str(),
+							pGv->m_gblName.c_str(), dimIdx.c_str(), gblRegModReset.c_str());
+
+					} while (loopInfo.Iter());
 				}
 			}
 		}
@@ -1977,39 +2256,48 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 			GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, "bool",
 				VA("r_%sTo%s_ifWrEn", pGv->m_gblName.c_str(), mod.m_modName.Uc().c_str()), pGv->m_dimenList);
 
-			vector<int> refList(pGv->m_dimenList.size());
+			string tabs = "\t";
+			CLoopInfo loopInfo(gblRegWrData, tabs, pGv->m_dimenList, 1);
 			do {
-				string dimIdx = IndexStr(refList);
-				gblRegWrData.Append("\tr_%sTo%s_ifWrEn%s = i_%sTo%s_ifWrEn%s;\n",
+				string dimIdx = loopInfo.IndexStr();
+
+				gblRegWrData.Append("%sr_%sTo%s_ifWrEn%s = i_%sTo%s_ifWrEn%s;\n", tabs.c_str(),
 					pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
 					pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
-			} while (DimenIter(pGv->m_dimenList, refList));
+
+			} while (loopInfo.Iter());
 		}
 
 		if (pGv->m_bReadForInstrRead && pNgvInfo->m_atomicMask != 0 && mod.m_threads.m_htIdW.AsInt() > 0) {
 			GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, VA("sc_uint<%s_HTID_W>", mod.m_modName.Upper().c_str()),
 				VA("r_%sTo%s_ifHtId", pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str()), pGv->m_dimenList);
 
-			vector<int> refList(pGv->m_dimenList.size());
+			string tabs = "\t";
+			CLoopInfo loopInfo(gblRegWrData, tabs, pGv->m_dimenList, 1);
 			do {
-				string dimIdx = IndexStr(refList);
-				gblRegWrData.Append("\tr_%sTo%s_ifHtId%s = i_%sTo%s_ifHtId%s;\n",
+				string dimIdx = loopInfo.IndexStr();
+
+				gblRegWrData.Append("%sr_%sTo%s_ifHtId%s = i_%sTo%s_ifHtId%s;\n", tabs.c_str(),
 					pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
 					pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
-			} while (DimenIter(pGv->m_dimenList, refList));
+
+			} while (loopInfo.Iter());
 		}
 
 		if (pGv->m_bReadForInstrRead && pNgvInfo->m_atomicMask != 0) {
 			GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, pGv->m_type,
 				VA("r_%sTo%s_ifData", pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str()), pGv->m_dimenList);
 
-			vector<int> refList(pGv->m_dimenList.size());
+			string tabs = "\t";
+			CLoopInfo loopInfo(gblRegWrData, tabs, pGv->m_dimenList, 1);
 			do {
-				string dimIdx = IndexStr(refList);
-				gblRegWrData.Append("\tr_%sTo%s_ifData%s = i_%sTo%s_ifData%s;\n",
+				string dimIdx = loopInfo.IndexStr();
+
+				gblRegWrData.Append("%sr_%sTo%s_ifData%s = i_%sTo%s_ifData%s;\n", tabs.c_str(),
 					pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
 					pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
-			} while (DimenIter(pGv->m_dimenList, refList));
+
+			} while (loopInfo.Iter());
 		}
 
 		if ((pGv->m_bReadForInstrRead || pGv->m_bReadForMifWrite) && pGv->m_ramType == eBlockRam) {
@@ -2019,39 +2307,48 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 				GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, bSignal ? "sc_signal<bool>" : "bool",
 					VA("r_g1_%sTo%s_wrEn", pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str()), pGv->m_dimenList);
 
-				vector<int> refList(pGv->m_dimenList.size());
+				string tabs = "\t";
+				CLoopInfo loopInfo(gblRegWrData, tabs, pGv->m_dimenList, 1);
 				do {
-					string dimIdx = IndexStr(refList);
-					gblRegWrData.Append("\tr_g1_%sTo%s_wrEn%s = r_%sTo%s_wrEn%s;\n",
+					string dimIdx = loopInfo.IndexStr();
+
+					gblRegWrData.Append("%sr_g1_%sTo%s_wrEn%s = r_%sTo%s_wrEn%s;\n", tabs.c_str(),
 						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
 						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
-				} while (DimenIter(pGv->m_dimenList, refList));
+
+				} while (loopInfo.Iter());
 			}
 
 			if (pGv->m_addrW > 0) {
 				GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, VA(bSignal ? "sc_signal<ht_uint%d>" : "ht_uint%d", pGv->m_addrW),
 					VA("r_g1_%sTo%s_wrAddr", pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str()), pGv->m_dimenList);
 
-				vector<int> refList(pGv->m_dimenList.size());
+				string tabs = "\t";
+				CLoopInfo loopInfo(gblRegWrData, tabs, pGv->m_dimenList, 1);
 				do {
-					string dimIdx = IndexStr(refList);
-					gblRegWrData.Append("\tr_g1_%sTo%s_wrAddr%s = r_%sTo%s_wrAddr%s;\n",
+					string dimIdx = loopInfo.IndexStr();
+
+					gblRegWrData.Append("%sr_g1_%sTo%s_wrAddr%s = r_%sTo%s_wrAddr%s;\n", tabs.c_str(),
 						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
 						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
-				} while (DimenIter(pGv->m_dimenList, refList));
+
+				} while (loopInfo.Iter());
 			}
 
 			{
 				GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, VA(bSignal ? "sc_signal<%s>" : "%s", pGv->m_type.c_str()),
 					VA("r_g1_%sTo%s_wrData", pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str()), pGv->m_dimenList);
 
-				vector<int> refList(pGv->m_dimenList.size());
+				string tabs = "\t";
+				CLoopInfo loopInfo(gblRegWrData, tabs, pGv->m_dimenList, 1);
 				do {
-					string dimIdx = IndexStr(refList);
-					gblRegWrData.Append("\tr_g1_%sTo%s_wrData%s = r_%sTo%s_wrData%s;\n",
+					string dimIdx = loopInfo.IndexStr();
+
+					gblRegWrData.Append("%sr_g1_%sTo%s_wrData%s = r_%sTo%s_wrData%s;\n", tabs.c_str(),
 						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
 						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
-				} while (DimenIter(pGv->m_dimenList, refList));
+
+				} while (loopInfo.Iter());
 			}
 		}
 
@@ -2077,32 +2374,38 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 						VA("r_%sTo%s_wrEn", pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str()), pGv->m_dimenList);
 				}
 
-				vector<int> refList(pGv->m_dimenList.size());
+				string tabs = "\t";
+				CLoopInfo loopInfo(gblRegWrData, tabs, pGv->m_dimenList, 1);
 				do {
-					string dimIdx = IndexStr(refList);
+					string dimIdx = loopInfo.IndexStr();
+
 					if (pNgvInfo->m_bNgvWrDataClk2x && (mod.m_clkRate == eClk1x) && pGv->m_addrW == 0) {
-						gblRegWrData.Append("\tr_%sTo%s_wrEn_2x%s = i_%sTo%s_wrEn%s;\n",
+						gblRegWrData.Append("%sr_%sTo%s_wrEn_2x%s = i_%sTo%s_wrEn%s;\n", tabs.c_str(),
 							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
 							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
 					} else {
-						gblRegWrData.Append("\tr_%sTo%s_wrEn%s = i_%sTo%s_wrEn%s;\n",
+						gblRegWrData.Append("%sr_%sTo%s_wrEn%s = i_%sTo%s_wrEn%s;\n", tabs.c_str(),
 							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
 							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
 					}
-				} while (DimenIter(pGv->m_dimenList, refList));
+
+				} while (loopInfo.Iter());
 			}
 
 			if (pGv->m_addrW > 0) {
 				GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, VA("ht_uint%d", pGv->m_addrW),
 					VA("r_%sTo%s_wrAddr", pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str()), pGv->m_dimenList);
 
-				vector<int> refList(pGv->m_dimenList.size());
+				string tabs = "\t";
+				CLoopInfo loopInfo(gblRegWrData, tabs, pGv->m_dimenList, 1);
 				do {
-					string dimIdx = IndexStr(refList);
-					gblRegWrData.Append("\tr_%sTo%s_wrAddr%s = i_%sTo%s_wrAddr%s;\n",
+					string dimIdx = loopInfo.IndexStr();
+
+					gblRegWrData.Append("%sr_%sTo%s_wrAddr%s = i_%sTo%s_wrAddr%s;\n", tabs.c_str(),
 						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
 						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
-				} while (DimenIter(pGv->m_dimenList, refList));
+
+				} while (loopInfo.Iter());
 			}
 
 			{
@@ -2114,19 +2417,22 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 						VA("r_%sTo%s_wrData", pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str()), pGv->m_dimenList);
 				}
 
-				vector<int> refList(pGv->m_dimenList.size());
+				string tabs = "\t";
+				CLoopInfo loopInfo(gblRegWrData, tabs, pGv->m_dimenList, 1);
 				do {
-					string dimIdx = IndexStr(refList);
+					string dimIdx = loopInfo.IndexStr();
+
 					if (pNgvInfo->m_bNgvWrDataClk2x && (mod.m_clkRate == eClk1x) && pGv->m_addrW == 0) {
-						gblRegWrData.Append("\tr_%sTo%s_wrData_2x%s = i_%sTo%s_wrData%s;\n",
+						gblRegWrData.Append("%sr_%sTo%s_wrData_2x%s = i_%sTo%s_wrData%s;\n", tabs.c_str(),
 							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
 							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
 					} else {
-						gblRegWrData.Append("\tr_%sTo%s_wrData%s = i_%sTo%s_wrData%s;\n",
+						gblRegWrData.Append("%sr_%sTo%s_wrData%s = i_%sTo%s_wrData%s;\n", tabs.c_str(),
 							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
 							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
 					}
-				} while (DimenIter(pGv->m_dimenList, refList));
+
+				} while (loopInfo.Iter());
 			}
 		}
 
@@ -2139,20 +2445,23 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 			GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, "bool",
 				VA("r_%sTo%s_iwCompRdy", pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str()), pGv->m_dimenList);
 
-			vector<int> refList(pGv->m_dimenList.size());
+			string tabs = "\t";
+			CLoopInfo loopInfo(gblRegWrComp, tabs, pGv->m_dimenList, 1);
 			do {
-				string dimIdx = IndexStr(refList);
+				string dimIdx = loopInfo.IndexStr();
+
 				if (mod.m_threads.m_htIdW.AsInt() > 0) {
-					gblRegWrComp.Append("\tr_%sTo%s_iwCompRdy%s = %s || c_%sTo%s_iwCompRdy%s;\n",
+					gblRegWrComp.Append("%sr_%sTo%s_iwCompRdy%s = %s || c_%sTo%s_iwCompRdy%s;\n", tabs.c_str(),
 						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
 						compReset.c_str(),
 						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
 				} else {
-					gblRegWrComp.Append("\tr_%sTo%s_iwCompRdy%s = i_%sTo%s_iwCompRdy%s;\n",
+					gblRegWrComp.Append("%sr_%sTo%s_iwCompRdy%s = i_%sTo%s_iwCompRdy%s;\n", tabs.c_str(),
 						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
 						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
 				}
-			} while (DimenIter(pGv->m_dimenList, refList));
+
+			} while (loopInfo.Iter());
 		}
 
 		if (pGv->m_bWriteForInstrWrite && mod.m_threads.m_htIdW.AsInt() > 0) {
@@ -2163,15 +2472,18 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 			GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, VA("sc_uint<%s_HTID_W>", mod.m_modName.Upper().c_str()),
 				VA("r_%sTo%s_iwCompHtId", pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str()), pGv->m_dimenList);
 
-			vector<int> refList(pGv->m_dimenList.size());
+			string tabs = "\t";
+			CLoopInfo loopInfo(gblRegWrComp, tabs, pGv->m_dimenList, 1);
 			do {
-				string dimIdx = IndexStr(refList);
-				gblRegWrComp.Append("\tr_%sTo%s_iwCompHtId%s = %s ? (ht_uint%d)0 : c_%sTo%s_iwCompHtId%s;\n",
+				string dimIdx = loopInfo.IndexStr();
+
+				gblRegWrComp.Append("%sr_%sTo%s_iwCompHtId%s = %s ? (ht_uint%d)0 : c_%sTo%s_iwCompHtId%s;\n", tabs.c_str(),
 					pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
 					compReset.c_str(),
 					mod.m_threads.m_htIdW.AsInt(),
 					pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
-			} while (DimenIter(pGv->m_dimenList, refList));
+
+			} while (loopInfo.Iter());
 		}
 
 		if (pGv->m_bWriteForInstrWrite) {
@@ -2183,20 +2495,23 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 			GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, "bool",
 				VA("r_%sTo%s_iwCompData", pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str()), pGv->m_dimenList);
 
-			vector<int> refList(pGv->m_dimenList.size());
+			string tabs = "\t";
+			CLoopInfo loopInfo(gblRegWrComp, tabs, pGv->m_dimenList, 1);
 			do {
-				string dimIdx = IndexStr(refList);
+				string dimIdx = loopInfo.IndexStr();
+
 				if (mod.m_threads.m_htIdW.AsInt() > 0) {
-					gblRegWrComp.Append("\tr_%sTo%s_iwCompData%s = !%s && c_%sTo%s_iwCompData%s;\n",
+					gblRegWrComp.Append("%sr_%sTo%s_iwCompData%s = !%s && c_%sTo%s_iwCompData%s;\n", tabs.c_str(),
 						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
 						compReset.c_str(),
 						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
 				} else {
-					gblRegWrComp.Append("\tr_%sTo%s_iwCompData%s = i_%sTo%s_iwCompData%s;\n",
+					gblRegWrComp.Append("%sr_%sTo%s_iwCompData%s = i_%sTo%s_iwCompData%s;\n", tabs.c_str(),
 						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
 						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
 				}
-			} while (DimenIter(pGv->m_dimenList, refList));
+
+			} while (loopInfo.Iter());
 		}
 
 		if (pGv->m_bWriteForInstrWrite && mod.m_threads.m_htIdW.AsInt() > 0) {
@@ -2206,53 +2521,75 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 			GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, "bool",
 				VA("r_%sTo%s_iwCompInit", pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str()), pGv->m_dimenList);
 
-			vector<int> refList(pGv->m_dimenList.size());
+			string tabs = "\t";
+			CLoopInfo loopInfo(gblRegWrComp, tabs, pGv->m_dimenList, 1);
 			do {
-				string dimIdx = IndexStr(refList);
-				gblRegWrComp.Append("\tr_%sTo%s_iwCompInit%s = %s || c_%sTo%s_iwCompInit%s;\n",
+				string dimIdx = loopInfo.IndexStr();
+
+				gblRegWrComp.Append("%sr_%sTo%s_iwCompInit%s = %s || c_%sTo%s_iwCompInit%s;\n", tabs.c_str(),
 					pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
 					compReset.c_str(),
 					pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
-			} while (DimenIter(pGv->m_dimenList, refList));
+
+			} while (loopInfo.Iter());
 		}
 
 		if (pGv->m_bWriteForInstrWrite) {
 
 			int gvWrStg = mod.m_tsStg + pGv->m_wrStg.AsInt();
-			vector<int> refList(pGv->m_dimenList.size());
-			do {
-				string dimIdx = IndexStr(refList);
-				if (mod.m_threads.m_htIdW.AsInt() == 0) {
-					gblPostInstr.Append("\tc_t%d_%sIwComp%s = r_%sIwComp%s;\n",
-						gvWrStg - 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
-						pGv->m_gblName.c_str(), dimIdx.c_str());
-				}
-				else {
-					gblPostInstr.Append("\tm_%sIwComp%s[0].read_addr(r_t%d_htId);\n",
-						pGv->m_gblName.c_str(), dimIdx.c_str(), gvWrStg - 1);
-					gblPostInstr.Append("\tc_t%d_%sIwComp%s = m_%sIwComp%s[0].read_mem();\n",
-						gvWrStg - 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
-						pGv->m_gblName.c_str(), dimIdx.c_str());
-				}
-			} while (DimenIter(pGv->m_dimenList, refList));
 
-			for (; gvWrStg <= mod.m_gvIwCompStg; gvWrStg += 1) {
+			string tabs = "\t";
+			CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, mod.m_threads.m_htIdW.AsInt() == 0 ? 1 : 2);
+			do {
+				string dimIdx = loopInfo.IndexStr();
+
+				if (mod.m_threads.m_htIdW.AsInt() == 0) {
+					gblPostInstr.Append("%sc_t%d_%sIwComp%s = r_%sIwComp%s;\n", tabs.c_str(),
+						gvWrStg - 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
+						pGv->m_gblName.c_str(), dimIdx.c_str());
+				} else {
+					gblPostInstr.Append("%sm_%sIwComp%s[0].read_addr(r_t%d_htId);\n", tabs.c_str(),
+						pGv->m_gblName.c_str(), dimIdx.c_str(), gvWrStg - 1);
+					gblPostInstr.Append("%sc_t%d_%sIwComp%s = m_%sIwComp%s[0].read_mem();\n", tabs.c_str(),
+						gvWrStg - 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
+						pGv->m_gblName.c_str(), dimIdx.c_str());
+				}
+
+			} while (loopInfo.Iter());
+
+			for (gvWrStg = mod.m_tsStg + pGv->m_wrStg.AsInt(); gvWrStg <= mod.m_gvIwCompStg; gvWrStg += 1) {
 				m_gblRegDecl.Append("\tbool c_t%d_%sIwComp%s;\n",
 					gvWrStg - 1, pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
 				GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, "bool",
 					VA("r_t%d_%sIwComp", gvWrStg, pGv->m_gblName.c_str()), pGv->m_dimenList);
-				vector<int> refList(pGv->m_dimenList.size());
+			}
+
+			if (mod.m_tsStg + pGv->m_wrStg.AsInt() <= mod.m_gvIwCompStg) {
+				string tabs = "\t";
+				CLoopInfo loopInfo(gblReg, tabs, pGv->m_dimenList, mod.m_tsStg + pGv->m_wrStg.AsInt() == mod.m_gvIwCompStg ? 1 : 2);
 				do {
-					string dimIdx = IndexStr(refList);
-					if (gvWrStg > mod.m_tsStg + pGv->m_wrStg.AsInt()) {
-						gblPostInstr.Append("\tc_t%d_%sIwComp%s = r_t%d_%sIwComp%s;\n",
+					string dimIdx = loopInfo.IndexStr();
+
+					for (gvWrStg = mod.m_tsStg + pGv->m_wrStg.AsInt(); gvWrStg <= mod.m_gvIwCompStg; gvWrStg += 1) {
+						gblReg.Append("%sr_t%d_%sIwComp%s = c_t%d_%sIwComp%s;\n", tabs.c_str(),
+							gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
+							gvWrStg - 1, pGv->m_gblName.c_str(), dimIdx.c_str());
+					}
+				} while (loopInfo.Iter());
+			}
+
+			if (mod.m_tsStg + pGv->m_wrStg.AsInt() + 1 <= mod.m_gvIwCompStg) {
+				string tabs = "\t";
+				CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, mod.m_tsStg + pGv->m_wrStg.AsInt() + 1 == mod.m_gvIwCompStg ? 1 : 2);
+				do {
+					string dimIdx = loopInfo.IndexStr();
+
+					for (gvWrStg = mod.m_tsStg + pGv->m_wrStg.AsInt() + 1; gvWrStg <= mod.m_gvIwCompStg; gvWrStg += 1) {
+						gblPostInstr.Append("%sc_t%d_%sIwComp%s = r_t%d_%sIwComp%s;\n", tabs.c_str(),
 							gvWrStg - 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
 							gvWrStg - 1, pGv->m_gblName.c_str(), dimIdx.c_str());
 					}
-					gblReg.Append("\tr_t%d_%sIwComp%s = c_t%d_%sIwComp%s;\n",
-						gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
-						gvWrStg - 1, pGv->m_gblName.c_str(), dimIdx.c_str());
-				} while (DimenIter(pGv->m_dimenList, refList));
+				} while (loopInfo.Iter());
 			}
 		}
 
@@ -2261,13 +2598,17 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 				pGv->m_type.c_str(), mod.m_tsStg - 1, pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
 			GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, VA("%s ht_noload", pGv->m_type.c_str()),
 				VA("r_t%d_%sIfData", mod.m_tsStg, pGv->m_gblName.c_str()), pGv->m_dimenList);
-			vector<int> refList(pGv->m_dimenList.size());
+
+			string tabs = "\t";
+			CLoopInfo loopInfo(gblReg, tabs, pGv->m_dimenList, 1);
 			do {
-				string dimIdx = IndexStr(refList);
-				gblReg.Append("\tr_t%d_%sIfData%s = c_t%d_%sIfData%s;\n",
+				string dimIdx = loopInfo.IndexStr();
+
+				gblReg.Append("%sr_t%d_%sIfData%s = c_t%d_%sIfData%s;\n", tabs.c_str(),
 					mod.m_tsStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
 					mod.m_tsStg - 1, pGv->m_gblName.c_str(), dimIdx.c_str());
-			} while (DimenIter(pGv->m_dimenList, refList));
+
+			} while (loopInfo.Iter());
 		}
 
 		bool bPrivGblAndNoAddr = pGv->m_bPrivGbl && pGv->m_addrW == mod.m_threads.m_htIdW.AsInt();
@@ -2280,22 +2621,36 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 				GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, VA("%s ht_noload", pGv->m_type.c_str()),
 					VA("r_t%d_%sIrData", mod.m_tsStg + gvRdStg - 1, pGv->m_gblName.c_str()), pGv->m_dimenList);
 			}
-			vector<int> refList(pGv->m_dimenList.size());
-			do {
-				for (int gvRdStg = pGv->m_rdStg.AsInt(); gvRdStg <= lastStg; gvRdStg += 1) {
-					string dimIdx = IndexStr(refList);
 
-					if (gvRdStg > pGv->m_rdStg.AsInt()) {
-						gblPostInstr.Append("\tc_t%d_%sIrData%s = r_t%d_%sIrData%s;\n",
+			if (pGv->m_rdStg.AsInt() <= lastStg) {
+				string tabs = "\t";
+				CLoopInfo loopInfo(gblReg, tabs, pGv->m_dimenList, pGv->m_rdStg.AsInt() == lastStg ? 1 : 2);
+				do {
+					string dimIdx = loopInfo.IndexStr();
+
+					for (int gvRdStg = pGv->m_rdStg.AsInt(); gvRdStg <= lastStg; gvRdStg += 1) {
+
+						gblReg.Append("%sr_t%d_%sIrData%s = c_t%d_%sIrData%s;\n", tabs.c_str(),
+							mod.m_tsStg + gvRdStg - 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
+							mod.m_tsStg + gvRdStg - 2, pGv->m_gblName.c_str(), dimIdx.c_str());
+					}
+				} while (loopInfo.Iter());
+			}
+
+			if (pGv->m_rdStg.AsInt() + 1 <= lastStg) {
+				string tabs = "\t";
+				CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, pGv->m_rdStg.AsInt() + 1 == lastStg ? 1 : 2);
+				do {
+					string dimIdx = loopInfo.IndexStr();
+
+					for (int gvRdStg = pGv->m_rdStg.AsInt() + 1; gvRdStg <= lastStg; gvRdStg += 1) {
+
+						gblPostInstr.Append("%sc_t%d_%sIrData%s = r_t%d_%sIrData%s;\n", tabs.c_str(),
 							mod.m_tsStg + gvRdStg - 2, pGv->m_gblName.c_str(), dimIdx.c_str(),
 							mod.m_tsStg + gvRdStg - 2, pGv->m_gblName.c_str(), dimIdx.c_str());
 					}
-
-					gblReg.Append("\tr_t%d_%sIrData%s = c_t%d_%sIrData%s;\n",
-						mod.m_tsStg + gvRdStg - 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
-						mod.m_tsStg + gvRdStg - 2, pGv->m_gblName.c_str(), dimIdx.c_str());
-				}
-			} while (DimenIter(pGv->m_dimenList, refList));
+				} while (loopInfo.Iter());
+			}
 		}
 
 		if (pGv->m_bWriteForInstrWrite) {
@@ -2309,30 +2664,44 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 			string htIdStr = (mod.m_threads.m_htIdW.AsInt() > 0 &&
 				(pGv->m_bPrivGbl || pGv->m_addr1Name == "htId" || pGv->m_addr2Name == "htId")) ? VA("r_t%d_htId", mod.m_tsStg) : "";
 
-			vector<int> refList(pGv->m_dimenList.size());
-			do {
-				string dimIdx = IndexStr(refList);
+			if (mod.m_tsStg < mod.m_tsStg + pGv->m_wrStg.AsInt()) {
+				string tabs = "\t";
+				CLoopInfo loopInfo(gblPreInstr, tabs, pGv->m_dimenList, mod.m_tsStg + 1 == mod.m_tsStg + pGv->m_wrStg.AsInt() ? 1 : 2);
+				do {
+					string dimIdx = loopInfo.IndexStr();
 
-				for (int gvWrStg = mod.m_tsStg; gvWrStg < mod.m_tsStg + pGv->m_wrStg.AsInt(); gvWrStg += 1) {
-					if (bPrivGblAndNoAddr && gvWrStg == mod.m_tsStg) {
-						gblPreInstr.Append("\tc_t%d_%sIwData%s.InitData(%s, r_t%d_%sIrData%s);\n",
-							gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
-							htIdStr.c_str(),
-							gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str());
-					} else if (!bPrivGblAndNoAddr && gvWrStg == mod.m_tsStg) {
-						gblPreInstr.Append("\tc_t%d_%sIwData%s.InitZero(%s);\n",
-							gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
-							htIdStr.c_str());
-					} else {
-						gblPreInstr.Append("\tc_t%d_%sIwData%s = r_t%d_%sIwData%s;\n",
-							gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
+					for (int gvWrStg = mod.m_tsStg; gvWrStg < mod.m_tsStg + pGv->m_wrStg.AsInt(); gvWrStg += 1) {
+						if (bPrivGblAndNoAddr && gvWrStg == mod.m_tsStg) {
+							gblPreInstr.Append("%sc_t%d_%sIwData%s.InitData(%s, r_t%d_%sIrData%s);\n", tabs.c_str(),
+								gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
+								htIdStr.c_str(),
+								gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str());
+						} else if (!bPrivGblAndNoAddr && gvWrStg == mod.m_tsStg) {
+							gblPreInstr.Append("%sc_t%d_%sIwData%s.InitZero(%s);\n", tabs.c_str(),
+								gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
+								htIdStr.c_str());
+						} else {
+							gblPreInstr.Append("%sc_t%d_%sIwData%s = r_t%d_%sIwData%s;\n", tabs.c_str(),
+								gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
+								gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str());
+						}
+					}
+				} while (loopInfo.Iter());
+			}
+
+			if (mod.m_tsStg < mod.m_tsStg + pGv->m_wrStg.AsInt()) {
+				string tabs = "\t";
+				CLoopInfo loopInfo(gblReg, tabs, pGv->m_dimenList, mod.m_tsStg + 1 == mod.m_tsStg + pGv->m_wrStg.AsInt() ? 1 : 2);
+				do {
+					string dimIdx = loopInfo.IndexStr();
+
+					for (int gvWrStg = mod.m_tsStg; gvWrStg < mod.m_tsStg + pGv->m_wrStg.AsInt(); gvWrStg += 1) {
+						gblReg.Append("%sr_t%d_%sIwData%s = c_t%d_%sIwData%s;\n", tabs.c_str(),
+							gvWrStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
 							gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str());
 					}
-					gblReg.Append("\tr_t%d_%sIwData%s = c_t%d_%sIwData%s;\n",
-						gvWrStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
-						gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str());
-				}
-			} while (DimenIter(pGv->m_dimenList, refList));
+				} while (loopInfo.Iter());
+			}
 		}
 
 		gblPostInstr.NewLine();
@@ -2348,80 +2717,110 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 
 			string htIdStr = (mod.m_threads.m_htIdW.AsInt() > 0 &&
 				(pGv->m_bPrivGbl || pGv->m_addr1Name == "htId" || pGv->m_addr2Name == "htId")) ? VA("r_m%d_rdRspInfo.m_htId", rdRspStg) : "";
-			vector<int> refList(pGv->m_dimenList.size());
-			do {
-				string dimIdx = IndexStr(refList);
-				gblPreInstr.Append("\tc_m%d_%sMwData%s.InitZero(%s);\n",
-					rdRspStg,
-					pGv->m_gblName.c_str(), dimIdx.c_str(),
-					htIdStr.c_str());
-				gblReg.Append("\tr_m%d_%sMwData%s = c_m%d_%sMwData%s;\n",
-					rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
-					rdRspStg, pGv->m_gblName.c_str(), dimIdx.c_str());
-			} while (DimenIter(pGv->m_dimenList, refList));
+
+			{
+				string tabs = "\t";
+				CLoopInfo loopInfo(gblPreInstr, tabs, pGv->m_dimenList, 1);
+				do {
+					string dimIdx = loopInfo.IndexStr();
+
+					gblPreInstr.Append("%sc_m%d_%sMwData%s.InitZero(%s);\n", tabs.c_str(),
+						rdRspStg,
+						pGv->m_gblName.c_str(), dimIdx.c_str(),
+						htIdStr.c_str());
+
+				} while (loopInfo.Iter());
+			}
+
+			{
+				string tabs = "\t";
+				CLoopInfo loopInfo(gblReg, tabs, pGv->m_dimenList, 1);
+				do {
+					string dimIdx = loopInfo.IndexStr();
+
+					gblReg.Append("%sr_m%d_%sMwData%s = c_m%d_%sMwData%s;\n", tabs.c_str(),
+						rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
+						rdRspStg, pGv->m_gblName.c_str(), dimIdx.c_str());
+
+				} while (loopInfo.Iter());
+			}
 		}
 
 		if (pGv->m_bReadForInstrRead && pNgvInfo->m_atomicMask != 0) {
 			if (mod.m_threads.m_htIdW.AsInt() == 0) {
-				vector<int> refList(pGv->m_dimenList.size());
+
+				string tabs = "\t";
+				CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, 1);
 				do {
-					string dimIdx = IndexStr(refList);
-					gblPostInstr.Append("\tc_t%d_%sIfData%s = r_%sIf%s;\n",
+					string dimIdx = loopInfo.IndexStr();
+
+					gblPostInstr.Append("%sc_t%d_%sIfData%s = r_%sIf%s;\n", tabs.c_str(),
 						mod.m_tsStg - 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
 						pGv->m_gblName.c_str(), dimIdx.c_str());
-				} while (DimenIter(pGv->m_dimenList, refList));
+
+				} while (loopInfo.Iter());
+
 			} else {
 				int rdAddrStgNum = pGv->m_ramType == eBlockRam ? (mod.m_tsStg - 2) : (mod.m_tsStg - 1);
 				string rdAddrStg = rdAddrStgNum == 1 ? "c_t1" : VA("r_t%d", rdAddrStgNum);
 
-				vector<int> refList(pGv->m_dimenList.size());
+				string tabs = "\t";
+				CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, 2);
 				do {
-					string dimIdx = IndexStr(refList);
-					gblPostInstr.Append("\tm__GBL__%sIf%s.read_addr(%s_htId);\n",
+					string dimIdx = loopInfo.IndexStr();
+
+					gblPostInstr.Append("%sm__GBL__%sIf%s.read_addr(%s_htId);\n", tabs.c_str(),
 						pGv->m_gblName.c_str(), dimIdx.c_str(),
 						rdAddrStg.c_str());
-					gblPostInstr.Append("\tc_t%d_%sIfData%s = m__GBL__%sIf%s.read_mem();\n",
+					gblPostInstr.Append("%sc_t%d_%sIfData%s = m__GBL__%sIf%s.read_mem();\n", tabs.c_str(),
 						mod.m_tsStg - 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
 						pGv->m_gblName.c_str(), dimIdx.c_str());
-				} while (DimenIter(pGv->m_dimenList, refList));
+
+				} while (loopInfo.Iter());
 			}
 			gblPostInstr.NewLine();
 		}
 
 		if (pGv->m_bReadForInstrRead && pNgvInfo->m_atomicMask != 0) {
-			vector<int> refList(pGv->m_dimenList.size());
+
+			string tabs = "\t";
+			CLoopInfo loopInfo(gblPostInstrWrData, tabs, pGv->m_dimenList, mod.m_threads.m_htIdW.AsInt() == 0 ? 1 : 2);
 			do {
-				string dimIdx = IndexStr(refList);
+				string dimIdx = loopInfo.IndexStr();
+
 				if (mod.m_threads.m_htIdW.AsInt() == 0) {
-					gblPostInstrWrData.Append("\tif (r_%sTo%s_ifWrEn%s)\n",
+					gblPostInstrWrData.Append("%sif (r_%sTo%s_ifWrEn%s)\n", tabs.c_str(),
 						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
-					gblPostInstrWrData.Append("\t\tr_%sIf%s = r_%sTo%s_ifData%s;\n",
+					gblPostInstrWrData.Append("%s\tr_%sIf%s = r_%sTo%s_ifData%s;\n", tabs.c_str(),
 						pGv->m_gblName.c_str(), dimIdx.c_str(),
 						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
 				} else {
-					gblPostInstrWrData.Append("\tm__GBL__%sIf%s.write_addr(r_%sTo%s_ifHtId%s);\n",
+					gblPostInstrWrData.Append("%sm__GBL__%sIf%s.write_addr(r_%sTo%s_ifHtId%s);\n", tabs.c_str(),
 						pGv->m_gblName.c_str(), dimIdx.c_str(),
 						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
-					gblPostInstrWrData.Append("\tif (r_%sTo%s_ifWrEn%s)\n",
+					gblPostInstrWrData.Append("%sif (r_%sTo%s_ifWrEn%s)\n", tabs.c_str(),
 						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
-					gblPostInstrWrData.Append("\t\tm__GBL__%sIf%s.write_mem(r_%sTo%s_ifData%s);\n",
+					gblPostInstrWrData.Append("%s\tm__GBL__%sIf%s.write_mem(r_%sTo%s_ifData%s);\n", tabs.c_str(),
 						pGv->m_gblName.c_str(), dimIdx.c_str(),
 						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
 				}
-				gblPostInstrWrData.NewLine();
-			} while (DimenIter(pGv->m_dimenList, refList));
+			} while (loopInfo.Iter());
 		}
 		gblPostInstrWrData.NewLine();
 
 		if (pGv->m_bReadForInstrRead) {
 			if (pGv->m_addrW == 0) {
-				vector<int> refList(pGv->m_dimenList.size());
+
+				string tabs = "\t";
+				CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList,1);
 				do {
-					string dimIdx = IndexStr(refList);
-					gblPostInstr.Append("\tc_t%d_%sIrData%s = r__GBL__%s%s;\n",
+					string dimIdx = loopInfo.IndexStr();
+
+					gblPostInstr.Append("%sc_t%d_%sIrData%s = r__GBL__%s%s;\n", tabs.c_str(),
 						mod.m_tsStg - 2 + pGv->m_rdStg.AsInt(), pGv->m_gblName.c_str(), dimIdx.c_str(),
 						pGv->m_gblName.c_str(), dimIdx.c_str());
-				} while (DimenIter(pGv->m_dimenList, refList));
+
+				} while (loopInfo.Iter());
 			} else {
 				int rdAddrStgNum = mod.m_tsStg + pGv->m_rdStg.AsInt() - (pGv->m_ramType == eBlockRam ? 3 : 2);
 				string rdAddrStg = (rdAddrStgNum == 1 || pGv->m_ramType == eBlockRam) ? VA("c_t%d", rdAddrStgNum) : VA("r_t%d", rdAddrStgNum);
@@ -2458,11 +2857,12 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 					gblPostInstr.Append(", %s", addr2Name.c_str());
 				gblPostInstr.Append("%s;\n", bNeedParan ? ")" : "");
 
-				vector<int> refList(pGv->m_dimenList.size());
+				string tabs = "\t";
+				CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, 3);
 				do {
-					string dimIdx = IndexStr(refList);
+					string dimIdx = loopInfo.IndexStr();
 
-					gblPostInstr.Append("\tm__GBL__%sIr%s.read_addr(c_t%d_%sRdAddr);\n",
+					gblPostInstr.Append("%sm__GBL__%sIr%s.read_addr(c_t%d_%sRdAddr);\n", tabs.c_str(),
 						pGv->m_gblName.c_str(), dimIdx.c_str(),
 						rdAddrStgNum, pGv->m_gblName.Lc().c_str());
 
@@ -2470,29 +2870,29 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 					bool bNgvDist = !bNgvReg && pGv->m_ramType != eBlockRam;
 
 					if (bNgvDist) {
-						gblPostInstr.Append("\tc_t%d_%sIrData%s = m__GBL__%sIr%s.read_mem();\n",
+						gblPostInstr.Append("%sc_t%d_%sIrData%s = m__GBL__%sIr%s.read_mem();\n", tabs.c_str(),
 							rdAddrStgNum, pGv->m_gblName.c_str(), dimIdx.c_str(),
 							pGv->m_gblName.c_str(), dimIdx.c_str());
 					} else {
 
-						gblPostInstr.Append("\tif (r_g1_%sTo%s_wrEn%s && r_g1_%sTo%s_wrAddr%s == r_t%d_%sRdAddr)\n",
+						gblPostInstr.Append("%sif (r_g1_%sTo%s_wrEn%s && r_g1_%sTo%s_wrAddr%s == r_t%d_%sRdAddr)\n", tabs.c_str(),
 							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
 							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
 							rdAddrStgNum + 1, pGv->m_gblName.Lc().c_str());
 
-						gblPostInstr.Append("\t\tc_t%d_%sIrData%s = r_g1_%sTo%s_wrData%s;\n",
+						gblPostInstr.Append("%s\tc_t%d_%sIrData%s = r_g1_%sTo%s_wrData%s;\n", tabs.c_str(),
 							rdAddrStgNum + 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
 							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
 
-						gblPostInstr.Append("\telse\n");
+						gblPostInstr.Append("%selse\n", tabs.c_str());
 
-						gblPostInstr.Append("\t\tc_t%d_%sIrData%s = m__GBL__%sIr%s.read_mem();\n",
+						gblPostInstr.Append("%s\tc_t%d_%sIrData%s = m__GBL__%sIr%s.read_mem();\n", tabs.c_str(),
 							rdAddrStgNum + 1, pGv->m_gblName.c_str(), dimIdx.c_str(),
 							pGv->m_gblName.c_str(), dimIdx.c_str());
 					}
 					gblPostInstr.NewLine();
 
-				} while (DimenIter(pGv->m_dimenList, refList));
+				} while (loopInfo.Iter());
 			}
 		}
 
@@ -2505,72 +2905,84 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 					gblPostInstrWrComp.Append("\tbool c_%sIwComp%s;\n", pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
 			}
 
-			vector<int> refList(pGv->m_dimenList.size());
-			do {
-				string dimIdx = IndexStr(refList);
-				if (mod.m_threads.m_htIdW.AsInt() == 0) {
-					gblPostInstrWrComp.Append("\t%sc_%sIwComp%s = r_%sTo%s_iwCompRdy%s ? !r_%sTo%s_iwCompData%s : r_%sIwComp%s;\n",
-						typeStr.c_str(),
-						pGv->m_gblName.c_str(), dimIdx.c_str(),
-						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
-						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
-						pGv->m_gblName.c_str(), dimIdx.c_str());
+			{
+				string tabs = "\t";
+				CLoopInfo loopInfo(gblPostInstrWrComp, tabs, pGv->m_dimenList, mod.m_threads.m_htIdW.AsInt() == 0 ? 1 : 3);
+				do {
+					string dimIdx = loopInfo.IndexStr();
 
-					gblRegWrComp.Append("\tr_%sIwComp%s = !r_reset1x && c_%sIwComp%s;\n",
-						pGv->m_gblName.c_str(), dimIdx.c_str(),
-						pGv->m_gblName.c_str(), dimIdx.c_str());
-				} else {
-					gblPostInstrWrComp.Append("\tm_%sIwComp%s[0].write_addr(r_%sTo%s_iwCompHtId%s);\n",
-						pGv->m_gblName.c_str(), dimIdx.c_str(),
-						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
-					gblPostInstrWrComp.Append("\tm_%sIwComp%s[1].write_addr(r_%sTo%s_iwCompHtId%s);\n",
-						pGv->m_gblName.c_str(), dimIdx.c_str(),
-						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
-					gblPostInstrWrComp.Append("\tif (r_%sTo%s_iwCompRdy%s) {\n",
-						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
-					gblPostInstrWrComp.Append("\t\tm_%sIwComp%s[0].write_mem(!r_%sTo%s_iwCompData%s);\n",
-						pGv->m_gblName.c_str(), dimIdx.c_str(),
-						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
-					gblPostInstrWrComp.Append("\t\tm_%sIwComp%s[1].write_mem(!r_%sTo%s_iwCompData%s);\n",
-						pGv->m_gblName.c_str(), dimIdx.c_str(),
-						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
-					gblPostInstrWrComp.Append("\t}\n");
+					if (mod.m_threads.m_htIdW.AsInt() == 0) {
+						gblPostInstrWrComp.Append("%s%sc_%sIwComp%s = r_%sTo%s_iwCompRdy%s ? !r_%sTo%s_iwCompData%s : r_%sIwComp%s;\n", tabs.c_str(),
+							typeStr.c_str(),
+							pGv->m_gblName.c_str(), dimIdx.c_str(),
+							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
+							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
+							pGv->m_gblName.c_str(), dimIdx.c_str());
+
+					} else {
+						gblPostInstrWrComp.Append("%sm_%sIwComp%s[0].write_addr(r_%sTo%s_iwCompHtId%s);\n", tabs.c_str(),
+							pGv->m_gblName.c_str(), dimIdx.c_str(),
+							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+						gblPostInstrWrComp.Append("%sm_%sIwComp%s[1].write_addr(r_%sTo%s_iwCompHtId%s);\n", tabs.c_str(),
+							pGv->m_gblName.c_str(), dimIdx.c_str(),
+							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+						gblPostInstrWrComp.Append("%sif (r_%sTo%s_iwCompRdy%s) {\n", tabs.c_str(),
+							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+						gblPostInstrWrComp.Append("%s\tm_%sIwComp%s[0].write_mem(!r_%sTo%s_iwCompData%s);\n", tabs.c_str(),
+							pGv->m_gblName.c_str(), dimIdx.c_str(),
+							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+						gblPostInstrWrComp.Append("%s\tm_%sIwComp%s[1].write_mem(!r_%sTo%s_iwCompData%s);\n", tabs.c_str(),
+							pGv->m_gblName.c_str(), dimIdx.c_str(),
+							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+						gblPostInstrWrComp.Append("%s}\n", tabs.c_str());
+						gblPostInstrWrComp.NewLine();
+
+						gblPostInstrWrComp.Append("%sif (r_%sTo%s_iwCompInit%s) {\n", tabs.c_str(),
+							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+						gblPostInstrWrComp.Append("%s\tc_%sTo%s_iwCompRdy%s = true;\n", tabs.c_str(),
+							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+						gblPostInstrWrComp.Append("%s\tc_%sTo%s_iwCompHtId%s = r_%sTo%s_iwCompHtId%s + 1u;\n", tabs.c_str(),
+							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
+							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+						gblPostInstrWrComp.Append("%s\tc_%sTo%s_iwCompData%s = false;\n", tabs.c_str(),
+							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+						gblPostInstrWrComp.Append("%s\tc_%sTo%s_iwCompInit%s = r_%sTo%s_iwCompHtId%s != 0x%x;\n", tabs.c_str(),
+							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
+							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
+							(1 << mod.m_threads.m_htIdW.AsInt()) - 2);
+
+						gblPostInstrWrComp.Append("%s} else {\n", tabs.c_str());
+
+						gblPostInstrWrComp.Append("%s\tc_%sTo%s_iwCompRdy%s = i_%sTo%s_iwCompRdy%s;\n", tabs.c_str(),
+							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
+							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+						gblPostInstrWrComp.Append("%s\tc_%sTo%s_iwCompHtId%s = i_%sTo%s_iwCompHtId%s;\n", tabs.c_str(),
+							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
+							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+						gblPostInstrWrComp.Append("%s\tc_%sTo%s_iwCompData%s = i_%sTo%s_iwCompData%s;\n", tabs.c_str(),
+							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
+							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+						gblPostInstrWrComp.Append("%s\tc_%sTo%s_iwCompInit%s = false;\n", tabs.c_str(),
+							pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
+
+						gblPostInstrWrComp.Append("%s}\n", tabs.c_str());
+					}
 					gblPostInstrWrComp.NewLine();
+				} while (loopInfo.Iter());
+			}
 
-					gblPostInstrWrComp.Append("\tif (r_%sTo%s_iwCompInit%s) {\n",
-						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
-					gblPostInstrWrComp.Append("\t\tc_%sTo%s_iwCompRdy%s = true;\n",
-						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
-					gblPostInstrWrComp.Append("\t\tc_%sTo%s_iwCompHtId%s = r_%sTo%s_iwCompHtId%s + 1u;\n",
-						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
-						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
-					gblPostInstrWrComp.Append("\t\tc_%sTo%s_iwCompData%s = false;\n",
-						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
-					gblPostInstrWrComp.Append("\t\tc_%sTo%s_iwCompInit%s = r_%sTo%s_iwCompHtId%s != 0x%x;\n",
-						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
-						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
-						(1 << mod.m_threads.m_htIdW.AsInt()) - 2);
+			if (mod.m_threads.m_htIdW.AsInt() == 0) {
+				string tabs = "\t";
+				CLoopInfo loopInfo(gblRegWrComp, tabs, pGv->m_dimenList, 1);
+				do {
+					string dimIdx = loopInfo.IndexStr();
 
-					gblPostInstrWrComp.Append("\t} else {\n");
+					gblRegWrComp.Append("%sr_%sIwComp%s = !r_reset1x && c_%sIwComp%s;\n", tabs.c_str(),
+						pGv->m_gblName.c_str(), dimIdx.c_str(),
+						pGv->m_gblName.c_str(), dimIdx.c_str());
 
-					gblPostInstrWrComp.Append("\t\tc_%sTo%s_iwCompRdy%s = i_%sTo%s_iwCompRdy%s;\n",
-						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
-						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
-					gblPostInstrWrComp.Append("\t\tc_%sTo%s_iwCompHtId%s = i_%sTo%s_iwCompHtId%s;\n",
-						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
-						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
-					gblPostInstrWrComp.Append("\t\tc_%sTo%s_iwCompData%s = i_%sTo%s_iwCompData%s;\n",
-						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str(),
-						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
-					gblPostInstrWrComp.Append("\t\tc_%sTo%s_iwCompInit%s = false;\n",
-						pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), dimIdx.c_str());
-
-					gblPostInstrWrComp.Append("\t}\n");
-				}
-				gblPostInstrWrComp.NewLine();
-			} while (DimenIter(pGv->m_dimenList, refList));
-
-			gblRegWrComp.NewLine();
+				} while (loopInfo.Iter());
+			}
 		}
 
 		int gvWrStg = mod.m_tsStg + pGv->m_wrStg.AsInt();
@@ -2583,10 +2995,14 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 				gblPostInstr.Append("\tbool c_t%d_%sTo%s_iwWrEn%s;\n", 
 					gvWrStg, mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), pGv->m_dimenDecl.c_str());
 			}
-			vector<int> refList(pGv->m_dimenList.size());
+
+			string tabs = "\t";
+			CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, 1);
 			do {
-				string dimIdx = IndexStr(refList);
-				gblPostInstr.Append("\t%sc_t%d_%sTo%s_iwWrEn%s = ", typeStr.c_str(),
+				string dimIdx = loopInfo.IndexStr();
+
+				gblPostInstr.Append("%s%sc_t%d_%sTo%s_iwWrEn%s = ", tabs.c_str(),
+					typeStr.c_str(),
 					gvWrStg, mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), dimIdx.c_str());
 
 				string separator;
@@ -2597,36 +3013,43 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 						separator.c_str(), gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
 						iter.GetHeirFieldName().c_str());
 
-					separator = " ||\n\t\t";
+					separator = VA(" ||\n%s\t", tabs.c_str());
 
 					if (pGv->m_pType->m_eType != eRecord) continue;
 
-					if (iter->m_atomicMask & ATOMIC_INC)
+					if (iter->m_atomicMask & ATOMIC_INC) {
 						gblPostInstr.Append(" || r_t%d_%sIwData%s%s.GetIncEn()",
-						gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
-						iter.GetHeirFieldName().c_str());
-
-					if (iter->m_atomicMask & ATOMIC_SET)
+							gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
+							iter.GetHeirFieldName().c_str());
+					}
+					if (iter->m_atomicMask & ATOMIC_SET) {
 						gblPostInstr.Append(" || r_t%d_%sIwData%s%s.GetSetEn()",
-						gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
-						iter.GetHeirFieldName().c_str());
-
-					if (iter->m_atomicMask & ATOMIC_ADD)
+							gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
+							iter.GetHeirFieldName().c_str());
+					}
+					if (iter->m_atomicMask & ATOMIC_ADD) {
 						gblPostInstr.Append(" || r_t%d_%sIwData%s%s.GetAddEn()",
-						gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
-						iter.GetHeirFieldName().c_str());
+							gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
+							iter.GetHeirFieldName().c_str());
+					}
 				}
 
 				gblPostInstr.Append(";\n");
+			} while (loopInfo.Iter());
 
-				if (pGv->m_addr1W.size() > 0 && pGv->m_addr1Name != "htId" || pGv->m_addr2W.size() > 0 && pGv->m_addr2Name != "htId") {
-					gblPostInstr.Append("\tassert_msg(!c_t%d_%sTo%s_iwWrEn%s || r_t%d_%sIwData%s.IsAddrSet(),\n",
+			if (pGv->m_addr1W.size() > 0 && pGv->m_addr1Name != "htId" || pGv->m_addr2W.size() > 0 && pGv->m_addr2Name != "htId") {
+				string tabs = "\t";
+				CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, 1);
+				do {
+					string dimIdx = loopInfo.IndexStr();
+
+					gblPostInstr.Append("%sassert_msg(!c_t%d_%sTo%s_iwWrEn%s || r_t%d_%sIwData%s.IsAddrSet(),\n", tabs.c_str(),
 						gvWrStg, mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), dimIdx.c_str(),
 						gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str());
-					gblPostInstr.Append("\t\t\"%s variable %cW_%s%s was written but address was not set, use method .write_addr()\");\n",
+					gblPostInstr.Append("%s\t\"%s variable %cW_%s%s was written but address was not set, use method .write_addr()\");\n", tabs.c_str(),
 						pGv->m_bPrivGbl ? "private" : "global", pGv->m_bPrivGbl ? 'P' : 'G', pGv->m_gblName.Lc().c_str(), dimIdx.c_str());
-				}
-			} while (DimenIter(pGv->m_dimenList, refList));
+				} while (loopInfo.Iter());
+			}
 
 			for (int gvIwStg = gvWrStg + 1; gvIwStg <= mod.m_gvIwCompStg; gvIwStg += 1) {
 				if (pGv->m_dimenList.size() > 0) {
@@ -2634,16 +3057,33 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 						gvIwStg, mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), pGv->m_dimenDecl.c_str());
 				}
 				GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, "bool", VA("r_t%d_%sTo%s_iwWrEn", gvIwStg, mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str()), pGv->m_dimenList);
-				vector<int> refList(pGv->m_dimenList.size());
-				do {
-					string dimIdx = IndexStr(refList);
-					gblPostInstr.Append("\t%sc_t%d_%sTo%s_iwWrEn%s = r_t%d_%sTo%s_iwWrEn%s;\n", typeStr.c_str(),
-						gvIwStg, mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), dimIdx.c_str(),
-						gvIwStg, mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), dimIdx.c_str());
-					gblReg.Append("\tr_t%d_%sTo%s_iwWrEn%s = c_t%d_%sTo%s_iwWrEn%s;\n",
-						gvIwStg, mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), dimIdx.c_str(),
-						gvIwStg - 1, mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), dimIdx.c_str());
-				} while (DimenIter(pGv->m_dimenList, refList));
+
+				{
+					string tabs = "\t";
+					CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, 1);
+					do {
+						string dimIdx = loopInfo.IndexStr();
+
+						gblPostInstr.Append("%s%sc_t%d_%sTo%s_iwWrEn%s = r_t%d_%sTo%s_iwWrEn%s;\n", tabs.c_str(),
+							typeStr.c_str(),
+							gvIwStg, mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), dimIdx.c_str(),
+							gvIwStg, mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), dimIdx.c_str());
+
+					} while (loopInfo.Iter());
+				}
+
+				{
+					string tabs = "\t";
+					CLoopInfo loopInfo(gblReg, tabs, pGv->m_dimenList, 1);
+					do {
+						string dimIdx = loopInfo.IndexStr();
+
+						gblReg.Append("%sr_t%d_%sTo%s_iwWrEn%s = c_t%d_%sTo%s_iwWrEn%s;\n", tabs.c_str(),
+							gvIwStg, mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), dimIdx.c_str(),
+							gvIwStg - 1, mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), dimIdx.c_str());
+
+					} while (loopInfo.Iter());
+				}
 			}
 			gblPostInstr.NewLine();
 		}
@@ -2688,12 +3128,15 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 				GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, "bool",
 					VA("r_c2_%sIwComp", pGv->m_gblName.c_str()), pGv->m_dimenList);
 
-				vector<int> refList(pGv->m_dimenList.size());
+				string tabs = "\t";
+				CLoopInfo loopInfo(gblReg, tabs, pGv->m_dimenList, 1);
 				do {
-					string dimIdx = IndexStr(refList);
-					gblReg.Append("\tr_c2_%sIwComp%s = c_c1_%sIwComp%s;\n",
+					string dimIdx = loopInfo.IndexStr();
+
+					gblReg.Append("%sr_c2_%sIwComp%s = c_c1_%sIwComp%s;\n", tabs.c_str(),
 						pGv->m_gblName.c_str(), dimIdx.c_str(), pGv->m_gblName.c_str(), dimIdx.c_str());
-				} while (DimenIter(pGv->m_dimenList, refList));
+
+				} while (loopInfo.Iter());
 			}
 		}
 
@@ -2747,15 +3190,19 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 			if (pNgvInfo->m_bOgv) continue;
 
 			if (pGv->m_bWriteForInstrWrite) {
-				vector<int> refList(pGv->m_dimenList.size());
+
+				string tabs = "\t\t";
+				CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, 1);
 				do {
-					string dimIdx = IndexStr(refList);
-					gblPostInstr.Append("\t\thtComp.m_%sIwComp%s = c_t%d_%sTo%s_iwWrEn%s ? !r_t%d_%sIwComp%s : r_t%d_%sIwComp%s;\n",
+					string dimIdx = loopInfo.IndexStr();
+
+					gblPostInstr.Append("%shtComp.m_%sIwComp%s = c_t%d_%sTo%s_iwWrEn%s ? !r_t%d_%sIwComp%s : r_t%d_%sIwComp%s;\n", tabs.c_str(),
 						pGv->m_gblName.c_str(), dimIdx.c_str(),
 						mod.m_gvIwCompStg, mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), dimIdx.c_str(),
 						mod.m_gvIwCompStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
 						mod.m_gvIwCompStg, pGv->m_gblName.c_str(), dimIdx.c_str());
-				} while (DimenIter(pGv->m_dimenList, refList));
+
+				} while (loopInfo.Iter());
 			}
 		}
 
@@ -2800,20 +3247,24 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 			if (pNgvInfo->m_bOgv) continue;
 
 			if (pGv->m_bWriteForInstrWrite) {
-				vector<int> refList(pGv->m_dimenList.size());
-				do {
-					string dimIdx = IndexStr(refList);
-					if (mod.m_threads.m_htIdW.AsInt() > 0) {
-						gblPostInstr.Append("\tm_%sIwComp%s[1].read_addr(r_c1_htCompQueFront.m_htId);\n",
+				if (mod.m_threads.m_htIdW.AsInt() > 0) {
+
+					string tabs = "\t";
+					CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, 2);
+					do {
+						string dimIdx = loopInfo.IndexStr();
+
+
+						gblPostInstr.Append("%sm_%sIwComp%s[1].read_addr(r_c1_htCompQueFront.m_htId);\n", tabs.c_str(),
 							pGv->m_gblName.c_str(), dimIdx.c_str());
-						gblPostInstr.Append("\tc_c1_%sIwComp%s = m_%sIwComp%s[1].read_mem();\n",
+						gblPostInstr.Append("%sc_c1_%sIwComp%s = m_%sIwComp%s[1].read_mem();\n", tabs.c_str(),
 							pGv->m_gblName.c_str(), dimIdx.c_str(),
 							pGv->m_gblName.c_str(), dimIdx.c_str());
-					}
-				} while (DimenIter(pGv->m_dimenList, refList));
+
+					} while (loopInfo.Iter());
+				}
 			}
 		}
-		gblPostInstr.Append("\n");
 
 		string c2StgStr = mod.m_threads.m_htIdW.AsInt() == 0 ? "" : "c2_";
 
@@ -6017,7 +6468,7 @@ void CDsnInfo::GenerateNgvFiles()
 					VA("r_%s", pGv->m_gblName.c_str()), pGv->m_dimenList);
 
 				string tabs = "\t";
-				CLoopInfo loopInfo(ngvRegWrData, tabs, pGv->m_dimenList, 1);
+				CLoopInfo loopInfo(ngvRegWrData, tabs, pGv->m_dimenList, 2);
 				do {
 					string dimIdx = loopInfo.IndexStr();
 
