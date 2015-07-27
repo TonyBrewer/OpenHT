@@ -42,6 +42,8 @@ public:
 	bool GetLineBuffering() { return m_bLineBuffering; }
 	void FlushLineBuffer();
 
+	void SetInTask(bool bInTask) { m_bInTask = bInTask; }
+
 	void VarInitOpen() {
 		m_varInitListIdx = m_lineListIdx;
 		m_varInitLineIdx = m_lineList[m_lineListIdx].size();
@@ -62,11 +64,18 @@ public:
 	}
 
 	void SetVarDeclLines(bool bVarDeclLines) {
-		SetLineBuffering(!bVarDeclLines);
+		SetLineBuffering(m_bInTask || !bVarDeclLines);
 		if (bVarDeclLines) {
 			m_preVarDeclLevel = GetIndentLevel();
-			SetIndentLevel(1);
+			if (m_bInTask) {
+				SetLineBuffer(2);
+				SetIndentLevel(3);
+			} else {
+				SetIndentLevel(1);
+			}
 		} else {
+			if (m_bInTask)
+				SetLineBuffer(0);
 			SetIndentLevel(m_preVarDeclLevel);
 		}
 	}
@@ -89,8 +98,9 @@ private:
 	bool			m_bLineBuffering;
 	string			m_lineBuffer;
 	int				m_lineListIdx;
-	vector<string>	m_lineList[2];
+	vector<string>	m_lineList[3];
 
+	bool m_bInTask;
 	bool m_bVarInit;
 	string m_varInitBuffer;
 	vector<string> m_varInitLineList;

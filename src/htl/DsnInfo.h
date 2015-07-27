@@ -652,6 +652,7 @@ struct CSpanningField {
 		m_bForced = false;
 		m_bSpanning = false;
 		m_bDupRange = false;
+		m_bMrField = false;
 	}
 
 public:
@@ -666,6 +667,7 @@ public:
 	bool m_bIgnore;
 	bool m_bSpanning;
 	bool m_bDupRange;
+	bool m_bMrField;
 };
 
 struct CNgvInfo {
@@ -1146,7 +1148,8 @@ public:
 	bool		m_bNeedRdRspInfoRam;
 	bool		m_bRdRspCallBack;
 
-	vector<CMifRdDst>		m_rdDstList;
+	vector<int>			m_rdRspIdxWList;
+	vector<CMifRdDst>	m_rdDstList;
 };
 
 struct CMifWrSrc {
@@ -1292,7 +1295,7 @@ public:
 	CMifRd	m_mifRd;
 	CMifWr	m_mifWr;
 
-	vector<int> m_vIdxWList;
+	vector<int> m_memReqIdxWList;
 };
 
 class COutHostMsg {
@@ -2254,7 +2257,8 @@ public:
 	void GenModNgvStatements(CModule &mod);
 	void GenModOptNgvStatements(CModule * mod, CRam * pGv);
 
-	void FindSpanningWriteFields(CNgvInfo * pNgvInfo, bool bUserEnabled);
+	void FindSpanningWriteFields(CNgvInfo * pNgvInfo);
+	void FindMemoryReadSpanningFields(CNgvInfo * pNgvInfo);
 
 	void GenAeNextMsgIntf(HtiFile::CMsgIntfConn * pMicAeNext);
 	void GenAePrevMsgIntf(HtiFile::CMsgIntfConn * pMicAePrev);
@@ -2518,7 +2522,7 @@ private:
 
 // Code genertion loop / unroll routines
 struct CLoopInfo {
-	CLoopInfo(CHtCode &htCode, string &tabs, vector<CHtString> & dimenList, int stmtCnt = 1);
+	CLoopInfo(CHtCode &htCode, string &tabs, vector<CHtString> & dimenList, int stmtCnt = 1, int initIdx = 0);
 	string IndexStr(int startPos = -1, int endPos = -1, bool bParamStr = false);
 	bool Iter(bool bNewLine = true);
 	void LoopEnd(bool bNewLine);
@@ -2529,4 +2533,5 @@ struct CLoopInfo {
 	int m_stmtCnt;
 	vector<int> m_refList;
 	vector<bool> m_unrollList;
+	int m_preDimCnt;
 };

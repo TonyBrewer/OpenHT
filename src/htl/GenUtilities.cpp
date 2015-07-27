@@ -1527,9 +1527,9 @@ void CDsnInfo::GenIndexLoops(CHtCode &htCode, string &tabs, vector<CHtString> & 
 }
 
 // Code genertion loop / unroll routines
-CLoopInfo::CLoopInfo(CHtCode &htCode, string &tabs, vector<CHtString> & dimenList, int stmtCnt)
+CLoopInfo::CLoopInfo(CHtCode &htCode, string &tabs, vector<CHtString> & dimenList, int stmtCnt, int preDimCnt)
 	: m_htCode(htCode), m_tabs(tabs), m_dimenList(dimenList),
-	m_stmtCnt(stmtCnt), m_refList(dimenList.size()), m_unrollList(dimenList.size())
+	m_stmtCnt(stmtCnt), m_refList(dimenList.size()), m_unrollList(dimenList.size()), m_preDimCnt(preDimCnt)
 {
 	for (size_t i = 0; i < m_dimenList.size(); i += 1) {
 		m_unrollList[i] = false;// stmtCnt <= 3;
@@ -1537,8 +1537,9 @@ CLoopInfo::CLoopInfo(CHtCode &htCode, string &tabs, vector<CHtString> & dimenLis
 			stmtCnt *= m_dimenList[i].AsInt();
 
 		if (!m_unrollList[i]) {
+			int dimIdx = preDimCnt + (int)i + 1;
 			htCode.Append("%sfor (int idx%d = 0; idx%d < %d; idx%d += 1)%s\n",
-				m_tabs.c_str(), (int)i + 1, (int)i + 1, m_dimenList[i].AsInt(), (int)i + 1, stmtCnt > 1 ? " {" : "");
+				m_tabs.c_str(), dimIdx, dimIdx, m_dimenList[i].AsInt(), dimIdx, stmtCnt > 1 ? " {" : "");
 			tabs += "\t";
 		}
 	}
@@ -1562,7 +1563,7 @@ string CLoopInfo::IndexStr(int startPos, int endPos, bool bParamStr)
 			if (m_unrollList[i])
 				sprintf(buf, "[%d]", m_refList[i]);
 			else
-				sprintf(buf, "[idx%d]", i + 1);
+				sprintf(buf, "[idx%d]", m_preDimCnt + i + 1);
 		}
 		index += buf;
 	}

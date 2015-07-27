@@ -1146,7 +1146,7 @@ public:
 		return IsFunction() && GetPrevHier() && GetPrevHier()->IsStruct();
 	}
 	bool IsInlinedCall() {
-		return true || GetGlobalRefSet().size() > 0 || IsMemberFunc();
+		return GetGlobalRefSet().size() > 0 || IsMemberFunc();
 	}
 
 	CHtfeIdent * GetNextOverloadedFunc() { return 0; }
