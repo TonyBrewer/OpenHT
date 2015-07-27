@@ -39,6 +39,7 @@ CHtFile::CHtFile()
   m_bLineBuffering = false;
   m_lineListIdx = 0;
   m_bVarInit = false;
+  m_bInTask = false;
 }
 
 bool
@@ -236,6 +237,15 @@ void CHtFile::FlushLineBuffer()
 
 void CHtFile::VarInitClose()
 {
+	if (m_bInTask) {
+		// first insert task's temp var declarations
+		m_lineList[m_varInitListIdx].insert(m_lineList[m_varInitListIdx].begin() + m_varInitLineIdx,
+			m_lineList[2].begin(), m_lineList[2].end());
+		m_varInitLineIdx += m_lineList[2].size();
+		m_lineList[2].clear();
+	//	SetLineBuffer(0);
+	}
+
 	m_lineList[m_varInitListIdx].insert(m_lineList[m_varInitListIdx].begin() + m_varInitLineIdx,
 		m_varInitLineList.begin(), m_varInitLineList.end());
 	m_varInitLineList.clear();

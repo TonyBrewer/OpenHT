@@ -3943,13 +3943,15 @@ void CHtvDesign::GenFunction(CHtvIdent *pFunction, CHtvObject * pObj, CHtvObject
     m_vFile.Print("\ntask %s;\n", pFunction->GetName().c_str());
     m_vFile.IncIndentLevel();
 
+	m_vFile.SetInTask(true);
+
     if (pFunction->GetType() != GetVoidType()) {
         // function return
 		string bitRange;
         if (pFunction->GetWidth() > 1)
             bitRange = VA("[%d:0] ", pFunction->GetWidth()-1);
 
-        m_vFile.Print("output %s\\%s$Rtn;\n", bitRange.c_str(), pFunction->GetName().c_str());
+        m_vFile.Print("output %s\\%s$Rtn ;\n", bitRange.c_str(), pFunction->GetName().c_str());
     }
 
     // list parameters
@@ -4023,6 +4025,7 @@ void CHtvDesign::GenFunction(CHtvIdent *pFunction, CHtvObject * pObj, CHtvObject
     m_vFile.IncIndentLevel();
 
 	m_vFile.VarInitOpen();
+
 	m_bInAlwaysAtBlock = true;
 
     // gen input parameter assignments
@@ -4055,7 +4058,9 @@ void CHtvDesign::GenFunction(CHtvIdent *pFunction, CHtvObject * pObj, CHtvObject
 	m_vFile.DecIndentLevel();
     m_vFile.Print("end\n");
 
-    m_vFile.DecIndentLevel();
+	m_vFile.SetInTask(false);
+
+	m_vFile.DecIndentLevel();
     m_vFile.Print("endtask\n");
 }
 
