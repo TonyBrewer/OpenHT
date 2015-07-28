@@ -48,8 +48,8 @@
 
 void CPersBcm::PersBcm()
 {
-	if (PR_htValid) {
-		switch (PR_htInst) {
+	if (PR1_htValid) {
+		switch (PR1_htInst) {
 		// Initial Entry Point from Host Code -> BCM_ENTRY
 		//
 		// Read in Task information
@@ -60,7 +60,7 @@ void CPersBcm::PersBcm()
 				break;
 			}
 
-			ReadMem_task(PR_pBcmTask);
+			ReadMem_task(PR1_pBcmTask);
 
 			ReadMemPause(BCM_TASK_VALID);
 		}
@@ -102,7 +102,7 @@ void CPersBcm::PersBcm()
 						SendHostMsg(BCM_HASHES_COMPLETED, (ht_uint56)S_hashCount);
 						S_hashCount = 0;
 					}
-					SendReturn_bcm(P_pBcmTask);
+					SendReturn_bcm(P1_pBcmTask);
 				}
 			} else {
 				// Results are waiting to be processed
