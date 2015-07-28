@@ -17,10 +17,10 @@ CPersSch::PersSch()
     sch_thr_idx_t wcid = cid2que(nxtCid);
     sch_que_idx_t wadr = S_queWrIdx[wcid];
 
-	m_queDat.write_addr(wcid, wadr);
+	S_queDat.write_addr(wcid, wadr);
 
 	if (!RecvMsgBusy_schPush()) {
-		m_queDat.write_mem(RecvMsg_schPush());
+		S_queDat.write_mem(RecvMsg_schPush());
         S_queWrIdx[wcid] += 1;
 	}
 
@@ -29,7 +29,7 @@ CPersSch::PersSch()
 	//
 
 	sch_que_idx_t radr = S_queRdIdx[PR1_htId];
-	m_queDat.read_addr(PR1_htId, radr);
+	S_queDat.read_addr(PR1_htId, radr);
 
 	T1_bEmpty = SR_queWrIdx[PR1_htId] == SR_queRdIdx[PR1_htId];
 

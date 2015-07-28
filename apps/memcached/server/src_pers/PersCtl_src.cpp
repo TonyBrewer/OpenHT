@@ -17,13 +17,13 @@ CPersCtl::PersCtl()
 		S_blkActCnt -= 1;
     }
     HostBlk2Qw blkInfo;
-    blkInfo.m_qw = m_blkList.front();
+    blkInfo.m_qw = S_blkList.front();
     pkt_cnt_t blkPktCnt = (pkt_cnt_t)blkInfo.m_hb.m_recvBlkPktCnt;
     pkt_offset_t blkPktOffset = (pkt_offset_t)blkInfo.m_hb.m_recvBufBlkIdx;
 
     //m_rdPktHdr.read_addr((pkt_hdr_qw_t)(P_cnt >> 1));
     //uint64_t rdPktHdr = m_rdPktHdr.read_mem();
-    uint64_t rdPktHdr = GR_rdPktHdr_qw();
+    uint64_t rdPktHdr = GR_rdPktHdr;
 	uint16_t pktLen = (P_cnt & 1) ?
 			  (uint16_t)(rdPktHdr >> 48) :
 			  (uint16_t)(rdPktHdr >> 16);
@@ -45,16 +45,16 @@ CPersCtl::PersCtl()
     prefetch_idx_t nextPrefetchBuf;
     tzc64(S_prefetchBufMask, nextPrefetchBuf);
     bool bTakePrefetchBuf = false;
-    m_prefetchIdx.write_addr((pkt_hdr_idx_t)P_cnt);
-    m_prefetchIdx.read_addr((pkt_hdr_idx_t)P_cnt);
+    S_prefetchIdx.write_addr((pkt_hdr_idx_t)P_cnt);
+    S_prefetchIdx.read_addr((pkt_hdr_idx_t)P_cnt);
 
     if (!RecvMsgBusy_schPop()) {
         ht_uint4 idx = RecvMsg_schPop();
         S_schQueCnt[idx] += 1;
     }
 
-    m_pktAddr.write_addr((pkt_hdr_idx_t)P_cnt);
-	m_pktAddr.read_addr((pkt_hdr_idx_t)P_cnt);
+    S_pktAddr.write_addr((pkt_hdr_idx_t)P_cnt);
+    S_pktAddr.read_addr((pkt_hdr_idx_t)P_cnt);
     //m_rdPktDat0.read_addr((pkt_hdr_idx_t)P_cnt);
     //m_rdPktDat1.read_addr((pkt_hdr_idx_t)P_cnt);
 
@@ -63,7 +63,7 @@ CPersCtl::PersCtl()
 	if (PR_htValid) {
 #ifndef _HTV
 		extern FILE *tfp;
-        if (false && tfp && !m_blkList.empty()) {
+        if (false && tfp && !S_blkList.empty()) {
             fprintf(tfp, "CTL: cmd=%d pRecvBufBase=0x%012llx blkPktCnt=%d blkPktOffset=0x%x cnt=%d pktNum=%d actCnt=%d @ %lld\n",
                     (int)PR_htInst,
                     (long long)SR_pRecvBufBase,
@@ -107,13 +107,13 @@ CPersCtl::PersCtl()
 		break;
         case CTL_BLK_START: {
 			// wait for a block
-			if (m_blkList.empty()) {
+			if (S_blkList.empty()) {
 				HtRetry();
 				break;
 			}
 
             if (blkPktCnt == 0) {
-				m_blkList.pop();
+				S_blkList.pop();
 
 				HtContinue(CTL_RETURN);
 				break;
@@ -223,15 +223,15 @@ CPersCtl::PersCtl()
 				ReadMemPause(CTL_QUEUE_PKT);
 				break;
 			}
-            m_pktAddr.write_mem(c_pRecvBuffOffset | (MemAddr_t)P_pBlk);
+            S_pktAddr.write_mem(c_pRecvBuffOffset | (MemAddr_t)P_pBlk);
 			if (!pktNoBytes) {
                 //fprintf(stderr,"CTL_PKT_RD0: readAddr=0x%012llx QWords=%d\n",
                 //        (long long)P_pBlk, (int)pktQWords);
-                ReadMem_prePktDat(c_pRecvBuffOffset | (MemAddr_t)P_pBlk, nextPrefetchBuf<<3, pktQWords);
+			  ReadMem_prePktDat(c_pRecvBuffOffset | (MemAddr_t)P_pBlk, nextPrefetchBuf<<3, (ht_uint10)pktQWords);
                 bTakePrefetchBuf = true;
             }
 
-            m_prefetchIdx.write_mem(nextPrefetchBuf);
+            S_prefetchIdx.write_mem(nextPrefetchBuf);
 
             P_cnt += 1;
             P_hdrAddr = (ht_uint3)(P_cnt>>1);
@@ -250,7 +250,7 @@ CPersCtl::PersCtl()
                     // send the counts for each index to ACC
                     SendMsg_blkStart(P_blkInfo);
                     P_blkInfo.m_blkIdx += 1;
-                    m_blkList.pop();
+                    S_blkList.pop();
 
                     HtContinue(CTL_BLK_START);
                 }
@@ -281,12 +281,12 @@ CPersCtl::PersCtl()
 
 			CPktInfo2 pktInfo;
             pktInfo.m_info.m_blkIndex = P_blkInfo.m_blkIdx;
-			pktInfo.m_info.m_pPkt = m_pktAddr.read_mem();
+	    pktInfo.m_info.m_pPkt = S_pktAddr.read_mem();
             pktInfo.m_info.m_pktLen = (ht_uint12)pktLen;
             //pktInfo.m_info.m_pktWord1 = m_rdPktDat0.read_mem();
             //pktInfo.m_info.m_pktWord2 = m_rdPktDat1.read_mem();
-            pktInfo.m_info.m_pktOffset = (ht_uint20)m_pktAddr.read_mem();
-            pktInfo.m_info.m_prefetchIdx = m_prefetchIdx.read_mem();
+            pktInfo.m_info.m_pktOffset = (ht_uint20)S_pktAddr.read_mem();
+            pktInfo.m_info.m_prefetchIdx = S_prefetchIdx.read_mem();
 			pktInfo.m_connId = pktCid;
 
 #ifndef _HTV
