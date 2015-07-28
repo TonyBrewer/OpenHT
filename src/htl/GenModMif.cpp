@@ -583,6 +583,9 @@ void CDsnInfo::InitAndValidateModMif()
 			}
 		}
 
+		if (CLex::GetParseErrorCnt() > 0)
+			ParseMsg(Fatal, "Previous errors prevent generation of files");
+
 		if (mif.m_bMifRd) {
 
 			int maxElemQwCnt = max(maxRdElemQwCnt, maxWrElemQwCnt);
@@ -846,6 +849,7 @@ void CDsnInfo::ParseVarRefSpec(CLineInfo & lineInfo, string const & name,
 	bool bIndexFound = false;
 
 	string fldType = baseType;
+	int fldWidth = 0;
 	for (;;) {
 
 		if (bIndexFound) {
@@ -877,6 +881,7 @@ void CDsnInfo::ParseVarRefSpec(CLineInfo & lineInfo, string const & name,
 			pDimenList = &pField->m_dimenList;
 
 			fldType = pField->m_type;
+			fldWidth = pField->m_fieldWidth.AsInt();
 		}
 
 		size_t dimenCnt = 0;
@@ -1023,7 +1028,7 @@ void CDsnInfo::ParseVarRefSpec(CLineInfo & lineInfo, string const & name,
 		while (*pStr == ' ') pStr += 1;
 	}
 
-	pDstType = FindType(fldType, lineInfo);
+	pDstType = FindType(fldType, fldWidth, lineInfo);
 }
 
 void CDsnInfo::GenModMifStatements(CModule &mod)
@@ -2431,6 +2436,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 								}
 							}
 						}
+
 						string tabs = "\t";
 						CLoopInfo loopInfo(m_mifMacros, tabs, dimenList, 1, preDimCnt);
 						do {
@@ -2445,8 +2451,9 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 									mod.m_execStg, wrSrc.m_pPrivVar->m_name.c_str(), varName.c_str(), preDimIdx.c_str(), dimIdx.c_str());
 							}
 						} while (loopInfo.Iter());
-					}
-					else {
+
+					} else {
+
 						if (wrSrc.m_pGblVar->m_addrW == 0) {
 							if (wrSrc.m_pSrcType->m_clangMinAlign == 1) {
 								m_mifMacros.Append("\tc_t%d_memReq.m_wrData.m_%s.m_data = r__GBL__%s%s;\n",
@@ -2472,26 +2479,28 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 				}
 			}
 
-			if (wrSrc.m_varAddr1W > 0 && !wrSrc.m_fieldRefList[0].m_refAddrList[0].m_isIdx &&
-				wrSrc.m_fieldRefList[0].m_refAddrList[0].m_value < 0 && !wrSrc.m_varAddr1IsHtId && !bPreDimIdx)
-			{
-				m_mifMacros.Append("\tc_t%d_memReq.m_s%d_f1Addr1 = varAddr1;\n", mod.m_execStg, wrSrcIdx);
-			}
+			if (!wrSrc.m_pPrivVar) {
+				if (wrSrc.m_varAddr1W > 0 && !wrSrc.m_fieldRefList[0].m_refAddrList[0].m_isIdx &&
+					wrSrc.m_fieldRefList[0].m_refAddrList[0].m_value < 0 && !wrSrc.m_varAddr1IsHtId && !bPreDimIdx)
+				{
+					m_mifMacros.Append("\tc_t%d_memReq.m_s%d_f1Addr1 = varAddr1;\n", mod.m_execStg, wrSrcIdx);
+				}
 
-			if (wrSrc.m_varAddr2W > 0 && !wrSrc.m_fieldRefList[0].m_refAddrList[1].m_isIdx &&
-				wrSrc.m_fieldRefList[0].m_refAddrList[1].m_value < 0 && !wrSrc.m_varAddr2IsHtId && !bPreDimIdx)
-			{
-				m_mifMacros.Append("\tc_t%d_memReq.m_s%d_f1Addr2 = varAddr2;\n", mod.m_execStg, wrSrcIdx);
-			}
+				if (wrSrc.m_varAddr2W > 0 && !wrSrc.m_fieldRefList[0].m_refAddrList[1].m_isIdx &&
+					wrSrc.m_fieldRefList[0].m_refAddrList[1].m_value < 0 && !wrSrc.m_varAddr2IsHtId && !bPreDimIdx)
+				{
+					m_mifMacros.Append("\tc_t%d_memReq.m_s%d_f1Addr2 = varAddr2;\n", mod.m_execStg, wrSrcIdx);
+				}
 
-			for (size_t fldIdx = 0; fldIdx < wrSrc.m_fieldRefList.size(); fldIdx += 1) {
-				string fldName = fldIdx == 0 ? "var" : VA("fld%d", (int)fldIdx);
-				for (size_t dimIdx = 0; dimIdx < wrSrc.m_fieldRefList[fldIdx].m_refDimenList.size(); dimIdx += 1) {
-					CRefDimen & refDimen = wrSrc.m_fieldRefList[fldIdx].m_refDimenList[dimIdx];
+				for (size_t fldIdx = 0; fldIdx < wrSrc.m_fieldRefList.size(); fldIdx += 1) {
+					string fldName = fldIdx == 0 ? "var" : VA("fld%d", (int)fldIdx);
+					for (size_t dimIdx = 0; dimIdx < wrSrc.m_fieldRefList[fldIdx].m_refDimenList.size(); dimIdx += 1) {
+						CRefDimen & refDimen = wrSrc.m_fieldRefList[fldIdx].m_refDimenList[dimIdx];
 
-					if (refDimen.m_value < 0 && refDimen.m_size > 1 && !refDimen.m_isIdx && !bPreDimIdx) {
-						m_mifMacros.Append("\tc_t%d_memReq.m_s%d_f%dIdx%d = %sIdx%d;\n",
-							mod.m_execStg, wrSrcIdx, (int)fldIdx + 1, dimIdx + 1, fldName.c_str(), dimIdx + 1);
+						if (refDimen.m_value < 0 && refDimen.m_size > 1 && !refDimen.m_isIdx && !bPreDimIdx) {
+							m_mifMacros.Append("\tc_t%d_memReq.m_s%d_f%dIdx%d = %sIdx%d;\n",
+								mod.m_execStg, wrSrcIdx, (int)fldIdx + 1, dimIdx + 1, fldName.c_str(), dimIdx + 1);
+						}
 					}
 				}
 			}
@@ -4665,6 +4674,11 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 							}
 						}
 					} else {
+						if (ramType == eDistRam && mif.m_mifReqStgCnt < 2 && wrSrc.m_pSrcType->IsRecord()) {
+							mifPostInstr.Append("%s{\n", tabs.c_str());
+							bBrace = true;
+						}
+
 						mifPostInstr.Append("%s\tm_%s%s.read_addr(%s);\n",
 							tabs.c_str(),
 							addrVar.c_str(), varIdx.c_str(),
@@ -4672,9 +4686,37 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 
 						if (ramType == eDistRam) {
 							if (mif.m_mifReqStgCnt < 2) {
-								mifPostInstr.Append("%s\tc_t%d_%sToMif_req.m_data = m_%s%s.read_mem()%s;\n", tabs.c_str(),
-									mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
-									addrVar.c_str(), varIdx.c_str(), addrFld.c_str());
+								if (wrSrc.m_pSrcType->IsRecord()) {
+									mifPostInstr.Append("%s\t%s c_%s = m_%s%s.read_mem()%s;\n", tabs.c_str(),
+										wrSrc.m_pSrcType->m_typeName.c_str(),
+										wrSrc.m_pSrcType->m_typeName.c_str(),
+										addrVar.c_str(), varIdx.c_str(), addrFld.c_str());
+
+									for (CStructElemIter iter(this, wrSrc.m_pSrcType); !iter.end(); iter++) {
+										if (iter.IsStructOrUnion()) continue;
+
+										int pos = iter.GetHeirFieldPos();
+										//int width = iter.GetWidth();
+
+										//if (pos < qwIdx * reqSize || pos >= (qwIdx + 1) * reqSize) continue;
+
+										if (mif.m_mifReqStgCnt < 2) {
+											mifPostInstr.Append("%s\tc_t%d_%sToMif_req.m_data |= c_%s%s << %d;\n", tabs.c_str(),
+												mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
+												wrSrc.m_pSrcType->m_typeName.c_str(), iter.GetHeirFieldName().c_str(),
+												pos);
+										} else {
+											mifPostInstr.Append("%s\tc_t%d_memReq.m_wrData.m_%s |= c_%s%s << %d;\n", tabs.c_str(),
+												mod.m_execStg + 1, wrSrc.m_pSrcType->m_typeName.c_str(),
+												wrSrc.m_pSrcType->m_typeName.c_str(), iter.GetHeirFieldName().c_str(),
+												pos);
+										}
+									}
+								} else {
+									mifPostInstr.Append("%s\tc_t%d_%sToMif_req.m_data = m_%s%s.read_mem()%s;\n", tabs.c_str(),
+										mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
+										addrVar.c_str(), varIdx.c_str(), addrFld.c_str());
+								}
 							} else {
 								if (wrSrc.m_pSrcType->m_clangMinAlign == 1) {
 									mifPostInstr.Append("%s\tc_t%d_memReq.m_wrData.m_%s.m_data = m_%s%s.read_mem()%s;\n", tabs.c_str(),
@@ -4904,7 +4946,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 					mifPostInstr.Append("%s{\n", tabs.c_str());
 
 					mifPostInstr.Append("%s\t%s c_%s;\n", tabs.c_str(),
-					wrSrc.m_pGblVar->m_pType->m_typeName.c_str(), wrSrc.m_pGblVar->m_pType->m_typeName.c_str());
+						wrSrc.m_pGblVar->m_pType->m_typeName.c_str(), wrSrc.m_pGblVar->m_pType->m_typeName.c_str());
 
 					for (size_t fldIdx = 0; fldIdx < wrSrc.m_pGblVar->m_pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
 						CSpanningField &fld = wrSrc.m_pGblVar->m_pNgvInfo->m_spanningFieldList[fldIdx];
@@ -5265,8 +5307,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 						baseVar = VA("c_m%d_%sMwData", rdRspStg, rdDst.m_pGblVar->m_gblName.c_str());
 
 					ramType = rdDst.m_pGblVar->m_ramType;
-				}
-				else if (rdDst.m_pSharedVar) {
+				} else if (rdDst.m_pSharedVar) {
 					pDstType = rdDst.m_pDstType;
 					if (rdDst.m_pSharedVar->m_addr1W.AsInt() > 0) {
 						baseVar = VA("m__SHR__%s", rdDst.m_pSharedVar->m_name.c_str());
@@ -5278,8 +5319,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 						baseVar = VA("c__SHR__%s", rdDst.m_pSharedVar->m_name.c_str());
 					}
 					ramType = rdDst.m_pSharedVar->m_ramType;
-				}
-				else if (rdDst.m_pPrivVar) {
+				} else if (rdDst.m_pPrivVar) {
 					pDstType = rdDst.m_pDstType;
 					baseVar = VA("c_htPriv.m_%s", rdDst.m_pPrivVar->m_name.c_str());
 				} else
@@ -5386,6 +5426,9 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 					if (pDstType->IsRecord() && bMemVar && ramType == eBlockRam) {
 						mifPostInstr.Append("%s\t\t%s recData;\n", tabs.c_str(),
 							pDstType->m_typeName.c_str());
+					} else if (rdDst.m_pSharedVar && rdDst.m_pSharedVar->m_pType->IsRecord() && bMemVar && ramType == eBlockRam) {
+						mifPostInstr.Append("%s\t\t%s recData;\n", tabs.c_str(),
+							rdDst.m_pSharedVar->m_pType->m_typeName.c_str());
 					}
 
 					for (CStructElemIter iter(this, pDstType); !iter.end(); iter++) {
@@ -5428,6 +5471,13 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 									mifPostInstr.Append("\t\t%srecData%s = (%s)(c_m%d_rdRspData >> %d);\n",
 										tabs.c_str(),
 										iter.GetHeirFieldName().c_str(),
+										typeCast.c_str(),
+										rdRspStg,
+										pos % reqSize);
+								} else if (rdDst.m_pSharedVar && rdDst.m_pSharedVar->m_pType->IsRecord()) {
+									mifPostInstr.Append("\t\t%srecData%s = (%s)(c_m%d_rdRspData >> %d);\n",
+										tabs.c_str(),
+										addrFld.c_str(),
 										typeCast.c_str(),
 										rdRspStg,
 										pos % reqSize);
@@ -5495,6 +5545,10 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 						mifPostInstr.Append("%s\t\t%s.write_mem(recData);\n",
 							tabs.c_str(),
 							baseVar.c_str());
+					} else if (rdDst.m_pSharedVar && rdDst.m_pSharedVar->m_pType->IsRecord() && bMemVar && ramType == eBlockRam) {
+						mifPostInstr.Append("%s\t\t%s.write_mem(recData);\n",
+							tabs.c_str(),
+							addrVar.c_str());
 					}
 
 					if (rdDst.m_pRdType == 0 && pDstType->m_clangBitWidth > reqSize) {

@@ -1,0 +1,100 @@
+typedef sc_uint<48> MemAddr_t;
+
+struct test00_0_src_s1_data_struct {
+  uint32_t test00_0_src_v0_data;
+  int64_t test00_0_src_v1_data;
+  uint8_t test00_0_src_v2_data[1];
+  int32_t test00_0_src_v3_data[5][5];
+};
+
+struct test00_0_src_s0_data_struct {
+  test00_0_src_s1_data_struct test00_0_src_s1_data[5];
+};
+
+struct test00_0_dst_s2_data_struct {
+  int16_t test00_0_dst_v5_data : 6;
+  int32_t test00_0_dst_v6_data[5];
+  int32_t test00_0_dst_v7_data;
+};
+
+struct test00_0_dst_s1_data_struct {
+  int64_t test00_0_dst_v1_data : 48;
+  union {
+    int64_t test00_0_dst_v2_data : 31;
+    uint64_t test00_0_dst_v3_data : 17;
+    uint32_t test00_0_dst_v4_data[2];
+  };
+  test00_0_dst_s2_data_struct test00_0_dst_s2_data;
+  union {
+    int64_t test00_0_dst_v8_data;
+    uint64_t test00_0_dst_v9_data;
+  };
+};
+
+struct test00_0_dst_s0_data_struct {
+  int64_t test00_0_dst_v0_data;
+  test00_0_dst_s1_data_struct test00_0_dst_s1_data;
+};
+
+
+
+/////////////////////////////////////
+// CTL
+
+dsnInfo.AddModule(name=Ctl, htIdW=0);
+
+Ctl.AddInstr(name=CTL_TEST00);
+Ctl.AddInstr(name=CTL_RTN);
+
+Ctl.AddEntry(func=main, inst=CTL_TEST00, host=true)
+	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=memAddr)
+	;
+
+Ctl.AddReturn(func=main)
+	;
+
+Ctl.AddCall(func=test00);
+
+Ctl.AddPrivate()
+	.AddVar(type=MemAddr_t, name=memAddr)
+	;
+
+
+/////////////////////////////////////
+// TEST00
+
+#define TEST00_HTID_W 0
+dsnInfo.AddModule(name=Test00, htIdW=TEST00_HTID_W, clock=1x);
+
+Test00.AddInstr(name=TEST00_ENTRY);
+Test00.AddInstr(name=TEST00_WR0);
+Test00.AddInstr(name=TEST00_ST0);
+Test00.AddInstr(name=TEST00_LD0);
+Test00.AddInstr(name=TEST00_CHK0);
+Test00.AddInstr(name=TEST00_RTN);
+
+Test00.AddEntry(func=test00, inst=TEST00_ENTRY)
+	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=memAddr)
+	;
+
+Test00.AddReturn(func=test00)
+	;
+
+Test00.AddPrivate()
+	.AddVar(type=MemAddr_t, name=memAddr)
+	.AddVar(type=test00_0_src_s0_data_struct, name=test00_0_src_s0_data)
+	;
+
+Test00.AddShared()
+	.AddVar(type=test00_0_dst_s0_data_struct, name=test00_0_dst_s0_data)
+	;
+
+Test00.AddReadMem()
+	.AddDst(var=test00_0_dst_s0_data.test00_0_dst_v0_data, name=test00_0_dst_v0_data, memSrc=host)
+	;
+
+Test00.AddWriteMem()
+	.AddSrc(var=test00_0_src_s0_data.test00_0_src_s1_data[].test00_0_src_v1_data, name=test00_0_src_v1_data, memDst=host)
+	;
+
+

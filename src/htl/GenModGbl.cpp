@@ -1104,11 +1104,18 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 
 			for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
 				CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
-				if (!fld.m_bSpanning || imIdx == 1 && !fld.m_bMrField) continue;
+				if (!fld.m_bSpanning || fld.m_bDupRange || imIdx == 1 && !fld.m_bMrField) continue;
+
+				string typeName = fld.m_pType->m_typeName;
+				if (fld.m_pType->IsInt()) {
+					int fldWidth = fld.m_pType->AsInt()->m_fldWidth;
+					if (fldWidth > 0 && fldWidth < fld.m_pType->m_clangBitWidth)
+						typeName = VA("ht_%sint%d", fld.m_pType->AsInt()->m_eSign == eSigned ? "" : "u", fldWidth);
+				}
 
 				m_gblRegDecl.Append("\tht_%s_ram<%s, %d",
 					pGv->m_ramType == eBlockRam ? "block" : "dist",
-					fld.m_pType->m_typeName.c_str(), pGv->m_addrW);
+					typeName.c_str(), pGv->m_addrW);
 				m_gblRegDecl.Append("> m__GBL__%s%s%s;\n", fld.m_ramName.c_str(), pImStr, pGv->m_dimenDecl.c_str());
 			}
 
@@ -1124,7 +1131,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 
 					for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
 						CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
-						if (!fld.m_bSpanning || imIdx == 1 && !fld.m_bMrField) continue;
+						if (!fld.m_bSpanning || fld.m_bDupRange || imIdx == 1 && !fld.m_bMrField) continue;
 
 						gblReg.Append("%sm__GBL__%s%s%s.clock(%s);\n", tabs.c_str(),
 							fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
@@ -1141,7 +1148,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 
 						for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
 							CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
-							if (!fld.m_bSpanning || imIdx == 1 && !fld.m_bMrField) continue;
+							if (!fld.m_bSpanning || fld.m_bDupRange || imIdx == 1 && !fld.m_bMrField) continue;
 
 							m_gblReg1x.Append("%sm__GBL__%s%s%s.read_clock(r_reset1x);\n", tabs.c_str(),
 								fld.m_ramName.c_str(), pImStr, dimIdx.c_str());
@@ -1157,7 +1164,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 
 						for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
 							CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
-							if (!fld.m_bSpanning || imIdx == 1 && !fld.m_bMrField) continue;
+							if (!fld.m_bSpanning || fld.m_bDupRange || imIdx == 1 && !fld.m_bMrField) continue;
 
 							m_gblReg2x.Append("%sm__GBL__%s%s%s.write_clock(c_reset1x);\n", tabs.c_str(),
 								fld.m_ramName.c_str(), pImStr, dimIdx.c_str());
@@ -1173,7 +1180,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 
 						for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
 							CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
-							if (!fld.m_bSpanning || imIdx == 1 && !fld.m_bMrField) continue;
+							if (!fld.m_bSpanning || fld.m_bDupRange || imIdx == 1 && !fld.m_bMrField) continue;
 
 							m_gblReg2x.Append("%sm__GBL__%s%s%s.read_clock(c_reset1x);\n", tabs.c_str(),
 								fld.m_ramName.c_str(), pImStr, dimIdx.c_str());
@@ -1189,7 +1196,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 
 						for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
 							CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
-							if (!fld.m_bSpanning || imIdx == 1 && !fld.m_bMrField) continue;
+							if (!fld.m_bSpanning || fld.m_bDupRange || imIdx == 1 && !fld.m_bMrField) continue;
 
 							m_gblReg1x.Append("%sm__GBL__%s%s%s.write_clock(r_reset1x);\n", tabs.c_str(),
 							fld.m_ramName.c_str(), pImStr, dimIdx.c_str());
@@ -1279,7 +1286,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 							for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
 								CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
 
-								if (!fld.m_bSpanning) continue;
+								if (!fld.m_bSpanning || fld.m_bDupRange) continue;
 
 								for (CStructElemIter iter(this, pGv->m_pType); !iter.end(); iter++) {
 									wrCode.Append("%sm__GBL__%s%s%s.write_addr(i_%sTo%s_%sIwData%s.read().GetAddr());\n", tabs.c_str(),
@@ -1337,7 +1344,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 							for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
 								CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
 
-								if (!fld.m_bSpanning) continue;
+								if (!fld.m_bSpanning || fld.m_bDupRange) continue;
 
 								wrCode.Append("%sm__GBL__%s%s%s.write_addr(i_%sTo%s_%sMwData%s.read().GetAddr());\n", tabs.c_str(),
 									fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
@@ -1473,7 +1480,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 					for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
 						CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
 
-						if (!fld.m_bSpanning) continue;
+						if (!fld.m_bSpanning || fld.m_bDupRange) continue;
 
 						gblPostInstr.Append("%sm__GBL__%sIr%s.read_addr(c_t%d_%sRdAddr);\n", tabs.c_str(),
 							fld.m_ramName.c_str(), dimIdx.c_str(),
@@ -1491,7 +1498,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 					for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
 						CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
 
-						if (!fld.m_bSpanning) continue;
+						if (!fld.m_bSpanning || fld.m_bDupRange) continue;
 
 						gblPostInstr.Append("%sc_t%d_%sIrData%s%s = m__GBL__%sIr%s.read_mem();\n", tabs.c_str(),
 							rdAddrStgNum + (bNgvDist ? 0 : 1), pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str(),
@@ -1535,7 +1542,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 					for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
 						CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
 
-						if (!fld.m_bSpanning || imIdx == 1 && !fld.m_bMrField) continue;
+						if (!fld.m_bSpanning || fld.m_bDupRange || imIdx == 1 && !fld.m_bMrField) continue;
 
 						gblPostInstr.Append("%sm__GBL__%s%s%s.write_addr(r_t%d_%sIwData%s.GetAddr());\n", tabs.c_str(),
 							fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
@@ -1588,7 +1595,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 					for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
 						CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
 
-						if (!fld.m_bSpanning || imIdx == 1 && !fld.m_bMrField) continue;
+						if (!fld.m_bSpanning || fld.m_bDupRange || imIdx == 1 && !fld.m_bMrField) continue;
 
 						gblPostInstr.Append("%sm__GBL__%s%s%s.write_addr(r_m%d_%sMwData%s.GetAddr());\n", tabs.c_str(),
 							fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
@@ -1681,7 +1688,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 					for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
 						CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
 
-						if (!fld.m_bSpanning || imIdx == 1 && !fld.m_bMrField) continue;
+						if (!fld.m_bSpanning || fld.m_bDupRange || imIdx == 1 && !fld.m_bMrField) continue;
 
 						m_gblPostInstr2x.Append("%sm__GBL__%s%s%s.write_addr(r__GBL__%sPwData%s.GetAddr());\n", tabs.c_str(),
 							fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
