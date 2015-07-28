@@ -19,15 +19,16 @@ CPersPkt::PersPkt() {
 
     // stage 1
     // ugly hack because nonstandard types don't seem to work with global
-    CAccelWord cR;
-    for (int i=0; i<ACCEL_CONN_SIZE; i++)
-        cR.m_word[i] = GR1_connList_pConn(i);
-    T1_pConn = cR.m_pConn;
+    //CAccelWord cR;
+    //for (int i=0; i<ACCEL_CONN_SIZE; i++)
+    //    cR.m_word[i] = GR1_connList_pConn(i);
+    //T1_pConn = cR.m_pConn;
+    T1_pConn = GR1_connList;
 
     // pull these terms out for pipelining
     ht_attrib(register_balancing, CPersPkt, "no");
-    ht_attrib(equivalent_register_removal, r_t6_parsePos, "no");
-    ht_attrib(equivalent_register_removal, r_t6_pConn, "no");
+    ht_attrib(equivalent_register_removal, r_t7__STG__parsePos, "no"); //r_t6_parsePos
+    ht_attrib(equivalent_register_removal, r_t7__STG__pConn, "no"); //r_t6_pConn
     T1_parsePos = T1_pConn.m_parsePos;
     T1_parsePosInc = T1_pConn.m_parsePos + 1;
     T1_parsePosDec = T1_pConn.m_parsePos - 1;
@@ -121,19 +122,25 @@ CPersPkt::PersPkt() {
     T1_ch = 0;
     T1_first64 = (P1_chCnt | (uint16_t)0x03f) == (uint16_t)0x03f;
 
-    T1_prefetchData = GR1_prePktDat_qw();
+    T1_prefetchData = GR1_prePktDat;
     if (PR1_htValid) {
-        if(PR1_htInst != PKT_ENTRY && PR1_htInst != PKT_RETURN &&
-                PR1_htInst != PKT_MEMWAIT && PR1_htInst != PKT_PREFETCH) {
-            T1_eval = getNextChar(PR1_pCh, PR1_pktInfo.m_pPkt, T1_first64,
-                                  PR1_htId,
-                                   GR1_prePktDat_qw(), GR1_rdPktDat_qw(),
-                                  P1_prefetch, T1_ch);
-        }
+      if(PR1_htInst != PKT_ENTRY &&
+	 PR1_htInst != PKT_RETURN &&
+	 PR1_htInst != PKT_MEMWAIT &&
+	 PR1_htInst != PKT_PREFETCH) {
+	T1_eval = getNextChar(PR1_pCh,
+			      PR1_pktInfo.m_pPkt,
+			      T1_first64,
+			      PR1_htId,
+			      T1_prefetchData,
+			      GR1_rdPktDat,
+			      P1_prefetch,
+			      T1_ch);
+      }
     }
     
-    ht_attrib(equivalent_register_removal, r_t6_ch, "no");
-    ht_attrib(equivalent_register_removal, r_t6_chMisc, "no");
+    ht_attrib(equivalent_register_removal, r_t7__STG__ch, "no"); //r_t6_ch
+    ht_attrib(equivalent_register_removal, r_t7__STG__chMisc, "no"); //r_t6_chMisc
     T1_chMisc = T1_ch;
     T1_chIsLF = T1_ch == '\n';
     T1_chIsCR = T1_ch == '\r';
@@ -2260,12 +2267,14 @@ CPersPkt::PersPkt() {
 
     if (T3_htValid) {
         // again, a hack because global can't use a structure
-        CAccelWord cW;
-        cW.m_pConn = T3_pConn;
+        //CAccelWord cW;
+        //cW.m_pConn = T3_pConn;
         // this write doesn't need to occur in stage 2
-        for (int i=0; i<ACCEL_CONN_SIZE; i++) {
-            GW_connList_pConn(T3_pConnAddr, i, cW.m_word[i]);
-        }
+        //for (int i=0; i<ACCEL_CONN_SIZE; i++) {
+        //    GW_connList_pConn(T3_pConnAddr, i, cW.m_word[i]);
+        //}
+      GW3_connList.write_addr(T3_pConnAddr);
+      GW3_connList = T3_pConn;
     }
 
     // Warning: assuming that time between thread execution is longer than this pipe

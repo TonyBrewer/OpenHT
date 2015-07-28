@@ -1437,7 +1437,11 @@ int CStructElemIter::GetHeirFieldPos()
 int CStructElemIter::GetWidth()
 {
 	CStack &stack = m_stack.back();
-	if (stack.m_pRecord == 0) return m_pType->m_clangBitWidth;
+	if (stack.m_pRecord == 0) {
+		HtlAssert(m_pType->IsInt());
+		CHtInt * pHtInt = m_pType->AsInt();
+		return pHtInt->m_fldWidth > 0 ? pHtInt->m_fldWidth : m_pType->m_clangBitWidth;
+	}
 	CField * pField = stack.m_pRecord->m_fieldList[stack.m_fieldIdx];
 
 	return m_pDsnInfo->FindTypeWidth(pField);

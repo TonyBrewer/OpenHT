@@ -1698,7 +1698,6 @@ void HtdFile::ParseGlobalMethods()
 		string addr2;
 		string rdStg;
 		string wrStg;
-		bool bExtern = false;
 		bool bMaxIw = false;
 		bool bMaxMw = false;
 		string blockRam;
@@ -1718,7 +1717,6 @@ void HtdFile::ParseGlobalMethods()
 			{ "addr2", &addr2, false, ePrmIdentRef, 0, 0 },
 			{ "rdStg", &rdStg, false, ePrmInteger, 0, 0 },
 			{ "wrStg", &wrStg, false, ePrmInteger, 0, 0 },
-			{ "extern", &bExtern, false, ePrmBoolean, 0, 0 },
 			{ "maxIw", &bMaxIw, false, ePrmBoolean, 0, 0 },
 			{ "maxMw", &bMaxMw, false, ePrmBoolean, 0, 0 },
 			{ "blockRam", &blockRam, false, ePrmIdent, 0, 0 },
@@ -1729,8 +1727,9 @@ void HtdFile::ParseGlobalMethods()
 		};
 
 		if (!ParseParameters(params)) {
-			CPreProcess::ParseMsg(Error, "expected .AddVar( type, var {, dimen1=0 {, dimen2=0 }} {, addr1W=0 {, addr2W=0 }} ");
-			CPreProcess::ParseMsg(Info, "      {, addr1=\"\" {, addr2=\"\" }} {, rdStg=1 } {, wrStg=1 } {, maxIw=false} {, maxMw=false} )");
+			CPreProcess::ParseMsg(Error, "expected .AddVar( type, name {, dimen1=0 {, dimen2=0 }} {, addr1W=0 {, addr2W=0 }} ");
+			CPreProcess::ParseMsg(Info, "      {, addr1=\"\" {, addr2=\"\" }} {, rdStg=1 } {, wrStg=1 } {, maxIw=false} {, maxMw=false}");
+			CPreProcess::ParseMsg(Info, "      {, blockRam=\"\" } {, read=true } {, write=true } {, spanningWrite=false } )");
 		}
 
 		ERamType ramType = eAutoRam;
@@ -2230,7 +2229,7 @@ bool HtdFile::ParseParameters(CParamList *params)
 			bool bSignedBuiltin;
 			typeParamStr = ParseType(builtinWidth, bSignedBuiltin);
 
-			CType * pType = m_pDsnInfo->FindType(typeParamStr, CPreProcess::m_lineInfo);
+			CType * pType = m_pDsnInfo->FindType(typeParamStr, -1, CPreProcess::m_lineInfo);
 
 			if (pType && pType->IsRecord())
 				m_pDsnInfo->InitAndValidateRecord(pType->AsRecord());

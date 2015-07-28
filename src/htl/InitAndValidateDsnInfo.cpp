@@ -1103,37 +1103,52 @@ void CDsnInfo::InitAndValidateTypes()
 		for (size_t mgvIdx = 0; mgvIdx < mod.m_ngvList.size(); mgvIdx += 1) {
 			CRam * pNgv = mod.m_ngvList[mgvIdx];
 
-			pNgv->m_pType = FindType(pNgv->m_type, pNgv->m_lineInfo);
+			pNgv->m_pType = FindType(pNgv->m_type, -1, pNgv->m_lineInfo);
 		}
 
 		// shared variables
 		for (size_t shIdx = 0; shIdx < mod.m_shared.m_fieldList.size(); shIdx += 1) {
 			CField * pShared = mod.m_shared.m_fieldList[shIdx];
 
-			pShared->m_pType = FindType(pShared->m_type, pShared->m_lineInfo);
+			pShared->m_pType = FindType(pShared->m_type, -1, pShared->m_lineInfo);
 		}
 
 		// private variables
 		for (size_t prIdx = 0; prIdx < mod.m_threads.m_htPriv.m_fieldList.size(); prIdx += 1) {
 			CField * pPriv = mod.m_threads.m_htPriv.m_fieldList[prIdx];
 
-			pPriv->m_pType = FindType(pPriv->m_type, pPriv->m_lineInfo);
+			pPriv->m_pType = FindType(pPriv->m_type, -1, pPriv->m_lineInfo);
 		}
 
 		// stage variables
 		for (size_t stgIdx = 0; stgIdx < mod.m_stage.m_fieldList.size(); stgIdx += 1) {
 			CField * pStage = mod.m_stage.m_fieldList[stgIdx];
 
-			pStage->m_pType = FindType(pStage->m_type, pStage->m_lineInfo);
+			pStage->m_pType = FindType(pStage->m_type, -1, pStage->m_lineInfo);
 		}
 	}
 }
 
-CType * CDsnInfo::FindType(string const & typeName, CLineInfo const & lineInfo)
+CType * CDsnInfo::FindType(string const & typeName, int fldWidth, CLineInfo const & lineInfo)
 {
 	CType * pType = 0;
 
-	if (!(pType = FindRecord(typeName)) && !(pType = FindClangType(typeName)) && !(pType = FindHtIntType(typeName, lineInfo)))
+	if (pType = FindClangType(typeName)) {
+		if (fldWidth > 0) {
+			if (fldWidth > pType->m_clangBitWidth) {
+				ParseMsg(Error, lineInfo, "specified field width is greater than type width");
+			} else {
+				CHtInt * pIntType = pType->AsInt();
+				pType = new CHtInt(pIntType->m_eSign, pIntType->m_typeName, pIntType->m_clangBitWidth, pIntType->m_clangMinAlign, fldWidth);
+			}			
+		}
+
+		return pType;
+	}
+
+	HtlAssert(fldWidth <= 0);
+
+	if (!(pType = FindRecord(typeName)) && !(pType = FindHtIntType(typeName, lineInfo)))
 		ParseMsg(Error, lineInfo, "undeclared type, '%s'", typeName.c_str());
 
 	return pType;
@@ -1163,13 +1178,17 @@ void CDsnInfo::InitAndValidateRecord(CRecord * pRecord)
 			InitAndValidateRecord(pField->m_pType->AsRecord());
 			pType = pField->m_pType;
 		} else {
-			if (!(pType = FindType(pField->m_type, pField->m_lineInfo)))
+			if (!FindType(pField->m_type, -1, pField->m_lineInfo)) {
+				HtlAssert(0);
 				continue;
+			}
 
-			assert(pField->m_pType == pType);
+			pType = pField->m_pType;
 
-			if (pType->m_eType == eRecord)
-				InitAndValidateRecord(pType->AsRecord());
+			//assert(pField->m_pType == pType);
+
+			//if (pField->m_pType->IsRecord())
+			//	InitAndValidateRecord(pType->AsRecord());
 		}
 
 		pField->InitDimen(pField->m_lineInfo);

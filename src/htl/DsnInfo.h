@@ -109,8 +109,8 @@ public:
 enum ESign { eSigned, eUnsigned };
 
 struct CHtInt : CType {
-	CHtInt(ESign eSign, string const & name, int bitWidth, int minAlign) :
-		CType(eClang, name, bitWidth, minAlign, bitWidth), m_eSign(eSign)
+	CHtInt(ESign eSign, string const & name, int bitWidth, int minAlign, int fldWidth=-1) :
+		CType(eClang, name, bitWidth, minAlign, bitWidth), m_eSign(eSign), m_fldWidth(fldWidth)
 	{
 	}
 
@@ -118,6 +118,7 @@ struct CHtInt : CType {
 
 public:
 	ESign m_eSign;
+	int m_fldWidth;
 };
 
 struct CDimenList {
@@ -404,8 +405,6 @@ struct CRecord : CType {
 		bool bSrcRead = true, bool bSrcWrite = true, bool bMifRead = false, bool bMifWrite = false, HtdFile::ERamType ramType = HtdFile::eDistRam, int atomicMask = 0,
 		bool bSpanningFieldForced = false)
 	{
-
-
 		m_fieldList.push_back(new CField(pType, name, bitWidth, base, dimenList, bSrcRead, bSrcWrite, bMifRead, bMifWrite, ramType, atomicMask, bSpanningFieldForced));
 		m_fieldList.back()->InitDimen(CPreProcess::m_lineInfo);
 		m_fieldList.back()->m_fieldWidth.InitValue(CPreProcess::m_lineInfo, false);
@@ -413,15 +412,11 @@ struct CRecord : CType {
 		m_bReadForMifWrite |= bMifRead;
 		m_bWriteForMifRead |= bMifWrite;
 
-		// return reference to new struct for anonymous struct/unions
-		//if (name.size() == 0 && (pType->m_typeName == "union" || pType->m_typeName == "struct")) {
-		//	CField & field = *m_fieldList.back();
-		//	field.m_pRecord = new CRecord();
-		//	field.m_pRecord->m_bCStyle = true;
-		//	field.m_pRecord->m_bUnion = pType->m_typeName == "union";
-		//	return field.m_pRecord;
-		//} else
-		//	return 0;
+		if (pType->IsInt() && bitWidth.size() > 0) {
+			CHtInt * pIntType = pType->AsInt();
+			m_fieldList.back()->m_pType = new CHtInt(pIntType->m_eSign, pIntType->m_typeName, pIntType->m_clangBitWidth,
+				pIntType->m_clangMinAlign, m_fieldList.back()->m_fieldWidth.AsInt());
+		}
 
 		return m_fieldList.back();
 	}
@@ -2053,7 +2048,7 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 	void InitAndValidateTypes();
 	void InitAndValidateRecord(CRecord * pRecord);
 	string ParseTemplateParam(CLineInfo const & lineInfo, char const * &pStr, bool &error);
-	CType * FindType(string const & typeName, CLineInfo const & lineInfo = CLineInfo());
+	CType * FindType(string const & typeName, int fieldWidth = -1, CLineInfo const & lineInfo = CLineInfo());
 	CType * FindClangType(string typeName);
 	CType * FindHtIntType(string typeName, CLineInfo const & lineInfo);
 	CType * FindHtIntType(ESign sign, int width);
