@@ -18,7 +18,7 @@ CPersScatter::PersScatter()
 			BUSY_RETRY(ReadMemBusy());
 
 			// Memory read request
-			MemAddr_t memRdAddr = SR_bfsPackedAddr + ((2 * P_k) << 3);
+			MemAddr_t memRdAddr = (MemAddr_t)(SR_bfsPackedAddr + ((2 * P_k) << 3));
 			ReadMem_valMem(memRdAddr);
 			HtContinue(SCATTER_LD2);
 		}
@@ -27,7 +27,7 @@ CPersScatter::PersScatter()
 			BUSY_RETRY(ReadMemBusy());
 
 			// Memory read request
-			MemAddr_t memRdAddr = SR_bfsPackedAddr + ((2 * P_k + 1) << 3);
+			MemAddr_t memRdAddr = (MemAddr_t)(SR_bfsPackedAddr + ((2 * P_k + 1) << 3));
 			ReadMem_addrMem(memRdAddr);
 			ReadMemPause(SCATTER_ST);
 		}

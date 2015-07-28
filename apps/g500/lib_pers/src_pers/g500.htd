@@ -94,8 +94,8 @@ init.AddEntry(func=init, inst=INIT_RUN)
 
 init.AddReturn(func=init);
 
-init.AddWriteMem(rspCntW=9)
-	.AddSrc(var=init[], multiWr=true)
+init.AddWriteMem() //rspCntW=9
+	.AddSrc(var=init[#])
 	;
 
 ////////////////////////////////////////////////////
@@ -133,7 +133,7 @@ scatter.AddEntry(func=scatter, inst=SCATTER_LD1)
 scatter.AddReturn(func=scatter)
 	;
 
-scatter.AddReadMem(rspCntW=2)
+scatter.AddReadMem() //rspCntW=2
 	.AddDst(var=addrMem)
 	.AddDst(var=valMem)
 	;
@@ -184,7 +184,7 @@ bmap.AddReturn(func=bmap)
 
 bmap.AddCall(func=bufp, fork=true);
 
-bmap.AddReadMem(maxBw=true, rspCntW=1)
+bmap.AddReadMem() //rspCntW=1
 	.AddDst(var=data)
 	;
 
@@ -246,7 +246,7 @@ bufp.AddReturn(func=bufp)
 	.AddParam(type=BCW_t, name=updBitIdx)
 	;
 
-bufp.AddReadMem(maxBw=true, rspCntW=2)
+bufp.AddReadMem() //rspCntW=2
 	.AddDst(var=xoff0, rdType=uint64_t)
 	.AddDst(var=xoff1, rdType=uint64_t)
 	.AddDst(var=xadj, rdType=uint32_t)
