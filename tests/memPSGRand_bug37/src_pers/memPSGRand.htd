@@ -62,7 +62,7 @@ Test00.AddPrivate()
 	;
 
 Test00.AddGlobal()
-	.AddVar(type=test00_0_dst_s0_data_struct, name=test00_0_dst_s0_data, addr1=test00_0_dst_s0_data_RdAddr1, dimen1=3, dimen2=2)
+	.AddVar(type=test00_0_dst_s0_data_struct, name=test00_0_dst_s0_data, addr1=test00_0_dst_s0_data_RdAddr1, dimen1=3, dimen2=2, instrRead=true, instrWrite=true)
 	;
 
 Test00.AddReadMem()

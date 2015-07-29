@@ -2307,7 +2307,7 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 			} while (loopInfo.Iter());
 		}
 
-		if ((pGv->m_bReadForInstrRead || pGv->m_bReadForMifWrite) && pGv->m_ramType == eBlockRam) {
+		if (pGv->m_bReadForInstrRead && pGv->m_ramType == eBlockRam) {
 
 			bool bSignal = (mod.m_clkRate == eClk2x) != pNgvInfo->m_bNgvWrDataClk2x;
 			{

@@ -72,7 +72,7 @@ Test00.AddShared()
 	;
 
 Test00.AddGlobal()
-	.AddVar(type=test00_0_src_u0_data_union, name=test00_0_src_u0_data, addr1=test00_0_src_u0_data_RdAddr1, addr2=test00_0_src_u0_data_RdAddr2, dimen1=1, dimen2=2)
+	.AddVar(type=test00_0_src_u0_data_union, name=test00_0_src_u0_data, addr1=test00_0_src_u0_data_RdAddr1, addr2=test00_0_src_u0_data_RdAddr2, dimen1=1, dimen2=2, instrWrite=true)
 	;
 
 Test00.AddReadMem()

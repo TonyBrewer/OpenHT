@@ -55,7 +55,7 @@ gv1.AddReturn(func=gv1)
 	;
 
 gv1.AddGlobal()
-	.AddVar(type=CGVar, name=Gvar, dimen1=2, dimen2=4, addr1W=1, addr1=gvAddr, maxIw=true)
+	.AddVar(type=CGVar, name=Gvar, dimen1=2, dimen2=4, addr1W=1, addr1=gvAddr, maxIw=true, instrRead=true, instrWrite=true)
 	;
 
 ////////////////////////////////////////////////////
@@ -79,5 +79,5 @@ Gv2.AddReturn(func=gv2)
 	;
 
 Gv2.AddGlobal()
-	.AddVar(type=CGVar, name=Gvar, dimen1=2, dimen2=4, addr1W=1, addr1=gvAddr)
+	.AddVar(type=CGVar, name=Gvar, dimen1=2, dimen2=4, addr1W=1, addr1=gvAddr, instrRead=true, instrWrite=true)
 	;

@@ -64,7 +64,7 @@ Test00.AddShared()
 	;
 
 Test00.AddGlobal()
-	.AddVar(type=uint32_t, name=test00_0_v4_data)
+	.AddVar(type=uint32_t, name=test00_0_v4_data, instrRead=true)
 	;
 
 Test00.AddReadMem()

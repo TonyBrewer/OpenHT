@@ -40,5 +40,5 @@ inc.AddReadMem()
 	;
 
 inc.AddGlobal()
-	.AddVar(type=CData, name=arrayMem, addr1=htId, addr2=arrayMemRdPtr, read=true, write=false)
+	.AddVar(type=CData, name=arrayMem, addr1=htId, addr2=arrayMemRdPtr, instrRead=true, instrWrite=false)
 	;

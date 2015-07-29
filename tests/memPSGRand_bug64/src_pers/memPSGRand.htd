@@ -68,8 +68,8 @@ Test00.AddPrivate()
 	;
 
 Test00.AddGlobal()
-	.AddVar(type=test00_0_dst_u0_data_union, name=test00_0_dst_u0_data, rdStg=1, wrStg=2)
-	.AddVar(type=uint64_t, name=test00_1_src_v0_data, addr1=test00_1_src_v0_data_RdAddr1, addr2=test00_1_src_v0_data_RdAddr2)
+	.AddVar(type=test00_0_dst_u0_data_union, name=test00_0_dst_u0_data, rdStg=1, wrStg=2, instrRead=true)
+	.AddVar(type=uint64_t, name=test00_1_src_v0_data, addr1=test00_1_src_v0_data_RdAddr1, addr2=test00_1_src_v0_data_RdAddr2, instrRead=true, instrWrite=true)
 	;
 
 Test00.AddReadMem()

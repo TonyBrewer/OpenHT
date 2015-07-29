@@ -80,7 +80,7 @@ Test00.AddPrivate()
 	;
 
 Test00.AddGlobal()
-	.AddVar(type=test00_0_src_s0_data_struct, name=test00_0_src_s0_data, addr1=test00_0_src_s0_data_RdAddr1, addr2=test00_0_src_s0_data_RdAddr2, spanningWrite=true)
+	.AddVar(type=test00_0_src_s0_data_struct, name=test00_0_src_s0_data, addr1=test00_0_src_s0_data_RdAddr1, addr2=test00_0_src_s0_data_RdAddr2, spanningWrite=true, instrRead=true, instrWrite=true)
 	;
 
 Test00.AddReadMem()

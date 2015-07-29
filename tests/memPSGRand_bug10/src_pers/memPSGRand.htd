@@ -63,10 +63,10 @@ Test00.AddShared()
 	;
 
 Test00.AddGlobal()
-	.AddVar(type=uint16_t, name=test00_g_0_0_0_data)
-	.AddVar(type=uint16_t, name=test00_g_0_1_0_data)
-	.AddVar(type=uint32_t, name=test00_g_0_6_0_data)
-	.AddVar(type=uint8_t, name=test00_g_0_7_0_data, addr1=test00_g_0_7_0_data_RdAddr, dimen1=3)
+	.AddVar(type=uint16_t, name=test00_g_0_0_0_data, instrRead=true, instrWrite=true)
+	.AddVar(type=uint16_t, name=test00_g_0_1_0_data, instrRead=true)
+	.AddVar(type=uint32_t, name=test00_g_0_6_0_data, instrRead=true)
+	.AddVar(type=uint8_t, name=test00_g_0_7_0_data, addr1=test00_g_0_7_0_data_RdAddr, dimen1=3, instrRead=true, instrWrite=true)
 	;
 
 Test00.AddReadMem()

@@ -103,7 +103,7 @@ read.AddShared()
 	;
 
 read.AddGlobal()
-	.AddVar(type=COpMem, name=opMem, addr1W=THREAD_W, read=false, write=false);
+	.AddVar(type=COpMem, name=opMem, addr1W=THREAD_W, instrRead=false, instrWrite=false);
 
 read.AddReadMem(pause=true, poll=true)
 	.AddDst(name=opAMem, var=opMem().opA)
@@ -158,7 +158,7 @@ pipe.AddShared()
 	;
 
 pipe.AddGlobal()
-	.AddVar(type=COpMem, name=opMem, addr1=idx, read=true, write=false);
+	.AddVar(type=COpMem, name=opMem, addr1=idx, instrRead=true, instrWrite=false);
 
 // Fixme: Need a group id so that MemWritePoll will not return false until all
 // writes done, not just those in the current thread, but this generates a compile error

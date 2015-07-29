@@ -2,36 +2,36 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="ht_lib">
-      <UniqueIdentifier>{d1c464b2-6f76-4f4f-93e5-c6e146a6e106}</UniqueIdentifier>
+      <UniqueIdentifier>{160c0db1-e411-493b-9737-52256b78998b}</UniqueIdentifier>
     </Filter>
     <Filter Include="ht">
-      <UniqueIdentifier>{5f9b8a80-df67-4d34-a220-c889e78ed31b}</UniqueIdentifier>
+      <UniqueIdentifier>{9eca88b2-332b-413d-b2c2-39108c90d933}</UniqueIdentifier>
     </Filter>
     <Filter Include="ht_lib\host">
-      <UniqueIdentifier>{5883221a-84b7-453b-b430-a9a059f544eb}</UniqueIdentifier>
+      <UniqueIdentifier>{36fd41d7-40b5-4d36-b861-a55d9808e5f5}</UniqueIdentifier>
       <Extensions>h;cpp;c</Extensions>
     </Filter>
     <Filter Include="ht_lib\sysc">
-      <UniqueIdentifier>{af505820-2e0c-42dd-9ca6-04f4b90775aa}</UniqueIdentifier>
+      <UniqueIdentifier>{0fe0cc0c-d28a-41d3-97fd-8ab59bdcfa00}</UniqueIdentifier>
       <Extensions>h;cpp;c</Extensions>
     </Filter>
     <Filter Include="ht\verilog">
-      <UniqueIdentifier>{998aa6b0-b1bf-442d-9fe2-63facfe17492}</UniqueIdentifier>
+      <UniqueIdentifier>{11cd9db8-3468-4519-a6b0-fd2504894232}</UniqueIdentifier>
     </Filter>
     <Filter Include="ht\sysc">
-      <UniqueIdentifier>{7dc27e5d-5904-483d-a0af-3c84e645487f}</UniqueIdentifier>
+      <UniqueIdentifier>{8b2ea145-b71d-4cc4-bc55-1437d38cfbe2}</UniqueIdentifier>
       <Extensions>h;cpp;c</Extensions>
     </Filter>
     <Filter Include="src">
-      <UniqueIdentifier>{98328c15-2450-46de-8c0f-e8b19c557601}</UniqueIdentifier>
+      <UniqueIdentifier>{ec5a1bab-6bac-411a-8148-0c1b437b07d8}</UniqueIdentifier>
       <Extensions>h;cpp;c</Extensions>
     </Filter>
     <Filter Include="src_pers">
-      <UniqueIdentifier>{8d221c88-f738-4486-833a-869c72a92470}</UniqueIdentifier>
+      <UniqueIdentifier>{e8694c8a-88ad-4cb8-9811-e8138ed28808}</UniqueIdentifier>
       <Extensions>h;cpp;c</Extensions>
     </Filter>
     <Filter Include="src_model">
-      <UniqueIdentifier>{9c85bb15-973b-42df-aafd-00aea1576ad6}</UniqueIdentifier>
+      <UniqueIdentifier>{a9662fd1-f5d9-49aa-8466-d3962bc4c114}</UniqueIdentifier>
       <Extensions>h;cpp;c</Extensions>
     </Filter>
   </ItemGroup>

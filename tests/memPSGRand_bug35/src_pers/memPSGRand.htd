@@ -77,7 +77,7 @@ Test00.AddPrivate()
 	;
 
 Test00.AddGlobal()
-	.AddVar(type=test00_0_dst_u0_data_union, name=test00_0_dst_u0_data, addr1=test00_0_dst_u0_data_RdAddr1, addr2=test00_0_dst_u0_data_RdAddr2, dimen1=2)
+	.AddVar(type=test00_0_dst_u0_data_union, name=test00_0_dst_u0_data, addr1=test00_0_dst_u0_data_RdAddr1, addr2=test00_0_dst_u0_data_RdAddr2, dimen1=2, instrRead=true)
 	;
 
 Test00.AddReadMem()

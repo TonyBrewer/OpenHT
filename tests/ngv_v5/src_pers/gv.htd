@@ -72,7 +72,7 @@ gv1.AddReturn(func=gv1)
 	;
 
 gv1.AddGlobal()
-	.AddVar(type=uint16_t, name=Gv1, addr1=gvAddr1, blockRam=true)
+	.AddVar(type=uint16_t, name=Gv1, addr1=gvAddr1, blockRam=true, instrRead=true, instrWrite=true)
 	;
 
 ////////////////////////////////////////////////////
@@ -95,7 +95,7 @@ gv2.AddReturn(func=gv2)
 	;
 
 gv2.AddGlobal()
-	.AddVar(type=uint16_t, name=Gv2, addr1=gvAddr1, blockRam=false)
+	.AddVar(type=uint16_t, name=Gv2, addr1=gvAddr1, blockRam=false, instrRead=true, instrWrite=true)
 	;
 
 ////////////////////////////////////////////////////
@@ -121,7 +121,7 @@ gv3.AddReturn(func=gv3)
 	;
 
 gv3.AddGlobal()
-	.AddVar(type=Data16, name=Gv3, addr1=gvAddr1, write=false, blockRam=true)
+	.AddVar(type=Data16, name=Gv3, addr1=gvAddr1, instrWrite=false, blockRam=true, instrRead=true)
 	;
 
 gv3.AddReadMem()
@@ -155,7 +155,7 @@ gv4.AddReturn(func=gv4)
 	;
 
 gv4.AddGlobal()
-	.AddVar(type=Data16, name=Gv4, addr1=gvAddr1, write=false, blockRam=false)
+	.AddVar(type=Data16, name=Gv4, addr1=gvAddr1, instrWrite=false, blockRam=false, instrRead=true)
 	;
 
 gv4.AddReadMem()
@@ -188,8 +188,8 @@ gv5.AddReturn(func=gv5)
 	;
 
 gv5.AddGlobal()
-	.AddVar(type=Data16x2, name=Gv5a)
-	.AddVar(type=Data16x2, name=Gv5b)
+	.AddVar(type=Data16x2, name=Gv5a, instrWrite=true)
+	.AddVar(type=Data16x2, name=Gv5b, instrRead=true)
 	;
 
 gv5.AddWriteMem()
@@ -225,8 +225,8 @@ gv6.AddReturn(func=gv6)
 	;
 
 gv6.AddGlobal()
-	.AddVar(type=Data16, name=Gv6a, addr1=addr1)
-	.AddVar(type=Data16, name=Gv6b, addr1=addr1)
+	.AddVar(type=Data16, name=Gv6a, addr1=addr1, instrRead=true, instrWrite=true)
+	.AddVar(type=Data16, name=Gv6b, addr1=addr1, instrRead=true, instrWrite=true)
 	;
 
 gv6.AddWriteMem()
@@ -283,12 +283,12 @@ gv7.AddCall(func=gv8fIw);
 gv7.AddCall(func=gv8fMw);
 
 gv7.AddGlobal()
-	.AddVar(type=Data16, name=Gv8a, read=false)
-	.AddVar(type=Data16, name=Gv8b, addr1=addr1, read=false)
-	.AddVar(type=Data16, name=Gv8c, read=false, write=false)
-	.AddVar(type=Data16, name=Gv8d, addr1=addr1, read=false, write=false)
-	.AddVar(type=Data16, name=Gv8e, read=false)
-	.AddVar(type=Data16, name=Gv8f, addr1=addr1, read=false)
+	.AddVar(type=Data16, name=Gv8a, instrRead=false, instrWrite=true)
+	.AddVar(type=Data16, name=Gv8b, addr1=addr1, instrRead=false, instrWrite=true)
+	.AddVar(type=Data16, name=Gv8c, instrRead=false, instrWrite=false)
+	.AddVar(type=Data16, name=Gv8d, addr1=addr1, instrRead=false, instrWrite=false)
+	.AddVar(type=Data16, name=Gv8e, instrRead=false, instrWrite=true)
+	.AddVar(type=Data16, name=Gv8f, addr1=addr1, instrRead=false, instrWrite=true)
 	;
 
 gv7.AddWriteMem()
@@ -359,12 +359,12 @@ gv8.AddReturn(func=gv8fIw);
 gv8.AddReturn(func=gv8fMw);
 
 gv8.AddGlobal()
-	.AddVar(type=Data16, name=Gv8a, write=false)
-	.AddVar(type=Data16, name=Gv8b, addr1=addr1, write=false)
-	.AddVar(type=Data16, name=Gv8c, write=false)
-	.AddVar(type=Data16, name=Gv8d, addr1=addr1, write=false)
-	.AddVar(type=Data16, name=Gv8e, write=false)
-	.AddVar(type=Data16, name=Gv8f, addr1=addr1, write=false)
+	.AddVar(type=Data16, name=Gv8a, instrRead=true, instrWrite=false)
+	.AddVar(type=Data16, name=Gv8b, addr1=addr1, instrRead=true, instrWrite=false)
+	.AddVar(type=Data16, name=Gv8c, instrRead=true, instrWrite=false)
+	.AddVar(type=Data16, name=Gv8d, addr1=addr1, instrRead=true, instrWrite=false)
+	.AddVar(type=Data16, name=Gv8e, instrRead=true, instrWrite=false)
+	.AddVar(type=Data16, name=Gv8f, addr1=addr1, instrRead=true, instrWrite=false)
 	;
 
 ////////////////////////////////////////////////////
@@ -410,12 +410,12 @@ gv9.AddCall(func=gv10fIw);
 gv9.AddCall(func=gv10fMw);
 
 gv9.AddGlobal()
-	.AddVar(type=Data16, name=Gv10a, read=false)
-	.AddVar(type=Data16, name=Gv10b, addr1=addr1, read=false)
-	.AddVar(type=Data16, name=Gv10c, read=false, write=false)
-	.AddVar(type=Data16, name=Gv10d, addr1=addr1, read=false, write=false)
-	.AddVar(type=Data16, name=Gv10e, read=false)
-	.AddVar(type=Data16, name=Gv10f, addr1=addr1, read=false)
+	.AddVar(type=Data16, name=Gv10a, instrRead=false, instrWrite=true)
+	.AddVar(type=Data16, name=Gv10b, addr1=addr1, instrRead=false, instrWrite=true)
+	.AddVar(type=Data16, name=Gv10c, instrRead=false, instrWrite=false)
+	.AddVar(type=Data16, name=Gv10d, addr1=addr1, instrRead=false, instrWrite=false)
+	.AddVar(type=Data16, name=Gv10e, instrRead=false, instrWrite=true)
+	.AddVar(type=Data16, name=Gv10f, addr1=addr1, instrRead=false, instrWrite=true)
 	;
 
 gv9.AddWriteMem()
@@ -486,12 +486,12 @@ gv10.AddReturn(func=gv10fIw);
 gv10.AddReturn(func=gv10fMw);
 
 gv10.AddGlobal()
-	.AddVar(type=Data16, name=Gv10a, write=false)
-	.AddVar(type=Data16, name=Gv10b, addr1=addr1, write=false)
-	.AddVar(type=Data16, name=Gv10c, write=false)
-	.AddVar(type=Data16, name=Gv10d, addr1=addr1, write=false)
-	.AddVar(type=Data16, name=Gv10e, write=false)
-	.AddVar(type=Data16, name=Gv10f, addr1=addr1, write=false)
+	.AddVar(type=Data16, name=Gv10a, instrRead=true, instrWrite=false)
+	.AddVar(type=Data16, name=Gv10b, addr1=addr1, instrRead=true, instrWrite=false)
+	.AddVar(type=Data16, name=Gv10c, instrRead=true, instrWrite=false)
+	.AddVar(type=Data16, name=Gv10d, addr1=addr1, instrRead=true, instrWrite=false)
+	.AddVar(type=Data16, name=Gv10e, instrRead=true, instrWrite=false)
+	.AddVar(type=Data16, name=Gv10f, addr1=addr1, instrRead=true, instrWrite=false)
 	;
 
 ////////////////////////////////////////////////////
@@ -525,10 +525,10 @@ gv11.AddCall(func=gv12c);
 gv11.AddCall(func=gv12d);
 
 gv11.AddGlobal()
-	.AddVar(type=Data16, name=Gv12a, read=false)
-	.AddVar(type=Data16, name=Gv12b, addr1=addr1, read=false)
-	.AddVar(type=Data16, name=Gv12c, read=false, write=false)
-	.AddVar(type=Data16, name=Gv12d, addr1=addr1, read=false, write=false)
+	.AddVar(type=Data16, name=Gv12a, instrRead=false, instrWrite=true)
+	.AddVar(type=Data16, name=Gv12b, addr1=addr1, instrRead=false, instrWrite=true)
+	.AddVar(type=Data16, name=Gv12c, instrRead=false, instrWrite=false)
+	.AddVar(type=Data16, name=Gv12d, addr1=addr1, instrRead=false, instrWrite=false)
 	;
 
 gv11.AddWriteMem()
@@ -577,10 +577,10 @@ gv12.AddReturn(func=gv12c);
 gv12.AddReturn(func=gv12d);
 
 gv12.AddGlobal()
-	.AddVar(type=Data16, name=Gv12a, write=false)
-	.AddVar(type=Data16, name=Gv12b, addr1=addr1, write=false)
-	.AddVar(type=Data16, name=Gv12c, write=false)
-	.AddVar(type=Data16, name=Gv12d, addr1=addr1, write=false)
+	.AddVar(type=Data16, name=Gv12a, instrRead=true, instrWrite=false)
+	.AddVar(type=Data16, name=Gv12b, addr1=addr1, instrRead=true, instrWrite=false)
+	.AddVar(type=Data16, name=Gv12c, instrRead=true, instrWrite=false)
+	.AddVar(type=Data16, name=Gv12d, addr1=addr1, instrRead=true, instrWrite=false)
 	;
 
 ////////////////////////////////////////////////////
@@ -614,10 +614,10 @@ gv13.AddCall(func=gv14c);
 gv13.AddCall(func=gv14d);
 
 gv13.AddGlobal()
-	.AddVar(type=Data16, name=Gv14a, read=false)
-	.AddVar(type=Data16, name=Gv14b, addr1=addr1, read=false)
-	.AddVar(type=Data16, name=Gv14c, read=false, write=false)
-	.AddVar(type=Data16, name=Gv14d, addr1=addr1, read=false, write=false)
+	.AddVar(type=Data16, name=Gv14a, instrRead=false, instrWrite=true)
+	.AddVar(type=Data16, name=Gv14b, addr1=addr1, instrRead=false, instrWrite=true)
+	.AddVar(type=Data16, name=Gv14c, instrRead=false, instrWrite=false)
+	.AddVar(type=Data16, name=Gv14d, addr1=addr1, instrRead=false, instrWrite=false)
 	;
 
 gv13.AddWriteMem()
@@ -666,10 +666,10 @@ gv14.AddReturn(func=gv14c);
 gv14.AddReturn(func=gv14d);
 
 gv14.AddGlobal()
-	.AddVar(type=Data16, name=Gv14a, write=false)
-	.AddVar(type=Data16, name=Gv14b, addr1=addr1, write=false)
-	.AddVar(type=Data16, name=Gv14c, write=false)
-	.AddVar(type=Data16, name=Gv14d, addr1=addr1, write=false)
+	.AddVar(type=Data16, name=Gv14a, instrRead=true, instrWrite=false)
+	.AddVar(type=Data16, name=Gv14b, addr1=addr1, instrRead=true, instrWrite=false)
+	.AddVar(type=Data16, name=Gv14c, instrRead=true, instrWrite=false)
+	.AddVar(type=Data16, name=Gv14d, addr1=addr1, instrRead=true, instrWrite=false)
 	;
 
 ////////////////////////////////////////////////////
@@ -700,7 +700,7 @@ gv15.AddReturn(func=gv15)
 	;
 
 gv15.AddGlobal()
-	.AddVar(type=CUnion, name=Gv15, addr1=gvAddr1, spanningWrite=true, blockRam=true)
+	.AddVar(type=CUnion, name=Gv15, addr1=gvAddr1, instrRead=true, instrWrite=true, spanningWrite=true, blockRam=true)
 	;
 
 gv15.AddReadMem()
@@ -721,7 +721,7 @@ gv16.AddEntry(func=gv16, inst=GV16_ENTRY)
 	;
 
 gv16.AddGlobal()
-	.AddVar(type=uint64_t, name=Gv16, dimen1=6, addr1=gvAddr1, write=false, blockRam=true)
+	.AddVar(type=uint64_t, name=Gv16, dimen1=6, addr1=gvAddr1, instrRead=true, instrWrite=false, blockRam=true)
 	;
 
 gv16.AddPrivate()
@@ -759,7 +759,7 @@ gv17.AddEntry(func=gv17, inst=GV17_ENTRY)
 	;
 
 gv17.AddGlobal()
-	.AddVar(type=uint64_t, name=Gv17, addr1=addr1, addr2=addr2, write=true, read=true, blockRam=true)
+	.AddVar(type=uint64_t, name=Gv17, addr1=addr1, addr2=addr2, instrWrite=true, instrRead=true, blockRam=true)
 	;
 
 gv17.AddPrivate()

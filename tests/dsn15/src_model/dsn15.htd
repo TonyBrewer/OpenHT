@@ -39,5 +39,5 @@ echo.AddReadMem()
 	;
 
 echo.AddGlobal(var=arrayMem, addr1=arrayMemRdPtr, addr1W=2)
-	.AddField(type=uint64_t, name=data, read=true, write=true)
+	.AddField(type=uint64_t, name=data, instrRead=true, instrWrite=true)
 	;

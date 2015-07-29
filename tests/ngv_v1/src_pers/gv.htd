@@ -35,5 +35,5 @@ gv.AddReturn(func=htmain)
 	;
 
 gv.AddGlobal()
-	.AddVar(type=CGVar, name=gvar, addr1W=3, addr1=gvAddr)
+	.AddVar(type=CGVar, name=gvar, addr1W=3, addr1=gvAddr, instrRead=true, instrWrite=true)
 	;

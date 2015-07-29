@@ -60,7 +60,7 @@ Test00.AddPrivate()
 	;
 
 Test00.AddGlobal()
-	.AddVar(type=uint64_t, name=test00_0_src_v0_data, addr1=test00_0_src_v0_data_RdAddr1, addr2=test00_0_src_v0_data_RdAddr2)
+	.AddVar(type=uint64_t, name=test00_0_src_v0_data, addr1=test00_0_src_v0_data_RdAddr1, addr2=test00_0_src_v0_data_RdAddr2, instrRead=true, instrWrite=true)
 	;
 
 Test00.AddReadMem()

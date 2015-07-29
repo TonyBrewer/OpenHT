@@ -84,7 +84,7 @@ Test03.AddPrivate()
 	;
 
 Test03.AddGlobal()
-	.AddVar(type=test03_1_2_data_struct, name=test03_1_2_data)
+	.AddVar(type=test03_1_2_data_struct, name=test03_1_2_data, instrWrite=true)
 	;
 
 Test03.AddReadMem()

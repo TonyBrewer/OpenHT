@@ -53,8 +53,8 @@ Test14.AddPrivate()
 	;
 
 Test14.AddGlobal()
-	.AddVar(type=uint16_t, name=test14_0_0_data, addr1=test14_0_0_data_RdAddr1, dimen1=2, rdStg=2, wrStg=2)
-	.AddVar(type=uint16_t, name=test14_0_1_data, dimen1=2, rdStg=2, wrStg=2)
+	.AddVar(type=uint16_t, name=test14_0_0_data, addr1=test14_0_0_data_RdAddr1, dimen1=2, rdStg=2, wrStg=2, instrWrite=true)
+	.AddVar(type=uint16_t, name=test14_0_1_data, dimen1=2, rdStg=2, wrStg=2, instrRead=true)
 	;
 
 Test14.AddReadMem()

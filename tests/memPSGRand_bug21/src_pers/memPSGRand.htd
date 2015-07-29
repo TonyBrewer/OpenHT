@@ -54,7 +54,7 @@ Test10.AddPrivate()
 	;
 
 Test10.AddGlobal()
-	.AddVar(type=uint16_t, name=test10_0_1_data, dimen1=1)
+	.AddVar(type=uint16_t, name=test10_0_1_data, dimen1=1, instrRead=true)
 	;
 
 Test10.AddReadMem()

@@ -62,7 +62,7 @@ Test00.AddShared()
 	;
 
 Test00.AddGlobal()
-	.AddVar(type=test00_0_dst_s0_data_struct, name=test00_0_dst_s0_data, addr1=test00_0_dst_s0_data_RdAddr1, addr2=test00_0_dst_s0_data_RdAddr2, rdStg=2, wrStg=2)
+	.AddVar(type=test00_0_dst_s0_data_struct, name=test00_0_dst_s0_data, addr1=test00_0_dst_s0_data_RdAddr1, addr2=test00_0_dst_s0_data_RdAddr2, rdStg=2, wrStg=2, instrRead=true)
 	;
 
 Test00.AddReadMem()

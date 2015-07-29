@@ -56,8 +56,8 @@ inc.AddReadMem()
 inc.AddWriteMem();
 
 inc.AddGlobal()
-	.AddVar(type=CData, name=arrayMem, addr1=arrayMemRdPtr, read=true, write=true)
-	.AddVar(type=CData, name=arrayMem2, addr1=arrayMemRdPtr, read=true, write=true)
+	.AddVar(type=CData, name=arrayMem, addr1=arrayMemRdPtr, instrRead=true, instrWrite=true)
+	.AddVar(type=CData, name=arrayMem2, addr1=arrayMemRdPtr, instrRead=true, instrWrite=true)
 	;
 
 inc.AddFunction(type=bool, name=fb);
@@ -87,7 +87,7 @@ dsnInfo.AddModule(name=inc2, htIdW=INC2_HTID_W);
 inc2.AddInst(name=INC2_INIT);
 
 inc2.AddGlobal()
-	.AddVar(type=CData, name=arrayMem2, addr1W=INC_HTID_W, read=false, write=true)
+	.AddVar(type=CData, name=arrayMem2, addr1W=INC_HTID_W, instrRead=false, instrWrite=true)
 	;
 
 inc2.AddEntry(func=inc2, inst=INC2_INIT)

@@ -53,7 +53,7 @@ Test00.AddPrivate()
 	;
 
 Test00.AddGlobal()
-	.AddVar(type=test00_0_src_s0_data_struct, name=test00_0_src_s0_data)
+	.AddVar(type=test00_0_src_s0_data_struct, name=test00_0_src_s0_data, instrRead=true, instrWrite=true)
 	;
 
 Test00.AddReadMem()

@@ -57,7 +57,7 @@ Test00.AddShared()
 	;
 
 Test00.AddGlobal()
-	.AddVar(type=ht_int18, name=test00_0_dst_v0_data, addr1=test00_0_dst_v0_data_RdAddr1)
+	.AddVar(type=ht_int18, name=test00_0_dst_v0_data, addr1=test00_0_dst_v0_data_RdAddr1, instrRead=true)
 	;
 
 Test00.AddReadMem()

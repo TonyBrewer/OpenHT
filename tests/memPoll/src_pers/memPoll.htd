@@ -75,7 +75,7 @@ poll0.AddReadMem(pause=false, poll=true)
 	.AddDst(var=arrayMem0().data);
 
 poll0.AddGlobal()
-	.AddVar(type=CData, name=arrayMem0, addr1=arrayMemRdPtr, read=true, write=false)
+	.AddVar(type=CData, name=arrayMem0, addr1=arrayMemRdPtr, instrRead=true, instrWrite=false)
 	;
 
 ////////////////////////////////////////////////////
@@ -110,7 +110,7 @@ poll1.AddReadMem(pause=false, poll=true)
 	.AddDst(var=arrayMem1().data);
 
 poll1.AddGlobal()
-	.AddVar(type=CData, name=arrayMem1, addr1=arrayMemRdPtr, read=true, write=false)
+	.AddVar(type=CData, name=arrayMem1, addr1=arrayMemRdPtr, instrRead=true, instrWrite=false)
 	;
 
 ////////////////////////////////////////////////////
@@ -145,7 +145,7 @@ poll2.AddReadMem(pause=false, poll=true)
 	.AddDst(var=arrayMem2().data);
 
 poll2.AddGlobal()
-	.AddVar(type=CData, name=arrayMem2, addr1=arrayMemRdPtr, read=true, write=false)
+	.AddVar(type=CData, name=arrayMem2, addr1=arrayMemRdPtr, instrRead=true, instrWrite=false)
 	;
 
 ////////////////////////////////////////////////////
@@ -180,7 +180,7 @@ poll3.AddReadMem(pause=false, poll=true)
 	.AddDst(var=arrayMem3().data);
 
 poll3.AddGlobal()
-	.AddVar(type=CData, name=arrayMem3, addr1=arrayMemRdPtr, read=true, write=false)
+	.AddVar(type=CData, name=arrayMem3, addr1=arrayMemRdPtr, instrRead=true, instrWrite=false)
 	;
 
 ////////////////////////////////////////////////////
@@ -217,5 +217,5 @@ poll4.AddReadMem(rspGrpW=5, pause=false, poll=true)
 	.AddDst(var=arrayMem4().data);
 
 poll4.AddGlobal()
-	.AddVar(type=CData, name=arrayMem4, addr1=arrayMemRdPtr, read=true, write=false)
+	.AddVar(type=CData, name=arrayMem4, addr1=arrayMemRdPtr, instrRead=true, instrWrite=false)
 	;
