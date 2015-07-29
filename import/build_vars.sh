@@ -1,7 +1,8 @@
 #!/bin/sh
 
-unset JAVA_HOME
 unset PERL5LIB
+unset JAVA_HOME
+unset LD_LIBRARY_PATH
 unset PYTHON PYTHON_DIR PYTHON_VER
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
@@ -11,7 +12,7 @@ if [ -f /etc/redhat-release ]; then
   if [ $OS_VER -lt 6 ]; then
     PREFIX=/sw/Local/c5x
     PATH=$PREFIX/bin:$PREFIX/gcc-4.4.7/bin:$PATH
-    LD_LIBRARY_PATH=$PREFIX/lib:$LD_LIBRARY_PATH
+    LD_LIBRARY_PATH=$PREFIX/lib
     LD_LIBRARY_PATH=$PREFIX/lib64:$LD_LIBRARY_PATH
   fi
 elif [ -f /etc/lsb-release ]; then
