@@ -344,7 +344,7 @@ CDsnInfo::GenRamIntfStruct(CHtCode &code, char const * pTabs, string intfName, C
 
 void
 CDsnInfo::GenStructIsEqual(CHtCode &htFile, char const * pTabs, string prefixName, string &typeName,
-vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType structType, bool bHeader)
+vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType structType, bool bHeader, int idxInit)
 {
 	string m_ = bCStyle ? "" : "m_";
 	if (bHeader) {
@@ -375,7 +375,7 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 						if (pField->m_name.size() > 0)
 							prefixName += m_ + pField->m_name + fldIdx + ".";
 
-						GenStructIsEqual(htFile, pTabs, prefixName, typeName, m_recordList[recordIdx]->m_fieldList, m_recordList[recordIdx]->m_bCStyle, pStr, structType, false);
+						GenStructIsEqual(htFile, pTabs, prefixName, typeName, m_recordList[recordIdx]->m_fieldList, m_recordList[recordIdx]->m_bCStyle, pStr, structType, false, idxInit);
 
 						prefixName.erase(prefixLen);
 
@@ -383,19 +383,18 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 
 				} else {
 					string tabs = pTabs;
-					int idxCnt = 0;
 					for (size_t i = 0; i < pField->m_dimenList.size(); i += 1) {
-						idxCnt += 1;
+						idxInit += 1;
 						bool bIsSigned = m_defineTable.FindStringIsSigned(pField->m_dimenList[i].AsStr());
 						htFile.Append("%s\t\tfor (%s idx%d = 0; idx%d < %d; idx%d += 1) {\n", tabs.c_str(),
-							bIsSigned ? "int" : "unsigned", idxCnt, idxCnt, pField->m_dimenList[i].AsInt(), idxCnt);
+							bIsSigned ? "int" : "unsigned", idxInit, idxInit, pField->m_dimenList[i].AsInt(), idxInit);
 						tabs += "\t";
 					}
 
 					if (pField->m_name.size() > 0)
 						prefixName += m_ + pField->m_name + pField->m_dimenIndex + ".";
 
-					GenStructIsEqual(htFile, tabs.c_str(), prefixName, typeName, m_recordList[recordIdx]->m_fieldList, m_recordList[recordIdx]->m_bCStyle, pStr, structType, false);
+					GenStructIsEqual(htFile, tabs.c_str(), prefixName, typeName, m_recordList[recordIdx]->m_fieldList, m_recordList[recordIdx]->m_bCStyle, pStr, structType, false, idxInit);
 
 					prefixName.erase(prefixLen);
 
@@ -408,7 +407,7 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 			} else if (pField->m_pType->IsRecord() && pField->m_name.size() == 0) {
 
 				CRecord * pRecord = pField->m_pType->AsRecord();
-				GenStructIsEqual(htFile, pTabs, prefixName, typeName, pRecord->m_fieldList, pRecord->m_bCStyle, pStr, structType, false);
+				GenStructIsEqual(htFile, pTabs, prefixName, typeName, pRecord->m_fieldList, pRecord->m_bCStyle, pStr, structType, false, idxInit);
 
 			} else {
 				if (pField->m_elemCnt <= 8) {
@@ -425,11 +424,11 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 					} while (DimenIter(pField->m_dimenList, refList));
 
 				} else {
-					GenRamIndexLoops(htFile, "\t\t", *pField);
+					string dimenIndex = GenRamIndexLoops(htFile, VA("%s\t", pTabs).c_str(), *pField, false, idxInit);
 
 					htFile.Append("%s\t\tif (!(%s%s%s%s == rhs.%s%s%s%s)) return false;\n", pTabs,
-						prefixName.c_str(), m_.c_str(), pField->m_name.c_str(), pField->m_dimenIndex.c_str(),
-						prefixName.c_str(), m_.c_str(), pField->m_name.c_str(), pField->m_dimenIndex.c_str());
+						prefixName.c_str(), m_.c_str(), pField->m_name.c_str(), dimenIndex.c_str(),
+						prefixName.c_str(), m_.c_str(), pField->m_name.c_str(), dimenIndex.c_str());
 				}
 			}
 		}
@@ -444,7 +443,7 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 
 void
 CDsnInfo::GenStructAssign(CHtCode &htFile, char const * pTabs, string prefixName, string &typeName,
-vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType structType, bool bHeader)
+vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType structType, bool bHeader, int idxInit)
 {
 	string m_ = bCStyle ? "" : "m_";
 
@@ -477,7 +476,7 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 							prefixName += m_ + pField->m_name + fldIdx + ".";
 
 						GenStructAssign(htFile, pTabs, prefixName, typeName, m_recordList[recordIdx]->m_fieldList,
-							m_recordList[recordIdx]->m_bCStyle, pStr, structType, false);
+							m_recordList[recordIdx]->m_bCStyle, pStr, structType, false, idxInit);
 
 						prefixName.erase(prefixLen);
 
@@ -485,12 +484,11 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 
 				} else {
 					string tabs = pTabs;
-					int idxCnt = 0;
 					for (size_t i = 0; i < pField->m_dimenList.size(); i += 1) {
-						idxCnt += 1;
+						idxInit += 1;
 						bool bIsSigned = m_defineTable.FindStringIsSigned(pField->m_dimenList[i].AsStr());
 						htFile.Append("%s\t\tfor (%s idx%d = 0; idx%d < %d; idx%d += 1) {\n", tabs.c_str(),
-							bIsSigned ? "int" : "unsigned", idxCnt, idxCnt, pField->m_dimenList[i].AsInt(), idxCnt);
+							bIsSigned ? "int" : "unsigned", idxInit, idxInit, pField->m_dimenList[i].AsInt(), idxInit);
 						tabs += "\t";
 					}
 
@@ -498,7 +496,7 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 						prefixName += m_ + pField->m_name + pField->m_dimenIndex + ".";
 
 					GenStructAssign(htFile, tabs.c_str(), prefixName, typeName, m_recordList[recordIdx]->m_fieldList,
-						m_recordList[recordIdx]->m_bCStyle, pStr, structType, false);
+						m_recordList[recordIdx]->m_bCStyle, pStr, structType, false, idxInit);
 
 					prefixName.erase(prefixLen);
 
@@ -511,7 +509,7 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 			} else if (pField->m_pType->IsRecord() && pField->m_name.size() == 0) {
 
 				CRecord * pRecord = pField->m_pType->AsRecord();
-				GenStructAssign(htFile, pTabs, prefixName, typeName, pRecord->m_fieldList, bCStyle, pStr, structType, false);
+				GenStructAssign(htFile, pTabs, prefixName, typeName, pRecord->m_fieldList, bCStyle, pStr, structType, false, idxInit);
 
 			} else {
 				vector<int> refList(pField->m_dimenList.size(), 0);
@@ -536,7 +534,7 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 
 void
 CDsnInfo::GenStructAssignToZero(CHtCode &htFile, char const * pTabs, string prefixName, string &typeName,
-vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType structType, bool bHeader)
+vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType structType, bool bHeader, int idxInit)
 {
 	string m_ = bCStyle ? "" : "m_";
 
@@ -570,7 +568,7 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 							prefixName += m_ + pField->m_name + fldIdx + ".";
 
 						GenStructAssignToZero(htFile, pTabs, prefixName, typeName, m_recordList[recordIdx]->m_fieldList,
-							m_recordList[recordIdx]->m_bCStyle, pStr, structType, false);
+							m_recordList[recordIdx]->m_bCStyle, pStr, structType, false, idxInit);
 
 						prefixName.erase(prefixLen);
 
@@ -578,12 +576,11 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 
 				} else {
 					string tabs = pTabs;
-					int idxCnt = 0;
 					for (size_t i = 0; i < pField->m_dimenList.size(); i += 1) {
-						idxCnt += 1;
+						idxInit += 1;
 						bool bIsSigned = m_defineTable.FindStringIsSigned(pField->m_dimenList[i].AsStr());
 						htFile.Append("%s\t\tfor (%s idx%d = 0; idx%d < %d; idx%d += 1) {\n", tabs.c_str(),
-							bIsSigned ? "int" : "unsigned", idxCnt, idxCnt, pField->m_dimenList[i].AsInt(), idxCnt);
+							bIsSigned ? "int" : "unsigned", idxInit, idxInit, pField->m_dimenList[i].AsInt(), idxInit);
 						tabs += "\t";
 					}
 
@@ -591,7 +588,7 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 						prefixName += m_ + pField->m_name + pField->m_dimenIndex + ".";
 
 					GenStructAssignToZero(htFile, tabs.c_str(), prefixName, typeName, m_recordList[recordIdx]->m_fieldList,
-						m_recordList[recordIdx]->m_bCStyle, pStr, structType, false);
+						m_recordList[recordIdx]->m_bCStyle, pStr, structType, false, idxInit);
 
 					prefixName.erase(prefixLen);
 
@@ -605,7 +602,7 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 			} else if (pField->m_pType->IsRecord() && pField->m_name.size() == 0) {
 
 				CRecord * pRecord = pField->m_pType->AsRecord();
-				GenStructAssignToZero(htFile, pTabs, prefixName, typeName, pRecord->m_fieldList, bCStyle, pStr, structType, false);
+				GenStructAssignToZero(htFile, pTabs, prefixName, typeName, pRecord->m_fieldList, bCStyle, pStr, structType, false, idxInit);
 
 			} else {
 
@@ -623,9 +620,10 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 
 				} else {
 
-					GenRamIndexLoops(htFile, "\t\t", *pField);
+					string dimenIndex = GenRamIndexLoops(htFile, VA("%s\t", pTabs).c_str(), *pField, false, idxInit);
+
 					htFile.Append("\t\t%s%s%s%s%s%s = 0;\n", pTabs, pStr,
-						prefixName.c_str(), m_.c_str(), pField->m_name.c_str(), pField->m_dimenIndex.c_str());
+						prefixName.c_str(), m_.c_str(), pField->m_name.c_str(), dimenIndex.c_str());
 				}
 			}
 		}
@@ -639,7 +637,7 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 
 void
 CDsnInfo::GenStructScTrace(CHtCode &htFile, char const * pTabs, string prefixName1, string prefixName2, string &typeName,
-vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType structType, bool bHeader)
+vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType structType, bool bHeader, int idxInit)
 {
 	string m_ = bCStyle ? "" : "m_";
 
@@ -675,7 +673,7 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 						}
 
 						GenStructScTrace(htFile, pTabs, prefixName1, prefixName2, typeName, m_recordList[recordIdx]->m_fieldList,
-							m_recordList[recordIdx]->m_bCStyle, pStr, structType, false);
+							m_recordList[recordIdx]->m_bCStyle, pStr, structType, false, idxInit);
 
 						prefixName1.erase(prefixLen1);
 						prefixName2.erase(prefixLen2);
@@ -685,12 +683,11 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 				} else {
 					string loopIdx;
 					string tabs = pTabs;
-					int idxCnt = 0;
 					for (size_t i = 0; i < pField->m_dimenList.size(); i += 1) {
-						idxCnt += 1;
+						idxInit += 1;
 						bool bIsSigned = m_defineTable.FindStringIsSigned(pField->m_dimenList[i].AsStr());
 						htFile.Append("%s\t\tfor (%s idx%d = 0; idx%d < %d; idx%d += 1) {\n", tabs.c_str(),
-							bIsSigned ? "int" : "unsigned", idxCnt, idxCnt, pField->m_dimenList[i].AsInt(), idxCnt);
+							bIsSigned ? "int" : "unsigned", idxInit, idxInit, pField->m_dimenList[i].AsInt(), idxInit);
 						tabs += "\t";
 						loopIdx += VA("[\" + (std::string)HtStrFmt(\"%%d\", idx%d) + \"]", (int)i + 1);
 					}
@@ -701,7 +698,7 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 					}
 
 					GenStructScTrace(htFile, tabs.c_str(), prefixName1, prefixName2, typeName, m_recordList[recordIdx]->m_fieldList,
-						m_recordList[recordIdx]->m_bCStyle, pStr, structType, false);
+						m_recordList[recordIdx]->m_bCStyle, pStr, structType, false, idxInit);
 
 					prefixName1.erase(prefixLen1);
 					prefixName2.erase(prefixLen2);
@@ -715,7 +712,7 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 			} else if (pField->m_pType->IsRecord() && pField->m_name.size() == 0) {
 
 				CRecord * pRecord = pField->m_pType->AsRecord();
-				GenStructScTrace(htFile, pTabs, prefixName1, prefixName2, typeName, pRecord->m_fieldList, bCStyle, pStr, structType, false);
+				GenStructScTrace(htFile, pTabs, prefixName1, prefixName2, typeName, pRecord->m_fieldList, bCStyle, pStr, structType, false, idxInit);
 
 			} else {
 				if (pField->m_elemCnt <= 8) {
@@ -733,11 +730,12 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 
 				} else {
 
-					string loopIdx = GenRamIndexLoops(htFile, "\t\t", *pField);
+					string scTraceIndex;
+					string dimenIndex = GenRamIndexLoops(htFile, VA("%s\t", pTabs).c_str(), *pField, false, idxInit, &scTraceIndex);
 
 					htFile.Append("%s\t\tsc_trace(tf, v.%s%s%s%s, NAME + \".%s%s%s%s\");\n", pTabs,
-						prefixName1.c_str(), m_.c_str(), pField->m_name.c_str(), pField->m_dimenIndex.c_str(),
-						prefixName2.c_str(), m_.c_str(), pField->m_name.c_str(), loopIdx.c_str());
+						prefixName1.c_str(), m_.c_str(), pField->m_name.c_str(), dimenIndex.c_str(),
+						prefixName2.c_str(), m_.c_str(), pField->m_name.c_str(), scTraceIndex.c_str());
 				}
 			}
 		}
@@ -749,7 +747,7 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 
 void
 CDsnInfo::GenStructStream(CHtCode &htFile, char const * pTabs, string prefixName, string &typeName,
-vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType structType, bool bHeader)
+vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType structType, bool bHeader, int idxInit)
 {
 	htFile.Append("%s\tfriend ostream& operator << (ostream& os, %s const & v) { return os; }\n", pTabs, typeName.c_str());
 }
@@ -1383,8 +1381,10 @@ void CStructElemIter::operator ++ (int)
 
 		if (bFollowStruct) {
 			string heirName = m_stack.back().m_heirName;
-			if (pField3->m_name.size() > 0)
-				heirName += "." + pField3->m_name;
+			if (pField3->m_name.size() > 0) {
+				if (heirName.size() > 0) heirName += ".";
+				heirName += pField3->m_name;
+			}
 			if (m_bDimenIter)
 				heirName += m_pDsnInfo->IndexStr(m_stack.back().m_refList);
 
@@ -1418,8 +1418,10 @@ string CStructElemIter::GetHeirFieldName(bool bAddPreDot)
 	CField * pField = stack.m_pRecord->m_fieldList[stack.m_fieldIdx];
 
 	string heirFieldName;
-	if (stack.m_heirName.size() > 0 || bAddPreDot)
-		heirFieldName = stack.m_heirName + ".";
+	if (bAddPreDot)
+		heirFieldName = ".";
+	if (stack.m_heirName.size() > 0)
+		heirFieldName += stack.m_heirName + ".";
 	heirFieldName += pField->m_name + m_pDsnInfo->IndexStr(stack.m_refList);
 
 	return heirFieldName;
@@ -1494,17 +1496,19 @@ string CDsnInfo::GenRamIndexLoops(CHtCode &ramCode, vector<int> & dimenList, boo
 	return tabs;
 }
 
-string CDsnInfo::GenRamIndexLoops(CHtCode &ramCode, const char *pTabs, CDimenList &dimenList, bool bOpenParen)
+string CDsnInfo::GenRamIndexLoops(CHtCode &ramCode, const char *pTabs, CDimenList &dimenList, bool bOpenParen, int idxInit, string * pScTraceIndex)
 {
 	string loopIdx;
 	string indentTabs;
 	for (size_t i = 0; i < dimenList.m_dimenList.size(); i += 1) {
 		bool bIsSigned = m_defineTable.FindStringIsSigned(dimenList.m_dimenList[i].AsStr());
 		ramCode.Append("%s\tfor (%s idx%d = 0; idx%d < %d; idx%d += 1)%s\n\t%s", pTabs,
-			bIsSigned ? "int" : "unsigned", (int)i + 1, (int)i + 1, dimenList.m_dimenList[i].AsInt(), (int)i + 1,
+			bIsSigned ? "int" : "unsigned", idxInit + (int)i + 1, idxInit + (int)i + 1, dimenList.m_dimenList[i].AsInt(), idxInit + (int)i + 1,
 			bOpenParen && dimenList.m_dimenList.size() == i + 1 ? " {" : "", indentTabs.c_str());
 		indentTabs += "\t";
-		loopIdx += VA("[\" + (std::string)HtStrFmt(\"%%d\", idx%d) + \"]", (int)i + 1);
+		if (pScTraceIndex)
+			*pScTraceIndex += VA("[\" + (std::string)HtStrFmt(\"%%d\", idx%d) + \"]", idxInit + (int)i + 1);
+		loopIdx += VA("[idx%d]", idxInit + (int)i + 1);
 	}
 	return loopIdx;
 }

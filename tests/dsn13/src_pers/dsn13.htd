@@ -42,7 +42,7 @@ incRd.AddReadMem()
 	.AddFunction(name=arrayMem, rspInfoW=INCRD_HTID_W, rsmDly=4);
 
 incRd.AddGlobal()
-	.AddVar(type=CData, name=arrayMem, addr1W=INCRD_HTID_W, read=false, write=true)
+	.AddVar(type=CData, name=arrayMem, addr1W=INCRD_HTID_W, instrRead=false, instrWrite=true)
 	;
 
 #define INCWR_HTID_W 5
@@ -77,5 +77,5 @@ incWr.AddReturn(func=incWr)
 incWr.AddWriteMem();
 
 incWr.AddGlobal()
-	.AddVar(type=CData, name=arrayMem, addr1=arrayMemRdPtr, read=true, write=false)
+	.AddVar(type=CData, name=arrayMem, addr1=arrayMemRdPtr, instrRead=true, instrWrite=false)
 	;

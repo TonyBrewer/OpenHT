@@ -57,7 +57,7 @@ gv1.AddReturn(func=gv1)
 	;
 
 gv1.AddGlobal()
-	.AddVar(type=CGVar, name=gvar1, addr1=gvAddr, read=true)
+	.AddVar(type=CGVar, name=gvar1, addr1=gvAddr, instrRead=true, instrWrite=true)
 	;
 
 gv1.AddWriteMem(reqPause=true)
@@ -92,7 +92,7 @@ gv2.AddReturn(func=gv2)
 	;
 
 gv2.AddGlobal()
-	.AddVar(type=CGVar, name=gvar2, addr1=htId, addr2=gvAddr, write=false)
+	.AddVar(type=CGVar, name=gvar2, addr1=htId, addr2=gvAddr, instrWrite=false, instrRead=true)
 	;
 
 gv2.AddReadMem()

@@ -59,7 +59,7 @@ union CUnion {
 };
 
 inc.AddGlobal()
-	.AddVar(type=CUnion, name=arrayMem, addr1=instCnt, read=true, write=true)
+	.AddVar(type=CUnion, name=arrayMem, addr1=instCnt, instrRead=true, instrWrite=true)
 	;
 
 //////////////////////////////////////////

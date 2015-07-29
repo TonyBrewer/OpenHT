@@ -94,7 +94,7 @@ Test01.AddPrivate()
 	;
 
 Test01.AddGlobal()
-	.AddVar(type=uint32_t, name=test01_0_0_data, dimen1=2)
+	.AddVar(type=uint32_t, name=test01_0_0_data, dimen1=2, instrRead=true, instrWrite=true)
 	;
 
 Test01.AddReadMem()
@@ -135,7 +135,7 @@ Test02.AddPrivate()
 	;
 
 Test02.AddGlobal()
-	.AddVar(type=uint16_t, name=test02_0_1_data, addr1=test02_0_1_data_RdAddr1, addr2=test02_0_1_data_RdAddr2, dimen1=2)
+	.AddVar(type=uint16_t, name=test02_0_1_data, addr1=test02_0_1_data_RdAddr1, addr2=test02_0_1_data_RdAddr2, dimen1=2, instrRead=true)
 	;
 
 Test02.AddReadMem()
@@ -175,7 +175,7 @@ Test03.AddPrivate()
 	;
 
 Test03.AddGlobal()
-	.AddVar(type=uint16_t, name=test03_0_0_data, dimen1=2)
+	.AddVar(type=uint16_t, name=test03_0_0_data, dimen1=2, instrWrite=true)
 	;
 
 Test03.AddReadMem()
@@ -214,7 +214,7 @@ Test04.AddPrivate()
 	;
 
 Test04.AddGlobal()
-	.AddVar(type=uint32_t, name=test04_0_0_data, addr1=test04_0_0_data_RdAddr1)
+	.AddVar(type=uint32_t, name=test04_0_0_data, addr1=test04_0_0_data_RdAddr1, instrRead=true, instrWrite=true)
 	;
 
 Test04.AddReadMem()

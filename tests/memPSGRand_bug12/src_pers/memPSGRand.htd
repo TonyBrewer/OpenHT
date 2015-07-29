@@ -86,7 +86,7 @@ Test00.AddShared()
 	;
 
 Test00.AddGlobal()
-	.AddVar(type=test00_0_g_0_data_struct, name=test00_0_g_0_data)
+	.AddVar(type=test00_0_g_0_data_struct, name=test00_0_g_0_data, instrRead=true, instrWrite=true)
 	;
 
 Test00.AddReadMem()

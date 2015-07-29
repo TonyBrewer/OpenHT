@@ -74,8 +74,8 @@ Test00.AddShared()
 	;
 
 Test00.AddGlobal()
-	.AddVar(type=uint64_t, name=test00_0_src_v0_data, addr1=test00_0_src_v0_data_RdAddr1, dimen1=3)
-	.AddVar(type=uint8_t, name=test00_2_dst_v0_data, addr1=test00_2_dst_v0_data_RdAddr1, rdStg=1, wrStg=1)
+	.AddVar(type=uint64_t, name=test00_0_src_v0_data, addr1=test00_0_src_v0_data_RdAddr1, dimen1=3, instrRead=true, instrWrite=true)
+	.AddVar(type=uint8_t, name=test00_2_dst_v0_data, addr1=test00_2_dst_v0_data_RdAddr1, rdStg=1, wrStg=1, instrRead=true)
 	;
 
 Test00.AddReadMem()

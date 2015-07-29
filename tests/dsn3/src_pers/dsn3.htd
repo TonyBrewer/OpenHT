@@ -41,5 +41,5 @@ xyz.AddReadMem()
 xyz.AddWriteMem();
 
 xyz.AddGlobal()
-	.AddVar(type=CData, name=arrayMem, addr1=arrayMemRdPtr, read=true, write=true)
+	.AddVar(type=CData, name=arrayMem, addr1=arrayMemRdPtr, instrRead=true, instrWrite=true)
 	;

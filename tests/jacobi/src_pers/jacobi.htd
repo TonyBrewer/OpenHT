@@ -99,7 +99,7 @@ stencil.AddPrivate()
 
 // Ram for temp array
 stencil.AddGlobal()
-	.AddVar(type=CTwoFxPnt, name=tempa, addr1=ram_i, read=true, write=true)
+	.AddVar(type=CTwoFxPnt, name=tempa, addr1=ram_i, instrRead=true, instrWrite=true)
 	;
 
 // Set up memory write interface
@@ -113,7 +113,7 @@ stencil.AddReadMem()
 
 // Ram for reading memory 
 stencil.AddGlobal()
-	.AddVar(type=CTwoFxPnt, name=mifRdVal, addr1=ram_rdVal, read=true, write=false)
+	.AddVar(type=CTwoFxPnt, name=mifRdVal, addr1=ram_rdVal, instrRead=true, instrWrite=false)
 	;
 
 // Callee interface

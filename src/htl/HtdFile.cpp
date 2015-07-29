@@ -1701,8 +1701,8 @@ void HtdFile::ParseGlobalMethods()
 		bool bMaxIw = false;
 		bool bMaxMw = false;
 		string blockRam;
-		bool bRead = true;
-		bool bWrite = true;
+		bool bRead = false;
+		bool bWrite = false;
 		bool bSpanningWrite = false;
 
 		CParamList params[] =
@@ -1720,8 +1720,8 @@ void HtdFile::ParseGlobalMethods()
 			{ "maxIw", &bMaxIw, false, ePrmBoolean, 0, 0 },
 			{ "maxMw", &bMaxMw, false, ePrmBoolean, 0, 0 },
 			{ "blockRam", &blockRam, false, ePrmIdent, 0, 0 },
-			{ "read", &bRead, false, ePrmBoolean, 0, 0 },
-			{ "write", &bWrite, false, ePrmBoolean, 0, 0 },
+			{ "instrRead", &bRead, false, ePrmBoolean, 0, 0 },
+			{ "instrWrite", &bWrite, false, ePrmBoolean, 0, 0 },
 			{ "spanningWrite", &bSpanningWrite, false, ePrmBoolean, 0, 0 },
 			{ 0, 0, 0, ePrmUnknown, 0, 0 }
 		};
@@ -1729,7 +1729,7 @@ void HtdFile::ParseGlobalMethods()
 		if (!ParseParameters(params)) {
 			CPreProcess::ParseMsg(Error, "expected .AddVar( type, name {, dimen1=0 {, dimen2=0 }} {, addr1W=0 {, addr2W=0 }} ");
 			CPreProcess::ParseMsg(Info, "      {, addr1=\"\" {, addr2=\"\" }} {, rdStg=1 } {, wrStg=1 } {, maxIw=false} {, maxMw=false}");
-			CPreProcess::ParseMsg(Info, "      {, blockRam=\"\" } {, read=true } {, write=true } {, spanningWrite=false } )");
+			CPreProcess::ParseMsg(Info, "      {, blockRam=\"\" } {, instrRead=false } {, instrWrite=false } {, spanningWrite=false } )");
 		}
 
 		ERamType ramType = eAutoRam;

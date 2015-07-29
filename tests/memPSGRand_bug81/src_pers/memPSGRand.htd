@@ -54,7 +54,7 @@ Test00.AddPrivate()
 	;
 
 Test00.AddGlobal()
-	.AddVar(type=uint32_t, name=test00_0_dst_v0_data, rdStg=3, wrStg=3)
+	.AddVar(type=uint32_t, name=test00_0_dst_v0_data, rdStg=3, wrStg=3, instrRead=true)
 	;
 
 Test00.AddReadMem()

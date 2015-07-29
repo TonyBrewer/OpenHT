@@ -53,7 +53,7 @@ Test00.AddPrivate()
 	;
 
 Test00.AddGlobal()
-	.AddVar(type=uint8_t, name=test00_0_0_data, dimen1=2, rdStg=1, wrStg=1)
+	.AddVar(type=uint8_t, name=test00_0_0_data, dimen1=2, rdStg=1, wrStg=1, instrRead=true, instrWrite=true)
 	;
 
 Test00.AddReadMem()

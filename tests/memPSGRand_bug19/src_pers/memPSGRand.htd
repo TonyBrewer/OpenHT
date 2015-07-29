@@ -52,7 +52,7 @@ Test00.AddPrivate()
 	;
 
 Test00.AddGlobal()
-	.AddVar(type=uint32_t, name=test00_0_0_data)
+	.AddVar(type=uint32_t, name=test00_0_0_data, instrRead=true, instrWrite=true)
 	;
 
 Test00.AddReadMem()

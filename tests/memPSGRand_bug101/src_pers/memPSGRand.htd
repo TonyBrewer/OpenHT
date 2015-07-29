@@ -55,7 +55,7 @@ Test00.AddPrivate()
 	;
 
 Test00.AddGlobal()
-	.AddVar(type=test00_0_dst_s0_data_struct, name=test00_0_dst_s0_data, addr1=addr1, blockRam=true)
+	.AddVar(type=test00_0_dst_s0_data_struct, name=test00_0_dst_s0_data, addr1=addr1, blockRam=true, instrRead=true, instrWrite=true)
 	;
 
 Test00.AddReadMem()

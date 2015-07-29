@@ -48,7 +48,7 @@ Test00.AddPrivate()
 	;
 
 Test00.AddGlobal()
-	.AddVar(type=uint16_t, name=test00_0_v4_data, dimen1=2, dimen2=2)
+	.AddVar(type=uint16_t, name=test00_0_v4_data, dimen1=2, dimen2=2, instrRead=true)
 	;
 
 Test00.AddReadMem()

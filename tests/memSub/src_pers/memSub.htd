@@ -41,7 +41,7 @@ MemSub.AddShared()
 	;
 
 MemSub.AddGlobal()
-	.AddVar(name=array2, type=Align16, addr1=addr1, read=false, write=false)
+	.AddVar(name=array2, type=Align16, addr1=addr1, instrRead=false, instrWrite=false)
 	;
 
 MemSub.AddReturn(func=MemSub)

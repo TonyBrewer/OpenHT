@@ -53,7 +53,7 @@ gv1.AddReturn(func=gv1)
 	;
 
 gv1.AddGlobal()
-	.AddVar(type=CGVar, name=gvar, addr1=gvAddr)
+	.AddVar(type=CGVar, name=gvar, addr1=gvAddr, instrWrite=true)
 	;
 
 gv1.AddWriteMem()

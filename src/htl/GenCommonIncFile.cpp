@@ -669,9 +669,19 @@ void CDsnInfo::GenGlobalVarWriteTypes(CHtFile & htFile, CType * pType, int &atom
 
 		fprintf(htFile, "\t\t%s _data_;\n", pType->m_typeName.c_str());
 
-		for (CStructElemIter iter(this, pRecord, false); !iter.end(); iter++) {
-			fprintf(htFile, "\t\t_data_.%s = %s.GetData();\n",
-				iter.GetHeirFieldName(false).c_str(), iter.GetHeirFieldName(false).c_str());
+		if (pRecord->m_bUnion) {
+			fprintf(htFile, "\t\t_data_ = 0;\n");
+			for (CStructElemIter iter(this, pRecord, true); !iter.end(); iter++) {
+				fprintf(htFile, "\t\tif (%s.GetWrEn())\n",
+					iter.GetHeirFieldName(false).c_str());
+				fprintf(htFile, "\t\t\t_data_.%s = %s.GetData();\n",
+					iter.GetHeirFieldName(false).c_str(), iter.GetHeirFieldName(false).c_str());
+			}
+		} else {
+			for (CStructElemIter iter(this, pRecord, false); !iter.end(); iter++) {
+				fprintf(htFile, "\t\t_data_.%s = %s.GetData();\n",
+					iter.GetHeirFieldName(false).c_str(), iter.GetHeirFieldName(false).c_str());
+			}
 		}
 		fprintf(htFile, "\t\treturn _data_;\n");
 		fprintf(htFile, "\t}\n");

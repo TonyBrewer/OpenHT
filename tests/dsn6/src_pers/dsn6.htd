@@ -49,6 +49,6 @@ inc.AddReadMem()
 inc.AddWriteMem();
 
 inc.AddGlobal()
-	.AddVar(type=CTwoFld, name=arrayMem1, addr1=arrayMemRdPtr)
-	.AddVar(type=CTwoFld, name=arrayMem2, addr1=arrayMemRdPtr)
+	.AddVar(type=CTwoFld, name=arrayMem1, addr1=arrayMemRdPtr, instrRead=true)
+	.AddVar(type=CTwoFld, name=arrayMem2, addr1=arrayMemRdPtr, instrRead=true)
 	;

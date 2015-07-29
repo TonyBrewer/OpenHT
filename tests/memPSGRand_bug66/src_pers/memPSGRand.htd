@@ -78,8 +78,8 @@ Test00.AddShared()
 	;
 
 Test00.AddGlobal()
-	.AddVar(type=test00_0_src_s0_data_struct, name=test00_0_src_s0_data, addr1=test00_0_src_s0_data_RdAddr1, addr2=test00_0_src_s0_data_RdAddr2, dimen1=2, dimen2=5)
-	.AddVar(type=int64_t, name=test00_0_dst_v0_data, dimen1=4, dimen2=1)
+	.AddVar(type=test00_0_src_s0_data_struct, name=test00_0_src_s0_data, addr1=test00_0_src_s0_data_RdAddr1, addr2=test00_0_src_s0_data_RdAddr2, dimen1=2, dimen2=5, instrWrite=true)
+	.AddVar(type=int64_t, name=test00_0_dst_v0_data, dimen1=4, dimen2=1, instrRead=true)
 	;
 
 Test00.AddReadMem()

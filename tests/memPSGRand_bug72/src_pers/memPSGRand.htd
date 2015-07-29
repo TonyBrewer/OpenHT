@@ -143,12 +143,12 @@ Test00.AddShared()
 	;
 
 Test00.AddGlobal()
-	.AddVar(type=test00_0_src_u0_data_union, name=test00_0_src_u0_data, addr1=test00_0_src_u0_data_RdAddr1, dimen1=5)
-	.AddVar(type=uint8_t, name=test00_1_src_v0_data)
-	.AddVar(type=test00_1_dst_s0_data_struct, name=test00_1_dst_s0_data)
-	.AddVar(type=int32_t, name=test00_2_src_v0_data, addr1=test00_2_src_v0_data_RdAddr1, addr2=test00_2_src_v0_data_RdAddr2, dimen1=3, dimen2=5)
-	.AddVar(type=int32_t, name=test00_2_dst_v0_data)
-	.AddVar(type=test00_4_dst_s0_data_struct, name=test00_4_dst_s0_data, addr1=test00_4_dst_s0_data_RdAddr1, dimen1=2, dimen2=4)
+	.AddVar(type=test00_0_src_u0_data_union, name=test00_0_src_u0_data, addr1=test00_0_src_u0_data_RdAddr1, dimen1=5, instrWrite=true)
+	.AddVar(type=uint8_t, name=test00_1_src_v0_data, instrRead=true, instrWrite=true)
+	.AddVar(type=test00_1_dst_s0_data_struct, name=test00_1_dst_s0_data, instrRead=true)
+	.AddVar(type=int32_t, name=test00_2_src_v0_data, addr1=test00_2_src_v0_data_RdAddr1, addr2=test00_2_src_v0_data_RdAddr2, dimen1=3, dimen2=5, instrWrite=true)
+	.AddVar(type=int32_t, name=test00_2_dst_v0_data, instrRead=true)
+	.AddVar(type=test00_4_dst_s0_data_struct, name=test00_4_dst_s0_data, addr1=test00_4_dst_s0_data_RdAddr1, dimen1=2, dimen2=4, instrRead=true)
 	;
 
 Test00.AddReadMem()

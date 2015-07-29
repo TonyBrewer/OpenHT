@@ -106,7 +106,7 @@ inc0.AddReadMem()
 inc0.AddWriteMem();
 
 inc0.AddGlobal()
-	.AddVar(type=CData, name=arrayMem0, addr1=arrayMemRdPtr, read=true, write=false)
+	.AddVar(type=CData, name=arrayMem0, addr1=arrayMemRdPtr, instrRead=true, instrWrite=false)
 	;
 
 ////////////////////////////////////////////////////
@@ -153,11 +153,11 @@ inc1.AddReadMem()
 inc1.AddWriteMem();
 
 //inc1.AddGlobal(var=arrayMem1, addr1W=INC1_HTID_W+7, addr1=arrayMemRdPtr)
-//	.AddField(type=uint64_t, name=data, read=true, write=false)
+//	.AddField(type=uint64_t, name=data, instrRead=true, instrWrite=false)
 //	;
 
 inc1.AddGlobal()
-	.AddVar(type=CData, name=arrayMem1, addr1=arrayMemRdPtr, read=true, write=false)
+	.AddVar(type=CData, name=arrayMem1, addr1=arrayMemRdPtr, instrRead=true, instrWrite=false)
 	;
 
 ////////////////////////////////////////////////////
@@ -203,7 +203,7 @@ inc2.AddReadMem()
 inc2.AddWriteMem();
 
 inc2.AddGlobal()
-	.AddVar(type=CData, name=arrayMem2, addr1=arrayMemRdPtr, read=true, write=false)
+	.AddVar(type=CData, name=arrayMem2, addr1=arrayMemRdPtr, instrRead=true, instrWrite=false)
 	;
 
 ////////////////////////////////////////////////////
@@ -252,7 +252,7 @@ inc3.AddReadMem()
 inc3.AddWriteMem();
 
 inc3.AddGlobal()
-	.AddVar(type=CData, name=arrayMem3, addr1=arrayMemRdPtr, read=true, write=false, rdStg=1, wrStg=1)
+	.AddVar(type=CData, name=arrayMem3, addr1=arrayMemRdPtr, instrRead=true, instrWrite=false, rdStg=1, wrStg=1)
 	;
 
 ////////////////////////////////////////////////////
@@ -298,7 +298,7 @@ inc4.AddReadMem()
 inc4.AddWriteMem();
 
 inc4.AddGlobal()
-	.AddVar(type=CData, name=arrayMem4, addr1=arrayMemRdPtr, read=true, write=false)
+	.AddVar(type=CData, name=arrayMem4, addr1=arrayMemRdPtr, instrRead=true, instrWrite=false)
 	;
 
 ////////////////////////////////////////////////////
@@ -347,7 +347,7 @@ inc5.AddReadMem(rspGrpW=INC5_RD_GRP_W)
 inc5.AddWriteMem();
 
 inc5.AddGlobal()
-	.AddVar(type=CData, name=arrayMem5, addr1=arrayMemRdPtr, read=true, write=false)
+	.AddVar(type=CData, name=arrayMem5, addr1=arrayMemRdPtr, instrRead=true, instrWrite=false)
 	;
 
 ////////////////////////////////////////////////////
@@ -396,7 +396,7 @@ inc6.AddReadMem(rspGrpW=INC6_RD_GRP_W)
 inc6.AddWriteMem();
 
 inc6.AddGlobal()
-	.AddVar(type=CData, name=arrayMem6, addr1=arrayMemRdPtr, read=true, write=false)
+	.AddVar(type=CData, name=arrayMem6, addr1=arrayMemRdPtr, instrRead=true, instrWrite=false)
 	;
 
 ////////////////////////////////////////////////////
@@ -445,7 +445,7 @@ inc7.AddReadMem(rspGrpW=INC7_RD_GRP_W)
 inc7.AddWriteMem();
 
 inc7.AddGlobal()
-	.AddVar(type=CData, name=arrayMem7, addr1=arrayMemRdPtr, read=true, write=false)
+	.AddVar(type=CData, name=arrayMem7, addr1=arrayMemRdPtr, instrRead=true, instrWrite=false)
 	;
 
 ////////////////////////////////////////////////////
@@ -494,7 +494,7 @@ inc8.AddReadMem(rspGrpW=INC8_RD_GRP_W)
 inc8.AddWriteMem();
 
 inc8.AddGlobal()
-	.AddVar(type=CData, name=arrayMem8, addr1=arrayMemRdPtr, read=true, write=false)
+	.AddVar(type=CData, name=arrayMem8, addr1=arrayMemRdPtr, instrRead=true, instrWrite=false)
 	;
 
 ////////////////////////////////////////////////////
@@ -543,7 +543,7 @@ inc9.AddReadMem()
 inc9.AddWriteMem(rspGrpW=INC9_WR_GRP_W);
 
 inc9.AddGlobal()
-	.AddVar(type=CData, name=arrayMem9, addr1=arrayMemRdPtr, read=true, write=false)
+	.AddVar(type=CData, name=arrayMem9, addr1=arrayMemRdPtr, instrRead=true, instrWrite=false)
 	;
 
 ////////////////////////////////////////////////////
@@ -592,7 +592,7 @@ inc10.AddReadMem()
 inc10.AddWriteMem(rspGrpW=INC10_WR_GRP_W);
 	
 inc10.AddGlobal()
-	.AddVar(type=CData, name=arrayMem10, addr1=arrayMemRdPtr, read=true, write=false)
+	.AddVar(type=CData, name=arrayMem10, addr1=arrayMemRdPtr, instrRead=true, instrWrite=false)
 	;
 
 ////////////////////////////////////////////////////
@@ -643,7 +643,7 @@ inc11.AddReadMem()
 inc11.AddWriteMem(rspGrpW=INC11_WR_GRP_W);
 	
 inc11.AddGlobal()
-	.AddVar(type=CData, name=arrayMem11, addr1=arrayMemRdPtr, read=true, write=false, rdStg=1, wrStg=1)
+	.AddVar(type=CData, name=arrayMem11, addr1=arrayMemRdPtr, instrRead=true, instrWrite=false, rdStg=1, wrStg=1)
 	;
 
 ////////////////////////////////////////////////////
@@ -694,5 +694,5 @@ inc12.AddReadMem()
 inc12.AddWriteMem(rspGrpW=INC12_WR_GRP_W);
 	
 inc12.AddGlobal()
-	.AddVar(type=CData, name=arrayMem12, addr1=arrayMemRdPtr, read=true, write=false, rdStg=1, wrStg=1)
+	.AddVar(type=CData, name=arrayMem12, addr1=arrayMemRdPtr, instrRead=true, instrWrite=false, rdStg=1, wrStg=1)
 	;

@@ -34,7 +34,7 @@ tst.AddReadMem()
 	.AddDst(var=gvar[](,).data);
 
 tst.AddGlobal()
-	.AddVar(type=CData, name=gvar, addr1=gvarAddr, addr2=gvarAddr, dimen1=1, read=true, write=false)
+	.AddVar(type=CData, name=gvar, addr1=gvarAddr, addr2=gvarAddr, dimen1=1, instrRead=true, instrWrite=false)
 	;
 
 tst.AddCall(func=tst2)
@@ -67,7 +67,7 @@ tst2.AddPrivate()
 	;
 
 tst2.AddGlobal()
-	.AddVar(type=CData, name=gvar, addr1=gvarAddr, addr2=gvarAddr, dimen1=1, read=true, write=false)
+	.AddVar(type=CData, name=gvar, addr1=gvarAddr, addr2=gvarAddr, dimen1=1, instrRead=true, instrWrite=false)
 	;
 
 tst2.AddReadMem()
@@ -96,8 +96,8 @@ tst3.AddPrivate()
 	;
 
 tst3.AddGlobal()
-	.AddVar(type=CByte, name=gvar3, addr1=htId, read=true, write=true)
-	.AddVar(type=CByte, name=gvar31, addr1=htId, read=true, write=false)
+	.AddVar(type=CByte, name=gvar3, addr1=htId, instrRead=true, instrWrite=true)
+	.AddVar(type=CByte, name=gvar31, addr1=htId, instrRead=true, instrWrite=false)
 	;
 
 tst3.AddReadMem()

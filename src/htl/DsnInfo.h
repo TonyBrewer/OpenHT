@@ -2085,11 +2085,11 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 	void GenRamIntfStruct(FILE *incFp, string intfName, CRam &ram, EStructType type);
 	void GenUserStructs(FILE *incFp, CRecord * pUserRecord, char const * pTabs = "");
 	void GenUserStructs(CHtCode &htFile, CRecord * pUserRecord, char const * pTabs = "");
-	void GenStructIsEqual(CHtCode &htFile, char const * pTabs, string prefixName, string &typeName, vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType structType = eStructAll, bool bHeader = true);
-	void GenStructAssign(CHtCode &htFile, char const * pTabs, string prefixName, string &typeName, vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType structType = eStructAll, bool bHeader = true);
-	void GenStructAssignToZero(CHtCode &htFile, char const * pTabs, string prefixName, string &typeName, vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType structType = eStructAll, bool bHeader = true);
-	void GenStructScTrace(CHtCode &htFile, char const * pTabs, string prefixName1, string prefixName2, string &typeName, vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType structType = eStructAll, bool bHeader = true);
-	void GenStructStream(CHtCode &htFile, char const * pTabs, string prefixName, string &typeName, vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType structType = eStructAll, bool bHeader = true);
+	void GenStructIsEqual(CHtCode &htFile, char const * pTabs, string prefixName, string &typeName, vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType structType = eStructAll, bool bHeader = true, int idxInit = 0);
+	void GenStructAssign(CHtCode &htFile, char const * pTabs, string prefixName, string &typeName, vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType structType = eStructAll, bool bHeader = true, int idxInit = 0);
+	void GenStructAssignToZero(CHtCode &htFile, char const * pTabs, string prefixName, string &typeName, vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType structType = eStructAll, bool bHeader = true, int idxInit = 0);
+	void GenStructScTrace(CHtCode &htFile, char const * pTabs, string prefixName1, string prefixName2, string &typeName, vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType structType = eStructAll, bool bHeader = true, int idxInit = 0);
+	void GenStructStream(CHtCode &htFile, char const * pTabs, string prefixName, string &typeName, vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType structType = eStructAll, bool bHeader = true, int idxInit = 0);
 	void GenModDecl(EVcdType vcdType, CHtCode &htFile, string &modName, VA type, VA var, vector<CHtString> const & dimenList = g_nullHtStringVec);
 	void GenVcdDecl(CHtCode &sosCode, EVcdType vcdType, CHtCode &declCode, string &modName, VA type, VA var, vector<CHtString> const & dimenList = g_nullHtStringVec);
 	void GenModVar(EVcdType vcdType, string &vcdModName, bool &bFirstModVar, string decl, string dimen, string name, string val, vector<CHtString> const & dimenList = g_nullHtStringVec);
@@ -2273,7 +2273,7 @@ public:
 	int CountPhaseResetFanout(CModInst &modInst);
 	void GenDimenInfo(CDimenList & ramList, CDimenList & fieldList, vector<int> & dimenList, string & dimenDecl, string & dimenIndex, string * pVarIndex = 0, string * pFldIndex = 0);
 	string GenRamIndexLoops(CHtCode &ramCode, vector<int> & dimenList, bool bOpenParen = false);
-	string GenRamIndexLoops(CHtCode &ramCode, const char *pTabs, CDimenList &dimenList, bool bOpenParen = false);
+	string GenRamIndexLoops(CHtCode &ramCode, const char *pTabs, CDimenList &dimenList, bool bOpenParen = false, int idxInit = 0, string * pScTraceIndex = 0);
 	void GenRamIndexLoops(FILE *fp, CDimenList &dimenList, const char *pTabs);
 	void GenIndexLoops(CHtCode &htCode, string &tabs, vector<CHtString> & dimenList, bool bOpenParen = false);
 

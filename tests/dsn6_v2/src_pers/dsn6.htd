@@ -49,5 +49,5 @@ inc.AddReadMem()
 inc.AddWriteMem();
 
 inc.AddGlobal()
-	.AddVar(type=CTwoFld, name=arrayMem, addr1=arrayMemRdPtr, dimen1=2)
+	.AddVar(type=CTwoFld, name=arrayMem, addr1=arrayMemRdPtr, dimen1=2, instrRead=true)
 	;
