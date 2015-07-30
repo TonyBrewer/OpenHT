@@ -55,7 +55,7 @@ Test00.AddShared()
 	.AddVar(type=uint64_t, name=test00_0_src_v0_data, dimen1=3, dimen2=2)
 	;
 
-Test00.AddReadMem()
+Test00.AddReadMem(maxBw=true)
 	.AddDst(var=test00_0_src_v0_data[1][#], name=test00_0_src_v0_data, memSrc=host)
 	;
 
