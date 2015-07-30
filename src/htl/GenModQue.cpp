@@ -44,6 +44,8 @@ CDsnInfo::GenModIhdStatements(CModule &mod)
 	CHtCode	& ihdPostReg = mod.m_clkRate == eClk1x ? m_ihdPostReg1x : m_ihdPostReg2x;
 	CHtCode	& ihdOut = mod.m_clkRate == eClk1x ? m_ihdOut1x : m_ihdOut2x;
 
+	string reset = mod.m_clkRate == eClk1x ? "r_reset1x" : "c_reset2x";
+
 	// I/O declarations
 	m_ihdIoDecl.Append("\t// Inbound host data\n");
 
@@ -246,12 +248,12 @@ CDsnInfo::GenModIhdStatements(CModule &mod)
 		else {
 			m_ihdRamClock1x.Append("\tm_%sQue.push_clock(r_reset1x);\n",
 				queIntf.m_queName.Lc().c_str());
-			m_ihdRamClock2x.Append("\tm_%sQue.pop_clock(c_reset1x);\n",
+			m_ihdRamClock2x.Append("\tm_%sQue.pop_clock(c_reset2x);\n",
 				queIntf.m_queName.Lc().c_str());
 		}
 
 		ihdReg.Append("\tr_ihdQue_front = c_ihdQue_front;\n");
-		ihdReg.Append("\tr_ihdQue_empty = c_reset1x || c_ihdQue_empty;\n");
+		ihdReg.Append("\tr_ihdQue_empty = %s || c_ihdQue_empty;\n", reset.c_str());
 	}
 
 	// assign registers

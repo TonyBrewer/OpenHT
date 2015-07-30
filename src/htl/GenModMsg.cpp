@@ -566,6 +566,8 @@ void CDsnInfo::GenModMsgStatements(CModule &mod)
 		CHtCode & msgPostReg = mod.m_clkRate == eClk2x ? m_msgPostReg2x : m_msgPostReg1x;
 		CHtCode & msgOut = mod.m_clkRate == eClk2x ? m_msgOut2x : m_msgOut1x;
 
+		string reset = mod.m_clkRate == eClk1x ? "r_reset1x" : "c_reset2x";
+
 		if (pMsgIntf->m_dir == "in") {
 
 			if (!bIn) {
@@ -803,17 +805,17 @@ void CDsnInfo::GenModMsgStatements(CModule &mod)
 						string intfIdx = IndexStr(refList);
 
 						if (srcClkRate == mod.m_clkRate)
-							msgReg.Append("\tm_%sToAu_%sMsgQue%s.clock(c_reset1x);\n",
-							pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str());
+							msgReg.Append("\tm_%sToAu_%sMsgQue%s.clock(%s);\n",
+							pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str(), reset.c_str());
 						else if (srcClkRate == eClk2x) {
-							m_msgReg2x.Append("\tm_%sToAu_%sMsgQue%s.push_clock(c_reset1x);\n",
+							m_msgReg2x.Append("\tm_%sToAu_%sMsgQue%s.push_clock(c_reset2x);\n",
 								pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str());
-							m_msgReg1x.Append("\tm_%sToAu_%sMsgQue%s.pop_clock(c_reset1x);\n",
+							m_msgReg1x.Append("\tm_%sToAu_%sMsgQue%s.pop_clock(r_reset1x);\n",
 								pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str());
 						} else {
-							m_msgReg1x.Append("\tm_%sToAu_%sMsgQue%s.push_clock(c_reset1x);\n",
+							m_msgReg1x.Append("\tm_%sToAu_%sMsgQue%s.push_clock(r_reset1x);\n",
 								pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str());
-							m_msgReg2x.Append("\tm_%sToAu_%sMsgQue%s.pop_clock(c_reset1x);\n",
+							m_msgReg2x.Append("\tm_%sToAu_%sMsgQue%s.pop_clock(c_reset2x);\n",
 								pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str());
 						}
 					} while (DimenIter(dimenList, refList));
@@ -836,8 +838,9 @@ void CDsnInfo::GenModMsgStatements(CModule &mod)
 					do {
 						string intfIdx = IndexStr(refList);
 
-						msgReg.Append("\tr_%sToAu_%sMsgRdy%s = !c_reset1x && c_%sToAu_%sMsgRdy%s;\n",
+						msgReg.Append("\tr_%sToAu_%sMsgRdy%s = !%s && c_%sToAu_%sMsgRdy%s;\n",
 							pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str(),
+							reset.c_str(),
 							pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), intfIdx.c_str());
 
 					} while (DimenIter(dimenList, refList));

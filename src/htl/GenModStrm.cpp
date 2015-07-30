@@ -160,6 +160,8 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 	CHtCode & strmReg = mod.m_clkRate == eClk2x ? m_strmReg2x : m_strmReg1x;
 	CHtCode & strmOut = mod.m_clkRate == eClk2x ? m_strmOut2x : m_strmOut1x;
 
+	string reset = mod.m_clkRate == eClk1x ? "r_reset1x" : "c_reset2x";
+
 	string vcdModName = VA("Pers%s", mod.m_modName.Uc().c_str());
 
 	g_appArgs.GetDsnRpt().AddLevel("Stream\n");
@@ -1731,7 +1733,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 			for (int i = 0; i < pStrm->m_strmCnt.AsInt(); i += 1) {
 				string strmIdx = pStrm->m_strmCnt.size() == 0 ? "" : VA("[%d]", i);
 
-				strmReg.Append("\tm_rdStrm%s_nextRspQue%s.clock(c_reset1x);\n", strmName.c_str(), strmIdx.c_str());
+				strmReg.Append("\tm_rdStrm%s_nextRspQue%s.clock(%s);\n", strmName.c_str(), strmIdx.c_str(), reset.c_str());
 			}
 
 			//int strmWIdx = 0;
@@ -2842,7 +2844,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 			}
 			if (mod.m_threads.m_htIdW.AsInt() > 0 && mod.m_rsmSrcCnt > 1) {
 				m_strmRegDecl.Append("\tht_dist_que<CHtCmd, %s_HTID_W> m_wrStrm%s_rsmQue;\n", mod.m_modName.Upper().c_str(), strmName.c_str());
-				strmReg.Append("\tm_wrStrm%s_rsmQue.clock(c_reset1x);\n", strmName.c_str());
+				strmReg.Append("\tm_wrStrm%s_rsmQue.clock(%s);\n", strmName.c_str(), reset.c_str());
 			}
 
 			if (pStrm->m_reserve.AsInt() > 0) {
@@ -2858,7 +2860,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 				for (int i = 0; i < pStrm->m_strmCnt.AsInt(); i += 1) {
 					string strmIdx = pStrm->m_strmCnt.size() == 0 ? "" : VA("[%d]", i);
 
-					strmReg.Append("\tm_wrStrm%s_pipeQue%s.clock(c_reset1x);\n", strmName.c_str(), strmIdx.c_str());
+					strmReg.Append("\tm_wrStrm%s_pipeQue%s.clock(%s);\n", strmName.c_str(), strmIdx.c_str(), reset.c_str());
 				}
 			}
 
@@ -2944,7 +2946,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 					strmPostInstr.Append("\t\tm_wrStrm%s_rsmQue.push(rsm);\n", strmName.c_str());
 					strmPostInstr.NewLine();
 					strmPostInstr.Append("#\t\tifndef _HTV\n");
-					strmPostInstr.Append("\t\tassert(c_reset1x || m_htRsmWait.read_mem_debug(rsm.m_htId) == true);\n");
+					strmPostInstr.Append("\t\tassert(%s || m_htRsmWait.read_mem_debug(rsm.m_htId) == true);\n", reset.c_str());
 					strmPostInstr.Append("\t\tm_htRsmWait.write_mem_debug(rsm.m_htId) = false;\n");
 					strmPostInstr.Append("#\t\tendif\n");
 				} else {
@@ -2964,7 +2966,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 						strmPostInstr.Append("\t\tc_t0_rsmHtInstr = m_wrStrm%s_rsmHtInstr.read_mem();\n", strmName.c_str());
 
 					strmPostInstr.Append("#\t\tifndef _HTV\n");
-					strmPostInstr.Append("\t\tassert(c_reset1x || m_htRsmWait.read_mem_debug(c_t0_rsmHtId) == true);\n");
+					strmPostInstr.Append("\t\tassert(%s || m_htRsmWait.read_mem_debug(c_t0_rsmHtId) == true);\n", reset.c_str());
 					strmPostInstr.Append("\t\tm_htRsmWait.write_mem_debug(c_t0_rsmHtId) = false;\n");
 					strmPostInstr.Append("#\t\tendif\n");
 				}
@@ -2977,7 +2979,7 @@ void CDsnInfo::GenModStrmStatements(CModule &mod)
 					strmPostInstr.Append("\t\tc_t0_rsmHtInstr = m_wrStrm%s_rsmHtInstr.read_mem();\n", strmName.c_str());
 
 				strmPostInstr.Append("#\t\tifndef _HTV\n");
-				strmPostInstr.Append("\t\tassert(c_reset1x || r_htRsmWait == true);\n");
+				strmPostInstr.Append("\t\tassert(%s || r_htRsmWait == true);\n", reset.c_str());
 				strmPostInstr.Append("\t\tc_htRsmWait = false;\n");
 				strmPostInstr.Append("#\t\tendif\n");
 			}

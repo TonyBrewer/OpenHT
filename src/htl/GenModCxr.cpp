@@ -1277,6 +1277,8 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 	CHtCode	& cxrPostReg = mod.m_clkRate == eClk1x ? m_cxrPostReg1x : m_cxrPostReg2x;
 	CHtCode	& cxrOut = mod.m_clkRate == eClk1x ? m_cxrOut1x : m_cxrOut2x;
 
+	string reset = mod.m_clkRate == eClk2x ? "c_reset2x" : "r_reset1x";
+
 	if (mod.m_instrList.size() > 0) {
 		m_cxrDefines.Append("//////////////////////////////////\n");
 		m_cxrDefines.Append("// Instruction defines\n");
@@ -2124,12 +2126,12 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 				cxrTsStage.Append("\tc_asyncCall%s_rsmInstr%s = r_asyncCall%s_rsmInstr%s;\n",
 					cxrCall.m_funcName.c_str(), replStr.c_str(), cxrCall.m_funcName.c_str(), replStr.c_str());
 
-				cxrReg.Append("\tr_asyncCall%s_waiting%s = !c_reset1x && c_asyncCall%s_waiting%s;\n",
-					cxrCall.m_funcName.c_str(), replStr.c_str(), cxrCall.m_funcName.c_str(), replStr.c_str());
-				cxrReg.Append("\tr_asyncCall%s_rtnCnt%s = c_reset1x ? (ht_uint%d)0 : c_asyncCall%s_rtnCnt%s;\n",
-					cxrCall.m_funcName.c_str(), replStr.c_str(), forkCntW, cxrCall.m_funcName.c_str(), replStr.c_str());
-				cxrReg.Append("\tr_asyncCall%s_rtnCntFull%s = !c_reset1x && c_asyncCall%s_rtnCntFull%s;\n",
-					cxrCall.m_funcName.c_str(), replStr.c_str(), cxrCall.m_funcName.c_str(), replStr.c_str());
+				cxrReg.Append("\tr_asyncCall%s_waiting%s = !%s && c_asyncCall%s_waiting%s;\n",
+					cxrCall.m_funcName.c_str(), replStr.c_str(), reset.c_str(), cxrCall.m_funcName.c_str(), replStr.c_str());
+				cxrReg.Append("\tr_asyncCall%s_rtnCnt%s = %s ? (ht_uint%d)0 : c_asyncCall%s_rtnCnt%s;\n",
+					cxrCall.m_funcName.c_str(), replStr.c_str(), reset.c_str(), forkCntW, cxrCall.m_funcName.c_str(), replStr.c_str());
+				cxrReg.Append("\tr_asyncCall%s_rtnCntFull%s = !%s && c_asyncCall%s_rtnCntFull%s;\n",
+					cxrCall.m_funcName.c_str(), replStr.c_str(), reset.c_str(), cxrCall.m_funcName.c_str(), replStr.c_str());
 				cxrReg.Append("\tr_asyncCall%s_rsmInstr%s = c_asyncCall%s_rsmInstr%s;\n",
 					cxrCall.m_funcName.c_str(), replStr.c_str(), cxrCall.m_funcName.c_str(), replStr.c_str());
 
@@ -2897,20 +2899,20 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 				}
 
 				if (mod.m_clkRate == srcClkRate || cxrIntf.IsCallOrXfer())
-					cxrReg.Append("\tm_%s_%sQue%s.clock(c_reset1x);\n",
-					cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
+					cxrReg.Append("\tm_%s_%sQue%s.clock(%s);\n",
+					cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(), reset.c_str());
 
 				else {
 					if (srcClkRate == eClk1x) {
-						cxrReg.Append("\tm_%s_%sQue%s.pop_clock(c_reset1x);\n",
-							cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
-						m_cxrReg1x.Append("\tm_%s_%sQue%s.push_clock(c_reset1x);\n",
-							cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
+						cxrReg.Append("\tm_%s_%sQue%s.pop_clock(%s);\n",
+							cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(), reset.c_str());
+						m_cxrReg1x.Append("\tm_%s_%sQue%s.push_clock(%s);\n",
+							cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(), reset.c_str());
 					} else {
-						cxrReg.Append("\tm_%s_%sQue%s.pop_clock(c_reset1x);\n",
-							cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
-						m_cxrReg2x.Append("\tm_%s_%sQue%s.push_clock(c_reset1x);\n",
-							cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
+						cxrReg.Append("\tm_%s_%sQue%s.pop_clock(%s);\n",
+							cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(), reset.c_str());
+						m_cxrReg2x.Append("\tm_%s_%sQue%s.push_clock(%s);\n",
+							cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(), reset.c_str());
 					}
 				}
 
@@ -2959,8 +2961,9 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 						cxrIntf.GetPortNameDstToSrcLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 				}
 
-				m_cxrReg1x.Append("\t\tr_%s_%sCnt%s = c_reset1x ? (sc_uint<%d+1>)0 : c_%s_%sCnt%s;\n",
-					cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(),
+				m_cxrReg1x.Append("\t\tr_%s_%sCnt%s = %s ? (sc_uint<%d+1>)0 : c_%s_%sCnt%s;\n",
+					cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(), 
+					reset.c_str(),
 					cxrIntf.GetQueDepthW(),
 					cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 			}
@@ -3041,8 +3044,8 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 			cxrTsStage.Append("\tc_%sCall_roundRobin = r_%sCall_roundRobin;\n",
 				cxrCall.m_funcName.c_str(), cxrCall.m_funcName.c_str());
 
-			iplReg.Append("\tr_%sCall_roundRobin = c_reset1x ? (ht_uint%d)0 : c_%sCall_roundRobin;\n",
-				cxrCall.m_funcName.c_str(), replIdxW, cxrCall.m_funcName.c_str());
+			iplReg.Append("\tr_%sCall_roundRobin = %s ? (ht_uint%d)0 : c_%sCall_roundRobin;\n",
+				cxrCall.m_funcName.c_str(), reset.c_str(), replIdxW, cxrCall.m_funcName.c_str());
 		}
 
 		cxrTsStage.Append("\n");
@@ -3222,12 +3225,14 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 			HtdFile::EClkRate srcClkRate = cxrIntf.m_pSrcMod->m_clkRate;
 
 			if (mod.m_clkRate == srcClkRate || cxrIntf.IsCallOrXfer())
-				iplReg.Append("\tr_%s_%sAvl%s = !c_reset1x && c_%s_%sAvl%s;\n",
+				iplReg.Append("\tr_%s_%sAvl%s = !%s && c_%s_%sAvl%s;\n",
 				cxrIntf.GetPortNameDstToSrcLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(),
+				reset.c_str(),
 				cxrIntf.GetPortNameDstToSrcLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 			else if (mod.m_clkRate == eClk1x)
-				iplReg.Append("\tr_%s_%sAvl_1x%s = !c_reset1x && c_%s_%sAvl%s;\n",
+				iplReg.Append("\tr_%s_%sAvl_1x%s = !%s && c_%s_%sAvl%s;\n",
 				cxrIntf.GetPortNameDstToSrcLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(),
+				reset.c_str(),
 				cxrIntf.GetPortNameDstToSrcLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 			else {
 				if (cxrIntf.GetPortReplCnt() <= 1)
@@ -3251,8 +3256,9 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 
 				m_cxrPostInstr2x.Append("\t\t- (r_%s_%sAvlCnt_2x%s.read() > 0 && !r_phase);\n",
 					cxrIntf.GetPortNameDstToSrcLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
-				iplReg.Append("\tr_%s_%sAvlCnt_2x%s = c_reset1x ? (ht_uint%d) 0 : c_%s_%sAvlCnt_2x%s;\n",
+				iplReg.Append("\tr_%s_%sAvlCnt_2x%s = %s ? (ht_uint%d) 0 : c_%s_%sAvlCnt_2x%s;\n",
 					cxrIntf.GetPortNameDstToSrcLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(),
+					reset.c_str(),
 					cxrIntf.GetQueDepthW() + 1,
 					cxrIntf.GetPortNameDstToSrcLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 			}
@@ -3260,8 +3266,9 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 			if (cxrIntf.GetQueDepthW() > 0) {
 				if (cxrIntf.m_bCxrIntfFields) {
 					if (mod.m_clkRate != eClk1x || cxrIntf.m_pSrcMod->m_clkRate != eClk1x) {
-						iplReg.Append("\tr_%s_%sQueEmpty%s = c_reset1x || c_%s_%sQueEmpty%s;\n",
+						iplReg.Append("\tr_%s_%sQueEmpty%s = %s || c_%s_%sQueEmpty%s;\n",
 							cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(),
+							reset.c_str(),
 							cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 						iplReg.Append("\tr_%s_%sQueFront%s = c_%s_%sQueFront%s;\n",
 							cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(),
@@ -3333,8 +3340,9 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 					cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 			}
 
-			iplReg.Append("\tr_%s_%sRdy%s = !c_reset1x && c_%s_%sRdy%s;\n",
+			iplReg.Append("\tr_%s_%sRdy%s = !%s && c_%s_%sRdy%s;\n",
 				cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(),
+				reset.c_str(),
 				cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 
 			if (mod.m_bGvIwComp) {
@@ -3375,16 +3383,16 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 
 			int avlCnt = 1ul << cxrIntf.GetQueDepthW();
 
-			iplReg.Append("\tr_%s_%sAvlCnt%s = c_reset1x ? (ht_uint%d)%d : c_%s_%sAvlCnt%s;\n",
+			iplReg.Append("\tr_%s_%sAvlCnt%s = %s ? (ht_uint%d)%d : c_%s_%sAvlCnt%s;\n",
 				cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(),
+				reset.c_str(),
 				cxrIntf.GetQueDepthW() + 1, avlCnt,
 				cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 
-			iplReg.Append("\tr_%s_%sAvlCntZero%s = !c_reset1x && c_%s_%sAvlCntZero%s;\n",
-				cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(),
+			iplReg.Append("\tr_%s_%sAvlCntZero%s = !%s && c_%s_%sAvlCntZero%s;\n",
+				cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(), 
+				reset.c_str(),
 				cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
-
-
 
 			m_cxrPostInstr1x.NewLine();
 			m_cxrPostInstr2x.NewLine();

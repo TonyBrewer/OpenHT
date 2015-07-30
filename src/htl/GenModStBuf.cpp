@@ -83,6 +83,8 @@ void CDsnInfo::GenModStBufStatements(CModule * pMod)
 	CHtCode & stBufPreInstr = pMod->m_clkRate == eClk2x ? m_stBufPreInstr2x : m_stBufPreInstr1x;
 	CHtCode & stBufReg = pMod->m_clkRate == eClk2x ? m_stBufReg2x : m_stBufReg1x;
 
+	string reset = pMod->m_clkRate == eClk1x ? "r_reset1x" : "c_reset2x";
+
 	string vcdModName = VA("Pers%s", pMod->m_modName.Uc().c_str());
 
 	g_appArgs.GetDsnRpt().AddLevel("Stencil Buffer\n");
@@ -144,7 +146,7 @@ void CDsnInfo::GenModStBufStatements(CModule * pMod)
 			stBufName.c_str(), pStBuf->m_stencilSize[1] - 1);
 
 		for (int i = 0; i < pStBuf->m_stencilSize[1] - 1; i += 1)
-			stBufReg.Append("\tm_stBuf%s_que[%d].clock(c_reset1x);\n", stBufName.c_str(), i);
+			stBufReg.Append("\tm_stBuf%s_que[%d].clock(%s);\n", stBufName.c_str(), i, reset.c_str());
 
 		m_stBufRegDecl.Append("\n");
 		stBufPreInstr.Append("\n");

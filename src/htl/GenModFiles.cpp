@@ -174,12 +174,18 @@ CDsnInfo::WritePersCppFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 	m_stBufReg1x.Write(cppFile);
 
 	if (mod.m_bHasThreads && mod.m_clkRate == eClk1x)
-		fprintf(cppFile, "\tr_userReset = c_reset1x;\n\n");
+		fprintf(cppFile, "\tr_userReset = r_reset1x;\n\n");
 
 	fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset1x, \"no\");\n");
 	fprintf(cppFile, "\tHtResetFlop(r_reset1x, i_reset.read());\n");
-	fprintf(cppFile, "\tc_reset1x = r_reset1x;\n");
 	fprintf(cppFile, "\n");
+
+	if (bNeedClk2x) {
+		fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset2x, \"no\");\n");
+		fprintf(cppFile, "\tHtResetFlop(r_reset2x, i_reset.read());\n");
+		fprintf(cppFile, "\tc_reset2x = r_reset2x;\n");
+		fprintf(cppFile, "\n");
+	}
 
 	int phaseCnt = CountPhaseResetFanout(modInst);
 	phaseCnt = modInst.m_pMod->m_phaseCnt;
@@ -272,7 +278,7 @@ CDsnInfo::WritePersCppFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 		m_mifPostInstr2x.Write(cppFile);
 
 		if (!m_iplReset2x.Empty() || !m_mifReset2x.Empty()) {
-			fprintf(cppFile, "\tif (c_reset1x) {\n");
+			fprintf(cppFile, "\tif (c_reset2x) {\n");
 			m_iplReset2x.Write(cppFile);
 			m_mifReset2x.Write(cppFile);
 			fprintf(cppFile, "\t}\n");
@@ -300,10 +306,10 @@ CDsnInfo::WritePersCppFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 		m_stBufReg2x.Write(cppFile);
 
 		if (mod.m_bHasThreads && mod.m_clkRate == eClk2x)
-			fprintf(cppFile, "\tr_userReset = c_reset1x;\n\n");
+			fprintf(cppFile, "\tr_userReset = c_reset2x;\n\n");
 
 		fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_phase, \"no\");\n");
-		fprintf(cppFile, "\tr_phase = c_reset1x.read() || !r_phase;\n");
+		fprintf(cppFile, "\tr_phase = c_reset2x.read() || !r_phase;\n");
 		fprintf(cppFile, "\n");
 
 		m_gblPostReg2x.Write(cppFile);
@@ -548,11 +554,12 @@ CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 	if (bStateMachine) {
 		if (bNeedClk2x)
 			fprintf(incFile, "\tbool r_phase;\n");
-		fprintf(incFile, "\tbool r_reset1x;\n");
-		if (bNeedClk2x)
-			fprintf(incFile, "\tsc_signal<bool> c_reset1x;\n");
-		else
-			fprintf(incFile, "\tbool c_reset1x;\n");
+		fprintf(incFile, "\tbool ht_noload r_reset1x;\n");
+		if (bNeedClk2x) {
+			fprintf(incFile, "\tbool r_reset2x;\n");
+			fprintf(incFile, "\tsc_signal<bool> c_reset2x;\n");
+		}
+
 		fprintf(incFile, "\tbool ht_noload r_userReset;\n");
 		fprintf(incFile, "\n");
 	}
@@ -767,7 +774,8 @@ CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 	if (bStateMachine) {
 		fprintf(incFile, "\n");
 		fprintf(incFile, "#\t\tifndef _HTV\n");
-		fprintf(incFile, "\t\tc_reset1x = true;\n");
+		if (bNeedClk2x)
+			fprintf(incFile, "\t\tc_reset2x = true;\n");
 		fprintf(incFile, "\t\tr_userReset = true;\n");
 		for (int stgIdx = mod.m_tsStg; stgIdx < mod.m_wrStg; stgIdx += 1) {
 			if (mod.m_bHasThreads)

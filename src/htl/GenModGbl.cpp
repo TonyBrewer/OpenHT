@@ -794,7 +794,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 	CHtCode & gblReg = pMod->m_clkRate == eClk2x ? m_gblReg2x : m_gblReg1x;
 	CHtCode & gblOut = pMod->m_clkRate == eClk2x ? m_gblOut2x : m_gblOut1x;
 
-	string gblRegReset = pMod->m_clkRate == eClk2x ? "c_reset1x" : "r_reset1x";
+	string gblRegReset = pMod->m_clkRate == eClk2x ? "c_reset2x" : "r_reset1x";
 
 	string vcdModName = VA("Pers%s", pMod->m_modName.Uc().c_str());
 
@@ -1166,8 +1166,8 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 							CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
 							if (!fld.m_bSpanning || fld.m_bDupRange || imIdx == 1 && !fld.m_bMrField) continue;
 
-							m_gblReg2x.Append("%sm__GBL__%s%s%s.write_clock(c_reset1x);\n", tabs.c_str(),
-								fld.m_ramName.c_str(), pImStr, dimIdx.c_str());
+							m_gblReg2x.Append("%sm__GBL__%s%s%s.write_clock(%s);\n", tabs.c_str(),
+								fld.m_ramName.c_str(), pImStr, dimIdx.c_str(), gblRegReset.c_str());
 						}
 					} while (loopInfo.Iter());
 				}
@@ -1182,8 +1182,8 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 							CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
 							if (!fld.m_bSpanning || fld.m_bDupRange || imIdx == 1 && !fld.m_bMrField) continue;
 
-							m_gblReg2x.Append("%sm__GBL__%s%s%s.read_clock(c_reset1x);\n", tabs.c_str(),
-								fld.m_ramName.c_str(), pImStr, dimIdx.c_str());
+							m_gblReg2x.Append("%sm__GBL__%s%s%s.read_clock(%s);\n", tabs.c_str(),
+								fld.m_ramName.c_str(), pImStr, dimIdx.c_str(), gblRegReset.c_str());
 						}
 					} while (loopInfo.Iter());
 				}
@@ -1727,7 +1727,7 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 	CHtCode & gblReg = mod.m_clkRate == eClk2x ? m_gblReg2x : m_gblReg1x;
 	CHtCode & gblOut = mod.m_clkRate == eClk2x ? m_gblOut2x : m_gblOut1x;
 
-	string gblRegReset = mod.m_clkRate == eClk2x ? "c_reset1x" : "r_reset1x";
+	string gblRegReset = mod.m_clkRate == eClk2x ? "c_reset2x" : "r_reset1x";
 
 	string vcdModName = VA("Pers%s", mod.m_modName.Uc().c_str());
 
@@ -1836,8 +1836,8 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 		CHtCode & gblRegWrData = pNgvInfo->m_bNgvWrDataClk2x ? m_gblReg2x : m_gblReg1x;
 		CHtCode & gblRegWrComp = pNgvInfo->m_bNgvWrCompClk2x ? m_gblReg2x : m_gblReg1x;
 
-		string gblRegWrDataReset = pNgvInfo->m_bNgvWrDataClk2x ? "c_reset1x" : "r_reset1x";
-		string gblRegWrCompReset = pNgvInfo->m_bNgvWrCompClk2x ? "c_reset1x" : "r_reset1x";
+		string gblRegWrDataReset = pNgvInfo->m_bNgvWrDataClk2x ? "c_reset2x" : "r_reset1x";
+		string gblRegWrCompReset = pNgvInfo->m_bNgvWrCompClk2x ? "c_reset2x" : "r_reset1x";
 
 		// global variable module I/O
 		if (pGv->m_bWriteForInstrWrite) { // Instruction read
@@ -2183,7 +2183,7 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 					mod.m_modName.Upper().c_str(), pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
 
 				CHtCode &gblRegMod = mod.m_clkRate == eClk2x ? m_gblReg2x : m_gblReg1x;
-				string gblRegModReset = mod.m_clkRate == eClk2x ? "c_reset1x" : "r_reset1x";
+				string gblRegModReset = mod.m_clkRate == eClk2x ? "c_reset2x" : "r_reset1x";
 
 				{
 					string tabs = "\t";
@@ -2443,7 +2443,7 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 			}
 		}
 
-		string compReset = pNgvInfo->m_bNgvWrCompClk2x ? "c_reset1x" : "r_reset1x";
+		string compReset = pNgvInfo->m_bNgvWrCompClk2x ? "c_reset2x" : "r_reset1x";
 		if (pGv->m_bWriteForInstrWrite) {
 			if (mod.m_threads.m_htIdW.AsInt() > 0) {
 				m_gblRegDecl.Append("\tbool c_%sTo%s_iwCompRdy%s;\n",
@@ -3482,7 +3482,7 @@ void CDsnInfo::GenerateNgvFiles()
 		CHtCode &ngvOut = pNgvInfo->m_bNgvWrDataClk2x ? ngvOut_2x : ngvOut_1x;
 		CHtCode &ngvWrCompOut = pNgvInfo->m_bNgvWrCompClk2x ? ngvOut_2x : ngvOut_1x;
 
-		string ngvRegWrDataReset = pNgvInfo->m_bNgvWrDataClk2x ? "c_reset1x" : "r_reset1x";
+		string ngvRegWrDataReset = pNgvInfo->m_bNgvWrDataClk2x ? "c_reset2x" : "r_reset1x";
 
 		string ngvWrDataClk = pNgvInfo->m_bNgvWrDataClk2x ? "_2x" : "";
 		string ngvSelClk = pNgvInfo->m_bNgvWrCompClk2x ? "_2x" : "";
@@ -3671,7 +3671,7 @@ void CDsnInfo::GenerateNgvFiles()
 						ngvClkRrSel.c_str(), dimIdx.c_str());
 					ngvPreRegRrSel.NewLine();
 
-					string rrSelReset = pNgvInfo->m_bNgvWrCompClk2x ? "c_reset1x" : "r_reset1x";
+					string rrSelReset = pNgvInfo->m_bNgvWrCompClk2x ? "c_reset2x" : "r_reset1x";
 
 					for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
 						CModule &mod = *ngvModInfoList[pNgvInfo->m_wrPortList[ngvIdx].first].m_pMod;
@@ -3728,7 +3728,7 @@ void CDsnInfo::GenerateNgvFiles()
 				do {
 					string dimIdx = loopInfo.IndexStr();
 
-					string rrSelReset = pNgvInfo->m_bNgvWrCompClk2x ? "c_reset1x" : "r_reset1x";
+					string rrSelReset = pNgvInfo->m_bNgvWrCompClk2x ? "c_reset2x" : "r_reset1x";
 
 					ngvRegRrSel.Append("%sr_rrSel%s%s = %s ? (ht_uint%d)0x1 : c_rrSel%s%s;\n", tabs.c_str(),
 						ngvWrDataClk.c_str(), dimIdx.c_str(),
@@ -4286,7 +4286,7 @@ void CDsnInfo::GenerateNgvFiles()
 
 				CHtCode & ngvOutModIn = (mod.m_clkRate == eClk2x || bNgvSelGwClk2x) ? ngvOut_2x : ngvOut_1x;
 
-				string ngvRegSelGwReset = pNgvInfo->m_bNgvWrCompClk2x ? "c_reset1x" : "r_reset1x";
+				string ngvRegSelGwReset = pNgvInfo->m_bNgvWrCompClk2x ? "c_reset2x" : "r_reset1x";
 
 				string preSig = mod.m_clkRate == eClk2x && !bNgvSelGwClk2x && idW == 0 && imCh == 'i' ? "sc_signal<" : "";
 				string postSig = mod.m_clkRate == eClk2x && !bNgvSelGwClk2x && idW == 0 && imCh == 'i' ? ">" : "";
@@ -4790,15 +4790,18 @@ void CDsnInfo::GenerateNgvFiles()
 							string dimIdx = loopInfo.IndexStr();
 
 							if (idW > 0) {
-								ngvReg_2x.Append("%sm_%s_%cw%sIdQue%s%s.push_clock(c_reset1x);\n", tabs.c_str(),
-									mod.m_modName.Lc().c_str(), imCh, idStr.c_str(), eoStr.c_str(), dimIdx.c_str());
+								ngvReg_2x.Append("%sm_%s_%cw%sIdQue%s%s.push_clock(%s);\n", tabs.c_str(),
+									mod.m_modName.Lc().c_str(), imCh, idStr.c_str(), eoStr.c_str(), dimIdx.c_str(),
+									ngvRegSelGwReset.c_str());
 							}
 							if (imIdx == 0) {
-								ngvReg_2x.Append("%sm_%s_%cwCompQue%s%s.push_clock(c_reset1x);\n", tabs.c_str(),
-									mod.m_modName.Lc().c_str(), imCh, eoStr.c_str(), dimIdx.c_str());
+								ngvReg_2x.Append("%sm_%s_%cwCompQue%s%s.push_clock(%s);\n", tabs.c_str(),
+									mod.m_modName.Lc().c_str(), imCh, eoStr.c_str(), dimIdx.c_str(),
+									ngvRegSelGwReset.c_str());
 							}
-							ngvReg_2x.Append("%sm_%s_%cwDataQue%s%s.push_clock(c_reset1x);\n", tabs.c_str(),
-								mod.m_modName.Lc().c_str(), imCh, eoStr.c_str(), dimIdx.c_str());
+							ngvReg_2x.Append("%sm_%s_%cwDataQue%s%s.push_clock(%s);\n", tabs.c_str(),
+								mod.m_modName.Lc().c_str(), imCh, eoStr.c_str(), dimIdx.c_str(),
+								ngvRegSelGwReset.c_str());
 
 						} while (loopInfo.Iter());
 					}
@@ -4823,7 +4826,7 @@ void CDsnInfo::GenerateNgvFiles()
 								mod.m_modName.Lc().c_str(), imCh, eoStr.c_str(), ngvClkWrComp.c_str(), queRegDataSig.c_str(), dimIdx.c_str(),
 								mod.m_modName.Lc().c_str(), imCh, eoStr.c_str(), ngvClkWrComp.c_str(), dimIdx.c_str());
 
-							string wrCompReset = bNgvSelGwClk2x ? "c_reset1x" : "r_reset1x";
+							string wrCompReset = bNgvSelGwClk2x ? "c_reset2x" : "r_reset1x";
 
 							ngvRegSelGw.Append("%sr_%s_%cwWrEn%s%s%s%s = !%s && c_%s_%cwWrEn%s%s%s;\n", tabs.c_str(),
 								mod.m_modName.Lc().c_str(), imCh, eoStr.c_str(), ngvClkWrComp.c_str(), queRegWrEnSig.c_str(), dimIdx.c_str(),
@@ -7155,8 +7158,10 @@ void CDsnInfo::GenerateNgvFiles()
 		if (bNeed2x)
 			ngvRegDecl.Append("\tbool ht_noload r_phase;\n");
 		ngvRegDecl.Append("\tbool ht_noload r_reset1x;\n");
-		if (bNeed2x)
-			ngvRegDecl.Append("\tsc_signal<bool> ht_noload c_reset1x;\n");
+		if (bNeed2x) {
+			ngvRegDecl.Append("\tbool ht_noload r_reset2x;\n");
+			ngvRegDecl.Append("\tsc_signal<bool> ht_noload c_reset2x;\n");
+		}
 		ngvRegDecl.NewLine();
 
 		ngvRegDecl.Write(incFile);
@@ -7180,7 +7185,7 @@ void CDsnInfo::GenerateNgvFiles()
 
 		if (bNeed2x) {
 			fprintf(incFile, "#\t\tifndef _HTV\n");
-			fprintf(incFile, "\t\tc_reset1x = true;\n");
+			fprintf(incFile, "\t\tc_reset2x = true;\n");
 			fprintf(incFile, "#\t\tendif\n");
 		}
 		fprintf(incFile, "\t}\n");
@@ -7220,9 +7225,14 @@ void CDsnInfo::GenerateNgvFiles()
 
 		fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset1x, \"no\");\n");
 		fprintf(cppFile, "\tHtResetFlop(r_reset1x, i_reset.read());\n");
-		if (bNeed2x)
-			fprintf(cppFile, "\tc_reset1x = r_reset1x;\n");
 		fprintf(cppFile, "\n");
+
+		if (bNeed2x) {
+			fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset2x, \"no\");\n");
+			fprintf(cppFile, "\tHtResetFlop(r_reset2x, i_reset.read());\n");
+			fprintf(cppFile, "\tc_reset2x = r_reset1x;\n");
+			fprintf(cppFile, "\n");
+		}
 
 		ngvOut_1x.Write(cppFile);
 
@@ -7239,7 +7249,7 @@ void CDsnInfo::GenerateNgvFiles()
 
 		if (bNeed2x) {
 			fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_phase, \"no\");\n");
-			fprintf(cppFile, "\tr_phase = c_reset1x.read() || !r_phase;\n");
+			fprintf(cppFile, "\tr_phase = c_reset2x.read() || !r_phase;\n");
 			fprintf(cppFile, "\n");
 		}
 

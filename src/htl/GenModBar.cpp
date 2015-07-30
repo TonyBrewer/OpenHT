@@ -39,6 +39,8 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 	string unitNameUc = !g_appArgs.IsModuleUnitNamesEnabled() ? m_unitName.Uc() : "";
 	string vcdModName = VA("Pers%s", mod.m_modName.Uc().c_str());
 
+	string reset = mod.m_clkRate == eClk1x ? "r_reset1x" : "c_reset2x";
+
 	int rlsCntBits = 0;
 	switch (mod.m_modInstList.size()) {
 	case 1: rlsCntBits = 1; break;
@@ -190,7 +192,8 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 		if (pBar->m_barIdW.AsInt() == 0) {
 			GenModDecl(eVcdAll, m_barRegDecl, vcdModName, "bool", VA("r_bar%sActive", pBar->m_name.Uc().c_str()));
 			barPreInstr.Append("\tbool c_bar%sActive = r_bar%sActive;\n", pBar->m_name.Uc().c_str(), pBar->m_name.Uc().c_str());
-			barReg.Append("\tr_bar%sActive = !c_reset1x && c_bar%sActive;\n", pBar->m_name.Uc().c_str(), pBar->m_name.Uc().c_str());
+			barReg.Append("\tr_bar%sActive = !%s && c_bar%sActive;\n",
+				pBar->m_name.Uc().c_str(), reset.c_str(), pBar->m_name.Uc().c_str());
 
 			if (mod.m_modInstList.size() == 1) {
 				GenModDecl(eVcdAll, m_barRegDecl, vcdModName, VA("sc_uint<%s_HTID_W+%d>", mod.m_modName.Upper().c_str(), rlsCntBits),
@@ -291,8 +294,8 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 
 			m_barRegDecl.Append("\tht_uint%d r_bar%sInitCnt;\n",
 				pBar->m_barIdW.AsInt() + 1, pBar->m_name.Uc().c_str());
-			barReg.Append("\tr_bar%sInitCnt = c_reset1x ? (ht_uint%d)0 : c_bar%sInitCnt;\n",
-				pBar->m_name.Uc().c_str(), pBar->m_barIdW.AsInt() + 1, pBar->m_name.Uc().c_str());
+			barReg.Append("\tr_bar%sInitCnt = %s ? (ht_uint%d)0 : c_bar%sInitCnt;\n",
+				pBar->m_name.Uc().c_str(), reset.c_str(), pBar->m_barIdW.AsInt() + 1, pBar->m_name.Uc().c_str());
 		}
 
 		GenModDecl(eVcdAll, m_barRegDecl, vcdModName, "CBarRlsInfo", VA("r_bar%sRlsNext", pBar->m_name.Uc().c_str()));
@@ -302,7 +305,8 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 		if (mod.m_modInstList.size() > 1) {
 			GenModDecl(eVcdAll, m_barRegDecl, vcdModName, "bool", VA("r_bar%sRelease", pBar->m_name.Uc().c_str()));
 			barPreInstr.Append("\tbool c_bar%sRelease = r_bar%sRelease;\n", pBar->m_name.Uc().c_str(), pBar->m_name.Uc().c_str());
-			barReg.Append("\tr_bar%sRelease = !c_reset1x && c_bar%sRelease;\n", pBar->m_name.Uc().c_str(), pBar->m_name.Uc().c_str());
+			barReg.Append("\tr_bar%sRelease = !%s && c_bar%sRelease;\n",
+				pBar->m_name.Uc().c_str(), reset.c_str(), pBar->m_name.Uc().c_str());
 
 			if (pBar->m_barIdW.AsInt() > 0) {
 				GenModDecl(eVcdAll, m_barRegDecl, vcdModName, VA("ht_uint%d", pBar->m_barIdW.AsInt()), VA("r_bar%sRlsId", pBar->m_name.Uc().c_str()));
@@ -327,21 +331,23 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 				pBar->m_name.Uc().c_str(), mod.m_execStg + 1);
 
 			m_barRegDecl.Append("\tht_dist_que<CBarRlsInfo, %d> m_bar%sRlsQue;\n", mod.m_threads.m_htIdW.AsInt(), pBar->m_name.Uc().c_str());
-			barReg.Append("\tm_bar%sRlsQue.clock(c_reset1x);\n", pBar->m_name.Uc().c_str());
+			barReg.Append("\tm_bar%sRlsQue.clock(%s);\n", pBar->m_name.Uc().c_str(), reset.c_str());
 		}
 
 		if (mod.m_modInstList.size() > 1 && mod.m_threads.m_htIdW.AsInt() > 0) {
 			if (pBar->m_barIdW.AsInt() > 0) {
 				m_barRegDecl.Append("\tht_dist_que<ht_uint%d, %d> m_bar%sRlsIdQue;\n",
 					pBar->m_barIdW.AsInt(), mod.m_threads.m_htIdW.AsInt(), pBar->m_name.Uc().c_str());
-				barReg.Append("\tm_bar%sRlsIdQue.clock(c_reset1x);\n", pBar->m_name.Uc().c_str());
+				barReg.Append("\tm_bar%sRlsIdQue.clock(%s);\n", pBar->m_name.Uc().c_str(), reset.c_str());
 			} else {
 				m_barRegDecl.Append("\tsc_uint<%s_HTID_W+%d> r_bar%sRlsQueCnt;\n",
 					mod.m_modName.Upper().c_str(), rlsCntBits, pBar->m_name.Uc().c_str());
 				barPreInstr.Append("\tsc_uint<%s_HTID_W+%d> c_bar%sRlsQueCnt = r_bar%sRlsQueCnt;\n",
 					mod.m_modName.Upper().c_str(), rlsCntBits, pBar->m_name.Uc().c_str(), pBar->m_name.Uc().c_str());
-				barReg.Append("\tr_bar%sRlsQueCnt = c_reset1x ? (sc_uint<%s_HTID_W+%d>)0 : c_bar%sRlsQueCnt;\n",
-					pBar->m_name.Uc().c_str(), mod.m_modName.Upper().c_str(), rlsCntBits, pBar->m_name.Uc().c_str());
+				barReg.Append("\tr_bar%sRlsQueCnt = %s ? (sc_uint<%s_HTID_W+%d>)0 : c_bar%sRlsQueCnt;\n",
+					pBar->m_name.Uc().c_str(),
+					reset.c_str(),
+					mod.m_modName.Upper().c_str(), rlsCntBits, pBar->m_name.Uc().c_str());
 			}
 		}
 
@@ -363,12 +369,14 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 			barPostInstr.Append("\t\t\tc_bar%sRlsHead.m_link.m_bEol = true;\n", pBar->m_name.Uc().c_str());
 			barPostInstr.Append("\t\t} else {\n");
 			if (mod.m_modInstList.size() == 1) {
-				barPostInstr.Append("\t\t\tassert_msg(c_reset1x || c_bar%sReleaseCnt == r_t%d_bar%sReleaseCnt, \"Runtime check failed in CPersBarrier::PersBarrier()\""
-					"\n\t\t\t\t\" - calls to HtBarrier have inconsistent releaseCnt value\\n\");\n",
+				barPostInstr.Append("\t\t\tassert_msg(%s || c_bar%sReleaseCnt == r_t%d_bar%sReleaseCnt, \"Runtime check failed in CPersBarrier::PersBarrier()\""
+					"\n\t\t\t\t\" - calls to HtBarrier have inconsistent releaseCnt value\\n\");\n", 
+					reset.c_str(),
 					pBar->m_name.Uc().c_str(), mod.m_execStg + 1, pBar->m_name.Uc().c_str());
 			}
-			barPostInstr.Append("\t\t\tassert_msg(c_reset1x || c_bar%sRlsHead.m_instr == r_t%d_bar%sReleaseInstr, \"Runtime check failed in CPersBarrier::PersBarrier()\""
+			barPostInstr.Append("\t\t\tassert_msg(%s || c_bar%sRlsHead.m_instr == r_t%d_bar%sReleaseInstr, \"Runtime check failed in CPersBarrier::PersBarrier()\""
 				"\n\t\t\t\t\" - calls to HtBarrier have inconsistent releaseInstr value\\n\");\n",
+				reset.c_str(),
 				pBar->m_name.Uc().c_str(), mod.m_execStg + 1, pBar->m_name.Uc().c_str());
 			barPostInstr.Append("\t\t\tc_bar%sActive = true;\n", pBar->m_name.Uc().c_str());
 			barPostInstr.Append("\t\t\tc_bar%sRlsHead.m_link.m_bEol = false;\n", pBar->m_name.Uc().c_str());
@@ -426,7 +434,7 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 				barPostInstr.Append("\tht_uint%d c_bar%sRlsId = r_bar%sRlsId;\n",
 				pBar->m_barIdW.AsInt(), pBar->m_name.Uc().c_str(), pBar->m_name.Uc().c_str());
 
-			barPostInstr.Append("\tif (c_reset1x)\n");
+			barPostInstr.Append("\tif (%s)\n", reset.c_str());
 
 			if (mod.m_modInstList.size() == 1)
 				barPostInstr.Append("\t\tc_t%d_bar%sId = 0;\n", mod.m_execStg, pBar->m_name.Uc().c_str());
@@ -532,7 +540,8 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 		barPostInstr.Append("\t}\n");
 		barPostInstr.Append("\n");
 
-		barPostInstr.Append("\tc_bar%sRlsNext.m_link.m_bEol = c_reset1x || c_bar%sRlsNext.m_link.m_bEol;\n", pBar->m_name.Uc().c_str(), pBar->m_name.Uc().c_str());
+		barPostInstr.Append("\tc_bar%sRlsNext.m_link.m_bEol = %s || c_bar%sRlsNext.m_link.m_bEol;\n",
+			pBar->m_name.Uc().c_str(), reset.c_str(), pBar->m_name.Uc().c_str());
 
 		if (mod.m_modInstList.size() > 1) {
 			barOut.Append("\n");
@@ -646,11 +655,12 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 		}
 	}
 
-	fprintf(incFile, "\tbool r_reset1x;\n");
 	if (mod.m_clkRate == eClk1x)
-		fprintf(incFile, "\tbool c_reset1x;\n");
-	else
-		fprintf(incFile, "\tsc_signal<bool> c_reset1x;\n");
+		fprintf(incFile, "\tbool r_reset1x;\n");
+	else {
+		fprintf(incFile, "\tbool r_reset2x;\n");
+		fprintf(incFile, "\tsc_signal<bool> c_reset2x;\n");
+	}
 
 	fprintf(incFile, "\n");
 	fprintf(incFile, "\tvoid Pers%sBarCtl_1x();\n", mod.m_modName.Uc().c_str());
@@ -671,7 +681,7 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 	}
 
 	fprintf(incFile, "#\t\tifndef _HTV\n");
-	fprintf(incFile, "\t\tc_reset1x = true;\n");
+	fprintf(incFile, "\t\tc_reset2x = true;\n");
 	fprintf(incFile, "#\t\tendif\n");
 
 	fprintf(incFile, "\t}\n");
@@ -719,9 +729,9 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 			mod.m_modName.Uc().c_str(), mod.m_modName.Uc().c_str());
 		fprintf(cppFile, "{\n");
 
-		fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset1x, \"no\");\n");
-		fprintf(cppFile, "\tHtResetFlop(r_reset1x, i_reset.read());\n");
-		fprintf(cppFile, "\tc_reset1x = r_reset1x;\n");
+		fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset2x, \"no\");\n");
+		fprintf(cppFile, "\tHtResetFlop(r_reset2x, i_reset.read());\n");
+		fprintf(cppFile, "\tc_reset2x = r_reset2x;\n");
 		fprintf(cppFile, "}\n");
 		fprintf(cppFile, "\n");
 	}
@@ -835,16 +845,17 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 		fprintf(cppFile, "\n");
 
 		if (mod.m_threads.m_htIdW.AsInt() == 0) {
-			for (int replIdx = 0; replIdx < replCnt; replIdx += 1)
-				fprintf(cppFile, "\tc_bar%sInfo[%d].m_valid = !c_reset1x && c_bar%sInfo[%d].m_valid;\n",
-				pBar->m_name.Uc().c_str(), replIdx, pBar->m_name.Uc().c_str(), replIdx);
+			for (int replIdx = 0; replIdx < replCnt; replIdx += 1) {
+				fprintf(cppFile, "\tc_bar%sInfo[%d].m_valid = !%s && c_bar%sInfo[%d].m_valid;\n",
+					pBar->m_name.Uc().c_str(), replIdx, reset.c_str(), pBar->m_name.Uc().c_str(), replIdx);
+			}
 			fprintf(cppFile, "\n");
 		}
 
 		if (pBar->m_barIdW.AsInt() > 0) {
 			fprintf(cppFile, "\tht_uint%d c_bar%sInitCnt = r_bar%sInitCnt;\n",
 				pBar->m_barIdW.AsInt() + 1, pBar->m_name.Uc().c_str(), pBar->m_name.Uc().c_str());
-			fprintf(cppFile, "\tif (c_reset1x)\n");
+			fprintf(cppFile, "\tif (%s)\n", reset.c_str());
 			fprintf(cppFile, "\t\tc_bar%sInfoRd.m_barId = 0;\n", pBar->m_name.Uc().c_str());
 			fprintf(cppFile, "\telse if (r_bar%sInitCnt[%d] == 0) {\n",
 				pBar->m_name.Uc().c_str(), pBar->m_barIdW.AsInt());
@@ -870,8 +881,8 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 				fprintf(cppFile, "#\tendif\n");
 			}
 		} else {
-			fprintf(cppFile, "\tr_bar%sActive = !c_reset1x && c_bar%sActive;\n",
-				pBar->m_name.Uc().c_str(), pBar->m_name.Uc().c_str());
+			fprintf(cppFile, "\tr_bar%sActive = !%s && c_bar%sActive;\n",
+				pBar->m_name.Uc().c_str(), reset.c_str(), pBar->m_name.Uc().c_str());
 			fprintf(cppFile, "\tr_bar%sEnterCnt = c_bar%sEnterCnt;\n",
 				pBar->m_name.Uc().c_str(), pBar->m_name.Uc().c_str());
 		}
@@ -887,14 +898,14 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 		fprintf(cppFile, "\n");
 
 		if (pBar->m_barIdW.AsInt() > 0) {
-			fprintf(cppFile, "\tr_bar%sInitCnt = c_reset1x ? (ht_uint%d)0 : c_bar%sInitCnt;\n",
-				pBar->m_name.Uc().c_str(), pBar->m_barIdW.AsInt() + 1, pBar->m_name.Uc().c_str());
+			fprintf(cppFile, "\tr_bar%sInitCnt = %s ? (ht_uint%d)0 : c_bar%sInitCnt;\n",
+				pBar->m_name.Uc().c_str(), reset.c_str(), pBar->m_barIdW.AsInt() + 1, pBar->m_name.Uc().c_str());
 			fprintf(cppFile, "\n");
 		}
 
 		for (int replIdx = 0; replIdx < replCnt; replIdx += 1) {
 			if (mod.m_threads.m_htIdW.AsInt() > 0)
-				fprintf(cppFile, "\tm_bar%sInfoQue[%d].clock(c_reset1x);\n", pBar->m_name.Uc().c_str(), replIdx);
+				fprintf(cppFile, "\tm_bar%sInfoQue[%d].clock(%s);\n", pBar->m_name.Uc().c_str(), replIdx, reset.c_str());
 			else
 				fprintf(cppFile, "\tr_bar%sInfo[%d] = c_bar%sInfo[%d];\n",
 				pBar->m_name.Uc().c_str(), replIdx, pBar->m_name.Uc().c_str(), replIdx);
@@ -909,7 +920,7 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 		if (mod.m_clkRate == eClk1x && barIdx == mod.m_barrierList.size() - 1) {
 			fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset1x, \"no\");\n");
 			fprintf(cppFile, "\tHtResetFlop(r_reset1x, i_reset.read());\n");
-			fprintf(cppFile, "\tc_reset1x = r_reset1x;\n");
+			fprintf(cppFile, "\tc_reset2x = r_reset1x;\n");
 			fprintf(cppFile, "\n");
 		}
 
