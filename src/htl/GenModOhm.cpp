@@ -35,6 +35,8 @@ void CDsnInfo::GenModOhmStatements(CModule &mod)
 	CHtCode	& ohmReg = mod.m_clkRate == eClk1x ? m_ohmReg1x : m_ohmReg2x;
 	CHtCode	& ohmPostReg = mod.m_clkRate == eClk1x ? m_ohmPostReg1x : m_ohmPostReg2x;
 
+	string reset = mod.m_clkRate == eClk1x ? "r_reset1x" : "c_reset2x";
+
 	// Generate I/O declartions
 	m_ohmIoDecl.Append("\t// outbound host message interface\n");
 	m_ohmIoDecl.Append("\tsc_out<CHostCtrlMsgIntf> o_%sToHti_ohm;\n", mod.m_modName.Lc().c_str());
@@ -70,7 +72,7 @@ void CDsnInfo::GenModOhmStatements(CModule &mod)
 	ohmPostInstr.NewLine();
 
 	if (mod.m_clkRate == eClk2x) {
-		ohmPostInstr.Append("\tif (r_%sToHti_ohm_2x.read().m_bValid && r_phase && !c_reset1x)\n", mod.m_modName.Lc().c_str());
+		ohmPostInstr.Append("\tif (r_%sToHti_ohm_2x.read().m_bValid && r_phase && !%s)\n", mod.m_modName.Lc().c_str(), reset.c_str());
 		ohmPostInstr.Append("\t\tc_%sToHti_ohm = r_%sToHti_ohm_2x;\n", mod.m_modName.Lc().c_str(), mod.m_modName.Lc().c_str());
 		ohmPostInstr.NewLine();
 	}
@@ -83,7 +85,8 @@ void CDsnInfo::GenModOhmStatements(CModule &mod)
 		m_ohmReg1x.Append("\tr_%sToHti_ohm_1x = r_%sToHti_ohm_2x;\n", mod.m_modName.Lc().c_str(), mod.m_modName.Lc().c_str());
 		ohmReg.Append("\tr_%sToHti_ohm_2x = c_%sToHti_ohm;\n", mod.m_modName.Lc().c_str(), mod.m_modName.Lc().c_str());
 	}
-	ohmReg.Append("\tr_%sToHti_ohmAvlCnt = c_reset1x ? (ht_uint1)1 : c_%sToHti_ohmAvlCnt;\n", mod.m_modName.Lc().c_str(), mod.m_modName.Lc().c_str());
+	ohmReg.Append("\tr_%sToHti_ohmAvlCnt = %s ? (ht_uint1)1 : c_%sToHti_ohmAvlCnt;\n",
+		mod.m_modName.Lc().c_str(), reset.c_str(), mod.m_modName.Lc().c_str());
 	ohmReg.Append("\n");
 
 	// Generate output statements

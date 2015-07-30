@@ -2836,7 +2836,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 
 	m_mifRamDecl.Append("\t// Memory Interface State\n");
 
-	string reset = mod.m_clkRate == eClk2x ? "c_reset1x" : "r_reset1x";
+	string reset = mod.m_clkRate == eClk2x ? "c_reset2x" : "r_reset1x";
 
 	bool bNeedRdRspInfo = false;
 	bool bNeedRdRspInfoRam = false;
@@ -3616,7 +3616,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 				mifReg.NewLine();
 				for (size_t i = 0; i < rdDstNgvRamList.size(); i += 1) {
 					CHtCode & mifRegMwComp = rdDstNgvRamList[i]->m_pNgvInfo->m_bNgvWrCompClk2x ? m_mifReg2x : m_mifReg1x;
-					string resetMwComp = rdDstNgvRamList[i]->m_pNgvInfo->m_bNgvWrCompClk2x ? "c_reset1x" : "r_reset1x";
+					string resetMwComp = rdDstNgvRamList[i]->m_pNgvInfo->m_bNgvWrCompClk2x ? "c_reset2x" : "r_reset1x";
 
 					m_mifDecl.Append("\tht_dist_que<ht_uint%d, 5> m_%sTo%s_mwCompQue%s;\n",
 						mif.m_mifRd.m_rspGrpW.AsInt(),
@@ -3913,9 +3913,10 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 	}
 
 	if (mif.m_bMifRd) {
-		mifPostInstr.Append("\tassert_msg(c_reset1x || !c_t%d_memReq.m_valid || !c_t%d_memReq.m_rdReq%s || c_t%d_bReadMemAvail,"
+		mifPostInstr.Append("\tassert_msg(%s || !c_t%d_memReq.m_valid || !c_t%d_memReq.m_rdReq%s || c_t%d_bReadMemAvail,"
 			" \"Runtime check failed in CPers%s::Pers%s_%s()"
 			" - expected ReadMemBusy() to have been called and not busy\");\n",
+			reset.c_str(),
 			mod.m_execStg,
 			mod.m_execStg,
 			or_memReqHold.c_str(),
@@ -3925,9 +3926,10 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 	}
 
 	if (mif.m_bMifWr) {
-		mifPostInstr.Append("\tassert_msg(c_reset1x || !c_t%d_memReq.m_valid || !c_t%d_memReq.m_wrReq%s || c_t%d_bWriteMemAvail,"
+		mifPostInstr.Append("\tassert_msg(%s || !c_t%d_memReq.m_valid || !c_t%d_memReq.m_wrReq%s || c_t%d_bWriteMemAvail,"
 			" \"Runtime check failed in CPers%s::Pers%s_%s()"
 			" - expected WriteMemBusy() to have been called and not busy\");\n",
+			reset.c_str(),
 			mod.m_execStg,
 			mod.m_execStg,
 			or_memReqHold.c_str(),

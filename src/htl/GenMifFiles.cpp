@@ -167,7 +167,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 
 	GenModDecl(eVcdAll, incCode, vcdModName, "bool", "r_reset1x");
 	if (bClk2x) {
-		GenModDecl(eVcdAll, incCode, vcdModName, "sc_signal<bool>", "c_reset1x");
+		GenModDecl(eVcdAll, incCode, vcdModName, "sc_signal<bool>", "c_reset2x");
 		GenModDecl(eVcdAll, incCode, vcdModName, "bool", "r_phase");
 		fprintf(incFile, "\n");
 	}
@@ -831,7 +831,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 
 	fprintf(cppFile, "\tHtResetFlop(r_reset1x, i_reset.read());\n");
 	if (bClk2x)
-		fprintf(cppFile, "\tc_reset1x = r_reset1x;\n");
+		fprintf(cppFile, "\tc_reset2x = r_reset1x;\n");
 
 	fprintf(cppFile, "\n");
 
@@ -979,7 +979,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 			if (!modMemPort.m_bRead && !modMemPort.m_bWrite || modMemPort.m_queueW == 0) continue;
 
 			if (pMod->m_clkRate == eClk2x)
-				fprintf(cppFile, "\tm_%sP%dReqQue.push_clock(c_reset1x);\n", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+				fprintf(cppFile, "\tm_%sP%dReqQue.push_clock(c_reset2x);\n", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
 		}
 		fprintf(cppFile, "\n");
 
@@ -1009,7 +1009,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 
 			if (modMemPort.m_queueW == 0) {
 				fprintf(cppFile, "\n");
-				fprintf(cppFile, "\tr_%sP%dToMif_reqRdy_2x = !c_reset1x.read() && c_%sP%dToMif_reqRdy_2x;\n",
+				fprintf(cppFile, "\tr_%sP%dToMif_reqRdy_2x = !c_reset2x.read() && c_%sP%dToMif_reqRdy_2x;\n",
 					modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx,
 					modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
 				fprintf(cppFile, "\tr_%sP%dToMif_req_2x = c_%sP%dToMif_req_2x;\n",
@@ -1019,7 +1019,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 			fprintf(cppFile, "\n");
 		}
 
-		fprintf(cppFile, "\tr_phase = c_reset1x.read() || !r_phase;\n");
+		fprintf(cppFile, "\tr_phase = c_reset2x.read() || !r_phase;\n");
 		fprintf(cppFile, "\n");
 
 		fprintf(cppFile, "\t/////////////////////////\n");

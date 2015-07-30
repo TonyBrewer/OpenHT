@@ -328,7 +328,7 @@ CDsnInfo::GenerateHtiFiles()
 	fprintf(incFile, "\tbool r_reset1x;\n");
 
 	if (bCallClk2x || bRtnClk2x) {
-		fprintf(incFile, "\tsc_signal<bool> c_reset1x;\n");
+		fprintf(incFile, "\tsc_signal<bool> c_reset2x;\n");
 		fprintf(incFile, "\tbool r_phase;\n");
 	}
 
@@ -1037,7 +1037,7 @@ CDsnInfo::GenerateHtiFiles()
 
 	fprintf(cppFile, "\tHtResetFlop(r_reset1x, i_reset.read());\n");
 	if (bCallClk2x || bRtnClk2x)
-		fprintf(cppFile, "\tc_reset1x = r_reset1x;\n");
+		fprintf(cppFile, "\tc_reset2x = r_reset1x;\n");
 	fprintf(cppFile, "\n");
 
 	fprintf(cppFile, "\t// register properties\n");
@@ -1127,7 +1127,7 @@ CDsnInfo::GenerateHtiFiles()
 		fprintf(cppFile, "\n");
 
 		if (bRtnClk2x && bRtnCmdFields)
-			fprintf(cppFile, "\tm_oCmdQue.push_clock(c_reset1x);\n\n");
+			fprintf(cppFile, "\tm_oCmdQue.push_clock(c_reset2x);\n\n");
 
 		if (pOutQueIntf && bOhdClk2x)
 			fprintf(cppFile, "\tm_%sToHif_%sQue.push_clock(r_reset1x);\n",
@@ -1171,7 +1171,7 @@ CDsnInfo::GenerateHtiFiles()
 		}
 
 		fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_phase, \"no\");\n");
-		fprintf(cppFile, "\tr_phase = c_reset1x.read() || !r_phase;\n");
+		fprintf(cppFile, "\tr_phase = c_reset2x.read() || !r_phase;\n");
 		fprintf(cppFile, "\n");
 
 		fprintf(cppFile, "\t///////////////////////////////////////////////////////////////////////////\n");
