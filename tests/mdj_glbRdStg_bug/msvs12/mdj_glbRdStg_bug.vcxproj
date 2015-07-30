@@ -23,7 +23,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{CDE554F4-90FF-4FF4-B0BC-A24D830D16E4}</ProjectGuid>
+    <ProjectGuid>{DB90CDD3-B095-4154-A830-328381CEA06A}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>dsn2_new</RootNamespace>
   </PropertyGroup>
@@ -104,7 +104,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:/Ht/tests/msvs10/win32/Debug;C:/Ht/tests/msvs12/win32/Debug;C:/Ht/systemc-2.3.1/win_x86_32/Debug;C:/ht/pthread-win32-2.9.0/win_x86_32/Debug;./win32/Debug;./win32/Debug;$(HtToolsPath)/systemc-2.3.1/win_x86_32/Debug;$(HtToolsPath)/pthread-win32-2.9.0/win_x86_32/Debug</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:/Ht/systemc-2.3.0/msvc10/SystemC/x86/Debug;C:/Ht/tests/msvs10/win32/Debug;C:/Ht/tests/msvs12/win32/Debug;C:/Ht/systemc-2.3.1/win_x86_32/Debug;C:/ht/pthread-win32-2.9.0/win_x86_32/Debug;./win32/Debug;./win32/Debug;$(HtToolsPath)/systemc-2.3.1/win_x86_32/Debug;$(HtToolsPath)/pthread-win32-2.9.0/win_x86_32/Debug</AdditionalLibraryDirectories>
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;linux.lib;pthread.lib;systemc.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -121,14 +121,14 @@
       <MinimalRebuild>false</MinimalRebuild>
       <ForcedIncludeFiles>
       </ForcedIncludeFiles>
-      <DisableSpecificWarnings>4800;4996</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4244;4996</DisableSpecificWarnings>
       <AdditionalOptions>/bigobj</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:/Ht/tests/msvs12/x64/Debug;C:/Ht/systemc-2.3.1/win_x86_64/Debug;C:/ht/pthread-win32-2.9.0/win_x86_64/Debug;./x64/Debug;./x64/Debug;$(HtToolsPath)/systemc-2.3.1/win_x86_64/Debug;$(HtToolsPath)/pthread-win32-2.9.0/win_x86_64/Debug</AdditionalLibraryDirectories>
-      <AdditionalDependencies>pthread.lib;systemc.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:/Ht/systemc-2.3.0/msvc10/SystemC/x64/Debug;C:/Ht/tests/msvs10/x64/Debug;C:/Ht/tests/msvs12/x64/Debug;C:/Ht/systemc-2.3.1/win_x86_64/Debug;C:/ht/pthread-win32-2.9.0/win_x86_64/Debug;./x64/Debug;./x64/Debug;$(HtToolsPath)/systemc-2.3.1/win_x86_64/Debug;$(HtToolsPath)/pthread-win32-2.9.0/win_x86_64/Debug</AdditionalLibraryDirectories>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;pthread.lib;systemc.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -154,7 +154,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>C:/Ht/tests/msvs10/win32/Release;C:/Ht/tests/msvs12/win32/Release;C:/Ht/systemc-2.3.1/win_x86_32/Release;C:/ht/pthread-win32-2.9.0/win_x86_32/Release;./win32/Release;./win32/Release;$(HtToolsPath)/systemc-2.3.1/win_x86_32/Release;$(HtToolsPath)/pthread-win32-2.9.0/win_x86_32/Release</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:/Ht/systemc-2.3.0/msvc10/SystemC/x86/Release;C:/Ht/tests/msvs10/win32/Release;C:/Ht/tests/msvs12/win32/Release;C:/Ht/systemc-2.3.1/win_x86_32/Release;C:/ht/pthread-win32-2.9.0/win_x86_32/Release;./win32/Release;./win32/Release;$(HtToolsPath)/systemc-2.3.1/win_x86_32/Release;$(HtToolsPath)/pthread-win32-2.9.0/win_x86_32/Release</AdditionalLibraryDirectories>
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;linux.lib;pthread.lib;systemc.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -181,7 +181,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>C:/Ht/tests/msvs10/x64/Release;C:/Ht/tests/msvs12/x64/Release;C:/Ht/systemc-2.3.1/win_x86_64/Release;C:/ht/pthread-win32-2.9.0/win_x86_64/Release;./x64/Release;./x64/Release;$(HtToolsPath)/systemc-2.3.1/win_x86_64/Release;$(HtToolsPath)/pthread-win32-2.9.0/win_x86_64/Release</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:/Ht/systemc-2.3.0/msvc10/SystemC/x64/Release;C:/Ht/tests/msvs10/x64/Release;C:/Ht/tests/msvs12/x64/Release;C:/Ht/systemc-2.3.1/win_x86_64/Release;C:/ht/pthread-win32-2.9.0/win_x86_64/Release;./x64/Release;./x64/Release;$(HtToolsPath)/systemc-2.3.1/win_x86_64/Release;$(HtToolsPath)/pthread-win32-2.9.0/win_x86_64/Release</AdditionalLibraryDirectories>
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;linux.lib;pthread.lib;systemc.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -330,6 +330,24 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <CustomBuild Include="..\src_pers\bug.htl">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(HtToolsPath)\bin\htl -cl ..\src_pers\bug.htl</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(HtToolsPath)\bin\htl -cl ..\src_pers\bug.htl</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">$(HtToolsPath)\bin\htl -cl ..\src_pers\bug.htl</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(HtToolsPath)\bin\htl -cl ..\src_pers\bug.htl</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(HtToolsPath)\bin\htl -cl ..\src_pers\bug.htl</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">htl %(Filename) ...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">htl %(Filename) ...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">htl %(Filename) ...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">htl %(Filename) ...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">htl %(Filename) ...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\ht\sysc\HostIntf.h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\ht\sysc\HostIntf.h;..\ht\sysc\UnitIntf.h;..\ht\sysc\PersCommon.h;..\ht\sysc\PersAeTop.h;..\ht\sysc\PersAuTop.h;..\ht\sysc\PersHif.h;..\ht\sysc\PersAuHti.h;..\ht\sysc\PersAuHta.h;..\ht\sysc\PersAuMif0.h;..\ht\sysc\PersCtl.h;..\ht\sysc\PersTest00.h;..\ht\sysc\SyscAeTop.h;..\ht\sysc\SyscTop.h;..\ht\sysc\UnitIntf.cpp;..\ht\sysc\PersHif.cpp;..\ht\sysc\PersAuHti.cpp;..\ht\sysc\PersAuHta.cpp;..\ht\sysc\PersAuMif0.cpp;..\ht\sysc\PersCtl.cpp;..\ht\sysc\PersTest00.cpp;..\ht\sysc\SyscMon.cpp;..\ht\sysc\PersAuTop.sc;..\ht\sysc\PersAeTop.sc;..\ht\verilog\PersHif.v_;..\ht\verilog\PersAuHti.v_;..\ht\verilog\PersAuHta.v_;..\ht\verilog\PersAuMif0.v_;..\ht\verilog\PersCtl.v_;..\ht\verilog\PersTest00.v_;..\ht\verilog\PersUnitCnt.v_;..\ht\verilog\PersXbarStub.v_;..\ht\verilog\PersMiStub.v_;..\ht\verilog\PersMoStub.v_</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">..\ht\sysc\HostIntf.h;..\ht\sysc\UnitIntf.h;..\ht\sysc\PersCommon.h;..\ht\sysc\PersAeTop.h;..\ht\sysc\PersAuTop.h;..\ht\sysc\PersHif.h;..\ht\sysc\PersAuHti.h;..\ht\sysc\PersAuHta.h;..\ht\sysc\PersAuMif0.h;..\ht\sysc\PersCtl.h;..\ht\sysc\PersTest00.h;..\ht\sysc\SyscAeTop.h;..\ht\sysc\SyscTop.h;..\ht\sysc\UnitIntf.cpp;..\ht\sysc\PersHif.cpp;..\ht\sysc\PersAuHti.cpp;..\ht\sysc\PersAuHta.cpp;..\ht\sysc\PersAuMif0.cpp;..\ht\sysc\PersCtl.cpp;..\ht\sysc\PersTest00.cpp;..\ht\sysc\SyscMon.cpp;..\ht\sysc\PersAuTop.sc;..\ht\sysc\PersAeTop.sc;..\ht\verilog\PersHif.v_;..\ht\verilog\PersAuHti.v_;..\ht\verilog\PersAuHta.v_;..\ht\verilog\PersAuMif0.v_;..\ht\verilog\PersCtl.v_;..\ht\verilog\PersTest00.v_;..\ht\verilog\PersUnitCnt.v_;..\ht\verilog\PersXbarStub.v_;..\ht\verilog\PersMiStub.v_;..\ht\verilog\PersMoStub.v_</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\ht\sysc\HostIntf.h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\ht\sysc\HostIntf.h</Outputs>
+    </CustomBuild>
     <CustomBuild Include="..\ht\sysc\PersAuTop.sc">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(HtToolsPath)\bin\htv -I ..\src -I ..\src_pers -I ..\ht\sysc -I $(HtToolsPath)\ht_lib -I $(HtToolsPath)\ht_lib\sysc -DHT_SYSC ..\ht\sysc\%(Filename).sc ..\ht\sysc\%(Filename).h ..\ht\verilog\%(Filename).v</Command>
@@ -681,13 +699,6 @@
     </None>
     <None Include="..\ht\verilog\PersMoStub.v">
     </None>
-    <CustomBuild Include="..\src_pers\bug.htl">
-      <FileType>Document</FileType>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">x</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(HtToolsPath)\bin\htl -cl ..\src_pers\bug.htl</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">$(HtToolsPath)\bin\htl -cl ..\src_pers\bug.htl</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">x</Outputs>
-    </CustomBuild>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

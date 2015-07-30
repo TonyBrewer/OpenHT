@@ -1042,16 +1042,18 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 	if (!mod.m_mif.m_bMif)
 		return;
 
+	CMif &mif = mod.m_mif;
+
 	bool bNeedMifContQue = false;
 	bool bNeedMifPollQue = false;
 	bool bNeedMifRdRsmQue = false;
 	bool bNeedMifWrRsmQue = false;
 
+	bool bNeedLas = mif.m_mifRd.m_bMaxBw || mif.m_mifWr.m_bMaxBw;
+
 	g_appArgs.GetDsnRpt().AddLevel("Memory Interface\n");
 
 	string vcdModName = VA("Pers%s", mod.m_modName.Uc().c_str());
-
-	CMif &mif = mod.m_mif;
 
 	m_mifIoDecl.Append("\t// Memory Interface\n");
 	GenModDecl(eVcdUser, m_mifIoDecl, vcdModName, "sc_out<bool>", VA("o_%sP0ToMif_reqRdy", mod.m_modName.Lc().c_str()));
@@ -3282,7 +3284,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 	}
 	m_mifDecl.NewLine();
 
-	if (bMultiQwReq) {
+	if (bMultiQwReq && bNeedLas) {
 		GenModDecl(eVcdAll, m_mifDecl, vcdModName, "CMemReq", VA("r_t%d_memReqLas", mod.m_execStg + 1));
 		mifReg.Append("\tr_t%d_memReqLas = c_t%d_memReqLas;\n",
 			mod.m_execStg + 1,
@@ -3323,7 +3325,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 		mifReg.NewLine();
 	}
 
-	if (bMultiQwReq && mif.m_bMifRd && bNeedRdRspInfo) {
+	if (bMultiQwReq && mif.m_bMifRd && bNeedRdRspInfo && bNeedLas) {
 		GenModDecl(eVcdAll, m_mifDecl, vcdModName, "CRdRspInfo", VA("r_t%d_rdRspInfoLas", mod.m_execStg + 1));
 		mifReg.Append("\tr_t%d_rdRspInfoLas = c_t%d_rdRspInfoLas;\n",
 			mod.m_execStg + 1,
@@ -3353,7 +3355,7 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 	mifReg.NewLine();
 	m_mifDecl.NewLine();
 
-	if (bMultiQwReq) {
+	if (bMultiQwReq && bNeedLas) {
 		mifPreInstr.NewLine();
 
 		GenModDecl(eVcdAll, m_mifDecl, vcdModName, "CMemRdWrReqIntf", VA("r_t%d_%sToMif_reqLas", mod.m_execStg + 1, mod.m_modName.Lc().c_str()));
@@ -3975,30 +3977,32 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 
 		mifPostInstr.NewLine();
 
-		mifPostInstr.Append("\tbool c_t%d_memReqLasHold = r_t%d_memReqLas.m_valid && c_t%d_memReqHold;\n",
-			mod.m_execStg + 1,
-			mod.m_execStg + 1,
-			mod.m_execStg + 1);
+		if (bNeedLas) {
+			mifPostInstr.Append("\tbool c_t%d_memReqLasHold = r_t%d_memReqLas.m_valid && c_t%d_memReqHold;\n",
+				mod.m_execStg + 1,
+				mod.m_execStg + 1,
+				mod.m_execStg + 1);
 
-		mifPostInstr.Append("\tCMemReq c_t%d_memReqLas = c_t%d_memReqLasHold ? r_t%d_memReqLas : c_t%d_memReq;\n",
-			mod.m_execStg, mod.m_execStg + 1, mod.m_execStg + 1, mod.m_execStg);
-
-		mifPostInstr.Append("\tc_t%d_memReqLas.m_valid = c_t%d_memReqLasHold || c_t%d_memReqHold && c_t%d_memReq.m_valid;\n",
-			mod.m_execStg,
-			mod.m_execStg + 1,
-			mod.m_execStg + 1,
-			mod.m_execStg);
-
-		if (mif.m_bMifRd && bNeedRdRspInfo) {
-			mifPostInstr.Append("\tCRdRspInfo c_t%d_rdRspInfoLas = c_t%d_memReqLasHold ? r_t%d_rdRspInfoLas : c_t%d_rdRspInfo;\n",
+			mifPostInstr.Append("\tCMemReq c_t%d_memReqLas = c_t%d_memReqLasHold ? r_t%d_memReqLas : c_t%d_memReq;\n",
 				mod.m_execStg, mod.m_execStg + 1, mod.m_execStg + 1, mod.m_execStg);
+
+			mifPostInstr.Append("\tc_t%d_memReqLas.m_valid = c_t%d_memReqLasHold || c_t%d_memReqHold && c_t%d_memReq.m_valid;\n",
+				mod.m_execStg,
+				mod.m_execStg + 1,
+				mod.m_execStg + 1,
+				mod.m_execStg);
+
+			if (mif.m_bMifRd && bNeedRdRspInfo) {
+				mifPostInstr.Append("\tCRdRspInfo c_t%d_rdRspInfoLas = c_t%d_memReqLasHold ? r_t%d_rdRspInfoLas : c_t%d_rdRspInfo;\n",
+					mod.m_execStg, mod.m_execStg + 1, mod.m_execStg + 1, mod.m_execStg);
+			}
+			mifPostInstr.Append("\tCMemRdWrReqIntf c_t%d_%sToMif_reqLas = c_t%d_memReqLasHold ? r_t%d_%sToMif_reqLas : c_t%d_%sToMif_req;\n",
+				mod.m_execStg, mod.m_modName.Lc().c_str(),
+				mod.m_execStg + 1,
+				mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
+				mod.m_execStg, mod.m_modName.Lc().c_str());
+			mifPostInstr.NewLine();
 		}
-		mifPostInstr.Append("\tCMemRdWrReqIntf c_t%d_%sToMif_reqLas = c_t%d_memReqLasHold ? r_t%d_%sToMif_reqLas : c_t%d_%sToMif_req;\n",
-			mod.m_execStg, mod.m_modName.Lc().c_str(),
-			mod.m_execStg + 1,
-			mod.m_execStg + 1, mod.m_modName.Lc().c_str(),
-			mod.m_execStg, mod.m_modName.Lc().c_str());
-		mifPostInstr.NewLine();
 
 		mifPostInstr.Append("\tif (c_t%d_memReqHold) {\n",
 			mod.m_execStg + 1);
@@ -4013,18 +4017,20 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 				mod.m_execStg,
 				mod.m_execStg + 1);
 		}
-		mifPostInstr.Append("\t} else if (r_t%d_memReqLas.m_valid) {\n",
-			mod.m_execStg + 1);
-		mifPostInstr.Append("\t\tc_t%d_%sToMif_req = r_t%d_%sToMif_reqLas;\n",
-			mod.m_execStg, mod.m_modName.Lc().c_str(),
-			mod.m_execStg + 1, mod.m_modName.Lc().c_str());
-		mifPostInstr.Append("\t\tc_t%d_memReq = r_t%d_memReqLas;\n",
-			mod.m_execStg,
-			mod.m_execStg + 1);
-		if (mif.m_bMifRd && bNeedRdRspInfo) {
-			mifPostInstr.Append("\t\tc_t%d_rdRspInfo = r_t%d_rdRspInfoLas;\n",
+		if (bNeedLas) {
+			mifPostInstr.Append("\t} else if (r_t%d_memReqLas.m_valid) {\n",
+				mod.m_execStg + 1);
+			mifPostInstr.Append("\t\tc_t%d_%sToMif_req = r_t%d_%sToMif_reqLas;\n",
+				mod.m_execStg, mod.m_modName.Lc().c_str(),
+				mod.m_execStg + 1, mod.m_modName.Lc().c_str());
+			mifPostInstr.Append("\t\tc_t%d_memReq = r_t%d_memReqLas;\n",
 				mod.m_execStg,
 				mod.m_execStg + 1);
+			if (mif.m_bMifRd && bNeedRdRspInfo) {
+				mifPostInstr.Append("\t\tc_t%d_rdRspInfo = r_t%d_rdRspInfoLas;\n",
+					mod.m_execStg,
+					mod.m_execStg + 1);
+			}
 		}
 		mifPostInstr.Append("\t}\n");
 		mifPostInstr.NewLine();
@@ -4046,8 +4052,13 @@ void CDsnInfo::GenModMifStatements(CModule &mod)
 			mod.m_modName.Lc().c_str());
 		mifPostInstr.NewLine();
 
-		mifPostInstr.Append("\tbool c_t%d_memReqBusy = c_t%d_memReqLas.m_valid;\n",
-			mod.m_execStg - 1, mod.m_execStg, mod.m_modName.Lc().c_str());
+		if (bNeedLas) {
+			mifPostInstr.Append("\tbool c_t%d_memReqBusy = c_t%d_memReqLas.m_valid;\n",
+				mod.m_execStg - 1, mod.m_execStg, mod.m_modName.Lc().c_str());
+		} else {
+			mifPostInstr.Append("\tbool c_t%d_memReqBusy = c_t%d_memReq.m_valid;\n",
+				mod.m_execStg - 1, mod.m_execStg, mod.m_modName.Lc().c_str());
+		}
 		mifPostInstr.NewLine();
 
 		string reqValidQwRemEqZ = reqValid;
