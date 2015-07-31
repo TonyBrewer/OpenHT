@@ -429,8 +429,8 @@ ctl.AddShared(reset=false)
 	;
 
 ctl.AddGlobal()
-	.AddVar(type=uint64_t, name=rdPktHdr, addr1=hdrAddr, read=true, write=false)
-	.AddVar(type=uint64_t, name=prePktDat, addr1=prePktDatHdr, read=false, write=false)
+	.AddVar(type=uint64_t, name=rdPktHdr, addr1=hdrAddr, instrRead=true, instrWrite=false)
+	.AddVar(type=uint64_t, name=prePktDat, addr1=prePktDatHdr, instrRead=false, instrWrite=false)
 	;
 
 ctl.AddReadMem() //rspCntW=CTL_BLK_CNT_W+4
@@ -628,9 +628,9 @@ pkt.AddShared(reset=false)
 	;
 
 pkt.AddGlobal()
-	.AddVar(type=uint64_t, name=prePktDat, addr1=prefetchAddr, read=true, write=false, rdStg=1)
-	.AddVar(type=CAccelConn, name=connList, addr1=connAddr, read=true, write=true, rdStg=1, wrStg=3, spanningWrite=true)
-	.AddVar(type=uint64_t, name=rdPktDat, addr1=fetchAddr, read=true, write=false, rdStg=1)
+	.AddVar(type=uint64_t, name=prePktDat, addr1=prefetchAddr, instrRead=true, instrWrite=false, rdStg=1)
+	.AddVar(type=CAccelConn, name=connList, addr1=connAddr, instrRead=true, instrWrite=true, rdStg=1, wrStg=3, spanningWrite=true)
+	.AddVar(type=uint64_t, name=rdPktDat, addr1=fetchAddr, instrRead=true, instrWrite=false, rdStg=1)
 	;
 
 pkt.AddReadMem() //queueW=PKT_MREAD_W, rspCntW=PKT_MREAD_W
