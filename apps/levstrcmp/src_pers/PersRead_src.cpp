@@ -37,11 +37,11 @@ CPersRead::PersRead()
 				if (P_blkSize <= P_lineStrIdx)
 					SendReturn_Read();
 				else {
-					HtContinue(READ_BLK_LOOP0);
+					HtContinue(READ_BLK_LOOP);
 				}
 				break;
 			}
-		case READ_BLK_LOOP0:
+		case READ_BLK_LOOP:
 			// loop that reads left block
 			{
 				if (ReadMemBusy()) {
@@ -53,37 +53,17 @@ CPersRead::PersRead()
 				RamSize_t ramAddr = (RamSize_t)((P_blkIdx >> LINE_STR_CNT_L_W) + P_ramBlkIdx * RAM_BLOCK_SIZE);
 
 				if (P_sideIdx == 0)
-					ReadMem_strSetL0(memAddr, ramAddr, (LineStrIdxL_t)P_lineStrIdx);
+					ReadMem_strSetL(memAddr, ramAddr, (LineStrIdxL_t)P_lineStrIdx, 1);
 				else
-					ReadMem_strSetR0(memAddr, ramAddr, (LineStrIdxR_t)P_lineStrIdx);
-
-				HtContinue(READ_BLK_LOOP1);
-
-				break;
-			}
-		case READ_BLK_LOOP1:
-			// loop that reads left block
-			{
-				if (ReadMemBusy()) {
-					HtRetry();
-					break;
-				}
-
-				MemAddr_t memAddr = P_blkBase + SIZE_OF_STRING * P_blkIdx + 8;
-				RamSize_t ramAddr = (RamSize_t)((P_blkIdx >> LINE_STR_CNT_L_W) + P_ramBlkIdx * RAM_BLOCK_SIZE);
+					ReadMem_strSetR(memAddr, ramAddr, (LineStrIdxR_t)P_lineStrIdx, 1);
 
 				P_blkIdx += LINE_STR_CNT_L;
 				bool bLastReq = P_blkIdx >= P_blkSize;
 
-				if (P_sideIdx == 0)
-					ReadMem_strSetL1(memAddr, ramAddr, (LineStrIdxL_t)P_lineStrIdx);
-				else
-					ReadMem_strSetR1(memAddr, ramAddr, (LineStrIdxR_t)P_lineStrIdx);
-
 				if (bLastReq)
 					ReadMemPause(READ_RTN);
 				else
-					HtContinue(READ_BLK_LOOP0);
+					HtContinue(READ_BLK_LOOP);
 
 				break;
 			}

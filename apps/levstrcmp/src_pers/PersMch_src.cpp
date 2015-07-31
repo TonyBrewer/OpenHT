@@ -33,10 +33,10 @@ CPersMch::PersMch()
   T1_cmpValid = false;
   LineStrCntL_t c_ts_lineStrCntL = 0;
 
-  RamSize_t ramIdxL = P_ramIdxL;
+  RamSize_t ramIdxL = P1_ramIdxL;
 
-  if (PR_htValid) {
-      switch (PR_htInst) {
+  if (PR1_htValid) {
+      switch (PR1_htInst) {
       case MCH_ENTRY:
       {
           if (SendReturnBusy_MchBlkLx1R()) {
@@ -44,13 +44,13 @@ CPersMch::PersMch()
               break;
           }
 
-          P_blkIdxL = 0;
-          P_ramIdxL = (RamSize_t)(P_ramBlkIdx * RAM_BLOCK_SIZE);
+          P1_blkIdxL = 0;
+          P1_ramIdxL = (RamSize_t)(P1_ramBlkIdx * RAM_BLOCK_SIZE);
 
-          if (P_strLenL == 0 && P_strLenR == 0)
+          if (P1_strLenL == 0 && P1_strLenR == 0)
               // end of run indicator, wait until idle
               HtContinue(MCH_WAIT_TIL_IDLE);
-          else if (P_blkSizeL == 0)
+          else if (P1_blkSizeL == 0)
               SendReturn_MchBlkLx1R(SR_rsltCnt);		// an empty block, just return
           else
               HtContinue(MCH_BLK_L_LOOP);
@@ -66,14 +66,14 @@ CPersMch::PersMch()
           } else
               T1_cmpValid = true;
 
-          c_ts_lineStrCntL = (LineStrCntL_t) (P_blkSizeL - P_blkIdxL > LINE_STR_CNT_L
-                                              ? LINE_STR_CNT_L : (P_blkSizeL - P_blkIdxL));
+          c_ts_lineStrCntL = (LineStrCntL_t) (P1_blkSizeL - P1_blkIdxL > LINE_STR_CNT_L
+                                              ? LINE_STR_CNT_L : (P1_blkSizeL - P1_blkIdxL));
 
           // increment loop index and check for loop termination condition
-          P_blkIdxL += LINE_STR_CNT_L;
-          P_ramIdxL += 1;
+          P1_blkIdxL += LINE_STR_CNT_L;
+          P1_ramIdxL += 1;
 
-          if (P_blkIdxL < P_blkSizeL)
+          if (P1_blkIdxL < P1_blkSizeL)
               HtContinue(MCH_BLK_L_LOOP);
           else
               SendReturn_MchBlkLx1R(SR_rsltCnt);
@@ -115,13 +115,13 @@ CPersMch::PersMch()
   // each stage handles one loop iterations
   Score_t c_cmpAdjD;
   // if D is greater than the pipe edit distance set it in range
-  if (P_cmpAdjD > (Score_t)EDIT_DIST_W)
+  if (P1_cmpAdjD > (Score_t)EDIT_DIST_W)
       c_cmpAdjD = (Score_t)EDIT_DIST_W;
   else
-      c_cmpAdjD = P_cmpAdjD;
+      c_cmpAdjD = P1_cmpAdjD;
 #ifndef _HTV
-  if(P_cmpAdjD >= EDIT_DIST_W)
-      printf ("Warning edit distance of %d exceeds pipe, will always hit\n", (int)P_cmpAdjD);
+  if(P1_cmpAdjD >= EDIT_DIST_W)
+      printf ("Warning edit distance of %d exceeds pipe, will always hit\n", (int)P1_cmpAdjD);
 #endif
   switch (c_cmpAdjD) {
   case 0:
@@ -141,13 +141,13 @@ CPersMch::PersMch()
       break;
   }
 
-  T1_matchId.m_conIdxL = (ConIdx_t)(P_conIdxL + ((ramIdxL & (RAM_BLOCK_SIZE-1)) << LINE_STR_CNT_L_W));
-  T1_matchId.m_conIdxR = (ConIdx_t)(P_conIdxR + ((P_ramIdxR & (RAM_BLOCK_SIZE-1)) << LINE_STR_CNT_R_W));
-  T1_matchId.m_conIdL = P_conIdL;
-  T1_matchId.m_conIdR = P_conIdR;
+  T1_matchId.m_conIdxL = (ConIdx_t)(P1_conIdxL + ((ramIdxL & (RAM_BLOCK_SIZE-1)) << LINE_STR_CNT_L_W));
+  T1_matchId.m_conIdxR = (ConIdx_t)(P1_conIdxR + ((P1_ramIdxR & (RAM_BLOCK_SIZE-1)) << LINE_STR_CNT_R_W));
+  T1_matchId.m_conIdL = P1_conIdL;
+  T1_matchId.m_conIdR = P1_conIdR;
   T1_lineStrCntL = c_ts_lineStrCntL;
 
-  T1_strLenDiff = (ht_int6)P_strLenR - (ht_int6)P_strLenL;
+  T1_strLenDiff = (ht_int6)P1_strLenR - (ht_int6)P1_strLenL;
 
   T2_lineMaskL = (LineStrMaskL_t)((1ul << T2_lineStrCntL)-1);
   T2_lineMaskR = (LineStrMaskR_t)((1ul << T2_lineStrCntR)-1);
@@ -158,7 +158,7 @@ CPersMch::PersMch()
     ht_attrib(equivalent_register_removal, TR2_strL[1][idxL], "no");
 
     T1_strL[0][idxL] = GR1_strSetL[idxL];
-    T1_strL[1][idxL] = GR1_strSetL[idxL];
+    T1_strL[1][idxL] = T1_strL[0][idxL];
   }
 
   for (int idxR = 0; idxR < LINE_STR_CNT_R; idxR += 1) {
@@ -166,7 +166,7 @@ CPersMch::PersMch()
     ht_attrib(equivalent_register_removal, TR2_strR[1][idxR], "no");
 
     T1_strR[0][idxR] = GR1_strSetR[idxR];
-    T1_strR[1][idxR] = GR1_strSetR[idxR];
+    T1_strR[1][idxR] = T1_strR[0][idxR];
   }
 
 

@@ -70,6 +70,7 @@ union CStrPair {
 };
 	
 union CStrUnion {
+#pragma htl spanning_field
 	struct {
 		uint64_t m_data0;
 		uint16_t m_data1;
@@ -139,8 +140,7 @@ ctl.AddCall(func=MchBlkLx1R, fork=true, call=true);
 
 dsnInfo.AddModule(name=read, htIdW=READ_HTID_W);
 read.AddInst(name=READ_ENTRY);
-read.AddInst(name=READ_BLK_LOOP0);
-read.AddInst(name=READ_BLK_LOOP1);
+read.AddInst(name=READ_BLK_LOOP);
 read.AddInst(name=READ_RTN);
 
 
@@ -173,15 +173,13 @@ read.AddReturn(func=Read)
 	;
 
 read.AddReadMem() // rspCntW=6 ??
-	.AddDst(var=strSetL[].m_data0, name=strSetL0, memSrc=host)
-	.AddDst(var=strSetL[].m_data1, name=strSetL1, memSrc=host)
-	.AddDst(var=strSetR[].m_data0, name=strSetR0, memSrc=host)
-	.AddDst(var=strSetR[].m_data1, name=strSetR1, memSrc=host)
+	.AddDst(var=strSetL[](#), name=strSetL, memSrc=host)
+	.AddDst(var=strSetR[](#), name=strSetR, memSrc=host)
 	;
 
 read.AddGlobal()
-	.AddVar(type=CStrUnion, name=strSetL, addr1=strSetL_RdAddr1, dimen1=LINE_STR_CNT_L, read=false, write=true)
-	.AddVar(type=CStrUnion, name=strSetR, addr1=strSetR_RdAddr1, dimen1=LINE_STR_CNT_R, read=false, write=true)
+	.AddVar(type=CStrUnion, name=strSetL, addr1=strSetL_RdAddr1, dimen1=LINE_STR_CNT_L, instrRead=false, instrWrite=false, spanningWrite=true)
+	.AddVar(type=CStrUnion, name=strSetR, addr1=strSetR_RdAddr1, dimen1=LINE_STR_CNT_R, instrRead=false, instrWrite=false, spanningWrite=true)
 	;
 
 ////////////////////////////////////////////////////
@@ -257,8 +255,8 @@ mch.AddReturn(func=MchBlkLx1R)
 	;
 
 mch.AddGlobal()
-	.AddVar(type=CStrUnion, name=strSetL, addr1=ramIdxL, dimen1=LINE_STR_CNT_L, read=true, write=false)
-	.AddVar(type=CStrUnion, name=strSetR, addr1=ramIdxR, dimen1=LINE_STR_CNT_R, read=true, write=false)
+	.AddVar(type=CStrUnion, name=strSetL, addr1=ramIdxL, dimen1=LINE_STR_CNT_L, instrRead=true, instrWrite=false, spanningWrite=true)
+	.AddVar(type=CStrUnion, name=strSetR, addr1=ramIdxR, dimen1=LINE_STR_CNT_R, instrRead=true, instrWrite=false, spanningWrite=true)
 	;
 
 mch.AddFunction(type=void, name=ByteCmpMatrix)
