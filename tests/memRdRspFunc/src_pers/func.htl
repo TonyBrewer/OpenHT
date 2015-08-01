@@ -1,0 +1,14 @@
+// -cl $(HtToolsPath)/tests/memRdRspFunc/src_pers/func.htl
+-wd $(HtToolsPath)/tests/memRdRspFunc/msvs12/		// working directory
+
+-cp wx-690
+-ac 1
+-uc 1
+-df 150
+-vcd_all
+
+-pn memRdRspFunc
+
+-I ../src
+../src_pers/func.htd	    // design file location
+../ht/sysc							// location for output files

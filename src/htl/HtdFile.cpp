@@ -1961,7 +1961,7 @@ void HtdFile::ParseMifRdMethods()
 		string name;
 		string infoW;
 		string stgCnt = "0";
-		bool bMultiRd = false;
+		string elemCntW;
 		string memSrc = "coproc";
 		CType * pRdType = &g_uint64;
 
@@ -1969,18 +1969,18 @@ void HtdFile::ParseMifRdMethods()
 				{ "name", &name, true, ePrmIdent, 0, 0 },
 				{ "rspInfoW", &infoW, true, ePrmInteger, 0, 0 },
 				{ "rsmDly", &stgCnt, false, ePrmInteger, 0, 0 },
-				{ "multiRd", &bMultiRd, false, ePrmBoolean, 0, 0 },
+				{ "elemCntW", &elemCntW, false, ePrmInteger, 0, 0 },
 				{ "memSrc", &memSrc, false, ePrmIdent, 0, 0 },
 				{ "rdType", &pRdType, false, ePrmType, 0, 0 },
 				{ 0, 0, 0, ePrmUnknown, 0, 0 }
 		};
 
 		if (!ParseParameters(params))
-			CPreProcess::ParseMsg(Error, "expected AddFunc( name, rspInfoW, rsmDly {, multiRd=false}, {, memSrc=\"coproc\"}{, rdType=uint64 } )");
+			CPreProcess::ParseMsg(Error, "expected AddFunction( name, rspInfoW, rsmDly=0 {, elemCntW=0}, {, memSrc=\"coproc\"}{, rdType=uint64 } )");
 
 		if (pRdType	!= &g_uint64 && pRdType != &g_uint32 && pRdType != &g_uint16 && pRdType != &g_uint8 &&
 			pRdType != &g_int64 && pRdType != &g_int32 && pRdType != &g_int16 && pRdType != &g_int8)
-			CPreProcess::ParseMsg(Error, "expected AddDst rdType parameter to be uint64_t, uint32_t, uint16_t, uint8_t, int64_t, int32_t, int16_t or int8_t");
+			CPreProcess::ParseMsg(Error, "expected AddFunction rdType parameter to be uint64_t, uint32_t, uint16_t, uint8_t, int64_t, int32_t, int16_t or int8_t");
 
 		if (memSrc != "coproc" && memSrc != "host")
 			CPreProcess::ParseMsg(Error, "invalid value for memSrc (must be coproc or host)");
@@ -1989,7 +1989,7 @@ void HtdFile::ParseMifRdMethods()
 			CPreProcess::ParseMsg(Error, "duplicate memory read interface destination name '%s'", name.c_str());
 		else {
 			m_pDsn->m_mifRdDstList.insert(name);
-			m_pDsnInfo->AddDst(m_pOpenMifRd, name, infoW, stgCnt, bMultiRd, memSrc, pRdType);
+			m_pDsnInfo->AddDst(m_pOpenMifRd, name, infoW, stgCnt, elemCntW, memSrc, pRdType);
 		}
 
 		m_pLex->GetNextTk();

@@ -681,7 +681,8 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 	}
 
 	fprintf(incFile, "#\t\tifndef _HTV\n");
-	fprintf(incFile, "\t\tc_reset2x = true;\n");
+	if (mod.m_clkRate == eClk2x)
+		fprintf(incFile, "\t\tc_reset2x = true;\n");
 	fprintf(incFile, "#\t\tendif\n");
 
 	fprintf(incFile, "\t}\n");
@@ -920,7 +921,6 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 		if (mod.m_clkRate == eClk1x && barIdx == mod.m_barrierList.size() - 1) {
 			fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset1x, \"no\");\n");
 			fprintf(cppFile, "\tHtResetFlop(r_reset1x, i_reset.read());\n");
-			fprintf(cppFile, "\tc_reset2x = r_reset1x;\n");
 			fprintf(cppFile, "\n");
 		}
 

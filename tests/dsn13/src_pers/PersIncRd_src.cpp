@@ -60,7 +60,7 @@ void CPersIncRd::PersIncRd()
 	}
 }
 
-void CPersIncRd::ReadMemResp_arrayMem(sc_uint<INCRD_RD_GRP_ID_W> rdRspGrpId, sc_uint<INCRD_HTID_W> rdRspInfo, sc_uint<64> rdRspData)
+void CPersIncRd::ReadMemResp_arrayMem(sc_uint<INCRD_RD_GRP_ID_W> rdRspGrpId, sc_uint<INCRD_HTID_W> rdRspInfo, uint64_t rdRspData)
 {
 	assert(rdRspGrpId == rdRspInfo);
 
