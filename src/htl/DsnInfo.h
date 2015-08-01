@@ -1039,8 +1039,8 @@ struct CMifRdDst {
 		m_fldDimen2 = 0;
 	}
 
-	CMifRdDst(string name, string infoW, string stgCnt, bool bMultiRd, string memSrc, CType * pRdType) :
-		m_name(name), m_infoW(infoW), m_rsmDly(stgCnt), m_bMultiQwRdReq(bMultiRd), m_memSrc(memSrc), m_pRdType(pRdType)
+	CMifRdDst(string name, string infoW, string stgCnt, string const & elemCntW, string memSrc, CType * pRdType) :
+		m_name(name), m_infoW(infoW), m_rsmDly(stgCnt), m_elemCntW(elemCntW), m_memSrc(memSrc), m_pRdType(pRdType)
 	{
 		m_lineInfo = CPreProcess::m_lineInfo;
 		m_pSharedVar = 0;
@@ -1065,6 +1065,7 @@ struct CMifRdDst {
 	string		m_var;
 	CHtString	m_infoW;
 	CHtString	m_rsmDly;
+	CHtString	m_elemCntW;
 	bool        m_bMultiQwRdReq;
 	bool		m_bMultiQwHostRdReq;
 	bool		m_bMultiQwCoprocRdReq;
@@ -1974,7 +1975,7 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 	void AddDst(CMifRd * pOpenMifRd, string const & name, string const & var,
 		string const & memSrc, string const & atomic, CType * pRdType);
 	void AddDst(CMifRd * pOpenMifRd, string name, string infoW, string stgCnt,
-		bool bMultiRd, string memSrc, CType * pRdType);
+		string const & elemCntW, string memSrc, CType * pRdType);
 
 	// Routines called by HtdFile::saveHtdFile
 	bool GetModule(string &name) { return false; }

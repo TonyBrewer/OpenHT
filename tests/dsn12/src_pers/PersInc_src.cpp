@@ -137,17 +137,17 @@ void CPersInc::PersInc()
 }
 
 #if INC_HTID_W == 0 && INC_RSP_GRP_W == 0
-void CPersInc::ReadMemResp_arrayMem(sc_uint<64> rdRspData)
+void CPersInc::ReadMemResp_arrayMem(uint64_t rdRspData)
 {
 	S_arrayMem = rdRspData;
 }
 #elif INC_HTID_W == 0 && INC_RSP_GRP_W != 0
-void CPersInc::ReadMemResp_arrayMem(sc_uint<INC_RD_GRP_ID_W> ht_noload rdRspGrpId, sc_uint<64> rdRspData)
+void CPersInc::ReadMemResp_arrayMem(sc_uint<INC_RD_GRP_ID_W> ht_noload rdRspGrpId, uint64_t rdRspData)
 {
 	S_arrayMem = rdRspData;
 }
 #else
-void CPersInc::ReadMemResp_arrayMem(sc_uint<INC_RD_GRP_ID_W> rdRspGrpId, sc_uint<INC_HTID_W> rdRspInfo, sc_uint<64> rdRspData)
+void CPersInc::ReadMemResp_arrayMem(sc_uint<INC_RD_GRP_ID_W> rdRspGrpId, sc_uint<INC_HTID_W> rdRspInfo, uint64_t rdRspData)
 {
 	assert(rdRspGrpId == rdRspInfo);
 

@@ -383,7 +383,7 @@ void CDsnInfo::AddDst(CMifRd * pMifRd, string const & name, string const & var,
 }
 
 void CDsnInfo::AddDst(CMifRd * pMifRd, string name, string infoW, string stgCnt,
-	bool bMultiRd, string memSrc, CType * pRdType)
+	string const & elemCntW, string memSrc, CType * pRdType)
 {
-	pMifRd->m_rdDstList.push_back(CMifRdDst(name, infoW, stgCnt, bMultiRd, memSrc, pRdType));
+	pMifRd->m_rdDstList.push_back(CMifRdDst(name, infoW, stgCnt, elemCntW, memSrc, pRdType));
 }
