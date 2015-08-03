@@ -28,8 +28,8 @@ typedef sc_uint<48> MemAddr_t;
 typedef sc_uint<MAX_ELEM_CNT_W> ElemCnt_t;
 
 dsnInfo.AddModule(name=ctl, htIdW=CTL_HTID_W);
-ctl.AddInst(name=CTL_ENTRY);
-ctl.AddInst(name=CTL_RTN);
+ctl.AddInstr(name=CTL_ENTRY);
+ctl.AddInstr(name=CTL_RTN);
 
 ctl.AddPrivate()
 	.AddVar(type=uint8_t, name=testId)
@@ -38,7 +38,7 @@ ctl.AddPrivate()
 	.AddVar(type=uint8_t, name=threadId)
 	;
 
-ctl.AddEntry(func=htmain, inst=CTL_ENTRY, host=true)
+ctl.AddEntry(func=htmain, instr=CTL_ENTRY, host=true)
 	.AddParam(hostType=uint8_t, type=uint8_t, name=testId)
 	.AddParam(hostType=uint32_t, type=uint16_t, name=loopBase)
 	.AddParam(hostType=uint32_t, type=ElemCnt_t, name=elemCnt)
@@ -71,10 +71,10 @@ typedef sc_uint<INC0_HTID_W+7> Inc0Ptr_t;
 
 dsnInfo.AddModule(name=inc0, htIdW=INC0_HTID_W);
 
-inc0.AddInst(name=INC0_INIT);
-inc0.AddInst(name=INC0_READ);
-inc0.AddInst(name=INC0_WRITE);
-inc0.AddInst(name=INC0_RTN);
+inc0.AddInstr(name=INC0_INIT);
+inc0.AddInstr(name=INC0_READ);
+inc0.AddInstr(name=INC0_WRITE);
+inc0.AddInstr(name=INC0_RTN);
 
 inc0.AddHostMsg(dir=in, name=SU_ARRAY_ADDR)
 	.AddDst(var=arrayAddr, dataLsb=0)
@@ -91,7 +91,7 @@ inc0.AddShared()
 	.AddVar(type=MemAddr_t, name=arrayAddr)
 	;
 
-inc0.AddEntry(func=inc0, inst=INC0_INIT)
+inc0.AddEntry(func=inc0, instr=INC0_INIT)
 	.AddParam(hostType=uint32_t, type=uint16_t, name=loopBase)
 	.AddParam(hostType=uint32_t, type=ElemCnt_t, name=elemCnt)
 	;
@@ -117,10 +117,10 @@ typedef sc_uint<INC1_HTID_W+7> Inc1Ptr_t;
 
 dsnInfo.AddModule(name=inc1, htIdW=INC1_HTID_W);
 
-inc1.AddInst(name=INC1_INIT);
-inc1.AddInst(name=INC1_READ);
-inc1.AddInst(name=INC1_WRITE);
-inc1.AddInst(name=INC1_RTN);
+inc1.AddInstr(name=INC1_INIT);
+inc1.AddInstr(name=INC1_READ);
+inc1.AddInstr(name=INC1_WRITE);
+inc1.AddInstr(name=INC1_RTN);
 
 inc1.AddHostMsg(dir=in, name=SU_ARRAY_ADDR)
 	.AddDst(var=arrayAddr, dataLsb=0)
@@ -138,7 +138,7 @@ inc1.AddShared()
 	.AddVar(type=MemAddr_t, name=arrayAddr)
 	;
 
-inc1.AddEntry(func=inc1, inst=INC1_INIT)
+inc1.AddEntry(func=inc1, instr=INC1_INIT)
 	.AddParam(hostType=uint32_t, type=uint16_t, name=loopBase)
 	.AddParam(hostType=uint32_t, type=ElemCnt_t, name=elemCnt)
 	;
@@ -168,10 +168,10 @@ typedef sc_uint<INC2_HTID_W+7> Inc2Ptr_t;
 
 dsnInfo.AddModule(name=inc2, htIdW=INC2_HTID_W);
 
-inc2.AddInst(name=INC2_INIT);
-inc2.AddInst(name=INC2_READ);
-inc2.AddInst(name=INC2_WRITE);
-inc2.AddInst(name=INC2_RTN);
+inc2.AddInstr(name=INC2_INIT);
+inc2.AddInstr(name=INC2_READ);
+inc2.AddInstr(name=INC2_WRITE);
+inc2.AddInstr(name=INC2_RTN);
 
 inc2.AddHostMsg(dir=in, name=SU_ARRAY_ADDR)
 	.AddDst(var=arrayAddr, dataLsb=0)
@@ -188,7 +188,7 @@ inc2.AddShared()
 	.AddVar(type=MemAddr_t, name=arrayAddr)
 	;
 
-inc2.AddEntry(func=inc2, inst=INC2_INIT)
+inc2.AddEntry(func=inc2, instr=INC2_INIT)
 	.AddParam(hostType=uint32_t, type=uint16_t, name=loopBase)
 	.AddParam(hostType=uint32_t, type=ElemCnt_t, name=elemCnt)
 	;
@@ -215,10 +215,10 @@ typedef sc_uint<INC3_HTID_W+7> Inc3Ptr_t;
 
 dsnInfo.AddModule(name=inc3, htIdW=INC3_HTID_W);
 
-inc3.AddInst(name=INC3_INIT);
-inc3.AddInst(name=INC3_READ);
-inc3.AddInst(name=INC3_WRITE);
-inc3.AddInst(name=INC3_RTN);
+inc3.AddInstr(name=INC3_INIT);
+inc3.AddInstr(name=INC3_READ);
+inc3.AddInstr(name=INC3_WRITE);
+inc3.AddInstr(name=INC3_RTN);
 
 inc3.AddHostMsg(dir=in, name=SU_ARRAY_ADDR)
 	.AddDst(var=arrayAddr, dataLsb=0)
@@ -237,7 +237,7 @@ inc3.AddShared()
 
 inc3.AddStage(privWrStg=1, execStg=1);
 
-inc3.AddEntry(func=inc3, inst=INC3_INIT)
+inc3.AddEntry(func=inc3, instr=INC3_INIT)
 	.AddParam(hostType=uint32_t, type=uint16_t, name=loopBase)
 	.AddParam(hostType=uint32_t, type=ElemCnt_t, name=elemCnt)
 	;
@@ -263,10 +263,10 @@ typedef sc_uint<INC4_HTID_W+7> Inc4Ptr_t;
 
 dsnInfo.AddModule(name=inc4, htIdW=INC4_HTID_W);
 
-inc4.AddInst(name=INC4_INIT);
-inc4.AddInst(name=INC4_READ);
-inc4.AddInst(name=INC4_WRITE);
-inc4.AddInst(name=INC4_RTN);
+inc4.AddInstr(name=INC4_INIT);
+inc4.AddInstr(name=INC4_READ);
+inc4.AddInstr(name=INC4_WRITE);
+inc4.AddInstr(name=INC4_RTN);
 
 inc4.AddHostMsg(dir=in, name=SU_ARRAY_ADDR)
 	.AddDst(var=arrayAddr, dataLsb=0)
@@ -283,7 +283,7 @@ inc4.AddShared()
 	.AddVar(type=MemAddr_t, name=arrayAddr)
 	;
 
-inc4.AddEntry(func=inc4, inst=INC4_INIT)
+inc4.AddEntry(func=inc4, instr=INC4_INIT)
 	.AddParam(hostType=uint32_t, type=uint16_t, name=loopBase)
 	.AddParam(hostType=uint32_t, type=ElemCnt_t, name=elemCnt)
 	;
@@ -311,10 +311,10 @@ typedef sc_uint<INC5_RD_GRP_W> Inc5RdGrpId_t;
 
 dsnInfo.AddModule(name=inc5, htIdW=INC5_HTID_W);
 
-inc5.AddInst(name=INC5_INIT);
-inc5.AddInst(name=INC5_READ);
-inc5.AddInst(name=INC5_WRITE);
-inc5.AddInst(name=INC5_RTN);
+inc5.AddInstr(name=INC5_INIT);
+inc5.AddInstr(name=INC5_READ);
+inc5.AddInstr(name=INC5_WRITE);
+inc5.AddInstr(name=INC5_RTN);
 
 inc5.AddHostMsg(dir=in, name=SU_ARRAY_ADDR)
 	.AddDst(var=arrayAddr, dataLsb=0)
@@ -332,7 +332,7 @@ inc5.AddShared()
 	.AddVar(type=MemAddr_t, name=arrayAddr)
 	;
 
-inc5.AddEntry(func=inc5, inst=INC5_INIT)
+inc5.AddEntry(func=inc5, instr=INC5_INIT)
 	.AddParam(hostType=uint32_t, type=uint16_t, name=loopBase)
 	.AddParam(hostType=uint32_t, type=ElemCnt_t, name=elemCnt)
 	;
@@ -360,10 +360,10 @@ typedef sc_uint<INC6_RD_GRP_W> Inc6RdGrpId_t;
 
 dsnInfo.AddModule(name=inc6, htIdW=INC6_HTID_W);
 
-inc6.AddInst(name=INC6_INIT);
-inc6.AddInst(name=INC6_READ);
-inc6.AddInst(name=INC6_WRITE);
-inc6.AddInst(name=INC6_RTN);
+inc6.AddInstr(name=INC6_INIT);
+inc6.AddInstr(name=INC6_READ);
+inc6.AddInstr(name=INC6_WRITE);
+inc6.AddInstr(name=INC6_RTN);
 
 inc6.AddHostMsg(dir=in, name=SU_ARRAY_ADDR)
 	.AddDst(var=arrayAddr, dataLsb=0)
@@ -381,7 +381,7 @@ inc6.AddShared()
 	.AddVar(type=MemAddr_t, name=arrayAddr)
 	;
 
-inc6.AddEntry(func=inc6, inst=INC6_INIT)
+inc6.AddEntry(func=inc6, instr=INC6_INIT)
 	.AddParam(hostType=uint32_t, type=uint16_t, name=loopBase)
 	.AddParam(hostType=uint32_t, type=ElemCnt_t, name=elemCnt)
 	;
@@ -409,10 +409,10 @@ typedef sc_uint<INC7_RD_GRP_W> Inc7RdGrpId_t;
 
 dsnInfo.AddModule(name=inc7, htIdW=INC7_HTID_W);
 
-inc7.AddInst(name=INC7_INIT);
-inc7.AddInst(name=INC7_READ);
-inc7.AddInst(name=INC7_WRITE);
-inc7.AddInst(name=INC7_RTN);
+inc7.AddInstr(name=INC7_INIT);
+inc7.AddInstr(name=INC7_READ);
+inc7.AddInstr(name=INC7_WRITE);
+inc7.AddInstr(name=INC7_RTN);
 
 inc7.AddHostMsg(dir=in, name=SU_ARRAY_ADDR)
 	.AddDst(var=arrayAddr, dataLsb=0)
@@ -430,7 +430,7 @@ inc7.AddShared()
 	.AddVar(type=MemAddr_t, name=arrayAddr)
 	;
 
-inc7.AddEntry(func=inc7, inst=INC7_INIT)
+inc7.AddEntry(func=inc7, instr=INC7_INIT)
 	.AddParam(hostType=uint32_t, type=uint16_t, name=loopBase)
 	.AddParam(hostType=uint32_t, type=ElemCnt_t, name=elemCnt)
 	;
@@ -458,10 +458,10 @@ typedef sc_uint<INC8_RD_GRP_W> Inc8RdGrpId_t;
 
 dsnInfo.AddModule(name=inc8, htIdW=INC8_HTID_W);
 
-inc8.AddInst(name=INC8_INIT);
-inc8.AddInst(name=INC8_READ);
-inc8.AddInst(name=INC8_WRITE);
-inc8.AddInst(name=INC8_RTN);
+inc8.AddInstr(name=INC8_INIT);
+inc8.AddInstr(name=INC8_READ);
+inc8.AddInstr(name=INC8_WRITE);
+inc8.AddInstr(name=INC8_RTN);
 
 inc8.AddHostMsg(dir=in, name=SU_ARRAY_ADDR)
 	.AddDst(var=arrayAddr, dataLsb=0)
@@ -479,7 +479,7 @@ inc8.AddShared()
 	.AddVar(type=MemAddr_t, name=arrayAddr)
 	;
 
-inc8.AddEntry(func=inc8, inst=INC8_INIT)
+inc8.AddEntry(func=inc8, instr=INC8_INIT)
 	.AddParam(hostType=uint32_t, type=uint16_t, name=loopBase)
 	.AddParam(hostType=uint32_t, type=ElemCnt_t, name=elemCnt)
 	;
@@ -507,10 +507,10 @@ typedef sc_uint<INC9_WR_GRP_W> Inc9WrGrpId_t;
 
 dsnInfo.AddModule(name=inc9, htIdW=INC9_HTID_W);
 
-inc9.AddInst(name=INC9_INIT);
-inc9.AddInst(name=INC9_READ);
-inc9.AddInst(name=INC9_WRITE);
-inc9.AddInst(name=INC9_RTN);
+inc9.AddInstr(name=INC9_INIT);
+inc9.AddInstr(name=INC9_READ);
+inc9.AddInstr(name=INC9_WRITE);
+inc9.AddInstr(name=INC9_RTN);
 
 inc9.AddHostMsg(dir=in, name=SU_ARRAY_ADDR)
 	.AddDst(var=arrayAddr, dataLsb=0)
@@ -528,7 +528,7 @@ inc9.AddShared()
 	.AddVar(type=MemAddr_t, name=arrayAddr)
 	;
 
-inc9.AddEntry(func=inc9, inst=INC9_INIT)
+inc9.AddEntry(func=inc9, instr=INC9_INIT)
 	.AddParam(hostType=uint32_t, type=uint16_t, name=loopBase)
 	.AddParam(hostType=uint32_t, type=ElemCnt_t, name=elemCnt)
 	;
@@ -556,10 +556,10 @@ typedef sc_uint<INC10_WR_GRP_W> Inc10WrGrpId_t;
 
 dsnInfo.AddModule(name=inc10, htIdW=INC10_HTID_W);
 
-inc10.AddInst(name=INC10_INIT);
-inc10.AddInst(name=INC10_READ);
-inc10.AddInst(name=INC10_WRITE);
-inc10.AddInst(name=INC10_RTN);
+inc10.AddInstr(name=INC10_INIT);
+inc10.AddInstr(name=INC10_READ);
+inc10.AddInstr(name=INC10_WRITE);
+inc10.AddInstr(name=INC10_RTN);
 
 inc10.AddHostMsg(dir=in, name=SU_ARRAY_ADDR)
 	.AddDst(var=arrayAddr, dataLsb=0)
@@ -577,7 +577,7 @@ inc10.AddShared()
 	.AddVar(type=MemAddr_t, name=arrayAddr)
 	;
 
-inc10.AddEntry(func=inc10, inst=INC10_INIT)
+inc10.AddEntry(func=inc10, instr=INC10_INIT)
 	.AddParam(hostType=uint32_t, type=uint16_t, name=loopBase)
 	.AddParam(hostType=uint32_t, type=ElemCnt_t, name=elemCnt)
 	;
@@ -605,10 +605,10 @@ typedef sc_uint<INC11_WR_GRP_W> Inc11WrGrpId_t;
 
 dsnInfo.AddModule(name=inc11, htIdW=INC11_HTID_W);
 
-inc11.AddInst(name=INC11_INIT);
-inc11.AddInst(name=INC11_READ);
-inc11.AddInst(name=INC11_WRITE);
-inc11.AddInst(name=INC11_RTN);
+inc11.AddInstr(name=INC11_INIT);
+inc11.AddInstr(name=INC11_READ);
+inc11.AddInstr(name=INC11_WRITE);
+inc11.AddInstr(name=INC11_RTN);
 
 inc11.AddHostMsg(dir=in, name=SU_ARRAY_ADDR)
 	.AddDst(var=arrayAddr, dataLsb=0)
@@ -628,7 +628,7 @@ inc11.AddShared()
 
 inc11.AddStage(privWrStg=1, execStg=1);
 
-inc11.AddEntry(func=inc11, inst=INC11_INIT)
+inc11.AddEntry(func=inc11, instr=INC11_INIT)
 	.AddParam(hostType=uint32_t, type=uint16_t, name=loopBase)
 	.AddParam(hostType=uint32_t, type=ElemCnt_t, name=elemCnt)
 	;
@@ -656,10 +656,10 @@ typedef sc_uint<INC12_WR_GRP_W> Inc12WrGrpId_t;
 
 dsnInfo.AddModule(name=inc12, htIdW=INC12_HTID_W);
 
-inc12.AddInst(name=INC12_INIT);
-inc12.AddInst(name=INC12_READ);
-inc12.AddInst(name=INC12_WRITE);
-inc12.AddInst(name=INC12_RTN);
+inc12.AddInstr(name=INC12_INIT);
+inc12.AddInstr(name=INC12_READ);
+inc12.AddInstr(name=INC12_WRITE);
+inc12.AddInstr(name=INC12_RTN);
 
 inc12.AddHostMsg(dir=in, name=SU_ARRAY_ADDR)
 	.AddDst(var=arrayAddr, dataLsb=0)
@@ -679,7 +679,7 @@ inc12.AddShared()
 
 inc12.AddStage(privWrStg=1, execStg=1);
 
-inc12.AddEntry(func=inc12, inst=INC12_INIT)
+inc12.AddEntry(func=inc12, instr=INC12_INIT)
 	.AddParam(hostType=uint32_t, type=uint16_t, name=loopBase)
 	.AddParam(hostType=uint32_t, type=ElemCnt_t, name=elemCnt)
 	;

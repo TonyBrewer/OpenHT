@@ -16,11 +16,11 @@ struct CCtlMsg {
 // Ctl Module
 
 dsnInfo.AddModule(name=ctl, htIdW=0);
-ctl.AddInst(name=CTL_ENTRY);
-ctl.AddInst(name=CTL_WAIT);
-ctl.AddInst(name=CTL_RETURN);
+ctl.AddInstr(name=CTL_ENTRY);
+ctl.AddInstr(name=CTL_WAIT);
+ctl.AddInstr(name=CTL_RETURN);
 
-ctl.AddEntry(func=htmain, inst=CTL_ENTRY, host=true)
+ctl.AddEntry(func=htmain, instr=CTL_ENTRY, host=true)
 	;
 
 ctl.AddReturn(func=htmain)

@@ -50,21 +50,21 @@ struct CTwoFxPnt {
 dsnInfo.AddModule(name=stencil, htIdW=STENCIL_HTID_W);
 
 // Instructions (states)
-stencil.AddInst(name=START);
-stencil.AddInst(name=DONE);
-stencil.AddInst(name=FIRST_TWO_ROWS_LOOP_TOP);
-stencil.AddInst(name=FIRST_TWO_ROWS_READ2);
-stencil.AddInst(name=FIRST_TWO_ROWS_ASSIGN);
-stencil.AddInst(name=FIRST_TWO_ROWS_LOOP_EXIT);
-stencil.AddInst(name=J_LOOP_TOP);
-stencil.AddInst(name=J_LOOP_READ2);
-stencil.AddInst(name=J_LOOP_ASSIGN);
-stencil.AddInst(name=J_LOOP_EXIT);
-stencil.AddInst(name=I_LOOP_TOP);
-stencil.AddInst(name=I_LOOP_ASSIGN);
-stencil.AddInst(name=I_LOOP_CHANGE);
-stencil.AddInst(name=I_LOOP_EXIT);
-stencil.AddInst(name=J_LOOP_ASSIGN2);
+stencil.AddInstr(name=START);
+stencil.AddInstr(name=DONE);
+stencil.AddInstr(name=FIRST_TWO_ROWS_LOOP_TOP);
+stencil.AddInstr(name=FIRST_TWO_ROWS_READ2);
+stencil.AddInstr(name=FIRST_TWO_ROWS_ASSIGN);
+stencil.AddInstr(name=FIRST_TWO_ROWS_LOOP_EXIT);
+stencil.AddInstr(name=J_LOOP_TOP);
+stencil.AddInstr(name=J_LOOP_READ2);
+stencil.AddInstr(name=J_LOOP_ASSIGN);
+stencil.AddInstr(name=J_LOOP_EXIT);
+stencil.AddInstr(name=I_LOOP_TOP);
+stencil.AddInstr(name=I_LOOP_ASSIGN);
+stencil.AddInstr(name=I_LOOP_CHANGE);
+stencil.AddInstr(name=I_LOOP_EXIT);
+stencil.AddInstr(name=J_LOOP_ASSIGN2);
 
 // Default group
 
@@ -117,7 +117,7 @@ stencil.AddGlobal()
 	;
 
 // Callee interface
-stencil.AddEntry(func=stencil, inst=START)
+stencil.AddEntry(func=stencil, instr=START)
 	.AddParam(type=memAddrT, name=p_a)
 	.AddParam(type=memAddrT, name=p_newa)
 	.AddParam(type=log2m_t, name=p_is)
@@ -143,16 +143,16 @@ stencil.AddReturn(func=stencil)
 dsnInfo.AddModule(name=jacob, htIdW=JACOB_HTID_W);
 
 // Instructions (states)
-jacob.AddInst(name=JSTART);
-jacob.AddInst(name=STENCIL_JOIN);
-jacob.AddInst(name=JDONE);
-jacob.AddInst(name=DOLOOP_TOP);
-jacob.AddInst(name=DOLOOP_LATCH);
-jacob.AddInst(name=II_LOOP_TOP);
-jacob.AddInst(name=II_LOOP_LATCH);
-jacob.AddInst(name=JJ_LOOP_TOP);
-jacob.AddInst(name=JJ_LOOP_BODY);
-jacob.AddInst(name=JJ_LOOP_LATCH);
+jacob.AddInstr(name=JSTART);
+jacob.AddInstr(name=STENCIL_JOIN);
+jacob.AddInstr(name=JDONE);
+jacob.AddInstr(name=DOLOOP_TOP);
+jacob.AddInstr(name=DOLOOP_LATCH);
+jacob.AddInstr(name=II_LOOP_TOP);
+jacob.AddInstr(name=II_LOOP_LATCH);
+jacob.AddInstr(name=JJ_LOOP_TOP);
+jacob.AddInstr(name=JJ_LOOP_BODY);
+jacob.AddInstr(name=JJ_LOOP_LATCH);
 
 // Default group
 
@@ -181,7 +181,7 @@ jacob.AddPrivate()
 	; 
 
 // caller side return interface
-jacob.AddEntry(func=jacob, inst=JSTART, host=true)
+jacob.AddEntry(func=jacob, instr=JSTART, host=true)
 	.AddParam(hostType=uint64_t, type=memAddrT, name=p_a)
 	.AddParam(hostType=uint64_t, type=memAddrT, name=p_newa)
 	.AddParam(hostType=int, type=log2m_t, name=p_m)

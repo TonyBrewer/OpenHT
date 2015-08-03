@@ -105,7 +105,7 @@ vadd.AddShared()
 	.AddVar(type=ht_uint32, name=sum)
 	;
 
-vadd.AddEntry(func=htmain, inst=VADD_ENTER, host=true)
+vadd.AddEntry(func=htmain, instr=VADD_ENTER, host=true)
 	.AddParam(hostType=uint32_t, type=ht_uint32, name=yDimOff)
 	.AddParam(hostType=uint32_t, type=ht_uint32, name=yDimLen)
 	.AddParam(hostType=uint32_t, type=ht_uint32, name=xDimLen)

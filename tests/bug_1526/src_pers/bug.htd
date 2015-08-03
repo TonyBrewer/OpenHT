@@ -25,7 +25,7 @@ bug.AddShared()
 	.AddVar(type=bool, name=bStart4)
 	;
 
-bug.AddEntry(func=htmain, inst=BUG_ENTRY, host=true)
+bug.AddEntry(func=htmain, instr=BUG_ENTRY, host=true)
 	;
 
 bug.AddReturn(func=htmain)

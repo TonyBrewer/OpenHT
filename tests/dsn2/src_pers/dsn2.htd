@@ -11,8 +11,8 @@ struct CData {
 };
 
 dsnInfo.AddModule(name=inc, clock=2x, htIdW=INC_HTID_W);
-inc.AddInst(name=INC_INIT);
-inc.AddInst(name=INC_DATA);
+inc.AddInstr(name=INC_INIT);
+inc.AddInstr(name=INC_DATA);
 
 inc.AddHostMsg(dir=in, name=SU_ARRAY_ADDR)
 	.AddDst(var=arrayAddr, dataLsb=0)
@@ -30,7 +30,7 @@ inc.AddShared()
 	.AddVar(type=ht_uint48, name=arrayAddr)
 	;
 
-inc.AddEntry(func=htmain, inst=INC_INIT, host=true);
+inc.AddEntry(func=htmain, instr=INC_INIT, host=true);
 inc.AddReturn(func=htmain)
 	.AddParam(type=uint16_t, name=loopCnt)
 	;

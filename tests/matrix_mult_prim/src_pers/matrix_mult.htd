@@ -3,9 +3,9 @@
 
 dsnInfo.AddModule(name=ctl, htIdW=0);
 
-ctl.AddInst(name=CTL_ROW);
-ctl.AddInst(name=CTL_JOIN);
-ctl.AddInst(name=CTL_RTN);
+ctl.AddInstr(name=CTL_ROW);
+ctl.AddInstr(name=CTL_JOIN);
+ctl.AddInstr(name=CTL_RTN);
 
 ctl.AddHostMsg(dir=in, name=MC_ROW)
 	.AddDst(var=mcRow)
@@ -21,7 +21,7 @@ ctl.AddPrivate()
 	.AddVar(type=uint32_t, name=rowStride)
 	;
 
-ctl.AddEntry(func=htmain, inst=CTL_ROW, host=true)
+ctl.AddEntry(func=htmain, instr=CTL_ROW, host=true)
 	.AddParam(type=uint32_t, name=rowIdx)
 	.AddParam(type=uint32_t, name=rowStride)
 	;
@@ -36,9 +36,9 @@ ctl.AddCall(func=row, fork=true);
 // Loops over all entries in a row, dispatching each to PersAuSub
 dsnInfo.AddModule(name=row, htIdW=1);
 
-row.AddInst(name=ROW_ENTRY);
-row.AddInst(name=ROW_JOIN);
-row.AddInst(name=ROW_RTN);
+row.AddInstr(name=ROW_ENTRY);
+row.AddInstr(name=ROW_JOIN);
+row.AddInstr(name=ROW_RTN);
 
 row.AddHostMsg(dir=in, name=MC_COL)
 	.AddDst(var=mcCol)
@@ -54,7 +54,7 @@ row.AddPrivate()
 	.AddVar(type=uint32_t, name=eleIdx)
 	;
 
-row.AddEntry(func=row, inst=ROW_ENTRY)
+row.AddEntry(func=row, instr=ROW_ENTRY)
 	.AddParam(type=uint32_t, name=rowIdx)
 	.AddParam(type=uint32_t, name=eleIdx)
 	;
@@ -72,10 +72,10 @@ typedef ht_uint48 MemAddr_t;
 
 dsnInfo.AddModule(name=sub, htIdW=SUB_W);
 
-sub.AddInst(name=SUB_ENTRY);
-sub.AddInst(name=SUB_JOIN);
-sub.AddInst(name=SUB_STORE);
-sub.AddInst(name=SUB_RTN);
+sub.AddInstr(name=SUB_ENTRY);
+sub.AddInstr(name=SUB_JOIN);
+sub.AddInstr(name=SUB_STORE);
+sub.AddInstr(name=SUB_RTN);
 
 sub.AddHostMsg(dir=in, name=MC_BASE)
 	.AddDst(var=mcBase)
@@ -103,7 +103,7 @@ sub.AddPrivate()
 	.AddVar(type=uint64_t, name=eleSum)
 	;
 
-sub.AddEntry(func=sub, inst=SUB_ENTRY)
+sub.AddEntry(func=sub, instr=SUB_ENTRY)
 	.AddParam(type=uint32_t, name=rowIdx)
 	.AddParam(type=uint32_t, name=eleIdx)
 	.AddParam(type=uint32_t, name=calcIdx)
@@ -125,10 +125,10 @@ typedef ht_uint48 MemAddr_t;
 
 dsnInfo.AddModule(name=mult, htIdW=MULT_W, pause=true);
 
-mult.AddInst(name=MULT_LD1);
-mult.AddInst(name=MULT_LD2);
-mult.AddInst(name=MULT_CALC);
-mult.AddInst(name=MULT_RTN);
+mult.AddInstr(name=MULT_LD1);
+mult.AddInstr(name=MULT_LD2);
+mult.AddInstr(name=MULT_CALC);
+mult.AddInstr(name=MULT_RTN);
 
 mult.AddHostMsg(dir=in, name=MA_BASE)
 	.AddDst(var=maBase)
@@ -168,7 +168,7 @@ mult.AddPrivate()
 mult.AddStage()
 	;
 
-mult.AddEntry(func=mult, inst=MULT_LD1)
+mult.AddEntry(func=mult, instr=MULT_LD1)
 	.AddParam(type=uint32_t, name=rowIdx)
 	.AddParam(type=uint32_t, name=eleIdx)
 	.AddParam(type=uint32_t, name=calcIdx)

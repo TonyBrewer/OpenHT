@@ -7,16 +7,16 @@
 typedef sc_uint<CTL_HTID_W> HtId_t;
 
 dsnInfo.AddModule(name=ctl, htIdW=CTL_HTID_W);
-ctl.AddInst(name=CTL_INIT);
-ctl.AddInst(name=CTL_T1_ASYNC);
-ctl.AddInst(name=CTL_T1_JOIN);
-ctl.AddInst(name=CTL_T1_CALL);
-ctl.AddInst(name=CTL_T2_ASYNC);
-ctl.AddInst(name=CTL_T2_JOIN);
-ctl.AddInst(name=CTL_T2_CALL);
-ctl.AddInst(name=CTL_T3_CALL);
-ctl.AddInst(name=CTL_T4_CALL);
-ctl.AddInst(name=CTL_RTN);
+ctl.AddInstr(name=CTL_INIT);
+ctl.AddInstr(name=CTL_T1_ASYNC);
+ctl.AddInstr(name=CTL_T1_JOIN);
+ctl.AddInstr(name=CTL_T1_CALL);
+ctl.AddInstr(name=CTL_T2_ASYNC);
+ctl.AddInstr(name=CTL_T2_JOIN);
+ctl.AddInstr(name=CTL_T2_CALL);
+ctl.AddInstr(name=CTL_T3_CALL);
+ctl.AddInstr(name=CTL_T4_CALL);
+ctl.AddInstr(name=CTL_RTN);
 
 
 ctl.AddPrivate()
@@ -28,7 +28,7 @@ ctl.AddShared()
 	.AddVar(name=totalCnt, type=uint32_t)
 	;
 
-ctl.AddEntry(func=htmain, inst=CTL_INIT, host=true)
+ctl.AddEntry(func=htmain, instr=CTL_INIT, host=true)
 	;
 
 ctl.AddReturn(func=htmain)
@@ -55,10 +55,10 @@ ctl.AddCall(func=t4)
 //typedef sc_uint<T1_HTID_W> T1HtId_t;
 
 dsnInfo.AddModule(name=t1, htIdW=T1_HTID_W);
-t1.AddInst(name=T1_INIT);
-t1.AddInst(name=T1_CALL);
-t1.AddInst(name=T1_JOIN);
-t1.AddInst(name=T1_RTN);
+t1.AddInstr(name=T1_INIT);
+t1.AddInstr(name=T1_CALL);
+t1.AddInstr(name=T1_JOIN);
+t1.AddInstr(name=T1_RTN);
 
 
 t1.AddPrivate()
@@ -70,7 +70,7 @@ t1.AddShared()
 	.AddVar(name=totalCnt, type=uint32_t)
 	;
 
-t1.AddEntry(func=t1, inst=T1_INIT)
+t1.AddEntry(func=t1, instr=T1_INIT)
 	;
 
 t1.AddReturn(func=t1)
@@ -89,10 +89,10 @@ t1.AddCall(func=sum, queueW=0, fork=true)
 typedef sc_uint<T2_HTID_W> T2HtId_t;
 
 dsnInfo.AddModule(name=t2, htIdW=T2_HTID_W);
-t2.AddInst(name=T2_INIT);
-t2.AddInst(name=T2_CALL);
-t2.AddInst(name=T2_JOIN);
-t2.AddInst(name=T2_RTN);
+t2.AddInstr(name=T2_INIT);
+t2.AddInstr(name=T2_CALL);
+t2.AddInstr(name=T2_JOIN);
+t2.AddInstr(name=T2_RTN);
 
 
 t2.AddPrivate()
@@ -108,7 +108,7 @@ t2.AddStage()
 	.AddVar(name=cmdQueSize, type=ht_uint8, range=1)
 	;
 
-t2.AddEntry(func=t2, inst=T2_INIT)
+t2.AddEntry(func=t2, instr=T2_INIT)
 	;
 
 t2.AddReturn(func=t2)
@@ -127,10 +127,10 @@ t2.AddCall(func=sum, queueW=3, fork=true)
 typedef sc_uint<T3_HTID_W> T3HtId_t;
 
 dsnInfo.AddModule(name=t3, htIdW=T3_HTID_W);
-t3.AddInst(name=T3_INIT);
-t3.AddInst(name=T3_CALL);
-t3.AddInst(name=T3_JOIN);
-t3.AddInst(name=T3_RTN);
+t3.AddInstr(name=T3_INIT);
+t3.AddInstr(name=T3_CALL);
+t3.AddInstr(name=T3_JOIN);
+t3.AddInstr(name=T3_RTN);
 
 
 t3.AddPrivate()
@@ -146,7 +146,7 @@ t3.AddGlobal()
 	.AddVar(type=uint64_t, name=strSetL, addr1W=5, instrRead=false, instrWrite=true)
 	;
 
-t3.AddEntry(func=t3, inst=T3_INIT)
+t3.AddEntry(func=t3, instr=T3_INIT)
 	;
 
 t3.AddReturn(func=t3)
@@ -165,10 +165,10 @@ t3.AddCall(func=sum, fork=true, queueW=0)
 typedef sc_uint<T4_HTID_W> T4HtId_t;
 
 dsnInfo.AddModule(name=t4, htIdW=T4_HTID_W);
-t4.AddInst(name=T4_INIT);
-t4.AddInst(name=T4_CALL);
-t4.AddInst(name=T4_JOIN);
-t4.AddInst(name=T4_RTN);
+t4.AddInstr(name=T4_INIT);
+t4.AddInstr(name=T4_CALL);
+t4.AddInstr(name=T4_JOIN);
+t4.AddInstr(name=T4_RTN);
 
 
 t4.AddPrivate()
@@ -185,7 +185,7 @@ t4.AddGlobal()
 	.AddVar(type=uint64_t, name=strSetL, addr1=addr, instrRead=true, instrWrite=false)
 	;
 
-t4.AddEntry(func=t4, inst=T4_INIT)
+t4.AddEntry(func=t4, instr=T4_INIT)
 	;
 
 t4.AddReturn(func=t4)
@@ -204,15 +204,15 @@ t4.AddCall(func=sum, fork=true)
 typedef sc_uint<SUM_HTID_W> SumHtId_t;
 
 dsnInfo.AddModule(name=sum, htIdW=SUM_HTID_W);
-sum.AddInst(name=SUM_INIT);
-sum.AddInst(name=SUM_LOOP);
+sum.AddInstr(name=SUM_INIT);
+sum.AddInstr(name=SUM_LOOP);
 
 
 sum.AddPrivate()
 	.AddVar(name=loopCnt, type=uint8_t)
 	;
 
-sum.AddEntry(func=sum, inst=SUM_INIT)
+sum.AddEntry(func=sum, instr=SUM_INIT)
 	;
 
 sum.AddReturn(func=sum)

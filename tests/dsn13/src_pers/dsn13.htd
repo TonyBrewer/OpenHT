@@ -3,9 +3,9 @@
 
 #define INCRD_HTID_W 5
 dsnInfo.AddModule(name=incRd, htIdW=INCRD_HTID_W);
-incRd.AddInst(name=INCRD_INIT);
-incRd.AddInst(name=INCRD_READ);
-incRd.AddInst(name=INCRD_WRITE);
+incRd.AddInstr(name=INCRD_INIT);
+incRd.AddInstr(name=INCRD_READ);
+incRd.AddInstr(name=INCRD_WRITE);
 
 typedef sc_uint<INCRD_HTID_W> HtId_t;
 typedef sc_uint<48> MemAddr_t;
@@ -27,7 +27,7 @@ incRd.AddShared()
 	.AddVar(type=MemAddr_t, name=arrayAddr)
 	;
 
-incRd.AddEntry(func=htmain, inst=INCRD_INIT, host=true)
+incRd.AddEntry(func=htmain, instr=INCRD_INIT, host=true)
 	.AddParam(hostType=uint32_t, type=uint8_t, name=elemCnt)
 	;
 
@@ -47,8 +47,8 @@ incRd.AddGlobal()
 
 #define INCWR_HTID_W 5
 dsnInfo.AddModule(name=incWr, htIdW=INCWR_HTID_W);
-incWr.AddInst(name=INCWR_WRITE);
-incWr.AddInst(name=INCWR_RTN);
+incWr.AddInstr(name=INCWR_WRITE);
+incWr.AddInstr(name=INCWR_RTN);
 
 
 typedef sc_uint<INCWR_HTID_W> IncWrHtId_t;
@@ -66,7 +66,7 @@ incWr.AddShared()
 	.AddVar(type=MemAddr_t, name=arrayAddr)
 	;
 
-incWr.AddEntry(func=incWr, inst=INCWR_WRITE)
+incWr.AddEntry(func=incWr, instr=INCWR_WRITE)
 	.AddParam(type=uint8_t, name=loopCnt)
 	.AddParam(type=IncWrHtId_t, name=arrayMemRdPtr)
 	;

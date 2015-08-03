@@ -3,10 +3,10 @@
 #define CTL_HTID_W 4
 
 dsnInfo.AddModule(name=Ctl, htIdW=CTL_HTID_W);
-Ctl.AddInst(name=ENTRY);
-Ctl.AddInst(name=CALL_A);
-Ctl.AddInst(name=CALL_A_JOIN);
-Ctl.AddInst(name=RETURN);
+Ctl.AddInstr(name=ENTRY);
+Ctl.AddInstr(name=CALL_A);
+Ctl.AddInstr(name=CALL_A_JOIN);
+Ctl.AddInstr(name=RETURN);
 
 Ctl.AddPrivate()
 	.AddVar(type=uint32_t, name=rsltMask)
@@ -17,7 +17,7 @@ Ctl.AddPrivate()
 	.AddVar(type=uint8_t, name=rtnInData)
 	;
 
-Ctl.AddEntry(func=htmain, inst=ENTRY, host=true)
+Ctl.AddEntry(func=htmain, instr=ENTRY, host=true)
 	.AddParam(hostType=uint32_t, type=uint16_t, name=loopCntLimit)
 	;
 
@@ -32,8 +32,8 @@ Ctl.AddCall(func=ModA, queueW=2, fork=true);
 #define MODA_HTID_W 5
 
 dsnInfo.AddModule(name=ModA, htIdW=MODA_HTID_W);
-ModA.AddInst(name=ENTRY);
-ModA.AddInst(name=RETURN);
+ModA.AddInstr(name=ENTRY);
+ModA.AddInstr(name=RETURN);
 
 ModA.AddPrivate()
 	.AddVar(type=uint8_t, name=inData)
@@ -41,7 +41,7 @@ ModA.AddPrivate()
 	.AddVar(type=uint8_t, name=rtnInData)
 	;
 
-ModA.AddEntry(func=ModA, inst=ENTRY)
+ModA.AddEntry(func=ModA, instr=ENTRY)
 	.AddParam(type=uint8_t, name=inData)
 	.AddParam(type=ht_uint24, name=outData)
 	;
@@ -62,8 +62,8 @@ ModA.AddCall(func=ModB, queueW=1, dest=user);
 #define MODB_HTID_W 3
 
 dsnInfo.AddModule(name=ModB, htIdW=MODB_HTID_W);
-ModB.AddInst(name=ENTRY);
-ModB.AddInst(name=RETURN);
+ModB.AddInstr(name=ENTRY);
+ModB.AddInstr(name=RETURN);
 
 ModB.AddPrivate()
 	.AddVar(type=uint8_t, name=inData)
@@ -71,7 +71,7 @@ ModB.AddPrivate()
 	.AddVar(type=uint8_t, name=rtnInData)
 	;
 
-ModB.AddEntry(func=ModB, inst=ENTRY)
+ModB.AddEntry(func=ModB, instr=ENTRY)
 	.AddParam(type=uint8_t, name=inData)
 	.AddParam(type=ht_uint24, name=outData)
 	;
@@ -88,8 +88,8 @@ ModB.AddCall(func=ModC, queueW=2);
 #define MODC_HTID_W 4
 
 dsnInfo.AddModule(name=ModC, htIdW=MODC_HTID_W);
-ModC.AddInst(name=ENTRY);
-ModC.AddInst(name=RETURN);
+ModC.AddInstr(name=ENTRY);
+ModC.AddInstr(name=RETURN);
 
 ModC.AddPrivate()
 	.AddVar(type=uint8_t, name=inData)
@@ -97,7 +97,7 @@ ModC.AddPrivate()
 	.AddVar(type=uint8_t, name=rtnInData)
 	;
 
-ModC.AddEntry(func=ModC, inst=ENTRY)
+ModC.AddEntry(func=ModC, instr=ENTRY)
 	.AddParam(type=uint8_t, name=inData)
 	.AddParam(type=ht_uint24, name=outData)
 	;
@@ -114,15 +114,15 @@ ModC.AddCall(func=ModD, queueW=2);
 #define MODD_HTID_W 5
 
 dsnInfo.AddModule(name=ModD, htIdW=MODD_HTID_W);
-ModD.AddInst(name=ENTRY);
-ModD.AddInst(name=RETURN);
+ModD.AddInstr(name=ENTRY);
+ModD.AddInstr(name=RETURN);
 
 ModD.AddPrivate()
 	.AddVar(type=uint8_t, name=inData)
 	.AddVar(type=ht_uint24, name=outData)
 	;
 
-ModD.AddEntry(func=ModD, inst=ENTRY)
+ModD.AddEntry(func=ModD, instr=ENTRY)
 	.AddParam(type=uint8_t, name=inData)
 	.AddParam(type=ht_uint24, name=outData)
 	;

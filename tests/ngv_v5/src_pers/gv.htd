@@ -12,26 +12,26 @@ struct Data16x2 {
 // Ctl Module
 
 dsnInfo.AddModule(name=ctl, htIdW=0, clock=1x);
-ctl.AddInst(name=ENTRY);
-ctl.AddInst(name=CALL_GV2);
-ctl.AddInst(name=CALL_GV3);
-ctl.AddInst(name=CALL_GV4);
-ctl.AddInst(name=CALL_GV5);
-ctl.AddInst(name=CALL_GV6);
-ctl.AddInst(name=CALL_GV7);
-ctl.AddInst(name=CALL_GV9);
-ctl.AddInst(name=CALL_GV11);
-ctl.AddInst(name=CALL_GV13);
-ctl.AddInst(name=CALL_GV15);
-ctl.AddInst(name=CALL_GV16);
-ctl.AddInst(name=CALL_GV17);
-ctl.AddInst(name=RETURN);
+ctl.AddInstr(name=ENTRY);
+ctl.AddInstr(name=CALL_GV2);
+ctl.AddInstr(name=CALL_GV3);
+ctl.AddInstr(name=CALL_GV4);
+ctl.AddInstr(name=CALL_GV5);
+ctl.AddInstr(name=CALL_GV6);
+ctl.AddInstr(name=CALL_GV7);
+ctl.AddInstr(name=CALL_GV9);
+ctl.AddInstr(name=CALL_GV11);
+ctl.AddInstr(name=CALL_GV13);
+ctl.AddInstr(name=CALL_GV15);
+ctl.AddInstr(name=CALL_GV16);
+ctl.AddInstr(name=CALL_GV17);
+ctl.AddInstr(name=RETURN);
 
 ctl.AddPrivate()
 	.AddVar(type=ht_uint48, name=addr)
 	;
 	
-ctl.AddEntry(func=htmain, inst=ENTRY, host=true)
+ctl.AddEntry(func=htmain, instr=ENTRY, host=true)
 	.AddParam(hostType=void * , type=ht_uint48, name=addr)
 	;
 
@@ -56,12 +56,12 @@ ctl.AddCall(func=gv17);
 // Gv1 Module - 1x, 1F, Iw, Ir
 
 dsnInfo.AddModule(name=gv1, htIdW=3, clock=1x);
-gv1.AddInst(name=GV1_ENTRY);
-gv1.AddInst(name=GV1_WR);
-gv1.AddInst(name=GV1_RD);
-gv1.AddInst(name=GV1_RETURN);
+gv1.AddInstr(name=GV1_ENTRY);
+gv1.AddInstr(name=GV1_WR);
+gv1.AddInstr(name=GV1_RD);
+gv1.AddInstr(name=GV1_RETURN);
 
-gv1.AddEntry(func=gv1, inst=GV1_ENTRY)
+gv1.AddEntry(func=gv1, instr=GV1_ENTRY)
 	;
 
 gv1.AddPrivate()
@@ -79,12 +79,12 @@ gv1.AddGlobal()
 // Gv2 Module - 2x, 1F, Iw, Ir
 
 dsnInfo.AddModule(name=gv2, htIdW=3, clock=2x);
-gv2.AddInst(name=GV2_ENTRY);
-gv2.AddInst(name=GV2_WR);
-gv2.AddInst(name=GV2_RD);
-gv2.AddInst(name=GV2_RETURN);
+gv2.AddInstr(name=GV2_ENTRY);
+gv2.AddInstr(name=GV2_WR);
+gv2.AddInstr(name=GV2_RD);
+gv2.AddInstr(name=GV2_RETURN);
 
-gv2.AddEntry(func=gv2, inst=GV2_ENTRY)
+gv2.AddEntry(func=gv2, instr=GV2_ENTRY)
 	;
 
 gv2.AddPrivate()
@@ -102,13 +102,13 @@ gv2.AddGlobal()
 // Gv3 Module - 1x, 1F, Mw, Ir
 
 dsnInfo.AddModule(name=gv3, htIdW=3, clock=1x);
-gv3.AddInst(name=GV3_ENTRY);
-gv3.AddInst(name=GV3_WR);
-gv3.AddInst(name=GV3_RD);
-gv3.AddInst(name=GV3_TST);
-gv3.AddInst(name=GV3_RETURN);
+gv3.AddInstr(name=GV3_ENTRY);
+gv3.AddInstr(name=GV3_WR);
+gv3.AddInstr(name=GV3_RD);
+gv3.AddInstr(name=GV3_TST);
+gv3.AddInstr(name=GV3_RETURN);
 
-gv3.AddEntry(func=gv3, inst=GV3_ENTRY)
+gv3.AddEntry(func=gv3, instr=GV3_ENTRY)
 	.AddParam(type=ht_uint48, name=addr)
 	;
 
@@ -136,13 +136,13 @@ gv3.AddWriteMem()
 // Gv4 Module - 2x, 1F, Mw, Ir
 
 dsnInfo.AddModule(name=gv4, htIdW=3, clock=2x);
-gv4.AddInst(name=GV4_ENTRY);
-gv4.AddInst(name=GV4_WR);
-gv4.AddInst(name=GV4_RD);
-gv4.AddInst(name=GV4_TST);
-gv4.AddInst(name=GV4_RETURN);
+gv4.AddInstr(name=GV4_ENTRY);
+gv4.AddInstr(name=GV4_WR);
+gv4.AddInstr(name=GV4_RD);
+gv4.AddInstr(name=GV4_TST);
+gv4.AddInstr(name=GV4_RETURN);
 
-gv4.AddEntry(func=gv4, inst=GV4_ENTRY)
+gv4.AddEntry(func=gv4, instr=GV4_ENTRY)
 	.AddParam(type=ht_uint48, name=addr)
 	;
 
@@ -170,13 +170,13 @@ gv4.AddWriteMem()
 // Gv5 Module - 1x, 2F, Iw, Mr, Mw, Ir
 
 dsnInfo.AddModule(name=gv5, htIdW=0, clock=1x);
-gv5.AddInst(name=GV5_ENTRY);
-gv5.AddInst(name=GV5_WR);
-gv5.AddInst(name=GV5_RD);
-gv5.AddInst(name=GV5_TST);
-gv5.AddInst(name=GV5_RETURN);
+gv5.AddInstr(name=GV5_ENTRY);
+gv5.AddInstr(name=GV5_WR);
+gv5.AddInstr(name=GV5_RD);
+gv5.AddInstr(name=GV5_TST);
+gv5.AddInstr(name=GV5_RETURN);
 
-gv5.AddEntry(func=gv5, inst=GV5_ENTRY)
+gv5.AddEntry(func=gv5, instr=GV5_ENTRY)
 	.AddParam(type=ht_uint48, name=addr)
 	;
 
@@ -204,15 +204,15 @@ gv5.AddReadMem()
 // Gv6 Module - 1x, 2F, Iw, Mr, Mw, Ir
 
 dsnInfo.AddModule(name=gv6, htIdW=0, clock=1x);
-gv6.AddInst(name=GV6_ENTRY);
-gv6.AddInst(name=GV6_WR);
-gv6.AddInst(name=GV6_MRD);
-gv6.AddInst(name=GV6_MRD_TST);
-gv6.AddInst(name=GV6_IWR);
-gv6.AddInst(name=GV6_IWR_TST);
-gv6.AddInst(name=GV6_RETURN);
+gv6.AddInstr(name=GV6_ENTRY);
+gv6.AddInstr(name=GV6_WR);
+gv6.AddInstr(name=GV6_MRD);
+gv6.AddInstr(name=GV6_MRD_TST);
+gv6.AddInstr(name=GV6_IWR);
+gv6.AddInstr(name=GV6_IWR_TST);
+gv6.AddInstr(name=GV6_RETURN);
 
-gv6.AddEntry(func=gv6, inst=GV6_ENTRY)
+gv6.AddEntry(func=gv6, instr=GV6_ENTRY)
 	.AddParam(type=ht_uint48, name=addr)
 	;
 
@@ -262,7 +262,7 @@ gv7.AddInstr(name=GV7_gv8f_RD);
 gv7.AddInstr(name=GV7_gv8fMw);
 gv7.AddInstr(name=GV7_RETURN);
 
-gv7.AddEntry(func=gv7, inst=GV7_ENTRY)
+gv7.AddEntry(func=gv7, instr=GV7_ENTRY)
 	.AddParam(type=ht_uint48, name=addr)
 	;
 
@@ -316,31 +316,31 @@ gv8.AddInstr(name=GV8_ENTRYfIw);
 gv8.AddInstr(name=GV8_ENTRYfMw);
 gv8.AddInstr(name=GV8_RETURN);
 
-gv8.AddEntry(func=gv8a, inst=GV8_ENTRYa)
+gv8.AddEntry(func=gv8a, instr=GV8_ENTRYa)
 	.AddParam(type=ht_uint48, name=addr)
 	;
 
-gv8.AddEntry(func=gv8b, inst=GV8_ENTRYb)
+gv8.AddEntry(func=gv8b, instr=GV8_ENTRYb)
 	.AddParam(type=ht_uint3, name=addr1)
 	;
 
-gv8.AddEntry(func=gv8c, inst=GV8_ENTRYc)
+gv8.AddEntry(func=gv8c, instr=GV8_ENTRYc)
 	.AddParam(type=ht_uint48, name=addr)
 	;
 
-gv8.AddEntry(func=gv8d, inst=GV8_ENTRYd)
+gv8.AddEntry(func=gv8d, instr=GV8_ENTRYd)
 	.AddParam(type=ht_uint3, name=addr1)
 	;
 
-gv8.AddEntry(func=gv8eIw, inst=GV8_ENTRYeIw)
+gv8.AddEntry(func=gv8eIw, instr=GV8_ENTRYeIw)
 	;
-gv8.AddEntry(func=gv8eMw, inst=GV8_ENTRYeMw)
+gv8.AddEntry(func=gv8eMw, instr=GV8_ENTRYeMw)
 	;
 
-gv8.AddEntry(func=gv8fIw, inst=GV8_ENTRYfIw)
+gv8.AddEntry(func=gv8fIw, instr=GV8_ENTRYfIw)
 	.AddParam(type=ht_uint3, name=addr1)
 	;
-gv8.AddEntry(func=gv8fMw, inst=GV8_ENTRYfMw)
+gv8.AddEntry(func=gv8fMw, instr=GV8_ENTRYfMw)
 	.AddParam(type=ht_uint3, name=addr1)
 	;
 
@@ -389,7 +389,7 @@ gv9.AddInstr(name=GV9_gv10f_RD);
 gv9.AddInstr(name=GV9_gv10fMw);
 gv9.AddInstr(name=GV9_RETURN);
 
-gv9.AddEntry(func=gv9, inst=GV9_ENTRY)
+gv9.AddEntry(func=gv9, instr=GV9_ENTRY)
 	.AddParam(type=ht_uint48, name=addr)
 	;
 
@@ -443,31 +443,31 @@ gv10.AddInstr(name=GV10_ENTRYfIw);
 gv10.AddInstr(name=GV10_ENTRYfMw);
 gv10.AddInstr(name=GV10_RETURN);
 
-gv10.AddEntry(func=gv10a, inst=GV10_ENTRYa)
+gv10.AddEntry(func=gv10a, instr=GV10_ENTRYa)
 	.AddParam(type=ht_uint48, name=addr)
 	;
 
-gv10.AddEntry(func=gv10b, inst=GV10_ENTRYb)
+gv10.AddEntry(func=gv10b, instr=GV10_ENTRYb)
 	.AddParam(type=ht_uint3, name=addr1)
 	;
 
-gv10.AddEntry(func=gv10c, inst=GV10_ENTRYc)
+gv10.AddEntry(func=gv10c, instr=GV10_ENTRYc)
 	.AddParam(type=ht_uint48, name=addr)
 	;
 
-gv10.AddEntry(func=gv10d, inst=GV10_ENTRYd)
+gv10.AddEntry(func=gv10d, instr=GV10_ENTRYd)
 	.AddParam(type=ht_uint3, name=addr1)
 	;
 
-gv10.AddEntry(func=gv10eIw, inst=GV10_ENTRYeIw)
+gv10.AddEntry(func=gv10eIw, instr=GV10_ENTRYeIw)
 	;
-gv10.AddEntry(func=gv10eMw, inst=GV10_ENTRYeMw)
+gv10.AddEntry(func=gv10eMw, instr=GV10_ENTRYeMw)
 	;
 
-gv10.AddEntry(func=gv10fIw, inst=GV10_ENTRYfIw)
+gv10.AddEntry(func=gv10fIw, instr=GV10_ENTRYfIw)
 	.AddParam(type=ht_uint3, name=addr1)
 	;
-gv10.AddEntry(func=gv10fMw, inst=GV10_ENTRYfMw)
+gv10.AddEntry(func=gv10fMw, instr=GV10_ENTRYfMw)
 	.AddParam(type=ht_uint3, name=addr1)
 	;
 
@@ -508,7 +508,7 @@ gv11.AddInstr(name=GV11_gv12d_RD);
 gv11.AddInstr(name=GV11_gv12d);
 gv11.AddInstr(name=GV11_RETURN);
 
-gv11.AddEntry(func=gv11, inst=GV11_ENTRY)
+gv11.AddEntry(func=gv11, instr=GV11_ENTRY)
 	.AddParam(type=ht_uint48, name=addr)
 	;
 
@@ -550,19 +550,19 @@ gv12.AddInstr(name=GV12_ENTRYc);
 gv12.AddInstr(name=GV12_ENTRYd);
 gv12.AddInstr(name=GV12_RETURN);
 
-gv12.AddEntry(func=gv12a, inst=GV12_ENTRYa)
+gv12.AddEntry(func=gv12a, instr=GV12_ENTRYa)
 	.AddParam(type=ht_uint48, name=addr)
 	;
 
-gv12.AddEntry(func=gv12b, inst=GV12_ENTRYb)
+gv12.AddEntry(func=gv12b, instr=GV12_ENTRYb)
 	.AddParam(type=ht_uint3, name=addr1)
 	;
 
-gv12.AddEntry(func=gv12c, inst=GV12_ENTRYc)
+gv12.AddEntry(func=gv12c, instr=GV12_ENTRYc)
 	.AddParam(type=ht_uint48, name=addr)
 	;
 
-gv12.AddEntry(func=gv12d, inst=GV12_ENTRYd)
+gv12.AddEntry(func=gv12d, instr=GV12_ENTRYd)
 	.AddParam(type=ht_uint3, name=addr1)
 	;
 
@@ -597,7 +597,7 @@ gv13.AddInstr(name=GV13_gv14d_RD);
 gv13.AddInstr(name=GV13_gv14d);
 gv13.AddInstr(name=GV13_RETURN);
 
-gv13.AddEntry(func=gv13, inst=GV13_ENTRY)
+gv13.AddEntry(func=gv13, instr=GV13_ENTRY)
 	.AddParam(type=ht_uint48, name=addr)
 	;
 
@@ -639,19 +639,19 @@ gv14.AddInstr(name=GV14_ENTRYc);
 gv14.AddInstr(name=GV14_ENTRYd);
 gv14.AddInstr(name=GV14_RETURN);
 
-gv14.AddEntry(func=gv14a, inst=GV14_ENTRYa)
+gv14.AddEntry(func=gv14a, instr=GV14_ENTRYa)
 	.AddParam(type=ht_uint48, name=addr)
 	;
 
-gv14.AddEntry(func=gv14b, inst=GV14_ENTRYb)
+gv14.AddEntry(func=gv14b, instr=GV14_ENTRYb)
 	.AddParam(type=ht_uint3, name=addr1)
 	;
 
-gv14.AddEntry(func=gv14c, inst=GV14_ENTRYc)
+gv14.AddEntry(func=gv14c, instr=GV14_ENTRYc)
 	.AddParam(type=ht_uint48, name=addr)
 	;
 
-gv14.AddEntry(func=gv14d, inst=GV14_ENTRYd)
+gv14.AddEntry(func=gv14d, instr=GV14_ENTRYd)
 	.AddParam(type=ht_uint3, name=addr1)
 	;
 
@@ -684,12 +684,12 @@ union CUnion {
 };
 
 dsnInfo.AddModule(name=gv15, htIdW=3, clock=1x);
-gv15.AddInst(name=GV15_ENTRY);
-gv15.AddInst(name=GV15_WR);
-gv15.AddInst(name=GV15_RD);
-gv15.AddInst(name=GV15_RETURN);
+gv15.AddInstr(name=GV15_ENTRY);
+gv15.AddInstr(name=GV15_WR);
+gv15.AddInstr(name=GV15_RD);
+gv15.AddInstr(name=GV15_RETURN);
 
-gv15.AddEntry(func=gv15, inst=GV15_ENTRY)
+gv15.AddEntry(func=gv15, instr=GV15_ENTRY)
 	;
 
 gv15.AddPrivate()
@@ -711,12 +711,12 @@ gv15.AddReadMem()
 // Gv16 Module
 
 dsnInfo.AddModule(name=gv16, htIdW=3, clock=1x);
-gv16.AddInst(name=GV16_ENTRY);
-gv16.AddInst(name=GV16_WR);
-gv16.AddInst(name=GV16_RD);
-gv16.AddInst(name=GV16_RETURN);
+gv16.AddInstr(name=GV16_ENTRY);
+gv16.AddInstr(name=GV16_WR);
+gv16.AddInstr(name=GV16_RD);
+gv16.AddInstr(name=GV16_RETURN);
 
-gv16.AddEntry(func=gv16, inst=GV16_ENTRY)
+gv16.AddEntry(func=gv16, instr=GV16_ENTRY)
 	.AddParam(type=ht_uint48, name=addr)
 	;
 
@@ -744,17 +744,17 @@ gv16.AddWriteMem()
 // Gv17 Module
 
 dsnInfo.AddModule(name=gv17, htIdW=3, clock=1x);
-gv17.AddInst(name=GV17_ENTRY);
-gv17.AddInst(name=GV17a_WR);
-gv17.AddInst(name=GV17a_RD);
-gv17.AddInst(name=GV17a_TST);
-gv17.AddInst(name=GV17b_INIT);
-gv17.AddInst(name=GV17b_WR);
-gv17.AddInst(name=GV17b_RD);
-gv17.AddInst(name=GV17b_TST);
-gv17.AddInst(name=GV17_RETURN);
+gv17.AddInstr(name=GV17_ENTRY);
+gv17.AddInstr(name=GV17a_WR);
+gv17.AddInstr(name=GV17a_RD);
+gv17.AddInstr(name=GV17a_TST);
+gv17.AddInstr(name=GV17b_INIT);
+gv17.AddInstr(name=GV17b_WR);
+gv17.AddInstr(name=GV17b_RD);
+gv17.AddInstr(name=GV17b_TST);
+gv17.AddInstr(name=GV17_RETURN);
 
-gv17.AddEntry(func=gv17, inst=GV17_ENTRY)
+gv17.AddEntry(func=gv17, instr=GV17_ENTRY)
 	.AddParam(type=ht_uint48, name=addr)
 	;
 

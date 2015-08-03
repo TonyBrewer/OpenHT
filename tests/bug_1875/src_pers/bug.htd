@@ -1,9 +1,9 @@
 /////////////////////////////////////////////////////////
 dsnInfo.AddModule(name=bug, clock=1x, htIdW=2);
-bug.AddInst(name=BUG_ENTER);
-bug.AddInst(name=BUG_RTN);
+bug.AddInstr(name=BUG_ENTER);
+bug.AddInstr(name=BUG_RTN);
 
-bug.AddEntry(func=bug, inst=BUG_ENTER, host=true)
+bug.AddEntry(func=bug, instr=BUG_ENTER, host=true)
 	;
 
 bug.AddShared()

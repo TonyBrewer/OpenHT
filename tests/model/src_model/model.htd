@@ -2,7 +2,7 @@
 
 dsnInfo.AddModule(name=model, htIdW=0);
 
-model.AddInst(name=TEST);
+model.AddInstr(name=TEST);
 
 model.AddHostMsg(dir=in, name=MODEL_MSG);
 model.AddHostMsg(dir=out, name=OUT_MSG);
@@ -18,7 +18,7 @@ model.AddPrivate()
 	.AddVar(type=uint64_t, name=in4)
 	;
 
-model.AddEntry(func=htmain, inst=TEST, host=true)
+model.AddEntry(func=htmain, instr=TEST, host=true)
 	.AddParam(type=uint64_t, name=in1)
 	.AddParam(type=uint64_t, name=in2)
 	.AddParam(type=uint64_t, name=in3)

@@ -22,7 +22,7 @@ dsnInfo.AddModule(name=bug1, htIdW=BUG1_HTID_W);
 
 bug1.AddInstr(name=BUG1_ENTRY);
 #if BUG1_1_INST != 0
-bug1.AddInst(name=BUG1_INST);
+bug1.AddInstr(name=BUG1_INST);
 #endif
 
 #if BUG1_PRIV != 0
@@ -35,7 +35,7 @@ bug1.AddShared()
 	.AddVar(type=bool, name=bFlag)
 	;
 
-bug1.AddEntry(func=htmain, inst=BUG1_ENTRY, host=true)
+bug1.AddEntry(func=htmain, instr=BUG1_ENTRY, host=true)
 	;
 
 bug1.AddCall(func=bug2);
@@ -50,7 +50,7 @@ dsnInfo.AddModule(name=bug2, htIdW=BUG2_HTID_W);
 
 bug2.AddInstr(name=BUG2_ENTRY);
 #if BUG2_1_INST != 0
-bug2.AddInst(name=BUG2_INST);
+bug2.AddInstr(name=BUG2_INST);
 #endif
 
 #if BUG2_PRIV != 0
@@ -59,12 +59,12 @@ bug2.AddPrivate()
 	;
 #endif
 
-bug2.AddEntry(func=bug2, inst=BUG2_ENTRY);
+bug2.AddEntry(func=bug2, instr=BUG2_ENTRY);
 bug2.AddReturn(func=bug2)
 #if (BUG1_PRIV != 0 && BUG2_RTN != 0)
 	.AddParam(type=uint64_t, name=data)
 #endif
 	;
 
-bug2.AddEntry(func=bug2b, inst=BUG2_ENTRY);
+bug2.AddEntry(func=bug2b, instr=BUG2_ENTRY);
 bug2.AddReturn(func=bug2b);

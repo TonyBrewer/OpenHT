@@ -3,13 +3,13 @@
 #define CTL_HTID_W 1
 
 dsnInfo.AddModule(name=Ctl, htIdW=CTL_HTID_W);
-Ctl.AddInst(name=ENTRY);
-Ctl.AddInst(name=CALL_A);
-Ctl.AddInst(name=CALL_B);
-Ctl.AddInst(name=CALL_C);
-Ctl.AddInst(name=CALL_D);
-Ctl.AddInst(name=CALL_E);
-Ctl.AddInst(name=LOOP_CHK);
+Ctl.AddInstr(name=ENTRY);
+Ctl.AddInstr(name=CALL_A);
+Ctl.AddInstr(name=CALL_B);
+Ctl.AddInstr(name=CALL_C);
+Ctl.AddInstr(name=CALL_D);
+Ctl.AddInstr(name=CALL_E);
+Ctl.AddInstr(name=LOOP_CHK);
 
 Ctl.AddPrivate()
 	.AddVar(type=uint32_t, name=rsltMask)
@@ -19,7 +19,7 @@ Ctl.AddPrivate()
 	.AddVar(type=uint32_t, name=result)
 	;
 
-Ctl.AddEntry(func=htmain, inst=ENTRY, host=true)
+Ctl.AddEntry(func=htmain, instr=ENTRY, host=true)
 	.AddParam(hostType=uint32_t, type=uint16_t, name=loopCntLimit)
 	;
 
@@ -35,8 +35,8 @@ Ctl.AddCall(func=ModA, queueW=2);
 #define MODA_HTID_W 2
 
 dsnInfo.AddModule(name=ModA, htIdW=MODA_HTID_W);
-ModA.AddInst(name=ENTRY);
-ModA.AddInst(name=RETURN);
+ModA.AddInstr(name=ENTRY);
+ModA.AddInstr(name=RETURN);
 
 ModA.AddPrivate()
 	.AddVar(type=uint8_t, name=shft)
@@ -44,7 +44,7 @@ ModA.AddPrivate()
 	.AddVar(type=uint32_t, name=result)
 	;
 
-ModA.AddEntry(func=ModA, inst=ENTRY)
+ModA.AddEntry(func=ModA, instr=ENTRY)
 	.AddParam(type=uint8_t, name=shft)
 	.AddParam(type=uint8_t, name=value)
 	.AddParam(type=uint32_t, name=result)
@@ -61,8 +61,8 @@ ModA.AddCall(func=ModX, queueW=1);
 #define MODB_HTID_W 2
 
 dsnInfo.AddModule(name=ModB, htIdW=MODB_HTID_W);
-ModB.AddInst(name=ENTRY);
-ModB.AddInst(name=RETURN);
+ModB.AddInstr(name=ENTRY);
+ModB.AddInstr(name=RETURN);
 
 ModB.AddPrivate()
 	.AddVar(type=uint8_t, name=shft)
@@ -70,7 +70,7 @@ ModB.AddPrivate()
 	.AddVar(type=uint32_t, name=result)
 	;
 
-ModB.AddEntry(func=ModB, inst=ENTRY)
+ModB.AddEntry(func=ModB, instr=ENTRY)
 	.AddParam(type=uint8_t, name=shft)
 	.AddParam(type=uint8_t, name=value)
 	.AddParam(type=uint32_t, name=result)
@@ -87,7 +87,7 @@ ModB.AddCall(func=ModX, queueW=2);
 #define MODX_HTID_W 2
 
 dsnInfo.AddModule(name=ModX, htIdW=MODX_HTID_W);
-ModX.AddInst(name=ENTRY);
+ModX.AddInstr(name=ENTRY);
 
 ModX.AddPrivate()
 	.AddVar(type=uint8_t, name=shft)
@@ -95,7 +95,7 @@ ModX.AddPrivate()
 	.AddVar(type=uint32_t, name=result)
 	;
 
-ModX.AddEntry(func=ModX, inst=ENTRY)
+ModX.AddEntry(func=ModX, instr=ENTRY)
 	.AddParam(type=uint8_t, name=shft)
 	.AddParam(type=uint8_t, name=value)
 	.AddParam(type=uint32_t, name=result)

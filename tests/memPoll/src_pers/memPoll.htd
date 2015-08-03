@@ -16,12 +16,12 @@ struct CData {
 #define POLL_HTID_W 3
 
 dsnInfo.AddModule(name=poll, htIdW=POLL_HTID_W);
-poll.AddInst(name=POLL_POLL0);
-poll.AddInst(name=POLL_POLL1);
-poll.AddInst(name=POLL_POLL2);
-poll.AddInst(name=POLL_POLL3);
-poll.AddInst(name=POLL_POLL4);
-poll.AddInst(name=POLL_RTN);
+poll.AddInstr(name=POLL_POLL0);
+poll.AddInstr(name=POLL_POLL1);
+poll.AddInstr(name=POLL_POLL2);
+poll.AddInstr(name=POLL_POLL3);
+poll.AddInstr(name=POLL_POLL4);
+poll.AddInstr(name=POLL_RTN);
 
 poll.AddPrivate()
 	.AddVar(type=uint16_t, name=errRtn)
@@ -29,7 +29,7 @@ poll.AddPrivate()
 	.AddVar(type=MemAddr_t, name=arrayAddr)
 	;
 
-poll.AddEntry(func=htmain, inst=POLL_POLL4, host=true)
+poll.AddEntry(func=htmain, instr=POLL_POLL4, host=true)
 	.AddParam(hostType=uint64_t, type=MemAddr_t, name=arrayAddr)
 	;
 
@@ -51,10 +51,10 @@ poll.AddCall(func=poll4);
 typedef sc_uint<POLL0_ADDR1_W> Poll0Addr1_t;
 
 dsnInfo.AddModule(name=poll0, htIdW=POLL0_HTID_W);
-poll0.AddInst(name=POLL0_INIT);
-poll0.AddInst(name=POLL0_READ);
-poll0.AddInst(name=POLL0_WAIT);
-poll0.AddInst(name=POLL0_TEST);
+poll0.AddInstr(name=POLL0_INIT);
+poll0.AddInstr(name=POLL0_READ);
+poll0.AddInstr(name=POLL0_WAIT);
+poll0.AddInstr(name=POLL0_TEST);
 
 poll0.AddPrivate()
 	.AddVar(type=uint16_t, name=err)
@@ -63,7 +63,7 @@ poll0.AddPrivate()
 	.AddVar(type=MemAddr_t, name=arrayAddr)
 	;
 
-poll0.AddEntry(func=poll0, inst=POLL0_INIT)
+poll0.AddEntry(func=poll0, instr=POLL0_INIT)
 	.AddParam(hostType=uint64_t, type=MemAddr_t, name=arrayAddr)
 	;
 
@@ -86,10 +86,10 @@ poll0.AddGlobal()
 typedef sc_uint<POLL1_ADDR1_W> Poll1Addr1_t;
 
 dsnInfo.AddModule(name=poll1, htIdW=POLL1_HTID_W);
-poll1.AddInst(name=POLL1_INIT);
-poll1.AddInst(name=POLL1_READ);
-poll1.AddInst(name=POLL1_WAIT);
-poll1.AddInst(name=POLL1_TEST);
+poll1.AddInstr(name=POLL1_INIT);
+poll1.AddInstr(name=POLL1_READ);
+poll1.AddInstr(name=POLL1_WAIT);
+poll1.AddInstr(name=POLL1_TEST);
 
 poll1.AddPrivate()
 	.AddVar(type=uint16_t, name=err)
@@ -98,7 +98,7 @@ poll1.AddPrivate()
 	.AddVar(type=MemAddr_t, name=arrayAddr)
 	;
 
-poll1.AddEntry(func=poll1, inst=POLL1_INIT)
+poll1.AddEntry(func=poll1, instr=POLL1_INIT)
 	.AddParam(hostType=uint64_t, type=MemAddr_t, name=arrayAddr)
 	;
 
@@ -121,10 +121,10 @@ poll1.AddGlobal()
 typedef sc_uint<POLL2_ADDR1_W> Poll2Addr1_t;
 
 dsnInfo.AddModule(name=poll2, htIdW=POLL2_HTID_W);
-poll2.AddInst(name=POLL2_INIT);
-poll2.AddInst(name=POLL2_READ);
-poll2.AddInst(name=POLL2_WAIT);
-poll2.AddInst(name=POLL2_TEST);
+poll2.AddInstr(name=POLL2_INIT);
+poll2.AddInstr(name=POLL2_READ);
+poll2.AddInstr(name=POLL2_WAIT);
+poll2.AddInstr(name=POLL2_TEST);
 
 poll2.AddPrivate()
 	.AddVar(type=uint16_t, name=err)
@@ -133,7 +133,7 @@ poll2.AddPrivate()
 	.AddVar(type=MemAddr_t, name=arrayAddr)
 	;
 
-poll2.AddEntry(func=poll2, inst=POLL2_INIT)
+poll2.AddEntry(func=poll2, instr=POLL2_INIT)
 	.AddParam(hostType=uint64_t, type=MemAddr_t, name=arrayAddr)
 	;
 
@@ -156,10 +156,10 @@ poll2.AddGlobal()
 typedef sc_uint<POLL3_ADDR1_W> Poll3Addr1_t;
 
 dsnInfo.AddModule(name=poll3, htIdW=POLL3_HTID_W);
-poll3.AddInst(name=POLL3_INIT);
-poll3.AddInst(name=POLL3_READ);
-poll3.AddInst(name=POLL3_WAIT);
-poll3.AddInst(name=POLL3_TEST);
+poll3.AddInstr(name=POLL3_INIT);
+poll3.AddInstr(name=POLL3_READ);
+poll3.AddInstr(name=POLL3_WAIT);
+poll3.AddInstr(name=POLL3_TEST);
 
 poll3.AddPrivate()
 	.AddVar(type=uint16_t, name=err)
@@ -168,7 +168,7 @@ poll3.AddPrivate()
 	.AddVar(type=MemAddr_t, name=arrayAddr)
 	;
 
-poll3.AddEntry(func=poll3, inst=POLL3_INIT)
+poll3.AddEntry(func=poll3, instr=POLL3_INIT)
 	.AddParam(hostType=uint64_t, type=MemAddr_t, name=arrayAddr)
 	;
 
@@ -192,10 +192,10 @@ typedef sc_uint<POLL4_ADDR1_W> Poll4Addr1_t;
 typedef sc_uint<5> RdRspGrp_t;
 
 dsnInfo.AddModule(name=poll4, htIdW=POLL4_HTID_W);
-poll4.AddInst(name=POLL4_INIT);
-poll4.AddInst(name=POLL4_READ);
-poll4.AddInst(name=POLL4_WAIT);
-poll4.AddInst(name=POLL4_TEST);
+poll4.AddInstr(name=POLL4_INIT);
+poll4.AddInstr(name=POLL4_READ);
+poll4.AddInstr(name=POLL4_WAIT);
+poll4.AddInstr(name=POLL4_TEST);
 
 poll4.AddPrivate()
 	.AddVar(type=uint16_t, name=err)
@@ -205,7 +205,7 @@ poll4.AddPrivate()
 	.AddVar(type=RdRspGrp_t, name=memReadGrpId)
 	;
 
-poll4.AddEntry(func=poll4, inst=POLL4_INIT)
+poll4.AddEntry(func=poll4, instr=POLL4_INIT)
 	.AddParam(hostType=uint64_t, type=MemAddr_t, name=arrayAddr)
 	;
 

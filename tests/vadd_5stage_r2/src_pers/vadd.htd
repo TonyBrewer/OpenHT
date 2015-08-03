@@ -3,10 +3,10 @@
 
 dsnInfo.AddModule(name=ctl, htIdW=0);
 
-ctl.AddInst(name=CTL_ENTRY);
-ctl.AddInst(name=CTL_ADD);
-ctl.AddInst(name=CTL_JOIN);
-ctl.AddInst(name=CTL_RTN);
+ctl.AddInstr(name=CTL_ENTRY);
+ctl.AddInstr(name=CTL_ADD);
+ctl.AddInstr(name=CTL_JOIN);
+ctl.AddInstr(name=CTL_RTN);
 
 ctl.AddHostMsg(dir=in, name=VEC_LEN)
 	.AddDst(var=vecLen)
@@ -24,7 +24,7 @@ ctl.AddPrivate()
 	.AddVar(type=uint64_t, name=result)
 	;
 
-ctl.AddEntry(func=htmain, inst=CTL_ENTRY, host=true)
+ctl.AddEntry(func=htmain, instr=CTL_ENTRY, host=true)
 	.AddParam(type=uint32_t, name=vecIdx)
 	.AddParam(type=uint32_t, name=vecStride)
 	;
@@ -43,11 +43,11 @@ typedef ht_uint48 MemAddr_t;
 
 dsnInfo.AddModule(name=add, htIdW=ADD_HTID_W);
 
-add.AddInst(name=ADD_LD1);
-add.AddInst(name=ADD_LD2);
-add.AddInst(name=ADD_ADD);
-add.AddInst(name=ADD_ST);
-add.AddInst(name=ADD_RTN);
+add.AddInstr(name=ADD_LD1);
+add.AddInstr(name=ADD_LD2);
+add.AddInstr(name=ADD_ADD);
+add.AddInstr(name=ADD_ST);
+add.AddInstr(name=ADD_RTN);
 
 add.AddHostMsg(dir=in, name=OP1_ADDR)
 	.AddDst(var=op1Addr)
@@ -79,7 +79,7 @@ add.AddStage(privWrStg=6, execStg=1)
 	.AddVar(type=uint64_t, name=res, range=6, primOut=true)
 	;
 
-add.AddEntry(func=add, inst=ADD_LD1)
+add.AddEntry(func=add, instr=ADD_LD1)
 	.AddParam(type=uint32_t, name=vecIdx)
 	;
 

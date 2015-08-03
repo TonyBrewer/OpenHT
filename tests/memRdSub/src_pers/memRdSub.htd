@@ -5,8 +5,8 @@
 typedef sc_uint<48> MemAddr_t;
 
 dsnInfo.AddModule(name=RdSub, htIdW=WS_HTID_W);
-RdSub.AddInst(name=WS_READ);
-RdSub.AddInst(name=WS_RETURN);
+RdSub.AddInstr(name=WS_READ);
+RdSub.AddInstr(name=WS_RETURN);
 
 RdSub.AddPrivate()
 	.AddVar(type=MemAddr_t, name=rdAddr)
@@ -15,7 +15,7 @@ RdSub.AddPrivate()
 	.AddVar(type=ht_uint6, name=rdGrpId)
 	;
 
-RdSub.AddEntry(func=RdSub, inst=WS_READ, host=true)
+RdSub.AddEntry(func=RdSub, instr=WS_READ, host=true)
 	.AddParam(hostType=uint64_t, type=MemAddr_t, name=rdAddr)
 	.AddParam(type=uint64_t, name=expected)
 	.AddParam(hostType=uint8_t, type=ht_uint3, name=rdType)

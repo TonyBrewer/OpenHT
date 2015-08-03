@@ -10,7 +10,7 @@ dsnInfo.AddModule(name=Ctl, htIdW=0);
 Ctl.AddInstr(name=CTL_TEST14);
 Ctl.AddInstr(name=CTL_RTN);
 
-Ctl.AddEntry(func=main, inst=CTL_TEST14, host=true)
+Ctl.AddEntry(func=main, instr=CTL_TEST14, host=true)
 	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=memAddr)
 	;
 
@@ -37,7 +37,7 @@ Test14.AddInstr(name=TEST14_LD0);
 Test14.AddInstr(name=TEST14_CHK);
 Test14.AddInstr(name=TEST14_RTN);
 
-Test14.AddEntry(func=test14, inst=TEST14_ENTRY)
+Test14.AddEntry(func=test14, instr=TEST14_ENTRY)
 	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=memAddr)
 	;
 

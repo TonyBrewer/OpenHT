@@ -3,9 +3,9 @@
 
 dsnInfo.AddModule(name=ctl, htIdW=0);
 
-ctl.AddInst(name=CTL_ENTRY);
-ctl.AddInst(name=CTL_JOIN);
-ctl.AddInst(name=CTL_RTN);
+ctl.AddInstr(name=CTL_ENTRY);
+ctl.AddInstr(name=CTL_JOIN);
+ctl.AddInstr(name=CTL_RTN);
 
 
 ctl.AddPrivate()
@@ -15,7 +15,7 @@ ctl.AddPrivate()
 	.AddVar(type=uint32_t, name=sum)
 	;
 
-ctl.AddEntry(func=htmain, inst=CTL_ENTRY, host=true)
+ctl.AddEntry(func=htmain, instr=CTL_ENTRY, host=true)
 	.AddParam(type=uint32_t, name=length)
 	;
 
@@ -30,14 +30,14 @@ ctl.AddCall(func=echo, fork=true);
 // Echoes a number back to the calling function
 dsnInfo.AddModule(name=echo, htIdW=0);
 
-echo.AddInst(name=ECHO_RTN);
+echo.AddInstr(name=ECHO_RTN);
 
 
 echo.AddPrivate()
 	.AddVar(type=uint32_t, name=count)
 	;
 
-echo.AddEntry(func=echo, inst=ECHO_RTN)
+echo.AddEntry(func=echo, instr=ECHO_RTN)
 	.AddParam(type=uint32_t, name=count)
 	;
 

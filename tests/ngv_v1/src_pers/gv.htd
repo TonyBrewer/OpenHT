@@ -19,12 +19,12 @@ struct CGVar {
 // Gv Module
 
 dsnInfo.AddModule(name=gv, htIdW=3, clock=1x);
-gv.AddInst(name=GV_ENTRY);
-gv.AddInst(name=GV_I1);
-gv.AddInst(name=GV_I2);
-gv.AddInst(name=GV_RETURN);
+gv.AddInstr(name=GV_ENTRY);
+gv.AddInstr(name=GV_I1);
+gv.AddInstr(name=GV_I2);
+gv.AddInstr(name=GV_RETURN);
 
-gv.AddEntry(func=htmain, inst=GV_ENTRY, host=true)
+gv.AddEntry(func=htmain, instr=GV_ENTRY, host=true)
 	;
 
 gv.AddPrivate()

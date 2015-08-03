@@ -12,9 +12,9 @@ struct CTwoFld {
 
 
 dsnInfo.AddModule(name=inc, htIdW=INC_HTID_W);
-inc.AddInst(name=INC_INIT);
-inc.AddInst(name=INC_READ);
-inc.AddInst(name=INC_WRITE);
+inc.AddInstr(name=INC_INIT);
+inc.AddInstr(name=INC_READ);
+inc.AddInstr(name=INC_WRITE);
 
 inc.AddHostMsg(dir=in, name=SU_ARRAY_ADDR)
 	.AddDst(var=arrayAddr, dataLsb=0)
@@ -31,7 +31,7 @@ inc.AddShared()
 	.AddVar(type=ht_uint48, name=arrayAddr)
 	;
 
-inc.AddEntry(func=htmain, inst=INC_INIT, host=true)
+inc.AddEntry(func=htmain, instr=INC_INIT, host=true)
 	.AddParam(hostType=uint32_t, type=ElemCnt_t, name=elemCnt)
 	;
 inc.AddReturn(func=htmain)

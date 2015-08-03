@@ -11,7 +11,7 @@ test.AddPrivate()
         .AddVar(type=uint8_t, name=sum)
 	;
 
-test.AddEntry(func=main, inst=TEST_ENTRY, host=true)
+test.AddEntry(func=main, instr=TEST_ENTRY, host=true)
 	;
 
 test.AddReturn(func=main)
@@ -35,5 +35,5 @@ test2.AddShared()
         .AddVar(type=uint8_t, name=cnt)
 	;
 
-test2.AddEntry(func=test2, inst=TEST2_ENTRY);
+test2.AddEntry(func=test2, instr=TEST2_ENTRY);
 test2.AddReturn(func=test2);

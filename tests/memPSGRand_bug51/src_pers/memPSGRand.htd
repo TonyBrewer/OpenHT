@@ -219,7 +219,7 @@ Ctl.AddInstr(name=CTL_TEST11);
 Ctl.AddInstr(name=CTL_TEST12);
 Ctl.AddInstr(name=CTL_RTN);
 
-Ctl.AddEntry(func=main, inst=CTL_TEST00, host=true)
+Ctl.AddEntry(func=main, instr=CTL_TEST00, host=true)
 	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=memAddr)
 	;
 
@@ -258,7 +258,7 @@ Test00.AddInstr(name=TEST00_LD0);
 Test00.AddInstr(name=TEST00_CHK);
 Test00.AddInstr(name=TEST00_RTN);
 
-Test00.AddEntry(func=test00, inst=TEST00_ENTRY)
+Test00.AddEntry(func=test00, instr=TEST00_ENTRY)
 	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=memAddr)
 	;
 
@@ -299,7 +299,7 @@ Test01.AddInstr(name=TEST01_LD0);
 Test01.AddInstr(name=TEST01_CHK);
 Test01.AddInstr(name=TEST01_RTN);
 
-Test01.AddEntry(func=test01, inst=TEST01_ENTRY)
+Test01.AddEntry(func=test01, instr=TEST01_ENTRY)
 	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=memAddr)
 	;
 
@@ -342,7 +342,7 @@ Test02.AddInstr(name=TEST02_LD3);
 Test02.AddInstr(name=TEST02_CHK);
 Test02.AddInstr(name=TEST02_RTN);
 
-Test02.AddEntry(func=test02, inst=TEST02_ENTRY)
+Test02.AddEntry(func=test02, instr=TEST02_ENTRY)
 	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=memAddr)
 	;
 
@@ -400,7 +400,7 @@ Test03.AddInstr(name=TEST03_LD0);
 Test03.AddInstr(name=TEST03_CHK);
 Test03.AddInstr(name=TEST03_RTN);
 
-Test03.AddEntry(func=test03, inst=TEST03_ENTRY)
+Test03.AddEntry(func=test03, instr=TEST03_ENTRY)
 	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=memAddr)
 	;
 
@@ -449,7 +449,7 @@ Test04.AddInstr(name=TEST04_LD4);
 Test04.AddInstr(name=TEST04_CHK);
 Test04.AddInstr(name=TEST04_RTN);
 
-Test04.AddEntry(func=test04, inst=TEST04_ENTRY)
+Test04.AddEntry(func=test04, instr=TEST04_ENTRY)
 	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=memAddr)
 	;
 
@@ -520,7 +520,7 @@ Test05.AddInstr(name=TEST05_LD3);
 Test05.AddInstr(name=TEST05_CHK);
 Test05.AddInstr(name=TEST05_RTN);
 
-Test05.AddEntry(func=test05, inst=TEST05_ENTRY)
+Test05.AddEntry(func=test05, instr=TEST05_ENTRY)
 	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=memAddr)
 	;
 
@@ -588,7 +588,7 @@ Test06.AddInstr(name=TEST06_LD4);
 Test06.AddInstr(name=TEST06_CHK);
 Test06.AddInstr(name=TEST06_RTN);
 
-Test06.AddEntry(func=test06, inst=TEST06_ENTRY)
+Test06.AddEntry(func=test06, instr=TEST06_ENTRY)
 	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=memAddr)
 	;
 
@@ -641,7 +641,7 @@ Test07.AddInstr(name=TEST07_LD0);
 Test07.AddInstr(name=TEST07_CHK);
 Test07.AddInstr(name=TEST07_RTN);
 
-Test07.AddEntry(func=test07, inst=TEST07_ENTRY)
+Test07.AddEntry(func=test07, instr=TEST07_ENTRY)
 	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=memAddr)
 	;
 
@@ -688,7 +688,7 @@ Test08.AddInstr(name=TEST08_LD3);
 Test08.AddInstr(name=TEST08_CHK);
 Test08.AddInstr(name=TEST08_RTN);
 
-Test08.AddEntry(func=test08, inst=TEST08_ENTRY)
+Test08.AddEntry(func=test08, instr=TEST08_ENTRY)
 	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=memAddr)
 	;
 
@@ -754,7 +754,7 @@ Test09.AddInstr(name=TEST09_LD2);
 Test09.AddInstr(name=TEST09_CHK);
 Test09.AddInstr(name=TEST09_RTN);
 
-Test09.AddEntry(func=test09, inst=TEST09_ENTRY)
+Test09.AddEntry(func=test09, instr=TEST09_ENTRY)
 	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=memAddr)
 	;
 
@@ -808,7 +808,7 @@ Test10.AddInstr(name=TEST10_LD1);
 Test10.AddInstr(name=TEST10_CHK);
 Test10.AddInstr(name=TEST10_RTN);
 
-Test10.AddEntry(func=test10, inst=TEST10_ENTRY)
+Test10.AddEntry(func=test10, instr=TEST10_ENTRY)
 	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=memAddr)
 	;
 
@@ -857,7 +857,7 @@ Test11.AddInstr(name=TEST11_LD1);
 Test11.AddInstr(name=TEST11_CHK);
 Test11.AddInstr(name=TEST11_RTN);
 
-Test11.AddEntry(func=test11, inst=TEST11_ENTRY)
+Test11.AddEntry(func=test11, instr=TEST11_ENTRY)
 	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=memAddr)
 	;
 
@@ -904,7 +904,7 @@ Test12.AddInstr(name=TEST12_LD2);
 Test12.AddInstr(name=TEST12_CHK);
 Test12.AddInstr(name=TEST12_RTN);
 
-Test12.AddEntry(func=test12, inst=TEST12_ENTRY)
+Test12.AddEntry(func=test12, instr=TEST12_ENTRY)
 	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=memAddr)
 	;
 

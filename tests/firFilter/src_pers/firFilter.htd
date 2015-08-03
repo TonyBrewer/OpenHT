@@ -3,10 +3,10 @@
 
 dsnInfo.AddModule(name=ctl, htIdW=0);
 
-ctl.AddInst(name=CTL_ENTRY);
-ctl.AddInst(name=CTL_RECV);
-ctl.AddInst(name=CTL_SEND);
-ctl.AddInst(name=CTL_RTN);
+ctl.AddInstr(name=CTL_ENTRY);
+ctl.AddInstr(name=CTL_RECV);
+ctl.AddInstr(name=CTL_SEND);
+ctl.AddInstr(name=CTL_RTN);
 
 
 ctl.AddPrivate()
@@ -18,7 +18,7 @@ ctl.AddPrivate()
 	.AddVar(type=uint32_t, name=errRcv)
 	;
 
-ctl.AddEntry(func=htmain, inst=CTL_ENTRY, host=true)
+ctl.AddEntry(func=htmain, instr=CTL_ENTRY, host=true)
 	.AddParam(type=uint32_t, name=rcvAu)
 	.AddParam(type=int32_t, name=lastIdx)
 	;
@@ -42,10 +42,10 @@ typedef ht_uint48 MemAddr_t;
 
 dsnInfo.AddModule(name=process, htIdW=PROCESS_W);
 
-process.AddInst(name=PROCESS_ENTRY);
-process.AddInst(name=PROCESS_JOIN);
-process.AddInst(name=PROCESS_STORE);
-process.AddInst(name=PROCESS_RTN);
+process.AddInstr(name=PROCESS_ENTRY);
+process.AddInstr(name=PROCESS_JOIN);
+process.AddInstr(name=PROCESS_STORE);
+process.AddInstr(name=PROCESS_RTN);
 
 process.AddHostMsg(dir=in, name=OUTPUT_BASE)
 	.AddDst(var=outAddrBase)
@@ -70,7 +70,7 @@ process.AddPrivate()
 	.AddVar(type=int64_t, name=sum)
 	;
 
-process.AddEntry(func=process, inst=PROCESS_ENTRY)
+process.AddEntry(func=process, instr=PROCESS_ENTRY)
 	.AddParam(type=uint32_t, name=rcvIdx)
 	;
 
@@ -93,10 +93,10 @@ typedef ht_uint48 MemAddr_t;
 
 dsnInfo.AddModule(name=mult, htIdW=MULT_W);
 
-mult.AddInst(name=MULT_LD1);
-mult.AddInst(name=MULT_LD2);
-mult.AddInst(name=MULT_CALC);
-mult.AddInst(name=MULT_RTN);
+mult.AddInstr(name=MULT_LD1);
+mult.AddInstr(name=MULT_LD2);
+mult.AddInstr(name=MULT_CALC);
+mult.AddInstr(name=MULT_RTN);
 
 mult.AddHostMsg(dir=in, name=COEFF_BASE)
 	.AddDst(var=cofAddrBase)
@@ -125,7 +125,7 @@ mult.AddPrivate()
 mult.AddStage(privWrStg=6, execStg=1)
 	;
 
-mult.AddEntry(func=mult, inst=MULT_LD1)
+mult.AddEntry(func=mult, instr=MULT_LD1)
 	.AddParam(type=uint32_t, name=rcvIdx)
 	.AddParam(type=uint32_t, name=calcIdx)
 	;
