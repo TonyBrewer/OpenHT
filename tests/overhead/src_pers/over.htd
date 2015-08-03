@@ -14,7 +14,7 @@ over.AddShared()
 	.AddVar(type=bool, name=bResume)
 	;
 
-over.AddEntry(func=htmain, inst=OVER_RD, host=true)
+over.AddEntry(func=htmain, instr=OVER_RD, host=true)
 	.AddParam(hostType=uint64_t *, type=ht_uint48, name=addr)
 	;
 

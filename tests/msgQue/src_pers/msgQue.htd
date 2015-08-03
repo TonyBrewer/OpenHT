@@ -24,10 +24,10 @@
 // Src1 Module
 
 dsnInfo.AddModule(name=ctl, htIdW=0);
-ctl.AddInst(name=CTL_ENTRY);
-ctl.AddInst(name=CTL_FORK);
-ctl.AddInst(name=CTL_JOIN);
-ctl.AddInst(name=CTL_RETURN);
+ctl.AddInstr(name=CTL_ENTRY);
+ctl.AddInstr(name=CTL_FORK);
+ctl.AddInstr(name=CTL_JOIN);
+ctl.AddInstr(name=CTL_RETURN);
 
 ctl.AddPrivate()
 	.AddVar(type=uint8_t, name=errCnt)
@@ -36,7 +36,7 @@ ctl.AddPrivate()
 	.AddVar(type=bool, name=error)
 	;
 
-ctl.AddEntry(func=htmain, inst=CTL_ENTRY, host=true)
+ctl.AddEntry(func=htmain, instr=CTL_ENTRY, host=true)
 	;
 
 ctl.AddReturn(func=htmain)
@@ -56,11 +56,11 @@ ctl.AddFunction(name=RecvReturnPause, type=void)
 // Src1 Module
 
 dsnInfo.AddModule(name=src1, htIdW=0, clock=SRC1_CLK);
-src1.AddInst(name=SRC1_ENTRY);
-src1.AddInst(name=SRC1_SEND);
-src1.AddInst(name=SRC1_RETURN);
+src1.AddInstr(name=SRC1_ENTRY);
+src1.AddInstr(name=SRC1_SEND);
+src1.AddInstr(name=SRC1_RETURN);
 
-src1.AddEntry(func=src1, inst=SRC1_ENTRY)
+src1.AddEntry(func=src1, instr=SRC1_ENTRY)
 	.AddParam(type=uint8_t, name=modId)
 	;
 
@@ -80,11 +80,11 @@ src1.AddMsgIntf(dir=out, type=uint16_t, name=Tst);
 // Src2 Module
 
 dsnInfo.AddModule(name=src2, htIdW=0);
-src2.AddInst(name=SRC2_ENTRY);
-src2.AddInst(name=SRC2_SEND);
-src2.AddInst(name=SRC2_RETURN);
+src2.AddInstr(name=SRC2_ENTRY);
+src2.AddInstr(name=SRC2_SEND);
+src2.AddInstr(name=SRC2_RETURN);
 
-src2.AddEntry(func=src2, inst=SRC2_ENTRY)
+src2.AddEntry(func=src2, instr=SRC2_ENTRY)
 	.AddParam(type=uint8_t, name=modId)
 	;
 
@@ -104,11 +104,11 @@ src2.AddMsgIntf(dir=out, type=uint16_t, name=Tst);
 // Dst1 Module
 
 dsnInfo.AddModule(name=dst1, htIdW=0, clock=DST1_CLK);
-dst1.AddInst(name=DST1_ENTRY);
-dst1.AddInst(name=DST1_RECV);
-dst1.AddInst(name=DST1_RETURN);
+dst1.AddInstr(name=DST1_ENTRY);
+dst1.AddInstr(name=DST1_RECV);
+dst1.AddInstr(name=DST1_RETURN);
 
-dst1.AddEntry(func=dst1, inst=DST1_ENTRY)
+dst1.AddEntry(func=dst1, instr=DST1_ENTRY)
 	.AddParam(type=uint8_t, name=modId)
 	;
 
@@ -130,11 +130,11 @@ dst1.AddMsgIntf(dir=in, type=uint16_t, name=Tst, queueW=3);
 // Dst2 Module
 
 dsnInfo.AddModule(name=dst2, htIdW=0);
-dst2.AddInst(name=DST2_ENTRY);
-dst2.AddInst(name=DST2_SEND);
-dst2.AddInst(name=DST2_RETURN);
+dst2.AddInstr(name=DST2_ENTRY);
+dst2.AddInstr(name=DST2_SEND);
+dst2.AddInstr(name=DST2_RETURN);
 
-dst2.AddEntry(func=dst2, inst=DST2_ENTRY)
+dst2.AddEntry(func=dst2, instr=DST2_ENTRY)
 	.AddParam(type=uint8_t, name=msgCnt)
 	;
 

@@ -6,8 +6,8 @@ typedef sc_biguint<((32  + (((32  % 3 )) ? (3  - (32  % 3 )) : 0)) + 16 )> idivr
 
 dsnInfo.AddModule(name=math, htIdW=0);
 
-math.AddInst(name=TEST);
-math.AddInst(name=RTN);
+math.AddInstr(name=TEST);
+math.AddInstr(name=RTN);
 
 
 math.AddPrivate()
@@ -15,7 +15,7 @@ math.AddPrivate()
 	.AddVar(type=uint8_t, name=cnt)
 	;
 
-math.AddEntry(func=htmain, inst=TEST, host=true);
+math.AddEntry(func=htmain, instr=TEST, host=true);
 
 math.AddReturn(func=htmain) 
 	.AddParam(type=uint64_t, name=errMask)

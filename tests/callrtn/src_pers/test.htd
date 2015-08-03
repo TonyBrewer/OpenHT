@@ -1,7 +1,7 @@
 dsnInfo.AddModule(name=test, htIdW=0);
 
-test.AddInst(name=CALL);
-test.AddInst(name=RTN);
+test.AddInstr(name=CALL);
+test.AddInstr(name=RTN);
 
 
 test.AddHostMsg(dir=in, name=MSGVAR)
@@ -26,7 +26,7 @@ test.AddPrivate()
 	.AddVar(type=int32_t, name=arg9)
 	;
 
-test.AddEntry(func=htmain, inst=CALL, host=true)
+test.AddEntry(func=htmain, instr=CALL, host=true)
 	.AddParam(type=int32_t, name=arg0)
 	.AddParam(type=int32_t, name=arg1)
 	.AddParam(type=int32_t, name=arg2)

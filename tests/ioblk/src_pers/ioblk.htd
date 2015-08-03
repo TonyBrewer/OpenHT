@@ -4,9 +4,9 @@ iobk.AddHostMsg(dir=in, name=FLUSH_PERIOD)
 	.AddDst(var=flushArg, readOnly=false)
 	;
 
-iobk.AddInst(name=IOBK_IDLE);
-iobk.AddInst(name=IOBK_POP);
-iobk.AddInst(name=IOBK_PUSH);
+iobk.AddInstr(name=IOBK_IDLE);
+iobk.AddInstr(name=IOBK_POP);
+iobk.AddInstr(name=IOBK_PUSH);
 
 
 iobk.AddPrivate()
@@ -23,7 +23,7 @@ iobk.AddShared()
 	.AddVar(type=uint16_t, name=flushCnt)
 	;
 
-iobk.AddEntry(func=htmain, inst=IOBK_IDLE, host=true)
+iobk.AddEntry(func=htmain, instr=IOBK_IDLE, host=true)
 	.AddParam(hostType=uint8_t, type=uint8_t, name=au)
 	.AddParam(hostType=uint16_t, type=uint16_t, name=call)
 	.AddParam(hostType=int32_t, type=int32_t, name=cnt)

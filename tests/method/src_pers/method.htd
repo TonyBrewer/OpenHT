@@ -8,8 +8,8 @@ struct Sx {
 
 dsnInfo.AddModule(name=method, htIdW=0);
 
-method.AddInst(name=TEST);
-method.AddInst(name=RTN);
+method.AddInstr(name=TEST);
+method.AddInstr(name=RTN);
 
 
 method.AddPrivate()
@@ -20,7 +20,7 @@ method.AddPrivate()
 method.AddShared()
 	.AddVar(type=Sx, name=sx);
 
-method.AddEntry(func=htmain, inst=TEST, host=true);
+method.AddEntry(func=htmain, instr=TEST, host=true);
 
 method.AddReturn(func=htmain) 
 	.AddParam(type=int32_t, name=err)

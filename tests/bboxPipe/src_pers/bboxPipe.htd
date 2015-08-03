@@ -20,14 +20,14 @@ struct COpMem {
 // fires off reac/centrifuge threads to computer the result and write threads to consume the result
 dsnInfo.AddModule(name=ctl);
 
-ctl.AddInst(name=CTL_ENTRY);
-ctl.AddInst(name=CTL_READ);
-ctl.AddInst(name=CTL_DRAIN);
-ctl.AddInst(name=CTL_JOIN);
-ctl.AddInst(name=CTL_RTN);
+ctl.AddInstr(name=CTL_ENTRY);
+ctl.AddInstr(name=CTL_READ);
+ctl.AddInstr(name=CTL_DRAIN);
+ctl.AddInstr(name=CTL_JOIN);
+ctl.AddInstr(name=CTL_RTN);
 
 
-ctl.AddEntry(func=htmain, inst=CTL_ENTRY, host=true)
+ctl.AddEntry(func=htmain, instr=CTL_ENTRY, host=true)
 	.AddParam(hostType=int, type=ht_uint12, name=operation)
 	.AddParam(hostType=int, type=uint32_t, name=auStride)
 	.AddParam(hostType=int, type=uint32_t, name=vecLen)
@@ -68,12 +68,12 @@ ctl.AddCall(func=read, fork=true);
 // reads two operands and passes control to the the centrifuge pipe in another module
 dsnInfo.AddModule(name=read, htIdW=THREAD_W);
 
-read.AddInst(name=READ_ENTRY);
-read.AddInst(name=READ_LDB);
-read.AddInst(name=READ_TFR);
+read.AddInstr(name=READ_ENTRY);
+read.AddInstr(name=READ_LDB);
+read.AddInstr(name=READ_TFR);
 
 
-read.AddEntry(func=read, inst=READ_ENTRY)
+read.AddEntry(func=read, instr=READ_ENTRY)
 	.AddParam(type=idx_t, name=idx)
 	.AddParam(type=MemAddr_t, name=vaAddr)
 	.AddParam(type=MemAddr_t, name=vbAddr)
@@ -117,12 +117,12 @@ read.AddReadMem(pause=true, poll=true)
 
 dsnInfo.AddModule(name=pipe, clock=1x, htIdW=THREAD_W);
 
-pipe.AddInst(name=PIPE_ENTRY);
-pipe.AddInst(name=PIPE_DRAIN);
-pipe.AddInst(name=PIPE_RTN);
+pipe.AddInstr(name=PIPE_ENTRY);
+pipe.AddInstr(name=PIPE_DRAIN);
+pipe.AddInstr(name=PIPE_RTN);
 
 
-pipe.AddEntry(func=pipe, inst=PIPE_ENTRY)
+pipe.AddEntry(func=pipe, instr=PIPE_ENTRY)
 	.AddParam(type=idx_t, name=idx)
 	.AddParam(type=MemAddr_t, name=vtAddr)
 	.AddParam(type=uint64_t, name=scalar)

@@ -79,9 +79,9 @@ typedef ht_uint48 MemAddr_t;
 dsnInfo.AddModule(name=vadd, htIdW=VADD_HTID_W, reset=VADD_RESET, clock=CLK_RATE);
 
 vadd.AddInstr(name=VADD_RESET);
-vadd.AddInst(name=VADD_ENTER);
-vadd.AddInst(name=VADD_OPEN);
-vadd.AddInst(name=VADD_RETURN);
+vadd.AddInstr(name=VADD_ENTER);
+vadd.AddInstr(name=VADD_OPEN);
+vadd.AddInstr(name=VADD_RETURN);
 
 vadd.AddHostMsg(dir=in, name=OP1_ADDR)
 	.AddDst(var=addrA, readOnly=false)
@@ -116,7 +116,7 @@ vadd.AddShared()
 	.AddVar(type=ht_uint32, name=sum)
 	;
 
-vadd.AddEntry(func=htmain, inst=VADD_ENTER, host=true)
+vadd.AddEntry(func=htmain, instr=VADD_ENTER, host=true)
 	.AddParam(hostType=uint32_t, type=ht_uint32, name=yAddrOff)
 	.AddParam(hostType=uint32_t, type=ht_uint32, name=yDimLen)
 	.AddParam(hostType=uint32_t, type=ht_uint32, name=xDimLen)

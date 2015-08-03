@@ -8,13 +8,13 @@ typedef sc_uint<48> MemAddr_t;
 
 dsnInfo.AddModule(name=MemSub, htIdW=WS_HTID_W);
 
-MemSub.AddInst(name=WS_READ1);
-MemSub.AddInst(name=WS_WRITE1);
-MemSub.AddInst(name=WS_READ2);
-MemSub.AddInst(name=WS_WRITE2);
-MemSub.AddInst(name=WS_READ3);
-MemSub.AddInst(name=WS_WRITE3);
-MemSub.AddInst(name=WS_RETURN);
+MemSub.AddInstr(name=WS_READ1);
+MemSub.AddInstr(name=WS_WRITE1);
+MemSub.AddInstr(name=WS_READ2);
+MemSub.AddInstr(name=WS_WRITE2);
+MemSub.AddInstr(name=WS_READ3);
+MemSub.AddInstr(name=WS_WRITE3);
+MemSub.AddInstr(name=WS_RETURN);
 
 MemSub.AddPrivate()
 	.AddVar(type=MemAddr_t, name=rdAddr1)
@@ -27,7 +27,7 @@ MemSub.AddPrivate()
 	.AddVar(type=uint64_t, name=privArray, addr1=addr1)
 	;
 
-MemSub.AddEntry(func=MemSub, inst=WS_READ1, host=true)
+MemSub.AddEntry(func=MemSub, instr=WS_READ1, host=true)
 	.AddParam(hostType=uint16_t *, type=MemAddr_t, name=rdAddr1)
 	.AddParam(hostType=uint16_t *, type=MemAddr_t, name=wrAddr1)
 	.AddParam(hostType=Align16 *, type=MemAddr_t, name=rdAddr2)

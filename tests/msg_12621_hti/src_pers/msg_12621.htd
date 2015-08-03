@@ -7,20 +7,20 @@
 // Inc Module
 
 dsnInfo.AddModule(name=ctl, htIdW=CTL_HTID_W);
-ctl.AddInst(name=CTL_INIT);
-ctl.AddInst(name=CTL_A);
-ctl.AddInst(name=CTL_B);
-ctl.AddInst(name=CTL_C);
-ctl.AddInst(name=CTL_D);
-ctl.AddInst(name=CTL_E);
-ctl.AddInst(name=CTL_SEND_MSG);
-ctl.AddInst(name=CTL_RTN);
+ctl.AddInstr(name=CTL_INIT);
+ctl.AddInstr(name=CTL_A);
+ctl.AddInstr(name=CTL_B);
+ctl.AddInstr(name=CTL_C);
+ctl.AddInstr(name=CTL_D);
+ctl.AddInstr(name=CTL_E);
+ctl.AddInstr(name=CTL_SEND_MSG);
+ctl.AddInstr(name=CTL_RTN);
 
 ctl.AddPrivate()
 	.AddVar(type=uint8_t, name=elemCnt)
 	;
 
-ctl.AddEntry(func=htmain, inst=CTL_INIT, host=true)
+ctl.AddEntry(func=htmain, instr=CTL_INIT, host=true)
 	.AddParam(hostType=uint32_t, type=uint8_t, name=elemCnt)
 	;
 
@@ -43,8 +43,8 @@ ctl.AddMsgIntf(dir=in, name=EtoCtl, type=ht_uint4 );
 
 
 dsnInfo.AddModule(name=modA);
-modA.AddInst(name=MODA);
-modA.AddEntry(func=modA, inst=MODA);
+modA.AddInstr(name=MODA);
+modA.AddEntry(func=modA, instr=MODA);
 modA.AddReturn(func=modA);
 modA.AddMsgIntf(dir=in, name=CtlToA, type=ht_uint4, dimen=3 );
 modA.AddMsgIntf(dir=out, name=AtoE, type=ht_uint4 );
@@ -52,8 +52,8 @@ modA.AddMsgIntf(dir=out, name=AtoB, type=ht_uint4, fanout=B_REPL, autoConn=false
 
 
 dsnInfo.AddModule(name=modB);
-modB.AddInst(name=MODB);
-modB.AddEntry(func=modB, inst=MODB);
+modB.AddInstr(name=MODB);
+modB.AddEntry(func=modB, instr=MODB);
 modB.AddReturn(func=modB);
 modB.AddMsgIntf(dir=in, name=AtoB, type=ht_uint4, queueW=5, autoConn=false );
 modB.AddMsgIntf(dir=out, name=BtoC, type=ht_uint4, fanout=C_REPL/B_REPL );
@@ -61,8 +61,8 @@ modB.AddMsgIntf(dir=out, name=BtoD, type=ht_uint4, dimen=2 );
 
 
 dsnInfo.AddModule(name=modC);
-modC.AddInst(name=MODC);
-modC.AddEntry(func=modC, inst=MODC);
+modC.AddInstr(name=MODC);
+modC.AddEntry(func=modC, instr=MODC);
 modC.AddReturn(func=modC);
 modC.AddMsgIntf(dir=in, name=BtoC, type=ht_uint4 );
 modC.AddMsgIntf(dir=out, name=CtoD, type=ht_uint4 );
@@ -73,8 +73,8 @@ modC.AddShared()
 
 
 dsnInfo.AddModule(name=modD);
-modD.AddInst(name=MODD);
-modD.AddEntry(func=modD, inst=MODD);
+modD.AddInstr(name=MODD);
+modD.AddEntry(func=modD, instr=MODD);
 modD.AddReturn(func=modD);
 modD.AddMsgIntf(dir=in, name=CtoD, type=ht_uint4, fanin=C_REPL/B_REPL );
 modD.AddMsgIntf(dir=in, name=BtoD, type=ht_uint4, dimen=2 );
@@ -86,8 +86,8 @@ modD.AddShared()
 
 
 dsnInfo.AddModule(name=modE);
-modE.AddInst(name=MODE);
-modE.AddEntry(func=modE, inst=MODE);
+modE.AddInstr(name=MODE);
+modE.AddEntry(func=modE, instr=MODE);
 modE.AddReturn(func=modE);
 modE.AddMsgIntf(dir=in, name=DtoE, type=ht_uint4, dimen=4, fanin=D_REPL, queueW=5, autoConn=false );
 modE.AddMsgIntf(dir=in, name=AtoE, type=ht_uint4 );

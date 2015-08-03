@@ -1,7 +1,7 @@
 dsnInfo.AddModule(name=func, clock=1x, htIdW=3);
 
-func.AddInst(name=TEST);
-func.AddInst(name=RTN);
+func.AddInstr(name=TEST);
+func.AddInstr(name=RTN);
 
 struct s1 {
 	uint8_t m_f1[4];
@@ -22,7 +22,7 @@ func.AddStage()
 	.AddVar(type=bool, name=bool, range=1)
 	;
 
-func.AddEntry(func=htmain, inst=TEST, host=true);
+func.AddEntry(func=htmain, instr=TEST, host=true);
 
 func.AddReturn(func=htmain) 
 	.AddParam(type=int32_t, name=err)

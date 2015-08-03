@@ -17,9 +17,9 @@ struct CData {
 
 dsnInfo.AddModule(name=inc, htIdW=INC_HTID_W);
 
-inc.AddInst(name=INC_INIT);
-inc.AddInst(name=INC_READ);
-inc.AddInst(name=INC_WRITE);
+inc.AddInstr(name=INC_INIT);
+inc.AddInstr(name=INC_READ);
+inc.AddInstr(name=INC_WRITE);
 
 inc.AddHostMsg(dir=in, name=SU_ARRAY_ADDR)
 	.AddDst(var=arrayAddr, dataLsb=0)
@@ -37,7 +37,7 @@ inc.AddShared()
 	.AddVar(type=ht_uint4, name=pu4)
 	;
 
-inc.AddEntry(func=htmain, inst=INC_INIT, host=true)
+inc.AddEntry(func=htmain, instr=INC_INIT, host=true)
 	.AddParam(hostType=uint32_t, type=uint8_t, name=elemCnt)
 	;
 
@@ -84,13 +84,13 @@ inc.AddFunction(type=ht_uint4, name=fl)
 #define INC2_HTID_W 5
 dsnInfo.AddModule(name=inc2, htIdW=INC2_HTID_W);
 
-inc2.AddInst(name=INC2_INIT);
+inc2.AddInstr(name=INC2_INIT);
 
 inc2.AddGlobal()
 	.AddVar(type=CData, name=arrayMem2, addr1W=INC_HTID_W, instrRead=false, instrWrite=true)
 	;
 
-inc2.AddEntry(func=inc2, inst=INC2_INIT)
+inc2.AddEntry(func=inc2, instr=INC2_INIT)
 	;
 
 inc2.AddReturn(func=inc2)

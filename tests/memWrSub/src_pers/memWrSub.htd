@@ -5,8 +5,8 @@
 typedef sc_uint<48> MemAddr_t;
 
 dsnInfo.AddModule(name=WrSub, htIdW=WS_HTID_W);
-WrSub.AddInst(name=WS_WRITE);
-WrSub.AddInst(name=WS_RETURN);
+WrSub.AddInstr(name=WS_WRITE);
+WrSub.AddInstr(name=WS_RETURN);
 
 WrSub.AddPrivate()
 	.AddVar(type=MemAddr_t, name=wrAddr)
@@ -15,7 +15,7 @@ WrSub.AddPrivate()
 	.AddVar(type=ht_uint6, name=wrGrp)
 	;
 
-WrSub.AddEntry(func=WrSub, inst=WS_WRITE, host=true)
+WrSub.AddEntry(func=WrSub, instr=WS_WRITE, host=true)
 	.AddParam(hostType=uint64_t, type=MemAddr_t, name=wrAddr)
 	.AddParam(type=uint64_t, name=wrData)
 	.AddParam(hostType=uint8_t, type=ht_uint2, name=wrSize)

@@ -1,8 +1,8 @@
 dsnInfo.AddModule(name=stream, htIdW=0);
 
-stream.AddInst(name=STRM_IDLE);
-stream.AddInst(name=STRM_RECV);
-stream.AddInst(name=STRM_SEND);
+stream.AddInstr(name=STRM_IDLE);
+stream.AddInstr(name=STRM_RECV);
+stream.AddInstr(name=STRM_SEND);
 
 
 stream.AddPrivate()
@@ -13,7 +13,7 @@ stream.AddPrivate()
 	.AddVar(type=uint64_t, name=recvData)
 	;
 
-stream.AddEntry(func=htmain, inst=STRM_IDLE, host=true)
+stream.AddEntry(func=htmain, instr=STRM_IDLE, host=true)
 	.AddParam(hostType=uint16_t, type=uint16_t, name=rcvAu)
 	.AddParam(hostType=uint32_t, type=uint32_t, name=rcvCnt)
 	;

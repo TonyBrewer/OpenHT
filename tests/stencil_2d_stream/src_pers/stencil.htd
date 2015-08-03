@@ -17,9 +17,9 @@ struct CStencilBufferOut_5x5r2 {
 
 dsnInfo.AddModule(name=stencil, htIdW=0, clock=1x);
 
-stencil.AddInst(name=STENCIL_ENTER);
-stencil.AddInst(name=STENCIL_WAIT);
-stencil.AddInst(name=STENCIL_RETURN);
+stencil.AddInstr(name=STENCIL_ENTER);
+stencil.AddInstr(name=STENCIL_WAIT);
+stencil.AddInstr(name=STENCIL_RETURN);
 
 stencil.AddPrivate()
 	.AddVar(type=MemAddr_t, name=rdAddr)
@@ -57,7 +57,7 @@ stencil.AddStage()
 	.AddVar(type=CStencilBufferOut_5x5r2, name=stOut, range=1-2)
 	;
 
-stencil.AddEntry(func=htmain, inst=STENCIL_ENTER, host=true)
+stencil.AddEntry(func=htmain, instr=STENCIL_ENTER, host=true)
 	.AddParam(type=MemAddr_t, name=rdAddr, hostType=uint64_t)
 	.AddParam(type=MemAddr_t, name=wrAddr, hostType=uint64_t)
 	.AddParam(type=uint32_t, name=rows)

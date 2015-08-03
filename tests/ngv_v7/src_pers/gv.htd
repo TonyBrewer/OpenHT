@@ -35,22 +35,22 @@ struct CGV_4F_AA {
 // Ctl Module
 
 dsnInfo.AddModule(name=ctl, htIdW=0, clock=1x);
-ctl.AddInst(name=ENTRY);
-ctl.AddInst(name=JOIN_GV1);
-ctl.AddInst(name=JOIN_GV2);
-ctl.AddInst(name=JOIN_GV3);
-ctl.AddInst(name=JOIN_GV4);
-ctl.AddInst(name=JOIN_GV5);
-ctl.AddInst(name=JOIN_GV6);
-ctl.AddInst(name=PAUSE_GV1);
-ctl.AddInst(name=PAUSE_GV2);
-ctl.AddInst(name=PAUSE_GV3);
-ctl.AddInst(name=PAUSE_GV4);
-ctl.AddInst(name=PAUSE_GV5);
-ctl.AddInst(name=PAUSE_GV6);
-ctl.AddInst(name=RETURN);
+ctl.AddInstr(name=ENTRY);
+ctl.AddInstr(name=JOIN_GV1);
+ctl.AddInstr(name=JOIN_GV2);
+ctl.AddInstr(name=JOIN_GV3);
+ctl.AddInstr(name=JOIN_GV4);
+ctl.AddInstr(name=JOIN_GV5);
+ctl.AddInstr(name=JOIN_GV6);
+ctl.AddInstr(name=PAUSE_GV1);
+ctl.AddInstr(name=PAUSE_GV2);
+ctl.AddInstr(name=PAUSE_GV3);
+ctl.AddInstr(name=PAUSE_GV4);
+ctl.AddInstr(name=PAUSE_GV5);
+ctl.AddInstr(name=PAUSE_GV6);
+ctl.AddInstr(name=RETURN);
 
-ctl.AddEntry(func=htmain, inst=ENTRY, host=true)
+ctl.AddEntry(func=htmain, instr=ENTRY, host=true)
    .AddParam(type=ArgStruct, name=rxEnable)
    .AddParam(type=bool, name=txEnable)
 	;
@@ -86,11 +86,11 @@ ctl.AddPrivate()
 // Gv1 Module
 
 dsnInfo.AddModule(name=gv1, htIdW=3, clock=1x);
-gv1.AddInst(name=GV1_ENTRY);
-gv1.AddInst(name=GV1_LOOP);
-gv1.AddInst(name=GV1_RETURN);
+gv1.AddInstr(name=GV1_ENTRY);
+gv1.AddInstr(name=GV1_LOOP);
+gv1.AddInstr(name=GV1_RETURN);
 
-gv1.AddEntry(func=gv1, inst=GV1_ENTRY)
+gv1.AddEntry(func=gv1, instr=GV1_ENTRY)
 	;
 
 gv1.AddPrivate()
@@ -162,11 +162,11 @@ gv1.AddGlobal()
 // Gv2 Module
 
 dsnInfo.AddModule(name=gv2, htIdW=3, clock=1x);
-gv2.AddInst(name=GV2_ENTRY);
-gv2.AddInst(name=GV2_LOOP);
-gv2.AddInst(name=GV2_RETURN);
+gv2.AddInstr(name=GV2_ENTRY);
+gv2.AddInstr(name=GV2_LOOP);
+gv2.AddInstr(name=GV2_RETURN);
 
-gv2.AddEntry(func=gv2, inst=GV2_ENTRY)
+gv2.AddEntry(func=gv2, instr=GV2_ENTRY)
 	;
 
 gv2.AddPrivate()
@@ -239,11 +239,11 @@ gv2.AddGlobal()
 // Gv3 Module 2x clk
 
 dsnInfo.AddModule(name=gv3, htIdW=3, clock=2x);
-gv3.AddInst(name=GV3_ENTRY);
-gv3.AddInst(name=GV3_LOOP);
-gv3.AddInst(name=GV3_RETURN);
+gv3.AddInstr(name=GV3_ENTRY);
+gv3.AddInstr(name=GV3_LOOP);
+gv3.AddInstr(name=GV3_RETURN);
 
-gv3.AddEntry(func=gv3, inst=GV3_ENTRY)
+gv3.AddEntry(func=gv3, instr=GV3_ENTRY)
 	;
 
 gv3.AddPrivate()
@@ -316,11 +316,11 @@ gv3.AddGlobal()
 // Gv4 Module 2x clk
 
 dsnInfo.AddModule(name=gv4, htIdW=3, clock=2x);
-gv4.AddInst(name=GV4_ENTRY);
-gv4.AddInst(name=GV4_LOOP);
-gv4.AddInst(name=GV4_RETURN);
+gv4.AddInstr(name=GV4_ENTRY);
+gv4.AddInstr(name=GV4_LOOP);
+gv4.AddInstr(name=GV4_RETURN);
 
-gv4.AddEntry(func=gv4, inst=GV4_ENTRY)
+gv4.AddEntry(func=gv4, instr=GV4_ENTRY)
 	;
 
 gv4.AddPrivate()
@@ -392,11 +392,11 @@ gv4.AddGlobal()
 // Gv5 Module
 
 dsnInfo.AddModule(name=gv5, htIdW=3, clock=1x);
-gv5.AddInst(name=GV5_ENTRY);
-gv5.AddInst(name=GV5_LOOP);
-gv5.AddInst(name=GV5_RETURN);
+gv5.AddInstr(name=GV5_ENTRY);
+gv5.AddInstr(name=GV5_LOOP);
+gv5.AddInstr(name=GV5_RETURN);
 
-gv5.AddEntry(func=gv5, inst=GV5_ENTRY)
+gv5.AddEntry(func=gv5, instr=GV5_ENTRY)
 	;
 
 gv5.AddPrivate()
@@ -429,11 +429,11 @@ gv5.AddGlobal()
 // Gv6 Module
 
 dsnInfo.AddModule(name=gv6, htIdW=3, clock=2x);
-gv6.AddInst(name=GV6_ENTRY);
-gv6.AddInst(name=GV6_LOOP);
-gv6.AddInst(name=GV6_RETURN);
+gv6.AddInstr(name=GV6_ENTRY);
+gv6.AddInstr(name=GV6_LOOP);
+gv6.AddInstr(name=GV6_RETURN);
 
-gv6.AddEntry(func=gv6, inst=GV6_ENTRY)
+gv6.AddEntry(func=gv6, instr=GV6_ENTRY)
 	;
 
 gv6.AddPrivate()
