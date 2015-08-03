@@ -691,7 +691,7 @@ void HtdFile::ParseDsnInfoMethods()
 		};
 
 		if (!ParseParameters(params))
-			CPreProcess::ParseMsg(Error, "expected dsnInfo.AddModule( name, {, clock=1x} {, htIdW=\"\"} {, pause=false } {, reset=\"\"} )");
+			CPreProcess::ParseMsg(Error, "expected dsnInfo.AddModule( name, {, clock=1x }{, htIdW=0 }{, pause=false}{, reset=\"\" })");
 
 		EClkRate clkRate = eClk1x;
 		if (clock == "1x")
@@ -740,10 +740,6 @@ void HtdFile::ParseModuleMethods()
 		string poll = "false";
 
 		CParamList params[] = {
-				{ "queueW", &queueW, false, ePrmInteger, true, 0 },
-				{ "rspGrpId", &rspGrpId, false, ePrmIdent, true, 0 },
-				{ "rspCntW", &rspCntW, false, ePrmInteger, true, 0 },
-
 				{ "maxBw", &bMaxBw, false, ePrmBoolean, 0, 0 },
 				{ "rspGrpW", &rspGrpW, false, ePrmInteger, 0, 0 },
 				{ "pause", &pause, false, ePrmIdent, 0, 0 },
@@ -752,7 +748,7 @@ void HtdFile::ParseModuleMethods()
 		};
 
 		if (!ParseParameters(params))
-			CPreProcess::ParseMsg(Error, "expected <module>.AddReadMem( {, rspGrpW } {, pause } {, poll } )");
+			CPreProcess::ParseMsg(Error, "expected <module>.AddReadMem( {maxBw=false, }{ rspGrpW } {, pause=true } {, poll=false } )");
 
 		// force depricated parameters
 		queueW = "5";
@@ -792,20 +788,16 @@ void HtdFile::ParseModuleMethods()
 		bool bPoll = false;
 
 		CParamList params[] = {
-				{ "queueW", &queueW, false, ePrmInteger, true, 0 },
-				{ "rspGrpId", &rspGrpId, false, ePrmIdent, true, 0 },
-				{ "maxBw", &bMaxBw, false, ePrmBoolean, true, 0 },
-				{ "rspCntW", &rspCntW, false, ePrmInteger, true, 0 },
-
 				{ "rspGrpW", &rspGrpW, false, ePrmInteger, 0, 0 },
 				{ "pause", &bPause, false, ePrmBoolean, 0, 0 },
 				{ "reqPause", &bReqPause, false, ePrmBoolean, 0, 0 },
 				{ "poll", &bPoll, false, ePrmBoolean, 0, 0 },
+				{ "maxBw", &bMaxBw, false, ePrmBoolean, 0, 0 },
 				{ 0, 0, 0, ePrmUnknown, 0, 0 }
 		};
 
 		if (!ParseParameters(params))
-			CPreProcess::ParseMsg(Error, "expected <module>.AddWriteMem( {, rspGrpW } {, pause } {, poll } {, reqPause} )");
+			CPreProcess::ParseMsg(Error, "expected <module>.AddWriteMem( {, rspGrpW } {, pause=true} {, poll=false} {, reqPause=false}{, maxBw=false} )");
 
 		// force depricated parameters
 		queueW = "5";
@@ -865,6 +857,9 @@ void HtdFile::ParseModuleMethods()
 		if (!bFork && !bCall)
 			CPreProcess::ParseMsg(Error, "unsupported parameter combination, call=false and fork=false");
 
+		if (dest != "auto" && dest != "user")
+			CPreProcess::ParseMsg(Error, "unsupported parameter value for dest");
+
 		if (m_pOpenMod->m_callList.isInList(func))
 			CPreProcess::ParseMsg(Error, "duplicate call/transfer function name '%s'", func.c_str());
 		else {
@@ -907,14 +902,15 @@ void HtdFile::ParseModuleMethods()
 
 		CParamList params[] = {
 				{ "func", &func, true, ePrmIdent, 0, 0 },
-				{ "inst", &inst, true, ePrmIdent, 0, 0 },
+				{ "inst", &inst, false, ePrmIdent, true, 0 },
+				{ "instr", &inst, true, ePrmIdent, 0, 0 },
 				{ "host", &bHost, false, ePrmBoolean, 0, 0 },
 				{ "reserve", &reserve, false, ePrmInteger, 0, 0 },
 				{ 0, 0, 0, ePrmUnknown, 0, 0 }
 		};
 
 		if (!ParseParameters(params))
-			CPreProcess::ParseMsg(Error, "expected <mod>.AddEntry( func, inst {, host=<true or false>} )");
+			CPreProcess::ParseMsg(Error, "expected <mod>.AddEntry( func, instr {, reserve }{, host=false } )");
 
 		if (bHost && g_appArgs.GetEntryName().size() > 0)
 			CPreProcess::ParseMsg(Error, "specifing both htl option -en and AddEntry(host=true) not supported");
@@ -982,8 +978,11 @@ void HtdFile::ParseModuleMethods()
 				{ 0, 0, 0, ePrmUnknown, 0, 0 }
 		};
 
+		if (m_pLex->GetTkString() == "AddInst")
+			CPreProcess::ParseMsg(Warning, "AddInst is depricated, use AddInstr");
+
 		if (!ParseParameters(params))
-			CPreProcess::ParseMsg(Error, "expected <mod>.AddInstr( name )");
+			CPreProcess::ParseMsg(Error, "expected <mod>.AddInstr( name=\"\" )");
 
 		if (m_pOpenMod->m_instrList.isInList(name))
 			CPreProcess::ParseMsg(Error, "duplicate instruction name '%s'", name.c_str());
@@ -1099,7 +1098,6 @@ void HtdFile::ParseModuleMethods()
 				{ "close", &bClose, false, ePrmBoolean, 0, 0 },
 				{ "memDst", &memDst, false, ePrmIdent, 0, 0 },
 				{ "memPort", &memPort, false, ePrmIntList, 0, 0 },
-				//            { "access",		&access,	false,	ePrmIdent,	0, 0 },
 				{ "reserve", &reserve, false, ePrmInteger, 0, 0 },
 				{ "rspGrpW", &rspGrpW, false, ePrmInteger, 0, 0 },
 				{ 0, 0, 0, ePrmUnknown, 0, 0 }
@@ -1593,7 +1591,7 @@ void HtdFile::ParseEntryMethods()
 		};
 
 		if (!ParseParameters(params))
-			CPreProcess::ParseMsg(Error, "expected AddEntry(...).AddParam( { hostType=<type>, } type, name {, unused=false } )");
+			CPreProcess::ParseMsg(Error, "expected AddEntry(...).AddParam( { hostType, } type, name {, unused=false } )");
 
 		if (hostType.size() == 0)
 			hostType = pType->m_typeName;
@@ -1629,7 +1627,7 @@ void HtdFile::ParseReturnMethods()
 		};
 
 		if (!ParseParameters(params))
-			CPreProcess::ParseMsg(Error, "expected AddReturn(...).AddParam(type, name {, unused=false } )");
+			CPreProcess::ParseMsg(Error, "expected AddReturn(...).AddParam( { hostType,} type, name {, unused=false } )");
 
 		if (hostType.size() == 0)
 			hostType = pType->m_typeName;
@@ -1753,8 +1751,8 @@ void HtdFile::ParsePrivateMethods()
 		};
 
 		if (!ParseParameters(params)) {
-			CPreProcess::ParseMsg(Error, "expected AddVar( type, name {, dimen1=0 {, dimen2=0 }} {, addr1W=0 {, addr2W=0 }}");
-			CPreProcess::ParseMsg(Info, "{, addr1=\"\" {, addr2=\"\" }} )");
+			CPreProcess::ParseMsg(Error, "expected AddVar( type, name {, dimen1 {, dimen2 }} {, addr1W {, addr2W }}");
+			CPreProcess::ParseMsg(Info, "{, addr1 {, addr2 }} )");
 		}
 
 		if ((addr2W.size() > 0 || addr2.size() > 0) && addr1W.size() == 0 && addr1.size() == 0)
@@ -1791,7 +1789,6 @@ void HtdFile::ParseStageMethods()
 		bool bInit = false;
 		bool bConn = true;
 		bool bReset = false;
-		bool bZero = true;
 		bool bPrimOut = false;
 
 		CParamList params[] = {
@@ -1803,7 +1800,6 @@ void HtdFile::ParseStageMethods()
 				{ "init", &bInit, false, ePrmBoolean, 0, 0 },
 				{ "conn", &bConn, false, ePrmBoolean, 0, 0 },
 				{ "reset", &bReset, false, ePrmBoolean, 0, 0 },
-				//{ "zero",		&bZero,		false,  ePrmBoolean, 0, 0  },	// obsolete
 				{ "primOut", &bPrimOut, false, ePrmBoolean, 0, 0 },
 				{ 0, 0, 0, ePrmUnknown, 0, 0 }
 		};
@@ -1814,13 +1810,11 @@ void HtdFile::ParseStageMethods()
 		if (dimen2.size() > 0 && dimen1.size() == 0)
 			CPreProcess::ParseMsg(Error, "unsupported parameter conbination, dimen2 is specified but dimen1 is not");
 
-		if (bPrimOut) bZero = false;
-
 		if (m_pOpenMod->m_stageList.isInList(name))
 			CPreProcess::ParseMsg(Error, "duplicate stage variable name '%s'", name.c_str());
 		else {
 			m_pOpenMod->m_stageList.insert(name);
-			m_pDsnInfo->AddStageField(m_pOpenStage, pType, name, dimen1, dimen2, range, bInit, bConn, bReset, bZero);
+			m_pDsnInfo->AddStageField(m_pOpenStage, pType, name, dimen1, dimen2, range, bInit, bConn, bReset, !bPrimOut);
 		}
 
 		m_pLex->GetNextTk();
@@ -1861,7 +1855,7 @@ void HtdFile::ParseSharedMethods()
 		};
 
 		if (!ParseParameters(params))
-			CPreProcess::ParseMsg(Error, "expected AddVar( type, name {, dimen1=0 {, dimen2=0 }} {, rdSelW=0}{, wrSelW=0}{, addr1W=0 {, addr2W=0 }} {, queueW=0 } {, blockRam=false } {, reset=true } )");
+			CPreProcess::ParseMsg(Error, "expected AddVar( type, name {, dimen1 {, dimen2 }} {, rdSelW}{, wrSelW}{, addr1W {, addr2W }} {, queueW } {, blockRam=false } {, reset=true } )");
 
 		bool bBlockRam = false;
 		if (blockRam == "true")
