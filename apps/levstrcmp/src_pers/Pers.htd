@@ -82,16 +82,16 @@ union CStrUnion {
 // Control Module
 
 dsnInfo.AddModule(name=ctl, htIdW=CTL_HTID_W);
-ctl.AddInst(name=CTL_ENTRY);
-ctl.AddInst(name=CTL_BLK_L_LOOP);
-ctl.AddInst(name=CTL_BLK_R_LOOP);
-ctl.AddInst(name=CTL_RD_RTN);
-ctl.AddInst(name=CTL_RD_COMPLETE);
-ctl.AddInst(name=CTL_MCH_LOOP);
-ctl.AddInst(name=CTL_MCH_RTN);
-ctl.AddInst(name=CTL_MCH_COMPLETE);
-ctl.AddInst(name=CTL_WAIT_TIL_IDLE);
-ctl.AddInst(name=CTL_WAIT_RTN);
+ctl.AddInstr(name=CTL_ENTRY);
+ctl.AddInstr(name=CTL_BLK_L_LOOP);
+ctl.AddInstr(name=CTL_BLK_R_LOOP);
+ctl.AddInstr(name=CTL_RD_RTN);
+ctl.AddInstr(name=CTL_RD_COMPLETE);
+ctl.AddInstr(name=CTL_MCH_LOOP);
+ctl.AddInstr(name=CTL_MCH_RTN);
+ctl.AddInstr(name=CTL_MCH_COMPLETE);
+ctl.AddInstr(name=CTL_WAIT_TIL_IDLE);
+ctl.AddInstr(name=CTL_WAIT_RTN);
 
 ctl.AddPrivate()
 	.AddVar(type=StrLen_t, name=strLenL)
@@ -116,7 +116,7 @@ ctl.AddShared()
 	.AddVar(type=ht_uint6, name=threadActiveCnt)
 	;
 
-ctl.AddEntry(func=htmain, inst=CTL_ENTRY, host=true)
+ctl.AddEntry(func=htmain, instr=CTL_ENTRY, host=true)
 	.AddParam(hostType=int, type=StrLen_t, name=strLenL)
 	.AddParam(hostType=int, type=StrLen_t, name=strLenR)
 	.AddParam(hostType=int, type=MchAdjD_t, name=mchAdjD)
@@ -139,9 +139,9 @@ ctl.AddCall(func=MchBlkLx1R, fork=true, call=true);
 // Memory Read Module
 
 dsnInfo.AddModule(name=read, htIdW=READ_HTID_W);
-read.AddInst(name=READ_ENTRY);
-read.AddInst(name=READ_BLK_LOOP);
-read.AddInst(name=READ_RTN);
+read.AddInstr(name=READ_ENTRY);
+read.AddInstr(name=READ_BLK_LOOP);
+read.AddInstr(name=READ_RTN);
 
 
 read.AddPrivate()
@@ -161,7 +161,7 @@ read.AddShared()
 	;
 
 
-read.AddEntry(func=Read, inst=READ_ENTRY)
+read.AddEntry(func=Read, instr=READ_ENTRY)
 	.AddParam(type=MemAddr_t, name=blkBase)
 	.AddParam(type=BlkSize_t, name=blkSize)
 	.AddParam(type=LineStrSize_t, name=lineStrIdx)
@@ -203,9 +203,9 @@ struct ScoreStruct {
 	Score_t m_score[SCORE_WIDTH];
 };
 
-mch.AddInst(name=MCH_ENTRY);
-mch.AddInst(name=MCH_BLK_L_LOOP);
-mch.AddInst(name=MCH_WAIT_TIL_IDLE);
+mch.AddInstr(name=MCH_ENTRY);
+mch.AddInstr(name=MCH_BLK_L_LOOP);
+mch.AddInstr(name=MCH_WAIT_TIL_IDLE);
 
 mch.AddHostData(dir=out);
 
@@ -236,7 +236,7 @@ mch.AddPrivate()
 	.AddVar(type=BlkSizeL_t, name=blkIdxL)
 	;
 
-mch.AddEntry(func=MchBlkLx1R, inst=MCH_ENTRY)
+mch.AddEntry(func=MchBlkLx1R, instr=MCH_ENTRY)
 	.AddParam(type=StrLen_t, name=strLenL)
 	.AddParam(type=StrLen_t, name=strLenR)
 	.AddParam(type=MchAdjD_t, name=cmpAdjD)

@@ -372,17 +372,17 @@ struct CBlkInfo {
 	uint8_t m_pktCnt[SCH_THREAD_CNT];
 };
 
-ctl.AddInst(name=CTL_ENTRY);
-ctl.AddInst(name=CTL_SPAWN);
-ctl.AddInst(name=CTL_BLK_START);
-ctl.AddInst(name=CTL_PKT_HDR_RD);
-ctl.AddInst(name=CTL_PKT_RD);
-ctl.AddInst(name=CTL_QUEUE_PKT);
-ctl.AddInst(name=CTL_JOIN);
-ctl.AddInst(name=CTL_RETURN);
+ctl.AddInstr(name=CTL_ENTRY);
+ctl.AddInstr(name=CTL_SPAWN);
+ctl.AddInstr(name=CTL_BLK_START);
+ctl.AddInstr(name=CTL_PKT_HDR_RD);
+ctl.AddInstr(name=CTL_PKT_RD);
+ctl.AddInstr(name=CTL_QUEUE_PKT);
+ctl.AddInstr(name=CTL_JOIN);
+ctl.AddInstr(name=CTL_RETURN);
 
 
-ctl.AddEntry(func=htmain, inst=CTL_ENTRY, host=true)
+ctl.AddEntry(func=htmain, instr=CTL_ENTRY, host=true)
 	;
 ctl.AddReturn(func=htmain);
 
@@ -454,14 +454,14 @@ ctl.AddFunction(name=tzc16, type=void)
 //
 dsnInfo.AddModule(name=sch, htIdW=SCH_THREAD_CNT_W);
 
-sch.AddInst(name=SCH_SPIN);
-sch.AddInst(name=SCH_RETURN);
+sch.AddInstr(name=SCH_SPIN);
+sch.AddInstr(name=SCH_RETURN);
 
 sch.AddMsgIntf(dir=in, name=schPush, type=CPktInfo2);
 sch.AddMsgIntf(dir=out, name=schPop, type=sch_thr_idx_t);
 
 
-sch.AddEntry(func=sch, inst=SCH_SPIN);
+sch.AddEntry(func=sch, instr=SCH_SPIN);
 sch.AddReturn(func=sch);
 
 sch.AddCall(func=ProcessPkt);
@@ -488,10 +488,10 @@ sch.AddShared(reset=false)
 dsnInfo.AddModule(name=acc, htIdW=0);
 
 
-acc.AddInst(name=ACC_SPIN);
-acc.AddInst(name=ACC_FINISH);
+acc.AddInstr(name=ACC_SPIN);
+acc.AddInstr(name=ACC_FINISH);
 
-acc.AddEntry(func=acc, inst=ACC_SPIN);
+acc.AddEntry(func=acc, instr=ACC_SPIN);
 acc.AddReturn(func=acc);
 
 acc.AddMsgIntf(dir=in, name=accPush, type=CPktCmd);
@@ -542,50 +542,50 @@ acc.AddHostData(dir=out);
 //
 // Packet Processing Module
 dsnInfo.AddModule(name=pkt, htIdW=PKT_HTID_W);
-pkt.AddInst(name=PKT_ENTRY);
-pkt.AddInst(name=PKT_NEGOTIATE);
-pkt.AddInst(name=PKT_RETURN);
-pkt.AddInst(name=PKT_MEMWAIT);
-pkt.AddInst(name=PKT_PREFETCH);
-pkt.AddInst(name=PKT_KEYCMD);
-pkt.AddInst(name=CNY_PS_ASCII_CMD);
-pkt.AddInst(name=CNY_PS_SET_CMD);
-pkt.AddInst(name=CNY_PS_KEY);
-pkt.AddInst(name=CNY_PS_MKEY);
-pkt.AddInst(name=CNY_PS_FKEY);
-pkt.AddInst(name=CNY_PS_FLAG);
-pkt.AddInst(name=CNY_PS_EXP);
-pkt.AddInst(name=CNY_PS_BYTES);
-pkt.AddInst(name=CNY_PS_DELTA);
-pkt.AddInst(name=CNY_PS_NOREPLY);
-pkt.AddInst(name=CNY_PS_EOC_SPACE);
-pkt.AddInst(name=CNY_PS_EOC);
-pkt.AddInst(name=CNY_PS_DATA);
-pkt.AddInst(name=CNY_PS_DATA2);
-pkt.AddInst(name=CNY_PS_EOD);
-pkt.AddInst(name=CNY_PS_SWALLOW);
-pkt.AddInst(name=CNY_PS_GET_CMD);
-pkt.AddInst(name=CNY_PS_REPLACE_CMD);
-pkt.AddInst(name=CNY_PS_PREPEND_CMD);
-pkt.AddInst(name=CNY_PS_ADD_CMD);
-pkt.AddInst(name=CNY_PS_CAS_CMD);
-pkt.AddInst(name=CNY_PS_APPEND_CMD);
-pkt.AddInst(name=CNY_PS_DELETE_CMD);
-pkt.AddInst(name=CNY_PS_TOUCH_CMD);
-pkt.AddInst(name=CNY_PS_OTHER_CMD);
-pkt.AddInst(name=CNY_PS_INCR_CMD);
-pkt.AddInst(name=CNY_PS_DECR_CMD);
-pkt.AddInst(name=CNY_PS_BINARY_CMD);
-pkt.AddInst(name=CNY_PS_BIN_OTHER);
-pkt.AddInst(name=CNY_PS_BIN_FLAGS);
-pkt.AddInst(name=CNY_PS_BIN_EXPTIME);
-pkt.AddInst(name=CNY_PS_BIN_KEY);
-pkt.AddInst(name=CNY_PS_BIN_MKEY);
-pkt.AddInst(name=CNY_PS_BIN_FKEY);
-pkt.AddInst(name=CNY_PS_BIN_DATA);
-pkt.AddInst(name=CNY_PS_BIN_INIT);
-pkt.AddInst(name=CNY_PS_BIN_DELTA);
-pkt.AddInst(name=CNY_PS_BIN_SWALLOW);
+pkt.AddInstr(name=PKT_ENTRY);
+pkt.AddInstr(name=PKT_NEGOTIATE);
+pkt.AddInstr(name=PKT_RETURN);
+pkt.AddInstr(name=PKT_MEMWAIT);
+pkt.AddInstr(name=PKT_PREFETCH);
+pkt.AddInstr(name=PKT_KEYCMD);
+pkt.AddInstr(name=CNY_PS_ASCII_CMD);
+pkt.AddInstr(name=CNY_PS_SET_CMD);
+pkt.AddInstr(name=CNY_PS_KEY);
+pkt.AddInstr(name=CNY_PS_MKEY);
+pkt.AddInstr(name=CNY_PS_FKEY);
+pkt.AddInstr(name=CNY_PS_FLAG);
+pkt.AddInstr(name=CNY_PS_EXP);
+pkt.AddInstr(name=CNY_PS_BYTES);
+pkt.AddInstr(name=CNY_PS_DELTA);
+pkt.AddInstr(name=CNY_PS_NOREPLY);
+pkt.AddInstr(name=CNY_PS_EOC_SPACE);
+pkt.AddInstr(name=CNY_PS_EOC);
+pkt.AddInstr(name=CNY_PS_DATA);
+pkt.AddInstr(name=CNY_PS_DATA2);
+pkt.AddInstr(name=CNY_PS_EOD);
+pkt.AddInstr(name=CNY_PS_SWALLOW);
+pkt.AddInstr(name=CNY_PS_GET_CMD);
+pkt.AddInstr(name=CNY_PS_REPLACE_CMD);
+pkt.AddInstr(name=CNY_PS_PREPEND_CMD);
+pkt.AddInstr(name=CNY_PS_ADD_CMD);
+pkt.AddInstr(name=CNY_PS_CAS_CMD);
+pkt.AddInstr(name=CNY_PS_APPEND_CMD);
+pkt.AddInstr(name=CNY_PS_DELETE_CMD);
+pkt.AddInstr(name=CNY_PS_TOUCH_CMD);
+pkt.AddInstr(name=CNY_PS_OTHER_CMD);
+pkt.AddInstr(name=CNY_PS_INCR_CMD);
+pkt.AddInstr(name=CNY_PS_DECR_CMD);
+pkt.AddInstr(name=CNY_PS_BINARY_CMD);
+pkt.AddInstr(name=CNY_PS_BIN_OTHER);
+pkt.AddInstr(name=CNY_PS_BIN_FLAGS);
+pkt.AddInstr(name=CNY_PS_BIN_EXPTIME);
+pkt.AddInstr(name=CNY_PS_BIN_KEY);
+pkt.AddInstr(name=CNY_PS_BIN_MKEY);
+pkt.AddInstr(name=CNY_PS_BIN_FKEY);
+pkt.AddInstr(name=CNY_PS_BIN_DATA);
+pkt.AddInstr(name=CNY_PS_BIN_INIT);
+pkt.AddInstr(name=CNY_PS_BIN_DELTA);
+pkt.AddInstr(name=CNY_PS_BIN_SWALLOW);
 
 pkt.AddPrivate()
 	.AddVar(type=CPktInfo, name=pktInfo)
@@ -608,7 +608,7 @@ pkt.AddPrivate()
 	.AddVar(type=ht_uint9, name=fetchAddr)
 	;
 
-pkt.AddEntry(func=ProcessPkt, inst=PKT_ENTRY)
+pkt.AddEntry(func=ProcessPkt, instr=PKT_ENTRY)
 	.AddParam(type=CPktInfo, name=pktInfo)
 	.AddParam(type=uint16_t, name=connId)
 	.AddParam(type=conn_addr_t, name=connAddr)

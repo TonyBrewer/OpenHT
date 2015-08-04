@@ -22,14 +22,14 @@ typedef sc_uint<7> BCW_t;
 // Top-level
 dsnInfo.AddModule(name=ctl, htIdW=0);
 
-ctl.AddInst(name=CTL_ENTRY);
-ctl.AddInst(name=CTL_SCATTER);
-ctl.AddInst(name=CTL_INIT);
-ctl.AddInst(name=CTL_BMAP);
-ctl.AddInst(name=CTL_INIT_JOIN);
-ctl.AddInst(name=CTL_SCATTER_JOIN);
-ctl.AddInst(name=CTL_BMAP_JOIN);
-ctl.AddInst(name=CTL_RTN);
+ctl.AddInstr(name=CTL_ENTRY);
+ctl.AddInstr(name=CTL_SCATTER);
+ctl.AddInstr(name=CTL_INIT);
+ctl.AddInstr(name=CTL_BMAP);
+ctl.AddInstr(name=CTL_INIT_JOIN);
+ctl.AddInstr(name=CTL_SCATTER_JOIN);
+ctl.AddInstr(name=CTL_BMAP_JOIN);
+ctl.AddInstr(name=CTL_RTN);
 
 ctl.AddHostMsg(dir=in, name=BFS_SIZE)
 	.AddDst(var=bfsSize, dataLsb=0)
@@ -47,7 +47,7 @@ ctl.AddShared(reset=false)
 	.AddVar(type=uint64_t, name=bfsSize)
 	;
 
-ctl.AddEntry(func=htmain, inst=CTL_ENTRY, host=true)
+ctl.AddEntry(func=htmain, instr=CTL_ENTRY, host=true)
 	.AddParam(type=int32_t, name=command)
 	.AddParam(type=uint64_t, name=bmapIdx)
 	.AddParam(type=uint64_t, name=bmapStride)
@@ -66,8 +66,8 @@ ctl.AddCall(func=bmap, fork=true);
 
 dsnInfo.AddModule(name=init, htIdW=0);
 
-init.AddInst(name=INIT_RUN);
-init.AddInst(name=INIT_RTN);
+init.AddInstr(name=INIT_RUN);
+init.AddInstr(name=INIT_RTN);
 
 init.AddHostMsg(dir=in, name=BFS_ADDR)
 	.AddDst(var=bfsAddr, dataLsb=0)
@@ -87,7 +87,7 @@ init.AddShared(reset=false)
 	.AddVar(type=uint64_t, name=init, dimen1=8)
 	;
 
-init.AddEntry(func=init, inst=INIT_RUN)
+init.AddEntry(func=init, instr=INIT_RUN)
 	.AddParam(type=uint64_t, name=bfsIdx)
 	.AddParam(type=uint64_t, name=endIdx)
 	;
@@ -103,10 +103,10 @@ init.AddWriteMem() //rspCntW=9
 
 dsnInfo.AddModule(name=scatter, htIdW=SCATTER_HTID_W);
 
-scatter.AddInst(name=SCATTER_LD1);
-scatter.AddInst(name=SCATTER_LD2);
-scatter.AddInst(name=SCATTER_ST);
-scatter.AddInst(name=SCATTER_RTN);
+scatter.AddInstr(name=SCATTER_LD1);
+scatter.AddInstr(name=SCATTER_LD2);
+scatter.AddInstr(name=SCATTER_ST);
+scatter.AddInstr(name=SCATTER_RTN);
 
 scatter.AddHostMsg(dir=in, name=BFS_ADDR)
 	.AddDst(var=bfsAddr, dataLsb=0)
@@ -126,7 +126,7 @@ scatter.AddShared(reset=false)
 	.AddVar(type=MemAddr_t, name=bfsPackedAddr)
 	;
 
-scatter.AddEntry(func=scatter, inst=SCATTER_LD1)
+scatter.AddEntry(func=scatter, instr=SCATTER_LD1)
 	.AddParam(type=uint64_t, name=k)
 	;
 
@@ -145,12 +145,12 @@ scatter.AddWriteMem();
 
 dsnInfo.AddModule(name=bmap, htIdW=BMAP_HTID_W);
 
-bmap.AddInst(name=BMAP_LD);
-bmap.AddInst(name=BMAP_ZERO);
-bmap.AddInst(name=BMAP_PROCESS);
-bmap.AddInst(name=BMAP_UPD);
-bmap.AddInst(name=BMAP_ST);
-bmap.AddInst(name=BMAP_RTN);
+bmap.AddInstr(name=BMAP_LD);
+bmap.AddInstr(name=BMAP_ZERO);
+bmap.AddInstr(name=BMAP_PROCESS);
+bmap.AddInstr(name=BMAP_UPD);
+bmap.AddInstr(name=BMAP_ST);
+bmap.AddInstr(name=BMAP_RTN);
 
 bmap.AddHostMsg(dir=in, name=BMAP_OLD_ADDR)
 	.AddDst(var=bmapOldAddr, dataLsb=0)
@@ -174,7 +174,7 @@ bmap.AddShared(reset=false)
 	.AddVar(type=MemAddr_t, name=bmapNewAddr)
 	;
 
-bmap.AddEntry(func=bmap, inst=BMAP_LD)
+bmap.AddEntry(func=bmap, instr=BMAP_LD)
 	.AddParam(type=uint64_t, name=bmapIdx)
 	;
 
@@ -194,13 +194,13 @@ bmap.AddWriteMem();
 // Bottom up function pipe
 
 dsnInfo.AddModule(name=bufp, htIdW=BUFP_HTID_W);
-bufp.AddInst(name=BUFP_XOFF0_LD);
-bufp.AddInst(name=BUFP_XOFF1_LD);
-bufp.AddInst(name=BUFP_XOFF_CHK);
-bufp.AddInst(name=BUFP_XADJ_LD);
-bufp.AddInst(name=BUFP_BFS_LD);
-bufp.AddInst(name=BUFP_BFS_RSP);
-bufp.AddInst(name=BUFP_RTN);
+bufp.AddInstr(name=BUFP_XOFF0_LD);
+bufp.AddInstr(name=BUFP_XOFF1_LD);
+bufp.AddInstr(name=BUFP_XOFF_CHK);
+bufp.AddInstr(name=BUFP_XADJ_LD);
+bufp.AddInstr(name=BUFP_BFS_LD);
+bufp.AddInstr(name=BUFP_BFS_RSP);
+bufp.AddInstr(name=BUFP_RTN);
 
 bufp.AddHostMsg(dir=in, name=BFS_CTL)
 	.AddDst(var=bfsCtl, dataLsb=0)
@@ -237,7 +237,7 @@ bufp.AddPrivate()
 	.AddVar(type=uint64_t, name=bmap)
 	;
 
-bufp.AddEntry(func=bufp, inst=BUFP_XOFF0_LD)
+bufp.AddEntry(func=bufp, instr=BUFP_XOFF0_LD)
 	.AddParam(type=VW_t, name=vertex)
 	;
 
