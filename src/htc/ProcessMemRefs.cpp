@@ -789,6 +789,7 @@ public:
                 to_string<int>(i) + 
                 ", var=" + functionName + "_fld" + 
                 to_string<int>(i) +
+                "()" + // HTC2 address indexing specifier
                 ", memSrc=host)\n";
         }
         ReadMemString +=  "    ;\n" ;
@@ -817,7 +818,7 @@ public:
                 ", addr1=mif_rdVal_index, addr1W=" +
                 Upper(functionName) +
                 "_HTID_W" +
-                ", read=true, write=false)\n" ;
+                ", instrRead=true, instrWrite=false)\n" ;
         }
         RamString += "    ;\n\n" ;
 
@@ -1550,8 +1551,8 @@ public:
         std::string readstr = read ? "true" : "false";
         std::string writestr = write ? "true" : "false";
         declareGlobal += 
-            ", read=" + readstr
-            + ", write=" + writestr
+            ", instrRead=" + readstr
+            + ", instrWrite=" + writestr
             + ");\n";
 
         htd->appendArbitraryModuleString( declareGlobal) ;

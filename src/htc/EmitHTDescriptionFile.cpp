@@ -244,7 +244,7 @@ void EmitHTDVisitor::visitSgFunctionDeclaration(SgFunctionDeclaration *FD)
   std::vector<std::string> &il = htd->getInsts();
   if (il.size() > 0) {
     foreach (std::string iname, il) {
-      fs << modName << ".AddInst(" + makeParm("name", iname, false) + ");" 
+      fs << modName << ".AddInstr(" + makeParm("name", iname, false) + ");" 
           << std::endl;
       if (modEntryState == "") {
         modEntryState = iname;
@@ -338,7 +338,7 @@ void EmitHTDVisitor::visitSgFunctionDeclaration(SgFunctionDeclaration *FD)
   if (entries.size() > 0) {
     foreach (entry_tuple_t es, entries) {
       fs << modName << ".AddEntry(" + makeParm("func", tget(0, es), false)
-          + makeParm("inst", modEntryState)
+          + makeParm("instr", modEntryState)
           + makeOptParm("group",  tget(1, es))
           + makeOptParm("host", tget(2, es)) + ")" << std::endl;
       std::vector<parm_tuple_t> parms = tget(3, es);
