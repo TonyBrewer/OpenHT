@@ -5,11 +5,11 @@ dsnInfo.AddModule(name=test, htIdW=0);
 #define OP_UDIVR 2
 #define OP_SDIVR 3
 
-test.AddInst(name=TEST);
-test.AddInst(name=TEST_RTN);
+test.AddInstr(name=TEST);
+test.AddInstr(name=TEST_RTN);
 
 
-test.AddEntry(func=htmain, inst=TEST, host=true)
+test.AddEntry(func=htmain, instr=TEST, host=true)
 	.AddParam(type=uint8_t, name=op)
 	.AddParam(type=uint64_t, name=op1)
 	.AddParam(type=uint64_t, name=op2)

@@ -11,8 +11,8 @@ struct CData {
 };
 
 dsnInfo.AddModule(name=echo, clock=1x, htIdW=INC_HTID_W);
-echo.AddInst(name=ECHO_INIT);
-echo.AddInst(name=ECHO_DATA);
+echo.AddInstr(name=ECHO_INIT);
+echo.AddInstr(name=ECHO_DATA);
 
 echo.AddHostMsg(dir=in, name=SU_ARRAY_ADDR)
 	.AddDst(var=arrayAddr, dataLsb=0)
@@ -31,7 +31,7 @@ echo.AddShared()
 	.AddVar(type=ht_uint48, name=arrayAddr)
 	;
 
-echo.AddEntry(func=echo, inst=ECHO_INIT, host=true)
+echo.AddEntry(func=echo, instr=ECHO_INIT, host=true)
 	.AddParam(type=uint16_t, name=callCnt)
 	;
 echo.AddReturn(func=echo)

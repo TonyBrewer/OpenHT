@@ -10,13 +10,13 @@ struct CByte {
 
 dsnInfo.AddModule(name=tst, htIdW=0);
 
-tst.AddInst(name=TST_READ);
-tst.AddInst(name=TST_CHK);
-tst.AddInst(name=TST_CALL);
-tst.AddInst(name=TST_RTN);
+tst.AddInstr(name=TST_READ);
+tst.AddInstr(name=TST_CHK);
+tst.AddInstr(name=TST_CALL);
+tst.AddInstr(name=TST_RTN);
 
 
-tst.AddEntry(func=htmain, inst=TST_READ, host=true)
+tst.AddEntry(func=htmain, instr=TST_READ, host=true)
 	.AddParam(hostType=uint64_t, type=ht_uint48, name=memAddr)
 	;
 
@@ -47,11 +47,11 @@ tst.AddCall(func=tst3)
 
 dsnInfo.AddModule(name=tst2, htIdW=0);
 
-tst2.AddInst(name=TST2_READ);
-tst2.AddInst(name=TST2_RTN);
+tst2.AddInstr(name=TST2_READ);
+tst2.AddInstr(name=TST2_RTN);
 
 
-tst2.AddEntry(func=tst2, inst=TST2_READ)
+tst2.AddEntry(func=tst2, instr=TST2_READ)
 	.AddParam(type=ht_uint48, name=memAddr)
 	.AddParam(type=ht_uint9, name=err)
 	;
@@ -80,11 +80,11 @@ tst2.AddReadMem()
 
 dsnInfo.AddModule(name=tst3, clock=2x, htIdW=TST3_HTID_W);
 
-tst3.AddInst(name=TST3_ENTRY);
-tst3.AddInst(name=TST3_RTN);
+tst3.AddInstr(name=TST3_ENTRY);
+tst3.AddInstr(name=TST3_RTN);
 
 
-tst3.AddEntry(func=tst3, inst=TST3_ENTRY)
+tst3.AddEntry(func=tst3, instr=TST3_ENTRY)
 	.AddParam(type=ht_uint48, name=memAddr)
 	;
 

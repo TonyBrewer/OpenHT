@@ -5,11 +5,11 @@
 /////////////////////////////////////////////////////////
 
 dsnInfo.AddModule(name=add, clock=1x, htIdW=0);
-add.AddInst(name=ADD_ENTRY);
-add.AddInst(name=ADD_SETUP);
-add.AddInst(name=ADD_RTN);
+add.AddInstr(name=ADD_ENTRY);
+add.AddInstr(name=ADD_SETUP);
+add.AddInstr(name=ADD_RTN);
 
-add.AddEntry(func=add, inst=ADD_ENTRY, host=true)
+add.AddEntry(func=add, instr=ADD_ENTRY, host=true)
 	.AddParam(hostType=uint32_t, type=uint32_t, name=ia)
 	.AddParam(hostType=uint32_t, type=uint32_t, name=ib)
 	.AddParam(hostType=uint32_t, type=uint32_t, name=ic)

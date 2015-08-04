@@ -23,14 +23,14 @@ dsnInfo.AddModule(name=inc, htIdW=INC_HTID_W);
 dsnInfo.AddModule(name=inc, htIdW=INC_HTID_W, pause=true);
 #endif
 
-inc.AddInst(name=INC_INIT);
-inc.AddInst(name=INC_READ);
-inc.AddInst(name=INC_WRITE);
+inc.AddInstr(name=INC_INIT);
+inc.AddInstr(name=INC_READ);
+inc.AddInstr(name=INC_WRITE);
 #if INC_RD_POLL==1
-inc.AddInst(name=INC_READ_POLL);
+inc.AddInstr(name=INC_READ_POLL);
 #endif
 #if INC_WR_POLL==1
-inc.AddInst(name=INC_WRITE_POLL);
+inc.AddInstr(name=INC_WRITE_POLL);
 #endif
 
 #if INC_HTID_W == 0
@@ -63,7 +63,7 @@ inc.AddShared()
 #endif
 	;
 
-inc.AddEntry(func=htmain, inst=INC_INIT, host=true)
+inc.AddEntry(func=htmain, instr=INC_INIT, host=true)
 	.AddParam(hostType=uint32_t, type=uint8_t, name=elemCnt)
 	;
 

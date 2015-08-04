@@ -1,10 +1,10 @@
 dsnInfo.AddModule(name=inc, clock=1x, htIdW=5);
 
-inc.AddInst(name=ENTRY);
-inc.AddInst(name=LOCK);
-inc.AddInst(name=INC);
-inc.AddInst(name=BAR);
-inc.AddInst(name=RTN);
+inc.AddInstr(name=ENTRY);
+inc.AddInstr(name=LOCK);
+inc.AddInstr(name=INC);
+inc.AddInstr(name=BAR);
+inc.AddInstr(name=RTN);
 
 inc.AddBarrier();
 
@@ -16,7 +16,7 @@ inc.AddShared()
 	.AddVar(type=uint16_t, name=cnt)
 	;
 
-inc.AddEntry(func=htmain, inst=ENTRY, host=true);
+inc.AddEntry(func=htmain, instr=ENTRY, host=true);
 
 inc.AddReturn(func=htmain) 
 	.AddParam(type=int16_t, name=cnt)
@@ -30,8 +30,8 @@ dsnInfo.AddModule(name=lock, clock=2x, htIdW=3);
 lock.AddInstr(name=LOCK);
 lock.AddInstr(name=UNLOCK);
 
-lock.AddEntry(func=lock, inst=LOCK, reserve=6);
-lock.AddEntry(func=unlock, inst=UNLOCK, reserve=1);
+lock.AddEntry(func=lock, instr=LOCK, reserve=6);
+lock.AddEntry(func=unlock, instr=UNLOCK, reserve=1);
 
 lock.AddReturn(func=lock);
 lock.AddReturn(func=unlock);

@@ -11,11 +11,11 @@ typedef sc_biguint<IDIV_N_W+1>	idiv_p_t;
 
 dsnInfo.AddModule(name=idiv, htIdW=0, pause=true);
 
-idiv.AddInst(name=DIV_ENTRY);
-idiv.AddInst(name=DIV_LOOP);
-idiv.AddInst(name=DIV_RTN);
+idiv.AddInstr(name=DIV_ENTRY);
+idiv.AddInstr(name=DIV_LOOP);
+idiv.AddInstr(name=DIV_RTN);
 
-idiv.AddEntry(func=idiv, inst=DIV_ENTRY)
+idiv.AddEntry(func=idiv, instr=DIV_ENTRY)
 	.AddParam(type=bool, name=sign)
 	.AddParam(type=idiv_n_t, name=n)
 	.AddParam(type=idiv_d_t, name=d)

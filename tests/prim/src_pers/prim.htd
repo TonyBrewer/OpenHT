@@ -2,11 +2,11 @@
 
 dsnInfo.AddModule(name=prm, htIdW=0);
 
-prm.AddInst(name=PRM_ENTRY);
-prm.AddInst(name=PRM_RTN);
+prm.AddInstr(name=PRM_ENTRY);
+prm.AddInstr(name=PRM_RTN);
 
 
-prm.AddEntry(func=htmain, inst=PRM_ENTRY, host=true)
+prm.AddEntry(func=htmain, instr=PRM_ENTRY, host=true)
 	.AddParam(hostType=uint16_t, type=ht_uint16, name=a)
 	.AddParam(hostType=uint16_t, type=ht_uint16, name=b)
 	;

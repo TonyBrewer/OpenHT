@@ -11,7 +11,7 @@ Ctl.AddInstr(name=CTL_PRIV1)
 	.AddInstr(name=CTL_RTN)
 	;
 
-Ctl.AddEntry(func=main, inst=CTL_PRIV1, host=true)
+Ctl.AddEntry(func=main, instr=CTL_PRIV1, host=true)
 	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=memAddr)
 	;
 
@@ -38,7 +38,7 @@ Priv1.AddInstr(name=PRIV1_ENTRY)
 	.AddInstr(name=PRIV1_RETURN)
 	;
 
-Priv1.AddEntry(func=priv1, inst=PRIV1_ENTRY)
+Priv1.AddEntry(func=priv1, instr=PRIV1_ENTRY)
 	.AddParam(type=MemAddr_t, name=memAddr)
 	;
 
@@ -70,7 +70,7 @@ Priv2.AddInstr(name=PRIV2_ENTRY)
 	.AddInstr(name=PRIV2_RETURN)
 	;
 
-Priv2.AddEntry(func=priv2, inst=PRIV2_ENTRY)
+Priv2.AddEntry(func=priv2, instr=PRIV2_ENTRY)
 	.AddParam(type=MemAddr_t, name=memAddr)
 	;
 

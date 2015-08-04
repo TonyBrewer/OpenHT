@@ -113,7 +113,7 @@ vadd.AddShared()
 	.AddVar(type=ht_uint32, name=readVar)
 	;
 
-vadd.AddEntry(func=htmain, inst=VADD_ENTER, host=true)
+vadd.AddEntry(func=htmain, instr=VADD_ENTER, host=true)
 	.AddParam(hostType=uint32_t, type=ht_uint32, name=yDimOff)
 	.AddParam(hostType=uint32_t, type=ht_uint32, name=yDimLen)
 	.AddParam(hostType=uint32_t, type=ht_uint32, name=xDimLen)
@@ -146,6 +146,6 @@ dsnInfo.AddModule(name=sub, htIdW=SUB_HTID_W);
 sub.AddInstr(name=SUB_ENTRY);
 sub.AddInstr(name=SUB_RETURN);
 
-sub.AddEntry(func=sub, inst=SUB_ENTRY);
+sub.AddEntry(func=sub, instr=SUB_ENTRY);
 
 sub.AddReturn(func=sub);

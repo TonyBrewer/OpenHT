@@ -17,11 +17,11 @@ typedef sc_biguint<IDIVR_CMP_W>	idivr_cmp_t;
 
 dsnInfo.AddModule(name=idivr, htIdW=0, pause=true);
 
-idivr.AddInst(name=DIV_ENTRY);
-idivr.AddInst(name=DIV_LOOP);
-idivr.AddInst(name=DIV_RTN);
+idivr.AddInstr(name=DIV_ENTRY);
+idivr.AddInstr(name=DIV_LOOP);
+idivr.AddInstr(name=DIV_RTN);
 
-idivr.AddEntry(func=idivr, inst=DIV_ENTRY)
+idivr.AddEntry(func=idivr, instr=DIV_ENTRY)
 	.AddParam(type=bool, name=sign)
 	.AddParam(type=idivr_n_t, name=n)
 	.AddParam(type=idivr_d_t, name=d)

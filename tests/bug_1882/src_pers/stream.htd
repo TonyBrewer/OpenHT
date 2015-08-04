@@ -1,14 +1,14 @@
 dsnInfo.AddModule(name=stream, htIdW=0);
 
-stream.AddInst(name=STRM_RECV);
-stream.AddInst(name=STRM_ECHO);
-stream.AddInst(name=STRM_RTN);
+stream.AddInstr(name=STRM_RECV);
+stream.AddInstr(name=STRM_ECHO);
+stream.AddInstr(name=STRM_RTN);
 
 stream.AddPrivate()
 	.AddVar(type=uint64_t, name=rcvData)
 	;
 
-stream.AddEntry(func=htmain, inst=STRM_RECV, host=true)
+stream.AddEntry(func=htmain, instr=STRM_RECV, host=true)
 	;
 
 stream.AddReturn(func=htmain)

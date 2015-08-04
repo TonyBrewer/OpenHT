@@ -9,9 +9,9 @@ struct CData {
 	uint64_t data;
 };
 
-xyz.AddInst(name=XYZ_INIT);
-xyz.AddInst(name=XYZ_READ);
-xyz.AddInst(name=XYZ_WRITE);
+xyz.AddInstr(name=XYZ_INIT);
+xyz.AddInstr(name=XYZ_READ);
+xyz.AddInstr(name=XYZ_WRITE);
 
 xyz.AddHostMsg(dir=in, name=SU_ARRAY_ADDR)
 	.AddDst(var=arrayAddr, dataLsb=0)
@@ -27,7 +27,7 @@ xyz.AddShared()
 	.AddVar(type=ht_uint48, name=arrayAddr)
 	;
 
-xyz.AddEntry(func=htmain, inst=XYZ_INIT, host=true)
+xyz.AddEntry(func=htmain, instr=XYZ_INIT, host=true)
 	.AddParam(hostType=uint32_t, type=uint8_t, name=elemCnt)
 	;
 

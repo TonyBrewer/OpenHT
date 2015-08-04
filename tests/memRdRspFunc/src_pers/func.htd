@@ -1,0 +1,289 @@
+
+union CGbl {
+	uint64_t u64;
+	uint32_t u32;
+};
+
+////////////////////////////////////////////////////
+// Ctl Module
+
+dsnInfo.AddModule(name=ctl, htIdW=0, clock=1x);
+ctl.AddInstr(name=ENTRY);
+ctl.AddInstr(name=CALL_F1);
+ctl.AddInstr(name=CALL_F2);
+ctl.AddInstr(name=CALL_F3);
+ctl.AddInstr(name=CALL_F4);
+ctl.AddInstr(name=CALL_F5);
+ctl.AddInstr(name=CALL_F8);
+ctl.AddInstr(name=RETURN);
+
+ctl.AddPrivate()
+	.AddVar(type=ht_uint48, name=addr)
+	;
+	
+ctl.AddEntry(func=htmain, instr=ENTRY, host=true)
+	.AddParam(hostType=void * , type=ht_uint48, name=addr)
+	;
+
+ctl.AddReturn(func=htmain)
+	;
+
+ctl.AddCall(func=f1);
+ctl.AddCall(func=f2);
+ctl.AddCall(func=f3);
+ctl.AddCall(func=f4);
+ctl.AddCall(func=f5);
+ctl.AddCall(func=f8);
+
+
+////////////////////////////////////////////////////
+// F1 Module
+
+dsnInfo.AddModule(name=f1, clock=1x, htIdW=3);
+
+f1.AddInstr(name=F1_ENTRY);
+f1.AddInstr(name=F1_RD32);
+f1.AddInstr(name=F1_RD16);
+f1.AddInstr(name=F1_RD64DLY);
+f1.AddInstr(name=F1_RETURN);
+
+f1.AddPrivate()
+	.AddVar(type=ht_uint48, name=addr)
+	;
+
+f1.AddShared()
+	.AddVar(type=uint64_t, name=rslt64, dimen1=8)
+	.AddVar(type=uint32_t, name=rslt32, dimen1=8)
+	.AddVar(type=uint64_t, name=rslt64Dly, dimen1=8)
+	;
+
+f1.AddStage()
+	.AddVar(type=uint64_t, name=rdRspData, range=1-10)
+	;
+
+f1.AddEntry(func=f1, instr=F1_ENTRY)
+	.AddParam(type=ht_uint48, name=addr)
+	;
+
+f1.AddReturn(func=f1)
+	;
+
+f1.AddReadMem()
+	.AddFunction(name=func16, rspInfoW=4, rdType=int16_t)
+	.AddFunction(name=func64, rspInfoW=5, elemCntW=8)
+	.AddFunction(name=func32, rspInfoW=7, elemCntW=6, rdType=uint32_t)
+	.AddFunction(name=func64Dly, rspInfoW=5, elemCntW=5, rsmDly=11)
+	;
+
+
+////////////////////////////////////////////////////
+// F2 Module
+
+dsnInfo.AddModule(name=f2, clock=1x, htIdW=0);
+
+f2.AddInstr(name=F2_ENTRY);
+f2.AddInstr(name=F2_RD32);
+f2.AddInstr(name=F2_RD16);
+f2.AddInstr(name=F2_RD64DLY);
+f2.AddInstr(name=F2_RETURN);
+
+f2.AddPrivate()
+	.AddVar(type=ht_uint48, name=addr)
+	;
+
+f2.AddShared()
+	.AddVar(type=uint64_t, name=rslt64)
+	.AddVar(type=uint32_t, name=rslt32)
+	.AddVar(type=uint64_t, name=rslt64Dly)
+	;
+
+f2.AddStage()
+	.AddVar(type=uint64_t, name=rdRspData, range=1-10)
+	;
+
+f2.AddEntry(func=f2, instr=F2_ENTRY)
+	.AddParam(type=ht_uint48, name=addr)
+	;
+
+f2.AddReturn(func=f2)
+	;
+
+f2.AddReadMem()
+	.AddFunction(name=func16, rspInfoW=4, rdType=int16_t)
+	.AddFunction(name=func64, rspInfoW=5, elemCntW=8)
+	.AddFunction(name=func32, rspInfoW=7, elemCntW=6, rdType=uint32_t)
+	.AddFunction(name=func64Dly, rspInfoW=5, elemCntW=5, rsmDly=11)
+	;
+
+
+////////////////////////////////////////////////////
+// F3 Module
+
+dsnInfo.AddModule(name=f3, clock=1x, htIdW=3);
+
+f3.AddInstr(name=F3_ENTRY);
+f3.AddInstr(name=F3_RD32);
+f3.AddInstr(name=F3_RD16);
+f3.AddInstr(name=F3_RD64DLY);
+f3.AddInstr(name=F3_RETURN);
+
+f3.AddPrivate()
+	.AddVar(type=ht_uint48, name=addr)
+	;
+
+f3.AddShared()
+	.AddVar(type=uint64_t, name=rslt64, dimen1=4)
+	.AddVar(type=uint32_t, name=rslt32, dimen1=4)
+	.AddVar(type=uint64_t, name=rslt64Dly, dimen1=4)
+	;
+
+f3.AddStage()
+	.AddVar(type=uint64_t, name=rdRspData, range=1-10)
+	;
+
+f3.AddEntry(func=f3, instr=F3_ENTRY)
+	.AddParam(type=ht_uint48, name=addr)
+	;
+
+f3.AddReturn(func=f3)
+	;
+
+f3.AddReadMem(rspGrpW=2)
+	.AddFunction(name=func16, rspInfoW=4, rdType=int16_t)
+	.AddFunction(name=func64, rspInfoW=5, elemCntW=8)
+	.AddFunction(name=func32, rspInfoW=7, elemCntW=6, rdType=uint32_t)
+	.AddFunction(name=func64Dly, rspInfoW=5, elemCntW=5, rsmDly=11)
+	;
+
+
+////////////////////////////////////////////////////
+// F4 Module
+
+dsnInfo.AddModule(name=f4, clock=1x, htIdW=3);
+
+f4.AddInstr(name=F4_ENTRY);
+f4.AddInstr(name=F4_RD32);
+f4.AddInstr(name=F4_RD16);
+f4.AddInstr(name=F4_RD64DLY);
+f4.AddInstr(name=F4_RD64GBL);
+f4.AddInstr(name=F4_RETURN);
+
+f4.AddPrivate()
+	.AddVar(type=ht_uint48, name=addr)
+	.AddVar(type=ht_uint9, name=gvAddr)
+	;
+
+f4.AddShared()
+	.AddVar(type=uint64_t, name=rslt64, dimen1=4)
+	.AddVar(type=uint32_t, name=rslt32, dimen1=4)
+	.AddVar(type=uint64_t, name=rslt64Dly, dimen1=4)
+	;
+
+f4.AddStage()
+	.AddVar(type=uint64_t, name=rdRspData, range=1-10)
+	;
+
+f4.AddEntry(func=f4, instr=F4_ENTRY)
+	.AddParam(type=ht_uint48, name=addr)
+	;
+
+f4.AddReturn(func=f4)
+	;
+
+f4.AddGlobal()
+	.AddVar(type=CGbl, name=gbl, addr1=gvAddr, blockRam=true, instrRead=true)
+	;
+
+f4.AddReadMem(rspGrpW=2)
+	.AddFunction(name=func16, rspInfoW=4, rdType=int16_t)
+	.AddFunction(name=func64, rspInfoW=5, elemCntW=8)
+	.AddFunction(name=func32, rspInfoW=7, elemCntW=6, rdType=uint32_t)
+	.AddFunction(name=func64Dly, rspInfoW=5, elemCntW=5, rsmDly=11)
+	.AddDst(name=gbl, var=gbl(3).u64)
+	;
+
+
+////////////////////////////////////////////////////
+// F5 Module
+
+dsnInfo.AddModule(name=f5, clock=2x, htIdW=3);
+
+f5.AddInstr(name=F5_ENTRY);
+f5.AddInstr(name=F5_RD32);
+f5.AddInstr(name=F5_RD16);
+f5.AddInstr(name=F5_RD64DLY);
+f5.AddInstr(name=F5_RETURN);
+
+f5.AddPrivate()
+	.AddVar(type=ht_uint48, name=addr)
+	;
+
+f5.AddShared()
+	.AddVar(type=uint64_t, name=rslt64, dimen1=8)
+	.AddVar(type=uint32_t, name=rslt32, dimen1=8)
+	.AddVar(type=uint64_t, name=rslt64Dly, dimen1=8)
+	;
+
+f5.AddStage()
+	.AddVar(type=uint64_t, name=rdRspData, range=1-10)
+	;
+
+f5.AddEntry(func=f5, instr=F5_ENTRY)
+	.AddParam(type=ht_uint48, name=addr)
+	;
+
+f5.AddReturn(func=f5)
+	;
+
+f5.AddReadMem()
+	.AddFunction(name=func16, rspInfoW=4, rdType=int16_t)
+	.AddFunction(name=func64, rspInfoW=5, elemCntW=8)
+	.AddFunction(name=func32, rspInfoW=7, elemCntW=6, rdType=uint32_t)
+	.AddFunction(name=func64Dly, rspInfoW=5, elemCntW=5, rsmDly=11)
+	;
+
+////////////////////////////////////////////////////
+// F8 Module
+
+dsnInfo.AddModule(name=f8, clock=2x, htIdW=3);
+
+f8.AddInstr(name=F8_ENTRY);
+f8.AddInstr(name=F8_RD32);
+f8.AddInstr(name=F8_RD16);
+f8.AddInstr(name=F8_RD64DLY);
+f8.AddInstr(name=F8_RD64GBL);
+f8.AddInstr(name=F8_RETURN);
+
+f8.AddPrivate()
+	.AddVar(type=ht_uint48, name=addr)
+	.AddVar(type=ht_uint9, name=gvAddr)
+	;
+
+f8.AddShared()
+	.AddVar(type=uint64_t, name=rslt64, dimen1=4)
+	.AddVar(type=uint32_t, name=rslt32, dimen1=4)
+	.AddVar(type=uint64_t, name=rslt64Dly, dimen1=4)
+	;
+
+f8.AddStage()
+	.AddVar(type=uint64_t, name=rdRspData, range=1-2)
+	;
+
+f8.AddEntry(func=f8, instr=F8_ENTRY)
+	.AddParam(type=ht_uint48, name=addr)
+	;
+
+f8.AddReturn(func=f8)
+	;
+
+f8.AddGlobal()
+	.AddVar(type=CGbl, name=gbl, addr1=gvAddr, blockRam=true, instrRead=true)
+	;
+
+f8.AddReadMem(rspGrpW=2)
+	.AddFunction(name=func16, rspInfoW=4, rdType=int16_t)
+	.AddFunction(name=func64, rspInfoW=5, elemCntW=8)
+	.AddFunction(name=func32, rspInfoW=7, elemCntW=6, rdType=uint32_t)
+	.AddFunction(name=func64Dly, rspInfoW=5, elemCntW=5, rsmDly=1)
+	.AddDst(name=gbl, var=gbl(12).u64)
+	;

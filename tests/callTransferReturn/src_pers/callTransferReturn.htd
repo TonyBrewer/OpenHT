@@ -2,15 +2,15 @@
 // Start Module
 
 dsnInfo.AddModule(name=start, htIdW=0);
-start.AddInst(name=START_ENTRY);
-start.AddInst(name=START_EXIT);
+start.AddInstr(name=START_ENTRY);
+start.AddInstr(name=START_EXIT);
 
 
 start.AddPrivate()
 	.AddVar(type=uint64_t, name=startData)
 	;
 
-start.AddEntry(func=htmain, inst=START_ENTRY, host=true)
+start.AddEntry(func=htmain, instr=START_ENTRY, host=true)
 	.AddParam(type=uint64_t, name=startData)
 	;
 
@@ -24,15 +24,15 @@ start.AddReturn(func=htmain)
 // Exec1 Module
 
 dsnInfo.AddModule(name=exec1, htIdW=0);
-exec1.AddInst(name=EXEC1_ENTRY);
-exec1.AddInst(name=EXEC1_TXFR);
+exec1.AddInstr(name=EXEC1_ENTRY);
+exec1.AddInstr(name=EXEC1_TXFR);
 
 
 exec1.AddPrivate()
 	.AddVar(type=uint64_t, name=exec1Data)
 	;
 
-exec1.AddEntry(func=funcA, inst=EXEC1_ENTRY)
+exec1.AddEntry(func=funcA, instr=EXEC1_ENTRY)
 	.AddParam(type=uint64_t, name=exec1Data)
 	;
 
@@ -43,14 +43,14 @@ exec1.AddTransfer(func=funcB)
 // Exec2 Module
 
 dsnInfo.AddModule(name=exec2, htIdW=0);
-exec2.AddInst(name=EXEC2_ENTRY);
+exec2.AddInstr(name=EXEC2_ENTRY);
 
 
 exec2.AddPrivate()
 	.AddVar(type=uint64_t, name=exec2Data)
 	;
 
-exec2.AddEntry(func=funcB, inst=EXEC2_ENTRY)
+exec2.AddEntry(func=funcB, instr=EXEC2_ENTRY)
 	.AddParam(type=uint64_t, name=exec2Data)
 	;
 

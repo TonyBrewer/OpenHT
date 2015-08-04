@@ -2,9 +2,9 @@ typedef ht_uint48 MemAddr_t;
 
 dsnInfo.AddModule(name=ctl, htIdW=0);
 
-ctl.AddInst(name=CTL_LD);
-ctl.AddInst(name=CTL_ADD);
-ctl.AddInst(name=CTL_RTN);
+ctl.AddInstr(name=CTL_LD);
+ctl.AddInstr(name=CTL_ADD);
+ctl.AddInstr(name=CTL_RTN);
 
 ctl.AddHostMsg(dir=in, name=ADDR)
 	.AddDst(var=addr)
@@ -20,7 +20,7 @@ ctl.AddShared()
 	.AddVar(type=MemAddr_t, name=addr)
 	;
 
-ctl.AddEntry(func=htmain, inst=CTL_LD, host=true)
+ctl.AddEntry(func=htmain, instr=CTL_LD, host=true)
 	;
 
 ctl.AddReturn(func=htmain)

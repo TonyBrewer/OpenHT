@@ -7,14 +7,14 @@ struct CGVar {
 // Ctl Module
 
 dsnInfo.AddModule(name=ctl, htIdW=0, clock=1x);
-ctl.AddInst(name=ENTRY);
-ctl.AddInst(name=JOIN_GV1);
-ctl.AddInst(name=JOIN_GV2);
-ctl.AddInst(name=PAUSE_GV1);
-ctl.AddInst(name=PAUSE_GV2);
-ctl.AddInst(name=RETURN);
+ctl.AddInstr(name=ENTRY);
+ctl.AddInstr(name=JOIN_GV1);
+ctl.AddInstr(name=JOIN_GV2);
+ctl.AddInstr(name=PAUSE_GV1);
+ctl.AddInstr(name=PAUSE_GV2);
+ctl.AddInstr(name=RETURN);
 
-ctl.AddEntry(func=htmain, inst=ENTRY, host=true)
+ctl.AddEntry(func=htmain, instr=ENTRY, host=true)
 	;
 
 ctl.AddReturn(func=htmain)
@@ -34,11 +34,11 @@ ctl.AddPrivate()
 // Gv1 Module
 
 dsnInfo.AddModule(name=gv1, htIdW=3, clock=1x);
-gv1.AddInst(name=GV1_ENTRY);
-gv1.AddInst(name=GV1_LOOP);
-gv1.AddInst(name=GV1_RETURN);
+gv1.AddInstr(name=GV1_ENTRY);
+gv1.AddInstr(name=GV1_LOOP);
+gv1.AddInstr(name=GV1_RETURN);
 
-gv1.AddEntry(func=gv1, inst=GV1_ENTRY)
+gv1.AddEntry(func=gv1, instr=GV1_ENTRY)
 	;
 
 gv1.AddPrivate()
@@ -58,11 +58,11 @@ gv1.AddGlobal()
 // Gv2 Module
 
 dsnInfo.AddModule(name=gv2, htIdW=3, clock=2x);
-gv2.AddInst(name=GV2_ENTRY);
-gv2.AddInst(name=GV2_LOOP);
-gv2.AddInst(name=GV2_RETURN);
+gv2.AddInstr(name=GV2_ENTRY);
+gv2.AddInstr(name=GV2_LOOP);
+gv2.AddInstr(name=GV2_RETURN);
 
-gv2.AddEntry(func=gv2, inst=GV2_ENTRY)
+gv2.AddEntry(func=gv2, instr=GV2_ENTRY)
 	;
 
 gv2.AddPrivate()

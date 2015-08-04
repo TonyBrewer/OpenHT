@@ -13,9 +13,9 @@ struct CData {
 };
 
 dsnInfo.AddModule(name=inc, htIdW=INC_HTID_W);
-inc.AddInst(name=INC_INIT);
-inc.AddInst(name=INC_READ);
-inc.AddInst(name=INC_WRITE);
+inc.AddInstr(name=INC_INIT);
+inc.AddInstr(name=INC_READ);
+inc.AddInstr(name=INC_WRITE);
 
 inc.AddHostMsg(dir=in, name=SU_ARRAY_ADDR)
 	.AddDst(var=arrayAddr, dataLsb=0)
@@ -31,7 +31,7 @@ inc.AddShared()
 	.AddVar(type=ht_uint48, name=arrayAddr)
 	;
 
-inc.AddEntry(func=inc, inst=INC_INIT)
+inc.AddEntry(func=inc, instr=INC_INIT)
 	.AddParam(type=ElemCnt_t, name=elemCnt, unused=false)
 	;
 
@@ -51,13 +51,13 @@ inc.AddGlobal()
 // Cxr1 Module
 
 dsnInfo.AddModule(name=cxr1, htIdW=CXR1_HTID_W);
-cxr1.AddInst(name=CXR1_0);
-cxr1.AddInst(name=CXR1_1);
+cxr1.AddInstr(name=CXR1_0);
+cxr1.AddInstr(name=CXR1_1);
 
 cxr1.AddPrivate()
 	;
 
-cxr1.AddEntry(func=cxr1, inst=CXR1_0, host=true)
+cxr1.AddEntry(func=cxr1, instr=CXR1_0, host=true)
 	;
 cxr1.AddTransfer(func=cxr1b)
 	;
@@ -67,14 +67,14 @@ cxr1.AddCall(func=cxr2);
 // Cxr1b Module
 
 dsnInfo.AddModule(name=cxr1b, htIdW=CXR1b_HT_ID_W);
-cxr1b.AddInst(name=CXR1b_0);
-cxr1b.AddInst(name=CXR1b_1);
-cxr1b.AddInst(name=CXR1b_2);
+cxr1b.AddInstr(name=CXR1b_0);
+cxr1b.AddInstr(name=CXR1b_1);
+cxr1b.AddInstr(name=CXR1b_2);
 
 cxr1b.AddPrivate()
 	;
 
-cxr1b.AddEntry(func=cxr1b, inst=CXR1b_2)
+cxr1b.AddEntry(func=cxr1b, instr=CXR1b_2)
 	;
 cxr1b.AddReturn(func=cxr1)
 	;
@@ -84,16 +84,16 @@ cxr1b.AddCall(func=cxr2);
 // Cxr2 Module
 
 dsnInfo.AddModule(name=cxr2, htIdW=3);
-cxr2.AddInst(name=CXR2_0);
-cxr2.AddInst(name=CXR2_1);
-cxr2.AddInst(name=CXR2_2);
-cxr2.AddInst(name=CXR2_3);
-cxr2.AddInst(name=CXR2_4);
+cxr2.AddInstr(name=CXR2_0);
+cxr2.AddInstr(name=CXR2_1);
+cxr2.AddInstr(name=CXR2_2);
+cxr2.AddInstr(name=CXR2_3);
+cxr2.AddInstr(name=CXR2_4);
 
 cxr2.AddPrivate()
 	;
 
-cxr2.AddEntry(func=cxr2, inst=CXR2_4)
+cxr2.AddEntry(func=cxr2, instr=CXR2_4)
 	;
 cxr2.AddTransfer(func=cxr2b)
 	;
@@ -102,20 +102,20 @@ cxr2.AddTransfer(func=cxr2b)
 // Cxr2b Module
 
 dsnInfo.AddModule(name=cxr2b, htIdW=CXR2b_HTID_W);
-cxr2b.AddInst(name=CXR2b_0);
-cxr2b.AddInst(name=CXR2b_1);
-cxr2b.AddInst(name=CXR2b_2);
-cxr2b.AddInst(name=CXR2b_3);
-cxr2b.AddInst(name=CXR2b_4);
-cxr2b.AddInst(name=CXR2b_5);
-cxr2b.AddInst(name=CXR2b_6);
-cxr2b.AddInst(name=CXR2b_7);
-cxr2b.AddInst(name=CXR2b_8);
+cxr2b.AddInstr(name=CXR2b_0);
+cxr2b.AddInstr(name=CXR2b_1);
+cxr2b.AddInstr(name=CXR2b_2);
+cxr2b.AddInstr(name=CXR2b_3);
+cxr2b.AddInstr(name=CXR2b_4);
+cxr2b.AddInstr(name=CXR2b_5);
+cxr2b.AddInstr(name=CXR2b_6);
+cxr2b.AddInstr(name=CXR2b_7);
+cxr2b.AddInstr(name=CXR2b_8);
 
 cxr2b.AddPrivate()
 	;
 
-cxr2b.AddEntry(func=cxr2b, inst=CXR2b_5)
+cxr2b.AddEntry(func=cxr2b, instr=CXR2b_5)
 	;
 cxr2b.AddReturn(func=cxr2)
 	;

@@ -1039,8 +1039,8 @@ struct CMifRdDst {
 		m_fldDimen2 = 0;
 	}
 
-	CMifRdDst(string name, string infoW, string stgCnt, bool bMultiRd, string memSrc, CType * pRdType) :
-		m_name(name), m_infoW(infoW), m_rsmDly(stgCnt), m_bMultiQwRdReq(bMultiRd), m_memSrc(memSrc), m_pRdType(pRdType)
+	CMifRdDst(string name, string infoW, string stgCnt, string const & elemCntW, string memSrc, CType * pRdType) :
+		m_name(name), m_infoW(infoW), m_rsmDly(stgCnt), m_elemCntW(elemCntW), m_memSrc(memSrc), m_pRdType(pRdType)
 	{
 		m_lineInfo = CPreProcess::m_lineInfo;
 		m_pSharedVar = 0;
@@ -1065,6 +1065,7 @@ struct CMifRdDst {
 	string		m_var;
 	CHtString	m_infoW;
 	CHtString	m_rsmDly;
+	CHtString	m_elemCntW;
 	bool        m_bMultiQwRdReq;
 	bool		m_bMultiQwHostRdReq;
 	bool		m_bMultiQwCoprocRdReq;
@@ -1959,8 +1960,6 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 
 	void AddStageField(CStage * pStage, CType * pType, string name, string dimen1, string dimen2, string *pRange,
 		bool bInit, bool bConn, bool bReset, bool bZero);
-	//void AddStructField(CRecord * pRecord, CType * pType, string const & name, string bitWidth = "", string base = "", vector<CHtString> const &dimenList = g_nullHtStringVec,
-	//	bool bSrcRead = true, bool bSrcWrite = true, bool bMifRead = false, bool bMifWrite = false, HtdFile::ERamType ramType = HtdFile::eDistRam, int atomicMask = 0);
 
 	void AddEntryParam(CCxrEntry * pEntry, string hostType, CType * pType, string paramName, bool bIsUsed) { pEntry->AddParam(hostType, pType, paramName, bIsUsed); }
 	void AddReturnParam(CCxrReturn * pReturn, string hostType, CType * pType, string paramName, bool bIsUsed) { pReturn->AddParam(hostType, pType, paramName, bIsUsed); }
@@ -1974,7 +1973,7 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 	void AddDst(CMifRd * pOpenMifRd, string const & name, string const & var,
 		string const & memSrc, string const & atomic, CType * pRdType);
 	void AddDst(CMifRd * pOpenMifRd, string name, string infoW, string stgCnt,
-		bool bMultiRd, string memSrc, CType * pRdType);
+		string const & elemCntW, string memSrc, CType * pRdType);
 
 	// Routines called by HtdFile::saveHtdFile
 	bool GetModule(string &name) { return false; }

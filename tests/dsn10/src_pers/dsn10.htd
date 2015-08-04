@@ -10,9 +10,9 @@
 typedef sc_uint<8> ElemCnt_t;
 
 dsnInfo.AddModule(name=inc, htIdW=INC_HTID_W);
-inc.AddInst(name=INC_INIT);
-inc.AddInst(name=INC_READ);
-inc.AddInst(name=INC_WRITE);
+inc.AddInstr(name=INC_INIT);
+inc.AddInstr(name=INC_READ);
+inc.AddInstr(name=INC_WRITE);
 
 union CUnion {
 	uint64_t m_data0;
@@ -41,7 +41,7 @@ inc.AddPrivate()
 inc.AddShared()
 	.AddVar(type=ht_uint48, name=arrayAddr);
 
-inc.AddEntry(func=inc, inst=INC_INIT)
+inc.AddEntry(func=inc, instr=INC_INIT)
 	.AddParam(type=ElemCnt_t, name=elemCnt, unused=false)
 	;
 inc.AddReturn(func=inc);
@@ -61,9 +61,9 @@ inc.AddGlobal()
 // Cxr1 Module
 
 dsnInfo.AddModule(name=cxr1, clock=2x, htIdW=CXR1_HTID_W);
-cxr1.AddInst(name=CXR1_0);
-cxr1.AddInst(name=CXR1_1);
-cxr1.AddInst(name=CXR1_2);
+cxr1.AddInstr(name=CXR1_0);
+cxr1.AddInstr(name=CXR1_1);
+cxr1.AddInstr(name=CXR1_2);
 
 cxr1.AddHostMsg(dir=out, name=OHM_TEST_MSG);
 
@@ -72,7 +72,7 @@ cxr1.AddPrivate()
 	.AddVar(type=uint16_t, name=junk)
 	;
 
-cxr1.AddEntry(func=htmain, inst=CXR1_0, host=true)
+cxr1.AddEntry(func=htmain, instr=CXR1_0, host=true)
 	.AddParam(type=uint64_t, name=trail)
 	;
 cxr1.AddTransfer(func=cxr1b, queueW=3)
@@ -84,9 +84,9 @@ cxr1.AddCall(func=cxr2e2, queueW=4);
 // Cxr1b Module
 
 dsnInfo.AddModule(name=cxr1b, clock=2x, htIdW=CXR1b_HT_ID_W);
-cxr1b.AddInst(name=CXR1b_0);
-cxr1b.AddInst(name=CXR1b_1);
-cxr1b.AddInst(name=CXR1b_2);
+cxr1b.AddInstr(name=CXR1b_0);
+cxr1b.AddInstr(name=CXR1b_1);
+cxr1b.AddInstr(name=CXR1b_2);
 
 cxr1b.AddHostMsg(dir=out, name=OHM_TEST_MSG);
 
@@ -95,7 +95,7 @@ cxr1b.AddPrivate()
 	.AddVar(type=uint16_t, name=junk)
 	;
 
-cxr1b.AddEntry(func=cxr1b, inst=CXR1b_0)
+cxr1b.AddEntry(func=cxr1b, instr=CXR1b_0)
 	.AddParam(type=uint64_t, name=trail)
 	;
 cxr1b.AddReturn(func=htmain)
@@ -108,12 +108,12 @@ cxr1b.AddCall(func=cxr2e2, queueW=0);
 // Cxr2 Module
 
 dsnInfo.AddModule(name=cxr2, clock=2x, htIdW=0);
-cxr2.AddInst(name=CXR2_0E1);
-cxr2.AddInst(name=CXR2_0E2);
-cxr2.AddInst(name=CXR2_1);
-cxr2.AddInst(name=CXR2_2);
-cxr2.AddInst(name=CXR2_3);
-cxr2.AddInst(name=CXR2_4);
+cxr2.AddInstr(name=CXR2_0E1);
+cxr2.AddInstr(name=CXR2_0E2);
+cxr2.AddInstr(name=CXR2_1);
+cxr2.AddInstr(name=CXR2_2);
+cxr2.AddInstr(name=CXR2_3);
+cxr2.AddInstr(name=CXR2_4);
 
 cxr2.AddPrivate()
 	.AddVar(type=uint8_t, name=instCnt)
@@ -121,11 +121,11 @@ cxr2.AddPrivate()
 	.AddVar(type=uint16_t, name=junk)
 	;
 
-cxr2.AddEntry(func=cxr2e1, inst=CXR2_0E1)
+cxr2.AddEntry(func=cxr2e1, instr=CXR2_0E1)
 	.AddParam(type=uint8_t, name=instCnt)
 	.AddParam(type=uint64_t, name=trail)
 	;
-cxr2.AddEntry(func=cxr2e2, inst=CXR2_0E2)
+cxr2.AddEntry(func=cxr2e2, instr=CXR2_0E2)
 	.AddParam(type=uint8_t, name=instCnt)
 	.AddParam(type=uint64_t, name=trail)
 	.AddParam(type=uint16_t, name=junk)
@@ -144,15 +144,15 @@ cxr2.AddReturn(func=cxr2e2)
 // Cxr2b Module
 
 dsnInfo.AddModule(name=cxr2b, clock=2x, htIdW=CXR2b_HTID_W);
-cxr2b.AddInst(name=CXR2b_0);
-cxr2b.AddInst(name=CXR2b_1);
-cxr2b.AddInst(name=CXR2b_2);
-cxr2b.AddInst(name=CXR2b_3);
-cxr2b.AddInst(name=CXR2b_4);
-cxr2b.AddInst(name=CXR2b_5);
-cxr2b.AddInst(name=CXR2b_6);
-cxr2b.AddInst(name=CXR2b_7);
-cxr2b.AddInst(name=CXR2b_8);
+cxr2b.AddInstr(name=CXR2b_0);
+cxr2b.AddInstr(name=CXR2b_1);
+cxr2b.AddInstr(name=CXR2b_2);
+cxr2b.AddInstr(name=CXR2b_3);
+cxr2b.AddInstr(name=CXR2b_4);
+cxr2b.AddInstr(name=CXR2b_5);
+cxr2b.AddInstr(name=CXR2b_6);
+cxr2b.AddInstr(name=CXR2b_7);
+cxr2b.AddInstr(name=CXR2b_8);
 
 cxr2b.AddPrivate()
 	.AddVar(type=uint8_t, name=instCnt)
@@ -160,7 +160,7 @@ cxr2b.AddPrivate()
 	.AddVar(type=ht_uint1, name=entry)
 	;
 
-cxr2b.AddEntry(func=cxr2b, inst=CXR2b_0)
+cxr2b.AddEntry(func=cxr2b, instr=CXR2b_0)
 	.AddParam(type=uint8_t, name=instCnt)
 	.AddParam(type=uint64_t, name=trail)
 	.AddParam(type=ht_uint1, name=entry)
@@ -178,14 +178,14 @@ cxr2b.AddReturn(func=cxr2e2)
 // Cxr2c Module
 
 dsnInfo.AddModule(name=cxr2c, clock=2x, htIdW=CXR2c_HTID_W);
-cxr2c.AddInst(name=CXR2c_0);
-cxr2c.AddInst(name=CXR2c_1);
-cxr2c.AddInst(name=CXR2c_2);
-cxr2c.AddInst(name=CXR2c_3);
-cxr2c.AddInst(name=CXR2c_4);
-cxr2c.AddInst(name=CXR2c_5);
-cxr2c.AddInst(name=CXR2c_6);
-cxr2c.AddInst(name=CXR2c_7);
+cxr2c.AddInstr(name=CXR2c_0);
+cxr2c.AddInstr(name=CXR2c_1);
+cxr2c.AddInstr(name=CXR2c_2);
+cxr2c.AddInstr(name=CXR2c_3);
+cxr2c.AddInstr(name=CXR2c_4);
+cxr2c.AddInstr(name=CXR2c_5);
+cxr2c.AddInstr(name=CXR2c_6);
+cxr2c.AddInstr(name=CXR2c_7);
 
 cxr2c.AddPrivate()
 	.AddVar(type=uint8_t, name=instCnt)
@@ -193,7 +193,7 @@ cxr2c.AddPrivate()
 	.AddVar(type=ht_uint1, name=entry)
 	;
 
-cxr2c.AddEntry(func=cxr2c, inst=CXR2c_0)
+cxr2c.AddEntry(func=cxr2c, instr=CXR2c_0)
 	.AddParam(type=uint8_t, name=instCnt)
 	.AddParam(type=uint64_t, name=trail)
 	.AddParam(type=ht_uint1, name=entry)

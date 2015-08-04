@@ -80,10 +80,10 @@ typedef sc_uint<48> MemAddr_t;
 #define CTL_HTID_W 0
 
 dsnInfo.AddModule(name=ctl, htIdW=CTL_HTID_W);
-ctl.AddInst(name=CTL_ENTRY);
-ctl.AddInst(name=CTL_FORK);
-ctl.AddInst(name=CTL_JOIN);
-ctl.AddInst(name=CTL_LOOP);
+ctl.AddInstr(name=CTL_ENTRY);
+ctl.AddInstr(name=CTL_FORK);
+ctl.AddInstr(name=CTL_JOIN);
+ctl.AddInstr(name=CTL_LOOP);
 
 ctl.AddPrivate()
 	.AddVar(type=uint16_t, name=testCnt)
@@ -92,7 +92,7 @@ ctl.AddPrivate()
 	.AddVar(type=uint16_t, name=errCnt)
 	;
 
-ctl.AddEntry(func=htmain, inst=CTL_ENTRY, host=true)
+ctl.AddEntry(func=htmain, instr=CTL_ENTRY, host=true)
 	;
 
 ctl.AddReturn(func=htmain)
@@ -108,12 +108,12 @@ ctl.AddMsgIntf(dir=out, type=bool, name=clr);
 // Barrier Module
 
 dsnInfo.AddModule(name=barrier, htIdW=BARRIER_HTID_W, clock=BARRIER_CLK, pause=false);
-barrier.AddInst(name=BARRIER_ENTRY);
-barrier.AddInst(name=BARRIER_INC);
-barrier.AddInst(name=BARRIER_WAIT1);
-barrier.AddInst(name=BARRIER_WAIT2);
-barrier.AddInst(name=BARRIER_WAIT3);
-barrier.AddInst(name=BARRIER_RETURN);
+barrier.AddInstr(name=BARRIER_ENTRY);
+barrier.AddInstr(name=BARRIER_INC);
+barrier.AddInstr(name=BARRIER_WAIT1);
+barrier.AddInstr(name=BARRIER_WAIT2);
+barrier.AddInstr(name=BARRIER_WAIT3);
+barrier.AddInstr(name=BARRIER_RETURN);
 
 barrier.AddPrivate()
 	.AddVar(type=uint16_t, name=threadCnt)
@@ -125,7 +125,7 @@ barrier.AddShared()
 	.AddVar(type=uint16_t, name=inc)
 	;
 
-barrier.AddEntry(func=barrier, inst=BARRIER_ENTRY)
+barrier.AddEntry(func=barrier, instr=BARRIER_ENTRY)
 	.AddParam(type=uint16_t, name=threadCnt)
 	.AddParam(type=uint16_t, name=threadId)
 	;

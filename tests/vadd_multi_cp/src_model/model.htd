@@ -1,6 +1,6 @@
 dsnInfo.AddModule(name=model, htIdW=0);
 
-model.AddInst(name=MODEL);
+model.AddInstr(name=MODEL);
 
 model.AddHostMsg(dir=in, name=OP1_ADDR)
 	;
@@ -23,7 +23,7 @@ model.AddPrivate()
 	.AddVar(type=uint32_t, name=vecStride)
 	;
 
-model.AddEntry(func=htmain, inst=MODEL, host=true)
+model.AddEntry(func=htmain, instr=MODEL, host=true)
 	.AddParam(type=uint32_t, name=vecIdx)
 	.AddParam(type=uint32_t, name=vecStride)
 	;
