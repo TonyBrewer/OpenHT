@@ -1,0 +1,13 @@
+// -cl $(HtToolsPath)/tests/spanWr_bug/src_pers/memPSGRand.htl
+-wd $(HtToolsPath)/tests/spanWr_bug/msvs12/
+
+-cp wx-690
+-ac 1
+-uc 1
+-df 150
+-vcd_all
+-pn spanWr_bug
+-ml 0.2
+-I ../src
+../src_pers/memPSGRand.htd
+../ht/sysc

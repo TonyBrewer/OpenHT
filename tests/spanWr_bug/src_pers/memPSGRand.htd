@@ -1,0 +1,105 @@
+typedef sc_uint<48> MemAddr_t;
+
+
+struct ReqhdrFields {
+	uint8_t m_magic;
+	uint8_t m_opcode;
+	uint16_t m_keyLen;
+	uint8_t m_extraLen;
+	uint8_t m_dataType;
+	uint16_t m_vBucket;
+	uint32_t m_bodyLen;
+	uint32_t m_opaque;
+	uint64_t m_cas;
+};
+
+union CBinReqhdr {
+	ReqhdrFields m_hdr;
+	uint8_t m_bytes[24];
+};
+
+struct keyField {
+	uint8_t m_byte[12];
+};
+
+struct CAccelConn {
+	uint64_t m_parseState:6;
+	uint64_t m_hashPos:4;
+	uint8_t m_cmd;
+	uint8_t m_errCode;
+	uint64_t m_protocol:3;
+	uint64_t m_transport:3;
+	uint64_t m_skipSpace:1;
+	uint64_t m_noreply:1;
+	uint64_t m_bConnClosed:1;
+	uint32_t m_parsePos;
+	uint32_t m_hash_a;
+	uint32_t m_hash_b;
+	uint32_t m_hash_c;
+	uint64_t m_initial;
+	uint64_t m_delta;
+	uint32_t m_flags;
+	uint32_t m_exptime;
+	uint32_t m_bytes;
+	keyField m_key12;
+	CBinReqhdr m_binReqHdr;
+};
+
+// make sure this matches the size of the above struct
+#define ACCEL_CONN_SIZE 11
+
+union CAccelWord {
+	CAccelConn m_pConn;
+#pragma htl spanning_field
+	uint64_t m_word[ACCEL_CONN_SIZE];
+};
+
+
+/////////////////////////////////////
+// CTL
+
+dsnInfo.AddModule(name=Ctl, htIdW=0);
+
+Ctl.AddInstr(name=CTL_TEST00);
+Ctl.AddInstr(name=CTL_RTN);
+
+Ctl.AddEntry(func=main, instr=CTL_TEST00, host=true)
+	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=memAddr)
+	;
+
+Ctl.AddReturn(func=main)
+	;
+
+Ctl.AddCall(func=test00);
+
+Ctl.AddPrivate()
+	.AddVar(type=MemAddr_t, name=memAddr)
+	;
+
+
+/////////////////////////////////////
+// TEST00
+
+#define TEST00_HTID_W 0
+dsnInfo.AddModule(name=Test00, htIdW=TEST00_HTID_W);
+
+Test00.AddInstr(name=TEST00_ENTRY);
+Test00.AddInstr(name=TEST00_RTN);
+
+Test00.AddEntry(func=test00, instr=TEST00_ENTRY)
+	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=memAddr)
+	;
+
+Test00.AddReturn(func=test00)
+	;
+
+Test00.AddPrivate()
+	.AddVar(type=MemAddr_t, name=memAddr)
+	.AddVar(type=ht_uint9, name=rdAddr)
+	;
+
+Test00.AddGlobal()
+	.AddVar(type=CAccelWord, name=test00_0_src_u0_data, addr1=rdAddr, instrWrite=true, instrRead=true, rdStg=1, wrStg=3, spanningWrite=true)
+	;
+
+

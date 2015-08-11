@@ -1,7 +1,7 @@
 // -cl $(HtToolsPath)/tests/dsn12/src_pers/dsn12.htl
 -wd $(HtToolsPath)/tests/dsn12/msvs12/
 
--cp hc-2
+-cp wx-690
 -uc 1
 -un Su
 -df 150

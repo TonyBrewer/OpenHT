@@ -168,8 +168,8 @@ bool bCStyle, bool bInclude, bool bData64, bool bUnion)
 			if (pField->m_bIfDefHtv)
 				fprintf(incFp, "#ifndef _HTV\n");
 
-			if (IsBaseType(pField->m_type)) {
-				CTypeDef *pTypeDef = FindTypeDef(pField->m_type);
+			if (IsBaseType(pField->m_pType->m_typeName)) {
+				CTypeDef *pTypeDef = FindTypeDef(pField->m_pType->m_typeName);
 
 				if (pTypeDef && pTypeDef->m_width.size() > 0)
 					fprintf(incFp, "%s%s %s%s : %s;\n", pTabs, pTypeDef->m_type.c_str(), m_.c_str(), pField->m_name.c_str(), pTypeDef->m_width.c_str());
@@ -315,7 +315,7 @@ CDsnInfo::GenRamIntfStruct(CHtCode &code, char const * pTabs, string intfName, C
 			CField * pField = ram.m_fieldList[fieldIdx];
 
 			if (type == eStructRamRdData && (pField->m_bSrcRead || pField->m_bMifRead) || type != eStructRamRdData && (pField->m_bSrcWrite || pField->m_bMifWrite)) {
-				CTypeDef *pTypeDef = FindTypeDef(pField->m_type);
+				CTypeDef *pTypeDef = FindTypeDef(pField->m_pType->m_typeName);
 
 				if (false && pField->m_dimenList.size() == 0) {
 					if (pTypeDef && pTypeDef->m_width.size() > 0)
@@ -360,7 +360,7 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 
 			size_t recordIdx;
 			for (recordIdx = 0; recordIdx < m_recordList.size(); recordIdx += 1) {
-				if (m_recordList[recordIdx]->m_typeName == pField->m_type)
+				if (m_recordList[recordIdx]->m_typeName == pField->m_pType->m_typeName)
 					break;
 			}
 			if (structType != eGenRamWrEn && !bCStyle && recordIdx < m_recordList.size()) {
@@ -460,7 +460,7 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 
 			size_t recordIdx;
 			for (recordIdx = 0; recordIdx < m_recordList.size(); recordIdx += 1) {
-				if (m_recordList[recordIdx]->m_typeName == pField->m_type)
+				if (m_recordList[recordIdx]->m_typeName == pField->m_pType->m_typeName)
 					break;
 			}
 			if (structType != eGenRamWrEn && recordIdx < m_recordList.size()) {
@@ -552,7 +552,7 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 
 			size_t recordIdx;
 			for (recordIdx = 0; recordIdx < m_recordList.size(); recordIdx += 1) {
-				if (m_recordList[recordIdx]->m_typeName == pField->m_type)
+				if (m_recordList[recordIdx]->m_typeName == pField->m_pType->m_typeName)
 					break;
 			}
 			if (structType != eGenRamWrEn && !bCStyle && recordIdx < m_recordList.size()) {
@@ -654,7 +654,7 @@ vector<CField *> &fieldList, bool bCStyle, const char *&pStr, EStructType struct
 
 			size_t recordIdx;
 			for (recordIdx = 0; recordIdx < m_recordList.size(); recordIdx += 1) {
-				if (m_recordList[recordIdx]->m_typeName == pField->m_type)
+				if (m_recordList[recordIdx]->m_typeName == pField->m_pType->m_typeName)
 					break;
 			}
 			if (structType != eGenRamWrEn && !bCStyle && recordIdx < m_recordList.size()) {
@@ -757,7 +757,7 @@ CDsnInfo::GenStructInit(FILE *fp, string &tabs, string prefixName, CField * pFie
 {
 	size_t recordIdx;
 	for (recordIdx = 0; recordIdx < m_recordList.size(); recordIdx += 1) {
-		if (m_recordList[recordIdx]->m_typeName == pField->m_type)
+		if (m_recordList[recordIdx]->m_typeName == pField->m_pType->m_typeName)
 			break;
 	}
 	bool bIsInStructList = recordIdx < m_recordList.size();
@@ -812,7 +812,7 @@ CDsnInfo::GenStructInit(FILE *fp, string &tabs, string prefixName, CField * pFie
 		fprintf(fp, "%s%s = 0;\n",
 			tabs.c_str(), prefixName.c_str());
 	} else {
-		int width = FindTypeWidth(pField);
+		int width = pField->m_pType->GetClangBitWidth();
 
 		string mask = width == 64 ? "" : VA(" & 0x%llxULL", ((1ull << width) - 1));
 
@@ -933,7 +933,7 @@ string CDsnInfo::GenFieldType(CField * pField, bool bConst)
 
 	} else {
 
-		type = pField->m_type;
+		type = pField->m_pType->m_typeName;
 	}
 
 	if (bConst)
@@ -1030,7 +1030,7 @@ CDsnInfo::GenUserStructFieldList(CHtCode &htFile, bool bIsHtPriv, vector<CField 
 
 		size_t recordIdx;
 		for (recordIdx = 0; recordIdx < m_recordList.size(); recordIdx += 1) {
-			if (m_recordList[recordIdx]->m_typeName == pField->m_type)
+			if (m_recordList[recordIdx]->m_typeName == pField->m_pType->m_typeName)
 				break;
 		}
 
@@ -1040,7 +1040,7 @@ CDsnInfo::GenUserStructFieldList(CHtCode &htFile, bool bIsHtPriv, vector<CField 
 			CRecord * pRecord = pField->m_pType->AsRecord();
 			GenUserStructFieldList(htFile, false, pRecord->m_fieldList, pRecord->m_bCStyle, pRecord->m_bUnion ? Union : Struct, tabs + "\t", bUnion);
 		} else {
-			CTypeDef *pTypeDef = FindTypeDef(pField->m_type);
+			CTypeDef *pTypeDef = FindTypeDef(pField->m_pType->m_typeName);
 
 			if (bUnion && pTypeDef && pTypeDef->m_width.size() > 0 && pField->m_dimenList.size() > 0)
 				ParseMsg(Error, pField->m_lineInfo, "unsupported capability, arrays of members within unions, where member has a specified field width");
@@ -1102,7 +1102,7 @@ void CDsnInfo::GenUserStructBadData(CHtCode &htFile, bool bHeader, string struct
 
 		size_t recordIdx;
 		for (recordIdx = 0; recordIdx < m_recordList.size(); recordIdx += 1) {
-			if (m_recordList[recordIdx]->m_typeName == pField->m_type)
+			if (m_recordList[recordIdx]->m_typeName == pField->m_pType->m_typeName)
 				break;
 		}
 
@@ -1227,7 +1227,7 @@ CDsnInfo::GenStruct(FILE *incFp, string intfName, CRecord &ram, EGenStructMode m
 
 		if (mode == eGenStruct || mode == eGenStructRdData && pField->m_bSrcRead || mode == eGenStructWrData && pField->m_bSrcWrite) {
 			// find typedef
-			CTypeDef *pTypeDef = FindTypeDef(pField->m_type);
+			CTypeDef *pTypeDef = FindTypeDef(pField->m_pType->m_typeName);
 
 			if (pTypeDef && pTypeDef->m_width.size() > 0)
 				fprintf(incFp, "\t\t%s m_%s:%s;\n", pTypeDef->m_type.c_str(), pField->m_name.c_str(), pTypeDef->m_width.c_str());
@@ -1442,11 +1442,17 @@ int CStructElemIter::GetWidth()
 	if (stack.m_pRecord == 0) {
 		HtlAssert(m_pType->IsInt());
 		CHtInt * pHtInt = m_pType->AsInt();
-		return pHtInt->m_fldWidth > 0 ? pHtInt->m_fldWidth : m_pType->m_clangBitWidth;
+		return pHtInt->m_fldWidth > 0 ? pHtInt->m_fldWidth : pHtInt->m_clangBitWidth;
 	}
 	CField * pField = stack.m_pRecord->m_fieldList[stack.m_fieldIdx];
 
-	return m_pDsnInfo->FindTypeWidth(pField);
+	if (pField->m_pType->IsInt()) {
+		CHtInt * pHtInt = pField->m_pType->AsInt();
+		return pHtInt->m_fldWidth > 0 ? pHtInt->m_fldWidth : pHtInt->m_clangBitWidth;
+	} else {
+		return m_pType->m_clangBitWidth;
+	}
+	//return m_pDsnInfo->FindTypeWidth(pField);
 }
 
 CType * CStructElemIter::GetType()
@@ -1655,4 +1661,64 @@ bool CType::IsEmbeddedUnion() {
 	}
 
 	return false;
+}
+
+int CType::GetClangBitWidth()
+{
+	if (IsInt()) {
+		CHtInt * pHtInt = AsInt();
+		return pHtInt->m_fldWidth > 0 ? pHtInt->m_fldWidth : pHtInt->m_clangBitWidth;
+	} else
+		return m_clangBitWidth;
+}
+
+// Initialize the m_packedBitWidth field for a type
+struct CSpan { CSpan(int fst, int lst) : m_fst(fst), m_lst(lst) {} int m_fst, m_lst; };
+int CType::GetPackedBitWidth()
+{
+	if (m_packedBitWidth > 0) return m_packedBitWidth;
+
+	// ordered list of spans
+	vector<CSpan> spanList;
+
+	for (CStructElemIter iter(g_pDsnInfo, this); !iter.end(); iter++) {
+		int fst = iter.GetHeirFieldPos();
+		int lst = fst + iter.GetWidth() - 1;
+
+		// add span to list
+		size_t i;
+		for (i = 0; i < spanList.size(); i += 1) {
+			if (spanList[i].m_fst < fst) continue;
+
+			spanList.insert(spanList.begin() + i, CSpan(fst, lst));
+			break;
+		}
+
+		if (i == spanList.size())
+			spanList.push_back(CSpan(fst, lst));
+	}
+
+	// now scan spans and find contiguous spans
+	int packedBitWidth = 0;
+	for (size_t i = 0; i < spanList.size(); i += 1) {
+		int fst = spanList[i].m_fst;
+		int lst = spanList[i].m_lst;
+
+		size_t j;
+		for (j = i + 1; j < spanList.size(); j += 1) {
+			if (spanList[j].m_fst <= lst + 1)
+				lst = max(spanList[j].m_lst, lst);
+			else {
+				i = j - 1;
+				break;
+			}
+		}
+
+		packedBitWidth += lst - fst + 1;
+
+		if (j == spanList.size())
+			break;
+	}
+
+	return m_packedBitWidth = packedBitWidth;
 }

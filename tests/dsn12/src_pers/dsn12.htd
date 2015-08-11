@@ -3,7 +3,8 @@
 
 #pragma message "__SEED__ " __SEED__
 #ifdef _WIN32
-#define TEST 0xb6da8b76
+#define TEST 0xff35bfd5
+//#define TEST 0xb6da8b76
 //#define TEST __RANDOM__
 #else
 #define TEST __RANDOM__

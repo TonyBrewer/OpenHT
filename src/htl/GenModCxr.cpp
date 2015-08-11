@@ -53,7 +53,7 @@ void CDsnInfo::InitAndValidateModCxr()
 					CField * pField = fieldList[fldIdx];
 
 					if (pField->m_name == pParam->m_name) {
-						if (pField->m_type != pParam->m_type)
+						if (pField->m_pType->m_typeName != pParam->m_pType->m_typeName)
 							ParseMsg(Error, pParam->m_lineInfo, "parameter and private variable have different types");
 						bFound = true;
 					}
@@ -104,7 +104,7 @@ void CDsnInfo::InitAndValidateModCxr()
 						CField * pParam = rtn.m_paramList[paramIdx];
 						CField * pParam2 = rtn2.m_paramList[paramIdx];
 
-						if (pParam->m_name != pParam2->m_name || pParam->m_type != pParam2->m_type) {
+						if (pParam->m_name != pParam2->m_name || pParam->m_pType->m_typeName != pParam2->m_pType->m_typeName) {
 							CPreProcess::ParseMsg(Error, rtn2.m_lineInfo, "AddReturn commands with matching function names have different returning parameter");
 							CPreProcess::ParseMsg(Info, rtn.m_lineInfo, "previous AddReturn command");
 							break;
@@ -465,7 +465,7 @@ void CDsnInfo::CheckRequiredEntryNames(vector<CModIdx> &callStk)
 						CField * pField = fieldList[fldIdx];
 
 						if (pField->m_name == pParam->m_name) {
-							if (pField->m_type != pParam->m_type)
+							if (pField->m_pType->m_typeName != pParam->m_pType->m_typeName)
 								ParseMsg(Error, pParam->m_lineInfo, "parameter and caller's (%s) private variable have different types",
 								pPrevCxrCallMod->m_modName.c_str());
 							bFound = true;
@@ -1538,9 +1538,9 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 
 				bool bBasicType;
 				CTypeDef * pTypeDef;
-				string type = pField->m_type;
+				string type = pField->m_pType->m_typeName;
 				while (!(bBasicType = IsBaseType(type))) {
-					if (!(pTypeDef = FindTypeDef(pField->m_type)))
+					if (!(pTypeDef = FindTypeDef(pField->m_pType->m_typeName)))
 						break;
 					type = pTypeDef->m_type;
 				}
@@ -1562,9 +1562,9 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 
 				bool bBasicType;
 				CTypeDef * pTypeDef;
-				string type = pField->m_type;
+				string type = pField->m_pType->m_typeName;
 				while (!(bBasicType = IsBaseType(type))) {
-					if (!(pTypeDef = FindTypeDef(pField->m_type)))
+					if (!(pTypeDef = FindTypeDef(pField->m_pType->m_typeName)))
 						break;
 					type = pTypeDef->m_type;
 				}
@@ -1927,9 +1927,9 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 
 				bool bBasicType;
 				CTypeDef * pTypeDef;
-				string type = pField->m_type;
+				string type = pField->m_pType->m_typeName;
 				while (!(bBasicType = IsBaseType(type))) {
-					if (!(pTypeDef = FindTypeDef(pField->m_type)))
+					if (!(pTypeDef = FindTypeDef(pField->m_pType->m_typeName)))
 						break;
 					type = pTypeDef->m_type;
 				}
@@ -1951,9 +1951,9 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 
 				bool bBasicType;
 				CTypeDef * pTypeDef;
-				string type = pField->m_type;
+				string type = pField->m_pType->m_typeName;
 				while (!(bBasicType = IsBaseType(type))) {
-					if (!(pTypeDef = FindTypeDef(pField->m_type)))
+					if (!(pTypeDef = FindTypeDef(pField->m_pType->m_typeName)))
 						break;
 					type = pTypeDef->m_type;
 				}
@@ -2477,9 +2477,9 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 
 				bool bBasicType;
 				CTypeDef * pTypeDef;
-				string type = pField->m_type;
+				string type = pField->m_pType->m_typeName;
 				while (!(bBasicType = IsBaseType(type))) {
-					if (!(pTypeDef = FindTypeDef(pField->m_type)))
+					if (!(pTypeDef = FindTypeDef(pField->m_pType->m_typeName)))
 						break;
 					type = pTypeDef->m_type;
 				}
@@ -2501,9 +2501,9 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 
 				bool bBasicType;
 				CTypeDef * pTypeDef;
-				string type = pField->m_type;
+				string type = pField->m_pType->m_typeName;
 				while (!(bBasicType = IsBaseType(type))) {
-					if (!(pTypeDef = FindTypeDef(pField->m_type)))
+					if (!(pTypeDef = FindTypeDef(pField->m_pType->m_typeName)))
 						break;
 					type = pTypeDef->m_type;
 				}
@@ -3503,7 +3503,7 @@ CDsnInfo::ZeroStruct(CHtCode &code, string fieldBase, vector<CField *> &fieldLis
 
 		size_t recordIdx;
 		for (recordIdx = 0; recordIdx < m_recordList.size(); recordIdx += 1) {
-			if (m_recordList[recordIdx]->m_typeName == pField->m_type)
+			if (m_recordList[recordIdx]->m_typeName == pField->m_pType->m_typeName)
 				break;
 		}
 		if (recordIdx < m_recordList.size()) {

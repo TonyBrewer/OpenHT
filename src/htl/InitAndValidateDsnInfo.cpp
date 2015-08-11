@@ -306,7 +306,7 @@ void CDsnInfo::InitPrivateAsGlobal()
 
 			string ramName = mod.m_modName.AsStr() + "__" + pPriv->m_name;
 
-			mod.m_ngvList.push_back(new CRam(pPriv->m_type, ramName, pPriv->m_dimenList,
+			mod.m_ngvList.push_back(new CRam(pPriv->m_pType->m_typeName, ramName, pPriv->m_dimenList,
 				pPriv->m_addr1Name, pPriv->m_addr2Name,
 				pPriv->m_addr1W.AsStr(), pPriv->m_addr2W.AsStr(), rdStg, wrStg, bMaxIw,
 				bMaxMw, pPriv->m_ramType, bRead, bWrite));
@@ -365,7 +365,7 @@ void CDsnInfo::InitPrivateAsGlobal()
 
 					string ramName = mod.m_modName.AsStr() + "__" + pPriv->m_name;
 
-					mod.m_ngvList.push_back(new CRam(pPriv->m_type, ramName, pPriv->m_dimenList,
+					mod.m_ngvList.push_back(new CRam(pPriv->m_pType->m_typeName, ramName, pPriv->m_dimenList,
 						pPriv->m_addr1Name, pPriv->m_addr2Name,
 						pPriv->m_addr1W.AsStr(), pPriv->m_addr2W.AsStr(), rdStg, wrStg, bMaxIw,
 						bMaxMw, pPriv->m_ramType, bRead, bWrite));
@@ -425,7 +425,7 @@ void CDsnInfo::InitPrivateAsGlobal()
 
 					string ramName = mod.m_modName.AsStr() + "__" + pPriv->m_name;
 
-					mod.m_ngvList.push_back(new CRam(pPriv->m_type, ramName, pPriv->m_dimenList,
+					mod.m_ngvList.push_back(new CRam(pPriv->m_pType->m_typeName, ramName, pPriv->m_dimenList,
 						pPriv->m_addr1Name, pPriv->m_addr2Name,
 						pPriv->m_addr1W.AsStr(), pPriv->m_addr2W.AsStr(), rdStg, wrStg, bMaxIw,
 						bMaxMw, pPriv->m_ramType, bRead, bWrite));
@@ -519,7 +519,10 @@ void CDsnInfo::InitBramUsage()
 			target.m_name = "";
 			target.m_pRamType = &mod.m_threads.m_ramType;
 			target.m_depth = 1 << mod.m_threads.m_htIdW.AsInt();
-			target.m_width = FindFieldListWidth("", mod.m_threads.m_lineInfo, mod.m_threads.m_htPriv.m_fieldList);
+			target.m_width = 0;
+			for (size_t i = 0; i < mod.m_threads.m_htPriv.m_fieldList.size(); i += 1) {
+				target.m_width += mod.m_threads.m_htPriv.m_fieldList[i]->m_pType->GetPackedBitWidth() * mod.m_threads.m_htPriv.m_fieldList[i]->m_elemCnt;
+			}
 			target.m_copies = (int)mod.m_modInstList.size();
 			target.m_slices = FindSliceCnt(target.m_depth, target.m_width);
 			target.m_brams = FindBramCnt(target.m_depth, target.m_width);
@@ -538,7 +541,7 @@ void CDsnInfo::InitBramUsage()
 				target.m_name = pRam->m_gblName;
 				target.m_pRamType = &pRam->m_ramType;
 				target.m_depth = 1 << pRam->m_addrW;
-				target.m_width = pRam->m_pType->m_packedBitWidth;
+				target.m_width = pRam->m_pType->GetPackedBitWidth();
 				target.m_copies = (int)mod.m_modInstList.size();
 				target.m_copies *= pRam->m_elemCnt;
 				target.m_copies *= (pRam->m_bReadForInstrRead ? 1 : 0) + (pRam->m_bReadForMifWrite ? 1 : 0);
@@ -562,7 +565,7 @@ void CDsnInfo::InitBramUsage()
 				target.m_name = pRam->m_gblName;
 				target.m_pRamType = &pRam->m_ramType;
 				target.m_depth = 1 << pRam->m_addrW;
-				target.m_width = pRam->m_pType->m_packedBitWidth;
+				target.m_width = pRam->m_pType->GetPackedBitWidth();
 				target.m_copies = (int)mod.m_modInstList.size();
 				target.m_copies *= pRam->m_elemCnt;
 				target.m_copies *= (pRam->m_bReadForInstrRead ? 1 : 0) + (pRam->m_bReadForMifWrite ? 1 : 0);
@@ -590,7 +593,7 @@ void CDsnInfo::InitBramUsage()
 			else
 				target.m_depth = 1 << pShared->m_queueW.AsInt();
 
-			target.m_width = FindTypeWidth(pShared);
+			target.m_width = pShared->m_pType->GetPackedBitWidth();
 			target.m_width *= pShared->m_elemCnt;
 			target.m_copies = (int)mod.m_modInstList.size();
 			target.m_copies *= pShared->m_elemCnt;
@@ -740,17 +743,12 @@ bool CDsnInfo::FindCIntType(string name, int & width, bool & bSigned)
 	return false;
 }
 
-int CDsnInfo::FindTypeWidth(CField const * pField, int * pMinAlign, bool bHostType)
+int CDsnInfo::FindHostTypeWidth(CField const * pField)
 {
-	return FindTypeWidth(pField->m_name, pField->m_type, pField->m_fieldWidth, pField->m_lineInfo, pMinAlign, bHostType);
+	return FindHostTypeWidth(pField->m_name, pField->m_hostType, pField->m_fieldWidth, pField->m_lineInfo);
 }
 
-int CDsnInfo::FindHostTypeWidth(CField const * pField, int * pMinAlign)
-{
-	return FindTypeWidth(pField->m_name, pField->m_hostType, pField->m_fieldWidth, pField->m_lineInfo, pMinAlign, true);
-}
-
-int CDsnInfo::FindTypeWidth(string const &varName, string const &typeName, CHtString const &bitWidth, CLineInfo const &lineInfo, int * pMinAlign, bool bHostType)
+int CDsnInfo::FindHostTypeWidth(string const &varName, string const &typeName, CHtString const &bitWidth, CLineInfo const &lineInfo)
 {
 	// first remove trailing astricks
 	bool bPointer = false;
@@ -762,12 +760,7 @@ int CDsnInfo::FindTypeWidth(string const &varName, string const &typeName, CHtSt
 			break;
 	}
 
-	if (!bHostType && bPointer)
-		ParseMsg(Error, lineInfo, "use of pointer types is not supported");
-
 	string baseName = typeName.substr(0, i + 1);
-
-	int minAlign;
 
 	// first check if typeName was defined as a typedef
 	for (size_t i = 0; i < m_typedefList.size(); i += 1) {
@@ -775,8 +768,7 @@ int CDsnInfo::FindTypeWidth(string const &varName, string const &typeName, CHtSt
 
 		if (typeDef.m_name == baseName) {
 			HtlAssert(bitWidth.size() == 0);
-			int width = FindTypeWidth(varName, typeDef.m_type, typeDef.m_width, lineInfo, &minAlign, bHostType);
-			if (pMinAlign) *pMinAlign = minAlign;
+			int width = FindHostTypeWidth(varName, typeDef.m_type, typeDef.m_width, lineInfo);
 			return width == 0 ? 0 : (bPointer ? 64 : width);
 		}
 	}
@@ -789,10 +781,10 @@ int CDsnInfo::FindTypeWidth(string const &varName, string const &typeName, CHtSt
 
 		// found it, now determine width of struct/union
 
+		ValidateHostType(pRecord, lineInfo);
+
 		HtlAssert(bitWidth.size() == 0);
-		int width = bPointer ? 64 : FindStructWidth(*pRecord, &minAlign, bHostType);
-		if (pMinAlign) *pMinAlign = minAlign;
-		return width;
+		return bPointer ? 64 : pRecord->GetClangBitWidth();
 	}
 
 	// not found as typedef, must be a basic type
@@ -803,62 +795,17 @@ int CDsnInfo::FindTypeWidth(string const &varName, string const &typeName, CHtSt
 			if (bitWidth.size() > 0) {
 				if (bitWidth.AsInt() > basicType.m_width)
 					ParseMsg(Error, lineInfo, "%s bit field width (%d) too large for base type %s", varName.c_str(), bitWidth.AsInt(), typeName.c_str());
-				if (pMinAlign) *pMinAlign = basicType.m_width;
 				return bitWidth.AsInt();
 			}
-			if (pMinAlign) *pMinAlign = basicType.m_width;
 			return bPointer ? 64 : basicType.m_width;
 		}
 	}
 
-	if (bHostType) {
-		if (baseName != "void" || !bPointer) {
-			ParseMsg(Error, lineInfo, "type (%s) not supported for host call/return parameter", typeName.c_str());
-			return 0;
-		} else
-			return 64;
-	}
-
-	int scTypeLen = 0;
-	if (typeName.substr(0, scTypeLen = 6) == "sc_int" ||
-		typeName.substr(0, scTypeLen = 7) == "sc_uint" ||
-		typeName.substr(0, scTypeLen = 9) == "sc_bigint" ||
-		typeName.substr(0, scTypeLen = 10) == "sc_biguint") {
-		// evaluate width
-		char const * pStr = typeName.c_str() + scTypeLen + 1;
-
-		bool bErr;
-		string param = ParseTemplateParam(lineInfo, pStr, bErr);
-		if (bErr) return 0;
-
-		int width;
-		bool bIsSigned;
-		if (!m_defineTable.FindStringValue(lineInfo, param, width, bIsSigned)) {
-			ParseMsg(Error, lineInfo, "unable to determine width, '%s'", typeName.c_str());
-			return 0;
-		}
-
-		HtlAssert(bitWidth.size() == 0);
-		return width;
-	}
-
-	int htTypeLen = 0;
-	if (typeName.substr(0, htTypeLen = 6) == "ht_int" ||
-		typeName.substr(0, htTypeLen = 7) == "ht_uint") {
-
-		char * pEnd;
-		int width = strtol(typeName.c_str() + htTypeLen, &pEnd, 10);
-		if (pEnd == typeName.c_str() + htTypeLen) {
-			ParseMsg(Error, lineInfo, "unable to determine width, '%s'", typeName.c_str());
-			return 0;
-		}
-
-		return width;
-	}
-
-	ParseMsg(Error, lineInfo, "undefined type, '%s'", typeName.c_str());
-
-	return 0;
+	if (baseName != "void" || !bPointer) {
+		ParseMsg(Error, lineInfo, "type (%s) not supported for host call/return parameter", typeName.c_str());
+		return 0;
+	} else
+		return 64;
 }
 
 bool CDsnInfo::FindFieldInStruct(CLineInfo const &lineInfo, string const &type,
@@ -917,7 +864,7 @@ bool CDsnInfo::IsInFieldList(CLineInfo const &lineInfo, string const &fldName, v
 
 		} else if (pField->m_name == "") {	// AddStruct/AddUnion anonamous struct/union
 			bool bCStyle;
-			if (FindFieldInStruct(lineInfo, pField->m_type, fldName, true, bCStyle, pBaseField, pLastField)) {
+			if (FindFieldInStruct(lineInfo, pField->m_pType->m_typeName, fldName, true, bCStyle, pBaseField, pLastField)) {
 				pBaseField = pField;
 				return true;
 			}
@@ -972,7 +919,7 @@ bool CDsnInfo::IsInFieldList(CLineInfo const &lineInfo, string const &fldName, v
 			for (recordIdx = 0; recordIdx < m_recordList.size(); recordIdx += 1) {
 				CRecord * pRecord = m_recordList[recordIdx];
 
-				if (pRecord->m_typeName == pField->m_type)
+				if (pRecord->m_typeName == pField->m_pType->m_typeName)
 					break;
 			}
 
@@ -990,69 +937,19 @@ bool CDsnInfo::IsInFieldList(CLineInfo const &lineInfo, string const &fldName, v
 	return false;
 }
 
-int CDsnInfo::FindStructWidth(CRecord & record, int * pMinAlign, bool bHostType)
+void CDsnInfo::ValidateHostType(CType * pType, CLineInfo const & lineInfo)
 {
-	int width = 0;
-	if (record.m_bUnion) {
-		// find maximum field width
-		int minAlign = 1;
-		*pMinAlign = 1;
-		for (size_t fldIdx = 0; fldIdx < record.m_fieldList.size(); fldIdx += 1) {
-			CField * pField = record.m_fieldList[fldIdx];
-
-			int fldWidth;
-			if (pField->m_pType->IsRecord())
-				fldWidth = FindStructWidth(*pField->m_pType->AsRecord(), &minAlign, bHostType) * pField->m_elemCnt;
-			else
-				fldWidth = FindTypeWidth(pField, &minAlign, bHostType) * pField->m_elemCnt;
-
-			if (*pMinAlign) *pMinAlign = max(*pMinAlign, minAlign);
-			width = fldWidth > width ? fldWidth : width;
+	if (pType->IsRecord()) {
+		CRecord * pRecord = pType->AsRecord();
+		for (size_t i = 0; i < pRecord->m_fieldList.size(); i += 1) {
+			ValidateHostType(pRecord->m_fieldList[i]->m_pType, lineInfo);
 		}
 	} else {
-		// struct find sum of field widths
-		width = FindFieldListWidth(record.m_typeName, record.m_lineInfo, record.m_fieldList, pMinAlign, bHostType);
-	}
-	assert(width == record.m_packedBitWidth);
-	return width;
-}
-
-int CDsnInfo::FindFieldListWidth(string structName, CLineInfo &lineInfo, vector<CField *> &fieldList, int * pMinAlign, bool bHostType)
-{
-	int minAlign = 1;
-	int width = 0;
-
-	for (size_t fldIdx = 0; fldIdx < fieldList.size(); fldIdx += 1) {
-		CField * pField = fieldList[fldIdx];
-
-		int fieldWidth;
-		if (pField->m_pType->IsRecord())
-			fieldWidth = FindStructWidth(*pField->m_pType->AsRecord(), &minAlign, bHostType) * pField->m_elemCnt;
-		else
-			fieldWidth = FindTypeWidth(pField, &minAlign, bHostType) * pField->m_elemCnt;
-
-		if (bHostType) {
-			int rem = width % minAlign;
-			if (rem > 0 && bHostType) {
-				static vector<string> structList;
-				size_t i;
-				for (i = 0; i < structList.size(); i += 1)
-					if (structList[i] == structName)
-						break;
-				if (i == structList.size()) {
-					structList.push_back(structName);
-					ParseMsg(Error, lineInfo, "unsupported use of struct %s with unused bytes due to field alignment requirements", structName.c_str());
-					ParseMsg(Info, lineInfo, "replace unused bytes with named fields as a work around");
-				}
-			}
-			if (rem > 0)
-				width = width - rem + minAlign;
+		CHtInt * pHtInt = pType->AsInt();
+		if (pHtInt->m_clangMinAlign == 1) {
+			ParseMsg(Error, lineInfo, "unsupported hostType, %s", pHtInt->m_typeName.c_str());
 		}
-
-		width += fieldWidth;
 	}
-
-	return width;
 }
 
 void CDsnInfo::InitNativeCTypes()
@@ -1110,21 +1007,21 @@ void CDsnInfo::InitAndValidateTypes()
 		for (size_t shIdx = 0; shIdx < mod.m_shared.m_fieldList.size(); shIdx += 1) {
 			CField * pShared = mod.m_shared.m_fieldList[shIdx];
 
-			pShared->m_pType = FindType(pShared->m_type, -1, pShared->m_lineInfo);
+			pShared->m_pType = FindType(pShared->m_pType->m_typeName, -1, pShared->m_lineInfo);
 		}
 
 		// private variables
 		for (size_t prIdx = 0; prIdx < mod.m_threads.m_htPriv.m_fieldList.size(); prIdx += 1) {
 			CField * pPriv = mod.m_threads.m_htPriv.m_fieldList[prIdx];
 
-			pPriv->m_pType = FindType(pPriv->m_type, -1, pPriv->m_lineInfo);
+			pPriv->m_pType = FindType(pPriv->m_pType->m_typeName, -1, pPriv->m_lineInfo);
 		}
 
 		// stage variables
 		for (size_t stgIdx = 0; stgIdx < mod.m_stage.m_fieldList.size(); stgIdx += 1) {
 			CField * pStage = mod.m_stage.m_fieldList[stgIdx];
 
-			pStage->m_pType = FindType(pStage->m_type, -1, pStage->m_lineInfo);
+			pStage->m_pType = FindType(pStage->m_pType->m_typeName, -1, pStage->m_lineInfo);
 		}
 	}
 }
@@ -1164,7 +1061,6 @@ void CDsnInfo::InitAndValidateRecord(CRecord * pRecord)
 	int clangBitWidth = 0;
 	int clangMinAlign = 8;
 	int prevTypeWidth = 0;
-	int packedBitWidth = 0;
 
 	for (size_t fldIdx = 0; fldIdx < pRecord->m_fieldList.size(); fldIdx += 1) {
 		CField * pField = pRecord->m_fieldList[fldIdx];
@@ -1178,17 +1074,12 @@ void CDsnInfo::InitAndValidateRecord(CRecord * pRecord)
 			InitAndValidateRecord(pField->m_pType->AsRecord());
 			pType = pField->m_pType;
 		} else {
-			if (!FindType(pField->m_type, -1, pField->m_lineInfo)) {
+			if (!FindType(pField->m_pType->m_typeName, -1, pField->m_lineInfo)) {
 				HtlAssert(0);
 				continue;
 			}
 
 			pType = pField->m_pType;
-
-			//assert(pField->m_pType == pType);
-
-			//if (pField->m_pType->IsRecord())
-			//	InitAndValidateRecord(pType->AsRecord());
 		}
 
 		pField->InitDimen(pField->m_lineInfo);
@@ -1219,7 +1110,7 @@ void CDsnInfo::InitAndValidateRecord(CRecord * pRecord)
 
 		} else {
 			fieldWidth = pType->m_clangBitWidth;
-			packedFieldWidth = pType->m_packedBitWidth;
+			packedFieldWidth = pType->GetPackedBitWidth();
 			prevTypeWidth = 0;
 
 			if (!pRecord->m_bUnion) {
@@ -1235,11 +1126,6 @@ void CDsnInfo::InitAndValidateRecord(CRecord * pRecord)
 				clangBitWidth += pType->m_clangBitWidth * pField->m_elemCnt;
 		}
 
-		if (pRecord->m_bUnion)
-			packedBitWidth = max(packedBitWidth, packedFieldWidth * (int)pField->m_elemCnt);
-		else
-			packedBitWidth += packedFieldWidth * pField->m_elemCnt;
-
 		pField->m_clangBitPos = clangBitPos;
 		if (!pRecord->m_bUnion)
 			clangBitPos += fieldWidth * pField->m_elemCnt;
@@ -1252,7 +1138,6 @@ void CDsnInfo::InitAndValidateRecord(CRecord * pRecord)
 
 	pRecord->m_clangBitWidth = clangBitWidth;
 	pRecord->m_clangMinAlign = clangMinAlign;
-	pRecord->m_packedBitWidth = packedBitWidth;
 }
 
 // Check if type name is valid C language integer, if so return stdint type

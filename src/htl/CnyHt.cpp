@@ -14,38 +14,40 @@
 void SigHandler(int signo) { HtlAssert(0); }
 void InstallSigHandler() { signal(SIGSEGV, SigHandler); }
 
+CDsnInfo * g_pDsnInfo = 0;
+
 int main(int argc, char const **argv)
 {
 	InstallSigHandler();
 
 	g_appArgs.Parse(argc, argv);
 
-	CDsnInfo dsnInfo;
+	g_pDsnInfo = new CDsnInfo;
 
 	for (int i = 0; i < g_appArgs.GetInputFileCnt(); i += 1)
-		dsnInfo.loadHtdFile(g_appArgs.GetInputFile(i));
+		g_pDsnInfo->loadHtdFile(g_appArgs.GetInputFile(i));
 
-	dsnInfo.LoadDefineList();
+	g_pDsnInfo->LoadDefineList();
 
-	dsnInfo.loadHtiFile(g_appArgs.GetInstanceFile());
+	g_pDsnInfo->loadHtiFile(g_appArgs.GetInstanceFile());
 
 	if (CLex::GetParseErrorCnt() > 0)
 		CPreProcess::ParseMsg(Fatal, "Previous errors prevent generation of files");
 
 	// initialize and validate dsnInfo
-	dsnInfo.InitializeAndValidate();
+	g_pDsnInfo->InitializeAndValidate();
 
-	dsnInfo.DrawModuleCmdRelationships();
+	g_pDsnInfo->DrawModuleCmdRelationships();
 
-	dsnInfo.GenPersFiles();
+	g_pDsnInfo->GenPersFiles();
 
 	g_appArgs.GetDsnRpt().GenApiEnd();
 	g_appArgs.GetDsnRpt().GenCallGraph();
 
-	dsnInfo.ReportRamFieldUsage();
+	g_pDsnInfo->ReportRamFieldUsage();
 
 #ifdef _WIN32
-	dsnInfo.GenMsvsProjectFiles();
+	g_pDsnInfo->GenMsvsProjectFiles();
 #endif
 
 	return 0;

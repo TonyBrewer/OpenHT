@@ -34,7 +34,12 @@ struct CHtString {
 	const char * c_str() { return m_string.c_str(); }
 
 	string & AsStr() { return m_string; }
-	int AsInt() const { HtlAssert(m_bIsValid); return m_value; }
+	int AsInt() const { 
+		//if (!m_bIsValid)
+		//	bool stop = true;
+		HtlAssert(m_bIsValid);
+		return m_value; 
+	}
 
 	bool IsValid() { return m_bIsValid; }
 	void InitValue(CLineInfo const &lineInfo, bool bRequired = true, int defValue = 0, bool bIsSigned = true);

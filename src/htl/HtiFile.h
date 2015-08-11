@@ -21,6 +21,7 @@ struct CDsnInfo;
 struct CInstanceParams;
 struct CModule;
 struct CMsgIntf;
+struct CType;
 
 class HtiFile {
 public:
@@ -137,7 +138,7 @@ public:
 
 		CLineInfo m_lineInfo;
 
-		string m_type;
+		CType * m_pType;
 	};
 
 private:

@@ -2894,8 +2894,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 			for (size_t privIdx = 0; privIdx < mod.m_threads.m_htPriv.m_fieldList.size(); privIdx += 1) {
 				CField * pPriv = mod.m_threads.m_htPriv.m_fieldList[privIdx];
 
-
-				int privWidth = FindTypeWidth(pPriv);
+				int privWidth = pPriv->m_pType->GetPackedBitWidth();
 
 				vector<int> refList(pPriv->m_dimenList.size());
 

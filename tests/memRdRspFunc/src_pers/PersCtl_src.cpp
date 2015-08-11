@@ -57,7 +57,17 @@ void CPersCtl::PersCtl()
 				break;
 			}
 
-			SendCall_f5(RETURN, PR_addr);
+			SendCall_f5(CALL_F8, PR_addr);
+			break;
+		}
+		case CALL_F8:
+		{
+			if (SendCallBusy_f8()) {
+				HtRetry();
+				break;
+			}
+
+			SendCall_f8(RETURN, PR_addr);
 			break;
 		}
 		case RETURN:

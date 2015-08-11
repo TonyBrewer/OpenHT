@@ -1,0 +1,103 @@
+typedef ht_uint48 MemAddr_t;
+
+/////////////////////////////////////
+// CTL
+
+dsnInfo.AddModule(name=Ctl, htIdW=3);
+
+Ctl.AddInstr(name=CTL_ENTRY);
+Ctl.AddInstr(name=CTL_RTN);
+
+Ctl.AddEntry(func=main, instr=CTL_ENTRY, host=true)
+	.AddParam(type=uint8_t, name=testId)
+	.AddParam(type=uint8_t, name=threadId)
+	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=memAddr)
+	;
+
+Ctl.AddReturn(func=main)
+	;
+
+Ctl.AddCall(func=rdPause);
+Ctl.AddCall(func=wrPause);
+
+Ctl.AddPrivate()
+	.AddVar(type=uint8_t, name=testId)
+	.AddVar(type=uint8_t, name=threadId)
+	.AddVar(type=MemAddr_t, name=memAddr)
+	;
+
+
+/////////////////////////////////////
+// RD
+
+#define RD_HTID_W 3
+dsnInfo.AddModule(name=Rd, htIdW=RD_HTID_W);
+
+Rd.AddInstr(name=RD_ENTRY);
+Rd.AddInstr(name=RD_REQ);
+Rd.AddInstr(name=RD_PAUSE);
+Rd.AddInstr(name=RD_LOOP);
+Rd.AddInstr(name=RD_RTN);
+
+Rd.AddEntry(func=rdPause, instr=RD_ENTRY)
+	.AddParam(type=uint8_t, name=threadId)
+	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=memAddr)
+	;
+
+Rd.AddReturn(func=rdPause)
+	;
+
+Rd.AddBarrier();
+
+Rd.AddPrivate()
+	.AddVar(type=uint8_t, name=threadId)
+	.AddVar(type=MemAddr_t, name=memAddr)
+	.AddVar(type=ht_uint8, name=memOffset)
+	.AddVar(type=bool, name=bStandalonePause)
+	.AddVar(type=uint8_t, name=reqIdx)
+	.AddVar(type=uint8_t, name=loopIdx)
+	;
+
+Rd.AddReadMem()
+	.AddFunction(name=rdFunc, rspInfoW=8, elemCntW=4, memSrc=host)
+	;
+
+/////////////////////////////////////
+// WR
+
+#define WR_HTID_W 3
+dsnInfo.AddModule(name=Wr, htIdW=WR_HTID_W);
+
+Wr.AddInstr(name=WR_ENTRY);
+Wr.AddInstr(name=WR_DATA);
+Wr.AddInstr(name=WR_REQ);
+Wr.AddInstr(name=WR_PAUSE);
+Wr.AddInstr(name=WR_LOOP);
+Wr.AddInstr(name=WR_RTN);
+
+Wr.AddEntry(func=wrPause, instr=WR_ENTRY)
+	.AddParam(type=uint8_t, name=threadId)
+	.AddParam(hostType=uint64_t *, type=MemAddr_t, name=memAddr)
+	;
+
+Wr.AddReturn(func=wrPause)
+	;
+
+Wr.AddBarrier();
+
+Wr.AddPrivate()
+	.AddVar(type=uint8_t, name=threadId)
+	.AddVar(type=MemAddr_t, name=memAddr)
+	.AddVar(type=ht_uint32, name=memOffset)
+	.AddVar(type=bool, name=bStandalonePause)
+	.AddVar(type=uint8_t, name=reqIdx)
+	.AddVar(type=uint8_t, name=loopIdx)
+	;
+
+Wr.AddShared()
+	.AddVar(type=uint64_t, name=data, addr1W=8)
+	;
+
+Wr.AddWriteMem()
+	.AddSrc(var=data(#), memDst=host)
+	;
