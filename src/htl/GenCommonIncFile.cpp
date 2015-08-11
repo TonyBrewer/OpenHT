@@ -376,7 +376,7 @@ void CDsnInfo::MarkNeededIncludeStructs(CRecord * pRecord)
 		for (size_t struct2Idx = 0; struct2Idx < m_recordList.size(); struct2Idx += 1) {
 			CRecord * pRecord2 = m_recordList[struct2Idx];
 
-			if (pRecord2->m_typeName == pField->m_type && !pRecord2->m_bNeedIntf) {
+			if (pRecord2->m_typeName == pField->m_pType->m_typeName && !pRecord2->m_bNeedIntf) {
 				pRecord2->m_bNeedIntf = true;
 				MarkNeededIncludeStructs(pRecord2);
 			}
@@ -427,7 +427,7 @@ void CDsnInfo::GenGlobalVarWriteTypes(CHtFile & htFile, CType * pType, int &atom
 			if (field.m_fieldWidth.size() > 0) {
 				int width;
 				bool bSigned;
-				bool bFound = FindCIntType(field.m_type, width, bSigned);
+				bool bFound = FindCIntType(field.m_pType->m_typeName, width, bSigned);
 				HtlAssert(bFound);
 
 				pFieldType = FindHtIntType(bSigned ? eSigned : eUnsigned, field.m_fieldWidth.AsInt());
@@ -700,7 +700,7 @@ void CDsnInfo::GenGlobalVarWriteTypes(CHtFile & htFile, CType * pType, int &atom
 			if (field.m_fieldWidth.size() > 0) {
 				int width;
 				bool bSigned;
-				bool bFound = FindCIntType(field.m_type, width, bSigned);
+				bool bFound = FindCIntType(field.m_pType->m_typeName, width, bSigned);
 				HtlAssert(bFound);
 
 				if (bSigned)
@@ -708,7 +708,7 @@ void CDsnInfo::GenGlobalVarWriteTypes(CHtFile & htFile, CType * pType, int &atom
 				else
 					fieldTypeName += VA("ht_uint%d", field.m_fieldWidth.AsInt());
 			} else {
-				fieldTypeName += field.m_type;
+				fieldTypeName += field.m_pType->m_typeName;
 			}
 
 			if (!field.m_pType->IsRecord()) {

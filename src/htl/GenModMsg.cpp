@@ -540,10 +540,10 @@ void CDsnInfo::SetMsgIntfConnUsedFlags(bool bInBound, CMsgIntfConn * pConn, CMod
 
 	if (bInBound) {
 		pMsgIntf->m_outModName = pConn->m_outMsgIntf.m_pMod->m_modName;
-		if (pConn->m_type.size() > 0 && pConn->m_type != pMsgIntf->m_pType->m_typeName)
-			ParseMsg(Error, pConn->m_lineInfo, "incompatible message types: %s and %s", pConn->m_type.c_str(), pMsgIntf->m_pType->m_typeName.c_str());
+		if (pConn->m_pType && pConn->m_pType->m_typeName != pMsgIntf->m_pType->m_typeName)
+			ParseMsg(Error, pConn->m_lineInfo, "incompatible message types: %s and %s", pConn->m_pType->m_typeName.c_str(), pMsgIntf->m_pType->m_typeName.c_str());
 	} else {
-		pConn->m_type = pMsgIntf->m_pType->m_typeName;
+		pConn->m_pType = pMsgIntf->m_pType;
 	}
 }
 
@@ -1235,7 +1235,7 @@ void CDsnInfo::GenAeNextMsgIntf(HtiFile::CMsgIntfConn * pMicAeNext)
 	CHtString bitWidth;
 	bitWidth.SetValue(0);
 
-	int msgDwCnt = (FindTypeWidth(varName, pMicAeNext->m_type, bitWidth, pMicAeNext->m_lineInfo) + 31) / 32;
+	int msgDwCnt = ((pMicAeNext->m_pType->GetPackedBitWidth()) + 31) / 32;
 	int msgDwCntW = FindLg2(msgDwCnt - 1);
 	{
 		////////////////////////////////////////////////////////////////
@@ -1256,7 +1256,7 @@ void CDsnInfo::GenAeNextMsgIntf(HtiFile::CMsgIntfConn * pMicAeNext)
 		fprintf(incFile, "\n");
 
 		fprintf(incFile, "\tsc_in<bool> i_msgRdy;\n");
-		fprintf(incFile, "\tsc_in<%s> i_msg;\n", pMicAeNext->m_type.c_str());
+		fprintf(incFile, "\tsc_in<%s> i_msg;\n", pMicAeNext->m_pType->m_typeName.c_str());
 		fprintf(incFile, "\tsc_out<bool> o_msgFull;\n");
 		fprintf(incFile, "\n");
 
@@ -1266,7 +1266,7 @@ void CDsnInfo::GenAeNextMsgIntf(HtiFile::CMsgIntfConn * pMicAeNext)
 		fprintf(incFile, "\n");
 
 		if (msgDwCnt > 1) {
-			fprintf(incFile, "\tht_dist_que<%s, 5> m_msg;\n", pMicAeNext->m_type.c_str());
+			fprintf(incFile, "\tht_dist_que<%s, 5> m_msg;\n", pMicAeNext->m_pType->m_typeName.c_str());
 			fprintf(incFile, "\tbool r_mon_valid;\n");
 			fprintf(incFile, "\tuint32_t r_mon_data;\n");
 			fprintf(incFile, "\tbool r_mon_stall;\n");
@@ -1275,7 +1275,7 @@ void CDsnInfo::GenAeNextMsgIntf(HtiFile::CMsgIntfConn * pMicAeNext)
 			fprintf(incFile, "\tbool r_reset1x;\n");
 		} else {
 			fprintf(incFile, "\tbool r_mon_valid;\n");
-			fprintf(incFile, "\t%s r_msg;\n", pMicAeNext->m_type.c_str());
+			fprintf(incFile, "\t%s r_msg;\n", pMicAeNext->m_pType->m_typeName.c_str());
 			fprintf(incFile, "\tbool r_msgFull;\n");
 		}
 		fprintf(incFile, "\n");
@@ -1327,8 +1327,8 @@ void CDsnInfo::GenAeNextMsgIntf(HtiFile::CMsgIntfConn * pMicAeNext)
 		fprintf(cppFile, "void CPersMonSb::PersMonSb_1x()\n");
 		fprintf(cppFile, "{\n");
 
-		fprintf(cppFile, "\tunion %sUnion {\n", pMicAeNext->m_type.c_str());
-		fprintf(cppFile, "\t\t%s m_msg;\n", pMicAeNext->m_type.c_str());
+		fprintf(cppFile, "\tunion %sUnion {\n", pMicAeNext->m_pType->m_typeName.c_str());
+		fprintf(cppFile, "\t\t%s m_msg;\n", pMicAeNext->m_pType->m_typeName.c_str());
 		if (msgDwCnt > 1)
 			fprintf(cppFile, "\t\tuint32_t m_data[%d];\n", msgDwCnt);
 		else
@@ -1356,16 +1356,16 @@ void CDsnInfo::GenAeNextMsgIntf(HtiFile::CMsgIntfConn * pMicAeNext)
 		}
 		fprintf(cppFile, "\n");
 
-		fprintf(cppFile, "\t%sUnion %sUnion;\n", pMicAeNext->m_type.c_str(), pMicAeNext->m_type.c_str() + 1);
+		fprintf(cppFile, "\t%sUnion %sUnion;\n", pMicAeNext->m_pType->m_typeName.c_str(), pMicAeNext->m_pType->m_typeName.c_str() + 1);
 		if (msgDwCnt > 1)
-			fprintf(cppFile, "\t%sUnion.m_msg = m_msg.front();\n", pMicAeNext->m_type.c_str() + 1);
+			fprintf(cppFile, "\t%sUnion.m_msg = m_msg.front();\n", pMicAeNext->m_pType->m_typeName.c_str() + 1);
 		else
-			fprintf(cppFile, "\t%sUnion.m_msg = r_msg;\n", pMicAeNext->m_type.c_str() + 1);
+			fprintf(cppFile, "\t%sUnion.m_msg = r_msg;\n", pMicAeNext->m_pType->m_typeName.c_str() + 1);
 		fprintf(cppFile, "\n");
 
 		if (msgDwCnt > 1) {
 			fprintf(cppFile, "\tr_mon_valid = !m_msg.empty() && !r_mon_stall;\n");
-			fprintf(cppFile, "\tr_mon_data = %sUnion.m_data[r_msgIdx];\n", pMicAeNext->m_type.c_str() + 1);
+			fprintf(cppFile, "\tr_mon_data = %sUnion.m_data[r_msgIdx];\n", pMicAeNext->m_pType->m_typeName.c_str() + 1);
 			fprintf(cppFile, "\tr_mon_stall = i_mon_stall;\n");
 			fprintf(cppFile, "\tr_msgFull = m_msg.size() > 28;\n");
 			fprintf(cppFile, "\tr_msgIdx = r_reset1x ? (ht_uint%d)0 : c_msgIdx;\n", msgDwCntW);
@@ -1383,7 +1383,7 @@ void CDsnInfo::GenAeNextMsgIntf(HtiFile::CMsgIntfConn * pMicAeNext)
 		if (msgDwCnt > 1)
 			fprintf(cppFile, "\to_mon_data = r_mon_data;\n");
 		else
-			fprintf(cppFile, "\to_mon_data = %sUnion.m_data;\n", pMicAeNext->m_type.c_str() + 1);
+			fprintf(cppFile, "\to_mon_data = %sUnion.m_data;\n", pMicAeNext->m_pType->m_typeName.c_str() + 1);
 		fprintf(cppFile, "\to_msgFull = r_msgFull;\n");
 		fprintf(cppFile, "}\n");
 
@@ -1409,7 +1409,7 @@ void CDsnInfo::GenAeNextMsgIntf(HtiFile::CMsgIntfConn * pMicAeNext)
 		fprintf(incFile, "\n");
 
 		fprintf(incFile, "\tsc_out<bool> o_msgRdy;\n");
-		fprintf(incFile, "\tsc_out<%s> o_msg;\n", pMicAeNext->m_type.c_str());
+		fprintf(incFile, "\tsc_out<%s> o_msg;\n", pMicAeNext->m_pType->m_typeName.c_str());
 		fprintf(incFile, "\tsc_in<bool> i_msgFull;\n");
 		fprintf(incFile, "\n");
 
@@ -1420,7 +1420,7 @@ void CDsnInfo::GenAeNextMsgIntf(HtiFile::CMsgIntfConn * pMicAeNext)
 
 		fprintf(incFile, "\tbool r_msgFull;\n");
 		fprintf(incFile, "\tbool r_msgRdy;\n");
-		fprintf(incFile, "\t%s r_msg;\n", pMicAeNext->m_type.c_str());
+		fprintf(incFile, "\t%s r_msg;\n", pMicAeNext->m_pType->m_typeName.c_str());
 		if (msgDwCnt > 1) {
 			fprintf(incFile, "\tht_uint%d r_msgIdx;\n", msgDwCntW);
 			fprintf(incFile, "\tbool r_reset1x;\n");
@@ -1470,8 +1470,8 @@ void CDsnInfo::GenAeNextMsgIntf(HtiFile::CMsgIntfConn * pMicAeNext)
 		fprintf(cppFile, "void CPersMipSb::PersMipSb_1x()\n");
 		fprintf(cppFile, "{\n");
 
-		fprintf(cppFile, "\tunion %sUnion {\n", pMicAeNext->m_type.c_str());
-		fprintf(cppFile, "\t\t%s m_msg;\n", pMicAeNext->m_type.c_str());
+		fprintf(cppFile, "\tunion %sUnion {\n", pMicAeNext->m_pType->m_typeName.c_str());
+		fprintf(cppFile, "\t\t%s m_msg;\n", pMicAeNext->m_pType->m_typeName.c_str());
 		if (msgDwCnt > 1)
 			fprintf(cppFile, "\t\tuint32_t m_data[%d];\n", msgDwCnt);
 		else
@@ -1479,12 +1479,12 @@ void CDsnInfo::GenAeNextMsgIntf(HtiFile::CMsgIntfConn * pMicAeNext)
 		fprintf(cppFile, "\t};\n");
 		fprintf(cppFile, "\n");
 
-		fprintf(cppFile, "\t%sUnion %sUnion;\n", pMicAeNext->m_type.c_str(), pMicAeNext->m_type.c_str() + 1);
+		fprintf(cppFile, "\t%sUnion %sUnion;\n", pMicAeNext->m_pType->m_typeName.c_str(), pMicAeNext->m_pType->m_typeName.c_str() + 1);
 		if (msgDwCnt > 1) {
-			fprintf(cppFile, "\t%sUnion.m_msg = r_msg;\n", pMicAeNext->m_type.c_str() + 1);
-			fprintf(cppFile, "\t%sUnion.m_data[r_msgIdx] = i_mip_data;\n", pMicAeNext->m_type.c_str() + 1);
+			fprintf(cppFile, "\t%sUnion.m_msg = r_msg;\n", pMicAeNext->m_pType->m_typeName.c_str() + 1);
+			fprintf(cppFile, "\t%sUnion.m_data[r_msgIdx] = i_mip_data;\n", pMicAeNext->m_pType->m_typeName.c_str() + 1);
 		} else
-			fprintf(cppFile, "\t%sUnion.m_data = i_mip_data;\n", pMicAeNext->m_type.c_str() + 1);
+			fprintf(cppFile, "\t%sUnion.m_data = i_mip_data;\n", pMicAeNext->m_pType->m_typeName.c_str() + 1);
 		fprintf(cppFile, "\n");
 
 		if (msgDwCnt > 1) {
@@ -1506,7 +1506,7 @@ void CDsnInfo::GenAeNextMsgIntf(HtiFile::CMsgIntfConn * pMicAeNext)
 			fprintf(cppFile, "\tr_msgRdy = i_mip_valid;\n");
 		}
 
-		fprintf(cppFile, "\tr_msg = %sUnion.m_msg;\n", pMicAeNext->m_type.c_str() + 1);
+		fprintf(cppFile, "\tr_msg = %sUnion.m_msg;\n", pMicAeNext->m_pType->m_typeName.c_str() + 1);
 		fprintf(cppFile, "\tr_msgFull = i_msgFull;\n");
 		if (msgDwCnt > 1) {
 			fprintf(cppFile, "\tr_msgIdx = r_reset1x ? (ht_uint%d)0 : c_msgIdx;\n", msgDwCntW);
@@ -1532,7 +1532,7 @@ void CDsnInfo::GenAePrevMsgIntf(HtiFile::CMsgIntfConn * pMicAePrev)
 	CHtString bitWidth;
 	bitWidth.SetValue(0);
 
-	int msgDwCnt = (FindTypeWidth(varName, pMicAePrev->m_type, bitWidth, pMicAePrev->m_lineInfo) + 31) / 32;
+	int msgDwCnt = ((pMicAePrev->m_pType->GetPackedBitWidth()) + 31) / 32;
 	int msgDwCntW = FindLg2(msgDwCnt - 1);
 	{
 		////////////////////////////////////////////////////////////////
@@ -1553,7 +1553,7 @@ void CDsnInfo::GenAePrevMsgIntf(HtiFile::CMsgIntfConn * pMicAePrev)
 		fprintf(incFile, "\n");
 
 		fprintf(incFile, "\tsc_in<bool> i_msgRdy;\n");
-		fprintf(incFile, "\tsc_in<%s> i_msg;\n", pMicAePrev->m_type.c_str());
+		fprintf(incFile, "\tsc_in<%s> i_msg;\n", pMicAePrev->m_pType->m_typeName.c_str());
 		fprintf(incFile, "\tsc_out<bool> o_msgFull;\n");
 		fprintf(incFile, "\n");
 
@@ -1563,7 +1563,7 @@ void CDsnInfo::GenAePrevMsgIntf(HtiFile::CMsgIntfConn * pMicAePrev)
 		fprintf(incFile, "\n");
 
 		if (msgDwCnt > 1) {
-			fprintf(incFile, "\tht_dist_que<%s, 5> m_msg;\n", pMicAePrev->m_type.c_str());
+			fprintf(incFile, "\tht_dist_que<%s, 5> m_msg;\n", pMicAePrev->m_pType->m_typeName.c_str());
 			fprintf(incFile, "\tbool r_mop_valid;\n");
 			fprintf(incFile, "\tuint32_t r_mop_data;\n");
 			fprintf(incFile, "\tbool r_mop_stall;\n");
@@ -1572,7 +1572,7 @@ void CDsnInfo::GenAePrevMsgIntf(HtiFile::CMsgIntfConn * pMicAePrev)
 			fprintf(incFile, "\tbool r_reset1x;\n");
 		} else {
 			fprintf(incFile, "\tbool r_mop_valid;\n");
-			fprintf(incFile, "\t%s r_msg;\n", pMicAePrev->m_type.c_str());
+			fprintf(incFile, "\t%s r_msg;\n", pMicAePrev->m_pType->m_typeName.c_str());
 			fprintf(incFile, "\tbool r_msgFull;\n");
 		}
 		fprintf(incFile, "\n");
@@ -1624,8 +1624,8 @@ void CDsnInfo::GenAePrevMsgIntf(HtiFile::CMsgIntfConn * pMicAePrev)
 		fprintf(cppFile, "void CPersMopSb::PersMopSb_1x()\n");
 		fprintf(cppFile, "{\n");
 
-		fprintf(cppFile, "\tunion %sUnion {\n", pMicAePrev->m_type.c_str());
-		fprintf(cppFile, "\t\t%s m_msg;\n", pMicAePrev->m_type.c_str());
+		fprintf(cppFile, "\tunion %sUnion {\n", pMicAePrev->m_pType->m_typeName.c_str());
+		fprintf(cppFile, "\t\t%s m_msg;\n", pMicAePrev->m_pType->m_typeName.c_str());
 		if (msgDwCnt > 1)
 			fprintf(cppFile, "\t\tuint32_t m_data[%d];\n", msgDwCnt);
 		else
@@ -1653,16 +1653,16 @@ void CDsnInfo::GenAePrevMsgIntf(HtiFile::CMsgIntfConn * pMicAePrev)
 		}
 		fprintf(cppFile, "\n");
 
-		fprintf(cppFile, "\t%sUnion %sUnion;\n", pMicAePrev->m_type.c_str(), pMicAePrev->m_type.c_str() + 1);
+		fprintf(cppFile, "\t%sUnion %sUnion;\n", pMicAePrev->m_pType->m_typeName.c_str(), pMicAePrev->m_pType->m_typeName.c_str() + 1);
 		if (msgDwCnt > 1)
-			fprintf(cppFile, "\t%sUnion.m_msg = m_msg.front();\n", pMicAePrev->m_type.c_str() + 1);
+			fprintf(cppFile, "\t%sUnion.m_msg = m_msg.front();\n", pMicAePrev->m_pType->m_typeName.c_str() + 1);
 		else
-			fprintf(cppFile, "\t%sUnion.m_msg = r_msg;\n", pMicAePrev->m_type.c_str() + 1);
+			fprintf(cppFile, "\t%sUnion.m_msg = r_msg;\n", pMicAePrev->m_pType->m_typeName.c_str() + 1);
 		fprintf(cppFile, "\n");
 
 		if (msgDwCnt > 1) {
 			fprintf(cppFile, "\tr_mop_valid = !m_msg.empty() && !r_mop_stall;\n");
-			fprintf(cppFile, "\tr_mop_data = %sUnion.m_data[r_msgIdx];\n", pMicAePrev->m_type.c_str() + 1);
+			fprintf(cppFile, "\tr_mop_data = %sUnion.m_data[r_msgIdx];\n", pMicAePrev->m_pType->m_typeName.c_str() + 1);
 			fprintf(cppFile, "\tr_mop_stall = i_mop_stall;\n");
 			fprintf(cppFile, "\tr_msgFull = m_msg.size() > 28;\n");
 			fprintf(cppFile, "\tr_msgIdx = r_reset1x ? (ht_uint%d)0 : c_msgIdx;\n", msgDwCntW);
@@ -1680,7 +1680,7 @@ void CDsnInfo::GenAePrevMsgIntf(HtiFile::CMsgIntfConn * pMicAePrev)
 		if (msgDwCnt > 1)
 			fprintf(cppFile, "\to_mop_data = r_mop_data;\n");
 		else
-			fprintf(cppFile, "\to_mop_data = %sUnion.m_data;\n", pMicAePrev->m_type.c_str() + 1);
+			fprintf(cppFile, "\to_mop_data = %sUnion.m_data;\n", pMicAePrev->m_pType->m_typeName.c_str() + 1);
 		fprintf(cppFile, "\to_msgFull = r_msgFull;\n");
 		fprintf(cppFile, "}\n");
 
@@ -1706,7 +1706,7 @@ void CDsnInfo::GenAePrevMsgIntf(HtiFile::CMsgIntfConn * pMicAePrev)
 		fprintf(incFile, "\n");
 
 		fprintf(incFile, "\tsc_out<bool> o_msgRdy;\n");
-		fprintf(incFile, "\tsc_out<%s> o_msg;\n", pMicAePrev->m_type.c_str());
+		fprintf(incFile, "\tsc_out<%s> o_msg;\n", pMicAePrev->m_pType->m_typeName.c_str());
 		fprintf(incFile, "\tsc_in<bool> i_msgFull;\n");
 		fprintf(incFile, "\n");
 
@@ -1717,7 +1717,7 @@ void CDsnInfo::GenAePrevMsgIntf(HtiFile::CMsgIntfConn * pMicAePrev)
 
 		fprintf(incFile, "\tbool r_msgFull;\n");
 		fprintf(incFile, "\tbool r_msgRdy;\n");
-		fprintf(incFile, "\t%s r_msg;\n", pMicAePrev->m_type.c_str());
+		fprintf(incFile, "\t%s r_msg;\n", pMicAePrev->m_pType->m_typeName.c_str());
 		if (msgDwCnt > 1) {
 			fprintf(incFile, "\tht_uint%d r_msgIdx;\n", msgDwCntW);
 			fprintf(incFile, "\tbool r_reset1x;\n");
@@ -1767,8 +1767,8 @@ void CDsnInfo::GenAePrevMsgIntf(HtiFile::CMsgIntfConn * pMicAePrev)
 		fprintf(cppFile, "void CPersMinSb::PersMinSb_1x()\n");
 		fprintf(cppFile, "{\n");
 
-		fprintf(cppFile, "\tunion %sUnion {\n", pMicAePrev->m_type.c_str());
-		fprintf(cppFile, "\t\t%s m_msg;\n", pMicAePrev->m_type.c_str());
+		fprintf(cppFile, "\tunion %sUnion {\n", pMicAePrev->m_pType->m_typeName.c_str());
+		fprintf(cppFile, "\t\t%s m_msg;\n", pMicAePrev->m_pType->m_typeName.c_str());
 		if (msgDwCnt > 1)
 			fprintf(cppFile, "\t\tuint32_t m_data[%d];\n", msgDwCnt);
 		else
@@ -1776,12 +1776,12 @@ void CDsnInfo::GenAePrevMsgIntf(HtiFile::CMsgIntfConn * pMicAePrev)
 		fprintf(cppFile, "\t};\n");
 		fprintf(cppFile, "\n");
 
-		fprintf(cppFile, "\t%sUnion %sUnion;\n", pMicAePrev->m_type.c_str(), pMicAePrev->m_type.c_str() + 1);
+		fprintf(cppFile, "\t%sUnion %sUnion;\n", pMicAePrev->m_pType->m_typeName.c_str(), pMicAePrev->m_pType->m_typeName.c_str() + 1);
 		if (msgDwCnt > 1) {
-			fprintf(cppFile, "\t%sUnion.m_msg = r_msg;\n", pMicAePrev->m_type.c_str() + 1);
-			fprintf(cppFile, "\t%sUnion.m_data[r_msgIdx] = i_min_data;\n", pMicAePrev->m_type.c_str() + 1);
+			fprintf(cppFile, "\t%sUnion.m_msg = r_msg;\n", pMicAePrev->m_pType->m_typeName.c_str() + 1);
+			fprintf(cppFile, "\t%sUnion.m_data[r_msgIdx] = i_min_data;\n", pMicAePrev->m_pType->m_typeName.c_str() + 1);
 		} else
-			fprintf(cppFile, "\t%sUnion.m_data = i_min_data;\n", pMicAePrev->m_type.c_str() + 1);
+			fprintf(cppFile, "\t%sUnion.m_data = i_min_data;\n", pMicAePrev->m_pType->m_typeName.c_str() + 1);
 		fprintf(cppFile, "\n");
 
 		if (msgDwCnt > 1) {
@@ -1803,7 +1803,7 @@ void CDsnInfo::GenAePrevMsgIntf(HtiFile::CMsgIntfConn * pMicAePrev)
 			fprintf(cppFile, "\tr_msgRdy = i_min_valid;\n");
 		}
 
-		fprintf(cppFile, "\tr_msg = %sUnion.m_msg;\n", pMicAePrev->m_type.c_str() + 1);
+		fprintf(cppFile, "\tr_msg = %sUnion.m_msg;\n", pMicAePrev->m_pType->m_typeName.c_str() + 1);
 		fprintf(cppFile, "\tr_msgFull = i_msgFull;\n");
 		if (msgDwCnt > 1) {
 			fprintf(cppFile, "\tr_msgIdx = r_reset1x ? (ht_uint%d)0 : c_msgIdx;\n", msgDwCntW);

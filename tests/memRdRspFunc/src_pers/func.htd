@@ -69,10 +69,10 @@ f1.AddReturn(func=f1)
 	;
 
 f1.AddReadMem()
-	.AddFunction(name=func16, rspInfoW=4, rdType=int16_t)
-	.AddFunction(name=func64, rspInfoW=5, elemCntW=8)
-	.AddFunction(name=func32, rspInfoW=7, elemCntW=6, rdType=uint32_t)
-	.AddFunction(name=func64Dly, rspInfoW=5, elemCntW=5, rsmDly=11)
+	.AddFunction(name=func16, rspInfoW=4, rdType=int16_t, memSrc=host)
+	.AddFunction(name=func64, rspInfoW=5, elemCntW=8, memSrc=host)
+	.AddFunction(name=func32, rspInfoW=7, elemCntW=6, rdType=uint32_t, memSrc=host)
+	.AddFunction(name=func64Dly, rspInfoW=5, elemCntW=5, rsmDly=11, memSrc=host)
 	;
 
 
@@ -109,10 +109,10 @@ f2.AddReturn(func=f2)
 	;
 
 f2.AddReadMem()
-	.AddFunction(name=func16, rspInfoW=4, rdType=int16_t)
-	.AddFunction(name=func64, rspInfoW=5, elemCntW=8)
-	.AddFunction(name=func32, rspInfoW=7, elemCntW=6, rdType=uint32_t)
-	.AddFunction(name=func64Dly, rspInfoW=5, elemCntW=5, rsmDly=11)
+	.AddFunction(name=func16, rspInfoW=4, rdType=int16_t, memSrc=host)
+	.AddFunction(name=func64, rspInfoW=5, elemCntW=8, memSrc=host)
+	.AddFunction(name=func32, rspInfoW=7, elemCntW=6, rdType=uint32_t, memSrc=host)
+	.AddFunction(name=func64Dly, rspInfoW=5, elemCntW=5, rsmDly=11, memSrc=host)
 	;
 
 
@@ -149,10 +149,10 @@ f3.AddReturn(func=f3)
 	;
 
 f3.AddReadMem(rspGrpW=2)
-	.AddFunction(name=func16, rspInfoW=4, rdType=int16_t)
-	.AddFunction(name=func64, rspInfoW=5, elemCntW=8)
-	.AddFunction(name=func32, rspInfoW=7, elemCntW=6, rdType=uint32_t)
-	.AddFunction(name=func64Dly, rspInfoW=5, elemCntW=5, rsmDly=11)
+	.AddFunction(name=func16, rspInfoW=4, rdType=int16_t, memSrc=host)
+	.AddFunction(name=func64, rspInfoW=5, elemCntW=8, memSrc=host)
+	.AddFunction(name=func32, rspInfoW=7, elemCntW=6, rdType=uint32_t, memSrc=host)
+	.AddFunction(name=func64Dly, rspInfoW=5, elemCntW=5, rsmDly=11, memSrc=host)
 	;
 
 
@@ -195,10 +195,10 @@ f4.AddGlobal()
 	;
 
 f4.AddReadMem(rspGrpW=2)
-	.AddFunction(name=func16, rspInfoW=4, rdType=int16_t)
-	.AddFunction(name=func64, rspInfoW=5, elemCntW=8)
-	.AddFunction(name=func32, rspInfoW=7, elemCntW=6, rdType=uint32_t)
-	.AddFunction(name=func64Dly, rspInfoW=5, elemCntW=5, rsmDly=11)
+	.AddFunction(name=func16, rspInfoW=4, rdType=int16_t, memSrc=host)
+	.AddFunction(name=func64, rspInfoW=5, elemCntW=8, memSrc=host)
+	.AddFunction(name=func32, rspInfoW=7, elemCntW=6, rdType=uint32_t, memSrc=host)
+	.AddFunction(name=func64Dly, rspInfoW=5, elemCntW=5, rsmDly=11, memSrc=host)
 	.AddDst(name=gbl, var=gbl(3).u64)
 	;
 
@@ -236,10 +236,10 @@ f5.AddReturn(func=f5)
 	;
 
 f5.AddReadMem()
-	.AddFunction(name=func16, rspInfoW=4, rdType=int16_t)
-	.AddFunction(name=func64, rspInfoW=5, elemCntW=8)
-	.AddFunction(name=func32, rspInfoW=7, elemCntW=6, rdType=uint32_t)
-	.AddFunction(name=func64Dly, rspInfoW=5, elemCntW=5, rsmDly=11)
+	.AddFunction(name=func16, rspInfoW=4, rdType=int16_t, memSrc=host)
+	.AddFunction(name=func64, rspInfoW=5, elemCntW=8, memSrc=host)
+	.AddFunction(name=func32, rspInfoW=7, elemCntW=6, rdType=uint32_t, memSrc=host)
+	.AddFunction(name=func64Dly, rspInfoW=5, elemCntW=5, rsmDly=11, memSrc=host)
 	;
 
 ////////////////////////////////////////////////////
@@ -281,9 +281,9 @@ f8.AddGlobal()
 	;
 
 f8.AddReadMem(rspGrpW=2)
-	.AddFunction(name=func16, rspInfoW=4, rdType=int16_t)
-	.AddFunction(name=func64, rspInfoW=5, elemCntW=8)
-	.AddFunction(name=func32, rspInfoW=7, elemCntW=6, rdType=uint32_t)
-	.AddFunction(name=func64Dly, rspInfoW=5, elemCntW=5, rsmDly=1)
+	.AddFunction(name=func16, rspInfoW=4, rdType=int16_t, memSrc=host)
+	.AddFunction(name=func64, rspInfoW=5, elemCntW=8, memSrc=host)
+	.AddFunction(name=func32, rspInfoW=7, elemCntW=6, rdType=uint32_t, memSrc=host)
+	.AddFunction(name=func64Dly, rspInfoW=5, elemCntW=5, rsmDly=1, memSrc=host)
 	.AddDst(name=gbl, var=gbl(12).u64)
 	;

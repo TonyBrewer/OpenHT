@@ -1,0 +1,2 @@
+AddModInstParams(unit=Au, modPath="Ctl/Rd", replCnt=2);
+AddModInstParams(unit=Au, modPath="Ctl/Wr", replCnt=2);

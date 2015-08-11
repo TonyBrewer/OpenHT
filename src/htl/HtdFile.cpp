@@ -902,7 +902,6 @@ void HtdFile::ParseModuleMethods()
 
 		CParamList params[] = {
 				{ "func", &func, true, ePrmIdent, 0, 0 },
-				{ "inst", &inst, false, ePrmIdent, true, 0 },
 				{ "instr", &inst, true, ePrmIdent, 0, 0 },
 				{ "host", &bHost, false, ePrmBoolean, 0, 0 },
 				{ "reserve", &reserve, false, ePrmInteger, 0, 0 },
@@ -969,7 +968,7 @@ void HtdFile::ParseModuleMethods()
 
 		m_pLex->GetNextTk();
 
-	} else if (m_pLex->GetTkString() == "AddInst" || m_pLex->GetTkString() == "AddInstr") {
+	} else if (m_pLex->GetTkString() == "AddInstr") {
 
 		string name;
 
@@ -977,9 +976,6 @@ void HtdFile::ParseModuleMethods()
 				{ "name", &name, true, ePrmIdent, 0, 0 },
 				{ 0, 0, 0, ePrmUnknown, 0, 0 }
 		};
-
-		if (m_pLex->GetTkString() == "AddInst")
-			CPreProcess::ParseMsg(Warning, "AddInst is depricated, use AddInstr");
 
 		if (!ParseParameters(params))
 			CPreProcess::ParseMsg(Error, "expected <mod>.AddInstr( name=\"\" )");
@@ -2012,7 +2008,7 @@ void HtdFile::ParseMifWrMethods()
 		};
 
 		if (!ParseParameters(pavars))
-			CPreProcess::ParseMsg(Error, "expected AddWriteMem(...).AddSrc( name, var, {, memSrc=host|coproc } )");
+			CPreProcess::ParseMsg(Error, "expected AddWriteMem(...).AddSrc( name, var, {, memDst=host|coproc } )");
 
 		if ((pType == 0) == (var.size() == 0))
 			CPreProcess::ParseMsg(Error, "either var or type must be specified (but not both)");

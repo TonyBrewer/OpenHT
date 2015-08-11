@@ -41,9 +41,8 @@ void CDsnInfo::InitAndValidateModStrm()
 				continue;
 			}
 
-			string varName;
-			CHtString bitWidth;
-			pStrm->m_elemBitW = FindTypeWidth(varName, pStrm->m_pType->m_typeName, bitWidth, pStrm->m_lineInfo);
+			pStrm->m_elemBitW = pStrm->m_pType->GetClangBitWidth();
+
 			if (pStrm->m_elemBitW != 8 && pStrm->m_elemBitW != 16 && pStrm->m_elemBitW != 32 && pStrm->m_elemBitW != 64)
 				ParseMsg(Error, pStrm->m_lineInfo, "unsupported type width for stream (%d) must be 8, 16, 32 or 64", pStrm->m_elemBitW);
 

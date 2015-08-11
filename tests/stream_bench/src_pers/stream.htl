@@ -1,0 +1,10 @@
+// -cl $(HtToolsPath)/tests/stream_bench/src_pers/stream.htl
+-wd $(HtToolsPath)/tests/stream_bench/msvs12/
+
+-cp hc-2
+-uc 1
+-un Au
+-df 150
+-pn stream_bench
+../src_pers/stream.htd
+../ht/sysc

@@ -51,7 +51,7 @@ void CDsnInfo::InitAndValidateModIhm()
 					// type of variable should be a union or struct
 					bool bCStyle;
 					CField const * pBaseField, *pLastField;
-					FindFieldInStruct(msgDst.m_lineInfo, pShared->m_type, msgDst.m_field, true, bCStyle, pBaseField, pLastField);
+					FindFieldInStruct(msgDst.m_lineInfo, pShared->m_pType->m_typeName, msgDst.m_field, true, bCStyle, pBaseField, pLastField);
 					msgDst.m_pField = pLastField;
 
 					if (msgDst.m_pField == 0) {
@@ -323,14 +323,14 @@ void CDsnInfo::GenModIhmStatements(CModule &mod)
 
 			if (msgDst.m_pShared->m_queueW.size() > 0) {
 				ihmPostInstr.Append("%s\t\t\t\tm__SHR__%s%s.push( (%s)(%s.read().m_msgData >> %s) );\n", extraTab.c_str(),
-					msgDst.m_var.c_str(), indexes.c_str(), msgDst.m_pShared->m_type.c_str(), ihmSignal, msgDst.m_dataLsb.c_str());
+					msgDst.m_var.c_str(), indexes.c_str(), msgDst.m_pShared->m_pType->m_typeName.c_str(), ihmSignal, msgDst.m_dataLsb.c_str());
 			} else if (msgDst.m_addr1Lsb.size() > 0) {
 				ihmPostInstr.Append("%s\t\t\t\tm__SHR__%s%s.write_mem((%s)(%s.read().m_msgData >> %s));\n", extraTab.c_str(),
-					msgDst.m_var.c_str(), indexes.c_str(), msgDst.m_pShared->m_type.c_str(), ihmSignal, msgDst.m_dataLsb.c_str());
+					msgDst.m_var.c_str(), indexes.c_str(), msgDst.m_pShared->m_pType->m_typeName.c_str(), ihmSignal, msgDst.m_dataLsb.c_str());
 			} else if (msgDst.m_field.size() > 0) {
 				string castStr;
 				if (msgDst.m_pField->m_fieldWidth.size() == 0)
-					castStr = msgDst.m_pField->m_type;
+					castStr = msgDst.m_pField->m_pType->m_typeName;
 				else
 					castStr = VA("ht_uint%d", msgDst.m_pField->m_fieldWidth.AsInt());
 
@@ -339,7 +339,7 @@ void CDsnInfo::GenModIhmStatements(CModule &mod)
 					castStr.c_str(), ihmSignal, msgDst.m_dataLsb.c_str());
 			} else
 				ihmPostInstr.Append("%s\t\t\t\tc__SHR__%s%s = (%s)(%s.read().m_msgData >> %s);\n", extraTab.c_str(),
-				msgDst.m_var.c_str(), indexes.c_str(), msgDst.m_pShared->m_type.c_str(), ihmSignal, msgDst.m_dataLsb.c_str());
+				msgDst.m_var.c_str(), indexes.c_str(), msgDst.m_pShared->m_pType->m_typeName.c_str(), ihmSignal, msgDst.m_dataLsb.c_str());
 
 			if (msgDst.m_idx1Lsb.size() > 0)
 				ihmPostInstr.Append("\t\t\t\t}\n");

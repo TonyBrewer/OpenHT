@@ -504,7 +504,7 @@ CDsnInfo::GenerateHtiFiles()
 
 			if (pField->m_pType->IsInt()) {
 				fprintf(cppFile, "\t\tcase %d: {\n", callQwCnt - argQwIdx);
-				if (pField->m_type == "bool") {
+				if (pField->m_pType->m_typeName == "bool") {
 					fprintf(cppFile, "\t\t\tc_%s_%s.m_%s = (iDatQueDat.m_data & 1) != 0;\n",
 						callIntf.GetSrcToDstLc(), callIntf.GetIntfName(), pField->m_name.c_str());
 				} else {
@@ -521,9 +521,9 @@ CDsnInfo::GenerateHtiFiles()
 				for (int fldQwIdx = 0; fldQwIdx < fldQwCnt; fldQwIdx += 1) {
 					bool bBasicType;
 					CTypeDef * pTypeDef;
-					string type = pField->m_type;
+					string type = pField->m_pType->m_typeName;
 					while (!(bBasicType = IsBaseType(type))) {
-						if (!(pTypeDef = FindTypeDef(pField->m_type)))
+						if (!(pTypeDef = FindTypeDef(pField->m_pType->m_typeName)))
 							break;
 						type = pTypeDef->m_type;
 					}
@@ -543,7 +543,7 @@ CDsnInfo::GenerateHtiFiles()
 							callIntf.GetSrcToDstLc(), callIntf.GetIntfName(), pField->m_name.c_str(),
 							pField->m_name.c_str());
 					} else {
-						if (pField->m_type == "bool") {
+						if (pField->m_pType->m_typeName == "bool") {
 							fprintf(cppFile, "\t\t\tc_%s_%s.m_%s = (iDatQueDat.m_data & 1) != 0;\n",
 								callIntf.GetSrcToDstLc(), callIntf.GetIntfName(), pField->m_name.c_str());
 						} else {
@@ -795,9 +795,9 @@ CDsnInfo::GenerateHtiFiles()
 				for (int fldQwIdx = 0; fldQwIdx < fldQwCnt; fldQwIdx += 1) {
 					bool bBasicType;
 					CTypeDef * pTypeDef;
-					string type = pField->m_type;
+					string type = pField->m_pType->m_typeName;
 					while (!(bBasicType = IsBaseType(type))) {
-						if (!(pTypeDef = FindTypeDef(pField->m_type)))
+						if (!(pTypeDef = FindTypeDef(pField->m_pType->m_typeName)))
 							break;
 						type = pTypeDef->m_type;
 					}

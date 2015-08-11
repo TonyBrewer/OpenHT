@@ -23,13 +23,13 @@ void CDsnInfo::InitAndValidateHif()
 	for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
 		CField * pParam = pCxrEntry->m_paramList[fldIdx];
 
-		// error messages are generated in FindTypeWidth routine
-		FindTypeWidth(pParam->m_name, pParam->m_hostType, pParam->m_fieldWidth, pCxrEntry->m_lineInfo, 0, true);
+		// error messages are generated in routine
+		FindHostTypeWidth(pParam->m_name, pParam->m_hostType, pParam->m_fieldWidth, pCxrEntry->m_lineInfo);
 
-		if (pParam->m_hostType != pParam->m_type) {
+		if (pParam->m_hostType != pParam->m_pType->m_typeName) {
 			string hostStructName, unitStructName;
 			bool bHostStruct = FindStructName(pParam->m_hostType, hostStructName);
-			bool bUnitStruct = FindStructName(pParam->m_type, unitStructName);
+			bool bUnitStruct = FindStructName(pParam->m_pType->m_typeName, unitStructName);
 
 			if (bHostStruct != bUnitStruct || bHostStruct && hostStructName != unitStructName)
 				ParseMsg(Error, pParam->m_lineInfo, "incompatible types specified for parameters type and hostType");
@@ -39,12 +39,12 @@ void CDsnInfo::InitAndValidateHif()
 	for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
 		CField * pParam = cxrReturn.m_paramList[fldIdx];
 
-		FindTypeWidth(pParam->m_name, pParam->m_hostType, pParam->m_fieldWidth, pCxrEntry->m_lineInfo, 0, true);
+		FindHostTypeWidth(pParam->m_name, pParam->m_hostType, pParam->m_fieldWidth, pCxrEntry->m_lineInfo);
 
-		if (pParam->m_hostType != pParam->m_type) {
+		if (pParam->m_hostType != pParam->m_pType->m_typeName) {
 			string hostStructName, unitStructName;
 			bool bHostStruct = FindStructName(pParam->m_hostType, hostStructName);
-			bool bUnitStruct = FindStructName(pParam->m_type, unitStructName);
+			bool bUnitStruct = FindStructName(pParam->m_pType->m_typeName, unitStructName);
 
 			if (bHostStruct != bUnitStruct || bHostStruct && hostStructName != unitStructName)
 				ParseMsg(Error, pParam->m_lineInfo, "incompatible types specified for parameters type and hostType");

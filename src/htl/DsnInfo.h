@@ -84,7 +84,7 @@ inline bool IsPowerTwo(uint64_t x) { return (x & (x - 1)) == 0; }
 enum EType { eRecord, eTypedef, eClang, eHtInt };
 
 struct CType {
-	CType(EType eType, string const & name, int clangBitWidth, int minAlign, int packedBitWidth) :
+	CType(EType eType, string const & name, int clangBitWidth, int minAlign, int packedBitWidth = -1) :
 		m_eType(eType), m_typeName(name), m_clangBitWidth(clangBitWidth), 
 		m_clangMinAlign(minAlign), m_packedBitWidth(packedBitWidth)
 	{
@@ -98,11 +98,16 @@ public:
 	bool IsInt() { return m_eType == eClang || m_eType == eHtInt; }
 	bool IsEmbeddedUnion();
 
+	int GetClangBitWidth();
+	int GetPackedBitWidth();
+
 public:
 	EType m_eType;
 	string m_typeName;
 	int m_clangBitWidth;
 	int m_clangMinAlign;
+
+private:
 	int m_packedBitWidth;
 };
 
@@ -110,7 +115,7 @@ enum ESign { eSigned, eUnsigned };
 
 struct CHtInt : CType {
 	CHtInt(ESign eSign, string const & name, int bitWidth, int minAlign, int fldWidth=-1) :
-		CType(eClang, name, bitWidth, minAlign, bitWidth), m_eSign(eSign), m_fldWidth(fldWidth)
+		CType(eClang, name, bitWidth, minAlign, fldWidth > 0 ? fldWidth : bitWidth), m_eSign(eSign), m_fldWidth(fldWidth)
 	{
 	}
 
@@ -173,7 +178,6 @@ struct CField : CDimenList {
 		Init();
 
 		m_pType = pType;
-		m_type = pType->m_typeName;
 		m_name = name;
 		m_fieldWidth = bitWidth;
 		m_base = base;
@@ -192,7 +196,6 @@ struct CField : CDimenList {
 		Init();
 
 		m_pType = pType;
-		m_type = pType->m_typeName;
 		m_name = fieldName;
 		m_bIfDefHtv = bIfDefHtv;
 	}
@@ -203,7 +206,6 @@ struct CField : CDimenList {
 
 		m_hostType = hostType;
 		m_pType = pType;
-		m_type = pType->m_typeName;
 		m_name = fieldName;
 		m_bIsUsed = bIsUsed;
 	}
@@ -220,7 +222,6 @@ struct CField : CDimenList {
 		Init();
 
 		m_pType = pType;
-		m_type = pType->m_typeName;
 		m_name = fieldName;
 		if (dimen1.size() > 0)
 			m_dimenList.push_back(dimen1);
@@ -234,7 +235,6 @@ struct CField : CDimenList {
 		Init();
 
 		m_pType = pType;
-		m_type = pType->m_typeName;
 		m_name = name;
 		if (dimen1.size() > 0)
 			m_dimenList.push_back(dimen1);
@@ -254,7 +254,6 @@ struct CField : CDimenList {
 		Init();
 
 		m_pType = pType;
-		m_type = pType->m_typeName;
 		m_name = name;
 		if (dimen1.size() > 0)
 			m_dimenList.push_back(dimen1);
@@ -274,7 +273,6 @@ struct CField : CDimenList {
 		Init();
 
 		m_pType = pType;
-		m_type = pType->m_typeName;
 		m_name = name;
 		if (dimen1.size() > 0)
 			m_dimenList.push_back(dimen1);
@@ -295,7 +293,6 @@ struct CField : CDimenList {
 
 		m_dir = dir;
 		m_pType = pType;
-		m_type = pType->m_typeName;
 		m_name = name;
 	}
 
@@ -320,7 +317,6 @@ private:
 public:
 	string		m_hostType;
 	string		m_dir;
-	string		m_type;
 	string		m_base;
 	string		m_name;
 	CHtString	m_fieldWidth;
@@ -370,6 +366,7 @@ public:
 };
 
 struct CRecord : CType {
+	virtual ~CRecord() {}
 	CRecord() : CType(eRecord, string(), -1, 0, -1), m_bReadForInstrRead(false), m_bWriteForInstrWrite(false),
 		m_bReadForMifWrite(false), m_bWriteForMifRead(false),
 		m_bCStyle(false), m_bUnion(false), m_bShared(false), m_bInclude(false), m_bNeedIntf(false), m_atomicMask(0)
@@ -1111,6 +1108,7 @@ struct CMifRd {
 		m_bMultiQwCoprocRdReq = false;
 		m_bMultiQwHostRdMif = false;
 		m_bMultiQwCoprocRdMif = false;
+		m_bMultiQwRdRsp = false;
 		m_bRdRspCallBack = false;
 		m_bNeedRdRspInfoRam = false;
 		m_bPause = false;
@@ -1139,6 +1137,7 @@ public:
 	bool		m_bMultiQwCoprocRdReq;
 	bool		m_bMultiQwHostRdMif;
 	bool		m_bMultiQwCoprocRdMif;
+	bool        m_bMultiQwRdRsp;
 	int			m_maxRsmDly;
 	int			m_maxRdRspInfoW;
 	bool		m_bNeedRdRspInfoRam;
@@ -2029,13 +2028,11 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 		bool bIndexCheck, bool &bCStyle, CField const * &pBaseField, CField const * &pLastField);
 	bool IsInFieldList(CLineInfo const &lineInfo, string const &addrName, vector<CField *> const &fieldList,
 		bool bCStyle, bool bIndexCheck, CField const * &pBaseField, CField const * &pLastField, string * pFullName);
-	int FindTypeWidth(CField const * pField, int * pMinAlign = 0, bool bHostType = false);
 	bool FindCIntType(string typeName, int &width, bool &bSigned);
-	int FindHostTypeWidth(CField const * pField, int * pMinAlign = 0);
 	bool FindStructName(string const &structType, string &structName);
-	int FindTypeWidth(string const &varName, string const &typeName, CHtString const &bitWidth, CLineInfo const &lineInfo, int * pMinAlign = 0, bool bHostType = false);
-	int FindStructWidth(CRecord & record, int * pMinAlign = 0, bool bHostType = false);
-	int FindFieldListWidth(string structName, CLineInfo &lineInfo, vector<CField *> &fieldList, int * pMinAlign = 0, bool bHostType = false);
+	int FindHostTypeWidth(CField const * pField);
+	int FindHostTypeWidth(string const &varName, string const &typeName, CHtString const &bitWidth, CLineInfo const &lineInfo);
+	void ValidateHostType(CType * pType, CLineInfo const & lineInfo);
 	bool FindVariableWidth(CLineInfo const &lineInfo, CModule &mod, string name, bool &bHtId, bool &bPrivate, bool &bShared, bool &bStage, int &addr1W);
 	bool FindFieldRefWidth(CLineInfo const &lineInfo, string const &fieldRef, vector<CField *> const &fieldList, int &varW);
 	float FindSlicePerBramRatio(int depth, int width);
@@ -2513,6 +2510,8 @@ private:
 	// Sections of code for typedef, struct, union declarations
 	CHtCode m_tdsuDefines;
 };
+
+extern CDsnInfo * g_pDsnInfo;
 
 // Code genertion loop / unroll routines
 struct CLoopInfo {

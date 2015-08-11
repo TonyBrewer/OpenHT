@@ -645,7 +645,7 @@ void CDsnInfo::FindSpanningWriteFields(CNgvInfo * pNgvInfo)
 					bramWidth = 9;
 
 				int centralizedCopies = pNgvInfo->m_rdPortCnt + 1;
-				int centralizedBramCnt = centralizedCopies * ((pNgv->m_pType->m_packedBitWidth + bramWidth - 1) / bramWidth);
+				int centralizedBramCnt = centralizedCopies * ((pNgv->m_pType->GetPackedBitWidth() + bramWidth - 1) / bramWidth);
 
 				int localBramCnt = 0;
 
@@ -670,7 +670,7 @@ void CDsnInfo::FindSpanningWriteFields(CNgvInfo * pNgvInfo)
 					dramWidth = 3;
 
 				int centralizedCopies = pNgvInfo->m_rdPortCnt + 1;
-				int centralizedSliceCnt = centralizedCopies * ((pNgv->m_pType->m_packedBitWidth + dramWidth - 1) / dramWidth);
+				int centralizedSliceCnt = centralizedCopies * ((pNgv->m_pType->GetPackedBitWidth() + dramWidth - 1) / dramWidth);
 
 				int localSliceCnt = 0;
 
@@ -814,7 +814,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 	for (int stgIdx = 1; stgIdx <= stgLast; stgIdx += 1) {
 
 		string varStg;
-		if (pMod->m_stage.m_bStageNums)
+		if (pMod->m_stage.m_bStageNums || stgLast > 1)
 			varStg = VA("%d", stgIdx);
 
 		if (stgIdx >= pGv->m_rdStg.AsInt()) {

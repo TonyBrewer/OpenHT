@@ -1,0 +1,14 @@
+// -cl $(HtToolsPath)/tests/pause_bug/src_pers/pause_bug.htl
+-wd $(HtToolsPath)/tests/pause_bug/msvs12/
+
+-cp wx-690
+-ac 1
+-uc 1
+-df 150
+-vcd_all
+-pn pause_bug
+-ml 0.2
+-I ../src
+-if ../src_pers/pause_bug.hti
+../src_pers/pause_bug.htd
+../ht/sysc
