@@ -126,7 +126,7 @@ void CDsnInfo::InitAndValidateModMif()
 					mif.m_mifRd.m_bMultiQwHostRdMif |= rdDst.m_bMultiQwHostRdMif;
 					mif.m_mifRd.m_bMultiQwCoprocRdMif |= rdDst.m_bMultiQwCoprocRdMif;
 
-					mif.m_mifRd.m_bMultiQwRdRsp |= rdDst.m_memSize == 64 && rdDst.m_maxElemCnt > 1;
+					mif.m_mifRd.m_bMultiQwRdRsp |= (rdDst.m_bMultiQwHostRdMif || rdDst.m_bMultiQwCoprocRdMif) && rdDst.m_maxElemCnt > 1;
 
 					mif.m_mifRd.m_bRdRspCallBack = true;
 
@@ -322,7 +322,8 @@ void CDsnInfo::InitAndValidateModMif()
 				mif.m_mifRd.m_bMultiQwHostRdMif |= rdDst.m_bMultiQwHostRdMif;
 				mif.m_mifRd.m_bMultiQwCoprocRdMif |= rdDst.m_bMultiQwCoprocRdMif;
 
-				mif.m_mifRd.m_bMultiQwRdRsp |= rdDst.m_memSize == 64 && (rdDst.m_maxElemCnt > 1 || rdDst.m_pDstType->m_clangBitWidth > 64);
+				mif.m_mifRd.m_bMultiQwRdRsp |= (rdDst.m_bMultiQwHostRdMif || rdDst.m_bMultiQwCoprocRdMif) &&
+					(rdDst.m_maxElemCnt > 1 || rdDst.m_pDstType->m_clangBitWidth > 64);
 
 				// find maxRdElemQwCnt and maxElemCnt
 				int elemQwCnt = rdDst.m_pDstType->m_clangMinAlign == 1 ? 1 :
