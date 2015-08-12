@@ -42,6 +42,6 @@ src_pers/design.htd: src_htc/$(HTC_SRC)
 	    >> src/$(basename rose_$(HTC_SRC)).cpp
 	@rm -f src_htc/rose_$(HTC_SRC)
 
-clean: cleanhtc
+clean distclean: cleanhtc
 cleanhtc:
 	@rm -rf src_pers src/rose_*
