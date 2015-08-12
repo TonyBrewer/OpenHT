@@ -1,7 +1,7 @@
 // -cl $(HtToolsPath)/tests/dsn4/src_pers/dsn4.htl
 -wd $(HtToolsPath)/tests/dsn4/msvs12/
 
--cp hc-2
+-cp hc-1
 -it
 -uc 2
 -un Su
