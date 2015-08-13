@@ -295,8 +295,6 @@ struct ReqhdrFields {
 union CBinReqhdr {
 	ReqhdrFields m_hdr;
 	uint8_t m_bytes[24];
-#pragma htl spanning_field
-	uint64_t m_qw[3];
 };
 
 struct keyField {
@@ -304,34 +302,48 @@ struct keyField {
 };
 
 struct CAccelConn {
-	uint64_t m_parseState:6;
-	uint64_t m_hashPos:4;
-	uint8_t m_cmd;
-	uint8_t m_errCode;
-	uint64_t m_protocol:3;
-	uint64_t m_transport:3;
-	uint64_t m_skipSpace:1;
-	uint64_t m_noreply:1;
-	uint64_t m_bConnClosed:1;
-	uint32_t m_parsePos;
+	uint32_t m_parseState:6;
+	uint32_t m_hashPos:4;
+	uint32_t m_cmd:8;
+	uint32_t m_errCode:8;
+	uint32_t m_protocol:3;
+	uint32_t m_transport:3; 
 	uint32_t m_hash_a;
+
 	uint32_t m_hash_b;
 	uint32_t m_hash_c;
+
 	uint64_t m_initial;
+
 	uint64_t m_delta;
+
+	uint32_t m_parsePos;
 	uint32_t m_flags;
+
 	uint32_t m_exptime;
 	uint32_t m_bytes;
-	keyField m_key12;
+
 	CBinReqhdr m_binReqHdr;
+	keyField m_key12;
+
+	uint8_t m_skipSpace:1;
+	uint8_t m_noreply:1;
+	uint8_t m_bConnClosed:1;
 };
 
 // make sure this matches the size of the above struct
-#define ACCEL_CONN_SIZE 11
+#define ACCEL_CONN_SIZE 10 // WAS 11
 
 union CAccelWord {
 	CAccelConn m_pConn;
-	uint64_t m_word[ACCEL_CONN_SIZE];
+	struct {
+#pragma htl spanning_field
+		uint64_t m_qword[ACCEL_CONN_SIZE];
+#pragma htl spanning_field
+		uint32_t m_dword;
+#pragma htl spanning_field
+		uint8_t m_bits:3;
+	};
 };
 
 union CByteData {
@@ -629,7 +641,7 @@ pkt.AddShared(reset=false)
 
 pkt.AddGlobal()
 	.AddVar(type=uint64_t, name=prePktDat, addr1=prefetchAddr, instrRead=true, instrWrite=false, rdStg=1)
-	.AddVar(type=CAccelConn, name=connList, addr1=connAddr, instrRead=true, instrWrite=true, rdStg=1, wrStg=3, spanningWrite=true)
+	.AddVar(type=CAccelWord, name=connList, addr1=connAddr, instrRead=true, instrWrite=true, rdStg=1, wrStg=3, spanningWrite=true)
 	.AddVar(type=uint64_t, name=rdPktDat, addr1=fetchAddr, instrRead=true, instrWrite=false, rdStg=1)
 	;
 

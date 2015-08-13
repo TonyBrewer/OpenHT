@@ -18,12 +18,7 @@ CPersPkt::PersPkt() {
     T1_accQueFull = S_accQueCnt[cid2que(P1_connId)] == 0;
 
     // stage 1
-    // ugly hack because nonstandard types don't seem to work with global
-    //CAccelWord cR;
-    //for (int i=0; i<ACCEL_CONN_SIZE; i++)
-    //    cR.m_word[i] = GR1_connList_pConn(i);
-    //T1_pConn = cR.m_pConn;
-    T1_pConn = GR1_connList;
+    T1_pConn = GR1_connList.m_pConn;
 
     // pull these terms out for pipelining
     ht_attrib(register_balancing, CPersPkt, "no");
@@ -2266,15 +2261,15 @@ CPersPkt::PersPkt() {
     } // if PR2_htValid
 
     if (T3_htValid) {
-        // again, a hack because global can't use a structure
-        //CAccelWord cW;
-        //cW.m_pConn = T3_pConn;
+        CAccelWord cW;
+        cW.m_pConn = T3_pConn;
         // this write doesn't need to occur in stage 2
-        //for (int i=0; i<ACCEL_CONN_SIZE; i++) {
-        //    GW_connList_pConn(T3_pConnAddr, i, cW.m_word[i]);
-        //}
-      GW3_connList.write_addr(T3_pConnAddr);
-      GW3_connList = T3_pConn;
+	GW3_connList.write_addr(T3_pConnAddr);
+        for (int i=0; i<ACCEL_CONN_SIZE; i++) {
+	  GW3_connList.m_qword[i] = cW.m_qword[i];
+        }
+	GW3_connList.m_dword = cW.m_dword;
+	GW3_connList.m_bits = cW.m_bits;
     }
 
     // Warning: assuming that time between thread execution is longer than this pipe
