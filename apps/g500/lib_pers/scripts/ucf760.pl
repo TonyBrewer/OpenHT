@@ -5,19 +5,20 @@ $m = "Mram_mem";
 
 #							X	Y	36?
 @brams = (
-[ "${b}Bmap/m_bmapMem_data/${m}",			0,	-1,	1],
+[ "${b}Bmap/m__GBL__bmap__dataIr/${m}",			0,	-1,	1],
 [ "${b}Bmap/m_htPriv/${m}1",				0,	-1,	1],
 [ "${b}Bmap/m_htPriv/${m}2",				0,	-1,	1],
 [ "${b}Bmap/m_htPriv/${m}3",				0,	-1,	1],
-[ "${b}Bmap/m_htPriv/${m}4",				0,	-1,	0],
 
 [ "${b}Bufp/m_htPriv/${m}1",				1,	-1,	1],
 [ "${b}Bufp/m_htPriv/${m}2",				1,	-1,	0],
-[ "${b}Bufp/m_arrayMem_xadj/${m}",			1,	-1,	0],
-[ "${b}Bufp/m_arrayMem_xoff0/${m}",			1,	-1,	0],
-[ "${b}Bufp/m_arrayMem_xoff1/${m}",			1,	-1,	0],
-[ "${b}Bufp/m_arrayMem_bmap/${m}",			1,	-1,	1],
+[ "${b}Bufp/m__GBL__bufp__xadjIr/${m}",			1,	-1,	0],
+[ "${b}Bufp/m__GBL__bufp__xoff0Ir/${m}",		1,	-1,	0],
+[ "${b}Bufp/m__GBL__bufp__xoff1Ir/${m}",		1,	-1,	0],
+[ "${b}Bufp/m__GBL__bufp__bmapIr/${m}",			1,	-1,	1],
 
+[ "${b}Scatter/m__GBL__scatter__addrMemIr/${m}",	2,	-1,	1],
+[ "${b}Scatter/m__GBL__scatter__valMemIr/${m}",		2,	-1,	1],
 [ "${b}Scatter/m_htPriv/${m}",				2,	-1,	1],
 );
 
