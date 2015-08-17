@@ -5,7 +5,7 @@ export CNY_PDK_PLATFORM ?= hc-2ex
 export CNY_HT_SIG ?= 65000
 #export CNY_HT_NICK ?= $(CNY_HT_SIG)
 
-export PLAT_hc-1_AEUCNT = 5
+export PLAT_hc-1_AEUCNT = 6
 export PLAT_hc-2_AEUCNT = $(PLAT_hc-1_AEUCNT)
 export PLAT_hc-1ex_AEUCNT = 16
 export PLAT_hc-2ex_AEUCNT = $(PLAT_hc-1ex_AEUCNT)
