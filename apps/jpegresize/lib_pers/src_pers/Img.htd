@@ -9,18 +9,18 @@
 
 dsnInfo.AddModule(name=img, htIdW=0);
 
-img.AddInst(name=IMG_ENTRY)
-	.AddInst(name=IMG_DH_FORK)
-	.AddInst(name=IMG_VE_FORK)
-	.AddInst(name=IMG_DEC_PAUSE)
-	.AddInst(name=IMG_HWRK_PAUSE)
-	.AddInst(name=IMG_VCTL_PAUSE)
-	.AddInst(name=IMG_ENC_PAUSE)
-	.AddInst(name=IMG_DEC_JOIN)
-	.AddInst(name=IMG_HWRK_JOIN)
-	.AddInst(name=IMG_VCTL_JOIN)
-	.AddInst(name=IMG_ENC_JOIN)
-	.AddInst(name=IMG_RETURN)
+img.AddInstr(name=IMG_ENTRY)
+	.AddInstr(name=IMG_DH_FORK)
+	.AddInstr(name=IMG_VE_FORK)
+	.AddInstr(name=IMG_DEC_PAUSE)
+	.AddInstr(name=IMG_HWRK_PAUSE)
+	.AddInstr(name=IMG_VCTL_PAUSE)
+	.AddInstr(name=IMG_ENC_PAUSE)
+	.AddInstr(name=IMG_DEC_JOIN)
+	.AddInstr(name=IMG_HWRK_JOIN)
+	.AddInstr(name=IMG_VCTL_JOIN)
+	.AddInstr(name=IMG_ENC_JOIN)
+	.AddInstr(name=IMG_RETURN)
 	;
 
 img.AddPrivate()
@@ -34,7 +34,7 @@ img.AddShared()
 	.AddVar(type=ht_uint1, name=fileIdx)
         ;
 
-img.AddEntry(func=htmain, inst=IMG_ENTRY, host=true)
+img.AddEntry(func=htmain, instr=IMG_ENTRY, host=true)
 	.AddParam(type=uint8_t, name=jobId)
 	.AddParam(hostType=uint64_t, type=ht_uint48, name=pJobInfo)
 	.AddParam(hostType=uint8_t, type=ht_uint2, name=persMode)

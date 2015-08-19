@@ -29,62 +29,62 @@ void CPersIhuf2::PersIhuf2()
 	//
 	// Threads are used to prefetch data into memBuf's
 	//
-	bool bRdDone = P_pInPtr >= P_pInPtrEnd;
+	bool bRdDone = P1_pInPtr >= P1_pInPtrEnd;
 
-	if (PR_htValid) {
-		switch (PR_htInst) {
+	if (PR1_htValid) {
+		switch (PR1_htInst) {
 		case IHUF_ENTRY: {
-			S_htId[P_pid] = PR_htId;
-			S_paused[P_pid] = false;
-			S_jobId = P_jobId;
-			S_imageIdx = P_imageIdx;
-			S_rstIdx[P_pid] = P_rstIdx;
-			S_numBlk = P_numBlk;
-			S_compCnt = P_compCnt;
-			S_mcuCols = P_mcuCols;
-			S_firstRstMcuCnt[P_pid] = P_firstRstMcuCnt;
+			S_htId[P1_pid] = PR1_htId;
+			S_paused[P1_pid] = false;
+			S_jobId = P1_jobId;
+			S_imageIdx = P1_imageIdx;
+			S_rstIdx[P1_pid] = P1_rstIdx;
+			S_numBlk = P1_numBlk;
+			S_compCnt = P1_compCnt;
+			S_mcuCols = P1_mcuCols;
+			S_firstRstMcuCnt[P1_pid] = P1_firstRstMcuCnt;
 			for (int j=0; j<IHUF_MEM_CNT; j++)
-				S_bufRdy[P_pid][j] = false;
+				S_bufRdy[P1_pid][j] = false;
 
-			S_bufSel[P_pid] = 0;
-			S_bufRa[P_pid] = P_pInPtr & ((1<<6)-1);
+			S_bufSel[P1_pid] = 0;
+			S_bufRa[P1_pid] = P1_pInPtr & ((1<<6)-1);
 
-			P_pInPtr = ((P_pInPtr) >> 6) << 6;
+			P1_pInPtr = ((P1_pInPtr) >> 6) << 6;
 
 			HtContinue(IHUF_READ);
 		}
 		break;
 		case IHUF_READ: {
 			BUSY_RETRY(ReadMemBusy());
-			BUSY_RETRY(S_bufRdy[P_pid][P_bufSel]);
+			BUSY_RETRY(S_bufRdy[P1_pid][P1_bufSel]);
 
 			if (bRdDone) {
-				if (P_cnt)
+				if (P1_cnt)
 					ReadMemPause(IHUF_RD_WAIT);
 				else {
-					S_paused[P_pid] = true;
+					S_paused[P1_pid] = true;
 					HtPause(IHUF_XFER);
 				}
 				break;
 			}
 
-			ReadMem_memBuf(P_pInPtr, P_bufSel, P_cnt * 8, P_pid, 8);
-			P_pInPtr += 64;
+			ReadMem_memBuf(P1_pInPtr, P1_bufSel, P1_cnt * 8, P1_pid, 8);
+			P1_pInPtr += 64;
 
-			if (P_cnt++ == IHUF_MEM_LINES-1) {
-				P_cnt = 0;
+			if (P1_cnt++ == IHUF_MEM_LINES-1) {
+				P1_cnt = 0;
 				ReadMemPause(IHUF_RD_WAIT);
 			} else
 				HtContinue(IHUF_READ);
 		}
 		break;
 		case IHUF_RD_WAIT: {
-			S_bufRdy[P_pid][P_bufSel] = true;
-			P_bufSel += 1u;
+			S_bufRdy[P1_pid][P1_bufSel] = true;
+			P1_bufSel += 1u;
 
 			if (bRdDone) {
-				S_paused[P_pid] = true;
-				//printf("ReplId %d, Pausing PR_htId %d, P_pid %d\n", (int)i_replId.read(), (int)PR_htId, (int)P_pid);
+				S_paused[P1_pid] = true;
+				//printf("ReplId %d, Pausing PR1_htId %d, P1_pid %d\n", (int)i_replId.read(), (int)PR1_htId, (int)P1_pid);
 				HtPause(IHUF_XFER);
 			} else
 				HtContinue(IHUF_READ);
@@ -93,7 +93,7 @@ void CPersIhuf2::PersIhuf2()
 		case IHUF_XFER: {
 			BUSY_RETRY(SendTransferBusy_idct());
 
-			SendTransfer_idct(P_pid, P_rstIdx);
+			SendTransfer_idct(P1_pid, P1_rstIdx);
 		}
 		break;
 		default:

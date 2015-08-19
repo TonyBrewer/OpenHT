@@ -135,3 +135,8 @@ struct JobInfoMsg {
 	JobInfoQw_t		m_rspQw;
 	uint64_t		m_data;
 };
+
+struct DecRstOff {
+	ht_int26		e;
+	McuCols_t		m;
+};

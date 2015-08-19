@@ -29,22 +29,22 @@ struct DhInfoHorz {
 
 dsnInfo.AddModule(name=dhInfo, htIdW=0);
 
-dhInfo.AddInst(name=DHINFO_ENTRY)
-	.AddInst(name=DINFO_READ)
-	.AddInst(name=DINFO_RSTINFO)
-	.AddInst(name=DINFO_RSTINFO_READ)
-	.AddInst(name=DINFO_DCDHT)
-	.AddInst(name=DINFO_DCDHT_READ)
-	.AddInst(name=HINFO_ENTRY)
-	.AddInst(name=HINFO_READ)
-	.AddInst(name=HINFO_PNT_INFO)
-	.AddInst(name=HINFO_PNT_INFO_READ)
-	.AddInst(name=HINFO_PNT_WGHT_LIST)
-	.AddInst(name=HINFO_PNT_WGHT_LIST_READ)
-	.AddInst(name=DHINFO_RETURN)
+dhInfo.AddInstr(name=DHINFO_ENTRY)
+	.AddInstr(name=DINFO_READ)
+	.AddInstr(name=DINFO_RSTINFO)
+	.AddInstr(name=DINFO_RSTINFO_READ)
+	.AddInstr(name=DINFO_DCDHT)
+	.AddInstr(name=DINFO_DCDHT_READ)
+	.AddInstr(name=HINFO_ENTRY)
+	.AddInstr(name=HINFO_READ)
+	.AddInstr(name=HINFO_PNT_INFO)
+	.AddInstr(name=HINFO_PNT_INFO_READ)
+	.AddInstr(name=HINFO_PNT_WGHT_LIST)
+	.AddInstr(name=HINFO_PNT_WGHT_LIST_READ)
+	.AddInstr(name=DHINFO_RETURN)
 	;
 
-dhInfo.AddEntry(func=dhInfo, inst=DHINFO_ENTRY)
+dhInfo.AddEntry(func=dhInfo, instr=DHINFO_ENTRY)
 	.AddParam(type=ht_uint2, name=imageIdx)
 	.AddParam(hostType=uint64_t, type=ht_uint48, name=pJobInfo)
 	;
@@ -68,8 +68,8 @@ dhInfo.AddShared()
 	.AddVar(type=ht_uint2,			name=imageIdx)
 	;
 
-dhInfo.AddReadMem(rspCntW=8)
-	.AddFunction(name=ReadRspFunc, rspInfoW=JOB_INFO_MEM_LINE_IDX_W, multiRd=true, memSrc=host);
+dhInfo.AddReadMem() //rspCntW=8
+	.AddFunction(name=ReadRspFunc, rspInfoW=JOB_INFO_MEM_LINE_IDX_W, elemCntW=3, memSrc=host);
 
 dhInfo.AddMsgIntf(dir=out, name=jobInfo, type=JobInfoMsg);
 

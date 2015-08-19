@@ -9,15 +9,15 @@
 
 dsnInfo.AddModule(name=veImg, htIdW=0);
 
-veImg.AddInst(name=VEIMG_ENTRY);
-veImg.AddInst(name=VEIMG_FORK);
-veImg.AddInst(name=VEIMG_VSM_JOIN);
-veImg.AddInst(name=VEIMG_VCTL_JOIN);
-veImg.AddInst(name=VEIMG_ENC_JOIN);
-veImg.AddInst(name=VEIMG_VSM_CONT);
-veImg.AddInst(name=VEIMG_VCTL_CONT);
-veImg.AddInst(name=VEIMG_ENC_CONT);
-veImg.AddInst(name=VEIMG_RETURN);
+veImg.AddInstr(name=VEIMG_ENTRY);
+veImg.AddInstr(name=VEIMG_FORK);
+veImg.AddInstr(name=VEIMG_VSM_JOIN);
+veImg.AddInstr(name=VEIMG_VCTL_JOIN);
+veImg.AddInstr(name=VEIMG_ENC_JOIN);
+veImg.AddInstr(name=VEIMG_VSM_CONT);
+veImg.AddInstr(name=VEIMG_VCTL_CONT);
+veImg.AddInstr(name=VEIMG_ENC_CONT);
+veImg.AddInstr(name=VEIMG_RETURN);
 
 veImg.AddPrivate()
 	.AddVar(type=uint8_t, name=jobId)
@@ -29,7 +29,7 @@ veImg.AddShared()
 	.AddVar(type=ht_uint1, name=fileIdx)
         ;
 
-veImg.AddEntry(func=htmain, inst=VEIMG_ENTRY, host=true)
+veImg.AddEntry(func=htmain, instr=VEIMG_ENTRY, host=true)
 	.AddParam(type=uint8_t, name=jobId)
 	.AddParam(hostType=uint64_t, type=ht_uint48, name=pJobInfo)
 	;
@@ -54,12 +54,12 @@ veImg.AddCall(func=enc, fork=true);
 
 dsnInfo.AddModule(name=vsm, htIdW=0);
 
-vsm.AddInst(name=VSM_ENTRY)
-	.AddInst(name=VSM_SEND)
-	.AddInst(name=VSM_RETURN)
+vsm.AddInstr(name=VSM_ENTRY)
+	.AddInstr(name=VSM_SEND)
+	.AddInstr(name=VSM_RETURN)
 	;
 
-vsm.AddEntry(func=vsm, inst=VSM_ENTRY)
+vsm.AddEntry(func=vsm, instr=VSM_ENTRY)
 	.AddParam(type=ImageIdx_t, name=imageIdx)
 	;
 

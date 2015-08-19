@@ -17,18 +17,18 @@
 
 dsnInfo.AddModule(name=veInfo, htIdW=0);
 
-veInfo.AddInst(name=VEINFO_ENTRY)
-	.AddInst(name=EINFO_READ)
-	.AddInst(name=VINFO_ENTRY)
-	.AddInst(name=VINFO_READ)
-	.AddInst(name=VINFO_PNT_INFO)
-	.AddInst(name=VINFO_PNT_INFO_READ)
-	.AddInst(name=VINFO_PNT_WGHT_LIST)
-	.AddInst(name=VINFO_PNT_WGHT_LIST_READ)
-	.AddInst(name=VINFO_RETURN)
+veInfo.AddInstr(name=VEINFO_ENTRY)
+	.AddInstr(name=EINFO_READ)
+	.AddInstr(name=VINFO_ENTRY)
+	.AddInstr(name=VINFO_READ)
+	.AddInstr(name=VINFO_PNT_INFO)
+	.AddInstr(name=VINFO_PNT_INFO_READ)
+	.AddInstr(name=VINFO_PNT_WGHT_LIST)
+	.AddInstr(name=VINFO_PNT_WGHT_LIST_READ)
+	.AddInstr(name=VINFO_RETURN)
 	;
 
-veInfo.AddEntry(func=veInfo, inst=VEINFO_ENTRY)
+veInfo.AddEntry(func=veInfo, instr=VEINFO_ENTRY)
 	.AddParam(type=ImageIdx_t, name=imageIdx)
 	.AddParam(hostType=uint64_t, type=ht_uint48, name=pJobInfo)
 	;
@@ -51,8 +51,8 @@ veInfo.AddShared()
 	.AddVar(type=ImageIdx_t, name=imageIdx)
 	;
 
-veInfo.AddReadMem(rspCntW=8)
-	.AddFunction(name=ReadRspFunc, rspInfoW=JOB_INFO_MEM_LINE_IDX_W+JOB_INFO_SECTION_ID_W, multiRd=true, memSrc=host);
+veInfo.AddReadMem() //rspCntW=8
+	.AddFunction(name=ReadRspFunc, rspInfoW=JOB_INFO_MEM_LINE_IDX_W+JOB_INFO_SECTION_ID_W, elemCntW=3, memSrc=host);
 
 veInfo.AddMsgIntf(dir=out, name=veInfo, type=JobInfoMsg);
 

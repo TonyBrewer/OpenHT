@@ -4,8 +4,8 @@
 
 dsnInfo.AddModule(name=eimg, htIdW=1);
 
-eimg.AddInst(name=EIMG);
-eimg.AddInst(name=EIMG2);
+eimg.AddInstr(name=EIMG);
+eimg.AddInstr(name=EIMG2);
 
 eimg.AddPrivate()
        .AddVar(type=uint8_t, name=jobId)
@@ -16,7 +16,7 @@ eimg.AddShared()
        .AddVar(type=ht_uint2, name=imageIdx)
        ;
 
-eimg.AddEntry(func=htmain, inst=EIMG, host=true)
+eimg.AddEntry(func=htmain, instr=EIMG, host=true)
        .AddParam(type=uint8_t, name=jobId)
        .AddParam(hostType=uint64_t, type=ht_uint48, name=pJobInfo)
        ;

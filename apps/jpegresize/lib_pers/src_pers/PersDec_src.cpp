@@ -27,8 +27,8 @@ void CPersDec::PersDec()
 	if (PR_htValid) {
 		switch (PR_htInst) {
 		case DEC_START: {
-			P_pInPtr = S_pRstBase + (ht_uint48)GR_rstOff_e();
-			P_firstRstMcuCnt = GR_rstOff_m();
+			P_pInPtr = S_pRstBase + (ht_uint48)GR_rstOff.e;
+			P_firstRstMcuCnt = GR_rstOff.m;
 			P_rstIdx += 1;
 
 			HtContinue(DEC_LOOP);
@@ -38,7 +38,7 @@ void CPersDec::PersDec()
 			BUSY_RETRY(S_pidPoolInitCnt < DPIPE_CNT || S_pidPool.empty());
 			BUSY_RETRY(SendCallBusy_ihuf());
 
-			ht_uint48 pInPtrEnd = S_pRstBase + (ht_uint48)GR_rstOff_e();
+			ht_uint48 pInPtrEnd = S_pRstBase + (ht_uint48)GR_rstOff.e;
 			McuRows_t rstIdx = (McuRows_t)(P_rstIdx - 1);
 
 			P_pid = S_pidPool.front();
@@ -49,7 +49,7 @@ void CPersDec::PersDec()
 					S_mcuColsRst, P_firstRstMcuCnt);
 
 			P_pInPtr = pInPtrEnd;
-			P_firstRstMcuCnt = GR_rstOff_m();
+			P_firstRstMcuCnt = GR_rstOff.m;
 			P_rstIdx += 1;
 
 			if (P_rstIdx > S_rstCnt)
@@ -109,11 +109,10 @@ void CPersDec::RecvJobInfo()
 					   "offsetof(JobDec, m_rstInfo) == %d\n",
 					   (int)offsetof(JobDec, m_rstInfo));
 
-				McuRows_t  a = (McuRows_t)(msg.m_rspQw - (DEC_RSTINFO_QOFF & MCU_ROWS_MASK));
-				ht_uint26 d = (ht_uint26)(msg.m_data >> 22);
-				McuCols_t m = (McuCols_t)(msg.m_data >> 48);
-				GW_rstOff_e(a, d);
-				GW_rstOff_m(a, m);
+				McuRows_t a = (McuRows_t)(msg.m_rspQw - (DEC_RSTINFO_QOFF & MCU_ROWS_MASK));
+				GW_rstOff.write_addr(a);
+				GW_rstOff.e = (ht_int26)(msg.m_data >> 22);
+				GW_rstOff.m = (McuCols_t)(msg.m_data >> 48);
 			}
 		}
 	}

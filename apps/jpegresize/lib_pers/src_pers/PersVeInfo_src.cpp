@@ -160,7 +160,7 @@ void CPersVeInfo::PersVeInfo()
 }
 
 // Send message to other vert modules
-void CPersVeInfo::ReadMemResp_ReadRspFunc(ht_uint3 rspIdx, sc_uint<VEINFO_MIF_DST_READRSPFUNC_INFO_W> rdRsp_info, sc_uint<64> rdRspData)
+void CPersVeInfo::ReadMemResp_ReadRspFunc(ht_uint3 rspIdx, sc_uint<JOB_INFO_MEM_LINE_IDX_W+JOB_INFO_SECTION_ID_W> rdRsp_info, uint64_t rdRspData)
 {
 	JobInfoMsg veInfoMsg;
 	veInfoMsg.m_imageIdx = S_imageIdx;

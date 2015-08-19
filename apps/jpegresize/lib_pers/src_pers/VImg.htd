@@ -9,15 +9,15 @@
 
 dsnInfo.AddModule(name=vimg, htIdW=0);
 
-vimg.AddInst(name=VIMG_ENTRY);
-vimg.AddInst(name=VIMG_FORK);
-vimg.AddInst(name=VIMG_VSM_JOIN);
-vimg.AddInst(name=VIMG_VCTL_JOIN);
-vimg.AddInst(name=VIMG_VWM_JOIN);
-vimg.AddInst(name=VIMG_VSM_CONT);
-vimg.AddInst(name=VIMG_VCTL_CONT);
-vimg.AddInst(name=VIMG_VWM_CONT);
-vimg.AddInst(name=VIMG_RETURN);
+vimg.AddInstr(name=VIMG_ENTRY);
+vimg.AddInstr(name=VIMG_FORK);
+vimg.AddInstr(name=VIMG_VSM_JOIN);
+vimg.AddInstr(name=VIMG_VCTL_JOIN);
+vimg.AddInstr(name=VIMG_VWM_JOIN);
+vimg.AddInstr(name=VIMG_VSM_CONT);
+vimg.AddInstr(name=VIMG_VCTL_CONT);
+vimg.AddInstr(name=VIMG_VWM_CONT);
+vimg.AddInstr(name=VIMG_RETURN);
 
 vimg.AddPrivate()
 	.AddVar(type=uint8_t, name=jobId)
@@ -29,7 +29,7 @@ vimg.AddShared()
 	.AddVar(type=ht_uint1, name=fileIdx)
         ;
 
-vimg.AddEntry(func=htmain, inst=VIMG_ENTRY, host=true)
+vimg.AddEntry(func=htmain, instr=VIMG_ENTRY, host=true)
 	.AddParam(type=uint8_t, name=jobId)
 	.AddParam(hostType=uint64_t, type=ht_uint48, name=pJobInfo)
 	;
@@ -56,12 +56,12 @@ vimg.AddCall(func=vwm, fork=true)
 
 dsnInfo.AddModule(name=vsm, htIdW=0);
 
-vsm.AddInst(name=VSM_ENTRY)
-	.AddInst(name=VSM_SEND)
-	.AddInst(name=VSM_RETURN)
+vsm.AddInstr(name=VSM_ENTRY)
+	.AddInstr(name=VSM_SEND)
+	.AddInstr(name=VSM_RETURN)
 	;
 
-vsm.AddEntry(func=vsm, inst=VSM_ENTRY)
+vsm.AddEntry(func=vsm, instr=VSM_ENTRY)
 	.AddParam(type=ht_uint1, name=imageIdx)
 	;
 
@@ -85,12 +85,12 @@ vsm.AddMsgIntf(dir=out, name=hrm, type=HorzResizeMsg);
 
 dsnInfo.AddModule(name=vwm, htIdW=0);
 
-vwm.AddInst(name=VWM_ENTRY)
-	.AddInst(name=VWM_LOOP)
-	.AddInst(name=VWM_RETURN)
+vwm.AddInstr(name=VWM_ENTRY)
+	.AddInstr(name=VWM_LOOP)
+	.AddInstr(name=VWM_RETURN)
 	;
 
-vwm.AddEntry(func=vwm, inst=VWM_ENTRY)
+vwm.AddEntry(func=vwm, instr=VWM_ENTRY)
 	.AddParam(type=ht_uint1, name=imageIdx)
 	;
 

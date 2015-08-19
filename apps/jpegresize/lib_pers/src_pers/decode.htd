@@ -5,6 +5,23 @@
 #include "JpegCommon.h"
 #include "PersStructs.h"
 
+struct coefValue {
+	bool		val;
+	ht_uint6	k;
+	int16_t		coef;
+};
+struct coefMsg {
+	uint8_t		jobId;
+	ht_uint2	imageIdx;
+	McuRows_t	rstIdx;
+	ht_uint2	compIdx;
+	bool		done;
+	bool		clr;
+	bool		rdy;
+	ht_uint2	dqtId;
+	coefValue	coef;
+};
+
 ////////////////////////////////////////
 typedef sc_uint<DPIPE_W> dpipe_id_t;
 typedef sc_uint<DPIPE_W+1> dpipe_cnt_t;
@@ -12,10 +29,10 @@ typedef sc_uint<DPIPE_W+1> dpipe_cnt_t;
 
 dsnInfo.AddModule(name=dec, htIdW=0);
 
-dec.AddInst(name=DEC_START);
-dec.AddInst(name=DEC_LOOP);
-dec.AddInst(name=DEC_JOIN);
-dec.AddInst(name=DEC_RETURN);
+dec.AddInstr(name=DEC_START);
+dec.AddInstr(name=DEC_LOOP);
+dec.AddInstr(name=DEC_JOIN);
+dec.AddInstr(name=DEC_RETURN);
 
 dec.AddPrivate()
 	.AddVar(type=dpipe_id_t, name=pid)
@@ -37,12 +54,11 @@ dec.AddShared()
 	.AddVar(type=ht_uint4, name=pidPoolInitCnt)
 	;
 
-dec.AddGlobal(var=rstOff, addr1W=MCU_ROWS_W, addr1=rstIdx)
-        .AddField(type=ht_uint26, name=e, read=true, write=true)
-        .AddField(type=McuCols_t, name=m, read=true, write=true)
+dec.AddGlobal()
+        .AddVar(type=DecRstOff, name=rstOff, addr1=rstIdx, instrRead=true, instrWrite=true)
         ;
 
-dec.AddEntry(func=dec, inst=DEC_START)
+dec.AddEntry(func=dec, instr=DEC_START)
 	.AddParam(type=ht_uint2, name=imageIdx)
 	.AddParam(type=uint8_t, name=jobId)
 	;
@@ -86,10 +102,10 @@ union IhufLookup {
 
 dsnInfo.AddModule(name=ihuf2, htIdW=DPIPE_W, pause=true);
 
-ihuf2.AddInst(name=IHUF_ENTRY);
-ihuf2.AddInst(name=IHUF_READ);
-ihuf2.AddInst(name=IHUF_RD_WAIT);
-ihuf2.AddInst(name=IHUF_XFER);
+ihuf2.AddInstr(name=IHUF_ENTRY);
+ihuf2.AddInstr(name=IHUF_READ);
+ihuf2.AddInstr(name=IHUF_RD_WAIT);
+ihuf2.AddInstr(name=IHUF_XFER);
 
 ihuf2.AddPrivate()
 	.AddVar(type=dpipe_id_t, name=pid)
@@ -169,7 +185,7 @@ ihuf2.AddStage()
 	.AddVar(type=ht_uint2, name=compIdx, dimen1=DPIPE_CNT, range=1-4)
 	;
 
-ihuf2.AddEntry(func=ihuf, inst=IHUF_ENTRY)
+ihuf2.AddEntry(func=ihuf, instr=IHUF_ENTRY)
 	.AddParam(type=dpipe_id_t, name=pid)
 	.AddParam(type=uint8_t, name=jobId)
 	.AddParam(type=ht_uint2, name=imageIdx)
@@ -185,27 +201,10 @@ ihuf2.AddTransfer(func=idct)
 	;
 
 ihuf2.AddMsgIntf(dir=in, name=jobInfo, type=JobInfoMsg);
-
-struct coefValue {
-	bool		val;
-	ht_uint6	k;
-	int16_t		coef;
-};
-struct coefMsg {
-	uint8_t		jobId;
-	ht_uint2	imageIdx;
-	McuRows_t	rstIdx;
-	ht_uint2	compIdx;
-	bool		done;
-	bool		clr;
-	bool		rdy;
-	ht_uint2	dqtId;
-	coefValue	coef;
-};
 ihuf2.AddMsgIntf(dir=out, name=coef, type=coefMsg, dimen=DPIPE_CNT);
 
-ihuf2.AddReadMem(rspCntW=6, maxBw=true)
-	.AddDst(name=memBuf, var=memBuf, dstIdx=varAddr2, multiRd=true, memSrc=host)
+ihuf2.AddReadMem() //rspCntW=6, maxBw=true
+	.AddDst(name=memBuf, var=memBuf[](#,#), memSrc=host)
 	;
 
 ihuf2.AddFunction(type=void, name=RecvJobInfo);
@@ -215,10 +214,10 @@ ihuf2.AddFunction(type=void, name=RecvJobInfo);
 #else
 dsnInfo.AddModule(name=ihuf, htIdW=DPIPE_W, pause=true);
 
-ihuf.AddInst(name=IHUF_ENTRY);
-ihuf.AddInst(name=IHUF_READ);
-ihuf.AddInst(name=IHUF_RD_WAIT);
-ihuf.AddInst(name=IHUF_XFER);
+ihuf.AddInstr(name=IHUF_ENTRY);
+ihuf.AddInstr(name=IHUF_READ);
+ihuf.AddInstr(name=IHUF_RD_WAIT);
+ihuf.AddInstr(name=IHUF_XFER);
 
 ihuf.AddPrivate()
 	.AddVar(type=dpipe_id_t, name=pid)
@@ -295,7 +294,7 @@ ihuf.AddStage()
 	.AddVar(type=ht_uint10, name=coefMsgQueSize, dimen1=DPIPE_CNT, range=1)
 	;
 
-ihuf.AddEntry(func=ihuf, inst=IHUF_ENTRY)
+ihuf.AddEntry(func=ihuf, instr=IHUF_ENTRY)
 	.AddParam(type=dpipe_id_t, name=pid)
 	.AddParam(type=uint8_t, name=jobId)
 	.AddParam(type=ht_uint2, name=imageIdx)
@@ -339,7 +338,7 @@ ihuf.AddFunction(type=void, name=RecvJobInfo);
 
 dsnInfo.AddModule(name=idct, htIdW=DPIPE_W);
 
-idct.AddInst(name=IDCT_ACTIVE);
+idct.AddInstr(name=IDCT_ACTIVE);
 
 idct.AddPrivate()
 	.AddVar(type=dpipe_id_t, name=pid)
@@ -464,7 +463,7 @@ idct.AddStage()
 	.AddVar(type=ht_uint6, name=decMsgQueSize, range=1)
 	;
 
-idct.AddEntry(func=idct, inst=IDCT_ACTIVE)
+idct.AddEntry(func=idct, instr=IDCT_ACTIVE)
 	.AddParam(type=dpipe_id_t, name=pid)
 	.AddParam(type=McuRows_t, name=rstIdx)
 	;

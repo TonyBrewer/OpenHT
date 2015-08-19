@@ -159,7 +159,7 @@ CPersVwrk::PersVwrk()
 				sc_uint<4+VERT_PREFETCH_MCUS_W> bufIdx = (P3_compIdx << (VERT_PREFETCH_MCUS_W+2)) | 
 					(P3_preMcuBlkRow << (VERT_PREFETCH_MCUS_W+1)) | (P3_preMcuBlkCol << VERT_PREFETCH_MCUS_W) | P3_readBufIdx;
 
-				ReadMem_rowPref(T3_memAddr, bufIdx, PR3_htId, 0, 8);
+				ReadMem_rowPref(P3_rdReqGrpId, T3_memAddr, bufIdx, PR3_htId, 0, 8);
 
 				T1_bReadMem = true;
 
@@ -270,11 +270,12 @@ CPersVwrk::PersVwrk()
 				S_pendBusy = true;
 				S_pendHtId = PR3_htId;
 				S_pendOrderQue.pop();
-				HtContinue(VWRK_WORK_LOOP);
+				P3_prevInst = VWRK_WORK_LOOP_A;
+				HtContinue(VWRK_WORK_LOOP_A);
 			}
 		}
 		break;
-		case VWRK_WORK_LOOP: {
+		case VWRK_WORK_LOOP_A: {
 			T1_bMcuBufFull = S_mcuBufInUseCnt[PR3_htId] == VERT_PREFETCH_MCUS_FULL;
 			T1_bMcuRowEnd = P3_preMcuRow == P3_inMcuRowEnd;
 			T1_bReadMemBusy = ReadMemBusy();
@@ -293,7 +294,7 @@ CPersVwrk::PersVwrk()
 				sc_uint<4+VERT_PREFETCH_MCUS_W> bufIdx = (P3_compIdx << (VERT_PREFETCH_MCUS_W+2)) | 
 					(P3_preMcuBlkRow << (VERT_PREFETCH_MCUS_W+1)) | (P3_preMcuBlkCol << VERT_PREFETCH_MCUS_W) | P3_readBufIdx;
 
-				ReadMem_rowPref(T3_memAddr, bufIdx, PR3_htId, 0, 8);
+				ReadMem_rowPref(P3_rdReqGrpId, T3_memAddr, bufIdx, PR3_htId, 0, 8);
 
 				T1_bReadMem = true;
 
@@ -321,10 +322,10 @@ CPersVwrk::PersVwrk()
 
 			T1_bPendHtId = S_pendHtId == PR3_htId;
 			T1_bMcuReadPendCnt = PR3_mcuReadPendCnt > 0;
-			T1_bReadMemPoll = !ReadMemPoll(P3_rdPollGrpId);
 			T1_bWorkQueNotFull = !S_workQue.full();
+			bool ReadMemPoll_noOutStandingReqs = (PR3_prevInst != PR3_htInst);
 
-			if (SR_pendBusy && SR_pendHtId == PR3_htId && PR3_mcuReadPendCnt > 0 && !ReadMemPoll(P3_rdPollGrpId) && !S_workQue.full()) {
+			if (SR_pendBusy && SR_pendHtId == PR3_htId && PR3_mcuReadPendCnt > 0 && ReadMemPoll_noOutStandingReqs && !S_workQue.full()) {
 
 				// send mcu to data path
 				VertWorkMsg work;
@@ -356,8 +357,108 @@ CPersVwrk::PersVwrk()
 			if (SR_pendBusy && SR_pendHtId == PR3_htId)
 				S_pendBusy = TR3_pendMcuRow_lt_inMcuRowEnd;
 
-			if (TR3_preMcuRow_lt_inMcuRowEnd || TR3_pendMcuRow_lt_inMcuRowEnd)
-				HtContinue(VWRK_WORK_LOOP);
+			if (TR3_preMcuRow_lt_inMcuRowEnd || TR3_pendMcuRow_lt_inMcuRowEnd) {
+				P3_prevInst = VWRK_WORK_LOOP_A;
+				if (ReadMemBusy()) {
+					HtRetry();
+				} else {
+					ReadMemPoll(P3_rdPollGrpId, VWRK_WORK_LOOP_B);
+				}
+
+			} else
+				HtContinue(VWRK_RETURN);
+		}
+		break;
+		case VWRK_WORK_LOOP_B: {
+			T1_bMcuBufFull = S_mcuBufInUseCnt[PR3_htId] == VERT_PREFETCH_MCUS_FULL;
+			T1_bMcuRowEnd = P3_preMcuRow == P3_inMcuRowEnd;
+			T1_bReadMemBusy = ReadMemBusy();
+
+			if (SR_readBusy && SR_readHtId == PR3_htId && TR3_mcuBufInUseCnt_lt_VERT_PREFETCH_MCUS && TR3_preMcuRow_lt_inMcuRowEnd && !ReadMemBusy()) {
+
+#ifndef _HTV
+				// these next statements were moved to the P1 stage to give the multiple additional registers stages
+				McuRows_t blkRow = (McuRows_t)(P3_preMcuRow * (T3_loopVcp.m_blkRowsPerMcu == 2 ? 2 : 1) | P3_preMcuBlkRow);
+				McuCols_t blkCol = (McuCols_t)(P3_outMcuColStart * (T3_loopVcp.m_blkColsPerMcu == 2 ? 2 : 1) | P3_preMcuBlkCol);
+				ht_uint26 pos = (ht_uint26)((blkRow * T3_loopVcp.m_inCompBlkCols + blkCol) * MEM_LINE_SIZE);
+				ht_uint48 memAddr = T3_loopVcp.m_pInCompBuf + pos;
+				assert(memAddr == T3_memAddr);
+#endif
+
+				sc_uint<4+VERT_PREFETCH_MCUS_W> bufIdx = (P3_compIdx << (VERT_PREFETCH_MCUS_W+2)) | 
+					(P3_preMcuBlkRow << (VERT_PREFETCH_MCUS_W+1)) | (P3_preMcuBlkCol << VERT_PREFETCH_MCUS_W) | P3_readBufIdx;
+
+				ReadMem_rowPref(P3_rdReqGrpId, T3_memAddr, bufIdx, PR3_htId, 0, 8);
+
+				T1_bReadMem = true;
+
+				if (TR3_preMcuBlkColP1_eq_blkColsPerMcu) {
+					P3_preMcuBlkCol = 0;
+					if (P3_preMcuBlkRow+1 == T3_loopVcp.m_blkRowsPerMcu) {
+						if (P3_compIdx+1 == T3_jobInfo.m_compCnt) {
+							P3_compIdx = 0;
+							P3_preMcuRow += 1;
+							P3_rdReqGrpId = (PR3_htId << VERT_PREFETCH_MCUS_W) | ((P3_rdReqGrpId+1) & (VERT_PREFETCH_MCUS-1));
+							P3_preMcuBlkRowFirst[P3_compIdx] = 0;
+
+							P3_readBufIdx += 1;
+							P3_mcuReadPendCnt += 1;
+							S_mcuBufInUseCnt[PR3_htId] += 1;
+						} else
+							P3_compIdx += 1;
+
+						P3_preMcuBlkRow = P3_preMcuBlkRowFirst[P3_compIdx];
+					} else
+						P3_preMcuBlkRow += 1;
+				} else
+					P3_preMcuBlkCol += 1;
+			}
+
+			T1_bPendHtId = S_pendHtId == PR3_htId;
+			T1_bMcuReadPendCnt = PR3_mcuReadPendCnt > 0;
+			T1_bWorkQueNotFull = !S_workQue.full();
+			bool ReadMemPoll_noOutStandingReqs = (PR3_prevInst != PR3_htInst);
+
+			if (SR_pendBusy && SR_pendHtId == PR3_htId && PR3_mcuReadPendCnt > 0 && ReadMemPoll_noOutStandingReqs && !S_workQue.full()) {
+
+				// send mcu to data path
+				VertWorkMsg work;
+				work.m_htId = PR3_htId;
+
+				work.m_mcuBlkRowFirst[0] = P3_bFirstWorkMcu ? P3_wrkMcuBlkRowFirst[0] : (ht_uint1)0;
+				work.m_mcuBlkRowFirst[1] = P3_bFirstWorkMcu ? P3_wrkMcuBlkRowFirst[1] : (ht_uint1)0;
+				work.m_mcuBlkRowFirst[2] = P3_bFirstWorkMcu ? P3_wrkMcuBlkRowFirst[2] : (ht_uint1)0;
+
+				work.m_pntWghtEnd = P3_pntWghtEnd;
+				work.m_imageIdx = P3_imageIdx;
+				work.m_bEndOfColumn = P3_pendMcuRow+1 == P3_inMcuRowEnd;
+				work.m_bufIdx = P3_pendBufIdx;
+				work.m_outMcuColStart = P3_outMcuColStart;
+				work.m_vrsIdx = P3_vrsIdx;
+
+				S_workQue.push( work );
+
+				P3_bFirstWorkMcu = false;
+				P3_rdPollGrpId = (PR3_htId << VERT_PREFETCH_MCUS_W) | ((P3_rdPollGrpId+1) & (VERT_PREFETCH_MCUS-1));
+				P3_mcuReadPendCnt -= 1;
+				P3_pendMcuRow += 1;
+				P3_pendBufIdx += 1;
+			}
+
+			if (SR_readBusy && SR_readHtId == PR3_htId)
+				S_readBusy = TR3_preMcuRow_lt_inMcuRowEnd;
+
+			if (SR_pendBusy && SR_pendHtId == PR3_htId)
+				S_pendBusy = TR3_pendMcuRow_lt_inMcuRowEnd;
+
+			if (TR3_preMcuRow_lt_inMcuRowEnd || TR3_pendMcuRow_lt_inMcuRowEnd) {
+				P3_prevInst = VWRK_WORK_LOOP_B;
+				if (ReadMemBusy()) {
+					HtRetry();
+				} else {
+					ReadMemPoll(P3_rdPollGrpId, VWRK_WORK_LOOP_A);
+				}
+			} 
 			else
 				HtContinue(VWRK_RETURN);
 		}

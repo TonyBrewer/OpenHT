@@ -57,10 +57,10 @@ struct eMemInfo {
 
 dsnInfo.AddModule(name=enc, htIdW=1);
 
-enc.AddInst(name=ENC_WRITE);
-enc.AddInst(name=ENC_WAIT);
-enc.AddInst(name=ENC_LENGTH);
-enc.AddInst(name=ENC_RETURN);
+enc.AddInstr(name=ENC_WRITE);
+enc.AddInstr(name=ENC_WAIT);
+enc.AddInstr(name=ENC_LENGTH);
+enc.AddInstr(name=ENC_RETURN);
 
 enc.AddPrivate()
 	.AddVar(type=uint8_t, name=jobId)
@@ -243,7 +243,7 @@ enc.AddStage(execStg=3)
 	.AddVar(type=ht_uint48, name=pLenBuf, range=2)
 	;
 
-enc.AddEntry(func=enc, inst=ENC_WRITE)
+enc.AddEntry(func=enc, instr=ENC_WRITE)
 	.AddParam(type=uint8_t, name=jobId)
 	.AddParam(type=ht_uint2, name=imageIdx)
 	.AddParam(hostType=uint64_t, type=ht_uint48, name=pJobInfo)
@@ -251,8 +251,9 @@ enc.AddEntry(func=enc, inst=ENC_WRITE)
 enc.AddReturn(func=enc)
 	;
 
-enc.AddWriteMem(maxBw=true, reqPause=true)
-	.AddSrc(name=memBuf, var=memBuf, multiWr=true, srcIdx=varAddr2, memDst=host)
+enc.AddWriteMem(reqPause=true) //maxBw=true
+	.AddSrc(name=memBuf, var=memBuf[](#,#), memDst=host)
+	.AddSrc(name=uint32, type=uint32_t, memDst=host)
 	;
 
 enc.AddMsgIntf(dir=in, name=veInfo, type=JobInfoMsg);

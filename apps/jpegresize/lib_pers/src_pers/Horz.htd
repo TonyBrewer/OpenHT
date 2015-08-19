@@ -96,13 +96,13 @@ struct HorzWriteMsg {
 
 dsnInfo.AddModule(name=hwrk, htIdW=HWRK_HTID_W);
 
-hwrk.AddInst(name=HWRK_ENTRY)
-	.AddInst(name=HWRK_INIT_HDS)
-	.AddInst(name=HWRK_WRITE_LOOP)
-	.AddInst(name=HWRK_RETURN)
+hwrk.AddInstr(name=HWRK_ENTRY)
+	.AddInstr(name=HWRK_INIT_HDS)
+	.AddInstr(name=HWRK_WRITE_LOOP)
+	.AddInstr(name=HWRK_RETURN)
 	;
 
-hwrk.AddEntry(func=hwrk, inst=HWRK_ENTRY)
+hwrk.AddEntry(func=hwrk, instr=HWRK_ENTRY)
 	.AddParam(type=ht_uint3, name=imageHtId)
 	.AddParam(type=ht_uint2, name=imageIdx)
 	.AddParam(type=ht_uint2, name=persMode)
@@ -196,8 +196,8 @@ hwrk.AddStage()
 	.AddVar(type=TransBufIdx_t,		name=transBufWrIdx,			range=2 )
 	;
 
-hwrk.AddWriteMem( rspCntW=8 )
-	.AddSrc( name=rslt, var=transBuf, multiWr=true, srcIdx=varAddr1, memDst=coproc )
+hwrk.AddWriteMem() // rspCntW=8
+	.AddSrc( name=rslt, var=transBuf(#), memDst=coproc )
 	;
 
 hwrk.AddMsgIntf(dir=in, name=jobInfo, type=JobInfoMsg);

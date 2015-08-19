@@ -66,17 +66,17 @@ inline int idct_descale(int64_t x, int n) {
 void
 CPersIdct::PersIdct()
 {
-	if (PR_htValid) {
-		switch (PR_htInst) {
+	if (PR1_htValid) {
+		switch (PR1_htInst) {
 		case IDCT_ACTIVE: {
 			BUSY_RETRY(SendReturnBusy_ihuf());
 
-			if (S_resActCnt[P_pid]) {
+			if (S_resActCnt[P1_pid]) {
 				HtContinue(IDCT_ACTIVE);
 				break;
 			}
 
-			SendReturn_ihuf(P_pid);
+			SendReturn_ihuf(P1_pid);
 		}
 		break;
 		default:

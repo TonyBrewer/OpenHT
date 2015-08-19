@@ -27,15 +27,15 @@ typedef sc_uint<VCTL_HTID_W> VctlHtId__t;
 
 dsnInfo.AddModule(name=vctl, htIdW=VCTL_HTID_W);
 
-vctl.AddInst(name=VCTL_ENTRY)
-	.AddInst(name=VCTL_CALC_START)
-	.AddInst(name=VCTL_CALC_END)
-	.AddInst(name=VCTL_MSG_LOOP)
-	.AddInst(name=VCTL_JOIN)
-	.AddInst(name=VCTL_RETURN)
+vctl.AddInstr(name=VCTL_ENTRY)
+	.AddInstr(name=VCTL_CALC_START)
+	.AddInstr(name=VCTL_CALC_END)
+	.AddInstr(name=VCTL_MSG_LOOP)
+	.AddInstr(name=VCTL_JOIN)
+	.AddInstr(name=VCTL_RETURN)
 	;
 
-vctl.AddEntry(func=vctl, inst=VCTL_ENTRY)
+vctl.AddEntry(func=vctl, instr=VCTL_ENTRY)
 	.AddParam(type=ht_uint3, name=imageHtId)
 	.AddParam(type=ImageIdx_t, name=imageIdx)
 	.AddParam(type=ht_uint2, name=persMode)
@@ -61,7 +61,7 @@ vctl.AddPrivate()
 	.AddVar(type=PntWghtCpInt_t, name=pntWghtStart)
 	.AddVar(type=PntWghtCpInt_t, name=pntWghtEnd)
 	.AddVar(type=McuRows_t, name=mcuRowCompletionCnt)
-	.AddVar(type=bool, name=mcuRowComplete, addr1=mcuRowCompletionCnt, addr1W=MCU_ROWS_W)
+	.AddVar(type=bool, name=mcuRowComplete, addr1=mcuRowCompletionCnt)
 	.AddVar(type=bool, name=bEndOfColumn)
 	.AddVar(type=ht_uint2, name=persMode)
 	;
@@ -78,8 +78,9 @@ vctl.AddStage()
 	.AddVar(type=bool,			name=hrm_bValid,			range=1 )
 	;
 
-vctl.AddGlobal(var=pntWghtStart, addr1W=IMAGE_ROWS_W, addr1=pntWghtStartRdAddr1, addr2W=1, addr2=pntWghtStartRdAddr2)
-	.AddField(type=PntWghtCpInt_t, name=d, read=true, write=true);
+vctl.AddGlobal()
+	.AddVar(type=PntWghtCpInt_t, name=pntWghtStart, addr1=pntWghtStartRdAddr1, addr2=pntWghtStartRdAddr2, instrRead=true, instrWrite=true)
+	;
 
 vctl.AddMsgIntf(dir=in, name=veInfo, type=JobInfoMsg);
 vctl.AddMsgIntf(dir=in, name=hrm, type=HorzResizeMsg, queueW=9, fanin=HORZ_REPL/VERT_REPL);
@@ -170,17 +171,18 @@ struct VertOrderState {
 
 dsnInfo.AddModule(name=vwrk, htIdW=VWRK_HTID_W, pause=true);
 
-vwrk.AddInst(name=VWRK_ENTRY)
-	.AddInst(name=VWRK_PREREAD_WAIT)
-	.AddInst(name=VWRK_PREREAD)
-	.AddInst(name=VWRK_VRS_WAIT)
-	.AddInst(name=VWRK_VRS_INIT)
-	.AddInst(name=VWRK_WORK_WAIT)
-	.AddInst(name=VWRK_WORK_LOOP)
-	.AddInst(name=VWRK_RETURN)
+vwrk.AddInstr(name=VWRK_ENTRY)
+	.AddInstr(name=VWRK_PREREAD_WAIT)
+	.AddInstr(name=VWRK_PREREAD)
+	.AddInstr(name=VWRK_VRS_WAIT)
+	.AddInstr(name=VWRK_VRS_INIT)
+	.AddInstr(name=VWRK_WORK_WAIT)
+	.AddInstr(name=VWRK_WORK_LOOP_A)
+	.AddInstr(name=VWRK_WORK_LOOP_B)
+	.AddInstr(name=VWRK_RETURN)
 	;
 
-vwrk.AddEntry(func=vwrk, inst=VWRK_ENTRY)
+vwrk.AddEntry(func=vwrk, instr=VWRK_ENTRY)
 	.AddParam(type=bool, name=bEndOfImage)
 	.AddParam(type=bool, name=bEndOfColumn)
 	.AddParam(type=ImageIdx_t, name=imageIdx)
@@ -222,6 +224,7 @@ vwrk.AddPrivate()
 	.AddVar(type=ht_uint1, name=wrkMcuBlkRowFirst, dimen1=3)
 	.AddVar(type=bool, name=bHtIdPushed)
 	.AddVar(type=VrsIdx_t, name=vrsIdx)
+	.AddVar(type=ht_uint3, name=prevInst)
 	;
 
 vwrk.AddShared()
@@ -349,8 +352,8 @@ vwrk.AddStage(execStg=3)
 	.AddVar(type=VwrkJobInfo,	name=jobInfo,									range=2 )
 	;
 
-vwrk.AddReadMem( queueW=5, rspCntW=8, rspGrpId=rdReqGrpId, maxBw=true, pause=false, poll=true )
-	.AddDst( name=rowPref, var=rowPref, multiRd=true, dstIdx=varIdx1, memSrc=coproc )
+vwrk.AddReadMem(rspGrpW=VWRK_HTID_W+VERT_PREFETCH_MCUS_W, pause=false, poll=true) // queueW=5, rspCntW=8, rspGrpId=rdReqGrpId, maxBw=true, 
+	.AddDst( name=rowPref, var=rowPref[#](,), memSrc=coproc )
 	;
 
 vwrk.AddMsgIntf(dir=in, name=veInfo, type=JobInfoMsg);

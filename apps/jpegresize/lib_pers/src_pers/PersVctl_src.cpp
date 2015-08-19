@@ -16,25 +16,26 @@
 
 void CPersVctl::PersVctl()
 {
-	if (PR_htValid) {
-		ht_uint1 vImgIdx = P_imageIdx & VERT_REPL_MASK;
+	if (PR1_htValid) {
+		ht_uint1 vImgIdx = P1_imageIdx & VERT_REPL_MASK;
 
-		switch (PR_htInst) {
+		switch (PR1_htInst) {
 		case VCTL_ENTRY: {
 
-			P_bEndOfImage = false;
-			P_inImageRowStart = 0;
-			P_inImageRowEnd = 0;
+			P1_bEndOfImage = false;
+			P1_inImageRowStart = 0;
+			P1_inImageRowEnd = 0;
 
-			P_outMcuRowStart = 0;
-			P_outMcuColStart = 0;
+			P1_outMcuRowStart = 0;
+			P1_outMcuColStart = 0;
 
-			P_pntWghtStartRdAddr1 = 0;
-			P_pntWghtStartRdAddr2 = vImgIdx;
+			P1_pntWghtStartRdAddr1 = 0;
+			P1_pntWghtStartRdAddr2 = vImgIdx;
 
-			if (S_mcuRowClearIdx[PR_htId] < S_jobInfo[vImgIdx].m_inMcuRows) {
-				PW_mcuRowComplete(S_mcuRowClearIdx[PR_htId], false);
-				S_mcuRowClearIdx[PR_htId] += 1;
+			if (S_mcuRowClearIdx[PR1_htId] < S_jobInfo[vImgIdx].m_inMcuRows) {
+				PW1_mcuRowComplete.write_addr(S_mcuRowClearIdx[PR1_htId]);
+				PW1_mcuRowComplete = false;
+				S_mcuRowClearIdx[PR1_htId] += 1;
 
 				HtContinue(VCTL_ENTRY);
 			} else
@@ -43,29 +44,29 @@ void CPersVctl::PersVctl()
 		break;
 		case VCTL_CALC_START: {
 			PntWghtCpInt_t filterOffset = (PntWghtCpInt_t)(17 - S_jobInfo[vImgIdx].m_filterWidth);
-			P_pntWghtStart = GR1_pntWghtStart_d();
-			PntWghtCpInt_t pntWghtStartSum = P_pntWghtStart + filterOffset;
-			P_inImageRowStart = pntWghtStartSum < 0 ? (ImageRows_t)0 : (ImageRows_t)pntWghtStartSum;
+			P1_pntWghtStart = GR1_pntWghtStart;
+			PntWghtCpInt_t pntWghtStartSum = P1_pntWghtStart + filterOffset;
+			P1_inImageRowStart = pntWghtStartSum < 0 ? (ImageRows_t)0 : (ImageRows_t)pntWghtStartSum;
 
-			McuRows_t outMcuRowEnd = P_outMcuRowStart + VERT_MCU_ROWS;
+			McuRows_t outMcuRowEnd = P1_outMcuRowStart + VERT_MCU_ROWS;
 			ImageRows_t outImageRowLast = (ImageRows_t)(outMcuRowEnd * S_jobInfo[vImgIdx].m_maxBlkRowsPerMcu * DCTSIZE);
 			if (outImageRowLast >= S_jobInfo[vImgIdx].m_outImageRows) {
-				P_bEndOfColumn = true;
-				P_pntWghtStartRdAddr1 = (PntWghtAddr_t)(S_jobInfo[vImgIdx].m_outImageRows-1);
+				P1_bEndOfColumn = true;
+				P1_pntWghtStartRdAddr1 = (PntWghtAddr_t)(S_jobInfo[vImgIdx].m_outImageRows-1);
 			} else {
-				P_bEndOfColumn = false;
-				P_pntWghtStartRdAddr1 = outImageRowLast;
+				P1_bEndOfColumn = false;
+				P1_pntWghtStartRdAddr1 = outImageRowLast;
 			}
 
-			fprintf(stdout, "VCTL: P_outMcuRowStart %d @ %lld\n", (int)P_outMcuRowStart, HT_CYCLE());
+			fprintf(stdout, "VCTL: P1_outMcuRowStart %d @ %lld\n", (int)P1_outMcuRowStart, HT_CYCLE());
 
 			HtContinue(VCTL_CALC_END);
 		}
 		break;
 		case VCTL_CALC_END: {
-			P_pntWghtEnd = GR1_pntWghtStart_d();
-			P_inImageRowEnd  = (ImageRows_t)(GR1_pntWghtStart_d() + COPROC_PNT_WGHT_CNT+1);
-			if (P_inImageRowEnd > S_jobInfo[vImgIdx].m_inImageRows) P_inImageRowEnd = S_jobInfo[vImgIdx].m_inImageRows;
+			P1_pntWghtEnd = GR1_pntWghtStart;
+			P1_inImageRowEnd  = (ImageRows_t)(GR1_pntWghtStart + COPROC_PNT_WGHT_CNT+1);
+			if (P1_inImageRowEnd > S_jobInfo[vImgIdx].m_inImageRows) P1_inImageRowEnd = S_jobInfo[vImgIdx].m_inImageRows;
 			HtContinue(VCTL_MSG_LOOP);
 		}
 		break;
@@ -83,59 +84,61 @@ void CPersVctl::PersVctl()
 
 			// first check if a horz MCU row complete message is ready
 		  	HorzResizeMsg hrm = PeekMsg_hrm(vImgIdx);
-			if (!P_bEndOfImage && RecvMsgReady_hrm(vImgIdx) &&
-			    (hrm.m_imageHtId == P_imageHtId)) {
+			if (!P1_bEndOfImage && RecvMsgReady_hrm(vImgIdx) &&
+			    (hrm.m_imageHtId == P1_imageHtId)) {
 				hrm = RecvMsg_hrm(vImgIdx);
 				T1_hrm_bValid = true;
 				T1_hrm = hrm;
-				PW_mcuRowComplete(hrm.m_mcuRow, true);
+				PW1_mcuRowComplete.write_addr(hrm.m_mcuRow);
+				PW1_mcuRowComplete = true;
 				HtContinue(VCTL_MSG_LOOP);
 				break;
 			}
 
 			// next check if the next MCU row is complete
-			P_bEndOfImage = PR_mcuRowCompletionCnt == S_jobInfo[vImgIdx].m_inMcuRows;
-			if ((PR_mcuRowComplete || P_persMode == 2) && !P_bEndOfImage) {
-				PW_mcuRowComplete(P_mcuRowCompletionCnt, false);
-				P_mcuRowCompletionCnt += 1;
+			P1_bEndOfImage = PR1_mcuRowCompletionCnt == S_jobInfo[vImgIdx].m_inMcuRows;
+			if ((PR1_mcuRowComplete || P1_persMode == 2) && !P1_bEndOfImage) {
+				PW1_mcuRowComplete.write_addr(P1_mcuRowCompletionCnt);
+				PW1_mcuRowComplete = false;
+				P1_mcuRowCompletionCnt += 1;
 			}
 
 			// finally check if there is work the for vert resizer
-			if (S_vertWorkLock && S_vertWorkHtId != PR_htId) {
+			if (S_vertWorkLock && S_vertWorkHtId != PR1_htId) {
 				HtContinue(VCTL_MSG_LOOP);
 				break;	// another thread is submitting work to vwrk, must wait
 			}
 
-			if ((P_mcuRowCompletionCnt * DCTSIZE << (S_jobInfo[vImgIdx].m_maxBlkRowsPerMcu == 2 ? 1 : 0)) < P_inImageRowEnd) {
+			if ((P1_mcuRowCompletionCnt * DCTSIZE << (S_jobInfo[vImgIdx].m_maxBlkRowsPerMcu == 2 ? 1 : 0)) < P1_inImageRowEnd) {
 				HtContinue(VCTL_MSG_LOOP);
 				break;
 			}
 
 			S_vertWorkLock = true;
-			S_vertWorkHtId = PR_htId;
+			S_vertWorkHtId = PR1_htId;
 
 			BUSY_RETRY(SendCallBusy_vwrk());
 
 			bool bEndOfImage = false;
-			SendCallFork_vwrk(VCTL_JOIN, bEndOfImage, P_bEndOfColumn, P_imageIdx, P_outMcuRowStart,
-				P_outMcuColStart, P_inImageRowStart, P_inImageRowEnd, P_pntWghtStart, P_pntWghtEnd );
+			SendCallFork_vwrk(VCTL_JOIN, bEndOfImage, P1_bEndOfColumn, P1_imageIdx, P1_outMcuRowStart,
+				P1_outMcuColStart, P1_inImageRowStart, P1_inImageRowEnd, P1_pntWghtStart, P1_pntWghtEnd );
 
-			if (P_outMcuColStart >= S_jobInfo[vImgIdx].m_outMcuCols-1) {
-				P_outMcuColStart = 0;
-				P_outMcuRowStart += VERT_MCU_ROWS;
-				P_inImageRowStart = P_inImageRowEnd;
+			if (P1_outMcuColStart >= S_jobInfo[vImgIdx].m_outMcuCols-1) {
+				P1_outMcuColStart = 0;
+				P1_outMcuRowStart += VERT_MCU_ROWS;
+				P1_inImageRowStart = P1_inImageRowEnd;
 
 				S_vertWorkLock = false;
 
-				ImageRows_t outImageRowFirst = (ImageRows_t)(P_outMcuRowStart * DCTSIZE << (S_jobInfo[vImgIdx].m_maxBlkRowsPerMcu == 2 ? 1 : 0));
-				P_pntWghtStartRdAddr1 = outImageRowFirst & IMAGE_ROWS_MASK;
+				ImageRows_t outImageRowFirst = (ImageRows_t)(P1_outMcuRowStart * DCTSIZE << (S_jobInfo[vImgIdx].m_maxBlkRowsPerMcu == 2 ? 1 : 0));
+				P1_pntWghtStartRdAddr1 = outImageRowFirst & IMAGE_ROWS_MASK;
 
-				if (P_bEndOfColumn)
+				if (P1_bEndOfColumn)
 					RecvReturnPause_vwrk(VCTL_RETURN);
 				else
 					RecvReturnPause_vwrk(VCTL_CALC_START);
 			} else {
-				P_outMcuColStart += 1;
+				P1_outMcuColStart += 1;
 
 				HtContinue(VCTL_MSG_LOOP);
 			}
@@ -150,21 +153,23 @@ void CPersVctl::PersVctl()
 			// collect any unneeded messages from horz
 			// this can occur when resizing to less than 1/16th
 		  	HorzResizeMsg hrm = PeekMsg_hrm(vImgIdx);
-			if (!P_bEndOfImage && RecvMsgReady_hrm(vImgIdx) &&
-			    (hrm.m_imageHtId == P_imageHtId)) {
+			if (!P1_bEndOfImage && RecvMsgReady_hrm(vImgIdx) &&
+			    (hrm.m_imageHtId == P1_imageHtId)) {
 				hrm = RecvMsg_hrm(vImgIdx);
-				PW_mcuRowComplete(hrm.m_mcuRow, true);
+				PW1_mcuRowComplete.write_addr(hrm.m_mcuRow);
+				PW1_mcuRowComplete = true;
 				HtContinue(VCTL_RETURN);
 				break;
 			}
 			// next check if the next MCU row is complete
-			P_bEndOfImage = PR_mcuRowCompletionCnt == S_jobInfo[vImgIdx].m_inMcuRows;
-			if ((PR_mcuRowComplete || P_persMode == 2) && !P_bEndOfImage) {
-				PW_mcuRowComplete(P_mcuRowCompletionCnt, false);
-				P_mcuRowCompletionCnt += 1;
+			P1_bEndOfImage = PR1_mcuRowCompletionCnt == S_jobInfo[vImgIdx].m_inMcuRows;
+			if ((PR1_mcuRowComplete || P1_persMode == 2) && !P1_bEndOfImage) {
+				PW1_mcuRowComplete.write_addr(P1_mcuRowCompletionCnt);
+				PW1_mcuRowComplete = false;
+				P1_mcuRowCompletionCnt += 1;
 			}
-			P_bEndOfImage = PR_mcuRowCompletionCnt == S_jobInfo[vImgIdx].m_inMcuRows;
-			if (P_bEndOfImage)
+			P1_bEndOfImage = PR1_mcuRowCompletionCnt == S_jobInfo[vImgIdx].m_inMcuRows;
+			if (P1_bEndOfImage)
 				SendReturn_vctl();
 			else
 				HtContinue(VCTL_RETURN);
@@ -215,7 +220,8 @@ void CPersVctl::RecvJobInfo()
 						veInfoMsg.m_rspQw - START_OF_PNT_INFO_QOFF <= S_jobInfo[vImgIdx].m_outImageRows)
 					{
 						PntWghtAddr_t wrAddr = (PntWghtAddr_t)(veInfoMsg.m_rspQw - START_OF_PNT_INFO_QOFF);
-						GW_pntWghtStart_d( wrAddr, vImgIdx, (PntWghtCpInt_t)veInfoMsg.m_data  );
+						GW1_pntWghtStart.write_addr(wrAddr, vImgIdx);
+						GW1_pntWghtStart = (PntWghtCpInt_t)veInfoMsg.m_data;
 					}
 				}
 				break;

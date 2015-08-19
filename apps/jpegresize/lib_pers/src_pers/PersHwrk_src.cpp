@@ -36,13 +36,13 @@ void CPersHwrk::PersHwrk()
 	S_hwmPop = false;
 	S_hwmEmpty = SR_hwmPop || S_writeMsgQue.empty();
 	S_hwm = S_writeMsgQue.front();
-	if (PR_htValid) {
-		switch (PR_htInst) {
+	if (PR1_htValid) {
+		switch (PR1_htInst) {
 		case HWRK_ENTRY: {
-			P_loopCnt = 0;
-			P_endOfMcuRowCnt = 0;
+			P1_loopCnt = 0;
+			P1_endOfMcuRowCnt = 0;
 
-			P_blkRowsPerMcu = S_horz.m_hcp[0].m_blkRowsPerMcu + S_horz.m_hcp[1].m_blkRowsPerMcu + S_horz.m_hcp[2].m_blkRowsPerMcu;
+			P1_blkRowsPerMcu = S_horz.m_hcp[0].m_blkRowsPerMcu + S_horz.m_hcp[1].m_blkRowsPerMcu + S_horz.m_hcp[2].m_blkRowsPerMcu;
 
 			HtContinue(HWRK_INIT_HDS);
 		}
@@ -55,16 +55,16 @@ void CPersHwrk::PersHwrk()
 			hds.m_mcuRow = 0;
 			hds.m_mcuBlkRow = 0;
 
-			S_hds.write_addr(P_loopCnt & ((1<<DEC_IHUF_IDX_W)-1) );
+			S_hds.write_addr(P1_loopCnt & ((1<<DEC_IHUF_IDX_W)-1) );
 			S_hds.write_mem( hds );
 
-			if (P_loopCnt+1 == (1 << DEC_IHUF_IDX_W)) {
+			if (P1_loopCnt+1 == (1 << DEC_IHUF_IDX_W)) {
 				S_bStateRdy = true;
 				HtContinue(HWRK_WRITE_LOOP);
 			} else
 				HtContinue(HWRK_INIT_HDS);
 
-			P_loopCnt += 1;
+			P1_loopCnt += 1;
 		}
 		break;
 		case HWRK_WRITE_LOOP: {
@@ -90,30 +90,30 @@ void CPersHwrk::PersHwrk()
 				TransBufIdx_t varAddr1 = hwm.m_transBlkIdx << 3;
 				ht_uint4 qwCnt = 8;
 
-				WriteMem_rslt(memAddr, varAddr1, qwCnt);
+				WriteMem_rslt(memAddr, varAddr1, (ht_uint9)qwCnt);
 
 				if (hwm.m_bEndOfMcuRow) {
 
-					P_endOfCompRowCnt[hwm.m_decPipeId] += 1;
-					if (P_endOfCompRowCnt[hwm.m_decPipeId] == P_blkRowsPerMcu) {
-						P_endOfCompRowCnt[hwm.m_decPipeId] = 0;
+					P1_endOfCompRowCnt[hwm.m_decPipeId] += 1;
+					if (P1_endOfCompRowCnt[hwm.m_decPipeId] == P1_blkRowsPerMcu) {
+						P1_endOfCompRowCnt[hwm.m_decPipeId] = 0;
 
-						P_endOfMcuRowCnt += 1;
+						P1_endOfMcuRowCnt += 1;
 
 #ifndef _HTV
 						printf("hrm(%d): cycle %d, mcuRow %d\n", (int)i_replId.read(), (int)HT_CYCLE(), (int)hwm.m_mcuRow);
 						fflush(stdout);
 #endif
 
-						bEndOfImage = P_endOfMcuRowCnt == S_horz.m_mcuRows;
+						bEndOfImage = P1_endOfMcuRowCnt == S_horz.m_mcuRows;
 
 						HorzResizeMsg hrm;
-						hrm.m_imageHtId = P_imageHtId;
+						hrm.m_imageHtId = P1_imageHtId;
 						hrm.m_mcuRow = hwm.m_mcuRow;
-						hrm.m_imageIdx = P_imageIdx;
+						hrm.m_imageIdx = P1_imageIdx;
 						hrm.m_bEndOfImage = bEndOfImage;
 
-						if (P_persMode == 3)
+						if (P1_persMode == 3)
 							// only send message if DH and VE are enabled
 							SendMsg_hrm( hrm );
 					}

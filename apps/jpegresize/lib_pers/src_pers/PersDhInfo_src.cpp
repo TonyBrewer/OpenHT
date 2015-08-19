@@ -217,7 +217,7 @@ void CPersDhInfo::PersDhInfo()
 }
 
 // Send message to other horz modules
-void CPersDhInfo::ReadMemResp_ReadRspFunc(ht_uint3 rspIdx, sc_uint<DHINFO_MIF_DST_READRSPFUNC_INFO_W> rdRsp_info, sc_uint<64> rdRspData)
+void CPersDhInfo::ReadMemResp_ReadRspFunc(ht_uint3 rspIdx, sc_uint<JOB_INFO_MEM_LINE_IDX_W> rdRsp_info, uint64_t rdRspData)
 {
 	JobInfoMsg hinfoMsg;
 	hinfoMsg.m_sectionId = S_sectionId;
