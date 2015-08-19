@@ -645,6 +645,7 @@ struct CSpanningField {
 		m_bSpanning = false;
 		m_bDupRange = false;
 		m_bMrField = false;
+		m_pDupField = 0;
 	}
 
 public:
@@ -660,6 +661,7 @@ public:
 	bool m_bSpanning;
 	bool m_bDupRange;
 	bool m_bMrField;
+	CSpanningField * m_pDupField;
 };
 
 struct CNgvInfo {
@@ -1549,6 +1551,7 @@ struct CModule {
 		m_bResetShared = true;
 		m_rsmSrcCnt = 0;
 		m_bGvIwComp = false;
+		m_gvIwCompStg = 0;
 		m_pInstrType = 0;
 	}
 

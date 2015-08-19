@@ -2494,12 +2494,6 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 
 				pIplTxStg->Append("\tsc_uint<%s_HTID_W> %s_htId = %s_htId;\n", mod.m_modName.Upper().c_str(), pOutStg, pInStg);
 				iplReg.Append("\t%s_htId = %s_htId;\n", pRegStg, pOutStg);
-
-				//m_iplRegDecl.Append("\tCHtPriv %s_htPriv;\n", pOutStg);
-				//pIplTxStg->Append("\t%s_htPriv = %s_htPriv;\n", pOutStg, pInStg);
-
-				//GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, VA("CHtPriv"), VA("%s_htPriv", pRegStg));
-				//iplReg.Append("\t%s_htPriv = %s_htPriv;\n", pRegStg, pOutStg);
 			}
 
 			pIplTxStg->Append("\tbool %s_htCmdRdy = %s_htCmdRdy;\n", pOutStg, pInStg);

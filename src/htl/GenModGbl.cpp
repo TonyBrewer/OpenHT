@@ -470,6 +470,7 @@ void CDsnInfo::FindSpanningWriteFields(CNgvInfo * pNgvInfo)
 				if (fp1 == fp2 && fw1 == fw2) {
 					// iter and iter2 have same bit ranges
 					fld2.m_bDupRange = !fld1.m_bDupRange;
+					fld2.m_pDupField = &fld1;
 				} else if (fp1 <= fp2 && fp1 + fw1 >= fp2 + fw2) {
 					// iter2 is subrange of iter
 				} else if (fp2 <= fp1 && fp2 + fw2 >= fp1 + fw1) {
@@ -928,7 +929,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 	}
 
 	if (pGv->m_bWriteForMifRead) {
-		int rdRspStg = pMod->m_mif.m_mifRd.m_bNeedRdRspInfoRam ? 2 : 1;
+		int rdRspStg = (pMod->m_mif.m_mifRd.m_bNeedRdRspInfoRam || pMod->m_mif.m_mifRd.m_bMultiQwRdRsp) ? 2 : 1;
 
 		string typeName;
 		if (pGv->m_bWriteForMifRead && pGv->m_bWriteForInstrWrite && pGv->m_addrW > 0 && pGv->m_pNgvInfo->m_pRdMod == pMod)
@@ -1001,7 +1002,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 	}
 
 	if (bFoundNonSpanning && pGv->m_bWriteForMifRead && pGv->m_ramType != eRegRam) {
-		int rdRspStg = pMod->m_mif.m_mifRd.m_bNeedRdRspInfoRam ? 2 : 1;
+		int rdRspStg = (pMod->m_mif.m_mifRd.m_bNeedRdRspInfoRam || pMod->m_mif.m_mifRd.m_bMultiQwRdRsp) ? 2 : 1;
 
 		string tabs = "\t";
 		CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, 3);
@@ -1043,7 +1044,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 		}
 
 		if (pGv->m_bWriteForMifRead) { // Memory
-			int rdRspStg = pMod->m_mif.m_mifRd.m_bNeedRdRspInfoRam ? 2 : 1;
+			int rdRspStg = (pMod->m_mif.m_mifRd.m_bNeedRdRspInfoRam || pMod->m_mif.m_mifRd.m_bMultiQwRdRsp) ? 2 : 1;
 
 			m_gblIoDecl.Append("\tsc_out<CGW_%s> o_%sTo%s_%sMwData%s;\n",
 				pGv->m_pNgvInfo->m_ngvWrType.c_str(),
@@ -1562,7 +1563,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 	}
 
 	if (pGv->m_bWriteForMifRead) {
-		int rdRspStg = pMod->m_mif.m_mifRd.m_bNeedRdRspInfoRam ? 2 : 1;
+		int rdRspStg = (pMod->m_mif.m_mifRd.m_bNeedRdRspInfoRam || pMod->m_mif.m_mifRd.m_bMultiQwRdRsp) ? 2 : 1;
 
 		if (pGv->m_addrW == 0) {
 			string tabs = "\t";
@@ -1595,16 +1596,20 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 					for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
 						CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
 
-						if (!fld.m_bSpanning || fld.m_bDupRange || imIdx == 1 && !fld.m_bMrField) continue;
+						if (!fld.m_bSpanning || imIdx == 1 && !fld.m_bMrField) continue;
 
-						gblPostInstr.Append("%sm__GBL__%s%s%s.write_addr(r_m%d_%sMwData%s.GetAddr());\n", tabs.c_str(),
-							fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
-							rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str());
+						if (!fld.m_bDupRange) {
+							gblPostInstr.Append("%sm__GBL__%s%s%s.write_addr(r_m%d_%sMwData%s.GetAddr());\n", tabs.c_str(),
+								fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
+								rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str());
+						}
 
 						gblPostInstr.Append("%sif (r_m%d_%sMwData%s%s.GetWrEn())\n", tabs.c_str(),
 							rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str());
+
+						string & ramName = fld.m_bDupRange ? fld.m_pDupField->m_ramName : fld.m_ramName;
 						gblPostInstr.Append("%s\tm__GBL__%s%s%s.write_mem(r_m%d_%sMwData%s.GetData()%s);\n", tabs.c_str(),
-							fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
+							ramName.c_str(), pImStr, dimIdx.c_str(),
 							rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str());
 
 						gblPostInstr.NewLine();
@@ -1616,7 +1621,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 	}
 
 	if (pNgvInfo->m_wrPortList.size() == 2 && pGv->m_addrW > 0) {
-		int rdRspStg = pMod->m_mif.m_mifRd.m_bNeedRdRspInfoRam ? 2 : 1;
+		int rdRspStg = (pMod->m_mif.m_mifRd.m_bNeedRdRspInfoRam || pMod->m_mif.m_mifRd.m_bMultiQwRdRsp) ? 2 : 1;
 		int gvWrStg = pMod->m_tsStg + pGv->m_wrStg.AsInt();
 
 		{
@@ -1933,7 +1938,7 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 		}
 
 		if (pGv->m_bWriteForMifRead) { // Memory
-			int rdRspStg = mod.m_mif.m_mifRd.m_bNeedRdRspInfoRam ? 2 : 1;
+			int rdRspStg = (mod.m_mif.m_mifRd.m_bNeedRdRspInfoRam || mod.m_mif.m_mifRd.m_bMultiQwRdRsp) ? 2 : 1;
 			if (mod.m_mif.m_mifRd.m_rspGrpW.AsInt() > 0) {
 				m_gblIoDecl.Append("\tsc_out<sc_uint<%s_RD_GRP_ID_W> > o_%sTo%s_mwGrpId%s;\n",
 					mod.m_modName.Upper().c_str(),
@@ -2714,7 +2719,7 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 		gblPostInstr.NewLine();
 
 		if (pGv->m_bWriteForMifRead) {
-			int rdRspStg = mod.m_mif.m_mifRd.m_bNeedRdRspInfoRam ? 2 : 1;
+			int rdRspStg = (mod.m_mif.m_mifRd.m_bNeedRdRspInfoRam || mod.m_mif.m_mifRd.m_bMultiQwRdRsp) ? 2 : 1;
 			GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, VA("CGW_%s", pGv->m_pNgvInfo->m_ngvWrType.c_str()),
 				VA("r_m%d_%sMwData", rdRspStg + 1, pGv->m_gblName.c_str()), pGv->m_dimenList);
 			m_gblRegDecl.Append("\tCGW_%s c_m%d_%sMwData%s;\n",
