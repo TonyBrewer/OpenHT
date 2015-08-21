@@ -117,9 +117,9 @@ ctl.AddShared()
 	;
 
 ctl.AddEntry(func=htmain, instr=CTL_ENTRY, host=true)
-	.AddParam(hostType=int, type=StrLen_t, name=strLenL)
-	.AddParam(hostType=int, type=StrLen_t, name=strLenR)
-	.AddParam(hostType=int, type=MchAdjD_t, name=mchAdjD)
+	.AddParam(hostType=int32_t, type=StrLen_t, name=strLenL)
+	.AddParam(hostType=int32_t, type=StrLen_t, name=strLenR)
+	.AddParam(hostType=int32_t, type=MchAdjD_t, name=mchAdjD)
 	.AddParam(hostType=uint16_t, type=ConId_t, name=conIdL)
 	.AddParam(hostType=uint16_t, type=ConId_t, name=conIdR)
 	.AddParam(hostType=uint16_t, type=ConSize_t, name=conSizeL)
@@ -266,13 +266,13 @@ mch.AddFunction(type=void, name=ByteCmpMatrix)
 	;
 
 mch.AddFunction(type=void, name=levenshteinBand)
-	.AddParam(dir=input, type=int, name=level)
+	.AddParam(dir=input, type=int32_t, name=level)
 	.AddParam(dir=input, type=CmpMatrix_t, name=matchArray)
 	.AddParam(dir=input, type=ScoreStruct, name=lscore)
 	.AddParam(dir=output, type=ScoreStruct, name=nscore)
 	;
 mch.AddFunction(type=void, name=levenshtein2Band)
-	.AddParam(dir=input, type=int, name=level)
+	.AddParam(dir=input, type=int32_t, name=level)
 	.AddParam(dir=input, type=bool, name=valid)
 	.AddParam(dir=input, type=CmpMatrix_t, name=matchArray)
 	.AddParam(dir=input, type=ScoreStruct, name=lscore)
