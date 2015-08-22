@@ -915,7 +915,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 
 		{
 			string tabs = "\t";
-			CLoopInfo loopInfo(gblReg, tabs, pGv->m_dimenList, 3);
+			CLoopInfo loopInfo(gblReg, tabs, pGv->m_dimenList, pGv->m_wrStg.AsInt());
 			do {
 				string dimIdx = loopInfo.IndexStr();
 
@@ -929,7 +929,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 	}
 
 	if (pGv->m_bWriteForMifRead) {
-		int rdRspStg = (pMod->m_mif.m_mifRd.m_bNeedRdRspInfoRam || pMod->m_mif.m_mifRd.m_bMultiQwRdRsp) ? 2 : 1;
+		int rdRspStg = pMod->m_mif.m_mifRd.m_rdRspStg;
 
 		string typeName;
 		if (pGv->m_bWriteForMifRead && pGv->m_bWriteForInstrWrite && pGv->m_addrW > 0 && pGv->m_pNgvInfo->m_pRdMod == pMod)
@@ -948,7 +948,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 
 		{
 			string tabs = "\t";
-			CLoopInfo loopInfo(gblPreInstr, tabs, pGv->m_dimenList, 3);
+			CLoopInfo loopInfo(gblPreInstr, tabs, pGv->m_dimenList, 1);
 			do {
 				string dimIdx = loopInfo.IndexStr();
 
@@ -960,7 +960,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 
 		{
 			string tabs = "\t";
-			CLoopInfo loopInfo(gblReg, tabs, pGv->m_dimenList, 3);
+			CLoopInfo loopInfo(gblReg, tabs, pGv->m_dimenList, 1);
 			do {
 				string dimIdx = loopInfo.IndexStr();
 
@@ -1002,7 +1002,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 	}
 
 	if (bFoundNonSpanning && pGv->m_bWriteForMifRead && pGv->m_ramType != eRegRam) {
-		int rdRspStg = (pMod->m_mif.m_mifRd.m_bNeedRdRspInfoRam || pMod->m_mif.m_mifRd.m_bMultiQwRdRsp) ? 2 : 1;
+		int rdRspStg = pMod->m_mif.m_mifRd.m_rdRspStg;
 
 		string tabs = "\t";
 		CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, 3);
@@ -1032,7 +1032,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 				pMod->m_modName.Lc().c_str(), pRdMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
 
 			string tabs = "\t";
-			CLoopInfo loopInfo(gblOut, tabs, pGv->m_dimenList, 3);
+			CLoopInfo loopInfo(gblOut, tabs, pGv->m_dimenList, 1);
 			do {
 				string dimIdx = loopInfo.IndexStr();
 
@@ -1044,14 +1044,14 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 		}
 
 		if (pGv->m_bWriteForMifRead) { // Memory
-			int rdRspStg = (pMod->m_mif.m_mifRd.m_bNeedRdRspInfoRam || pMod->m_mif.m_mifRd.m_bMultiQwRdRsp) ? 2 : 1;
+			int rdRspStg = pMod->m_mif.m_mifRd.m_rdRspStg;
 
 			m_gblIoDecl.Append("\tsc_out<CGW_%s> o_%sTo%s_%sMwData%s;\n",
 				pGv->m_pNgvInfo->m_ngvWrType.c_str(),
 				pMod->m_modName.Lc().c_str(), pRdMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
 
 			string tabs = "\t";
-			CLoopInfo loopInfo(gblOut, tabs, pGv->m_dimenList, 3);
+			CLoopInfo loopInfo(gblOut, tabs, pGv->m_dimenList, 1);
 			do {
 				string dimIdx = loopInfo.IndexStr();
 
@@ -1132,6 +1132,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 
 					for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
 						CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
+
 						if (!fld.m_bSpanning || fld.m_bDupRange || imIdx == 1 && !fld.m_bMrField) continue;
 
 						gblReg.Append("%sm__GBL__%s%s%s.clock(%s);\n", tabs.c_str(),
@@ -1149,6 +1150,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 
 						for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
 							CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
+
 							if (!fld.m_bSpanning || fld.m_bDupRange || imIdx == 1 && !fld.m_bMrField) continue;
 
 							m_gblReg1x.Append("%sm__GBL__%s%s%s.read_clock(r_reset1x);\n", tabs.c_str(),
@@ -1165,6 +1167,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 
 						for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
 							CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
+
 							if (!fld.m_bSpanning || fld.m_bDupRange || imIdx == 1 && !fld.m_bMrField) continue;
 
 							m_gblReg2x.Append("%sm__GBL__%s%s%s.write_clock(%s);\n", tabs.c_str(),
@@ -1181,6 +1184,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 
 						for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
 							CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
+
 							if (!fld.m_bSpanning || fld.m_bDupRange || imIdx == 1 && !fld.m_bMrField) continue;
 
 							m_gblReg2x.Append("%sm__GBL__%s%s%s.read_clock(%s);\n", tabs.c_str(),
@@ -1197,6 +1201,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 
 						for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
 							CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
+
 							if (!fld.m_bSpanning || fld.m_bDupRange || imIdx == 1 && !fld.m_bMrField) continue;
 
 							m_gblReg1x.Append("%sm__GBL__%s%s%s.write_clock(r_reset1x);\n", tabs.c_str(),
@@ -1287,16 +1292,18 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 							for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
 								CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
 
-								if (!fld.m_bSpanning || fld.m_bDupRange) continue;
+								if (!fld.m_bSpanning/* || fld.m_bDupRange*/) continue;
+
+								string & ramName = fld.m_bDupRange ? fld.m_pDupField->m_ramName : fld.m_ramName;
 
 								for (CStructElemIter iter(this, pGv->m_pType); !iter.end(); iter++) {
 									wrCode.Append("%sm__GBL__%s%s%s.write_addr(i_%sTo%s_%sIwData%s.read().GetAddr());\n", tabs.c_str(),
-										fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
+										ramName.c_str(), pImStr, dimIdx.c_str(),
 										pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str());
 									wrCode.Append("%sif (i_%sTo%s_%sIwData%s.read()%s.GetWrEn())\n", tabs.c_str(),
 										pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
 									wrCode.Append("%s\tm__GBL__%s%s%s.write_mem(i_%sTo%s_%sIwData%s.read().GetData()%s);\n", tabs.c_str(),
-										fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
+										ramName.c_str(), pImStr, dimIdx.c_str(),
 										pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(), iter.GetHeirFieldName().c_str());
 								}
 								wrCode.NewLine();
@@ -1345,15 +1352,17 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 							for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
 								CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
 
-								if (!fld.m_bSpanning || fld.m_bDupRange) continue;
+								if (!fld.m_bSpanning/* || fld.m_bDupRange*/) continue;
+
+								string & ramName = fld.m_bDupRange ? fld.m_pDupField->m_ramName : fld.m_ramName;
 
 								wrCode.Append("%sm__GBL__%s%s%s.write_addr(i_%sTo%s_%sMwData%s.read().GetAddr());\n", tabs.c_str(),
-									fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
+									ramName.c_str(), pImStr, dimIdx.c_str(),
 									pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str());
 								wrCode.Append("%sif (i_%sTo%s_%sMwData%s.read()%s.GetWrEn())\n", tabs.c_str(),
 									pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str());
 								wrCode.Append("%s\tm__GBL__%s%s%s.write_mem(i_%sTo%s_%sMwData%s.read().GetData()%s);\n", tabs.c_str(),
-									fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
+									ramName.c_str(), pImStr, dimIdx.c_str(),
 									pModInfo->m_pMod->m_modName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str());
 							}
 						} while (loopInfo.Iter());
@@ -1377,24 +1386,22 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 
 		if (pGv->m_rdStg.AsInt() + addr0Skip + 1 <= lastStg) {
 			string tabs = "\t";
-			CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, 3);
+			CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, lastStg - (pGv->m_rdStg.AsInt() + addr0Skip + 1) + 1);
 			do {
 				string dimIdx = loopInfo.IndexStr();
 
-				for (int gvRdStg = pGv->m_rdStg.AsInt() + addr0Skip; gvRdStg <= lastStg; gvRdStg += 1) {
+				for (int gvRdStg = pGv->m_rdStg.AsInt() + addr0Skip + 1; gvRdStg <= lastStg; gvRdStg += 1) {
 
-					if (gvRdStg > pGv->m_rdStg.AsInt() + addr0Skip) {
-						gblPostInstr.Append("%sc_t%d_%sIrData%s = r_t%d_%sIrData%s;\n", tabs.c_str(),
-							pMod->m_tsStg + gvRdStg - 2, pGv->m_gblName.c_str(), dimIdx.c_str(),
-							pMod->m_tsStg + gvRdStg - 2, pGv->m_gblName.c_str(), dimIdx.c_str());
-					}
+					gblPostInstr.Append("%sc_t%d_%sIrData%s = r_t%d_%sIrData%s;\n", tabs.c_str(),
+						pMod->m_tsStg + gvRdStg - 2, pGv->m_gblName.c_str(), dimIdx.c_str(),
+						pMod->m_tsStg + gvRdStg - 2, pGv->m_gblName.c_str(), dimIdx.c_str());
 				}
 			} while (loopInfo.Iter());
 		}
 
 		if (pGv->m_rdStg.AsInt() + addr0Skip <= lastStg) {
 			string tabs = "\t";
-			CLoopInfo loopInfo(gblReg, tabs, pGv->m_dimenList, 3);
+			CLoopInfo loopInfo(gblReg, tabs, pGv->m_dimenList, lastStg - (pGv->m_rdStg.AsInt() + addr0Skip) + 1);
 			do {
 				string dimIdx = loopInfo.IndexStr();
 
@@ -1423,7 +1430,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 		if (pGv->m_addrW == 0) {
 			if (pGv->m_rdStg.AsInt() < lastStg) {
 				string tabs = "\t";
-				CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, 3);
+				CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, 1);
 				do {
 					string dimIdx = loopInfo.IndexStr();
 
@@ -1543,16 +1550,18 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 					for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
 						CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
 
-						if (!fld.m_bSpanning || fld.m_bDupRange || imIdx == 1 && !fld.m_bMrField) continue;
+						if (!fld.m_bSpanning || /*fld.m_bDupRange || */imIdx == 1 && !fld.m_bMrField) continue;
+
+						string & ramName = fld.m_bDupRange ? fld.m_pDupField->m_ramName : fld.m_ramName;
 
 						gblPostInstr.Append("%sm__GBL__%s%s%s.write_addr(r_t%d_%sIwData%s.GetAddr());\n", tabs.c_str(),
-							fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
+							ramName.c_str(), pImStr, dimIdx.c_str(),
 							gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str());
 
 						gblPostInstr.Append("%sif (r_t%d_%sIwData%s%s.GetWrEn())\n", tabs.c_str(),
 							gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str());
 						gblPostInstr.Append("%s\tm__GBL__%s%s%s.write_mem(r_t%d_%sIwData%s.GetData()%s);\n", tabs.c_str(),
-							fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
+							ramName.c_str(), pImStr, dimIdx.c_str(),
 							gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str());
 
 						gblPostInstr.NewLine();
@@ -1563,7 +1572,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 	}
 
 	if (pGv->m_bWriteForMifRead) {
-		int rdRspStg = (pMod->m_mif.m_mifRd.m_bNeedRdRspInfoRam || pMod->m_mif.m_mifRd.m_bMultiQwRdRsp) ? 2 : 1;
+		int rdRspStg = pMod->m_mif.m_mifRd.m_rdRspStg;
 
 		if (pGv->m_addrW == 0) {
 			string tabs = "\t";
@@ -1598,16 +1607,15 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 
 						if (!fld.m_bSpanning || imIdx == 1 && !fld.m_bMrField) continue;
 
-						if (!fld.m_bDupRange) {
-							gblPostInstr.Append("%sm__GBL__%s%s%s.write_addr(r_m%d_%sMwData%s.GetAddr());\n", tabs.c_str(),
-								fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
+						string & ramName = fld.m_bDupRange ? fld.m_pDupField->m_ramName : fld.m_ramName;
+
+						gblPostInstr.Append("%sm__GBL__%s%s%s.write_addr(r_m%d_%sMwData%s.GetAddr());\n", tabs.c_str(),
+								ramName.c_str(), pImStr, dimIdx.c_str(),
 								rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str());
-						}
 
 						gblPostInstr.Append("%sif (r_m%d_%sMwData%s%s.GetWrEn())\n", tabs.c_str(),
 							rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str());
 
-						string & ramName = fld.m_bDupRange ? fld.m_pDupField->m_ramName : fld.m_ramName;
 						gblPostInstr.Append("%s\tm__GBL__%s%s%s.write_mem(r_m%d_%sMwData%s.GetData()%s);\n", tabs.c_str(),
 							ramName.c_str(), pImStr, dimIdx.c_str(),
 							rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str());
@@ -1621,7 +1629,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 	}
 
 	if (pNgvInfo->m_wrPortList.size() == 2 && pGv->m_addrW > 0) {
-		int rdRspStg = (pMod->m_mif.m_mifRd.m_bNeedRdRspInfoRam || pMod->m_mif.m_mifRd.m_bMultiQwRdRsp) ? 2 : 1;
+		int rdRspStg = pMod->m_mif.m_mifRd.m_rdRspStg;
 		int gvWrStg = pMod->m_tsStg + pGv->m_wrStg.AsInt();
 
 		{
@@ -1693,16 +1701,18 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 					for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
 						CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
 
-						if (!fld.m_bSpanning || fld.m_bDupRange || imIdx == 1 && !fld.m_bMrField) continue;
+						if (!fld.m_bSpanning || imIdx == 1 && !fld.m_bMrField) continue;
+
+						string & ramName = fld.m_bDupRange ? fld.m_pDupField->m_ramName : fld.m_ramName;
 
 						m_gblPostInstr2x.Append("%sm__GBL__%s%s%s.write_addr(r__GBL__%sPwData%s.GetAddr());\n", tabs.c_str(),
-							fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
+							ramName.c_str(), pImStr, dimIdx.c_str(),
 							pGv->m_gblName.c_str(), dimIdx.c_str());
 
 						m_gblPostInstr2x.Append("%sif (r__GBL__%sPwData%s%s.GetWrEn())\n", tabs.c_str(),
 							pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str());
 						m_gblPostInstr2x.Append("%s\tm__GBL__%s%s%s.write_mem(r__GBL__%sPwData%s%s.GetData());\n", tabs.c_str(),
-							fld.m_ramName.c_str(), pImStr, dimIdx.c_str(),
+							ramName.c_str(), pImStr, dimIdx.c_str(),
 							pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str());
 
 						m_gblPostInstr2x.NewLine();
@@ -4564,7 +4574,7 @@ void CDsnInfo::GenerateNgvFiles()
 
 						if (bNeedQue && imIdx == 1) {
 							string tabs = "\t";
-							CLoopInfo loopInfo(ngvRegModIn, tabs, pGv->m_dimenList, 5);
+							CLoopInfo loopInfo(ngvRegModIn, tabs, pGv->m_dimenList, 1);
 							do {
 								string dimIdx = loopInfo.IndexStr();
 
@@ -4578,7 +4588,7 @@ void CDsnInfo::GenerateNgvFiles()
 
 						if (bNeedQue && imIdx == 1) {
 							string tabs = "\t";
-							CLoopInfo loopInfo(ngvOutModIn, tabs, pGv->m_dimenList, 5);
+							CLoopInfo loopInfo(ngvOutModIn, tabs, pGv->m_dimenList, 1);
 							do {
 								string dimIdx = loopInfo.IndexStr();
 
@@ -6483,7 +6493,7 @@ void CDsnInfo::GenerateNgvFiles()
 					VA("r_%s", pGv->m_gblName.c_str()), pGv->m_dimenList);
 
 				string tabs = "\t";
-				CLoopInfo loopInfo(ngvRegWrData, tabs, pGv->m_dimenList, 2);
+				CLoopInfo loopInfo(ngvRegWrData, tabs, pGv->m_dimenList, 1);
 				do {
 					string dimIdx = loopInfo.IndexStr();
 

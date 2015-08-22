@@ -1637,7 +1637,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 		cxrPostReg.Append("#\tifdef _HTV\n");
 
 		for (int replIdx = 0; replIdx < replCnt; replIdx += 1) {
-			string indexStr = (bDestAuto || replCnt == 1) ? "" : VA("[%d]", replIdx);
+			string indexStr = bDestAuto ? "" : VA("[%d]", replIdx);
 
 			cxrPostReg.Append("\tc_Send%sBusy_%s%s = ", callType.c_str(), funcName.c_str(), indexStr.c_str());
 
@@ -1678,7 +1678,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 		cxrPostReg.Append("#\telse\n");
 
 		for (int replIdx = 0; replIdx < replCnt; replIdx += 1) {
-			string indexStr = (bDestAuto || replCnt == 1) ? "" : VA("[%d]", replIdx);
+			string indexStr = bDestAuto ? "" : VA("[%d]", replIdx);
 
 			cxrPostReg.Append("\tc_Send%sBusy_%s%s = ", callType.c_str(), funcName.c_str(), indexStr.c_str());
 
@@ -1723,7 +1723,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 
 		// generate Busy routine
 		string paramStr = bDestAuto ? "" : VA("ht_uint%d%s destId", replCntW == 0 ? 1 : replCntW, replCntW == 0 ? " ht_noload" : "");
-		string indexStr = (bDestAuto || replCntW == 0) ? "" : "[destId]";
+		string indexStr = bDestAuto ? "" : "[destId]";
 
 		g_appArgs.GetDsnRpt().AddLevel("bool Send%sBusy_%s(%s)\n",
 			cxrCall.m_bXfer ? "Transfer" : "Call", cxrCall.m_funcName.c_str(), paramStr.c_str());
@@ -2069,9 +2069,9 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 
 		bool bDestAuto = cxrCall.m_dest == "auto";
 
-		string declStr = (bDestAuto || replCnt == 1) ? "" : VA("[%d]", replCnt);
+		string declStr = bDestAuto ? "" : VA("[%d]", replCnt);
 		vector<CHtString> replDim;
-		if (!bDestAuto && replCnt != 1) {
+		if (!bDestAuto) {
 			char buf[16];
 			sprintf(buf, "%d", replCnt);
 			CHtString str = (string)buf;
@@ -2113,7 +2113,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 		}
 
 		for (int replIdx = 0; replIdx < replCnt; replIdx += 1) {
-			string replStr = (bDestAuto || replCnt == 1) ? "" : VA("[%d]", replIdx);
+			string replStr = bDestAuto ? "" : VA("[%d]", replIdx);
 
 			if (htIdW == 0) {
 
@@ -2213,7 +2213,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 		cxrPostReg.Append("#\tifdef _HTV\n");
 
 		for (int replIdx = 0; replIdx < replCnt; replIdx += 1) {
-			string indexStr = (bDestAuto || replCnt == 1) ? "" : VA("[%d]", replIdx);
+			string indexStr = bDestAuto ? "" : VA("[%d]", replIdx);
 
 			if (htIdW == 0)
 				cxrPostReg.Append("\t\tc_SendCallBusy_%s%s = r_asyncCall%s_rtnCntFull%s",
@@ -2257,7 +2257,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 		cxrPostReg.Append("#\telse\n");
 
 		for (int replIdx = 0; replIdx < replCnt; replIdx += 1) {
-			string indexStr = (bDestAuto || replCnt == 1) ? "" : VA("[%d]", replIdx);
+			string indexStr = bDestAuto ? "" : VA("[%d]", replIdx);
 
 			if (htIdW == 0)
 				cxrPostReg.Append("\t\tc_SendCallBusy_%s%s = r_asyncCall%s_rtnCntFull%s",
@@ -2298,7 +2298,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 		cxrPostReg.Append("#\tendif\n");
 
 		string paramStr = bDestAuto ? "" : VA("ht_uint%d%s destId", replCntW == 0 ? 1 : replCntW, replCntW == 0 ? " ht_noload" : "");
-		string indexStr = (bDestAuto || replCntW == 0) ? "" : "[destId]";
+		string indexStr = bDestAuto ? "" : "[destId]";
 
 		g_appArgs.GetDsnRpt().AddLevel("bool SendCallBusy_%s(%s)\n",
 			cxrCall.m_funcName.c_str(), paramStr.c_str());
@@ -2430,7 +2430,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 			m_cxrMacros.Append("\n");
 		}
 
-		indexStr = (bDestAuto || !bReplIntf) ? "" : "[destId]";
+		indexStr = bDestAuto ? "" : "[destId]";
 		if (htIdW == 0) {
 			m_cxrMacros.Append("\t// Should not happen - verify generated code properly limits outstanding calls\n");
 			m_cxrMacros.Append("\tassert(c_asyncCall%s_rtnCnt%s < 0x%x);\n",
@@ -2525,7 +2525,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 		// Generate AsyncCallPause function
 
 		paramStr = bDestAuto ? "" : VA(", ht_uint%d%s destId", replCntW == 0 ? 1 : replCntW, replCntW == 0 ? " ht_noload" : "");
-		indexStr = (bDestAuto || replCntW == 0) ? "" : "[destId]";
+		indexStr = bDestAuto ? "" : "[destId]";
 
 		g_appArgs.GetDsnRpt().AddLevel("void RecvReturnPause_%s(ht_uint%d rsmInstr%s)\n",
 			cxrCall.m_funcName.c_str(), mod.m_instrW, paramStr.c_str());
@@ -2620,7 +2620,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 		// Generate AsyncCallJoin function
 
 		paramStr = bDestAuto ? "" : VA("ht_uint%d%s destId", replCntW == 0 ? 1 : replCntW, replCntW == 0 ? " ht_noload" : "");
-		indexStr = (bDestAuto || replCntW == 0) ? "" : "[destId]";
+		indexStr = bDestAuto ? "" : "[destId]";
 
 		g_appArgs.GetDsnRpt().AddLevel("void RecvReturnJoin_%s(%s)\n",
 			cxrCall.m_funcName.c_str(), paramStr.c_str());

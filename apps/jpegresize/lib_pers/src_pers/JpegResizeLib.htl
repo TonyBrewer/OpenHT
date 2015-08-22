@@ -1,0 +1,17 @@
+// -cl $(HtToolsPath)/apps/jpegresize/lib_pers/src_pers/JpegResizeLib.htl
+-wd $(HtToolsPath)/apps/jpegresize/lib_pers/msvs12/
+
+-cp wx-690
+-ac 1
+-uc 1
+-df 150
+//-vcd_all
+-pn JpegResizeLib
+-ml 0.2
+-DHT_SYSC=1
+-I ../src
+-I ../src_pers
+-if ../src_pers/Img4.hti
+../src_pers/Img4.htd ../src_pers/DhInfo.htd ../src_pers/decode.htd ../src_pers/Horz.htd ../src_pers/VeInfo.htd ../src_pers/Vert.htd ../src_pers/encode.htd
+../ht/sysc
+
