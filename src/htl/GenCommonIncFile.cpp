@@ -742,8 +742,10 @@ void CDsnInfo::GenGlobalVarWriteTypes(CHtFile & htFile, CType * pType, int &atom
 			if (htIdW > 0) {
 				fprintf(htFile, "\tvoid InitZero(ht_uint%d htId)\n", pGv->m_addr0W.AsInt());
 				fprintf(htFile, "\t{\n");
-				if (pGv && pGv->m_addrW > 0)
+				if (pGv && pGv->m_addrW > 0) {
 					fprintf(htFile, "\t\tm_bAddr = %s;\n", bInitBAddrFalse ? "false" : "true");
+					fprintf(htFile, "\t\tm_addr = 0;\n");
+				}
 				if (pGv->m_addr0W.AsInt() > 0)
 					fprintf(htFile, "\t\tm_addr(%d, %d) = htId;\n", pGv->m_addrW - 1, pGv->m_addrW - pGv->m_addr0W.AsInt());
 				if (pGv->m_addr1Name == "htId")
@@ -785,8 +787,10 @@ void CDsnInfo::GenGlobalVarWriteTypes(CHtFile & htFile, CType * pType, int &atom
 			if (htIdW > 0) {
 				fprintf(htFile, "\tvoid InitData(ht_uint%d htId, %s _data_)\n", htIdW, pType->m_typeName.c_str());
 				fprintf(htFile, "\t{\n");
-				if (pGv->m_addrW > 0)
+				if (pGv->m_addrW > 0) {
 					fprintf(htFile, "\t\tm_bAddr = %s;\n", bInitBAddrFalse ? "false" : "true");
+					fprintf(htFile, "\t\tm_addr = 0;\n");
+				}
 				if (pGv->m_addr0W.AsInt() > 0)
 					fprintf(htFile, "\t\tm_addr(%d, %d) = htId;\n", pGv->m_addrW - 1, pGv->m_addrW - pGv->m_addr0W.AsInt());
 				if (pGv->m_addr1Name == "htId")
@@ -840,7 +844,10 @@ void CDsnInfo::GenGlobalVarWriteTypes(CHtFile & htFile, CType * pType, int &atom
 			fprintf(htFile, "\t}\n");
 		}
 
-		char * opList[] = { "=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "<<=", ">>=", 0 };
+		char * intOpList[] = { "=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "<<=", ">>=", 0 };
+		char * booleanOpList[] = { "=", "&=", "|=", "^=", 0 };
+
+		char ** opList = pType == &g_bool ? booleanOpList : intOpList;
 
 		for (int i = 0; opList[i]; i += 1) {
 			fprintf(htFile, "\tvoid operator %s (%s rhs)\n", opList[i], pType->m_typeName.c_str());

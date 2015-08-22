@@ -1,7 +1,7 @@
 // -cl $(HtToolsPath)/tests/memPause_v2/src_pers/memPause.htl
 -wd $(HtToolsPath)/tests/memPause_v2/msvs12/
 
--cp wx-690
+-cp hc-1ex
 -ml 0.3
 -ac 1
 -uc 1

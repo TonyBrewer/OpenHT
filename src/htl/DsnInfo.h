@@ -1144,6 +1144,7 @@ public:
 	int			m_maxRdRspInfoW;
 	bool		m_bNeedRdRspInfoRam;
 	bool		m_bRdRspCallBack;
+	int			m_rdRspStg;
 
 	vector<int>			m_rdRspIdxWList;
 	vector<CMifRdDst>	m_rdDstList;
