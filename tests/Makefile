@@ -1,9 +1,10 @@
 DIRS   = $(sort $(patsubst %/,%,$(dir $(wildcard */Makefile))))
 
-# SKIP list needs trailing <space>
-SKIP  += bug_1366 bug_1369 callrtn g500 model
+SKIP  += bug_1366 bug_1369 callrtn model
 SKIP  += $(wildcard OMP*)
-SKIP  += gups 
+SKIP  += memPSGRand
+# SKIP list needs trailing <space>
+SKIP  += 
 
 VSKIP  = $(SKIP)
 VSKIP += jacobi 
