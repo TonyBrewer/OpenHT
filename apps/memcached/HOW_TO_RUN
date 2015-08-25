@@ -1,0 +1,10 @@
+How to run:
+   Server:
+     <Build Personality / App / Setup Environment>
+     cd server;
+     ./app -t <thread count> -vv
+
+   Client:
+     cd clients/test;
+     make;
+     ./test_client -t <thread count> -vv
