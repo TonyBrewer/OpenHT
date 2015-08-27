@@ -1,21 +1,32 @@
 #include "Ht.h"
 using namespace Ht;
 
+#define LOOPCNT 8
+
 int main(int argc, char **argv)
 {
+	printf("%s\n", argv[0]);
+
 	CHtHif *pHtHif = new CHtHif();
 	CHtAuUnit *pUnit = new CHtAuUnit(pHtHif);
 
 	printf("#AUs = %d\n", pHtHif->GetUnitCnt());
 	fflush(stdout);
 
-	uint64_t data[32*8]; // Max 32 Cycles Per Test
+	uint64_t data[(32*8)+LOOPCNT]; // Max 32 Cycles Per Test
 
-	for (int i = 0; i < 100; i += 1) {
-		pUnit->SendCall_main(data);
+	for (uint32_t i = 0; i < LOOPCNT; i++) {
+
+		printf("Running Loop %d of %d...", i+1, LOOPCNT);
+
+		while (!pUnit->SendCall_main(&data[i]))
+			usleep(1000);
 
 		while (!pUnit->RecvReturn_main())
-			usleep(1);
+			usleep(1000);
+
+		printf("OK\n");
+
 	}
 
 	delete pUnit;
