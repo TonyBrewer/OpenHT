@@ -5,7 +5,7 @@ using namespace Ht;
 
 int main(int argc, char **argv)
 {
-	printf("memPSGRand_bug108\n");
+	printf("%s\n", argv[0]);
 
 	CHtHif *pHtHif = new CHtHif();
 	CHtAuUnit *pUnit = new CHtAuUnit(pHtHif);

@@ -1292,7 +1292,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 							for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
 								CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
 
-								if (!fld.m_bSpanning/* || fld.m_bDupRange*/) continue;
+								if (!fld.m_bSpanning) continue;
 
 								string & ramName = fld.m_bDupRange ? fld.m_pDupField->m_ramName : fld.m_ramName;
 
@@ -1352,7 +1352,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 							for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
 								CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
 
-								if (!fld.m_bSpanning/* || fld.m_bDupRange*/) continue;
+								if (!fld.m_bSpanning) continue;
 
 								string & ramName = fld.m_bDupRange ? fld.m_pDupField->m_ramName : fld.m_ramName;
 
@@ -1550,14 +1550,13 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 					for (size_t fldIdx = 0; fldIdx < pNgvInfo->m_spanningFieldList.size(); fldIdx += 1) {
 						CSpanningField &fld = pNgvInfo->m_spanningFieldList[fldIdx];
 
-						if (!fld.m_bSpanning || /*fld.m_bDupRange || */imIdx == 1 && !fld.m_bMrField) continue;
+						if (!fld.m_bSpanning || imIdx == 1 && !fld.m_bMrField) continue;
 
 						string & ramName = fld.m_bDupRange ? fld.m_pDupField->m_ramName : fld.m_ramName;
 
 						gblPostInstr.Append("%sm__GBL__%s%s%s.write_addr(r_t%d_%sIwData%s.GetAddr());\n", tabs.c_str(),
 							ramName.c_str(), pImStr, dimIdx.c_str(),
 							gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str());
-
 						gblPostInstr.Append("%sif (r_t%d_%sIwData%s%s.GetWrEn())\n", tabs.c_str(),
 							gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str());
 						gblPostInstr.Append("%s\tm__GBL__%s%s%s.write_mem(r_t%d_%sIwData%s.GetData()%s);\n", tabs.c_str(),
@@ -1610,9 +1609,8 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 						string & ramName = fld.m_bDupRange ? fld.m_pDupField->m_ramName : fld.m_ramName;
 
 						gblPostInstr.Append("%sm__GBL__%s%s%s.write_addr(r_m%d_%sMwData%s.GetAddr());\n", tabs.c_str(),
-								ramName.c_str(), pImStr, dimIdx.c_str(),
-								rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str());
-
+							ramName.c_str(), pImStr, dimIdx.c_str(),
+							rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str());
 						gblPostInstr.Append("%sif (r_m%d_%sMwData%s%s.GetWrEn())\n", tabs.c_str(),
 							rdRspStg + 1, pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str());
 
@@ -1708,7 +1706,6 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 						m_gblPostInstr2x.Append("%sm__GBL__%s%s%s.write_addr(r__GBL__%sPwData%s.GetAddr());\n", tabs.c_str(),
 							ramName.c_str(), pImStr, dimIdx.c_str(),
 							pGv->m_gblName.c_str(), dimIdx.c_str());
-
 						m_gblPostInstr2x.Append("%sif (r__GBL__%sPwData%s%s.GetWrEn())\n", tabs.c_str(),
 							pGv->m_gblName.c_str(), dimIdx.c_str(), fld.m_heirName.c_str());
 						m_gblPostInstr2x.Append("%s\tm__GBL__%s%s%s.write_mem(r__GBL__%sPwData%s%s.GetData());\n", tabs.c_str(),
@@ -3607,8 +3604,6 @@ void CDsnInfo::GenerateNgvFiles()
 					ngvIo.Append("\tsc_in<ht_uint%d> i_%sTo%s_mwGrpId%s;\n",
 						mod.m_mif.m_mifRd.m_rspGrpW.AsInt(), mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), pGv->m_dimenDecl.c_str());
 				}
-				//ngvIo.Append("\tsc_in<bool> i_%sTo%s_mwComp%s;\n",
-				//	mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), pGv->m_dimenDecl.c_str());
 				ngvIo.Append("\tsc_in<CGW_%s> i_%sTo%s_mwData%s;\n",
 					pGv->m_pNgvInfo->m_ngvWrType.c_str(), mod.m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), pGv->m_dimenDecl.c_str());
 				if (bNeedQue) {
@@ -3623,8 +3618,6 @@ void CDsnInfo::GenerateNgvFiles()
 					ngvIo.Append("\tsc_out<ht_uint%d> o_%sTo%s_mwCompGrpId%s;\n",
 						mod.m_mif.m_mifRd.m_rspGrpW.AsInt(), pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), pGv->m_dimenDecl.c_str());
 				}
-				//ngvIo.Append("\tsc_out<bool> o_%sTo%s_mwCompData%s;\n",
-				//	pGv->m_gblName.Lc().c_str(), mod.m_modName.Uc().c_str(), pGv->m_dimenDecl.c_str());
 				ngvIo.Append("\n");
 			}
 		}
@@ -4916,7 +4909,7 @@ void CDsnInfo::GenerateNgvFiles()
 					string dimIdx = loopInfo.IndexStr();
 
 					ngvPreRegRrSel.Append("%sc_t0_gwWrEn%s = false;\n", tabs.c_str(), dimIdx.c_str());
-					ngvPreRegRrSel.Append("%sc_t0_gwData%s = 0;\n", tabs.c_str(), dimIdx.c_str());
+					ngvPreRegRrSel.Append("%sc_t0_gwData%s.InitZero();\n", tabs.c_str(), dimIdx.c_str());
 					ngvPreRegRrSel.NewLine();
 
 					for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
@@ -5098,7 +5091,7 @@ void CDsnInfo::GenerateNgvFiles()
 
 					ngvPreReg_2x.Append("%sc_t%d_gwWrEn_2x%s = false;\n", tabs.c_str(), stgIdx, dimIdx.c_str());
 
-					ngvPreReg_2x.Append("%sc_t%d_gwData_2x%s = 0;\n", tabs.c_str(), stgIdx, dimIdx.c_str());
+					ngvPreReg_2x.Append("%sc_t%d_gwData_2x%s.InitZero();\n", tabs.c_str(), stgIdx, dimIdx.c_str());
 					ngvPreReg_2x.NewLine();
 
 					for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {
@@ -5253,7 +5246,7 @@ void CDsnInfo::GenerateNgvFiles()
 						string dimIdx = loopInfo.IndexStr();
 
 						ngvPreRegRrSel.Append("%sc_t0_gwWrEn%c%s = false;\n", tabs.c_str(), rngCh, dimIdx.c_str());
-						ngvPreRegRrSel.Append("%sc_t0_gwData%c%s = 0;\n", tabs.c_str(), rngCh, dimIdx.c_str());
+						ngvPreRegRrSel.Append("%sc_t0_gwData%c%s.InitZero();\n", tabs.c_str(), rngCh, dimIdx.c_str());
 						ngvPreRegRrSel.NewLine();
 
 						for (int ngvIdx = ngvPortLo; ngvIdx < ngvPortHi; ngvIdx += 1) {
@@ -5767,7 +5760,7 @@ void CDsnInfo::GenerateNgvFiles()
 							string dimIdx = loopInfo.IndexStr();
 
 							ngvPreReg_1x.Append("%sc_t0_gwWrEn%c%s = false;\n", tabs.c_str(), eoCh, dimIdx.c_str());
-							ngvPreReg_1x.Append("%sc_t0_gwData%c%s = 0;\n", tabs.c_str(), eoCh, dimIdx.c_str());
+							ngvPreReg_1x.Append("%sc_t0_gwData%c%s.InitZero();\n", tabs.c_str(), eoCh, dimIdx.c_str());
 							ngvPreReg_1x.NewLine();
 
 							for (int ngvIdx = 0; ngvIdx < ngvPortCnt; ngvIdx += 1) {

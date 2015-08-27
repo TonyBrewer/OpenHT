@@ -534,7 +534,7 @@ void CDsnInfo::GenGlobalVarWriteTypes(CHtFile & htFile, CType * pType, int &atom
 				htIdW = pGv->m_addr2W.AsInt();
 
 			if (htIdW > 0)
-				fprintf(htFile, "\tvoid InitZero(ht_uint%d htId) {\n", htIdW);
+				fprintf(htFile, "\tvoid InitZero(ht_uint%d htId=0) {\n", htIdW);
 			else
 				fprintf(htFile, "\tvoid InitZero() {\n");
 
@@ -740,7 +740,7 @@ void CDsnInfo::GenGlobalVarWriteTypes(CHtFile & htFile, CType * pType, int &atom
 				htIdW = pGv->m_addr2W.AsInt();
 
 			if (htIdW > 0) {
-				fprintf(htFile, "\tvoid InitZero(ht_uint%d htId)\n", pGv->m_addr0W.AsInt());
+				fprintf(htFile, "\tvoid InitZero(ht_uint%d htId=0)\n", pGv->m_addr0W.AsInt());
 				fprintf(htFile, "\t{\n");
 				if (pGv && pGv->m_addrW > 0) {
 					fprintf(htFile, "\t\tm_bAddr = %s;\n", bInitBAddrFalse ? "false" : "true");

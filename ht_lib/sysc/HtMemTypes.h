@@ -288,8 +288,8 @@ public:
 		uint64_t wrAddr = (wrIdx1 + (wrIdx2 << AW1)) & ((1 << AW1) * (1 << AW2) - 1);
 		ht_assert(m_bReset || !m_bWrAddr || m_wrAddr == wrAddr);
 		m_wrAddr = wrAddr;
-		if (!m_bReset && !m_bWrAddr)
-			m_wrData = m_mem[m_wrAddr];
+		if (!m_bWrAddr)
+			m_wrData = m_mem[m_bReset ? 0 : m_wrAddr];
 		m_bWrAddr = true;
 	}
 	uint64_t write_addr_debug() { return m_wrAddr; }
@@ -373,10 +373,12 @@ public:
 	uint64_t read_addr() { return m_rdAddr; }
 	bool read_in_use() { return m_bRdAddr; }
 	void write_addr(uint64_t wrIdx1, uint64_t wrIdx2=0) {
-		ht_assert(m_bReset || !m_bWrAddr);
+		uint64_t wrAddr = (wrIdx1 + (wrIdx2 << AW1)) & ((1 << AW1) * (1 << AW2) - 1);
+		ht_assert(m_bReset || !m_bWrAddr || m_wrAddr == wrAddr);
+		m_wrAddr = wrAddr;
+		if (!m_bWrAddr)
+			m_wrData = m_mem[m_bReset ? 0 : m_wrAddr];
 		m_bWrAddr = true;
-		m_wrAddr = (wrIdx1 + (wrIdx2 << AW1)) & ((1<<AW1) * (1<<AW2) - 1);
-		m_wrData = m_mem[m_bReset ? 0 : m_wrAddr];
 	}
 	bool write_in_use() { return m_bWrAddr; }
 	const T & read_mem_debug(uint64_t rdIdx1, uint64_t rdIdx2=0) {
@@ -475,12 +477,14 @@ public:
 	}
 	uint64_t read_addr() { return m_rdAddr; }
 	void write_addr(uint64_t wrSel, uint64_t wrIdx1, uint64_t wrIdx2=0) {
+		uint64_t wrAddr = (wrIdx1 + (wrIdx2 << AW1)) & ((1 << AW1) * (1 << AW2) - 1);
 		ht_assert(wrSel < (1 << SW));
-		ht_assert(!m_bWrAddr);
-		m_bWrAddr = true;
-		m_wrAddr = (wrIdx1 + (wrIdx2 << AW1)) & ((1<<AW1) * (1<<AW2) - 1);
+		ht_assert(m_bReset || !m_bWrAddr || m_wrAddr == wrAddr);
+		m_wrAddr = wrAddr;
 		m_wrSel = wrSel;
-		m_wrData = m_bReset ? m_mem[0][0] : m_mem[m_wrAddr][m_wrSel];
+		if (!m_bWrAddr)
+			m_wrData = m_bReset ? m_mem[0][0] : m_mem[m_wrAddr][m_wrSel];
+		m_bWrAddr = true;
 	}
 	const T & read_mem_debug(uint64_t rdSel, uint64_t rdIdx1, uint64_t rdIdx2=0) {
 		ht_assert(rdSel < (1<<SW));
@@ -581,11 +585,12 @@ public:
 	}
 	uint64_t read_addr() { return m_rdAddr; }
 	void write_addr(uint64_t wrIdx1, uint64_t wrIdx2=0) {
-		ht_assert(m_bReset || !m_bWrAddr);
-		m_bWrAddr = true;
-		m_wrAddr = (wrIdx1 + (wrIdx2 << AW1)) & ((1<<AW1) * (1<<AW2) - 1);
+		uint64_t wrAddr = (wrIdx1 + (wrIdx2 << AW1)) & ((1 << AW1) * (1 << AW2) - 1);
+		ht_assert(m_bReset || !m_bWrAddr || m_wrAddr == wrAddr);
+		m_wrAddr = wrAddr;
 		for (uint64_t wrSel = 0; wrSel < (1<<SW); wrSel += 1)
 			m_wrData[wrSel] = 0;
+		m_bWrAddr = true;
 	}
 	const T & read_mem_debug(uint64_t rdSel, uint64_t rdIdx1, uint64_t rdIdx2=0) {
 		ht_assert(rdSel < (1<<SW));
