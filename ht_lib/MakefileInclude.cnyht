@@ -115,6 +115,11 @@ ifdef DISABLE_CP_MEM
  endif
 endif
 
+MIF_CNT = $(shell grep 'define.*MIF_CNT ' ht/$(TGT)/PersAeTop.sc |\
+	    awk '{if (NF == 3 && $$3>0) \
+		 {printf "%d", $$3 * $(CNY_HT_AEUCNT)} \
+		 else {print $(CNY_HT_AEUCNT)}}')
+
 ifneq (,$(PLAT_WX_OR_MA))
  CNY_HT_AEUCNT ?= 1
  ifeq (,$(wildcard ht/$(TGT)/PersAeTop.sc))
@@ -123,10 +128,6 @@ ifneq (,$(PLAT_WX_OR_MA))
    BIFURCATE_MC_PORT = 1
   endif
  else
-  MIF_CNT = $(shell grep 'define.*MIF_CNT ' ht/$(TGT)/PersAeTop.sc |\
-		    awk '{if (NF == 3 && $$3>0) \
-			{printf "%d", $$3 * $(CNY_HT_AEUCNT)} \
-			else {print $(CNY_HT_AEUCNT)}}')
   ifneq (,$(findstring wx-2000,$(CNY_PDK_PLATFORM)))
    BIFURCATE_MC_PORT = $(shell perl -e 'print "1" if $(MIF_CNT)>8')
   endif
@@ -136,6 +137,8 @@ ifneq (,$(PLAT_WX_OR_MA))
    NUM_MC_PORTS = $(MIF_CNT)
   endif
  endif
+else
+   NUM_MC_PORTS = $(MIF_CNT)
 endif
 
 .PHONY: ht_dir
