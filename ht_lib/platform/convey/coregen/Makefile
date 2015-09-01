@@ -42,9 +42,9 @@ endif
 
 coregen.cgp:
 ifneq (,$(findstring ex, $(CNY_PDK_PLATFORM)))
-	@cp -p $(HT_LIB)/platform/$(HT_PLAT)/coregen/coregenv6.cgp $@
+	@cp -p $(HT_LIB)/platform/$(OHT_PLAT)/coregen/coregenv6.cgp $@
 else
-	@cp -p $(HT_LIB)/platform/$(HT_PLAT)/coregen/coregenv5.cgp $@
+	@cp -p $(HT_LIB)/platform/$(OHT_PLAT)/coregen/coregenv5.cgp $@
 endif
 
 clean:

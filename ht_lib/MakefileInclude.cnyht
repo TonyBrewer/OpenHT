@@ -9,10 +9,10 @@
 
 HT_VERSION := <VERSION>
 
-default: help1
-help: help2
-help1:
-	@echo "Convey HT ($(HT_VERSION)) project Makefile help"
+default: oht_help
+help: oht_help_vars
+oht_help:
+	@echo "Open HT ($(HT_VERSION)) project Makefile help"
 	@echo ""
 	@echo "::: Targets :::"
 	@echo ""
@@ -29,187 +29,32 @@ help1:
 	@echo "libmodel	Builds model interface library (libhtmodel.a)"
 	@echo "libsysc		Builds sysc interface library (libhtsysc.a)"
 	@echo "libapp		Builds coprocessor interface library (libhtapp.a)"
-	@echo ""
 
-help2: help1
-	@echo "::: Project Variables ::: (must be exported, i.e. export VAR=)"
+oht_help_vars: oht_help
 	@echo ""
-	@echo "CNY_PDK			PDK install base path"
-	@echo "CNY_PDK_REV		PDK revision"
-	@echo "CNY_PDK_PLATFORM	PDK target platform"
+	@echo "::: Variables ::: (must be exported, i.e. export VAR=)"
 	@echo ""
-	@echo "CNY_HT_AEUCNT		Number of units per AE (default 1)"
-	@echo "CNY_HT_ASSERT		Enable HW assertions (default false)"
-	@echo "CNY_HT_SIG		Decimal signature number (default 65000)"
-	@echo "CNY_HT_NICK		Alphanumeric nickname of signature (default CNY_HT_SIG)"
-	@echo "CNY_HT_FREQ		Personality frequency (default SYNC_CLK)"
-	@echo "CNY_HT_PDK_CFG		PDK configuration options file (default NULL)"
-	@echo ""
-	@echo "CNY_HT_DEFINES		Project defines (-DMY_DEFINE)"
-	@echo "CNY_HT_CFLAGS_MODEL	Compilation flags for 'model'"
-	@echo "CNY_HT_CFLAGS_SYSC	Compilation flags for 'sysc'"
-	@echo "CNY_HT_CFLAGS_VSIM	Compilation flags for 'vsim'"
-	@echo "CNY_HT_CFLAGS_APP	Compilation flags for 'app'"
-	@echo "CNY_HT_LIBEXCLUDE	source files to exclude from library"
-	@echo ""
-	@echo "CNY_HT_SIM_VCD		SystemC VCD tracing (default false)"
-	@echo "CNY_HT_SIM_ML		SystemC memory latency scaling (default 1.0)"
-	@echo "CNY_HT_SIM_NRI		SystemC no random initialization (default false)"
-	@echo "CNY_HT_SIM_RR		SystemC random retry (default false)"
-	@echo ""
+	@echo "OHT_PLAT	Target platform (default convey)"
+	@$(MAKE) -s plat_help
 
 ##############################################################################
 
 HT_LIB = $(HT_DIR)/ht_lib
 SC_DIR = $(HT_DIR)/local_systemc
 
-export HT_PLAT = convey
-HT_PLAT_DIR = $(HT_LIB)/platform/$(HT_PLAT)
+export OHT_PLAT = convey
+HT_PLAT_DIR = $(HT_LIB)/platform/$(OHT_PLAT)
 
-export CNY_PDK ?= /opt/convey/pdk2
-export CNY_PDK_REV ?= latest
-export CNY_PDK_PLATFORM ?= hc-1
-
-ifneq ($(findstring hc-,$(CNY_PDK_PLATFORM)),)
- export HT_HOST_API ?= ConveyOS
-else
- export HT_HOST_API ?= Driver
-endif
-
-ifeq ($(origin CNY_PATH), undefined)
- export CNY_PATH = $(abspath $(CNY_PDK)/..)
- ifeq ($(findstring convey,$(CNY_PATH)),)
-  export CNY_PATH = /opt/convey
- endif
-endif
-
-export CNY_HT_FREQ ?= SYNC_CLK
-export CNY_HT_SIG ?= 65000
-export CNY_HT_NICK ?= $(CNY_HT_SIG)
-
-PLAT_hc-1_ARCH    = 1
-PLAT_hc-2_ARCH    = 1
-PLAT_hc-1ex_ARCH  = 2
-PLAT_hc-2ex_ARCH  = 2
-PLAT_wx-2000_ARCH = 4
-PLAT_wx-690_ARCH  = 5
-PLAT_ma-100_ARCH  = 8
-PLAT_ma-400_ARCH  = 9
-PLAT_ARCH = ${PLAT_${CNY_PDK_PLATFORM}_ARCH}
-
-ifneq (,$(findstring wx,$(CNY_PDK_PLATFORM)))
-PLAT_WX_OR_MA = true
-endif
-ifneq (,$(findstring ma,$(CNY_PDK_PLATFORM)))
-PLAT_WX_OR_MA = true
-endif
-
-PERS_DIR = personalities/$(CNY_HT_SIG).1.1.$(PLAT_ARCH).0
-
-CNY_PDK_FPGA_PARTNUM ?= 510_48540$(PLAT_ARCH)_000
-
-PERFMON_MASK ?= 2
-
-ifdef DISABLE_CP_MEM
- ifneq (,$(PLAT_WX_OR_MA))
-  DISABLE_CP_MEM = DISABLE_CP_MEM = true
- else
-  DISABLE_CP_MEM =
- endif
-endif
-
-CNY_HT_AEUCNT ?= 1
-ifeq (,$(wildcard ht/$(TGT)/PersAeTop.sc))
- MIF_CNT = 16
-else
- MIF_CNT = $(shell grep 'define.*MIF_CNT ' ht/$(TGT)/PersAeTop.sc |\
-	     awk '{if (NF == 3 && $$3>0) \
-		  {printf "%d", $$3 * $(CNY_HT_AEUCNT)} \
-		  else {print $(CNY_HT_AEUCNT)}}')
-endif
-
-ifneq (,$(PLAT_WX_OR_MA))
- ifneq (,$(findstring wx-2000,$(CNY_PDK_PLATFORM)))
-  BIFURCATE_MC_PORT = $(shell perl -e 'print "1" if $(MIF_CNT)>8')
- endif
- ifneq (,$(BIFURCATE_MC_PORT))
-  NUM_MC_PORTS = $(shell perl -e 'printf "%d", $(MIF_CNT)+($(MIF_CNT)&1)')
- else
-  NUM_MC_PORTS = $(MIF_CNT)
- endif
-else
-   NUM_MC_PORTS = $(MIF_CNT)
-endif
 
 .PHONY: ht_dir
 ht_dir:
 	@if [ ! -d ./ht ]; then \
 	    mkdir -p ht; \
-	    rsync -ra \
-		--exclude config.sed \
-		--exclude coregen \
-		--exclude personalities \
-		--exclude verilog \
-		$(HT_DIR)/ht_lib/platform/$(HT_PLAT)/ ht; \
+	    $(MAKE) plat_ht_dir; \
 	fi
 
 ht/model ht/sysc ht/coregen ht/vsim ht/app: | ht_dir
 	@mkdir $@
-
-
-.PHONY: pdk_config
-pdk_config: | ht_dir
-	@echo "# config.pdk" > ht/config.pdk
-	@echo "CNY_PDK=$(CNY_PDK)" >> ht/config.pdk
-	@echo "CNY_PDK_REV=$(CNY_PDK_REV)" >> ht/config.pdk
-	@echo "HT_LIB=$(HT_LIB)" >> ht/config.pdk
-	@echo "HT_HOST_API=$(HT_HOST_API)" >> ht/config.pdk
-	@echo "CNY_PDK_FPGA_PARTNUM = $(CNY_PDK_FPGA_PARTNUM)" >> ht/config.pdk
-	@if [ -n "$(CNY_HT_AE_CNT)" ]; then \
-	    echo "WARNING - CNY_HT_AE_CNT deprecated and unused"; \
-	    echo "SAME_PERS = 0" >> ht/config.pdk; \
-	    echo "NUM_AES = $(CNY_HT_AE_CNT)" >> ht/config.pdk; \
-	fi
-	@if [ -n "$(NUM_MC_PORTS)" ]; then \
-	    echo "NUM_MC_PORTS = $(NUM_MC_PORTS)" >> ht/config.pdk; \
-	fi
-	@if [ -n "$(BIFURCATE_MC_PORT)" ]; then \
-	    echo "BIFURCATE_MC_PORT = $(BIFURCATE_MC_PORT)" >> ht/config.pdk; \
-	fi
-	@if [ -n "$(PERFMON)" ]; then \
-	    echo "WARNING - PERFMON deprecated, please use CNY_HT_PDK_CFG"; \
-	    echo "PERFMON = 1" >> ht/config.pdk; \
-	    echo "PERFMON_MASK = $(PERFMON_MASK)" >> ht/config.pdk; \
-	fi
-	@if [ -n "$(DISABLE_CP_MEM)" ]; then \
-	    echo "WARNING - DISABLE_CP_MEM deprecated, please use CNY_HT_PDK_CFG"; \
-	    echo "$(DISABLE_CP_MEM)" >> ht/config.pdk; \
-	fi
-	@if [ -n "$(XILINX_SEED)" ]; then \
-	    echo "WARNING - XILINX_SEED deprecated, please use CNY_HT_PDK_CFG"; \
-	    echo "XILINX_SEED = $(XILINX_SEED)" >> ht/config.pdk; \
-	fi
-	@echo "" >> ht/config.pdk
-	@cat $(HT_PLAT_DIR)/config.sed |\
-	    sed 's!= CNY_PDK_PLATFORM!= $(CNY_PDK_PLATFORM)!' |\
-	    sed 's!= CLK_PERS_FREQ!= $(CNY_HT_FREQ)!' |\
-	    sed 's!= HT_LIB!= $(HT_LIB)!' |\
-	    sed 's!HT_PLAT!$(HT_PLAT)!' \
-	    >> ht/config.pdk
-	@echo "" >> ht/config.pdk
-	@cat ht/config.pdk |\
-	    sed 's!^\([^#][^=]*\)=!export \1=!' |\
-	    sed 's![ ]*=[ ]*!=!' |\
-	    grep -v '^#' | grep -v '^$$' | grep -v 'USER_VERILOG_DIRS' |\
-	    grep -v 'include' \
-	    > ht/config.sh
-	@if [ -n "$(CNY_HT_PDK_CFG)" ]; then \
-	    echo "# CNY_HT_PDK_CFG [$(CNY_HT_PDK_CFG)]" >> ht/config.pdk.user; \
-	    cat $(CNY_HT_PDK_CFG) >> ht/config.pdk.user; \
-	    echo "" >> ht/config.pdk.user; \
-	fi
-	@cat ht/config.pdk >> ht/config.pdk.user
-	@mv ht/config.pdk.user ht/config.pdk
 
 
 .PHONY: model libmodel
@@ -239,14 +84,13 @@ vfiles: VTGT=VERILOG
 VTGT ?= VSIM
 
 .PHONY: vsim libvsim vfiles
-vsim libvsim vfiles: ht/coregen ht/vsim $(PERS_DIR)
+vsim libvsim vfiles: ht/coregen ht/vsim
 	@if [ ! -d ./src_pers ]; then \
 	    echo "Missing personality source directory (./src_pers)"; \
 	else \
-	    $(MAKE) -s -C ht/coregen -f $(HT_PLAT_DIR)/coregen/Makefile; \
+	    $(MAKE) -s plat_vsim; \
 	    $(MAKE) -s -C ht/vsim -f $(HT_LIB)/vsim/Makefile TGT=$(VTGT) genfiles; \
 	    $(MAKE) -C ht/vsim -f $(HT_LIB)/vsim/Makefile TGT=$(VTGT) genhfiles; \
-	    $(MAKE) TGT=vsim pdk_config; \
 	    $(MAKE) -C ht/vsim -f $(HT_LIB)/vsim/Makefile TGT=$(VTGT) $@; \
 	fi
 
@@ -257,64 +101,25 @@ app libapp: ht/app
 	$(MAKE) -C ht/app -f $(HT_LIB)/app/Makefile $@
 
 
-HT_LATEST = $(shell ls -rt ht.released 2>/dev/null | tail -1)
+.PHONY: pers
+pers: plat_pers
 
-.PHONY: pers pers_ln
-pers: vfiles
-	$(MAKE) -C ht/phys HT_LIB=$(HT_LIB)
-	$(MAKE) -C ht/phys release
-	$(MAKE) pers_ln
-
-pers_ln:
-	@(cd $(PERS_DIR) > /dev/null; \
-	    rm -f ae_fpga.tgz; \
-	    ln -s ../../ht.released/$(HT_LATEST)/ae_fpga.tgz .)
-
-# FIXME - arch sim doesn't know about WX
-PERS_SIG1 = $(subst $(PLAT_ARCH).0,1.0,$(PERS_DIR))
-.PHONY: personalities/customdb
-personalities/customdb:
-	@mkdir -p personalities
-	@echo "$(notdir $(PERS_DIR)),$(CNY_HT_NICK)" >> $@
-ifeq ($(findstring Driver,$(HT_HOST_API)),)
-	@echo "$(notdir $(PERS_SIG1)),$(CNY_HT_NICK)" >> $@
-endif
-	@sort -u $@ > $@.sort
-	@mv -f $@.sort $@
-
-$(PERS_DIR): personalities/customdb
-	@mkdir -p $@
-ifeq ($(findstring Driver,$(HT_HOST_API)),)
-	@(cd $@ > /dev/null; cp -p $(HT_PLAT_DIR)/personalities/* .)
-	@(cd $(dir $@) > /dev/null; \
-	    if [ ! -e $(notdir $(PERS_SIG1)) ]; then \
-		ln -s $(notdir $(PERS_DIR)) $(notdir $(PERS_SIG1)); \
-	    fi)
-endif
-
-
-clean: | pdk_config
-	@-if [ -d $(CNY_PDK)/$(CNY_PDK_REV) ]; then \
-	    (cd ht/sim >> /dev/null; \
-		make clean_all > /dev/null); \
-	fi
-	@rm -f ht/config.pdk ht/config.sh ht/Ht*.*
+clean: plat_clean
+	@rm -f ht/Ht*.*
 	@rm -rf ht/model ht/sysc ht/vsim ht/verilog ht/app
+	@rm -f ht/Ht*.* InstrTrace.txt
 	@rm -f app_model libhtmodel.*
 	@rm -f app_sysc libhtsysc.*
 	@rm -f app_vsim libhtvsim.* app_vsim.*
 	@rm -f app libhtapp.*
-	@rm -f InstrTrace.txt Ht*Rpt.html Ht*Rpt.txt
 ifneq ($(LOCALCLEAN),)
 	@rm -rf $(LOCALCLEAN)
 endif
 
-cleaner: | pdk_config
-	@rm -rf ht/coregen
-	@if [ -d $(CNY_PDK)/$(CNY_PDK_REV) ]; then \
-	    (cd ./ht/phys >> /dev/null; $(MAKE) -s clean); \
-	fi
+cleaner: plat_cleaner
 	@$(MAKE) -s clean
 
-distclean: cleaner
-	@rm -rf ht ht.released personalities wave.vcd
+distclean: plat_distclean cleaner
+	@rm -rf ht wave.vcd
+
+-include $(HT_LIB)/platform/$(OHT_PLAT)/MakefileInclude.plat
