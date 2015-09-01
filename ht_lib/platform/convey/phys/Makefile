@@ -17,7 +17,7 @@ else ifneq (,$(findstring wx-2000, $(CNY_PDK_PLATFORM)))
 else ifneq (,$(findstring ex, $(CNY_PDK_PLATFORM)))
     UCF_FILES += $(wildcard comp760.ucf)
 else
-    XST_TEMPLATE=$(HT_LIB)/verilog/xst.template
+    XST_TEMPLATE=xst.template
     UCF_FILES += $(wildcard comp330.ucf)
 endif
 

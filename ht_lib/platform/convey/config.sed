@@ -11,7 +11,7 @@ CNY_PDK_PLATFORM = CNY_PDK_PLATFORM
 CLK_PERS_FREQ = CLK_PERS_FREQ
 
 # Extra verilog directories
-USER_VERILOG_DIRS += HT_LIB/verilog ../../src_pers
+USER_VERILOG_DIRS += HT_LIB/platform/HT_PLAT/verilog ../../src_pers
 
 ####################################################################
 # Include Convey Makefile Template

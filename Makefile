@@ -87,7 +87,7 @@ prefix install: all
 	sed 's/<VERSION>/$(REL_DIR)/' ht_lib/MakefileInclude.cnyht \
 		> $(PREFIX)/ht_lib/MakefileInclude.cnyht
 	rm -rf $(PREFIX)/ht_lib/host/PersAsm.* $(PREFIX)/ht_lib/*/*Lib.* 
-	rm -rf $(PREFIX)/ht_lib/verilog/*.vpp
+	rm -rf $(PREFIX)/ht_lib/platform/convey/verilog/*.vpp
 	rm -rf $(PREFIX)/ht_lib/qt
 	cp -rp html $(PREFIX)
 	mkdir -p $(PREFIX)/doc/man1

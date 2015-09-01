@@ -63,6 +63,9 @@ help2: help1
 HT_LIB = $(HT_DIR)/ht_lib
 SC_DIR = $(HT_DIR)/local_systemc
 
+export HT_PLAT = convey
+HT_PLAT_DIR = $(HT_LIB)/platform/$(HT_PLAT)
+
 export CNY_PDK ?= /opt/convey/pdk2
 export CNY_PDK_REV ?= latest
 export CNY_PDK_PLATFORM ?= hc-1
@@ -115,27 +118,24 @@ ifdef DISABLE_CP_MEM
  endif
 endif
 
-MIF_CNT = $(shell grep 'define.*MIF_CNT ' ht/$(TGT)/PersAeTop.sc |\
-	    awk '{if (NF == 3 && $$3>0) \
-		 {printf "%d", $$3 * $(CNY_HT_AEUCNT)} \
-		 else {print $(CNY_HT_AEUCNT)}}')
+CNY_HT_AEUCNT ?= 1
+ifeq (,$(wildcard ht/$(TGT)/PersAeTop.sc))
+ MIF_CNT = 16
+else
+ MIF_CNT = $(shell grep 'define.*MIF_CNT ' ht/$(TGT)/PersAeTop.sc |\
+	     awk '{if (NF == 3 && $$3>0) \
+		  {printf "%d", $$3 * $(CNY_HT_AEUCNT)} \
+		  else {print $(CNY_HT_AEUCNT)}}')
+endif
 
 ifneq (,$(PLAT_WX_OR_MA))
- CNY_HT_AEUCNT ?= 1
- ifeq (,$(wildcard ht/$(TGT)/PersAeTop.sc))
-  NUM_MC_PORTS = 16
-  ifneq (,$(findstring wx-2000,$(CNY_PDK_PLATFORM)))
-   BIFURCATE_MC_PORT = 1
-  endif
+ ifneq (,$(findstring wx-2000,$(CNY_PDK_PLATFORM)))
+  BIFURCATE_MC_PORT = $(shell perl -e 'print "1" if $(MIF_CNT)>8')
+ endif
+ ifneq (,$(BIFURCATE_MC_PORT))
+  NUM_MC_PORTS = $(shell perl -e 'printf "%d", $(MIF_CNT)+($(MIF_CNT)&1)')
  else
-  ifneq (,$(findstring wx-2000,$(CNY_PDK_PLATFORM)))
-   BIFURCATE_MC_PORT = $(shell perl -e 'print "1" if $(MIF_CNT)>8')
-  endif
-  ifneq (,$(BIFURCATE_MC_PORT))
-   NUM_MC_PORTS = $(shell perl -e 'printf "%d", $(MIF_CNT)+($(MIF_CNT)&1)')
-  else
-   NUM_MC_PORTS = $(MIF_CNT)
-  endif
+  NUM_MC_PORTS = $(MIF_CNT)
  endif
 else
    NUM_MC_PORTS = $(MIF_CNT)
@@ -144,8 +144,13 @@ endif
 .PHONY: ht_dir
 ht_dir:
 	@if [ ! -d ./ht ]; then \
-	    cp -rp $(HT_DIR)/ht_lib/ht .;\
-	    rm ht/config.sed; \
+	    mkdir -p ht; \
+	    rsync -ra \
+		--exclude config.sed \
+		--exclude coregen \
+		--exclude personalities \
+		--exclude verilog \
+		$(HT_DIR)/ht_lib/platform/$(HT_PLAT)/ ht; \
 	fi
 
 ht/model ht/sysc ht/coregen ht/vsim ht/app: | ht_dir
@@ -185,10 +190,11 @@ pdk_config: | ht_dir
 	    echo "XILINX_SEED = $(XILINX_SEED)" >> ht/config.pdk; \
 	fi
 	@echo "" >> ht/config.pdk
-	@cat $(HT_DIR)/ht_lib/ht/config.sed |\
+	@cat $(HT_PLAT_DIR)/config.sed |\
 	    sed 's!= CNY_PDK_PLATFORM!= $(CNY_PDK_PLATFORM)!' |\
 	    sed 's!= CLK_PERS_FREQ!= $(CNY_HT_FREQ)!' |\
-	    sed 's!= HT_LIB!= $(HT_LIB)!' \
+	    sed 's!= HT_LIB!= $(HT_LIB)!' |\
+	    sed 's!HT_PLAT!$(HT_PLAT)!' \
 	    >> ht/config.pdk
 	@echo "" >> ht/config.pdk
 	@cat ht/config.pdk |\
@@ -237,7 +243,7 @@ vsim libvsim vfiles: ht/coregen ht/vsim $(PERS_DIR)
 	@if [ ! -d ./src_pers ]; then \
 	    echo "Missing personality source directory (./src_pers)"; \
 	else \
-	    $(MAKE) -s -C ht/coregen -f $(HT_LIB)/coregen/Makefile; \
+	    $(MAKE) -s -C ht/coregen -f $(HT_PLAT_DIR)/coregen/Makefile; \
 	    $(MAKE) -s -C ht/vsim -f $(HT_LIB)/vsim/Makefile TGT=$(VTGT) genfiles; \
 	    $(MAKE) -C ht/vsim -f $(HT_LIB)/vsim/Makefile TGT=$(VTGT) genhfiles; \
 	    $(MAKE) TGT=vsim pdk_config; \
@@ -279,7 +285,7 @@ endif
 $(PERS_DIR): personalities/customdb
 	@mkdir -p $@
 ifeq ($(findstring Driver,$(HT_HOST_API)),)
-	@(cd $@ > /dev/null; cp -p $(HT_LIB)/personalities/* .)
+	@(cd $@ > /dev/null; cp -p $(HT_PLAT_DIR)/personalities/* .)
 	@(cd $(dir $@) > /dev/null; \
 	    if [ ! -e $(notdir $(PERS_SIG1)) ]; then \
 		ln -s $(notdir $(PERS_DIR)) $(notdir $(PERS_SIG1)); \
