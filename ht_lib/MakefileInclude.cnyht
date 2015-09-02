@@ -42,16 +42,13 @@ oht_help_vars: oht_help
 HT_LIB = $(HT_DIR)/ht_lib
 SC_DIR = $(HT_DIR)/local_systemc
 
-export OHT_PLAT = convey
+export OHT_PLAT ?= convey
 HT_PLAT_DIR = $(HT_LIB)/platform/$(OHT_PLAT)
 
 
 .PHONY: ht_dir
 ht_dir:
-	@if [ ! -d ./ht ]; then \
-	    mkdir -p ht; \
-	    $(MAKE) plat_ht_dir; \
-	fi
+	@mkdir -p ht
 
 ht/model ht/sysc ht/coregen ht/vsim ht/app: | ht_dir
 	@mkdir $@
@@ -88,10 +85,10 @@ vsim libvsim vfiles: ht/coregen ht/vsim
 	@if [ ! -d ./src_pers ]; then \
 	    echo "Missing personality source directory (./src_pers)"; \
 	else \
-	    $(MAKE) -s plat_vsim; \
 	    $(MAKE) -s -C ht/vsim -f $(HT_LIB)/vsim/Makefile TGT=$(VTGT) genfiles; \
 	    $(MAKE) -C ht/vsim -f $(HT_LIB)/vsim/Makefile TGT=$(VTGT) genhfiles; \
 	    $(MAKE) -C ht/vsim -f $(HT_LIB)/vsim/Makefile TGT=$(VTGT) $@; \
+	    $(MAKE) -s TGT=$(VTGT) plat_vsim; \
 	fi
 
 

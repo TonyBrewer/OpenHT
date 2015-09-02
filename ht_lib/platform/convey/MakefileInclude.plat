@@ -37,17 +37,6 @@ plat_help:
 
 ##############################################################################
 
-plat_ht_dir:
-	@rsync -ra \
-	    --exclude MakefileInclude.plat \
-	    --exclude config.sed \
-	    --exclude coregen \
-	    --exclude personalities \
-	    --exclude verilog \
-	    $(HT_DIR)/ht_lib/platform/$(OHT_PLAT)/ ht; \
-
-##############################################################################
-
 export CNY_PDK ?= /opt/convey/pdk2
 export CNY_PDK_REV ?= latest
 export CNY_PDK_PLATFORM ?= hc-1
@@ -100,6 +89,15 @@ ifdef DISABLE_CP_MEM
  endif
 endif
 
+cny_ht_dir: | ht_dir
+	@rsync -ra \
+	    --exclude MakefileInclude.plat \
+	    --exclude config.sed \
+	    --exclude coregen \
+	    --exclude personalities \
+	    --exclude verilog \
+	    $(HT_DIR)/ht_lib/platform/$(OHT_PLAT)/ ht; \
+
 CNY_HT_AEUCNT ?= 1
 ifeq (,$(wildcard ht/$(TGT)/PersAeTop.sc))
  MIF_CNT = 16
@@ -125,7 +123,7 @@ endif
 
 
 .PHONY: pdk_config
-pdk_config: | ht_dir
+pdk_config: | cny_ht_dir
 	@echo "# config.pdk" > ht/config.pdk
 	@echo "CNY_PDK=$(CNY_PDK)" >> ht/config.pdk
 	@echo "CNY_PDK_REV=$(CNY_PDK_REV)" >> ht/config.pdk
