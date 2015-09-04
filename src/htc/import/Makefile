@@ -8,7 +8,7 @@ local_rose: patchelf
 	export BOOST_INSTALL=$(ROSE_BUILD)/local_boost && \
 	. ./build_vars.sh && \
 	    cd $(ROSE_BUILD) > /dev/null && \
-	    git clone https://github.com/rose-compiler/edg4x-rose rose && \
+	    git clone https://github.com/rose-compiler/rose && \
 	    cd rose > /dev/null && \
 	    git reset --hard 18f3b98052c0c57f684b65693c58c4a48b314389 && \
 	    patch -p1 -i ../edg4x-rose.patch && \
