@@ -27,10 +27,12 @@ src_pers/design.htd: src_htc/$(HTC_SRC)
 	@mv src_htc/*.htd src_pers
 	@echo "#define CNY_HTC_HOST 1" >> src/$(basename rose_$(HTC_SRC)).cpp
 	@echo "#define HIF_CODE 1" >> src/$(basename rose_$(HTC_SRC)).cpp
-	@sed 's:/\* extern "C" \*/:extern "C":' < src_htc/rose_$(HTC_SRC) \
+	@cat src_htc/rose_$(HTC_SRC) |\
+	     sed 's:/\* extern "C" \*/:extern "C":' \
 	    >> src/$(basename rose_$(HTC_SRC)).cpp
 	@rm -f src_htc/rose_$(HTC_SRC)
 
 clean distclean: cleanhtc
 cleanhtc:
-	@rm -rf src_pers/Pers* src/rose_*
+	@rm -f src_pers/Pers* src_pers/design.htd src_pers/rose_rose_*
+	@rm -f src/rose_* src_pers/design.htd
