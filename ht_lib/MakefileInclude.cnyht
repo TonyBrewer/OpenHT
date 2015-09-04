@@ -101,7 +101,7 @@ app libapp: ht/app
 .PHONY: pers
 pers: plat_pers
 
-clean: plat_clean
+clean:
 	@rm -rf ht/model ht/sysc ht/vsim ht/verilog ht/app
 	@rm -f ht/Ht*.* Ht*.* InstrTrace.txt
 	@rm -f app_model libhtmodel.*
@@ -111,11 +111,15 @@ clean: plat_clean
 ifneq ($(LOCALCLEAN),)
 	@rm -rf $(LOCALCLEAN)
 endif
+	@$(MAKE) plat_clean
 
-cleaner: plat_cleaner
+cleaner:
 	@$(MAKE) -s clean
+	@$(MAKE) -s plat_cleaner
 
-distclean: plat_distclean cleaner
+distclean:
 	@rm -rf ht wave.vcd
+	@$(MAKE) -s cleaner
+	@$(MAKE) -s plat_distclean
 
 -include $(HT_LIB)/platform/$(OHT_PLAT)/MakefileInclude.plat
