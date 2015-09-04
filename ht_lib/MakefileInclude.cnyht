@@ -102,9 +102,8 @@ app libapp: ht/app
 pers: plat_pers
 
 clean: plat_clean
-	@rm -f ht/Ht*.*
 	@rm -rf ht/model ht/sysc ht/vsim ht/verilog ht/app
-	@rm -f ht/Ht*.* InstrTrace.txt
+	@rm -f ht/Ht*.* Ht*.* InstrTrace.txt
 	@rm -f app_model libhtmodel.*
 	@rm -f app_sysc libhtsysc.*
 	@rm -f app_vsim libhtvsim.* app_vsim.*
