@@ -127,10 +127,7 @@ endif
 
 .PHONY: ht_dir
 ht_dir:
-	@if [ ! -d ./ht ]; then \
-	    cp -rp $(HT_DIR)/ht_lib/ht .;\
-	    rm ht/config.sed; \
-	fi
+	@mkdir -p ht
 
 ht/model ht/sysc ht/coregen ht/vsim ht/app: | ht_dir
 	@mkdir $@
