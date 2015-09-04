@@ -5,12 +5,8 @@
 
 void usage(char *);
 
-extern "C" void vadd (uint64_t *a, uint64_t *b, uint64_t *c, 
-                      uint64_t vecLen, uint64_t *result);
-
-#define CNY_HTC_HOST 1
-#define HIF_CODE 1
-#include "../src_htc/rose_vadd.c"
+extern void vadd (uint64_t *a, uint64_t *b, uint64_t *c, 
+                  uint64_t vecLen, uint64_t *result);
 
 int main(int argc, char **argv)
 {
