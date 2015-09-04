@@ -1,1 +1,1 @@
-include ../Makefile.OMPtemplate
+include ../Makefile.HTCtemplate
