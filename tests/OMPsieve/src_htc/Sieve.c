@@ -33,9 +33,15 @@ main() {
 } //end pragma omp target
 
   
+  int n=0;
   for(i=1;i<NSRCH;i++) {
-    if(prime[i]) printf("%d is prime\n",i);
+    if(prime[i]) {
+      n++;
+      printf("%d is prime\n",i);
+    }
   }
+
+  printf("%s\n", (n==26) ? "PASSED" : "FAILED");
 
   pers_detach();
 }
