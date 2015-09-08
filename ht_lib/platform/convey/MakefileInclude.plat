@@ -230,4 +230,4 @@ plat_cleaner: | pdk_config
 	fi
 
 plat_distclean:
-	@rm -rf ht ht.released personalities
+	@rm -rf ht.released personalities

@@ -119,7 +119,6 @@ cleaner:
 
 distclean:
 	@rm -rf ht wave.vcd
-	@$(MAKE) -s cleaner
 	@$(MAKE) -s plat_distclean
 
 -include $(HT_LIB)/platform/$(OHT_PLAT)/MakefileInclude.plat
