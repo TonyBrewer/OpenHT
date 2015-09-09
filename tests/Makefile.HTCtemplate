@@ -2,20 +2,17 @@ export CNY_PDK          ?= /work/pdk_releases
 export CNY_PDK_REV      ?= latest
 export CNY_PDK_PLATFORM ?= wx-690
 
-#PLAT_${CNY_PDK_PLATFORM}_AEUCNT ?= 8
-#export CNY_HT_AEUCNT = $(PLAT_${CNY_PDK_PLATFORM}_AEUCNT)
-
 export CFLAGS += -fopenmp
 export LDFLAGS += -fopenmp
 
 # DO NOT MODIFY ITEMS BELOW THIS LINE
-export HT_DIR ?= $(CNY_PDK)/ht
+export HT_DIR ?= /usr/local/ht_releases/latest
 include $(HT_DIR)/ht_lib/MakefileInclude.cnyht
 
 #
 # Weave in HTC
 #
-HTC_DIR ?= /work/htc_releases/latest
+HTC_DIR ?= /usr/local/htc_releases/latest
 HTC ?= $(HTC_DIR)/bin/htc
 
 HTC_SRC = $(notdir $(wildcard src_htc/*.c))

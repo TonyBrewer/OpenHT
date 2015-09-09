@@ -1,4 +1,9 @@
-SYSTEMC_BUILD = /tmp/systemc
+BLD_BASE = $(wildcard /dev/shm)
+ifeq (,$(BLD_BASE))
+BLD_BASE = /tmp
+endif
+
+SYSTEMC_BUILD = $(BLD_BASE)/systemc
 SYSTEMC_VER   = 2.3.1
 SYSTEMC_TAR   = systemc-$(SYSTEMC_VER).tgz
 

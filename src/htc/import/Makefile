@@ -1,4 +1,9 @@
-ROSE_BUILD = /dev/shm/rose
+BLD_BASE = $(wildcard /dev/shm)
+ifeq (,$(BLD_BASE))
+BLD_BASE = /tmp
+endif
+
+ROSE_BUILD = $(BLD_BASE)/rose
 
 local_rose: patchelf
 	$(MAKE) local_boost
@@ -28,7 +33,7 @@ local_rose: patchelf
 
 ##########
 
-ELF_BUILD = /dev/shm/patchelf
+ELF_BUILD = $(BLD_BASE)/patchelf
 
 patchelf:
 	rm -rf $(ELF_BUILD); mkdir -p $(ELF_BUILD)
@@ -47,7 +52,7 @@ patchelf:
 BOOST_VER = 1_45_0
 BOOST_VER_DOT = $(subst _,.,$(BOOST_VER))
 BOOST_URL = http://sourceforge.net/projects/boost/files/boost
-BOOST_BUILD = /dev/shm/boost
+BOOST_BUILD = $(BLD_BASE)/boost
 
 local_boost:
 	rm -rf $(BOOST_BUILD); mkdir -p $(BOOST_BUILD)
