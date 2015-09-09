@@ -128,6 +128,9 @@ HTV_FLAGS += -quartus
 endif
 ifneq ($(origin TGT), undefined)
 HTV_FLAGS += -DHT_$(TGT)
+ifneq (vsim, $(TGT))
+HTV_FLAGS += -DHT_VERILOG
+endif
 endif
 ifneq ($(origin CNY_HT_ASSERT), undefined)
 HTV_FLAGS += -DHT_ASSERT
