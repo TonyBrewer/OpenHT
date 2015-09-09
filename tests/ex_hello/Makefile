@@ -3,5 +3,5 @@ export CNY_PDK_REV	?= latest
 export CNY_PDK_PLATFORM	?= hc-2
 
 # DO NOT MODIFY ITEMS BELOW THIS LINE
-export HT_DIR ?= $(CNY_PDK)/ht
+export HT_DIR ?= /usr/local/ht_releases/latest
 include $(HT_DIR)/ht_lib/MakefileInclude.cnyht
