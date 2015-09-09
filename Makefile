@@ -98,8 +98,6 @@ prefix install: all
 	  e=$${ex#*/ex_}; \
 	  cp -rp $$ex $(PREFIX)/examples/$$e; \
 	  rm -rf $(PREFIX)/examples/$$e/msvs*; \
-	  grep -v 'HT_DIR.*releases' \
-		$$ex/Makefile > $(PREFIX)/examples/$$e/Makefile; \
 	done)
 	find $(PREFIX)/examples -name "*.htl" -exec rm {} \;
 	cp -rp local_systemc $(PREFIX)
