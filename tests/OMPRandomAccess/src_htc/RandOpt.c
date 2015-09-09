@@ -189,7 +189,7 @@ main (int argc, char **argv) {
 
   pers_attach();
 
-  int power = 24;
+  int power = 10;
   if(argc > 1) {
     power = atoi(argv[1]);
   }
