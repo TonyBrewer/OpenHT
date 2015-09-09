@@ -4,7 +4,6 @@
 using namespace Ht;
 
 #undef DEBUG
-#define DEBUG
 
 static CHtHif *pHtHif;
 static CHtAuUnit **pAuUnits;
@@ -19,8 +18,6 @@ extern "C" void pers_attach();
 extern "C" int __htc_get_unit_count()
 {
 	if (!pHtHif) pers_attach();
-
-        return 8;
 
 	return pHtHif->GetUnitCnt();
 }
@@ -55,13 +52,11 @@ extern "C" void pers_attach()
 	pthread_mutex_unlock(&mutex);
 }
 
-//extern "C" void *pers_cp_malloc(size_t size)
-extern "C" uint64_t pers_cp_malloc(size_t size)
+extern "C" void *pers_cp_malloc(size_t size)
 {
 	if (!pHtHif) pers_attach();
 
-        //	void *ptr = pHtHif->MemAllocAlign(4 * 1024, size);
-	uint64_t ptr  = (uint64_t)pHtHif->MemAllocAlign(4 * 1024, size);
+	void *ptr = pHtHif->MemAllocAlign(4 * 1024, size);
 
 	return ptr;
 }

@@ -4,7 +4,6 @@
 using namespace Ht;
 
 #undef DEBUG
-#define DEBUG
 
 static CHtHif *pHtHif;
 static CHtAuUnit **pAuUnits;
@@ -19,7 +18,6 @@ extern "C" void pers_attach();
 extern "C" int __htc_get_unit_count()
 {
 	if (!pHtHif) pers_attach();
-        return 1;
 
 	return pHtHif->GetUnitCnt();
 }
