@@ -22,6 +22,8 @@ OFILT	= $(addsuffix .o, $(basename $(notdir $(CNY_HT_LIBEXCLUDE))))
 LOBJS	= $(filter-out $(OFILT), $(OBJS))
 POBJS	= $(addsuffix .po, $(basename $(LOBJS)))
 
+PLAT_OBJS = $(wildcard $(HT_LIB)/platform/$(OHT_PLAT)/host/*.o)
+
 HT_HTIS	= $(wildcard $(STDIR)/*.hti)
 HT_HTDS	= $(wildcard $(STDIR)/*.htd)
 
@@ -64,7 +66,7 @@ vsim: ../../app_vsim
 	@chmod 755 $@
 
 ../../app_vsim.exe: $(OBJS)
-	$(CXX) -o $@ $(LDFLAGS) $(OBJS) $(LDLIBS)
+	$(CXX) -o $@ $(LDFLAGS) $(OBJS) $(PLAT_OBJS) $(LDLIBS)
 
 
 .PHONY: libvsim
@@ -76,12 +78,12 @@ endif
 
 ../../libhtvsim.a: $(LOBJS) $(HT_LIB)/libht.a
 	cp $(HT_LIB)/libht.a $@
-	ar rcs $@ $(LOBJS)
+	ar rcs $@ $(LOBJS) $(PLAT_OBJS)
 	@chmod 644 $@
 
 ../../libhtvsim.pa: $(POBJS) $(HT_LIB)/libht.pa
 	cp $(HT_LIB)/libht.pa $@
-	ar rcs $@ $(POBJS)
+	ar rcs $@ $(POBJS) $(PLAT_OBJS)
 	@chmod 644 $@
 
 include $(HT_DIR)/ht_lib/Makefile.template
