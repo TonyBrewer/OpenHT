@@ -25,7 +25,7 @@ mregress:
 
 HT_DIR = $(wildcard $(PWD)/../rpm/prefix)
 ifeq (,$(HT_DIR))
-    HT_DIR = /work/ht_releases/latest
+    HT_DIR = /usr/local/ht_releases/latest
 endif
 
 RDIRS=$(DIRS)
