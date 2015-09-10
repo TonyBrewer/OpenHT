@@ -23,13 +23,13 @@ vregress:
 mregress:
 	@$(MAKE) _regress TGT=model 
 
-ifneq (,$(wildcard $(PWD)/../rpm/prefix))
-  HT_DIR = $(PWD)/../rpm/prefix
+ifneq (,$(wildcard $(CURDIR)/../rpm/prefix))
+  HT_DIR = $(CURDIR)/../rpm/prefix
 else
 ifneq (,$(wildcard /usr/local/ht_releases/latest))
   HT_DIR = /usr/local/ht_releases/latest
 else
-  HT_DIR = $(PWD)/..
+  HT_DIR = $(CURDIR)/..
 endif
 endif
 
