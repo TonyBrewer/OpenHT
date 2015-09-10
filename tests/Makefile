@@ -23,9 +23,14 @@ vregress:
 mregress:
 	@$(MAKE) _regress TGT=model 
 
-HT_DIR = $(wildcard $(PWD)/../rpm/prefix)
-ifeq (,$(HT_DIR))
-    HT_DIR = /usr/local/ht_releases/latest
+ifneq (,$(wildcard $(PWD)/../rpm/prefix))
+  HT_DIR = $(PWD)/../rpm/prefix
+else
+ifneq (,$(wildcard /usr/local/ht_releases/latest))
+  HT_DIR = /usr/local/ht_releases/latest
+else
+  HT_DIR = $(PWD)/..
+endif
 endif
 
 RDIRS=$(DIRS)
@@ -109,6 +114,7 @@ sysc vsim:
 
 distclean clean:
 	@$(foreach d, $(DIRS), $(MAKE) -s -C$(d) $@ \
+			    	HT_DIR=$(HT_DIR) \
 			    	CNY_PDK=$(CNY_PDK) \
 			    	CNY_PDK_REV=$(CNY_PDK_REV) 2>&1 > /dev/null;)
 	rm -f */make*.log */regress*.log
