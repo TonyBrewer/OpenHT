@@ -269,14 +269,8 @@ void CDsnInfo::GenerateCommonIncludeFile()
 		CModule &mod = *m_modList[modIdx];
 		if (!mod.m_bIsUsed) continue;
 
-		int instId = -1;
 		for (size_t modInstIdx = 0; modInstIdx < mod.m_modInstList.size(); modInstIdx += 1) {
 			CModInst &modInst = mod.m_modInstList[modInstIdx];
-
-			if (modInst.m_instParams.m_instId == instId)
-				continue;
-
-			instId = modInst.m_instParams.m_instId;
 
 			for (size_t intfIdx = 0; intfIdx < modInst.m_cxrIntfList.size(); intfIdx += 1) {
 				CCxrIntf &cxrIntf = modInst.m_cxrIntfList[intfIdx];
@@ -306,8 +300,8 @@ void CDsnInfo::GenerateCommonIncludeFile()
 						cxrIntf.m_fullFieldList.push_back(new CField(cxrIntf.m_pSrcGroup->m_pHtIdType, "rtnHtId"));
 						cxrIntf.m_fullFieldList.back()->InitDimen(lineInfo);
 					}
-					if (cxrIntf.m_pSrcMod->m_pInstrType) {
-						cxrIntf.m_fullFieldList.push_back(new CField(cxrIntf.m_pSrcMod->m_pInstrType, "rtnInstr"));
+					if (cxrIntf.m_pSrcModInst->m_pMod->m_pInstrType) {
+						cxrIntf.m_fullFieldList.push_back(new CField(cxrIntf.m_pSrcModInst->m_pMod->m_pInstrType, "rtnInstr"));
 						cxrIntf.m_fullFieldList.back()->InitDimen(lineInfo);
 					}
 
@@ -332,8 +326,8 @@ void CDsnInfo::GenerateCommonIncludeFile()
 						cxrIntf.m_fullFieldList.push_back(new CField(cxrIntf.m_pDstGroup->m_pHtIdType, "rtnHtId"));
 						cxrIntf.m_fullFieldList.back()->InitDimen(lineInfo);
 					}
-					if (cxrIntf.m_pDstMod->m_pInstrType != 0) {
-						cxrIntf.m_fullFieldList.push_back(new CField(cxrIntf.m_pDstMod->m_pInstrType, "rtnInstr"));
+					if (cxrIntf.m_pDstModInst->m_pMod->m_pInstrType != 0) {
+						cxrIntf.m_fullFieldList.push_back(new CField(cxrIntf.m_pDstModInst->m_pMod->m_pInstrType, "rtnInstr"));
 						cxrIntf.m_fullFieldList.back()->InitDimen(lineInfo);
 					}
 

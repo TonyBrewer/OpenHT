@@ -5,6 +5,8 @@ using namespace Ht;
 
 int main(int argc, char **argv)
 {
+	printf("clk2x\n");
+
 	CHtHif *pHtHif = new CHtHif();
 	CHtAuUnit *pAuUnit = new CHtAuUnit(pHtHif);
 

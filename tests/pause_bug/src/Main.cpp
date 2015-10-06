@@ -3,6 +3,7 @@ using namespace Ht;
 
 int main(int argc, char **argv)
 {
+	printf("pause_bug\n", argv[0]);
 
 	CHtHif *pHtHif = new CHtHif();
 	CHtAuUnit *pUnit = new CHtAuUnit(pHtHif);

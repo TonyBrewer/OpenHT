@@ -98,6 +98,12 @@ CModule * CDsnInfo::AddModule(string name, EClkRate clkRate)
 	return pModule;
 }
 
+void CDsnInfo::AddModInstParam(CModule *pModule, string const &name, string const &default)
+{
+	// check for duplicate
+	pModule->AddInstParam(name, default);
+}
+
 CMifRd * CDsnInfo::AddReadMem(CModule * pModule, string queueW, string rspGrpId, string rspGrpW,
 	string rspCntW, bool maxBw, bool bPause, bool bPoll, bool bMultiRd)
 {
@@ -175,20 +181,23 @@ CMifWr * CDsnInfo::AddWriteMem(CModule * pModule, string queueW, string rspGrpId
 	return &mif.m_mifWr;
 }
 
-void CDsnInfo::AddCall(void * pHandle, string funcName, bool bCall, bool bFork, string queueW, string dest)
+CCxrCall * CDsnInfo::AddCall(void * pHandle, string const &modEntry, string const &callName, string const &modInst, bool bCall, bool bFork, string const &queueW, string const &dest)
 {
 	CModule * pModule = (CModule *)pHandle;
-	pModule->m_cxrCallList.push_back(CCxrCall(funcName, bCall, bFork, queueW, dest, false));
+	pModule->m_cxrCallList.push_back(CCxrCall(modEntry, callName, modInst, bCall, bFork, queueW, dest, false));
+	return &pModule->m_cxrCallList.back();
 }
 
-void CDsnInfo::AddXfer(void * pHandle, string funcName, string queueW)
+CCxrCall * CDsnInfo::AddXfer(void * pHandle, string const &modEntry, string const &xferName, string const &modInst, string const &queueW)
 {
 	CModule * pModule = (CModule *)pHandle;
 	string dest = "auto";
 	bool bCall = false;
 	bool bFork = false;
 	bool bXfer = true;
-	pModule->m_cxrCallList.push_back(CCxrCall(funcName, bCall, bFork, queueW, dest, bXfer));
+
+	pModule->m_cxrCallList.push_back(CCxrCall(modEntry, xferName, modInst, bCall, bFork, queueW, dest, bXfer));
+	return &pModule->m_cxrCallList.back();
 }
 
 CCxrEntry * CDsnInfo::AddEntry(CModule * pModule, string funcName, string entryInstr, string reserve, bool &bHost)
@@ -196,7 +205,7 @@ CCxrEntry * CDsnInfo::AddEntry(CModule * pModule, string funcName, string entryI
 	if (bHost) {
 		bool bCall = true;
 		bool bFork = false;
-		AddCall(m_modList[0], funcName, bCall, bFork, string("0"), string("auto"));
+		AddCall(m_modList[0], funcName, funcName, "", bCall, bFork, string("0"), string("auto"));
 	}
 
 	return &pModule->AddEntry(funcName, entryInstr, reserve);

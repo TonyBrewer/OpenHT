@@ -1819,7 +1819,7 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 			CCxrIntf &cxrIntf = modInst.m_cxrIntfList[intfIdx];
 
 			if (cxrIntf.m_cxrDir == CxrIn) continue;
-			if (cxrIntf.m_pDstMod->m_modName.AsStr() == "hif") continue;
+			if (cxrIntf.m_pDstModInst->m_pMod->m_modName.AsStr() == "hif") continue;
 			if (cxrIntf.GetPortReplId() != 0) continue;
 
 			htComp.AddStructField(&g_bool, VA("m_%sCompRdy", cxrIntf.GetIntfName()), "", "", cxrIntf.GetPortReplDimen());
@@ -3170,7 +3170,7 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 			CCxrIntf &cxrIntf = modInst.m_cxrIntfList[intfIdx];
 
 			if (cxrIntf.m_cxrDir == CxrIn) continue;
-			if (cxrIntf.m_pDstMod->m_modName.AsStr() == "hif") continue;
+			if (cxrIntf.m_pDstModInst->m_pMod->m_modName.AsStr() == "hif") continue;
 
 			if (cxrIntf.GetPortReplId() == 0) {
 				m_gblRegDecl.Append("\tbool c_%s_%sCompRdy%s;\n", cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplDecl());
@@ -3238,7 +3238,7 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 			else
 				intfRdy = VA("r_t%d_%s_%sRdy%s", mod.m_gvIwCompStg, cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 
-			if (cxrIntf.m_pDstMod->m_modName.AsStr() == "hif") {
+			if (cxrIntf.m_pDstModInst->m_pMod->m_modName.AsStr() == "hif") {
 				gblPostInstr.Append("\t\tif (%s)\n", intfRdy.c_str());
 
 				if (mod.m_threads.m_htIdW.AsInt() > 0)
@@ -3346,7 +3346,7 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 			CCxrIntf &cxrIntf = modInst.m_cxrIntfList[intfIdx];
 
 			if (cxrIntf.m_cxrDir == CxrIn) continue;
-			if (cxrIntf.m_pDstMod->m_modName.AsStr() == "hif") continue;
+			if (cxrIntf.m_pDstModInst->m_pMod->m_modName.AsStr() == "hif") continue;
 
 			gblPostInstr.Append("\tc_%s_%sCompRdy%s = false;\n",
 				cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
@@ -3369,7 +3369,7 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 			CCxrIntf &cxrIntf = modInst.m_cxrIntfList[intfIdx];
 
 			if (cxrIntf.m_cxrDir == CxrIn) continue;
-			if (cxrIntf.m_pDstMod->m_modName.AsStr() == "hif") continue;
+			if (cxrIntf.m_pDstModInst->m_pMod->m_modName.AsStr() == "hif") continue;
 
 			if (cxrIntf.m_cxrType == CxrCall) {
 				gblPostInstr.Append("\t\tif (r_%shtCompQueFront.m_%sCompRdy%s)\n",

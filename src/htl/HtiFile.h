@@ -87,8 +87,8 @@ public:
 	};
 
 	struct CModInstParams {
-		CModInstParams(string unitName, string modPath, vector<int> &memPortList, int instId, int replCnt)
-			: m_unitName(unitName), m_modPath(modPath), m_memPortList(memPortList), m_instId(instId),
+		CModInstParams(string unitName, string modPath, vector<int> &memPortList, string const &modInstName, int replCnt)
+			: m_unitName(unitName), m_modPath(modPath), m_memPortList(memPortList), m_modInstName(modInstName),
 			m_replCnt(replCnt), m_lineInfo(CPreProcess::m_lineInfo)
 		{
 			m_wasUsed = false;
@@ -97,7 +97,7 @@ public:
 		string m_unitName;
 		string m_modPath;
 		vector<int> m_memPortList;
-		int m_instId;
+		string m_modInstName;
 		int m_replCnt;
 		bool m_wasUsed;
 		CLineInfo m_lineInfo;
@@ -148,7 +148,7 @@ private:
 	// routines to load an hti file
 	void AddUnitInst(int ae, int au, string name) {}
 	void AddUnitParams(string unit, string entry, string memPortCnt) {}
-	void AddModInstParams(string unit, string modPath, vector<int> &memPort, string modInst, string replCnt);
+	void AddModInstParams(string unit, string modPath, vector<int> &memPort, string modInstName, string replCnt);
 	void AddMsgIntfConn(string &outUnit, string &outPath, string &inUnit, string &inPath, bool aeNext, bool aePrev);
 
 	void SkipTo(EToken skipTk);

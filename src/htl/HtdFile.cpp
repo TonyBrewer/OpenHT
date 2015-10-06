@@ -707,6 +707,7 @@ void HtdFile::ParseDsnInfoMethods()
 			m_pOpenMod = m_pDsn->m_modList.insert(name);
 			m_pOpenMod->m_pModule = m_pDsnInfo->AddModule(name, clkRate);
 			m_pParseMethod = &HtdFile::ParseModuleMethods;
+			m_pDsn->m_modInstParamList.clear();
 
 			AddThreads(m_pOpenMod->m_pModule, htIdW, reset, bPause);
 		}
@@ -729,7 +730,30 @@ void HtdFile::ParseDsnInfoMethods()
 
 void HtdFile::ParseModuleMethods()
 {
-	if (m_pLex->GetTkString() == "AddReadMem") {
+	if (m_pLex->GetTkString() == "AddInstParam") {
+
+		string name;
+		string default;
+
+		CParamList params[] = {
+			{ "name", &name, true, ePrmParamStr, 0, 0 },
+			{ "default", &default, false, ePrmParamStr, 0, 0 },
+			{ 0, 0, 0, ePrmUnknown, 0, 0 }
+		};
+
+		if (!ParseParameters(params))
+			CPreProcess::ParseMsg(Error, "expected <module>.AddInstParam( name=<name>, default=<value> )");
+
+		if (m_pDsn->m_modInstParamList.isInList(name))
+			CPreProcess::ParseMsg(Error, "duplicate instParam name '%s'", name.c_str());
+		else {
+			m_pDsn->m_modInstParamList.insert(name);
+			m_pDsnInfo->AddModInstParam(m_pOpenMod->m_pModule, name, default);
+		}
+
+		m_pLex->GetNextTk();
+
+	} else if (m_pLex->GetTkString() == "AddReadMem") {
 
 		string queueW;
 		string rspGrpId;
@@ -823,23 +847,31 @@ void HtdFile::ParseModuleMethods()
 
 	} else if (m_pLex->GetTkString() == "AddCall") {
 
-		string func;
+		string modEntry;
+		string modInst;
+		string callName;
 		string call;
 		string fork = "false";
 		string queueW = "5";
 		string dest = "auto";
 
 		CParamList params[] = {
-				{ "func", &func, true, ePrmIdent, 0, 0 },
-				{ "call", &call, false, ePrmIdent, 0, 0 },
-				{ "fork", &fork, false, ePrmIdent, 0, 0 },
-				{ "queueW", &queueW, false, ePrmInteger, 0, 0 },
-				{ "dest", &dest, false, ePrmIdent, 0, 0 },
-				{ 0, 0, 0, ePrmUnknown, 0, 0 }
+			{ "func", &modEntry, false, ePrmIdent, 0, 0, 1 },
+			{ "modEntry", &modEntry, true, ePrmIdent, 0, 0 },
+			{ "modInst", &modInst, false, ePrmIdent, 0, 0 },
+			{ "callName", &callName, false, ePrmIdent, 0, 0 },
+			{ "call", &call, false, ePrmIdent, 0, 0 },
+			{ "fork", &fork, false, ePrmIdent, 0, 0 },
+			{ "queueW", &queueW, false, ePrmInteger, 0, 0 },
+			{ "dest", &dest, false, ePrmIdent, 0, 0 },
+			{ 0, 0, 0, ePrmUnknown, 0, 0 }
 		};
 
 		if (!ParseParameters(params))
-			CPreProcess::ParseMsg(Error, "expected <module>.AddCall( func {, call=true} {, fork=false} {, queueW=5 } {, dest=auto } )");
+			CPreProcess::ParseMsg(Error, "expected <module>.AddCall( func {, callName=<name>} {, modInst=<name>} {, call=true} {, fork=false} {, queueW=5 } {, dest=auto } )");
+
+		if (callName.size() == 0)
+			callName = modEntry;
 
 		bool bFork = fork != "false";
 
@@ -860,34 +892,44 @@ void HtdFile::ParseModuleMethods()
 		if (dest != "auto" && dest != "user")
 			CPreProcess::ParseMsg(Error, "unsupported parameter value for dest");
 
-		if (m_pOpenMod->m_callList.isInList(func))
-			CPreProcess::ParseMsg(Error, "duplicate call/transfer function name '%s'", func.c_str());
+		if (m_pOpenMod->m_callList.isInList(callName))
+			CPreProcess::ParseMsg(Error, "duplicate call name '%s'", modEntry.c_str());
 		else {
-			m_pOpenMod->m_callList.insert(func);
-			AddCall(m_pOpenMod->m_pModule, func, bCall, bFork, queueW, dest);
+			m_pOpenMod->m_callList.insert(callName);
+			m_pOpenCall = m_pDsnInfo->AddCall(m_pOpenMod->m_pModule, modEntry, callName, modInst, bCall, bFork, queueW, dest);
+			m_pDsn->m_callInstParamList.clear();
 		}
 
+		m_pParseMethod = &HtdFile::ParseCallMethods;
 		m_pLex->GetNextTk();
 
 	} else if (m_pLex->GetTkString() == "AddTransfer") {
 
-		string func;
+		string modEntry;
+		string modInst;
+		string callName;
 		string queueW = "5";
 
 		CParamList params[] = {
-				{ "func", &func, true, ePrmIdent, 0, 0 },
-				{ "queueW", &queueW, false, ePrmInteger, 0, 0 },
-				{ 0, 0, 0, ePrmUnknown, 0, 0 }
+			{ "func", &modEntry, false, ePrmIdent, 0, 0, 1 },
+			{ "modEntry", &modEntry, true, ePrmIdent, 0, 0 },
+			{ "modInst", &modInst, false, ePrmIdent, 0, 0 },
+			{ "xferName", &callName, false, ePrmIdent, 0, 0 },
+			{ "queueW", &queueW, false, ePrmInteger, 0, 0 },
+			{ 0, 0, 0, ePrmUnknown, 0, 0 }
 		};
 
 		if (!ParseParameters(params))
-			CPreProcess::ParseMsg(Error, "expected <module>.AddTransfer( func {, queueW=5 } )");
+			CPreProcess::ParseMsg(Error, "expected <module>.AddTransfer( func {, xferName=<name>} {, modInst=<name>} {, queueW=5 } )");
 
-		if (m_pOpenMod->m_callList.isInList(func))
-			CPreProcess::ParseMsg(Error, "duplicate call/transfer function name '%s'", func.c_str());
+		if (callName.size() == 0)
+			callName = modEntry;
+
+		if (m_pOpenMod->m_callList.isInList(callName))
+			CPreProcess::ParseMsg(Error, "duplicate call name '%s'", modEntry.c_str());
 		else {
-			m_pOpenMod->m_callList.insert(func);
-			AddXfer(m_pOpenMod->m_pModule, func, queueW);
+			m_pOpenMod->m_callList.insert(callName);
+			m_pDsnInfo->AddXfer(m_pOpenMod->m_pModule, modEntry, callName, modInst, queueW);
 		}
 
 		m_pLex->GetNextTk();
@@ -1641,6 +1683,35 @@ void HtdFile::ParseReturnMethods()
 		CPreProcess::ParseMsg(Error, "Expected an AddReturn method");
 }
 
+void HtdFile::ParseCallMethods()
+{
+	if (m_pLex->GetTkString() == "AddInstParam") {
+
+		string name;
+		string value;
+
+		CParamList params[] = {
+			{ "name", &name, true, ePrmParamStr, 0, 0 },
+			{ "value", &value, true, ePrmParamStr, 0, 0 },
+			{ 0, 0, 0, ePrmUnknown, 0, 0 }
+		};
+
+		if (!ParseParameters(params))
+			CPreProcess::ParseMsg(Error, "expected AddCall(...).AddInstParam( name=<name>, value=<value> )");
+
+		if (m_pDsn->m_callInstParamList.isInList(name))
+			CPreProcess::ParseMsg(Error, "duplicate instParam name '%s'", name.c_str());
+		else {
+			m_pDsn->m_callInstParamList.insert(name);
+			m_pDsnInfo->AddCallInstParam(m_pOpenCall, name, value);
+		}
+
+		m_pLex->GetNextTk();
+
+	} else
+		CPreProcess::ParseMsg(Error, "Expected an AddCall method");
+}
+
 void HtdFile::ParseGlobalMethods()
 {
 	if (m_pLex->GetTkString() == "AddVar") {
@@ -2100,13 +2171,15 @@ bool HtdFile::ParseParameters(CParamList *params)
 			break;
 		}
 
-		if (params[i].m_bPresent) {
+		int dupIdx = params[i].m_dupIdx > 0 ? params[i].m_dupIdx : i;
+
+		if (params[dupIdx].m_bPresent) {
 			bError = true;
 			CPreProcess::ParseMsg(Error, "duplicate parameters '%s'", m_pLex->GetTkString().c_str());
 			break;
 		}
 
-		params[i].m_bPresent = true;
+		params[dupIdx].m_bPresent = true;
 
 		if (m_pLex->GetNextTk() != eTkEqual) {
 			bError = true;
@@ -2332,6 +2405,8 @@ bool HtdFile::ParseParameters(CParamList *params)
 
 	if (!bError) {
 		for (int i = 0; params[i].m_pName; i += 1) {
+			if (params[i].m_dupIdx > 0) continue;
+
 			if (params[i].m_bDeprecated && params[i].m_bPresent) {
 				CPreProcess::ParseMsg(Warning, "use of deprecated parameter name '%s'",
 					params[i].m_pName);

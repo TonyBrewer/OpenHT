@@ -761,11 +761,19 @@ struct CModIdx {
 	string		m_modPath;
 };
 
+struct CCallInstParam {
+	CCallInstParam(string const &name, string const &value) : m_name(name), m_value(value), m_lineInfo(CPreProcess::m_lineInfo) {}
+
+	string m_name;
+	string m_value;
+	CLineInfo m_lineInfo;
+};
+
 // Call/Transfer/Return interface info
 struct CCxrCall {
 	// Constructor used for AddCall
-	CCxrCall(string &funcName, bool bCall, bool bFork, string &queueW, string &dest, bool bXfer)
-		: m_funcName(funcName), m_bCall(bCall), m_bFork(bFork), m_queueW(queueW), m_dest(dest), m_bXfer(bXfer)
+	CCxrCall(string const &modEntry, string const &callName, string const &instName, bool bCall, bool bFork, string const &queueW, string const &dest, bool bXfer)
+		: m_modEntry(modEntry), m_callName(callName), m_instName(instName), m_bCall(bCall), m_bFork(bFork), m_queueW(queueW), m_dest(dest), m_bXfer(bXfer)
 	{
 
 		m_lineInfo = CPreProcess::m_lineInfo;
@@ -773,8 +781,14 @@ struct CCxrCall {
 		m_bXferFork = false;
 	}
 
+	void AddInstParam(string const &name, string const &value) {
+		m_instParamList.push_back(CCallInstParam(name, value));
+	}
+
 public:
-	CHtString		m_funcName;		// for Xfer and Call - name of target function
+	CHtString		m_modEntry;		// for Xfer and Call - name of target function
+	CHtString		m_callName;
+	string			m_instName;
 	bool			m_bCall;		// bCall and bFork can both be set
 	bool			m_bFork;
 	CHtString		m_queueW;
@@ -790,6 +804,8 @@ public:
 
 	bool			m_bCallFork;
 	bool			m_bXferFork;
+
+	vector<CCallInstParam> m_instParamList;
 
 	CLineInfo		m_lineInfo;
 };
@@ -810,8 +826,8 @@ struct CCxrCallList {
 };
 
 struct CCxrEntry {
-	CCxrEntry(string &funcName, string &entryInstr, string &reserve)
-		: m_funcName(funcName), m_entryInstr(entryInstr), m_reserveCnt(reserve)
+	CCxrEntry(string &modEntry, string &entryInstr, string &reserve)
+		: m_modEntry(modEntry), m_entryInstr(entryInstr), m_reserveCnt(reserve)
 	{
 
 		m_lineInfo = CPreProcess::m_lineInfo;
@@ -825,7 +841,7 @@ struct CCxrEntry {
 		return *this;
 	}
 
-	CHtString	m_funcName;
+	CHtString	m_modEntry;
 	string		m_entryInstr;
 	CHtString	m_reserveCnt;
 
@@ -842,7 +858,7 @@ struct CCxrEntry {
 };
 
 struct CCxrReturn {
-	CCxrReturn(string &func) : m_funcName(func)
+	CCxrReturn(string const &modEntry) : m_modEntry(modEntry)
 	{
 
 		m_lineInfo = CPreProcess::m_lineInfo;
@@ -855,14 +871,14 @@ struct CCxrReturn {
 		return *this;
 	}
 
-	CHtString		m_funcName;
+	CHtString		m_modEntry;
 
 	CCxrCallList	m_pairedCallList;
 
 	CThreads *		m_pGroup;
 	vector<CField *>	m_paramList;
 
-	bool m_bRtnJoin;
+	bool			m_bRtnJoin;
 
 	CLineInfo		m_lineInfo;
 };
@@ -1480,39 +1496,42 @@ struct CModMemPort {
 };
 
 struct CInstanceParams {
-	CInstanceParams(int instId, vector<int> &memPortList, int freq) : m_instId(instId), m_memPortList(memPortList)
+	CInstanceParams(string const &modInstName, vector<int> &memPortList, int freq) : m_modInstName(modInstName), m_memPortList(memPortList)
 	{
 		m_lineInfo = CPreProcess::m_lineInfo;
 	}
 
 	CInstanceParams()
 	{
-		m_instId = -1;
 		m_replCnt = -1;
 	}
 
-	int m_instId;
+	string m_modInstName;
 	vector<int> m_memPortList;
 	int m_replCnt;
 
 	CLineInfo m_lineInfo;
 };
 
+struct CCxrInstRtn {
+	vector<CModInst *> m_cxrEntryList;
+};
+
 // Instance info for a module
 struct CModInst {
 	CModInst() {}
-	CModInst(CModule *pMod, string & modPath, CInstanceParams &modInstParams, int cxrSrcCnt, int replCnt = 1, int replId = 0)
-		: m_pMod(pMod), m_instParams(modInstParams), m_cxrSrcCnt(cxrSrcCnt), m_replCnt(replCnt), m_replId(replId)
-	{
-		m_modPaths.push_back(modPath);
-	}
+	CModInst(CModule *pMod, string const & instName, string const & modPath, CInstanceParams &modInstParams, int cxrSrcCnt, size_t csrRtnCnt, int replCnt = 1, int replId = 0);
 
 	CModule *			m_pMod;
 	CInstanceParams		m_instParams;
-	CHtString			m_instName;		// Instance name
+	CHtString			m_instName;
+	CHtString			m_fileName;
 	vector<string>		m_modPaths;		// module instance path name if specified in instance file
+	vector<CCallInstParam>	m_callInstParamList;
+	vector<CCxrInstRtn>	m_cxrInstRtnList;
 	int					m_cxrSrcCnt;
 	vector<CCxrIntf>	m_cxrIntfList;	// List of interfaces for instance
+	CHtString			m_replInstName;		// module replicated instance name
 	int					m_replCnt;
 	int					m_replId;
 };
@@ -1528,13 +1547,21 @@ struct CStage : CRecord {
 	bool		m_bStageNums;
 };
 
+struct CModuleInstParam {
+	CModuleInstParam(string const &name, string const &default) : m_name(name), m_default(default), m_lineInfo(CPreProcess::m_lineInfo) {}
+
+	string m_name;
+	string m_default;
+	CLineInfo m_lineInfo;
+};
+
 struct CModule {
 	CModule(string modName, HtdFile::EClkRate clkRate, bool bIsUsed)
 	{
 		m_modName = modName;
 		m_clkRate = clkRate;
 
-		m_instName = "inst";
+		m_replInstName = "inst";
 
 		m_bHasThreads = false;
 		m_bRtnJoin = false;
@@ -1623,13 +1650,17 @@ struct CModule {
 		return &m_threads.m_htPriv;
 	}
 
+	void AddInstParam(string const &name, string const &default) {
+		m_instParamList.push_back(CModuleInstParam(name, default));
+	}
+
 public:
 	CHtString		m_modName;
 
 	string			m_smTidName;
 	string			m_smStateName;
 
-	string			m_instName;
+	string			m_replInstName;
 
 	int				m_instrW;
 
@@ -1651,7 +1682,6 @@ public:
 	bool			m_bCallFork;
 	bool			m_bXferFork;
 	bool			m_bHtIdInit;
-	int				m_instIdCnt;
 	int				m_maxRtnReplCnt; // maximum replication count for destination of return links
 	size_t			m_rsmSrcCnt;
 
@@ -1668,6 +1698,7 @@ public:
 	bool				m_bGvIwComp;
 	int					m_gvIwCompStg;
 
+	int					m_nonReplInstCnt;
 	vector<CModInst>	m_modInstList;		// module instance list
 	vector<CCxrCall>	m_cxrCallList;
 	vector<CCxrEntry *>	m_cxrEntryList;
@@ -1686,6 +1717,7 @@ public:
 	vector<CStream *>	m_streamList;
 	vector<CModMemPort *> m_memPortList;
 	vector<CStencilBuffer *> m_stencilBufferList;
+	vector<CModuleInstParam> m_instParamList;
 
 	CStage				m_stage;
 	CRecord				m_global;
@@ -1896,7 +1928,7 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 		if (g_appArgs.GetEntryName().size() > 0) {
 			bool bCall = true;
 			bool bFork = false;
-			AddCall(pHifMod, g_appArgs.GetEntryName(), bCall, bFork, string("0"), string("auto"));
+			AddCall(pHifMod, g_appArgs.GetEntryName(), g_appArgs.GetEntryName(), "", bCall, bFork, string("0"), string("auto"));
 		}
 
 		if (g_appArgs.GetIqModName().size() > 0)
@@ -1917,7 +1949,6 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 		m_defineTable.Insert(name, paramList, value, true, false, string("auto"));
 
 		m_htModId = 0;
-		m_maxInstId = 0;
 		m_maxReplCnt = 0;
 	}
 
@@ -1931,10 +1962,11 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 	CModule * AddModule(string name, EClkRate clkRate);
 	CRecord * AddStruct(string name, bool bCStyle, bool bUnion, EScope scope, bool bInclude = false, string modName = "");
 
+	void AddModInstParam(CModule *pModule, string const &name, string const &default);
 	CMifRd * AddReadMem(CModule * pModule, string queueW, string rspGrpId, string rspGrpW, string rspCntW, bool maxBw, bool bPause, bool bPoll, bool bMultiRd = false);
 	CMifWr * AddWriteMem(CModule * pModule, string queueW, string rspGrpId, string rspGrpW, string rspCntW, bool maxBw, bool bPause, bool bPoll, bool bReqPause, bool bMultiWr = false);
-	void AddCall(void * pModule, string funcName, bool bCall, bool bFork, string queueW, string dest);
-	void AddXfer(void * pModule, string funcName, string queueW);
+	CCxrCall * AddCall(void * pModule, string const &modEntry, string const &xferName, string const &modInst, bool bCall, bool bFork, string const &queueW, string const &dest);
+	CCxrCall * AddXfer(void * pModule, string const &modEntry, string const &xferName, string const &modInst, string const &queueW);
 	CCxrEntry * AddEntry(CModule * pModule, string funcName, string entryInstr, string reserve, bool &bHost);
 	CCxrReturn * AddReturn(void * pModule, string func);
 	CStage * AddStage(CModule * pModule, string privWrStg, string execStg);
@@ -1967,6 +1999,7 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 	void AddEntryParam(CCxrEntry * pEntry, string hostType, CType * pType, string paramName, bool bIsUsed) { pEntry->AddParam(hostType, pType, paramName, bIsUsed); }
 	void AddReturnParam(CCxrReturn * pReturn, string hostType, CType * pType, string paramName, bool bIsUsed) { pReturn->AddParam(hostType, pType, paramName, bIsUsed); }
 	void AddFunctionParam(CFunction * pFunction, string dir, CType * pType, string name) { pFunction->AddParam(dir, pType, name); }
+	void AddCallInstParam(CCxrCall * pCall, string const &name, string const &value) { pCall->AddInstParam(name, value); }
 
 	void * AddMsgDst(void * pOpenIhm, string var, string dataLsb, string addr1Lsb, string addr2Lsb,
 		string idx1Lsb, string idx2Lsb, string field, string fldIdx1Lsb, string fldIdx2Lsb, bool bReadOnly);
@@ -2064,6 +2097,7 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 
 	string GenIndexStr(bool bGen, char const * pFormat, int index);
 	void InitCxrIntfInfo();
+	bool IsCallDest(CModInst & srcModInst, CModInst & dstModInst);
 	bool AreModInstancesLinked(CModInst & srcModInst, CModInst & dstModInst);
 	void CheckRequiredEntryNames(vector<CModIdx> &callStk);
 	bool CheckTransferReturn(vector<CModIdx> &callStk);
@@ -2078,8 +2112,9 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 	void GenerateMifFiles(int mifId);
 	void GenerateNgvFiles();
 	void GenerateModuleFiles(CModule &modInfo);
+	void GenModInstInc(CModule &mod);
 	void GenStruct(FILE *incFp, string intfName, CRecord &ram, EGenStructMode mode = eGenStruct, bool bEmptyContructor = false);
-	void GenPersBanner(CHtFile &htFile, const char *unitName, const char *dsnName, bool is_h);
+	void GenPersBanner(CHtFile &htFile, const char *unitName, const char *dsnName, bool is_h, const char *incName=0);
 	void GenerateBanner(CHtFile &htFile, const char *fileName, bool is_h);
 	void GenIntfStruct(FILE *incFp, string intfName, vector<CField *> &fieldList, bool bCStyle, bool bInclude, bool bData64, bool bUnion);
 	void GenRamIntfStruct(FILE *incFp, string intfName, CRam &ram, EStructType type);
@@ -2213,8 +2248,6 @@ public:
 	bool		m_bBlockRamDoReg;
 	vector<CBramTarget> m_bramTargetList;
 
-	vector<int>	m_instIdList;
-	int			m_maxInstId;
 	int			m_maxReplCnt;
 
 	vector<CInstanceInfo>	m_instanceInfoList;
@@ -2237,7 +2270,7 @@ public:
 	void GenModTDSUStatements(CModule &mod); // typedef/define/struct/union
 	void GenModMsgStatements(CModule &mod);
 	void GenModBarStatements(CModule &mod);
-	void GenModIplStatements(CModule &mod, int modInstIdx);
+	void GenModIplStatements(CModInst &modInst);
 	void GenModIhmStatements(CModule &mod);
 	void GenModOhmStatements(CModule &mod);
 	void GenModCxrStatements(CModule &mod, int modInstIdx);
@@ -2260,8 +2293,8 @@ public:
 
 	void SetMsgIntfConnUsedFlags(bool bInBound, CMsgIntfConn * pConn, CModule &mod, CMsgIntf * pMsgIntf);
 
-	void WritePersCppFile(CModule &mod, int modInstIdx, bool bNeedClk2x);
-	void WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x);
+	void WritePersCppFile(CModInst & modInst, bool bNeedClk2x);
+	void WritePersIncFile(CModInst & modInst, bool bNeedClk2x);
 	//void GenStruct(string intfName, CRecord &ram, EGenStructMode mode, bool bEmptyContructor);
 	void GenRamIntfStruct(CHtCode &code, char const * pTabs, string intfName, CRam &ram, EStructType type);
 	void GenRamWrEn(CHtCode &code, char const * pTabs, string intfName, CRecord &ram);
@@ -2532,3 +2565,11 @@ struct CLoopInfo {
 	vector<bool> m_unrollList;
 	int m_preDimCnt;
 };
+
+inline CModInst::CModInst(CModule *pMod, string const & instName, string const & modPath, CInstanceParams &modInstParams, int cxrSrcCnt, size_t cxrRtnCnt, int replCnt, int replId)
+	: m_pMod(pMod), m_instParams(modInstParams), m_cxrSrcCnt(cxrSrcCnt), m_replCnt(replCnt), m_replId(replId)
+{
+	m_modPaths.push_back(modPath);
+	m_instName = instName.size() == 0 ? pMod->m_modName : CHtString(instName);
+	m_cxrInstRtnList.resize(cxrRtnCnt);
+}

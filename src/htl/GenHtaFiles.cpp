@@ -31,12 +31,13 @@ void CDsnInfo::GenerateHtaFiles()
 		if (!modInst.m_pMod->m_bHasThreads || modInst.m_pMod->m_bHostIntf)
 			continue;
 
-		if (modInst.m_replCnt <= 1)
+		if (modInst.m_replCnt <= 1) {
 			fprintf(incFile, "\tsc_in<CHtAssertIntf> i_%sToHta_assert;\n",
-			modInst.m_pMod->m_modName.Lc().c_str());
-		else if (modInst.m_replId == 0)
+				modInst.m_instName.Lc().c_str());
+		} else if (modInst.m_replId == 0) {
 			fprintf(incFile, "\tsc_in<CHtAssertIntf> i_%sToHta_assert[%d];\n",
-			modInst.m_pMod->m_modName.Lc().c_str(), modInst.m_replCnt);
+				modInst.m_instName.Lc().c_str(), modInst.m_replCnt);
+		}
 	}
 
 	fprintf(incFile, "\tsc_out<CHtAssertIntf> o_htaToHif_assert;\n");
@@ -53,12 +54,14 @@ void CDsnInfo::GenerateHtaFiles()
 		if (!modInst.m_pMod->m_bHasThreads || modInst.m_pMod->m_bHostIntf)
 			continue;
 
-		if (modInst.m_replCnt <= 1)
+		if (modInst.m_replCnt <= 1) {
 			fprintf(incFile, "\tCHtAssertIntf r_%sToHta_assert;\n",
-			modInst.m_pMod->m_modName.Lc().c_str());
-		else if (modInst.m_replId == 0)
+				modInst.m_instName.Lc().c_str());
+		} else if (modInst.m_replId == 0) {
 			fprintf(incFile, "\tCHtAssertIntf r_%sToHta_assert[%d];\n",
-			modInst.m_pMod->m_modName.Lc().c_str(), modInst.m_replCnt);
+				modInst.m_instName.Lc().c_str(),
+				modInst.m_replCnt);
+		}
 	}
 
 	fprintf(incFile, "\tCHtAssertIntf r_htaToHif_assert;\n");
@@ -112,7 +115,7 @@ void CDsnInfo::GenerateHtaFiles()
 		string replIdxStr = modInst.m_replCnt <= 1 ? "" : VA("[%d]", modInst.m_replId);
 
 		fprintf(cppFile, "\tif (r_%sToHta_assert%s.m_bAssert) c_htaToHif_assert.m_module |= 0x%x;\n",
-			modInst.m_pMod->m_modName.Lc().c_str(), replIdxStr.c_str(), moduleIdx++);
+			modInst.m_instName.Lc().c_str(), replIdxStr.c_str(), moduleIdx++);
 	}
 	fprintf(cppFile, "\n");
 	int moduleCnt = moduleIdx;
@@ -129,7 +132,7 @@ void CDsnInfo::GenerateHtaFiles()
 		string replIdxStr = modInst.m_replCnt <= 1 ? "" : VA("[%d]", modInst.m_replId);
 
 		fprintf(cppFile, "\tc_htaToHif_assert.m_info |= r_%sToHta_assert%s.m_info;\n",
-			modInst.m_pMod->m_modName.Lc().c_str(), replIdxStr.c_str());
+			modInst.m_instName.Lc().c_str(), replIdxStr.c_str());
 	}
 	fprintf(cppFile, "\n");
 
@@ -145,7 +148,7 @@ void CDsnInfo::GenerateHtaFiles()
 		string replIdxStr = modInst.m_replCnt <= 1 ? "" : VA("[%d]", modInst.m_replId);
 
 		fprintf(cppFile, "\tc_htaToHif_assert.m_lineNum |= r_%sToHta_assert%s.m_lineNum;\n",
-			modInst.m_pMod->m_modName.Lc().c_str(), replIdxStr.c_str());
+			modInst.m_instName.Lc().c_str(), replIdxStr.c_str());
 	}
 	fprintf(cppFile, "\n");
 
@@ -169,21 +172,21 @@ void CDsnInfo::GenerateHtaFiles()
 			string replIdx2Str = modInst2.m_replCnt <= 1 ? "" : VA("[%d]", modInst2.m_replId);
 
 			fprintf(cppFile, "\tbool c_bAssert_1_%d = r_%sToHta_assert%s.m_bAssert || r_%sToHta_assert%s.m_bAssert;\n",
-				modIdx / 2, modInst.m_pMod->m_modName.Lc().c_str(), replIdxStr.c_str(),
-				modInst2.m_pMod->m_modName.Lc().c_str(), replIdx2Str.c_str());
+				modIdx / 2, modInst.m_instName.Lc().c_str(), replIdxStr.c_str(),
+				modInst2.m_instName.Lc().c_str(), replIdx2Str.c_str());
 			fprintf(cppFile, "\tbool c_bCollision_1_%d = r_%sToHta_assert%s.m_bAssert && r_%sToHta_assert%s.m_bAssert;\n",
-				modIdx / 2, modInst.m_pMod->m_modName.Lc().c_str(), replIdxStr.c_str(),
-				modInst2.m_pMod->m_modName.Lc().c_str(), replIdx2Str.c_str());
+				modIdx / 2, modInst.m_instName.Lc().c_str(), replIdxStr.c_str(),
+				modInst2.m_instName.Lc().c_str(), replIdx2Str.c_str());
 			break;
 		}
 		if (instIdx == m_dsnInstList.size()) {
 			string replIdxStr = modInst.m_replCnt <= 1 ? "" : VA("[%d]", modInst.m_replId);
 
 			fprintf(cppFile, "\tbool c_bAssert_1_%d = r_%sToHta_assert%s.m_bAssert;\n",
-				modIdx / 2, modInst.m_pMod->m_modName.Lc().c_str(), replIdxStr.c_str());
+				modIdx / 2, modInst.m_instName.Lc().c_str(), replIdxStr.c_str());
 			if (moduleCnt > 1)
 				fprintf(cppFile, "\tbool c_bCollision_1_%d = r_%sToHta_assert%s.m_bAssert;\n",
-				modIdx / 2, modInst.m_pMod->m_modName.Lc().c_str(), replIdxStr.c_str());
+				modIdx / 2, modInst.m_instName.Lc().c_str(), replIdxStr.c_str());
 		}
 		modIdx += 2;
 	}
@@ -231,8 +234,8 @@ void CDsnInfo::GenerateHtaFiles()
 		string replIdxStr = modInst.m_replCnt <= 1 ? "" : VA("[%d]", modInst.m_replId);
 
 		fprintf(cppFile, "\tr_%sToHta_assert%s = i_%sToHta_assert%s;\n",
-			modInst.m_pMod->m_modName.Lc().c_str(), replIdxStr.c_str(),
-			modInst.m_pMod->m_modName.Lc().c_str(), replIdxStr.c_str());
+			modInst.m_instName.Lc().c_str(), replIdxStr.c_str(),
+			modInst.m_instName.Lc().c_str(), replIdxStr.c_str());
 	}
 
 	fprintf(cppFile, "\tr_htaToHif_assert = c_htaToHif_assert;\n");

@@ -96,7 +96,7 @@ void HtiFile::ParseHtiMethods()
 		string unit;
 		string modPath;
 		vector<int> memPort;
-		string instId;
+		string instName;
 		string replCnt;
 
 		CParamList params[] = {
@@ -104,21 +104,18 @@ void HtiFile::ParseHtiMethods()
 				{ "modPath", &modPath, true, ePrmIdent, 0, 0 },
 				{ "memPort", &memPort, false, ePrmIntList, 0, 0 },
 				{ "replCnt", &replCnt, false, ePrmInteger, 0, 0 },
-				{ "instId", &instId, false, ePrmInteger, 0, 0 },
+				{ "instName", &instName, false, ePrmIdent, 0, 0 },
 				{ 0, 0, 0, ePrmUnknown, 0, 0 }
 		};
 
 		if (!ParseParameters(params))
-			CPreProcess::ParseMsg(Error, "expected AddModInstParams( unit, modPath {, memPort } {, instId } )");
+			CPreProcess::ParseMsg(Error, "expected AddModInstParams( unit, modPath {, memPort } {, instName } )");
 
 		else {
 			if (modPath.size() > 0 && modPath[0] != '/')
 				modPath = "/" + modPath;
 
-			if (modPath.size() > 0 && modPath[modPath.size() - 1] == ']' && instId.size() > 0)
-				CPreProcess::ParseMsg(Error, "a replicated module instance can not specify an instId");
-
-			AddModInstParams(unit, modPath, memPort, instId, replCnt);
+			AddModInstParams(unit, modPath, memPort, instName, replCnt);
 		}
 
 	} else if (m_pLex->GetTkString() == "AddMsgIntfConn") {
@@ -370,27 +367,12 @@ bool HtiFile::ParseIntRange(vector<int> * pIntList)
 	return true;
 }
 
-void HtiFile::AddModInstParams(string unit, string modPath, vector<int> &memPortList, string modInst, string replCnt)
+void HtiFile::AddModInstParams(string unit, string modPath, vector<int> &memPortList, string modInstName, string replCnt)
 {
-	int modInstId = -1;
-	if (modInst.size() > 0) {
-		char * pEnd;
-		modInstId = strtol(modInst.c_str(), &pEnd, 10);
-
-		if (pEnd != modInst.c_str() + modInst.size())
-			CPreProcess::ParseMsg(Error, "expected an integer value for modInst parameter");
-	}
-
 	int replCntInt = 1;
 	if (replCnt.size() > 0) {
 		CHtString replStr = replCnt;
 		replStr.InitValue(CPreProcess::m_lineInfo, false, 1);
-
-		//char * pEnd;
-		//replCntInt = strtol(replCnt.c_str(), &pEnd, 10);
-
-		//if (pEnd != replCnt.c_str() + replCnt.size())
-		//	CPreProcess::ParseMsg(Error, "expected an integer value for replCnt parameter");
 
 		if (replStr.AsInt() < 1 || replStr.AsInt() > 8)
 			CPreProcess::ParseMsg(Error, "expected replCnt in range 1-8");
@@ -398,7 +380,7 @@ void HtiFile::AddModInstParams(string unit, string modPath, vector<int> &memPort
 		replCntInt = replStr.AsInt();
 	}
 
-	m_modInstParamsList.push_back(CModInstParams(unit, modPath, memPortList, modInstId, replCntInt));
+	m_modInstParamsList.push_back(CModInstParams(unit, modPath, memPortList, modInstName, replCntInt));
 }
 
 void HtiFile::AddMsgIntfConn(string &outUnit, string &outPath, string &inUnit, string &inPath, bool aeNext, bool aePrev)
@@ -561,21 +543,18 @@ void HtiFile::getModInstParams(string modPath, CInstanceParams & modInstParams)
 
 		if (modInstParams.m_replCnt < 0)
 			modInstParams.m_replCnt = instParams.m_replCnt;
-		else if (instParams.m_replCnt >= 0)
+		else if (instParams.m_replCnt >= 0) {
 			CPreProcess::ParseMsg(Error,
-			"Instance file specified replCnt for module path '%s' multiple times",
-			modPath.c_str());
-
-		modInstParams.m_instId = instParams.m_instId;
+				"Instance file specified replCnt for module path '%s' multiple times",
+				modPath.c_str());
+		}
+		modInstParams.m_modInstName = instParams.m_modInstName;
 
 		modInstParams.m_lineInfo = instParams.m_lineInfo;
 	}
 
 	if (modInstParams.m_replCnt < 0)
 		modInstParams.m_replCnt = 1;
-
-	if (modInstParams.m_instId < 0)
-		modInstParams.m_instId = 0;
 }
 
 void HtiFile::checkModInstParamsUsed()

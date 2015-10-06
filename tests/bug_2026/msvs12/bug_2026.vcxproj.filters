@@ -1,37 +1,37 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="ht_lib">
-      <UniqueIdentifier>{6d013078-f429-48f2-b458-1c12d8394714}</UniqueIdentifier>
+      <UniqueIdentifier>{3cdea189-9747-43a0-a1c8-ebe533b99aff}</UniqueIdentifier>
     </Filter>
     <Filter Include="ht">
-      <UniqueIdentifier>{1715371a-008c-406c-ab2c-66a4b8ebe48b}</UniqueIdentifier>
+      <UniqueIdentifier>{102912d9-ae34-4fc0-878b-502b66655682}</UniqueIdentifier>
     </Filter>
     <Filter Include="ht_lib\host">
-      <UniqueIdentifier>{8ebb0655-5b54-45cf-b48f-41a19bece7fa}</UniqueIdentifier>
+      <UniqueIdentifier>{75388343-c70b-4f61-99b4-f2b0b0fc5883}</UniqueIdentifier>
       <Extensions>h;cpp;c</Extensions>
     </Filter>
     <Filter Include="ht_lib\sysc">
-      <UniqueIdentifier>{35123315-f498-4a5d-9ca5-0d8e5b961b56}</UniqueIdentifier>
+      <UniqueIdentifier>{fc80825d-1585-48af-b6fb-0b966ce833e7}</UniqueIdentifier>
       <Extensions>h;cpp;c</Extensions>
     </Filter>
     <Filter Include="ht\verilog">
-      <UniqueIdentifier>{f25c4ae7-d86c-497e-953a-c0cbfe266a01}</UniqueIdentifier>
+      <UniqueIdentifier>{3ef262d3-7203-4f28-a3ac-53c47baa77df}</UniqueIdentifier>
     </Filter>
     <Filter Include="ht\sysc">
-      <UniqueIdentifier>{9a7c6b73-e0df-4030-ac28-b6fd58002b8c}</UniqueIdentifier>
+      <UniqueIdentifier>{f5507806-1d5c-4bc4-8454-4bc5150acfb0}</UniqueIdentifier>
       <Extensions>h;cpp;c</Extensions>
     </Filter>
     <Filter Include="src">
-      <UniqueIdentifier>{f8e75621-5f74-4330-9828-1cebe6c22494}</UniqueIdentifier>
+      <UniqueIdentifier>{82809ce9-5fa7-44f1-9dbb-432689ad5897}</UniqueIdentifier>
       <Extensions>h;cpp;c</Extensions>
     </Filter>
     <Filter Include="src_pers">
-      <UniqueIdentifier>{1d0e6733-bcf5-47c5-b320-34801fa65d91}</UniqueIdentifier>
+      <UniqueIdentifier>{b1026a54-6c6d-45af-a2e4-890767844e4b}</UniqueIdentifier>
       <Extensions>h;cpp;c</Extensions>
     </Filter>
     <Filter Include="src_model">
-      <UniqueIdentifier>{eb10dea8-5d9e-45c7-8570-07788f317994}</UniqueIdentifier>
+      <UniqueIdentifier>{9982b808-65f1-42da-a124-6900f430c146}</UniqueIdentifier>
       <Extensions>h;cpp;c</Extensions>
     </Filter>
   </ItemGroup>
@@ -200,14 +200,11 @@
     <ClCompile Include="$(HtToolsPath)\ht_lib\sysc\SyscMonLib.cpp">
       <Filter>ht_lib\sysc</Filter>
     </ClCompile>
-    <ClCompile Include="..\src_model\Model.cpp">
-      <Filter>src_model</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\Main.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <CustomBuild Include="..\src_pers\hello.htl">
+      <Filter>src_pers</Filter>
+    </CustomBuild>
     <CustomBuild Include="..\ht\sysc\PersAuTop.sc">
       <Filter>ht\sysc</Filter>
     </CustomBuild>
@@ -228,12 +225,6 @@
     </CustomBuild>
     <CustomBuild Include="..\ht\verilog\PersHello.v_">
       <Filter>ht\verilog</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\src_pers\hello.htl">
-      <Filter>src_pers</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\src_model\model.htl">
-      <Filter>src_model</Filter>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
@@ -298,9 +289,6 @@
     </None>
     <None Include="..\ht\verilog\PersMoStub.v">
       <Filter>ht\verilog</Filter>
-    </None>
-    <None Include="..\src_model\model.htd">
-      <Filter>src_model</Filter>
     </None>
   </ItemGroup>
 </Project>

@@ -13,21 +13,26 @@
 void
 CDsnInfo::GenerateModuleFiles(CModule &mod)
 {
-	int prevInstId = -1;
+	mod.m_nonReplInstCnt = 0;
 	for (size_t modInstIdx = 0; modInstIdx < mod.m_modInstList.size(); modInstIdx += 1) {
 		CModInst &modInst = mod.m_modInstList[modInstIdx];
 
-		if (modInst.m_instParams.m_instId == prevInstId)
-			continue;
+		if (modInst.m_replId > 0) continue;
 
-		prevInstId = modInst.m_instParams.m_instId;
+		mod.m_nonReplInstCnt += 1;
+	}
 
-		g_appArgs.GetDsnRpt().AddLevel("Pers%s\n", mod.m_modName.c_str());
+	for (size_t modInstIdx = 0; modInstIdx < mod.m_modInstList.size(); modInstIdx += 1) {
+		CModInst &modInst = mod.m_modInstList[modInstIdx];
+
+		if (modInst.m_replId > 0) continue;
+
+		g_appArgs.GetDsnRpt().AddLevel("Pers%s\n", modInst.m_instName.c_str());
 
 		// Generate statements seperate lists of statements for each module feature
 		GenPrimStateStatements(mod);
 		GenModTDSUStatements(mod);		// typedef/define/struct/union
-		GenModIplStatements(mod, modInstIdx);
+		GenModIplStatements(modInst);
 		GenModIhmStatements(mod);
 		GenModMsgStatements(mod);
 		GenModBarStatements(mod);
@@ -42,11 +47,64 @@ CDsnInfo::GenerateModuleFiles(CModule &mod)
 
 		bool bNeedClk2x = NeedClk2x();
 
-		WritePersCppFile(mod, modInstIdx, bNeedClk2x);
-		WritePersIncFile(mod, modInstIdx, bNeedClk2x);
+		if (mod.m_nonReplInstCnt > 1)
+			modInst.m_fileName = mod.m_modName == modInst.m_instName ? mod.m_modName.AsStr() + "_" : modInst.m_instName;
+		else
+			modInst.m_fileName = mod.m_modName;
+
+		WritePersCppFile(modInst, bNeedClk2x);
+		WritePersIncFile(modInst, bNeedClk2x);
 
 		g_appArgs.GetDsnRpt().EndLevel();
 	}
+
+	if (mod.m_nonReplInstCnt > 1)
+		GenModInstInc(mod);
+}
+
+void CDsnInfo::GenModInstInc(CModule &mod)
+{
+	// Generate .h file
+	string incFileName = g_appArgs.GetOutputFolder() + "/Pers" + mod.m_modName.Uc() + ".h";
+
+	CHtFile incFile(incFileName, "w");
+
+	GenPersBanner(incFile, "", mod.m_modName.Uc().c_str(), true);
+
+	for (size_t modInstIdx = 0; modInstIdx < mod.m_modInstList.size(); modInstIdx += 1) {
+		CModInst &modInst = mod.m_modInstList[modInstIdx];
+
+		if (modInst.m_replId > 0) continue;
+
+		if (modInstIdx == 0)
+			fprintf(incFile, "#if defined(PERS_%s)\n", modInst.m_instName.Upper().c_str());
+		else
+			fprintf(incFile, "#elif defined(PERS_%s)\n", modInst.m_instName.Upper().c_str());
+
+		fprintf(incFile, "\n");
+
+		for (size_t prmIdx = 0; prmIdx < modInst.m_callInstParamList.size(); prmIdx += 1) {
+			CCallInstParam & instParam = modInst.m_callInstParamList[prmIdx];
+
+			fprintf(incFile, "#define %s %s\n", instParam.m_name.c_str(), instParam.m_value.c_str());
+		}
+
+		if (modInst.m_callInstParamList.size() > 0)
+			fprintf(incFile, "\n");
+
+		if (modInst.m_instName != mod.m_modName)
+			fprintf(incFile, "#define CPers%s CPers%s\n", mod.m_modName.Uc().c_str(), modInst.m_instName.Uc().c_str());
+
+		fprintf(incFile, "#include \"Pers%s.h\"\n", modInst.m_fileName.Uc().c_str());
+
+		fprintf(incFile, "\n");
+	}
+
+	fprintf(incFile, "#else\n");
+	fprintf(incFile, "#error \"Fatal error in Pers%s.h\"\n", mod.m_modName.Uc().c_str());
+	fprintf(incFile, "#endif\n");
+
+	incFile.FileClose();
 }
 
 bool CDsnInfo::NeedClk2x()
@@ -61,33 +119,34 @@ bool CDsnInfo::NeedClk2x()
 }
 
 void
-CDsnInfo::WritePersCppFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
+CDsnInfo::WritePersCppFile(CModInst & modInst, bool bNeedClk2x)
 {
-	CModInst & modInst = mod.m_modInstList[modInstIdx];
+	CModule * pMod = modInst.m_pMod;
 
-	string instIdStr = GenIndexStr(mod.m_instIdCnt > 1, "%d", modInst.m_instParams.m_instId);
 	string unitNameUc = !g_appArgs.IsModuleUnitNamesEnabled() ? m_unitName.Uc() : "";
 
-	string cppFileName = g_appArgs.GetOutputFolder() + "/Pers" + unitNameUc + mod.m_modName.Uc() + instIdStr + ".cpp";
+	string cppFileName = g_appArgs.GetOutputFolder() + "/Pers" + unitNameUc + modInst.m_fileName.Uc() + ".cpp";
 
 	CHtFile cppFile(cppFileName, "w");
 
-	GenPersBanner(cppFile, unitNameUc.c_str(), (mod.m_modName.Uc() + instIdStr).c_str(), false);
+	GenPersBanner(cppFile, unitNameUc.c_str(), modInst.m_instName.Uc().c_str(), false, pMod->m_modName.Uc().c_str());
 
-	m_moduleFileList.push_back(VA("Pers%s_src.cpp", mod.m_modName.Uc().c_str()));
+	m_moduleFileList.push_back(VA("Pers%s_src.cpp", pMod->m_modName.Uc().c_str()));
 	m_moduleFileList.push_back(cppFileName);
 
-	fprintf(cppFile, "#ifdef _HTV\n");
 	fprintf(cppFile, "#define HT_MOD_ID 0x%x\n", m_htModId++);
-	fprintf(cppFile, "#include \"Pers%s%s_src.cpp\"\n", unitNameUc.c_str(), mod.m_modName.Uc().c_str());
+	fprintf(cppFile, "#include \"Pers%s%s_src.cpp\"\n", unitNameUc.c_str(), pMod->m_modName.Uc().c_str());
 	fprintf(cppFile, "#undef HT_MOD_ID\n");
-	if (g_appArgs.IsInstrTraceEnabled()) {
-		fprintf(cppFile, "#else\n");
-		fprintf(cppFile, "extern FILE *Ht::g_instrTraceFp;\n");
-	}
-	fprintf(cppFile, "#endif\n");
+	fprintf(cppFile, "\n");
 	fprintf(cppFile, "#define HT_MOD_ID 0x%x\n", m_htModId++);
 	fprintf(cppFile, "\n");
+
+	if (g_appArgs.IsInstrTraceEnabled()) {
+		fprintf(cppFile, "#ifndef _HTV\n");
+		fprintf(cppFile, "extern FILE *Ht::g_instrTraceFp;\n");
+		fprintf(cppFile, "#endif\n");
+		fprintf(cppFile, "\n");
+	}
 
 	// Write statement lists to module file in appropriate order
 	m_iplMacros.Write(cppFile);
@@ -102,15 +161,13 @@ CDsnInfo::WritePersCppFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 	m_strmFuncDef.Write(cppFile);
 	m_stBufFuncDef.Write(cppFile);
 
-	fprintf(cppFile, "void CPers%s%s%s::Pers%s%s_1x()\n",
-		unitNameUc.c_str(), mod.m_modName.Uc().c_str(),
-		instIdStr.c_str(),
-		unitNameUc.c_str(), mod.m_modName.Uc().c_str());
+	fprintf(cppFile, "void CPers%s%s::Pers%s%s_1x()\n",
+		unitNameUc.c_str(), modInst.m_instName.Uc().c_str(),
+		unitNameUc.c_str(), pMod->m_modName.Uc().c_str());
 	fprintf(cppFile, "{\n");
 
 	fprintf(cppFile, "\tc_aeId = i_aeId.read();\n");
 	fprintf(cppFile, "\tc_unitId = (uint8_t)(i_aeId.read() * HT_UNIT_CNT + i_aeUnitId.read());\n");
-	fprintf(cppFile, "\tc_instId = i_instId.read();\n");
 	fprintf(cppFile, "\tc_replId = i_replId.read();\n\n");
 
 	m_cxrT0Stage1x.Write(cppFile);
@@ -173,7 +230,7 @@ CDsnInfo::WritePersCppFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 	m_strmReg1x.Write(cppFile);
 	m_stBufReg1x.Write(cppFile);
 
-	if (mod.m_bHasThreads && mod.m_clkRate == eClk1x)
+	if (pMod->m_bHasThreads && pMod->m_clkRate == eClk1x)
 		fprintf(cppFile, "\tr_userReset = r_reset1x;\n\n");
 
 	fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset1x, \"no\");\n");
@@ -234,15 +291,14 @@ CDsnInfo::WritePersCppFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 
 	fprintf(cppFile, "}\n");
 
-	//HtlAssert(mod.m_bNeed2xClk == bNeed2xClk);
+	//HtlAssert(pMod->m_bNeed2xClk == bNeed2xClk);
 
 	if (bNeedClk2x) {
 
 		fprintf(cppFile, "\n");
-		fprintf(cppFile, "void CPers%s%s%s::Pers%s%s_2x()\n",
-			unitNameUc.c_str(), mod.m_modName.Uc().c_str(),
-			instIdStr.c_str(),
-			unitNameUc.c_str(), mod.m_modName.Uc().c_str());
+		fprintf(cppFile, "void CPers%s%s::Pers%s%s_2x()\n",
+			unitNameUc.c_str(), modInst.m_instName.Uc().c_str(),
+			unitNameUc.c_str(), pMod->m_modName.Uc().c_str());
 		fprintf(cppFile, "{\n");
 
 		m_cxrT0Stage2x.Write(cppFile);
@@ -305,7 +361,7 @@ CDsnInfo::WritePersCppFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 		m_strmReg2x.Write(cppFile);
 		m_stBufReg2x.Write(cppFile);
 
-		if (mod.m_bHasThreads && mod.m_clkRate == eClk2x)
+		if (pMod->m_bHasThreads && pMod->m_clkRate == eClk2x)
 			fprintf(cppFile, "\tr_userReset = c_reset2x;\n\n");
 
 		fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_phase, \"no\");\n");
@@ -341,13 +397,12 @@ CDsnInfo::WritePersCppFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 
 	if (!m_gblOutCont.Empty()) {
 
-		mod.m_bContAssign = true;
+		pMod->m_bContAssign = true;
 
 		fprintf(cppFile, "\n");
-		fprintf(cppFile, "void CPers%s%s%s::Pers%s%sCont()\n",
-			unitNameUc.c_str(), mod.m_modName.Uc().c_str(),
-			instIdStr.c_str(),
-			unitNameUc.c_str(), mod.m_modName.Uc().c_str());
+		fprintf(cppFile, "void CPers%s%s::Pers%s%sCont()\n",
+			unitNameUc.c_str(), modInst.m_instName.Uc().c_str(),
+			unitNameUc.c_str(), pMod->m_modName.Uc().c_str());
 		fprintf(cppFile, "{\n");
 
 		m_gblPreCont.Write(cppFile);
@@ -365,34 +420,32 @@ CDsnInfo::WritePersCppFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 }
 
 void
-CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
+CDsnInfo::WritePersIncFile(CModInst & modInst, bool bNeedClk2x)
 {
-	CModInst & modInst = mod.m_modInstList[modInstIdx];
+	CModule * pMod = modInst.m_pMod;
 
-	string vcdModName = VA("Pers%s", mod.m_modName.Uc().c_str());
+	string vcdModName = VA("Pers%s", modInst.m_instName.Uc().c_str());
 
-	string instIdStr = GenIndexStr(mod.m_instIdCnt > 1, "%d", modInst.m_instParams.m_instId);
 	string unitNameUc = !g_appArgs.IsModuleUnitNamesEnabled() ? m_unitName.Uc() : "";
 
 	// Generate .h file
-	string incFileName = g_appArgs.GetOutputFolder() + "/Pers" + unitNameUc + mod.m_modName.Uc() + instIdStr + ".h";
+	string incFileName = g_appArgs.GetOutputFolder() + "/Pers" + unitNameUc + modInst.m_fileName.Uc() + ".h";
 
 	CHtFile incFile(incFileName, "w");
 	CHtCode incCode(incFile);
 
-	GenPersBanner(incFile, unitNameUc.c_str(), mod.m_modName.Uc().c_str(), true);
+	GenPersBanner(incFile, unitNameUc.c_str(), modInst.m_instName.Uc().c_str(), true);
 
-	bool bStateMachine = mod.m_bHasThreads;
+	bool bStateMachine = pMod->m_bHasThreads;
 
 	if (bStateMachine) {
 		bool bFirstModVar = false;
 		GenModVar(eVcdUser, vcdModName, bFirstModVar, "bool const", "", "GR_htReset", "r_userReset");
 		GenModVar(eVcdUser, vcdModName, bFirstModVar, "uint8_t const", "", "SR_aeId", "c_aeId");
 		GenModVar(eVcdUser, vcdModName, bFirstModVar, "uint8_t const", "", "SR_unitId", "c_unitId");
-		GenModVar(eVcdUser, vcdModName, bFirstModVar, "uint8_t const", "", "SR_instId", "c_instId");
 		GenModVar(eVcdUser, vcdModName, bFirstModVar, "uint8_t const", "", "SR_replId", "c_replId");
 	}
-	if (!mod.m_bHtId)
+	if (!pMod->m_bHtId)
 		m_iplDefines.Append("#endif\n");
 	m_iplDefines.Append("#endif\n");
 	m_iplDefines.Append("\n");
@@ -418,18 +471,18 @@ CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 	m_iplDefines.Write(incFile);
 	m_gblDefines.Write(incFile);
 
-	fprintf(incFile, "SC_MODULE(CPers%s%s%s)\n", unitNameUc.c_str(), mod.m_modName.Uc().c_str(), instIdStr.c_str());
+	fprintf(incFile, "SC_MODULE(CPers%s%s)\n", unitNameUc.c_str(), modInst.m_instName.Uc().c_str());
 	fprintf(incFile, "{\n");
-	fprintf(incFile, "\tht_attrib(keep_hierarchy, CPers%s%s%s, \"true\");\n",
-		unitNameUc.c_str(), mod.m_modName.Uc().c_str(), instIdStr.c_str());
+	fprintf(incFile, "\tht_attrib(keep_hierarchy, CPers%s%s, \"true\");\n",
+		unitNameUc.c_str(), modInst.m_instName.Uc().c_str());
 	fprintf(incFile, "\n");
 	fprintf(incFile, "\t//////////////////////////////////\n");
-	fprintf(incFile, "\t// Module %s typedefs\n", mod.m_modName.c_str());
+	fprintf(incFile, "\t// Module %s typedefs\n", modInst.m_instName.c_str());
 
 	for (size_t i = 0; i < m_typedefList.size(); i += 1) {
 		//	must be a module and match current module
 		if (m_typedefList[i].m_scope.compare("module") != 0
-			|| m_typedefList[i].m_modName.compare(mod.m_modName.c_str()) != 0) {
+			|| m_typedefList[i].m_modName.compare(pMod->m_modName.c_str()) != 0) {
 			continue;
 		}
 
@@ -457,14 +510,14 @@ CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 	}
 	fprintf(incFile, "\n\n");
 	fprintf(incFile, "\t//////////////////////////////////\n");
-	fprintf(incFile, "\t// Module %s structs and unions\n", mod.m_modName.c_str());
+	fprintf(incFile, "\t// Module %s structs and unions\n", modInst.m_instName.c_str());
 	CHtCode fStructUnion;
 	for (size_t recordIdx = 0; recordIdx < m_recordList.size(); recordIdx += 1) {
 		if (m_recordList[recordIdx]->m_scope != eModule)
 			continue;	// module only
 		GenUserStructs(fStructUnion, m_recordList[recordIdx]);
 
-		string structName = VA("CPers%s::%s", mod.m_modName.Uc().c_str(), m_recordList[recordIdx]->m_typeName.c_str());
+		string structName = VA("CPers%s::%s", modInst.m_instName.Uc().c_str(), m_recordList[recordIdx]->m_typeName.c_str());
 
 		GenUserStructBadData(m_iplBadDecl, true, structName,
 			m_recordList[recordIdx]->m_fieldList, m_recordList[recordIdx]->m_bCStyle, "");
@@ -480,14 +533,13 @@ CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 
 	fprintf(incFile, "\tsc_in<uint8_t> i_aeId;\n");
 	fprintf(incFile, "\tsc_in<uint8_t> i_aeUnitId;\n");
-	fprintf(incFile, "\tsc_in<uint8_t> i_instId;\n");
 	fprintf(incFile, "\tsc_in<uint8_t> i_replId;\n");
 
 	fprintf(incFile, "\n");
 
-	if (mod.m_bHasThreads) {
+	if (pMod->m_bHasThreads) {
 		fprintf(incFile, "\t// HT assert interface\n");
-		fprintf(incFile, "\tsc_out<CHtAssertIntf> o_%sToHta_assert;\n", mod.m_modName.Lc().c_str());
+		fprintf(incFile, "\tsc_out<CHtAssertIntf> o_%sToHta_assert;\n", modInst.m_instName.Lc().c_str());
 		fprintf(incFile, "\n");
 	}
 
@@ -514,7 +566,6 @@ CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 
 	fprintf(incFile, "\tuint8_t ht_noload c_aeId;\n");
 	fprintf(incFile, "\tuint8_t ht_noload c_unitId;\n");
-	fprintf(incFile, "\tuint8_t ht_noload c_instId;\n");
 	fprintf(incFile, "\tuint8_t ht_noload c_replId;\n");
 	fprintf(incFile, "\n");
 
@@ -533,12 +584,12 @@ CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 	m_strmRegDecl.Write(incFile);
 	m_stBufRegDecl.Write(incFile);
 
-	if (mod.m_bHasThreads) {
-		if (mod.m_clkRate == eClk1x)
-			fprintf(incFile, "\tCHtAssertIntf r_%sToHta_assert;\n", mod.m_modName.Lc().c_str());
+	if (pMod->m_bHasThreads) {
+		if (pMod->m_clkRate == eClk1x)
+			fprintf(incFile, "\tCHtAssertIntf r_%sToHta_assert;\n", modInst.m_instName.Lc().c_str());
 		else {
-			fprintf(incFile, "\tsc_signal<CHtAssertIntf> r_%sToHta_assert;\n", mod.m_modName.Lc().c_str());
-			fprintf(incFile, "\tCHtAssertIntf r_%sToHta_assert_1x;\n", mod.m_modName.Lc().c_str());
+			fprintf(incFile, "\tsc_signal<CHtAssertIntf> r_%sToHta_assert;\n", modInst.m_instName.Lc().c_str());
+			fprintf(incFile, "\tCHtAssertIntf r_%sToHta_assert_1x;\n", modInst.m_instName.Lc().c_str());
 		}
 		fprintf(incFile, "\n");
 	}
@@ -571,16 +622,16 @@ CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 	fprintf(incFile, "\n");
 
 	fprintf(incFile, "\tvoid Pers%s%s();\n",
-		unitNameUc.c_str(), mod.m_modName.Uc().c_str());
+		unitNameUc.c_str(), pMod->m_modName.Uc().c_str());
 
 	fprintf(incFile, "\tvoid Pers%s%s_1x();\n",
-		unitNameUc.c_str(), mod.m_modName.Uc().c_str());
+		unitNameUc.c_str(), pMod->m_modName.Uc().c_str());
 	if (bNeedClk2x)
 		fprintf(incFile, "\tvoid Pers%s%s_2x();\n",
-		unitNameUc.c_str(), mod.m_modName.Uc().c_str());
-	if (mod.m_bContAssign)
+		unitNameUc.c_str(), pMod->m_modName.Uc().c_str());
+	if (pMod->m_bContAssign)
 		fprintf(incFile, "\tvoid Pers%s%sCont();\n",
-		unitNameUc.c_str(), mod.m_modName.Uc().c_str());
+		unitNameUc.c_str(), pMod->m_modName.Uc().c_str());
 	fprintf(incFile, "\n");
 
 	m_iplFuncDecl.Write(incFile);
@@ -594,18 +645,18 @@ CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 	m_strmFuncDecl.Write(incFile);
 	m_stBufFuncDecl.Write(incFile);
 
-	if (mod.m_htFuncList.size() > 0) {
-		for (size_t funcIdx = 0; funcIdx < mod.m_htFuncList.size(); funcIdx += 1) {
-			CFunc &func = mod.m_htFuncList[funcIdx];
+	if (pMod->m_htFuncList.size() > 0) {
+		for (size_t funcIdx = 0; funcIdx < pMod->m_htFuncList.size(); funcIdx += 1) {
+			CFunc &func = pMod->m_htFuncList[funcIdx];
 
 			fprintf(incFile, "\t%s %s;\n", func.m_rtnType.c_str(), func.m_funcName.c_str());
 		}
 		fprintf(incFile, "\n");
 	}
 
-	if (mod.m_funcList.size() > 0) {
-		for (size_t funcIdx = 0; funcIdx < mod.m_funcList.size(); funcIdx += 1) {
-			CFunction &func = mod.m_funcList[funcIdx];
+	if (pMod->m_funcList.size() > 0) {
+		for (size_t funcIdx = 0; funcIdx < pMod->m_funcList.size(); funcIdx += 1) {
+			CFunction &func = pMod->m_funcList[funcIdx];
 
 			fprintf(incFile, "\t%s %s(", func.m_pType->m_typeName.c_str(), func.m_name.c_str());
 
@@ -633,8 +684,8 @@ CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 	if (m_bRndInit) {
 		bool bFirst = true;
 
-		for (size_t shIdx = 0; shIdx < mod.m_shared.m_fieldList.size(); shIdx += 1) {
-			CField * pShared = mod.m_shared.m_fieldList[shIdx];
+		for (size_t shIdx = 0; shIdx < pMod->m_shared.m_fieldList.size(); shIdx += 1) {
+			CField * pShared = pMod->m_shared.m_fieldList[shIdx];
 
 			if (pShared->m_queueW.AsInt() > 0) continue;
 
@@ -643,7 +694,7 @@ CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 				bFirst = false;
 			}
 
-			if (pShared->m_reset == "false" || pShared->m_reset == "" && !mod.m_bResetShared) {
+			if (pShared->m_reset == "false" || pShared->m_reset == "" && !pMod->m_bResetShared) {
 				fprintf(incFile, "\tvoid RndInit_S_%s()\n", pShared->m_name.c_str());
 				fprintf(incFile, "\t{\n");
 			} else {
@@ -717,7 +768,7 @@ CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 					tabs += "\t";
 				}
 
-				bool bZero = !(pShared->m_reset == "false" || pShared->m_reset == "" && !mod.m_bResetShared);
+				bool bZero = !(pShared->m_reset == "false" || pShared->m_reset == "" && !pMod->m_bResetShared);
 				GenStructInit(incFile, tabs, VA("r__SHR__%s%s", pShared->m_name.c_str(), idxStr.c_str()), pShared, idxCnt, bZero);
 
 				for (size_t i = 0; i < pShared->m_dimenList.size(); i += 1) {
@@ -743,8 +794,8 @@ CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 	fprintf(incFile, "#\tendif\n");
 
 	fprintf(incFile, "\n");
-	fprintf(incFile, "\tSC_CTOR(CPers%s%s%s)\n",
-		unitNameUc.c_str(), mod.m_modName.Uc().c_str(), instIdStr.c_str());
+	fprintf(incFile, "\tSC_CTOR(CPers%s%s)\n",
+		unitNameUc.c_str(), modInst.m_instName.Uc().c_str());
 
 	fprintf(incFile, "#\t\tif !defined(_HTV)\n");
 
@@ -754,20 +805,20 @@ CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 	fprintf(incFile, "\t{\n");
 
 	fprintf(incFile, "\t\tSC_METHOD(Pers%s%s_1x);\n",
-		unitNameUc.c_str(), mod.m_modName.Uc().c_str());
+		unitNameUc.c_str(), pMod->m_modName.Uc().c_str());
 	fprintf(incFile, "\t\tsensitive << i_clock1x.pos();\n");
 
 	if (bNeedClk2x) {
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\t\tSC_METHOD(Pers%s%s_2x);\n",
-			unitNameUc.c_str(), mod.m_modName.Uc().c_str());
+			unitNameUc.c_str(), pMod->m_modName.Uc().c_str());
 		fprintf(incFile, "\t\tsensitive << i_clock2x.pos();\n");
 	}
 
-	if (mod.m_bContAssign) {
+	if (pMod->m_bContAssign) {
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\t\tSC_METHOD(Pers%s%sCont);\n",
-			unitNameUc.c_str(), mod.m_modName.Uc().c_str());
+			unitNameUc.c_str(), pMod->m_modName.Uc().c_str());
 		m_gblSenCont.Write(incFile);
 	}
 
@@ -777,8 +828,8 @@ CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 		if (bNeedClk2x)
 			fprintf(incFile, "\t\tc_reset2x = true;\n");
 		fprintf(incFile, "\t\tr_userReset = true;\n");
-		for (int stgIdx = mod.m_tsStg; stgIdx < mod.m_wrStg; stgIdx += 1) {
-			if (mod.m_bHasThreads)
+		for (int stgIdx = pMod->m_tsStg; stgIdx < pMod->m_wrStg; stgIdx += 1) {
+			if (pMod->m_bHasThreads)
 				fprintf(incFile, "\t\tr_t%d_htValid = false;\n", stgIdx);
 		}
 		m_iplCtorInit.Write(incFile);
@@ -793,18 +844,18 @@ CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 		fprintf(incFile, "#\t\tifndef _HTV\n");
 		fprintf(incFile, "\t\t// Random variable initialization (-ri)\n");
 
-		for (size_t shIdx = 0; shIdx < mod.m_shared.m_fieldList.size(); shIdx += 1) {
-			CField * pShared = mod.m_shared.m_fieldList[shIdx];
+		for (size_t shIdx = 0; shIdx < pMod->m_shared.m_fieldList.size(); shIdx += 1) {
+			CField * pShared = pMod->m_shared.m_fieldList[shIdx];
 
 			if (pShared->m_queueW.AsInt() > 0) continue;
 
-			bool bZero = !(pShared->m_reset == "false" || pShared->m_reset == "" && !mod.m_bResetShared);
+			bool bZero = !(pShared->m_reset == "false" || pShared->m_reset == "" && !pMod->m_bResetShared);
 
 			fprintf(incFile, "\t\t%sInit_S_%s();\n", bZero ? "Zero" : "Rnd", pShared->m_name.c_str());
 		}
 
-		//for (size_t ramIdx = 0; ramIdx < mod.m_intGblList.size(); ramIdx += 1) {
-		//	CRam &intRam = *mod.m_intGblList[ramIdx];
+		//for (size_t ramIdx = 0; ramIdx < pMod->m_intGblList.size(); ramIdx += 1) {
+		//	CRam &intRam = *pMod->m_intGblList[ramIdx];
 
 		//	if (intRam.m_addr1W.AsInt() == 0) continue;
 
@@ -815,9 +866,9 @@ CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 	}
 
 	string path("");
-	if (mod.m_modInstList.size() && mod.m_modInstList[0].m_modPaths.size()) {
+	if (pMod->m_modInstList.size() && pMod->m_modInstList[0].m_modPaths.size()) {
 		size_t pos;
-		path = mod.m_modInstList[0].m_modPaths[0];
+		path = pMod->m_modInstList[0].m_modPaths[0];
 		pos = path.find_last_of("/");
 		if (pos < path.size()) path.erase(pos, path.size() - pos);
 		pos = path.find_first_of(":/");
@@ -828,7 +879,7 @@ CDsnInfo::WritePersIncFile(CModule &mod, int modInstIdx, bool bNeedClk2x)
 	fprintf(incFile, "\n");
 	fprintf(incFile, "#\t\tifndef _HTV\n");
 	fprintf(incFile, "\t\tm_htMonModId = Ht::g_syscMon.RegisterModule(\"%s\", name(), %s_HTID_W, %s_INSTR_W, m_pInstrNames, %d);\n",
-		(path + mod.m_modName.Upper()).c_str(), mod.m_modName.Upper().c_str(), mod.m_modName.Upper().c_str(), (int)mod.m_memPortList.size());
+		(path + pMod->m_modName.Upper()).c_str(), pMod->m_modName.Upper().c_str(), pMod->m_modName.Upper().c_str(), (int)pMod->m_memPortList.size());
 	fprintf(incFile, "#\t\tendif\n");
 
 	fprintf(incFile, "\t}\n");

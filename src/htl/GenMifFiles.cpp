@@ -96,25 +96,25 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 		CModMemPort & modMemPort = *mifInst.m_pModMemPort;
 
 		fprintf(incFile, "\t// Pers%s%s%d Interface\n",
-			m_unitName.Uc().c_str(), modInst.m_instName.Uc().c_str(), mifId);
+			m_unitName.Uc().c_str(), modInst.m_replInstName.Uc().c_str(), mifId);
 		GenModDecl(eVcdAll, incCode, vcdModName, "sc_in<bool>",
-			VA("i_%sP%dToMif%d_reqRdy", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx, mifId));
+			VA("i_%sP%dToMif%d_reqRdy", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx, mifId));
 		GenModDecl(eVcdAll, incCode, vcdModName, "sc_in<CMemRdWrReqIntf>",
-			VA("i_%sP%dToMif%d_req", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx, mifId));
+			VA("i_%sP%dToMif%d_req", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx, mifId));
 		GenModDecl(eVcdAll, incCode, vcdModName, "sc_out<bool>",
-			VA("o_mif%dTo%sP%d_reqAvl", mifId, modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx));
+			VA("o_mif%dTo%sP%d_reqAvl", mifId, modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx));
 		fprintf(incFile, "\n");
 
 		if (modMemPort.m_bRead) {
-			GenModDecl(eVcdAll, incCode, vcdModName, "sc_out<bool>", VA("o_mif%dTo%sP%d_rdRspRdy", mifId, modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx));
-			GenModDecl(eVcdAll, incCode, vcdModName, "sc_out<CMemRdRspIntf>", VA("o_mif%dTo%sP%d_rdRsp", mifId, modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx));
-			GenModDecl(eVcdAll, incCode, vcdModName, "sc_in<bool>", VA("i_%sP%dToMif%d_rdRspFull", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx, mifId));
+			GenModDecl(eVcdAll, incCode, vcdModName, "sc_out<bool>", VA("o_mif%dTo%sP%d_rdRspRdy", mifId, modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx));
+			GenModDecl(eVcdAll, incCode, vcdModName, "sc_out<CMemRdRspIntf>", VA("o_mif%dTo%sP%d_rdRsp", mifId, modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx));
+			GenModDecl(eVcdAll, incCode, vcdModName, "sc_in<bool>", VA("i_%sP%dToMif%d_rdRspFull", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx, mifId));
 			fprintf(incFile, "\n");
 		}
 
 		if (modMemPort.m_bWrite) {
-			GenModDecl(eVcdAll, incCode, vcdModName, "sc_out<bool>", VA("o_mif%dTo%sP%d_wrRspRdy", mifId, modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx));
-			GenModDecl(eVcdAll, incCode, vcdModName, "sc_out<sc_uint<MIF_TID_W> >", VA("o_mif%dTo%sP%d_wrRspTid", mifId, modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx));
+			GenModDecl(eVcdAll, incCode, vcdModName, "sc_out<bool>", VA("o_mif%dTo%sP%d_wrRspRdy", mifId, modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx));
+			GenModDecl(eVcdAll, incCode, vcdModName, "sc_out<sc_uint<MIF_TID_W> >", VA("o_mif%dTo%sP%d_wrRspTid", mifId, modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx));
 			fprintf(incFile, "\n");
 		}
 	}
@@ -161,7 +161,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 		if (!modMemPort.m_bRead && !modMemPort.m_bWrite || modMemPort.m_queueW == 0) continue;
 
 		fprintf(incFile, "\tht_dist_que<CMemRdWrReqIntf, %d> m_%sP%dReqQue;\n",
-			modMemPort.m_queueW, modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+			modMemPort.m_queueW, modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 	}
 	fprintf(incFile, "\n");
 
@@ -185,27 +185,27 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 
 		if (modMemPort.m_queueW == 0) {
 			if (pMod->m_clkRate == eClk1x)
-				fprintf(incFile, "\tbool r_%sToMif_reqRdy;\n", modInst.m_instName.Lc().c_str());
+				fprintf(incFile, "\tbool r_%sToMif_reqRdy;\n", modInst.m_replInstName.Lc().c_str());
 			else {
-				fprintf(incFile, "\tsc_signal<bool> r_%sP%dToMif_reqRdy;\n", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
-				fprintf(incFile, "\tsc_signal<bool> r_%sP%dToMif_reqRdy_2x;\n", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+				fprintf(incFile, "\tsc_signal<bool> r_%sP%dToMif_reqRdy;\n", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
+				fprintf(incFile, "\tsc_signal<bool> r_%sP%dToMif_reqRdy_2x;\n", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 			}
 			fprintf(incFile, "\tCMemRdWrReqIntf r_%sP%dToMif_req;\n",
-				modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+				modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 			if (pMod->m_clkRate == eClk2x)
 				fprintf(incFile, "\tsc_signal<CMemRdWrReqIntf> r_%sP%dToMif_req_2x;\n",
-				modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+				modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 		} else {
 			if (pMod->m_clkRate == eClk2x) {
-				GenModDecl(eVcdAll, incCode, vcdModName, "bool", VA("r_%sP%dReqQueEmpty", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx));
-				GenModDecl(eVcdAll, incCode, vcdModName, "CMemRdWrReqIntf", VA("r_%sP%dReqQueFront", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx));
+				GenModDecl(eVcdAll, incCode, vcdModName, "bool", VA("r_%sP%dReqQueEmpty", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx));
+				GenModDecl(eVcdAll, incCode, vcdModName, "CMemRdWrReqIntf", VA("r_%sP%dReqQueFront", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx));
 			}
 		}
 
-		GenModDecl(eVcdAll, incCode, vcdModName, "bool", VA("r_mifTo%sP%d_reqAvl", modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx));
+		GenModDecl(eVcdAll, incCode, vcdModName, "bool", VA("r_mifTo%sP%d_reqAvl", modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx));
 
 		if (pMod->m_clkRate == eClk2x)
-			fprintf(incFile, "\tsc_signal<bool> r_%sP%dReqSel;\n", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+			fprintf(incFile, "\tsc_signal<bool> r_%sP%dReqSel;\n", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 	}
 	fprintf(incFile, "\n");
 
@@ -221,7 +221,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 			continue;
 
 		if (modMemPort.m_bMultiQwWrReq)
-			GenModDecl(eVcdAll, incCode, vcdModName, "ht_uint3", VA("r_%sP%dRemQwCnt", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx));
+			GenModDecl(eVcdAll, incCode, vcdModName, "ht_uint3", VA("r_%sP%dRemQwCnt", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx));
 	}
 
 	GenModDecl(eVcdNone, incCode, vcdModName, "bool", "r_mifToXbar_reqRdy");
@@ -253,23 +253,23 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 
 		if (modMemPort.m_bRead) {
 			if (modInst.m_pMod->m_clkRate == eClk1x)
-				GenModDecl(eVcdNone, incCode, vcdModName, "bool", VA("r_mifTo%sP%d_rdRspRdy", modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx));
+				GenModDecl(eVcdNone, incCode, vcdModName, "bool", VA("r_mifTo%sP%d_rdRspRdy", modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx));
 			else {
-				GenModDecl(eVcdNone, incCode, vcdModName, "sc_signal<bool>", VA("r_mifTo%sP%d_rdRspRdy", modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx));
-				GenModDecl(eVcdNone, incCode, vcdModName, "bool", VA("r_mifTo%sP%d_rdRspRdy_2x", modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx));
+				GenModDecl(eVcdNone, incCode, vcdModName, "sc_signal<bool>", VA("r_mifTo%sP%d_rdRspRdy", modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx));
+				GenModDecl(eVcdNone, incCode, vcdModName, "bool", VA("r_mifTo%sP%d_rdRspRdy_2x", modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx));
 			}
-			GenModDecl(eVcdNone, incCode, vcdModName, "CMemRdRspIntf", VA("r_mifTo%sP%d_rdRsp", modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx));
+			GenModDecl(eVcdNone, incCode, vcdModName, "CMemRdRspIntf", VA("r_mifTo%sP%d_rdRsp", modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx));
 			fprintf(incFile, "\n");
 		}
 
 		if (modMemPort.m_bWrite) {
 			if (modInst.m_pMod->m_clkRate == eClk1x)
-				GenModDecl(eVcdNone, incCode, vcdModName, "bool", VA("r_mifTo%sP%d_wrRspRdy", modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx));
+				GenModDecl(eVcdNone, incCode, vcdModName, "bool", VA("r_mifTo%sP%d_wrRspRdy", modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx));
 			else {
-				GenModDecl(eVcdNone, incCode, vcdModName, "sc_signal<bool>", VA("r_mifTo%sP%d_wrRspRdy", modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx));
-				GenModDecl(eVcdNone, incCode, vcdModName, "bool", VA("r_mifTo%sP%d_wrRspRdy_2x", modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx));
+				GenModDecl(eVcdNone, incCode, vcdModName, "sc_signal<bool>", VA("r_mifTo%sP%d_wrRspRdy", modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx));
+				GenModDecl(eVcdNone, incCode, vcdModName, "bool", VA("r_mifTo%sP%d_wrRspRdy_2x", modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx));
 			}
-			GenModDecl(eVcdNone, incCode, vcdModName, "sc_uint<MIF_TID_W>", VA("r_mifTo%sP%d_wrRspTid", modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx));
+			GenModDecl(eVcdNone, incCode, vcdModName, "sc_uint<MIF_TID_W>", VA("r_mifTo%sP%d_wrRspTid", modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx));
 			fprintf(incFile, "\n");
 		}
 	}
@@ -303,7 +303,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 		if (!bNewLine)
 			fprintf(incFile, "#\t\tifndef _HTV\n");
 
-		fprintf(incFile, "\t\tr_%sP%dReqQueEmpty = true;\n", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+		fprintf(incFile, "\t\tr_%sP%dReqQueEmpty = true;\n", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 		bNewLine = true;
 	}
 
@@ -367,13 +367,13 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 
 		if (modMemPort.m_queueW == 0)
 			fprintf(cppFile, "\tbool c_%sP%dReqRdy = r_%sP%dToMif_reqRdy;\n",
-			modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx, modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+			modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx, modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 		else if (modInst.m_pMod->m_clkRate == eClk1x)
 			fprintf(cppFile, "\tbool c_%sP%dReqRdy = !m_%sP%dReqQue.empty();\n",
-			modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx, modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+			modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx, modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 		else
 			fprintf(cppFile, "\tbool c_%sP%dReqRdy = !r_%sP%dReqQueEmpty;\n",
-			modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx, modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+			modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx, modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 	}
 
 	fprintf(cppFile, "\n");
@@ -388,10 +388,10 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 
 		if (1 < mifIntfCnt) {
 			fprintf(cppFile, "\tbool c_%sP%dReqSel = !r_xbarToMif_reqFull && c_%sP%dReqRdy && ((r_reqRr & 0x%lx) != 0 || !(\n",
-				modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx, modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx, 1ul << i);
+				modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx, modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx, 1ul << i);
 		} else {
 			fprintf(cppFile, "\tbool c_%sP%dReqSel = !r_xbarToMif_reqFull && c_%sP%dReqRdy && ((r_reqRr & 0x%lx) != 0);",
-				modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx, modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx, 1ul << i);
+				modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx, modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx, 1ul << i);
 		}
 
 		for (int j = 1; j < mifIntfCnt; j += 1) {
@@ -406,10 +406,10 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 			CModMemPort & modMemPortK = *mifInstK.m_pModMemPort;
 
 			fprintf(cppFile, "\t\t(c_%sP%dReqRdy && (r_reqRr & 0x%x) != 0)%s\n",
-				modInstK.m_instName.Lc().c_str(), modMemPortK.m_portIdx, mask3, j == mifIntfCnt - 1 ? "));" : " ||");
+				modInstK.m_replInstName.Lc().c_str(), modMemPortK.m_portIdx, mask3, j == mifIntfCnt - 1 ? "));" : " ||");
 		}
 
-		fprintf(cppFile, "\tht_attrib(keep, r_mifTo%sP%d_reqAvl, \"true\");\n", modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx);
+		fprintf(cppFile, "\tht_attrib(keep, r_mifTo%sP%d_reqAvl, \"true\");\n", modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx);
 		fprintf(cppFile, "\n");
 
 		i += 1;
@@ -447,21 +447,21 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 
 		char reqVarName[128];
 		if (modMemPort.m_queueW == 0)
-			sprintf(reqVarName, "r_%sP%dToMif_req", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+			sprintf(reqVarName, "r_%sP%dToMif_req", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 		else if (modInst.m_pMod->m_clkRate == eClk1x)
-			sprintf(reqVarName, "m_%sP%dReqQue.front()", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+			sprintf(reqVarName, "m_%sP%dReqQue.front()", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 		else
-			sprintf(reqVarName, "r_%sP%dReqQueFront", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+			sprintf(reqVarName, "r_%sP%dReqQueFront", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 
 		if (bNeed_reqPop)
-			fprintf(cppFile, "\tbool c_%sP%dReqPop = false;\n", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+			fprintf(cppFile, "\tbool c_%sP%dReqPop = false;\n", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 		if (bNeed_bRrHold)
 			fprintf(cppFile, "\tht_uint3 c_%sP%dRemQwCnt = r_%sP%dRemQwCnt;\n",
-			modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx,
-			modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
-		fprintf(cppFile, "\tif (c_%sP%dReqSel) {\n", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+			modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx,
+			modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
+		fprintf(cppFile, "\tif (c_%sP%dReqSel) {\n", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 		if (bNeed_reqPop)
-			fprintf(cppFile, "\t\tc_%sP%dReqPop = true;\n", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+			fprintf(cppFile, "\t\tc_%sP%dReqPop = true;\n", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 		fprintf(cppFile, "\t\tc_mifToXbar_reqRdy = true;\n");
 
 		char *pTab = "\t\t";
@@ -472,15 +472,15 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 			fprintf(cppFile, "\t\tsc_uint<3> qwCntM1 = (%s.m_tid >> MIF_TID_QWCNT_SHF) & MIF_TID_QWCNT_MSK;\n\n", reqVarName);
 
 			if (bNeed_bRrHold) {
-				fprintf(cppFile, "\t\tif (r_%sP%dRemQwCnt > 0)\n", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
-				fprintf(cppFile, "\t\t\tc_%sP%dRemQwCnt -= 1;\n", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+				fprintf(cppFile, "\t\tif (r_%sP%dRemQwCnt > 0)\n", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
+				fprintf(cppFile, "\t\t\tc_%sP%dRemQwCnt -= 1;\n", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 				fprintf(cppFile, "\t\telse if (%s.m_type == MEM_REQ_WR)\n", reqVarName);
-				fprintf(cppFile, "\t\t\tc_%sP%dRemQwCnt = qwCntM1;\n", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+				fprintf(cppFile, "\t\t\tc_%sP%dRemQwCnt = qwCntM1;\n", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 				fprintf(cppFile, "\t\telse\n");
-				fprintf(cppFile, "\t\t\tc_%sP%dRemQwCnt = 0;\n", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+				fprintf(cppFile, "\t\t\tc_%sP%dRemQwCnt = 0;\n", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 				fprintf(cppFile, "\n");
-				fprintf(cppFile, "\t\tif (c_%sP%dRemQwCnt > 0) {\n", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
-				fprintf(cppFile, "\t\t\tc_%sP%dReqPop = %s.m_type == MEM_REQ_WR;\n", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx, reqVarName);
+				fprintf(cppFile, "\t\tif (c_%sP%dRemQwCnt > 0) {\n", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
+				fprintf(cppFile, "\t\t\tc_%sP%dReqPop = %s.m_type == MEM_REQ_WR;\n", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx, reqVarName);
 				fprintf(cppFile, "\t\t\tbRrHold = true;\n");
 				fprintf(cppFile, "\t\t}\n");
 				fprintf(cppFile, "\n");
@@ -521,8 +521,8 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 
 		if (modMemPort.m_queueW != 0 && modInst.m_pMod->m_clkRate == eClk1x) {
 			if (modMemPort.m_bRead && modMemPort.m_bMultiQwRdReq && bNeed_reqPop)
-				fprintf(cppFile, "\t\tif (c_%sP%dReqPop)\n\t", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
-			fprintf(cppFile, "\t\tm_%sP%dReqQue.pop();\n", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+				fprintf(cppFile, "\t\tif (c_%sP%dReqPop)\n\t", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
+			fprintf(cppFile, "\t\tm_%sP%dReqQue.pop();\n", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 		}
 
 		if (bNeed_bRrHold)
@@ -535,20 +535,20 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 		if (modMemPort.m_queueW != 0 && modInst.m_pMod->m_clkRate == eClk2x) {
 			string reqSel;
 			if (modMemPort.m_bRead && modMemPort.m_bMultiQwRdReq && bNeed_reqPop)
-				reqSel = VA("c_%sP%dReqPop", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+				reqSel = VA("c_%sP%dReqPop", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 			else
-				reqSel = VA("c_%sP%dReqSel", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+				reqSel = VA("c_%sP%dReqSel", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 
 			fprintf(cppFile, "\tbool c_%sP%dReqQueEmpty = (r_%sP%dReqQueEmpty || %s) && m_%sP%dReqQue.empty();\n",
-				modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx, modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx,
-				reqSel.c_str(), modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+				modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx, modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx,
+				reqSel.c_str(), modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 			fprintf(cppFile, "\tCMemRdWrReqIntf c_%sP%dReqQueFront = (r_%sP%dReqQueEmpty || %s) ? m_%sP%dReqQue.front() : r_%sP%dReqQueFront;\n",
-				modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx, modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx, reqSel.c_str(),
-				modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx, modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+				modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx, modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx, reqSel.c_str(),
+				modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx, modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 			fprintf(cppFile, "\tif ((r_%sP%dReqQueEmpty || %s) && !m_%sP%dReqQue.empty())\n",
-				modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx, reqSel.c_str(),
-				modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
-			fprintf(cppFile, "\t\tm_%sP%dReqQue.pop();\n", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+				modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx, reqSel.c_str(),
+				modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
+			fprintf(cppFile, "\t\tm_%sP%dReqQue.pop();\n", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 			fprintf(cppFile, "\n");
 		}
 
@@ -568,20 +568,20 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 
 		if (modMemPort.m_bRead) {
 			fprintf(cppFile, "\tbool c_mifTo%sP%d_rdRspRdy = r_xbarToMif_rdRspRdy && (r_xbarToMif_rdRsp.m_tid & 0x%lx) == (ht_uint%d)0x%x;\n",
-				modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx, ((1ul << mifTidBits) - 1) << 3, mifTidBits == 0 ? 4 : mifTidBits + 3, i << 3);
-			fprintf(cppFile, "\tCMemRdRspIntf c_mifTo%sP%d_rdRsp;\n", modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx);
+				modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx, ((1ul << mifTidBits) - 1) << 3, mifTidBits == 0 ? 4 : mifTidBits + 3, i << 3);
+			fprintf(cppFile, "\tCMemRdRspIntf c_mifTo%sP%d_rdRsp;\n", modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx);
 			fprintf(cppFile, "\tc_mifTo%sP%d_rdRsp.m_tid = (sc_uint<MIF_TID_W>)(((r_xbarToMif_rdRsp.m_tid & MIF_TID_QWCNT_MSK) << MIF_TID_QWCNT_SHF) | (r_xbarToMif_rdRsp.m_tid >> %d));\n",
-				modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx, mifTidBits + 3);
+				modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx, mifTidBits + 3);
 			fprintf(cppFile, "\tc_mifTo%sP%d_rdRsp.m_data = r_xbarToMif_rdRsp.m_data;\n",
-				modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx);
+				modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx);
 			fprintf(cppFile, "\n");
 		}
 
 		if (modMemPort.m_bWrite) {
 			fprintf(cppFile, "\tbool c_mifTo%sP%d_wrRspRdy = r_xbarToMif_wrRspRdy && (r_xbarToMif_wrRspTid & 0x%lx) == (ht_uint%d)0x%x;\n",
-				modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx, ((1ul << mifTidBits) - 1) << 3, mifTidBits == 0 ? 4 : mifTidBits + 3, i << 3);
+				modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx, ((1ul << mifTidBits) - 1) << 3, mifTidBits == 0 ? 4 : mifTidBits + 3, i << 3);
 			fprintf(cppFile, "\tsc_uint<MIF_TID_W> c_mifTo%sP%d_wrRspTid = (sc_uint<MIF_TID_W>)(r_xbarToMif_wrRspTid >> %d);\n",
-				modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx, mifTidBits + 3);
+				modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx, mifTidBits + 3);
 			fprintf(cppFile, "\n");
 		}
 
@@ -606,43 +606,43 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 		if (modMemPort.m_queueW == 0) {
 			char reqPop[128];
 			if (bNeed_reqPop)
-				sprintf(reqPop, " && !c_%sP%dReqPop", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+				sprintf(reqPop, " && !c_%sP%dReqPop", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 			else
 				reqPop[0] = '\0';
 
 			if (pMod->m_clkRate == eClk1x)
 				fprintf(cppFile, "\tbool c_%sP%dToMif_reqRdy = i_%sP%dToMif%d_reqRdy.read() || r_%sP%dToMif_reqRdy%s;\n",
-				modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx, modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx,
-				mifId, modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx, reqPop);
+				modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx, modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx,
+				mifId, modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx, reqPop);
 			else
 				fprintf(cppFile, "\tbool c_%sP%dToMif_reqRdy = r_%sP%dToMif_reqRdy_2x.read() || r_%sP%dToMif_reqRdy%s;\n",
-				modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx, modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx,
-				modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx, reqPop);
+				modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx, modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx,
+				modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx, reqPop);
 
 			fprintf(cppFile, "\tCMemRdWrReqIntf c_%sP%dToMif_req = r_%sP%dToMif_req;\n",
-				modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx,
-				modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+				modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx,
+				modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 		}
 		if (pMod->m_clkRate == eClk1x)
-			fprintf(cppFile, "\tif (i_%sP%dToMif%d_reqRdy.read())\n", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx, mifId);
+			fprintf(cppFile, "\tif (i_%sP%dToMif%d_reqRdy.read())\n", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx, mifId);
 		else
 			if (modMemPort.m_queueW == 0)
-				fprintf(cppFile, "\tif (r_%sP%dToMif_reqRdy_2x.read())\n", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+				fprintf(cppFile, "\tif (r_%sP%dToMif_reqRdy_2x.read())\n", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 
 		if (modMemPort.m_queueW == 0) {
 			if (pMod->m_clkRate == eClk1x)
 				fprintf(cppFile, "\t\tc_%sP%dToMif_req = i_%sP%dToMif%d_req.read();\n",
-				modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx,
-				modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx, mifId);
+				modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx,
+				modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx, mifId);
 			else
 				fprintf(cppFile, "\t\tc_%sP%dToMif_req = r_%sP%dToMif_req_2x.read();\n",
-				modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx,
-				modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+				modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx,
+				modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 		} else
 			if (pMod->m_clkRate == eClk1x)
 				fprintf(cppFile, "\t\tm_%sP%dReqQue.push(i_%sP%dToMif%d_req.read());\n",
-				modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx,
-				modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx, mifId);
+				modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx,
+				modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx, mifId);
 		fprintf(cppFile, "\n");
 	}
 
@@ -662,9 +662,9 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 			continue;
 
 		if (pMod->m_clkRate == eClk1x)
-			fprintf(cppFile, "\tm_%sP%dReqQue.clock(r_reset1x);\n", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+			fprintf(cppFile, "\tm_%sP%dReqQue.clock(r_reset1x);\n", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 		else
-			fprintf(cppFile, "\tm_%sP%dReqQue.pop_clock(r_reset1x);\n", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+			fprintf(cppFile, "\tm_%sP%dReqQue.pop_clock(r_reset1x);\n", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 	}
 	fprintf(cppFile, "\n");
 
@@ -679,11 +679,11 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 			continue;
 
 		fprintf(cppFile, "\tr_%sP%dToMif_reqRdy = !r_reset1x && c_%sP%dToMif_reqRdy;\n",
-			modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx,
-			modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+			modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx,
+			modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 		fprintf(cppFile, "\tr_%sP%dToMif_req = c_%sP%dToMif_req;\n",
-			modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx,
-			modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+			modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx,
+			modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 		fprintf(cppFile, "\n");
 	}
 
@@ -703,20 +703,20 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 
 		char reqSel[128];
 		if (bNeed_reqPop)
-			sprintf(reqSel, "c_%sP%dReqPop", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+			sprintf(reqSel, "c_%sP%dReqPop", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 		else
-			sprintf(reqSel, "c_%sP%dReqSel", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+			sprintf(reqSel, "c_%sP%dReqSel", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 
 		if (pMod->m_clkRate == eClk1x)
-			fprintf(cppFile, "\tr_mifTo%sP%d_reqAvl = %s;\n", modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx, reqSel);
+			fprintf(cppFile, "\tr_mifTo%sP%d_reqAvl = %s;\n", modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx, reqSel);
 		else {
-			fprintf(cppFile, "\tr_%sP%dReqSel = %s;\n", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx, reqSel);
+			fprintf(cppFile, "\tr_%sP%dReqSel = %s;\n", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx, reqSel);
 			fprintf(cppFile, "\tr_%sP%dReqQueEmpty = r_reset1x || c_%sP%dReqQueEmpty;\n",
-				modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx,
-				modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+				modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx,
+				modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 			fprintf(cppFile, "\tr_%sP%dReqQueFront = c_%sP%dReqQueFront;\n",
-				modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx,
-				modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+				modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx,
+				modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 		}
 		bNewLine = true;
 	}
@@ -735,11 +735,11 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 		if (!modMemPort.m_bRead && !modMemPort.m_bWrite || pMod->m_clkRate != eClk1x || modMemPort.m_queueW != 0)	continue;
 
 		fprintf(cppFile, "\tr_%sP%dToMif_reqRdy = !r_reset1x && c_%sP%dToMif_reqRdy;\n",
-			modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx,
-			modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+			modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx,
+			modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 		fprintf(cppFile, "\tr_%sP%dToMif_req = c_%sP%dToMif_req;\n",
-			modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx,
-			modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+			modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx,
+			modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 		bNewLine = true;
 	}
 	if (bNewLine)
@@ -767,7 +767,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 
 			fprintf(cppFile, "%si_%sP%dToMif%d_rdRspFull.read()",
 				separator.c_str(),
-				modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx, mifId);
+				modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx, mifId);
 
 				separator = " || ";
 		}
@@ -790,8 +790,8 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 
 		if (modMemPort.m_bMultiQwWrReq)
 			fprintf(cppFile, "\tr_%sP%dRemQwCnt = r_reset1x ? (ht_uint3)0 : c_%sP%dRemQwCnt;\n",
-			modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx,
-			modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+			modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx,
+			modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 	}
 
 	fprintf(cppFile, "\tr_mifToXbar_reqRdy = r_reset1x ? (bool)0 : c_mifToXbar_reqRdy;\n");
@@ -810,21 +810,21 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 
 		if (modMemPort.m_bRead) {
 			fprintf(cppFile, "\tr_mifTo%sP%d_rdRspRdy = r_reset1x ? (bool)0 : c_mifTo%sP%d_rdRspRdy;\n",
-				modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx,
-				modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx);
+				modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx,
+				modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx);
 			fprintf(cppFile, "\tr_mifTo%sP%d_rdRsp = c_mifTo%sP%d_rdRsp;\n",
-				modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx,
-				modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx);
+				modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx,
+				modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx);
 			fprintf(cppFile, "\n");
 		}
 
 		if (modMemPort.m_bWrite) {
 			fprintf(cppFile, "\tr_mifTo%sP%d_wrRspRdy = r_reset1x ? (bool)0 : c_mifTo%sP%d_wrRspRdy;\n",
-				modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx,
-				modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx);
+				modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx,
+				modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx);
 			fprintf(cppFile, "\tr_mifTo%sP%d_wrRspTid = c_mifTo%sP%d_wrRspTid;\n",
-				modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx,
-				modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx);
+				modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx,
+				modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx);
 			fprintf(cppFile, "\n");
 		}
 	}
@@ -850,8 +850,8 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 			continue;
 
 		fprintf(cppFile, "\to_mif%dTo%sP%d_reqAvl = r_mifTo%sP%d_reqAvl;\n",
-			mifId, modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx,
-			modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx);
+			mifId, modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx,
+			modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx);
 	}
 	fprintf(cppFile, "\n");
 
@@ -878,22 +878,22 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 		if (modMemPort.m_bRead) {
 			if (modInst.m_pMod->m_clkRate == eClk1x)
 				fprintf(cppFile, "\to_mif%dTo%sP%d_rdRspRdy = r_mifTo%sP%d_rdRspRdy;\n",
-				mifId, modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx,
-				modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx);
+				mifId, modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx,
+				modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx);
 			fprintf(cppFile, "\to_mif%dTo%sP%d_rdRsp = r_mifTo%sP%d_rdRsp;\n",
-				mifId, modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx,
-				modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx);
+				mifId, modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx,
+				modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx);
 			fprintf(cppFile, "\n");
 		}
 
 		if (modMemPort.m_bWrite) {
 			if (modInst.m_pMod->m_clkRate == eClk1x)
 				fprintf(cppFile, "\to_mif%dTo%sP%d_wrRspRdy = r_mifTo%sP%d_wrRspRdy;\n",
-				mifId, modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx,
-				modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx);
+				mifId, modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx,
+				modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx);
 			fprintf(cppFile, "\to_mif%dTo%sP%d_wrRspTid = r_mifTo%sP%d_wrRspTid;\n",
-				mifId, modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx,
-				modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx);
+				mifId, modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx,
+				modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx);
 			fprintf(cppFile, "\n");
 		}
 	}
@@ -925,25 +925,25 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 
 			if (modMemPort.m_queueW == 0)
 				fprintf(cppFile, "\tCMemRdWrReqIntf c_%sP%dToMif_req_2x = r_%sP%dToMif_req_2x.read();\n",
-				modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx,
-				modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
-			fprintf(cppFile, "\tif (i_%sP%dToMif%d_reqRdy.read())\n", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx, mifId);
+				modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx,
+				modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
+			fprintf(cppFile, "\tif (i_%sP%dToMif%d_reqRdy.read())\n", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx, mifId);
 			if (modMemPort.m_queueW == 0) {
 				fprintf(cppFile, "\t\tc_%sP%dToMif_req_2x = i_%sP%dToMif%d_req.read();\n",
-					modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx,
-					modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx, mifId);
+					modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx,
+					modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx, mifId);
 				fprintf(cppFile, "\n");
 				fprintf(cppFile, "\tbool c_%sP%dToMif_reqRdy_2x = r_%sP%dToMif_reqRdy_2x && (r_phase\n",
-					modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx,
-					modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+					modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx,
+					modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 				fprintf(cppFile, "\t\t|| r_%sP%dToMif_reqRdy.read() && !r_%sP%dReqSel.read()) || i_%sP%dToMif%d_reqRdy.read();\n",
-					modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx,
-					modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx,
-					modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx, mifId);
+					modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx,
+					modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx,
+					modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx, mifId);
 			} else
 				fprintf(cppFile, "\t\tm_%sP%dReqQue.push(i_%sP%dToMif%d_req.read());\n",
-				modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx,
-				modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx, mifId);
+				modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx,
+				modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx, mifId);
 			fprintf(cppFile, "\n");
 		}
 
@@ -959,8 +959,8 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 
 			if (pMod->m_clkRate == eClk2x)
 				fprintf(cppFile, "\tbool c_%sP%dReqAvl = r_phase & r_%sP%dReqSel;\n",
-				modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx,
-				modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+				modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx,
+				modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 		}
 		fprintf(cppFile, "\n");
 
@@ -979,7 +979,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 			if (!modMemPort.m_bRead && !modMemPort.m_bWrite || modMemPort.m_queueW == 0) continue;
 
 			if (pMod->m_clkRate == eClk2x)
-				fprintf(cppFile, "\tm_%sP%dReqQue.push_clock(c_reset2x);\n", modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+				fprintf(cppFile, "\tm_%sP%dReqQue.push_clock(c_reset2x);\n", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 		}
 		fprintf(cppFile, "\n");
 
@@ -994,27 +994,27 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 			if (!modMemPort.m_bRead && !modMemPort.m_bWrite || pMod->m_clkRate == eClk1x) continue;
 
 			fprintf(cppFile, "\tr_mifTo%sP%d_reqAvl = c_%sP%dReqAvl;\n",
-				modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx,
-				modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+				modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx,
+				modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 
 			if (modMemPort.m_bRead)
 				fprintf(cppFile, "\tr_mifTo%sP%d_rdRspRdy_2x = r_mifTo%sP%d_rdRspRdy & r_phase;\n",
-				modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx,
-				modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx);
+				modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx,
+				modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx);
 
 			if (modMemPort.m_bWrite)
 				fprintf(cppFile, "\tr_mifTo%sP%d_wrRspRdy_2x = r_mifTo%sP%d_wrRspRdy & r_phase;\n",
-				modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx,
-				modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx);
+				modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx,
+				modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx);
 
 			if (modMemPort.m_queueW == 0) {
 				fprintf(cppFile, "\n");
 				fprintf(cppFile, "\tr_%sP%dToMif_reqRdy_2x = !c_reset2x.read() && c_%sP%dToMif_reqRdy_2x;\n",
-					modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx,
-					modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+					modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx,
+					modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 				fprintf(cppFile, "\tr_%sP%dToMif_req_2x = c_%sP%dToMif_req_2x;\n",
-					modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx,
-					modInst.m_instName.Lc().c_str(), modMemPort.m_portIdx);
+					modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx,
+					modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx);
 			}
 			fprintf(cppFile, "\n");
 		}
@@ -1037,18 +1037,18 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 				continue;
 
 			fprintf(cppFile, "\to_mif%dTo%sP%d_reqAvl = r_mifTo%sP%d_reqAvl;\n",
-				mifId, modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx,
-				modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx);
+				mifId, modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx,
+				modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx);
 
 			if (modMemPort.m_bRead)
 				fprintf(cppFile, "\to_mif%dTo%sP%d_rdRspRdy = r_mifTo%sP%d_rdRspRdy_2x;\n",
-				mifId, modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx,
-				modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx);
+				mifId, modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx,
+				modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx);
 
 			if (modMemPort.m_bWrite)
 				fprintf(cppFile, "\to_mif%dTo%sP%d_wrRspRdy = r_mifTo%sP%d_wrRspRdy_2x;\n",
-				mifId, modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx,
-				modInst.m_instName.Uc().c_str(), modMemPort.m_portIdx);
+				mifId, modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx,
+				modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx);
 		}
 
 		fprintf(cppFile, "}\n");

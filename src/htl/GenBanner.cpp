@@ -11,7 +11,7 @@
 #include "DsnInfo.h"
 
 void
-CDsnInfo::GenPersBanner(CHtFile &htFile, const char *unitName, const char *dsnName, bool is_h)
+CDsnInfo::GenPersBanner(CHtFile &htFile, const char *unitName, const char *dsnName, bool is_h, const char *incName)
 {
 	if (!htFile)
 		return;
@@ -34,7 +34,13 @@ CDsnInfo::GenPersBanner(CHtFile &htFile, const char *unitName, const char *dsnNa
 	    fprintf(htFile, "#include \"Pers%sCommon.h\"\n\n", !g_appArgs.IsModuleUnitNamesEnabled() ? unitName : "");
 	} else {
 	    fprintf(htFile, "#include \"Ht.h\"\n");
-	    fprintf(htFile, "#include \"%s.h\"\n\n", fileBase);
+		fprintf(htFile, "\n");
+		fprintf(htFile, "#define PERS_%s\n", CHtString(dsnName).Upper().c_str());
+
+		if (incName)
+			fprintf(htFile, "#include \"Pers%s.h\"\n\n", incName);
+		else
+			fprintf(htFile, "#include \"%s.h\"\n\n", fileBase);
 	}
 }
 

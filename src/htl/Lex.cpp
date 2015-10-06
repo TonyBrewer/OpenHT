@@ -250,18 +250,12 @@ string CLex::GetExprStr(char termCh)
 	char const * pEnd = pPos;
 
 	if (*pPos == '"') {
-		static bool bWarn = true;
-		if (bWarn) {
-			ParseMsg(Warning, "parameters enclosed in quotes is deprecated");
-			bWarn = false;
-		}
-
-		pPos += 1;
-		pEnd = pPos;
+		pEnd = pPos + 1;
 		for (;;) {
 			if (*pEnd == '"') {
+				pEnd += 1;
 				paramStr += string(pPos, pEnd - pPos);
-				m_pLine = pEnd + 1;
+				m_pLine = pEnd;
 				return paramStr;
 			}
 

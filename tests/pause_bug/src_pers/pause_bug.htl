@@ -5,7 +5,7 @@
 -ac 1
 -uc 1
 -df 150
--vcd_all
+//-vcd_all
 -pn pause_bug
 -ml 0.2
 -I ../src

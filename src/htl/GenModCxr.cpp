@@ -32,8 +32,6 @@ void CDsnInfo::InitAndValidateModCxr()
 	for (size_t modIdx = 0; modIdx < m_modList.size(); modIdx += 1) {
 		CModule &mod = *m_modList[modIdx];
 
-		mod.m_instIdCnt = 0;
-
 		mod.m_cxrEntryReserveCnt = 0;
 		for (size_t entryIdx = 0; entryIdx < mod.m_cxrEntryList.size(); entryIdx += 1) {
 			CCxrEntry * pCxrEntry = mod.m_cxrEntryList[entryIdx];
@@ -91,7 +89,7 @@ void CDsnInfo::InitAndValidateModCxr()
 				for (size_t rtn2Idx = 0; rtn2Idx < mod2.m_cxrReturnList.size(); rtn2Idx += 1) {
 					CCxrReturn &rtn2 = mod2.m_cxrReturnList[rtn2Idx];
 
-					if (rtn.m_funcName != rtn2.m_funcName) continue;
+					if (rtn.m_modEntry != rtn2.m_modEntry) continue;
 
 					// found matching returns, check parameter list
 					if (rtn.m_paramList.size() != rtn2.m_paramList.size()) {
@@ -193,8 +191,8 @@ void CDsnInfo::InitAndValidateModCxr()
 
 			mod.m_modInstList.resize(1);
 			mod.m_modInstList[0].m_pMod = &mod;
+			mod.m_modInstList[0].m_replInstName = mod.m_modName;
 			mod.m_modInstList[0].m_instName = mod.m_modName;
-			mod.m_modInstList[0].m_instParams.m_instId = 0;
 			mod.m_modInstList[0].m_instParams.m_memPortList.push_back(0);
 			mod.m_modInstList[0].m_cxrSrcCnt = (mod.m_bHasThreads ? 1 : 0) + mod.m_resetInstrCnt;
 			mod.m_modInstList[0].m_replCnt = 1;
@@ -203,12 +201,12 @@ void CDsnInfo::InitAndValidateModCxr()
 
 		// set module instance names
 		for (size_t i = 0; i < mod.m_modInstList.size(); i += 1) {
-			char instName[256];
-			if (mod.m_modInstList.size() > 1) {
-				sprintf(instName, "%s%d", mod.m_modName.c_str(), (int)i);
-				mod.m_modInstList[i].m_instName = instName;
+			CModInst &modInst = mod.m_modInstList[i];
+
+			if (modInst.m_replCnt > 1) {
+				modInst.m_replInstName = VA("%s%d", modInst.m_instName.c_str(), modInst.m_replId);
 			} else
-				mod.m_modInstList[i].m_instName = mod.m_modName;
+				modInst.m_replInstName = modInst.m_instName;
 		}
 	}
 
@@ -239,7 +237,7 @@ void CDsnInfo::CheckRequiredEntryNames(vector<CModIdx> &callStk)
 {
 	CModIdx & modCall = callStk.back();
 	CCxrCall & cxrCallee = modCall.m_pMod->m_cxrCallList[modCall.m_idx];
-	CHtString & funcName = cxrCallee.m_funcName;
+	CHtString & modEntry = cxrCallee.m_modEntry;
 
 	modCall.m_pMod->m_bCallFork |= cxrCallee.m_bCallFork;
 	modCall.m_pMod->m_bXferFork |= cxrCallee.m_bXferFork;
@@ -257,7 +255,7 @@ void CDsnInfo::CheckRequiredEntryNames(vector<CModIdx> &callStk)
 		for (entryIdx = 0; entryIdx < mod.m_cxrEntryList.size(); entryIdx += 1) {
 			CCxrEntry * pCxrEntry = mod.m_cxrEntryList[entryIdx];
 
-			if (pCxrEntry->m_funcName == funcName) {
+			if (pCxrEntry->m_modEntry == modEntry) {
 				pCxrEntry->m_bCallFork |= cxrCallee.m_bCallFork;
 				pCxrEntry->m_bXferFork |= cxrCallee.m_bXferFork;
 
@@ -275,9 +273,9 @@ void CDsnInfo::CheckRequiredEntryNames(vector<CModIdx> &callStk)
 
 	if (!bFound) {
 		if (cxrCallee.m_lineInfo.m_lineNum == 0)
-			ParseMsg(Error, "Personality entry function name was not found, '%s'", funcName.c_str());
+			ParseMsg(Error, "Personality entry function name was not found, '%s'", modEntry.c_str());
 		else
-			ParseMsg(Error, cxrCallee.m_lineInfo, "function name was not found, '%s'", funcName.c_str());
+			ParseMsg(Error, cxrCallee.m_lineInfo, "function name was not found, '%s'", modEntry.c_str());
 	} else if (m_modList[modIdx]->m_bActiveCall) {
 		ParseMsg(Error, cxrCallee.m_lineInfo, "found recursion in call chain");
 		for (size_t stkIdx = 1; stkIdx < callStk.size(); stkIdx += 1) {
@@ -286,13 +284,16 @@ void CDsnInfo::CheckRequiredEntryNames(vector<CModIdx> &callStk)
 
 			ParseMsg(Info, cxrCaller.m_lineInfo, "    Module %s, entry %s, called %s\n",
 				callStk[stkIdx].m_pMod->m_modName.Lc().c_str(),
-				cxrCaller.m_funcName.c_str(),
-				cxrCallee.m_funcName.c_str());
+				cxrCaller.m_modEntry.c_str(),
+				cxrCallee.m_modEntry.c_str());
 		}
 	} else {
 		CModule &mod = *m_modList[modIdx];
 
-		string modPath = callStk.back().m_modPath + "/" + mod.m_modName.AsStr();
+		if (cxrCallee.m_instName.size() == 0)
+			cxrCallee.m_instName = mod.m_modName;
+
+		string modPath = callStk.back().m_modPath + "/" + cxrCallee.m_instName;
 
 		{	// Found the modPath, check if any per instance params were specified.
 			// This section takes the modPath as input, appends to the modInstList,
@@ -311,52 +312,20 @@ void CDsnInfo::CheckRequiredEntryNames(vector<CModIdx> &callStk)
 			if (callStk.size() <= 1 && modInstParams.m_replCnt > 1)
 				ParseMsg(Error, modInstParams.m_lineInfo, "replication not supported for host interface entry module");
 
-			m_maxInstId = max(m_maxInstId, modInstParams.m_instId);
 			m_maxReplCnt = max(m_maxReplCnt, modInstParams.m_replCnt);
-
-			// add to list of unique instance IDs
-			size_t ii;
-			for (ii = 0; ii < m_instIdList.size(); ii += 1)
-				if (m_instIdList[ii] == modInstParams.m_instId)
-					break;
-
-			if (ii == m_instIdList.size())
-				m_instIdList.push_back(modInstParams.m_instId);
-
-			// replicated module instance must have a unique instId
-
-			for (size_t i = 0; i < mod.m_modInstList.size(); i += 1) {
-				if (modInstParams.m_instId != mod.m_modInstList[i].m_instParams.m_instId) {
-					//continue;
-
-					// temporary limitation until figure out how to follow call/return through different instances
-					ParseMsg(Error, modInstParams.m_lineInfo, "Different instIds for same module not currently supported");
-					ParseMsg(Info, modInstParams.m_lineInfo, "module path: %s has replCnt=%d, instId=%d",
-						mod.m_modInstList[i].m_modPaths[0].c_str(),
-						mod.m_modInstList[i].m_instParams.m_replCnt,
-						mod.m_modInstList[i].m_instParams.m_instId);
-					ParseMsg(Info, modInstParams.m_lineInfo, "module path: %s has replCnt=%d, instId=%d",
-						modPath.c_str(),
-						modInstParams.m_replCnt,
-						modInstParams.m_instId);
-					break;
-				}
-			}
 
 			if (modInstParams.m_replCnt > 1) {
 				// Push replCnt on modInstList
-				for (int i = 0; i < modInstParams.m_replCnt; i += 1) {
+				for (int replIdx = 0; replIdx < modInstParams.m_replCnt; replIdx += 1) {
 					// check for replicated instance parameters
 					CInstanceParams replModInstParams;
 					char buf[16];
-					sprintf(buf, "[%d]", (int)i);
+					sprintf(buf, "[%d]", (int)replIdx);
 					string replModPath = modPath + buf;
 					getModInstParams(replModPath, replModInstParams);
 
-					m_maxInstId = max(m_maxInstId, replModInstParams.m_instId);
 					m_maxReplCnt = max(m_maxReplCnt, replModInstParams.m_replCnt);
 
-					replModInstParams.m_instId = modInstParams.m_instId;
 					replModInstParams.m_replCnt = modInstParams.m_replCnt;
 
 					if (replModInstParams.m_lineInfo.m_fileName.size() == 0)
@@ -380,10 +349,69 @@ void CDsnInfo::CheckRequiredEntryNames(vector<CModIdx> &callStk)
 						ParseMsg(Error, replModInstParams.m_lineInfo, "module memory port count (%d) does not match instance memory port count (%d)\n",
 						(int)mod.m_memPortList.size(), (int)replModInstParams.m_memPortList.size());
 
-					int cxrSrcCnt = (mod.m_bHasThreads ? 1 : 0) + mod.m_resetInstrCnt;
-					mod.m_modInstList.push_back(CModInst(&mod, modPath, replModInstParams, cxrSrcCnt, modInstParams.m_replCnt, i));
+					// check if requested instName is new
+					size_t i;
+					for (i = 0; i < mod.m_modInstList.size(); i += 1) {
+						if (mod.m_modInstList[i].m_instName == cxrCallee.m_instName && mod.m_modInstList[i].m_replId == replIdx)
+							break;
+					}
+
+					if (i == mod.m_modInstList.size()) {
+						// new instName specified
+
+						int cxrSrcCnt = (mod.m_bHasThreads ? 1 : 0) + mod.m_resetInstrCnt;
+						mod.m_modInstList.push_back(CModInst(&mod, cxrCallee.m_instName, modPath, replModInstParams,
+							cxrSrcCnt, mod.m_cxrReturnList.size(), modInstParams.m_replCnt, replIdx));
+
+						for (size_t modPrmIdx = 0; modPrmIdx < mod.m_instParamList.size(); modPrmIdx += 1) {
+							CModuleInstParam & modInstParam = mod.m_instParamList[modPrmIdx];
+
+							size_t callPrmIdx;
+							for (callPrmIdx = 0; callPrmIdx < cxrCallee.m_instParamList.size(); callPrmIdx += 1)
+								if (modInstParam.m_name == cxrCallee.m_instParamList[callPrmIdx].m_name)
+									break;
+
+							if (callPrmIdx < cxrCallee.m_instParamList.size()) {
+								CCallInstParam &callInstParam = cxrCallee.m_instParamList[callPrmIdx];
+								mod.m_modInstList.back().m_callInstParamList.push_back(callInstParam);
+							} else if (modInstParam.m_default.size() > 0)
+								mod.m_modInstList.back().m_callInstParamList.push_back(CCallInstParam(modInstParam.m_name, modInstParam.m_default));
+							else
+								ParseMsg(Error, cxrCallee.m_lineInfo, "instParam must have either a default value or AddCall specified value");
+						}
+					} else {
+						// existing instName
+
+						// add new modPath to modInst
+						CModInst & modInst = mod.m_modInstList[i];
+						modInst.m_modPaths.push_back(modPath);
+
+						// verify callInstParams are the same
+						for (size_t modPrmIdx = 0; modPrmIdx < mod.m_instParamList.size(); modPrmIdx += 1) {
+							CModuleInstParam & modInstParam = mod.m_instParamList[modPrmIdx];
+
+							size_t callPrmIdx;
+							for (callPrmIdx = 0; callPrmIdx < cxrCallee.m_instParamList.size(); callPrmIdx += 1)
+								if (modInstParam.m_name == cxrCallee.m_instParamList[callPrmIdx].m_name)
+									break;
+
+							if (callPrmIdx < cxrCallee.m_instParamList.size()) {
+								CCallInstParam &callInstParam = cxrCallee.m_instParamList[callPrmIdx];
+								if (callInstParam.m_value != modInst.m_callInstParamList[modPrmIdx].m_value) {
+									ParseMsg(Error, cxrCallee.m_lineInfo, "inconsistent instParam value for param %s on instance %s",
+										callInstParam.m_name.c_str(), modInst.m_instName.c_str());
+								}
+							} else if (modInstParam.m_default.size() > 0) {
+								if (modInstParam.m_default != modInst.m_callInstParamList[modPrmIdx].m_value) {
+									ParseMsg(Error, cxrCallee.m_lineInfo, "inconsistent instParam value for param %s on instance %s",
+										modInstParam.m_default.c_str(), modInst.m_instName.c_str());
+								}
+							} else
+								ParseMsg(Error, cxrCallee.m_lineInfo, "instParam must have either a default value or AddCall specified value");
+						}
+					}
 				}
-				mod.m_instIdCnt += 1;
+
 			} else {
 
 				if (mod.m_memPortList.size() > 0 && modInstParams.m_memPortList.size() == 0) {
@@ -392,25 +420,67 @@ void CDsnInfo::CheckRequiredEntryNames(vector<CModIdx> &callStk)
 						modInstParams.m_memPortList[memPortIdx] = memPortIdx;
 				}
 
-				if (modInstParams.m_memPortList.size() != mod.m_memPortList.size())
+				if (modInstParams.m_memPortList.size() != mod.m_memPortList.size()) {
 					ParseMsg(Error, modInstParams.m_lineInfo, "module memory port count (%d) does not match instance memory port count (%d)\n",
-					(int)mod.m_memPortList.size(), (int)modInstParams.m_memPortList.size());
+						(int)mod.m_memPortList.size(), (int)modInstParams.m_memPortList.size());
+				}
 
-				// check if requested instId is new
+				// check if requested instName is new
 				size_t i;
 				for (i = 0; i < mod.m_modInstList.size(); i += 1) {
-					if (mod.m_modInstList[i].m_instParams.m_instId == modInstParams.m_instId)
+					if (mod.m_modInstList[i].m_instName == cxrCallee.m_instName)
 						break;
 				}
 
 				if (i == mod.m_modInstList.size()) {
-					// new instId specified
+					// new instName specified
 					int cxrSrcCnt = (mod.m_bHasThreads ? 1 : 0) + mod.m_resetInstrCnt;
-					mod.m_modInstList.push_back(CModInst(&mod, modPath, modInstParams, cxrSrcCnt));
-					mod.m_instIdCnt += 1;
+					mod.m_modInstList.push_back(CModInst(&mod, cxrCallee.m_instName, modPath, modInstParams, cxrSrcCnt, mod.m_cxrReturnList.size()));
+
+					for (size_t modPrmIdx = 0; modPrmIdx < mod.m_instParamList.size(); modPrmIdx += 1) {
+						CModuleInstParam & modInstParam = mod.m_instParamList[modPrmIdx];
+
+						size_t callPrmIdx;
+						for (callPrmIdx = 0; callPrmIdx < cxrCallee.m_instParamList.size(); callPrmIdx += 1)
+							if (modInstParam.m_name == cxrCallee.m_instParamList[callPrmIdx].m_name)
+								break;
+
+						if (callPrmIdx < cxrCallee.m_instParamList.size()) {
+							CCallInstParam &callInstParam = cxrCallee.m_instParamList[callPrmIdx];
+							mod.m_modInstList.back().m_callInstParamList.push_back(callInstParam);
+						} else if (modInstParam.m_default.size() > 0)
+							mod.m_modInstList.back().m_callInstParamList.push_back(CCallInstParam(modInstParam.m_name, modInstParam.m_default));
+						else
+							ParseMsg(Error, cxrCallee.m_lineInfo, "instParam must have either a default value or AddCall specified value");
+					}
 				} else {
 					// add new modPath to modInst
-					mod.m_modInstList[i].m_modPaths.push_back(modPath);
+					CModInst & modInst = mod.m_modInstList[i];
+					modInst.m_modPaths.push_back(modPath);
+
+					// verify callInstParams are the same
+					for (size_t modPrmIdx = 0; modPrmIdx < mod.m_instParamList.size(); modPrmIdx += 1) {
+						CModuleInstParam & modInstParam = mod.m_instParamList[modPrmIdx];
+
+						size_t callPrmIdx;
+						for (callPrmIdx = 0; callPrmIdx < cxrCallee.m_instParamList.size(); callPrmIdx += 1)
+							if (modInstParam.m_name == cxrCallee.m_instParamList[callPrmIdx].m_name)
+								break;
+
+						if (callPrmIdx < cxrCallee.m_instParamList.size()) {
+							CCallInstParam &callInstParam = cxrCallee.m_instParamList[callPrmIdx];
+							if (callInstParam.m_value != modInst.m_callInstParamList[modPrmIdx].m_value) {
+								ParseMsg(Error, cxrCallee.m_lineInfo, "inconsistent instParam value for param %s on instance %s",
+									callInstParam.m_name.c_str(), modInst.m_instName.c_str());
+							}
+						} else if (modInstParam.m_default.size() > 0) {
+							if (modInstParam.m_default != modInst.m_callInstParamList[modPrmIdx].m_value) {
+								ParseMsg(Error, cxrCallee.m_lineInfo, "inconsistent instParam value for param %s on instance %s",
+									modInstParam.m_default.c_str(), modInst.m_instName.c_str());
+							}
+						} else
+							ParseMsg(Error, cxrCallee.m_lineInfo, "instParam must have either a default value or AddCall specified value");
+					}
 				}
 			}
 		}
@@ -443,7 +513,7 @@ void CDsnInfo::CheckRequiredEntryNames(vector<CModIdx> &callStk)
 		for (size_t rtnIdx = 0; rtnIdx < m_modList[modIdx]->m_cxrReturnList.size(); rtnIdx += 1) {
 			CCxrReturn & cxrReturn = m_modList[modIdx]->m_cxrReturnList[rtnIdx];
 
-			if (cxrReturn.m_funcName == pPrevCxrCall->m_funcName) {
+			if (cxrReturn.m_modEntry == pPrevCxrCall->m_modEntry) {
 				pPrevCxrCall->m_pairedReturnList.push_back(CModIdx(*m_modList[modIdx], rtnIdx, modPath));
 				cxrReturn.m_pairedCallList.Insert(callStk[callIdx]);
 
@@ -507,11 +577,11 @@ void CDsnInfo::CheckRequiredEntryNames(vector<CModIdx> &callStk)
 			if (cxrCallee.m_bXfer)
 				ParseMsg(Error, pCxrEntry->m_lineInfo,
 				"expected an outbound return or transfer for original call (%s) that was transfered to entry (%s)",
-				pPrevCxrCall->m_funcName.c_str(), pCxrEntry->m_funcName.c_str());
+				pPrevCxrCall->m_modEntry.c_str(), pCxrEntry->m_modEntry.c_str());
 			else
 				ParseMsg(Error, pCxrEntry->m_lineInfo,
 				"expected a return for call to entry (%s)",
-				pCxrEntry->m_funcName.c_str());
+				pCxrEntry->m_modEntry.c_str());
 		}
 
 		mod.m_bActiveCall = false;
@@ -522,7 +592,7 @@ bool CDsnInfo::CheckTransferReturn(vector<CModIdx> &callStk)
 {
 	CModIdx & modCall = callStk.back();
 	CCxrCall & cxrCallee = modCall.m_pMod->m_cxrCallList[modCall.m_idx];
-	CHtString & funcName = cxrCallee.m_funcName;
+	CHtString & modEntry = cxrCallee.m_modEntry;
 
 	// search for matching entry in list of modules
 	size_t modIdx;
@@ -534,7 +604,7 @@ bool CDsnInfo::CheckTransferReturn(vector<CModIdx> &callStk)
 		for (entryIdx = 0; entryIdx < mod.m_cxrEntryList.size(); entryIdx += 1) {
 			CCxrEntry * pCxrEntry = mod.m_cxrEntryList[entryIdx];
 
-			if (pCxrEntry->m_funcName == funcName) {
+			if (pCxrEntry->m_modEntry == modEntry) {
 				bFound = true;
 				break;
 			}
@@ -546,9 +616,9 @@ bool CDsnInfo::CheckTransferReturn(vector<CModIdx> &callStk)
 
 	if (!bFound) {
 		if (cxrCallee.m_lineInfo.m_lineNum == 0)
-			ParseMsg(Error, "Personality entry function name was not found, '%s'", funcName.c_str());
+			ParseMsg(Error, "Personality entry function name was not found, '%s'", modEntry.c_str());
 		else
-			ParseMsg(Error, cxrCallee.m_lineInfo, "function name was not found, '%s'", funcName.c_str());
+			ParseMsg(Error, cxrCallee.m_lineInfo, "function name was not found, '%s'", modEntry.c_str());
 		return false;
 	} else if (m_modList[modIdx]->m_bActiveCall) {
 		ParseMsg(Error, cxrCallee.m_lineInfo, "found recursion in call chain");
@@ -558,8 +628,8 @@ bool CDsnInfo::CheckTransferReturn(vector<CModIdx> &callStk)
 
 			ParseMsg(Info, cxrCaller.m_lineInfo, "    Module %s, entry %s, called %s\n",
 				callStk[stkIdx].m_pMod->m_modName.Lc().c_str(),
-				cxrCaller.m_funcName.c_str(),
-				cxrCallee.m_funcName.c_str());
+				cxrCaller.m_modEntry.c_str(),
+				cxrCallee.m_modEntry.c_str());
 		}
 		return false;
 	} else {
@@ -586,7 +656,7 @@ bool CDsnInfo::CheckTransferReturn(vector<CModIdx> &callStk)
 		for (size_t rtnIdx = 0; rtnIdx < m_modList[modIdx]->m_cxrReturnList.size(); rtnIdx += 1) {
 			CCxrReturn & cxrReturn = m_modList[modIdx]->m_cxrReturnList[rtnIdx];
 
-			if (cxrReturn.m_funcName == pPrevCxrCall->m_funcName)
+			if (cxrReturn.m_modEntry == pPrevCxrCall->m_modEntry)
 				return true;
 		}
 
@@ -778,6 +848,9 @@ void CDsnInfo::InitCxrIntfInfo()
 			CThreads * pDstGroup = pDstCxrEntry->m_pGroup;
 			vector<CField *> * pFieldList = &pDstCxrEntry->m_paramList;
 
+			if (cxrCall.m_instName.size() == 0)
+				cxrCall.m_instName = dstMod.m_modName;
+
 			// find return select ID
 			int rtnSelId = -1;
 			for (size_t callListIdx = 0; callListIdx < pDstCxrEntry->m_pairedCallList.size(); callListIdx += 1) {
@@ -810,26 +883,33 @@ void CDsnInfo::InitCxrIntfInfo()
 				// Find number of destination instances
 				int instCnt = 0;
 				for (size_t dstIdx = 0; dstIdx < dstMod.m_modInstList.size(); dstIdx += 1) {
+					CModInst & dstModInst = dstMod.m_modInstList[dstIdx];
 
 					// check if instance file had information for this link
-					if (AreModInstancesLinked(srcModInst, dstMod.m_modInstList[dstIdx]))
-						instCnt += 1;
+					if (dstModInst.m_instName != cxrCall.m_instName) continue;
+					if (!IsCallDest(srcModInst, dstModInst)) continue;
+
+					//if (AreModInstancesLinked(srcModInst, dstMod.m_modInstList[dstIdx]))
+					instCnt += 1;
 				}
 
 				int instIdx = 0;
 				for (size_t dstIdx = 0; dstIdx < dstMod.m_modInstList.size(); dstIdx += 1) {
 					CModInst & dstModInst = dstMod.m_modInstList[dstIdx];
 
-					// check if instance file had information for this link
-					if (!AreModInstancesLinked(srcModInst, dstModInst))
-						continue;
+					//// check if instance file had information for this link
+					//if (!AreModInstancesLinked(srcModInst, dstModInst))
+					//	continue;
+
+					if (dstModInst.m_instName != cxrCall.m_instName) continue;
+					if (!IsCallDest(srcModInst, dstModInst)) continue;
 
 					// found link info
 					bFoundLinkInfo = true;
 
 					// insert call link
 					srcModInst.m_cxrIntfList.push_back(
-						CCxrIntf(cxrCall.m_funcName, srcMod, srcIdx, pSrcGroup, dstMod, dstIdx, pDstGroup,
+						CCxrIntf(cxrCall.m_modEntry, srcModInst, pSrcGroup, dstModInst, pDstGroup,
 						cxrType, CxrOut, cxrCall.m_queueW.AsInt(), pFieldList));
 
 					CCxrIntf & srcCxrIntf = srcModInst.m_cxrIntfList.back();
@@ -840,7 +920,7 @@ void CDsnInfo::InitCxrIntfInfo()
 					srcCxrIntf.m_bRtnJoin = cxrCall.m_bCallFork || cxrCall.m_bXferFork;
 
 					dstModInst.m_cxrIntfList.push_back(
-						CCxrIntf(cxrCall.m_funcName, srcMod, srcIdx, pSrcGroup, dstMod, dstIdx, pDstGroup,
+						CCxrIntf(cxrCall.m_modEntry, srcModInst, pSrcGroup, dstModInst, pDstGroup,
 						cxrType, CxrIn, cxrCall.m_queueW.AsInt(), pFieldList));
 
 					CCxrIntf & dstCxrIntf = dstModInst.m_cxrIntfList.back();
@@ -869,7 +949,7 @@ void CDsnInfo::InitCxrIntfInfo()
 
 						// insert call link
 						srcModInst.m_cxrIntfList.push_back(
-							CCxrIntf(cxrCall.m_funcName, srcMod, srcIdx, pSrcGroup, dstMod, dstIdx, pDstGroup,
+							CCxrIntf(cxrCall.m_modEntry, srcModInst, pSrcGroup, dstModInst, pDstGroup,
 							cxrType, CxrOut, cxrCall.m_queueW.AsInt(), pFieldList));
 
 						CCxrIntf & srcCxrIntf = srcModInst.m_cxrIntfList.back();
@@ -880,7 +960,7 @@ void CDsnInfo::InitCxrIntfInfo()
 						srcCxrIntf.m_bRtnJoin = cxrCall.m_bCallFork || cxrCall.m_bXferFork;
 
 						dstModInst.m_cxrIntfList.push_back(
-							CCxrIntf(cxrCall.m_funcName, srcMod, srcIdx, pSrcGroup, dstMod, dstIdx, pDstGroup,
+							CCxrIntf(cxrCall.m_modEntry, srcModInst, pSrcGroup, dstModInst, pDstGroup,
 							cxrType, CxrIn, cxrCall.m_queueW.AsInt(), pFieldList));
 
 						CCxrIntf & dstCxrIntf = dstModInst.m_cxrIntfList.back();
@@ -915,6 +995,8 @@ void CDsnInfo::InitCxrIntfInfo()
 				for (size_t srcIdx = 0; srcIdx < srcMod.m_modInstList.size(); srcIdx += 1) {
 					CModInst & srcModInst = srcMod.m_modInstList[srcIdx];
 
+					if (srcModInst.m_instName != dstCxrCall.m_instName) continue;
+
 					int instIdx = 0;
 					for (size_t dstIdx = 0; dstIdx < dstMod.m_modInstList.size(); dstIdx += 1) {
 						CModInst & dstModInst = dstMod.m_modInstList[dstIdx];
@@ -931,7 +1013,7 @@ void CDsnInfo::InitCxrIntfInfo()
 
 							// insert return link
 							srcModInst.m_cxrIntfList.push_back(
-								CCxrIntf(dstCxrCall.m_funcName, srcMod, srcIdx, pSrcGroup, dstMod, dstIdx, pDstGroup,
+								CCxrIntf(dstCxrCall.m_modEntry, srcModInst, pSrcGroup, dstModInst, pDstGroup,
 								CxrReturn, CxrOut, dstCxrCall.m_queueW.AsInt(), pFieldList));
 
 							CCxrIntf & srcCxrIntf = srcModInst.m_cxrIntfList.back();
@@ -943,7 +1025,7 @@ void CDsnInfo::InitCxrIntfInfo()
 							srcCxrIntf.m_bRtnJoin = cxrReturn.m_bRtnJoin;
 
 							dstModInst.m_cxrIntfList.push_back(
-								CCxrIntf(dstCxrCall.m_funcName, srcMod, srcIdx, pSrcGroup, dstMod, dstIdx, pDstGroup,
+								CCxrIntf(dstCxrCall.m_modEntry, srcModInst, pSrcGroup, dstModInst, pDstGroup,
 								CxrReturn, CxrIn, dstCxrCall.m_queueW.AsInt(), pFieldList));
 
 							CCxrIntf & dstCxrIntf = dstModInst.m_cxrIntfList.back();
@@ -968,7 +1050,7 @@ void CDsnInfo::InitCxrIntfInfo()
 
 							// insert return link
 							srcModInst.m_cxrIntfList.push_back(
-								CCxrIntf(dstCxrCall.m_funcName, srcMod, srcIdx, pSrcGroup, dstMod, dstIdx, pDstGroup,
+								CCxrIntf(dstCxrCall.m_modEntry, srcModInst, pSrcGroup, dstModInst, pDstGroup,
 								CxrReturn, CxrOut, dstCxrCall.m_queueW.AsInt(), pFieldList));
 
 							CCxrIntf & srcCxrIntf = srcModInst.m_cxrIntfList.back();
@@ -979,7 +1061,7 @@ void CDsnInfo::InitCxrIntfInfo()
 							srcCxrIntf.m_bRtnJoin = cxrReturn.m_bRtnJoin;
 
 							dstModInst.m_cxrIntfList.push_back(
-								CCxrIntf(dstCxrCall.m_funcName, srcMod, srcIdx, pSrcGroup, dstMod, dstIdx, pDstGroup,
+								CCxrIntf(dstCxrCall.m_modEntry, srcModInst, pSrcGroup, dstModInst, pDstGroup,
 								CxrReturn, CxrIn, dstCxrCall.m_queueW.AsInt(), pFieldList));
 
 							CCxrIntf & dstCxrIntf = dstModInst.m_cxrIntfList.back();
@@ -1017,7 +1099,7 @@ void CDsnInfo::InitCxrIntfInfo()
 
 					if (cxrCallIntf.m_cxrDir != CxrOut) continue;
 					if (cxrCallIntf.m_cxrType != CxrCall) continue;
-					if (cxrCallIntf.m_funcName != cxrRtnIntf.m_funcName) continue;
+					if (cxrCallIntf.m_modEntry != cxrRtnIntf.m_modEntry) continue;
 
 					cxrRtnIntf.m_callIntfIdx = callIntfIdx;
 					break;
@@ -1055,7 +1137,7 @@ void CDsnInfo::InitCxrIntfInfo()
 						if (cxrIntf2.m_cxrDir != CxrIn) continue;
 						if (cxrIntf2.m_srcInstName.size() > 0) continue;
 
-						if (cxrIntf.m_pSrcMod == cxrIntf2.m_pSrcMod && cxrIntf.m_funcName == cxrIntf2.m_funcName)
+						if (cxrIntf.m_pSrcModInst->m_instName == cxrIntf2.m_pSrcModInst->m_instName && cxrIntf.m_modEntry == cxrIntf2.m_modEntry)
 							modCnt += 1;
 					}
 
@@ -1065,12 +1147,13 @@ void CDsnInfo::InitCxrIntfInfo()
 						if (cxrIntf2.m_cxrDir != CxrIn) continue;
 						if (cxrIntf2.m_srcInstName.size() > 0) continue;
 
-						if (cxrIntf.m_pSrcMod == cxrIntf2.m_pSrcMod) {
-							cxrIntf2.m_dstInstName = cxrIntf.m_pDstMod->m_modName;
-							cxrIntf2.m_srcInstName = cxrIntf.m_pSrcMod->m_modName;
+						if (cxrIntf.m_pSrcModInst->m_instName == cxrIntf2.m_pSrcModInst->m_instName) {
+							cxrIntf2.m_dstInstName = cxrIntf.m_pDstModInst->m_instName;
+							cxrIntf2.m_srcInstName = cxrIntf.m_pSrcModInst->m_instName;
+
 							if (modCnt > 1) {
-								cxrIntf2.m_srcInstName += ('0' + cxrIntf2.m_srcInstIdx % modCnt);
-								cxrIntf2.m_srcReplId = cxrIntf2.m_srcInstIdx % modCnt;
+								cxrIntf2.m_srcInstName += ('0' + cxrIntf2.m_pSrcModInst->m_replId % modCnt);
+								cxrIntf2.m_srcReplId = cxrIntf2.m_pSrcModInst->m_replId % modCnt;
 								cxrIntf2.m_srcReplCnt = modCnt;
 							}
 						}
@@ -1084,7 +1167,7 @@ void CDsnInfo::InitCxrIntfInfo()
 						if (cxrIntf2.m_cxrDir != CxrOut) continue;
 						if (cxrIntf2.m_dstInstName.size() > 0) continue;
 
-						if (cxrIntf.m_pDstMod == cxrIntf2.m_pDstMod && cxrIntf.m_funcName == cxrIntf2.m_funcName)
+						if (cxrIntf.m_pDstModInst->m_instName == cxrIntf2.m_pDstModInst->m_instName && cxrIntf.m_modEntry == cxrIntf2.m_modEntry)
 							modCnt += 1;
 					}
 
@@ -1094,12 +1177,13 @@ void CDsnInfo::InitCxrIntfInfo()
 						if (cxrIntf2.m_cxrDir != CxrOut) continue;
 						if (cxrIntf2.m_dstInstName.size() > 0) continue;
 
-						if (cxrIntf.m_pDstMod == cxrIntf2.m_pDstMod) {
-							cxrIntf2.m_dstInstName = cxrIntf.m_pDstMod->m_modName;
-							cxrIntf2.m_srcInstName = cxrIntf.m_pSrcMod->m_modName;
+						if (cxrIntf.m_pDstModInst->m_instName == cxrIntf2.m_pDstModInst->m_instName) {
+							cxrIntf2.m_dstInstName = cxrIntf.m_pDstModInst->m_instName;
+							cxrIntf2.m_srcInstName = cxrIntf.m_pSrcModInst->m_instName;
+
 							if (modCnt > 1) {
-								cxrIntf2.m_dstInstName += ('0' + cxrIntf2.m_dstInstIdx % modCnt);
-								cxrIntf2.m_dstReplId = cxrIntf2.m_dstInstIdx % modCnt;
+								cxrIntf2.m_dstInstName += ('0' + cxrIntf2.m_pDstModInst->m_replId % modCnt);
+								cxrIntf2.m_dstReplId = cxrIntf2.m_pDstModInst->m_replId % modCnt;
 								cxrIntf2.m_dstReplCnt = modCnt;
 							}
 						}
@@ -1143,15 +1227,34 @@ void CDsnInfo::InitCxrIntfInfo()
 		for (size_t modInstIdx = 0; modInstIdx < mod.m_modInstList.size(); modInstIdx += 1) {
 			CModInst & modInst = mod.m_modInstList[modInstIdx];
 
-			bool bAsync = false;
-			do {
+			///////////////////////////////////////////////////////////
+			// generate Return_func routine
 
-				///////////////////////////////////////////////////////////
-				// generate Return_func routine
+			bool bSingleReplId = true;
+			int singleReplId = -1;
+			for (size_t rtnIdx = 0; rtnIdx < mod.m_cxrReturnList.size(); rtnIdx += 1) {
 
-				for (size_t rtnIdx = 0; rtnIdx < mod.m_cxrReturnList.size(); rtnIdx += 1) {
+				int rtnReplCnt = 0;
+				for (size_t intfIdx = 0; intfIdx < modInst.m_cxrIntfList.size(); intfIdx += 1) {
+					CCxrIntf &cxrIntf = modInst.m_cxrIntfList[intfIdx];
 
-					int rtnReplCnt = 0;
+					if (cxrIntf.m_cxrDir == CxrIn) continue;
+					if (cxrIntf.IsCallOrXfer()) continue;
+					if (cxrIntf.m_rtnIdx != (int)rtnIdx) continue;
+
+					rtnReplCnt += 1;
+					maxRtnReplId = max(maxRtnReplId, cxrIntf.m_rtnReplId);
+
+					if (singleReplId == -1)
+						singleReplId = cxrIntf.m_rtnReplId;
+					else if (singleReplId != cxrIntf.m_rtnReplId)
+						singleReplId = -2;
+				}
+
+				if (singleReplId == -2) {
+					bReplReturn = true;
+
+					// mark cxrIntf as needing rtnReplId compare
 					for (size_t intfIdx = 0; intfIdx < modInst.m_cxrIntfList.size(); intfIdx += 1) {
 						CCxrIntf &cxrIntf = modInst.m_cxrIntfList[intfIdx];
 
@@ -1159,28 +1262,10 @@ void CDsnInfo::InitCxrIntfInfo()
 						if (cxrIntf.IsCallOrXfer()) continue;
 						if (cxrIntf.m_rtnIdx != (int)rtnIdx) continue;
 
-						rtnReplCnt += 1;
-						maxRtnReplId = max(maxRtnReplId, cxrIntf.m_rtnReplId);
-					}
-
-					if (rtnReplCnt > 1) {
-						bReplReturn = true;
-
-						// mark cxrIntf as needing rtnReplId compare
-						for (size_t intfIdx = 0; intfIdx < modInst.m_cxrIntfList.size(); intfIdx += 1) {
-							CCxrIntf &cxrIntf = modInst.m_cxrIntfList[intfIdx];
-
-							if (cxrIntf.m_cxrDir == CxrIn) continue;
-							if (cxrIntf.IsCallOrXfer()) continue;
-							if (cxrIntf.m_rtnIdx != (int)rtnIdx) continue;
-
-							cxrIntf.m_bMultiInstRtn = true;
-						}
+						cxrIntf.m_bMultiInstRtn = true;
 					}
 				}
-
-				bAsync = !bAsync;
-			} while (!bAsync);
+			}
 		}
 
 		// Declare return private variables
@@ -1205,6 +1290,44 @@ void CDsnInfo::InitCxrIntfInfo()
 
 	if (bError)
 		printf("Fatal - previous errors prevent file generation\n");
+}
+
+bool CDsnInfo::IsCallDest(CModInst & srcModInst, CModInst & dstModInst)
+{
+	static bool bErrorReported = false;
+
+	// found a path match
+	//   check if replicated instances should be linked
+	int srcReplCnt = srcModInst.m_replCnt;
+	int dstReplCnt = dstModInst.m_replCnt;
+	if (srcReplCnt < dstReplCnt) {
+		int dstRangeSize = dstReplCnt / srcReplCnt;
+		if (!bErrorReported && dstRangeSize * srcReplCnt != dstReplCnt) { // make sure divides evenly
+			ParseMsg(Error, "source and destination of call/return must have replication counts that are integer multiples");
+			ParseMsg(Info, "modInst=%s replCnt=%d", srcModInst.m_instName.c_str(), srcReplCnt);
+			ParseMsg(Info, "modInst=%s replCnt=%d", dstModInst.m_instName.c_str(), dstReplCnt);
+			bErrorReported = true;
+		}
+
+		int dstRangeLow = srcModInst.m_replId * dstRangeSize;
+		int dstRangeHigh = (srcModInst.m_replId + 1) * dstRangeSize - 1;
+
+		return dstRangeLow <= dstModInst.m_replId && dstModInst.m_replId <= dstRangeHigh;
+
+	} else {
+		int srcRangeSize = srcReplCnt / dstReplCnt;
+		if (!bErrorReported && srcRangeSize * dstReplCnt != srcReplCnt) { // make sure divides evenly
+			ParseMsg(Error, "source and destination of call/return must have replication counts that are integer multiples");
+			ParseMsg(Info, "modInst=%s replCnt=%d", srcModInst.m_instName.c_str(), srcReplCnt);
+			ParseMsg(Info, "modInst=%s replCnt=%d", dstModInst.m_instName.c_str(), dstReplCnt);
+			bErrorReported = true;
+		}
+
+		int srcRangeLow = dstModInst.m_replId * srcRangeSize;
+		int srcRangeHigh = (dstModInst.m_replId + 1) * srcRangeSize - 1;
+
+		return srcRangeLow <= srcModInst.m_replId && srcModInst.m_replId <= srcRangeHigh;
+	}
 }
 
 bool CDsnInfo::AreModInstancesLinked(CModInst & srcModInst, CModInst & dstModInst)
@@ -1262,9 +1385,8 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 	HtlAssert(mod.m_modInstList.size() > 0);
 	CModInst & modInst = mod.m_modInstList[modInstIdx];
 
-	string vcdModName = VA("Pers%s", mod.m_modName.Uc().c_str());
+	string vcdModName = VA("Pers%s", modInst.m_instName.Uc().c_str());
 
-	string instIdStr = GenIndexStr(mod.m_instIdCnt > 1, "%d", modInst.m_instParams.m_instId);
 	string unitNameUc = !g_appArgs.IsModuleUnitNamesEnabled() ? m_unitName.Uc() : "";
 
 	CHtCode & iplPostInstr = mod.m_clkRate == eClk1x ? m_iplPostInstr1x : m_iplPostInstr2x;
@@ -1306,22 +1428,22 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 
 		CCxrReturn & cxrReturn = mod.m_cxrReturnList[rtnIdx];
 
-		CHtString &funcName = cxrReturn.m_funcName;
+		CHtString &modEntry = cxrReturn.m_modEntry;
 
-		m_cxrRegDecl.Append("\tbool ht_noload c_SendReturnBusy_%s;\n", funcName.c_str());
-		m_cxrRegDecl.Append("\tbool ht_noload c_SendReturnAvail_%s;\n", funcName.c_str());
+		m_cxrRegDecl.Append("\tbool ht_noload c_SendReturnBusy_%s;\n", modEntry.c_str());
+		m_cxrRegDecl.Append("\tbool ht_noload c_SendReturnAvail_%s;\n", modEntry.c_str());
 
-		cxrPreInstr.Append("\tc_SendReturnAvail_%s = false;\n", funcName.c_str());
+		cxrPreInstr.Append("\tc_SendReturnAvail_%s = false;\n", modEntry.c_str());
 
-		string vcdModName = VA("Pers%s", mod.m_modName.Uc().c_str());
-		GenModTrace(eVcdUser, vcdModName, VA("SendReturnBusy_%s()", funcName.c_str()),
-			VA("c_SendReturnBusy_%s", funcName.c_str()));
+		string vcdModName = VA("Pers%s", modInst.m_instName.Uc().c_str());
+		GenModTrace(eVcdUser, vcdModName, VA("SendReturnBusy_%s()", modEntry.c_str()),
+			VA("c_SendReturnBusy_%s", modEntry.c_str()));
 
 		if (cxrReturn.m_pairedCallList.size() > 0) {
 			cxrPostReg.Append("#\tifdef _HTV\n");
 
 			const char * pSeparator = "";
-			cxrPostReg.Append("\tc_SendReturnBusy_%s = ", funcName.c_str());
+			cxrPostReg.Append("\tc_SendReturnBusy_%s = ", modEntry.c_str());
 			for (size_t intfIdx = 0; intfIdx < modInst.m_cxrIntfList.size(); intfIdx += 1) {
 				CCxrIntf &cxrIntf = modInst.m_cxrIntfList[intfIdx];
 
@@ -1347,7 +1469,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 			cxrPostReg.Append("#\telse\n");
 
 			pSeparator = "";
-			cxrPostReg.Append("\tc_SendReturnBusy_%s = ", funcName.c_str());
+			cxrPostReg.Append("\tc_SendReturnBusy_%s = ", modEntry.c_str());
 			for (size_t intfIdx = 0; intfIdx < modInst.m_cxrIntfList.size(); intfIdx += 1) {
 				CCxrIntf &cxrIntf = modInst.m_cxrIntfList[intfIdx];
 
@@ -1375,24 +1497,24 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 			cxrPostReg.Append("#\tendif\n");
 
 		} else {
-			cxrPostReg.Append("\tc_SendReturnBusy_%s = false;\n", funcName.c_str());
+			cxrPostReg.Append("\tc_SendReturnBusy_%s = false;\n", modEntry.c_str());
 		}
 
-		g_appArgs.GetDsnRpt().AddLevel("bool SendReturnBusy_%s()\n", funcName.c_str());
+		g_appArgs.GetDsnRpt().AddLevel("bool SendReturnBusy_%s()\n", modEntry.c_str());
 		g_appArgs.GetDsnRpt().EndLevel();
 
-		m_cxrFuncDecl.Append("\tbool SendReturnBusy_%s();\n", funcName.c_str());
+		m_cxrFuncDecl.Append("\tbool SendReturnBusy_%s();\n", modEntry.c_str());
 
-		m_cxrMacros.Append("bool CPers%s%s%s::SendReturnBusy_%s()\n",
-			unitNameUc.c_str(), mod.m_modName.Uc().c_str(), instIdStr.c_str(), funcName.c_str());
+		m_cxrMacros.Append("bool CPers%s%s::SendReturnBusy_%s()\n",
+			unitNameUc.c_str(), modInst.m_instName.Uc().c_str(), modEntry.c_str());
 		m_cxrMacros.Append("{\n");
 
 		m_cxrMacros.Append("\tassert_msg(r_t%d_htValid, \"Runtime check failed in CPers%s::SendReturnBusy_%s()"
-			" - thread is not valid\");\n", mod.m_execStg, mod.m_modName.Uc().c_str(), funcName.c_str());
+			" - thread is not valid\");\n", mod.m_execStg, modInst.m_instName.Uc().c_str(), modEntry.c_str());
 		m_cxrMacros.Append("\n");
 
-		m_cxrMacros.Append("\tc_SendReturnAvail_%s = !c_SendReturnBusy_%s;\n", funcName.c_str(), funcName.c_str());
-		m_cxrMacros.Append("\treturn c_SendReturnBusy_%s;\n", funcName.c_str());
+		m_cxrMacros.Append("\tc_SendReturnAvail_%s = !c_SendReturnBusy_%s;\n", modEntry.c_str(), modEntry.c_str());
+		m_cxrMacros.Append("\treturn c_SendReturnBusy_%s;\n", modEntry.c_str());
 
 		m_cxrMacros.Append("}\n");
 		m_cxrMacros.Append("\n");
@@ -1406,11 +1528,11 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 
 		CCxrReturn & cxrReturn = mod.m_cxrReturnList[rtnIdx];
 
-		CHtString &funcName = cxrReturn.m_funcName;//m_pairedCallList[0].m_pMod->m_cxrCallList[cxrReturn.m_pairedCallList[0].m_idx].m_funcName;
+		CHtString &modEntry = cxrReturn.m_modEntry;
 
-		g_appArgs.GetDsnRpt().AddLevel("bool SendReturn_%s(", funcName.c_str());
+		g_appArgs.GetDsnRpt().AddLevel("bool SendReturn_%s(", modEntry.c_str());
 
-		m_cxrFuncDecl.Append("\tvoid SendReturn_%s(", funcName.c_str());
+		m_cxrFuncDecl.Append("\tvoid SendReturn_%s(", modEntry.c_str());
 		char * pSeparater = "";
 		for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
 			CField * pField = cxrReturn.m_paramList[fldIdx];
@@ -1426,8 +1548,8 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 
 		m_cxrFuncDecl.Append(");\n");
 
-		m_cxrMacros.Append("void CPers%s%s%s::SendReturn_%s(",
-			unitNameUc.c_str(), mod.m_modName.Uc().c_str(), instIdStr.c_str(), funcName.c_str());
+		m_cxrMacros.Append("void CPers%s%s::SendReturn_%s(",
+			unitNameUc.c_str(), modInst.m_instName.Uc().c_str(), modEntry.c_str());
 		pSeparater = "";
 		for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
 			CField * pField = cxrReturn.m_paramList[fldIdx];
@@ -1440,12 +1562,12 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 		m_cxrMacros.Append("{\n");
 
 		m_cxrMacros.Append("\tassert_msg(r_t%d_htValid, \"Runtime check failed in CPers%s::SendReturn_%s()"
-			" - thread is not valid\");\n", mod.m_execStg, mod.m_modName.Uc().c_str(), funcName.c_str());
+			" - thread is not valid\");\n", mod.m_execStg, modInst.m_instName.Uc().c_str(), modEntry.c_str());
 		m_cxrMacros.Append("\tassert_msg(c_t%d_htCtrl == HT_INVALID, \"Runtime check failed in CPers%s::SendReturn_%s()"
-			" - an Ht control routine was already called\");\n", mod.m_execStg, mod.m_modName.Uc().c_str(), funcName.c_str());
+			" - an Ht control routine was already called\");\n", mod.m_execStg, modInst.m_instName.Uc().c_str(), modEntry.c_str());
 		m_cxrMacros.Append("\tassert_msg(c_SendReturnAvail_%s, \"Runtime check failed in CPers%s::SendReturn_%s()"
 			" - expected SendReturnBusy_%s() to have been called and not busy\");\n",
-			funcName.c_str(), mod.m_modName.Uc().c_str(), funcName.c_str(), funcName.c_str());
+			modEntry.c_str(), modInst.m_instName.Uc().c_str(), modEntry.c_str(), modEntry.c_str());
 		m_cxrMacros.Append("\n");
 
 		if (cxrReturn.m_pairedCallList.size() > 0) {
@@ -1485,7 +1607,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 				}
 
 				char typeName[64];
-				sprintf(typeName, "%sHtId_t", cxrIntf.m_pDstMod->m_modName.Uc().c_str());
+				sprintf(typeName, "%sHtId_t", cxrIntf.m_pDstModInst->m_pMod->m_modName.Uc().c_str());
 
 				CTypeDef * pTypeDef = FindTypeDef(typeName);
 
@@ -1494,7 +1616,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 					cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(),
 					typeName, mod.m_execStg);
 
-				sprintf(typeName, "%sInstr_t", cxrIntf.m_pDstMod->m_modName.Uc().c_str());
+				sprintf(typeName, "%sInstr_t", cxrIntf.m_pDstModInst->m_pMod->m_modName.Uc().c_str());
 
 				pTypeDef = FindTypeDef(typeName);
 
@@ -1523,14 +1645,14 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 
 		} else {
 			m_cxrMacros.Append("\tassert_msg(false, \"Runtime check failed in CPers%s::SendReturn_%s()"
-				" - return does not have a paired call\");\n", mod.m_modName.Uc().c_str(), funcName.c_str());
+				" - return does not have a paired call\");\n", modInst.m_instName.Uc().c_str(), modEntry.c_str());
 		}
 
 		if (g_appArgs.IsInstrTraceEnabled()) {
 			m_cxrMacros.Append("\n");
 			m_cxrMacros.Append("#\tifndef _HTV\n");
 			m_cxrMacros.Append("\tif (Ht::g_instrTraceFp)\n");
-			m_cxrMacros.Append("\t\tfprintf(Ht::g_instrTraceFp, \"SendReturn_%s(", funcName.c_str());
+			m_cxrMacros.Append("\t\tfprintf(Ht::g_instrTraceFp, \"SendReturn_%s(", modEntry.c_str());
 
 			pSeparater = "";
 			for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
@@ -1595,7 +1717,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 		if (!cxrCall.m_bXfer && cxrCall.m_bCallFork) continue;
 
 		string callType = cxrCall.m_bXfer ? "Transfer" : "Call";
-		string funcName = cxrCall.m_funcName.AsStr();
+		string callName = cxrCall.m_callName.AsStr();
 		bool bDestAuto = cxrCall.m_dest == "auto";
 
 		int replCnt = 1;
@@ -1612,24 +1734,24 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 		}
 		int replCntW = FindLg2(replCnt - 1);
 
-		string vcdModName = VA("Pers%s", mod.m_modName.Uc().c_str());
+		string vcdModName = VA("Pers%s", modInst.m_instName.Uc().c_str());
 		if (bDestAuto) {
-			m_cxrRegDecl.Append("\tbool ht_noload c_Send%sBusy_%s;\n", callType.c_str(), funcName.c_str());
-			m_cxrRegDecl.Append("\tbool ht_noload c_Send%sAvail_%s;\n", callType.c_str(), funcName.c_str());
+			m_cxrRegDecl.Append("\tbool ht_noload c_Send%sBusy_%s;\n", callType.c_str(), callName.c_str());
+			m_cxrRegDecl.Append("\tbool ht_noload c_Send%sAvail_%s;\n", callType.c_str(), callName.c_str());
 
-			cxrPreInstr.Append("\tc_Send%sAvail_%s = false;\n", callType.c_str(), funcName.c_str());
+			cxrPreInstr.Append("\tc_Send%sAvail_%s = false;\n", callType.c_str(), callName.c_str());
 
-			GenModTrace(eVcdUser, vcdModName, VA("Send%sBusy_%s()", callType.c_str(), funcName.c_str()),
-				VA("c_Send%sBusy_%s", callType.c_str(), funcName.c_str()));
+			GenModTrace(eVcdUser, vcdModName, VA("Send%sBusy_%s()", callType.c_str(), callName.c_str()),
+				VA("c_Send%sBusy_%s", callType.c_str(), callName.c_str()));
 		} else {
-			m_cxrRegDecl.Append("\tbool ht_noload c_Send%sBusy_%s[%d];\n", callType.c_str(), funcName.c_str(), replCnt);
-			m_cxrRegDecl.Append("\tbool ht_noload c_Send%sAvail_%s[%d];\n", callType.c_str(), funcName.c_str(), replCnt);
+			m_cxrRegDecl.Append("\tbool ht_noload c_Send%sBusy_%s[%d];\n", callType.c_str(), callName.c_str(), replCnt);
+			m_cxrRegDecl.Append("\tbool ht_noload c_Send%sAvail_%s[%d];\n", callType.c_str(), callName.c_str(), replCnt);
 
 			for (int replIdx = 0; replIdx < replCnt; replIdx += 1) {
-				cxrPreInstr.Append("\tc_Send%sAvail_%s[%d] = false;\n", callType.c_str(), funcName.c_str(), replIdx);
+				cxrPreInstr.Append("\tc_Send%sAvail_%s[%d] = false;\n", callType.c_str(), callName.c_str(), replIdx);
 
-				GenModTrace(eVcdUser, vcdModName, VA("Send%sBusy_%s(%d)", callType.c_str(), funcName.c_str(), replIdx),
-					VA("c_Send%sBusy_%s[%d]", callType.c_str(), funcName.c_str(), replIdx));
+				GenModTrace(eVcdUser, vcdModName, VA("Send%sBusy_%s(%d)", callType.c_str(), callName.c_str(), replIdx),
+					VA("c_Send%sBusy_%s[%d]", callType.c_str(), callName.c_str(), replIdx));
 			}
 		}
 
@@ -1639,7 +1761,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 		for (int replIdx = 0; replIdx < replCnt; replIdx += 1) {
 			string indexStr = bDestAuto ? "" : VA("[%d]", replIdx);
 
-			cxrPostReg.Append("\tc_Send%sBusy_%s%s = ", callType.c_str(), funcName.c_str(), indexStr.c_str());
+			cxrPostReg.Append("\tc_Send%sBusy_%s%s = ", callType.c_str(), callName.c_str(), indexStr.c_str());
 
 			const char * pSeparator = "";
 			for (size_t intfIdx = 0; intfIdx < modInst.m_cxrIntfList.size(); intfIdx += 1) {
@@ -1653,14 +1775,14 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 					cxrPostReg.Append("%sr_%s_%sAvlCntZero%s",
 						pSeparator, cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 
-					if (cxrIntf.m_pDstMod->m_clkRate == eClk1x && cxrIntf.m_pDstMod->m_clkRate != mod.m_clkRate)
+					if (cxrIntf.m_pDstModInst->m_pMod->m_clkRate == eClk1x && cxrIntf.m_pDstModInst->m_pMod->m_clkRate != mod.m_clkRate)
 						cxrPostReg.Append(" || (r_%s_%sRdy%s & r_phase)",
 						cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 				} else {
 					cxrPostReg.Append("%sr_%s_%sAvlCntZero%s",
 						pSeparator, cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), indexStr.c_str());
 
-					if (cxrIntf.m_pDstMod->m_clkRate == eClk1x && cxrIntf.m_pDstMod->m_clkRate != mod.m_clkRate)
+					if (cxrIntf.m_pDstModInst->m_pMod->m_clkRate == eClk1x && cxrIntf.m_pDstModInst->m_pMod->m_clkRate != mod.m_clkRate)
 						cxrPostReg.Append(" || (r_%s_%sRdy%s & r_phase)",
 						cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), indexStr.c_str());
 
@@ -1680,7 +1802,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 		for (int replIdx = 0; replIdx < replCnt; replIdx += 1) {
 			string indexStr = bDestAuto ? "" : VA("[%d]", replIdx);
 
-			cxrPostReg.Append("\tc_Send%sBusy_%s%s = ", callType.c_str(), funcName.c_str(), indexStr.c_str());
+			cxrPostReg.Append("\tc_Send%sBusy_%s%s = ", callType.c_str(), callName.c_str(), indexStr.c_str());
 
 			const char * pSeparator = "";
 			for (size_t intfIdx = 0; intfIdx < modInst.m_cxrIntfList.size(); intfIdx += 1) {
@@ -1695,7 +1817,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 						pSeparator,
 						cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 
-					if (cxrIntf.m_pDstMod->m_clkRate == eClk1x && cxrIntf.m_pDstMod->m_clkRate != mod.m_clkRate)
+					if (cxrIntf.m_pDstModInst->m_pMod->m_clkRate == eClk1x && cxrIntf.m_pDstModInst->m_pMod->m_clkRate != mod.m_clkRate)
 						cxrPostReg.Append(" || (r_%s_%sRdy%s & r_phase)",
 						cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 				} else {
@@ -1703,7 +1825,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 						pSeparator,
 						cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), indexStr.c_str());
 
-					if (cxrIntf.m_pDstMod->m_clkRate == eClk1x && cxrIntf.m_pDstMod->m_clkRate != mod.m_clkRate)
+					if (cxrIntf.m_pDstModInst->m_pMod->m_clkRate == eClk1x && cxrIntf.m_pDstModInst->m_pMod->m_clkRate != mod.m_clkRate)
 						cxrPostReg.Append("%s(r_%s_%sRdy%s & r_phase)",
 						pSeparator,
 						cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), indexStr.c_str());
@@ -1726,26 +1848,26 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 		string indexStr = bDestAuto ? "" : "[destId]";
 
 		g_appArgs.GetDsnRpt().AddLevel("bool Send%sBusy_%s(%s)\n",
-			cxrCall.m_bXfer ? "Transfer" : "Call", cxrCall.m_funcName.c_str(), paramStr.c_str());
+			cxrCall.m_bXfer ? "Transfer" : "Call", callName.c_str(), paramStr.c_str());
 		g_appArgs.GetDsnRpt().EndLevel();
 
 		m_cxrFuncDecl.Append("\tbool Send%sBusy_%s(%s);\n",
-			cxrCall.m_bXfer ? "Transfer" : "Call", cxrCall.m_funcName.c_str(), paramStr.c_str());
+			cxrCall.m_bXfer ? "Transfer" : "Call", callName.c_str(), paramStr.c_str());
 
-		m_cxrMacros.Append("bool CPers%s%s%s::Send%sBusy_%s(%s)\n",
-			unitNameUc.c_str(), mod.m_modName.Uc().c_str(), instIdStr.c_str(),
-			cxrCall.m_bXfer ? "Transfer" : "Call", cxrCall.m_funcName.c_str(), paramStr.c_str());
+		m_cxrMacros.Append("bool CPers%s%s::Send%sBusy_%s(%s)\n",
+			unitNameUc.c_str(), modInst.m_instName.Uc().c_str(),
+			cxrCall.m_bXfer ? "Transfer" : "Call", callName.c_str(), paramStr.c_str());
 		m_cxrMacros.Append("{\n");
 
 		m_cxrMacros.Append("\tassert_msg(r_t%d_htValid, \"Runtime check failed in CPers%s::Send%sBusy_%s()"
-			" - thread is not valid\");\n", mod.m_execStg, mod.m_modName.Uc().c_str(), cxrCall.m_bXfer ? "Transfer" : "Call", cxrCall.m_funcName.c_str());
+			" - thread is not valid\");\n", mod.m_execStg, modInst.m_instName.Uc().c_str(), cxrCall.m_bXfer ? "Transfer" : "Call", callName.c_str());
 		m_cxrMacros.Append("\n");
 
 		m_cxrMacros.Append("\tc_Send%sAvail_%s%s = !c_Send%sBusy_%s%s;\n",
-			callType.c_str(), funcName.c_str(), indexStr.c_str(),
-			callType.c_str(), funcName.c_str(), indexStr.c_str());
+			callType.c_str(), callName.c_str(), indexStr.c_str(),
+			callType.c_str(), callName.c_str(), indexStr.c_str());
 		m_cxrMacros.Append("\treturn c_Send%sBusy_%s%s;\n",
-			callType.c_str(), funcName.c_str(), indexStr.c_str());
+			callType.c_str(), callName.c_str(), indexStr.c_str());
 
 		m_cxrMacros.Append("}\n");
 
@@ -1759,6 +1881,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 		if (!mod.m_bIsUsed) continue;
 
 		CCxrCall & cxrCall = mod.m_cxrCallList[callIdx];
+		string &callName = cxrCall.m_callName;
 
 		if (!cxrCall.m_bCall && !cxrCall.m_bXfer) continue;
 
@@ -1781,14 +1904,14 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 		}
 
 		g_appArgs.GetDsnRpt().AddLevel("void Send%s_%s(",
-			cxrCall.m_bXfer ? "Transfer" : "Call", cxrCall.m_funcName.c_str());
+			cxrCall.m_bXfer ? "Transfer" : "Call", callName.c_str());
 
 		m_cxrFuncDecl.Append("\tvoid Send%s_%s(",
-			cxrCall.m_bXfer ? "Transfer" : "Call", cxrCall.m_funcName.c_str());
+			cxrCall.m_bXfer ? "Transfer" : "Call", callName.c_str());
 
-		m_cxrMacros.Append("void CPers%s%s%s::Send%s_%s(",
-			unitNameUc.c_str(), mod.m_modName.Uc().c_str(), instIdStr.c_str(),
-			cxrCall.m_bXfer ? "Transfer" : "Call", cxrCall.m_funcName.c_str());
+		m_cxrMacros.Append("void CPers%s%s::Send%s_%s(",
+			unitNameUc.c_str(), modInst.m_instName.Uc().c_str(),
+			cxrCall.m_bXfer ? "Transfer" : "Call", callName.c_str());
 
 		char const * pSeparater;
 		if (!cxrCall.m_bXfer) {
@@ -1829,7 +1952,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 		m_cxrMacros.Append("{\n");
 
 		m_cxrMacros.Append("\tassert_msg(r_t%d_htValid, \"Runtime check failed in CPers%s::Send%s_%s()"
-			" - thread is not valid\");\n", mod.m_execStg, mod.m_modName.Uc().c_str(), cxrCall.m_bXfer ? "Transfer" : "Call", cxrCall.m_funcName.c_str());
+			" - thread is not valid\");\n", mod.m_execStg, modInst.m_instName.Uc().c_str(), cxrCall.m_bXfer ? "Transfer" : "Call", callName.c_str());
 		m_cxrMacros.Append("\n");
 
 		for (size_t intfIdx = 0; intfIdx < modInst.m_cxrIntfList.size(); intfIdx += 1) {
@@ -1846,7 +1969,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 				if (cxrCall.m_dest == "auto")
 					m_cxrMacros.Append("\tc_%s_%sRdy%s = r_%sCall_roundRobin == %dUL;\n",
 					cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(),
-					cxrCall.m_funcName.c_str(), cxrIntf.m_instIdx);
+					cxrCall.m_modEntry.c_str(), cxrIntf.m_instIdx);
 				else
 					m_cxrMacros.Append("\tc_%s_%sRdy%s = destId == %dUL;\n",
 					cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(),
@@ -1903,13 +2026,13 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 
 		if (bReplIntf && cxrCall.m_dest == "auto") {
 			m_cxrMacros.Append("\tc_%sCall_roundRobin = (r_%sCall_roundRobin + 1U) %% %dU;\n",
-				cxrCall.m_funcName.c_str(), cxrCall.m_funcName.c_str(), replCnt);
+				cxrCall.m_modEntry.c_str(), cxrCall.m_modEntry.c_str(), replCnt);
 			m_cxrMacros.Append("\n");
 		}
 
-		m_cxrMacros.Append("\tassert_msg(c_t%d_htCtrl == HT_INVALID, \"Runtime check failed in CPers%s%s::Send%s_%s()"
-			" - an Ht control routine was already called\");\n", mod.m_execStg, mod.m_modName.Uc().c_str(), instIdStr.c_str(),
-			cxrCall.m_bXfer ? "Transfer" : "Call", cxrCall.m_funcName.c_str());
+		m_cxrMacros.Append("\tassert_msg(c_t%d_htCtrl == HT_INVALID, \"Runtime check failed in CPers%s::Send%s_%s()"
+			" - an Ht control routine was already called\");\n", mod.m_execStg, modInst.m_instName.Uc().c_str(),
+			cxrCall.m_bXfer ? "Transfer" : "Call", callName.c_str());
 		m_cxrMacros.Append("\n");
 
 		m_cxrMacros.Append("\tc_t%d_htCtrl = HT_CALL;\n", mod.m_execStg);
@@ -1919,7 +2042,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 			m_cxrMacros.Append("#\tifndef _HTV\n");
 			m_cxrMacros.Append("\tif (Ht::g_instrTraceFp)\n");
 			m_cxrMacros.Append("\t\tfprintf(Ht::g_instrTraceFp, \"Send%s_%s(",
-				cxrCall.m_bXfer ? "Transfer" : "Call", cxrCall.m_funcName.c_str());
+				cxrCall.m_bXfer ? "Transfer" : "Call", cxrCall.m_modEntry.c_str());
 
 			pSeparater = "";
 			for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
@@ -1990,12 +2113,12 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 
 			m_cxrIoDecl.Append("\t// Inbound %s interface from %s\n",
 				cxrIntf.m_cxrType == CxrCall ? "call" : (cxrIntf.m_cxrType == CxrReturn ? "return" : "xfer"),
-				cxrIntf.m_pSrcMod->m_modName.c_str());
+				cxrIntf.m_pSrcModInst->m_instName.c_str());
 
 			GenModDecl(eVcdAll, m_cxrIoDecl, vcdModName, "sc_in<bool>",
 				VA("i_%s_%sRdy", cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName()), replDim);
 
-			if (cxrIntf.m_pSrcMod->m_bGvIwComp)
+			if (cxrIntf.m_pSrcModInst->m_pMod->m_bGvIwComp)
 				m_cxrIoDecl.Append("\tsc_in<bool> i_%s_%sCompRdy%s;\n", cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplDecl());
 
 			if (cxrIntf.m_bCxrIntfFields)
@@ -2011,12 +2134,12 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 
 			m_cxrIoDecl.Append("\t// Outbound %s interace to %s\n",
 				cxrIntf.m_cxrType == CxrCall ? "call" : (cxrIntf.m_cxrType == CxrReturn ? "return" : "xfer"),
-				cxrIntf.m_pDstMod->m_modName.c_str());
+				cxrIntf.m_pDstModInst->m_instName.c_str());
 
 			GenModDecl(eVcdAll, m_cxrIoDecl, vcdModName, "sc_out<bool>",
 				VA("o_%s_%sRdy", cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName()), replDim);
 
-			if (cxrIntf.m_pSrcMod->m_bGvIwComp && cxrIntf.m_pDstMod->m_modName.AsStr() != "hif") {
+			if (cxrIntf.m_pSrcModInst->m_pMod->m_bGvIwComp && cxrIntf.m_pDstModInst->m_pMod->m_modName.AsStr() != "hif") {
 				m_cxrIoDecl.Append("\tsc_out<bool> o_%s_%sCompRdy%s;\n",
 					cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplDecl());
 			}
@@ -2062,7 +2185,8 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 
 		int htIdW = cxrCall.m_pGroup->m_htIdW.AsInt();
 		int forkCntW = cxrCall.m_forkCntW + replCntW;
-		string funcName = cxrCall.m_funcName.AsStr();
+		string callName = cxrCall.m_callName;
+		string modEntry = cxrCall.m_modEntry.AsStr();
 
 		char rtnCntTypeStr[64];
 		sprintf(rtnCntTypeStr, "ht_uint%d", forkCntW);
@@ -2083,32 +2207,32 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 		// declarations
 		if (htIdW == 0) {
 
-			GenModDecl(eVcdAll, m_cxrRegDecl, vcdModName, "bool", VA("r_asyncCall%s_waiting", cxrCall.m_funcName.c_str()), replDim);
-			m_cxrRegDecl.Append("\tbool c_asyncCall%s_waiting%s;\n", cxrCall.m_funcName.c_str(), declStr.c_str());
-			GenModDecl(eVcdAll, m_cxrRegDecl, vcdModName, "bool", VA("r_asyncCall%s_rtnCntFull", cxrCall.m_funcName.c_str()), replDim);
-			m_cxrRegDecl.Append("\tbool c_asyncCall%s_rtnCntFull%s;\n", cxrCall.m_funcName.c_str(), declStr.c_str());
-			GenModDecl(eVcdAll, m_cxrRegDecl, vcdModName, rtnCntTypeStr, VA("r_asyncCall%s_rtnCnt", cxrCall.m_funcName.c_str()), replDim);
-			m_cxrRegDecl.Append("\tht_uint%d c_asyncCall%s_rtnCnt%s;\n", forkCntW, cxrCall.m_funcName.c_str(), declStr.c_str());
-			m_cxrRegDecl.Append("\tht_uint%d r_asyncCall%s_rsmInstr%s;\n", mod.m_instrW, cxrCall.m_funcName.c_str(), declStr.c_str());
-			m_cxrRegDecl.Append("\tht_uint%d c_asyncCall%s_rsmInstr%s;\n", mod.m_instrW, cxrCall.m_funcName.c_str(), declStr.c_str());
+			GenModDecl(eVcdAll, m_cxrRegDecl, vcdModName, "bool", VA("r_asyncCall%s_waiting", cxrCall.m_modEntry.c_str()), replDim);
+			m_cxrRegDecl.Append("\tbool c_asyncCall%s_waiting%s;\n", cxrCall.m_modEntry.c_str(), declStr.c_str());
+			GenModDecl(eVcdAll, m_cxrRegDecl, vcdModName, "bool", VA("r_asyncCall%s_rtnCntFull", cxrCall.m_modEntry.c_str()), replDim);
+			m_cxrRegDecl.Append("\tbool c_asyncCall%s_rtnCntFull%s;\n", cxrCall.m_modEntry.c_str(), declStr.c_str());
+			GenModDecl(eVcdAll, m_cxrRegDecl, vcdModName, rtnCntTypeStr, VA("r_asyncCall%s_rtnCnt", cxrCall.m_modEntry.c_str()), replDim);
+			m_cxrRegDecl.Append("\tht_uint%d c_asyncCall%s_rtnCnt%s;\n", forkCntW, cxrCall.m_modEntry.c_str(), declStr.c_str());
+			m_cxrRegDecl.Append("\tht_uint%d r_asyncCall%s_rsmInstr%s;\n", mod.m_instrW, cxrCall.m_modEntry.c_str(), declStr.c_str());
+			m_cxrRegDecl.Append("\tht_uint%d c_asyncCall%s_rsmInstr%s;\n", mod.m_instrW, cxrCall.m_modEntry.c_str(), declStr.c_str());
 
 		} else {
 
 			m_cxrRegDecl.Append("\tht_dist_ram<bool, %d> m_asyncCall%s_waiting%s;\n",
-				htIdW, cxrCall.m_funcName.c_str(), declStr.c_str());
+				htIdW, cxrCall.m_modEntry.c_str(), declStr.c_str());
 			m_cxrRegDecl.Append("\tht_dist_ram<bool, %d> m_asyncCall%s_rtnCntFull%s;\n",
-				htIdW, cxrCall.m_funcName.c_str(), declStr.c_str());
+				htIdW, cxrCall.m_modEntry.c_str(), declStr.c_str());
 			m_cxrRegDecl.Append("\tht_dist_ram<ht_uint%d, %d> m_asyncCall%s_rtnCnt%s;\n",
-				forkCntW, htIdW, cxrCall.m_funcName.c_str(), declStr.c_str());
+				forkCntW, htIdW, cxrCall.m_modEntry.c_str(), declStr.c_str());
 			m_cxrRegDecl.Append("\tht_dist_ram<ht_uint%d, %d> m_asyncCall%s_rsmInstr%s;\n",
-				mod.m_instrW, htIdW, cxrCall.m_funcName.c_str(), declStr.c_str());
+				mod.m_instrW, htIdW, cxrCall.m_modEntry.c_str(), declStr.c_str());
 			m_cxrRegDecl.Append("\n");
 
 			m_cxrRegDecl.Append("\tbool c_t%d_asyncCall%s_rtnCntFull%s;\n",
-				mod.m_execStg - 1, cxrCall.m_funcName.c_str(), declStr.c_str());
+				mod.m_execStg - 1, cxrCall.m_modEntry.c_str(), declStr.c_str());
 			GenModDecl(eVcdAll, m_cxrRegDecl, vcdModName, "bool",
 				VA("r_t%d_asyncCall%s_rtnCntFull",
-				mod.m_execStg, cxrCall.m_funcName.c_str()), replDim);
+				mod.m_execStg, cxrCall.m_modEntry.c_str()), replDim);
 			m_cxrRegDecl.Append("\n");
 		}
 
@@ -2118,68 +2242,68 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 			if (htIdW == 0) {
 
 				cxrTsStage.Append("\tc_asyncCall%s_waiting%s = r_asyncCall%s_waiting%s;\n",
-					cxrCall.m_funcName.c_str(), replStr.c_str(), cxrCall.m_funcName.c_str(), replStr.c_str());
+					cxrCall.m_modEntry.c_str(), replStr.c_str(), cxrCall.m_modEntry.c_str(), replStr.c_str());
 				cxrTsStage.Append("\tc_asyncCall%s_rtnCnt%s = r_asyncCall%s_rtnCnt%s;\n",
-					cxrCall.m_funcName.c_str(), replStr.c_str(), cxrCall.m_funcName.c_str(), replStr.c_str());
+					cxrCall.m_modEntry.c_str(), replStr.c_str(), cxrCall.m_modEntry.c_str(), replStr.c_str());
 				cxrTsStage.Append("\tc_asyncCall%s_rtnCntFull%s = r_asyncCall%s_rtnCntFull%s;\n",
-					cxrCall.m_funcName.c_str(), replStr.c_str(), cxrCall.m_funcName.c_str(), replStr.c_str());
+					cxrCall.m_modEntry.c_str(), replStr.c_str(), cxrCall.m_modEntry.c_str(), replStr.c_str());
 				cxrTsStage.Append("\tc_asyncCall%s_rsmInstr%s = r_asyncCall%s_rsmInstr%s;\n",
-					cxrCall.m_funcName.c_str(), replStr.c_str(), cxrCall.m_funcName.c_str(), replStr.c_str());
+					cxrCall.m_modEntry.c_str(), replStr.c_str(), cxrCall.m_modEntry.c_str(), replStr.c_str());
 
 				cxrReg.Append("\tr_asyncCall%s_waiting%s = !%s && c_asyncCall%s_waiting%s;\n",
-					cxrCall.m_funcName.c_str(), replStr.c_str(), reset.c_str(), cxrCall.m_funcName.c_str(), replStr.c_str());
+					cxrCall.m_modEntry.c_str(), replStr.c_str(), reset.c_str(), cxrCall.m_modEntry.c_str(), replStr.c_str());
 				cxrReg.Append("\tr_asyncCall%s_rtnCnt%s = %s ? (ht_uint%d)0 : c_asyncCall%s_rtnCnt%s;\n",
-					cxrCall.m_funcName.c_str(), replStr.c_str(), reset.c_str(), forkCntW, cxrCall.m_funcName.c_str(), replStr.c_str());
+					cxrCall.m_modEntry.c_str(), replStr.c_str(), reset.c_str(), forkCntW, cxrCall.m_modEntry.c_str(), replStr.c_str());
 				cxrReg.Append("\tr_asyncCall%s_rtnCntFull%s = !%s && c_asyncCall%s_rtnCntFull%s;\n",
-					cxrCall.m_funcName.c_str(), replStr.c_str(), reset.c_str(), cxrCall.m_funcName.c_str(), replStr.c_str());
+					cxrCall.m_modEntry.c_str(), replStr.c_str(), reset.c_str(), cxrCall.m_modEntry.c_str(), replStr.c_str());
 				cxrReg.Append("\tr_asyncCall%s_rsmInstr%s = c_asyncCall%s_rsmInstr%s;\n",
-					cxrCall.m_funcName.c_str(), replStr.c_str(), cxrCall.m_funcName.c_str(), replStr.c_str());
+					cxrCall.m_modEntry.c_str(), replStr.c_str(), cxrCall.m_modEntry.c_str(), replStr.c_str());
 
 			} else {
 
 				cxrTsStage.Append("\tm_asyncCall%s_waiting%s.read_addr(r_t%d_htId);\n",
-					cxrCall.m_funcName.c_str(), replStr.c_str(), mod.m_execStg);
+					cxrCall.m_modEntry.c_str(), replStr.c_str(), mod.m_execStg);
 				cxrTsStage.Append("\tm_asyncCall%s_waiting%s.write_addr(r_t%d_htId);\n",
-					cxrCall.m_funcName.c_str(), replStr.c_str(), mod.m_execStg);
+					cxrCall.m_modEntry.c_str(), replStr.c_str(), mod.m_execStg);
 				cxrTsStage.Append("\tm_asyncCall%s_rtnCnt%s.read_addr(r_t%d_htId);\n",
-					cxrCall.m_funcName.c_str(), replStr.c_str(), mod.m_execStg);
+					cxrCall.m_modEntry.c_str(), replStr.c_str(), mod.m_execStg);
 				cxrTsStage.Append("\tm_asyncCall%s_rtnCnt%s.write_addr(r_t%d_htId);\n",
-					cxrCall.m_funcName.c_str(), replStr.c_str(), mod.m_execStg);
+					cxrCall.m_modEntry.c_str(), replStr.c_str(), mod.m_execStg);
 				cxrTsStage.Append("\tm_asyncCall%s_rtnCntFull%s.read_addr(r_t%d_htId);\n",
-					cxrCall.m_funcName.c_str(), replStr.c_str(), mod.m_execStg - 1);
+					cxrCall.m_modEntry.c_str(), replStr.c_str(), mod.m_execStg - 1);
 				cxrTsStage.Append("\tm_asyncCall%s_rtnCntFull%s.write_addr(r_t%d_htId);\n",
-					cxrCall.m_funcName.c_str(), replStr.c_str(), mod.m_execStg);
+					cxrCall.m_modEntry.c_str(), replStr.c_str(), mod.m_execStg);
 				cxrTsStage.Append("\tm_asyncCall%s_rsmInstr%s.read_addr(r_t%d_htId);\n",
-					cxrCall.m_funcName.c_str(), replStr.c_str(), mod.m_execStg);
+					cxrCall.m_modEntry.c_str(), replStr.c_str(), mod.m_execStg);
 				cxrTsStage.Append("\tm_asyncCall%s_rsmInstr%s.write_addr(r_t%d_htId);\n",
-					cxrCall.m_funcName.c_str(), replStr.c_str(), mod.m_execStg);
+					cxrCall.m_modEntry.c_str(), replStr.c_str(), mod.m_execStg);
 				cxrTsStage.Append("\n");
 				cxrTsStage.Append("\tc_t%d_asyncCall%s_rtnCntFull%s = m_asyncCall%s_rtnCntFull%s.read_mem();\n",
-					mod.m_execStg - 1, cxrCall.m_funcName.c_str(), replStr.c_str(), cxrCall.m_funcName.c_str(), replStr.c_str());
+					mod.m_execStg - 1, cxrCall.m_modEntry.c_str(), replStr.c_str(), cxrCall.m_modEntry.c_str(), replStr.c_str());
 				cxrTsStage.Append("\n");
 
 				cxrReg.Append("\tm_asyncCall%s_waiting%s.clock();\n",
-					cxrCall.m_funcName.c_str(), replStr.c_str());
+					cxrCall.m_modEntry.c_str(), replStr.c_str());
 				cxrReg.Append("\tm_asyncCall%s_rtnCnt%s.clock();\n",
-					cxrCall.m_funcName.c_str(), replStr.c_str());
+					cxrCall.m_modEntry.c_str(), replStr.c_str());
 				cxrReg.Append("\tm_asyncCall%s_rtnCntFull%s.clock();\n",
-					cxrCall.m_funcName.c_str(), replStr.c_str());
+					cxrCall.m_modEntry.c_str(), replStr.c_str());
 				cxrReg.Append("\tm_asyncCall%s_rsmInstr%s.clock();\n",
-					cxrCall.m_funcName.c_str(), replStr.c_str());
+					cxrCall.m_modEntry.c_str(), replStr.c_str());
 				cxrReg.Append("\n");
 
 				cxrPostInstr.Append("\tif (r_t%d_htIdInit) {\n", mod.m_execStg);
 				cxrPostInstr.Append("\t\tm_asyncCall%s_waiting%s.write_mem(false);\n",
-					cxrCall.m_funcName.c_str(), replStr.c_str());
+					cxrCall.m_modEntry.c_str(), replStr.c_str());
 				cxrPostInstr.Append("\t\tm_asyncCall%s_rtnCnt%s.write_mem(0);\n",
-					cxrCall.m_funcName.c_str(), replStr.c_str());
+					cxrCall.m_modEntry.c_str(), replStr.c_str());
 				cxrPostInstr.Append("\t\tm_asyncCall%s_rtnCntFull%s.write_mem(false);\n",
-					cxrCall.m_funcName.c_str(), replStr.c_str());
+					cxrCall.m_modEntry.c_str(), replStr.c_str());
 				cxrPostInstr.Append("\t}\n");
 				cxrPostInstr.Append("\n");
 
 				cxrReg.Append("\tr_t%d_asyncCall%s_rtnCntFull%s = c_t%d_asyncCall%s_rtnCntFull%s;\n",
-					mod.m_execStg, cxrCall.m_funcName.c_str(), replStr.c_str(), mod.m_execStg - 1, cxrCall.m_funcName.c_str(), replStr.c_str());
+					mod.m_execStg, cxrCall.m_modEntry.c_str(), replStr.c_str(), mod.m_execStg - 1, cxrCall.m_modEntry.c_str(), replStr.c_str());
 				m_cxrRegDecl.Append("\n");
 			}
 
@@ -2189,24 +2313,24 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 
 		// Generate Async Call Busy Function
 
-		string vcdModName = VA("Pers%s", mod.m_modName.Uc().c_str());
+		string vcdModName = VA("Pers%s", modInst.m_instName.Uc().c_str());
 		if (bDestAuto) {
-			m_cxrRegDecl.Append("\tbool ht_noload c_SendCallBusy_%s;\n", funcName.c_str());
-			m_cxrRegDecl.Append("\tbool ht_noload c_SendCallAvail_%s;\n", funcName.c_str());
+			m_cxrRegDecl.Append("\tbool ht_noload c_SendCallBusy_%s;\n", callName.c_str());
+			m_cxrRegDecl.Append("\tbool ht_noload c_SendCallAvail_%s;\n", callName.c_str());
 
-			cxrPreInstr.Append("\tc_SendCallAvail_%s = false;\n", funcName.c_str());
+			cxrPreInstr.Append("\tc_SendCallAvail_%s = false;\n", callName.c_str());
 
-			GenModTrace(eVcdUser, vcdModName, VA("SendCallBusy_%s()", funcName.c_str()),
-				VA("c_SendCallBusy_%s", funcName.c_str()));
+			GenModTrace(eVcdUser, vcdModName, VA("SendCallBusy_%s()", callName.c_str()),
+				VA("c_SendCallBusy_%s", callName.c_str()));
 		} else {
-			m_cxrRegDecl.Append("\tbool ht_noload c_SendCallBusy_%s[%d];\n", funcName.c_str(), replCnt);
-			m_cxrRegDecl.Append("\tbool ht_noload c_SendCallAvail_%s[%d];\n", funcName.c_str(), replCnt);
+			m_cxrRegDecl.Append("\tbool ht_noload c_SendCallBusy_%s[%d];\n", callName.c_str(), replCnt);
+			m_cxrRegDecl.Append("\tbool ht_noload c_SendCallAvail_%s[%d];\n", callName.c_str(), replCnt);
 
 			for (int replIdx = 0; replIdx < replCnt; replIdx += 1) {
-				cxrPreInstr.Append("\tc_SendCallAvail_%s[%d] = false;\n", funcName.c_str(), replIdx);
+				cxrPreInstr.Append("\tc_SendCallAvail_%s[%d] = false;\n", callName.c_str(), replIdx);
 
-				GenModTrace(eVcdUser, vcdModName, VA("SendCallBusy_%s(%d)", funcName.c_str(), replIdx),
-					VA("c_SendCallBusy_%s[%d]", funcName.c_str(), replIdx));
+				GenModTrace(eVcdUser, vcdModName, VA("SendCallBusy_%s(%d)", callName.c_str(), replIdx),
+					VA("c_SendCallBusy_%s[%d]", callName.c_str(), replIdx));
 			}
 		}
 
@@ -2215,14 +2339,15 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 		for (int replIdx = 0; replIdx < replCnt; replIdx += 1) {
 			string indexStr = bDestAuto ? "" : VA("[%d]", replIdx);
 
-			if (htIdW == 0)
+			if (htIdW == 0) {
 				cxrPostReg.Append("\t\tc_SendCallBusy_%s%s = r_asyncCall%s_rtnCntFull%s",
-				cxrCall.m_funcName.c_str(), indexStr.c_str(),
-				cxrCall.m_funcName.c_str(), indexStr.c_str());
-			else
+					callName.c_str(), indexStr.c_str(),
+					callName.c_str(), indexStr.c_str());
+			} else {
 				cxrPostReg.Append("\t\tc_SendCallBusy_%s%s = r_t%d_asyncCall%s_rtnCntFull%s",
-				cxrCall.m_funcName.c_str(), indexStr.c_str(),
-				mod.m_execStg, cxrCall.m_funcName.c_str(), indexStr.c_str());
+					callName.c_str(), indexStr.c_str(),
+					mod.m_execStg, callName.c_str(), indexStr.c_str());
+			}
 
 			const char * pSeparator = "\n\t\t\t|| ";
 
@@ -2259,14 +2384,15 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 		for (int replIdx = 0; replIdx < replCnt; replIdx += 1) {
 			string indexStr = bDestAuto ? "" : VA("[%d]", replIdx);
 
-			if (htIdW == 0)
+			if (htIdW == 0) {
 				cxrPostReg.Append("\t\tc_SendCallBusy_%s%s = r_asyncCall%s_rtnCntFull%s",
-				cxrCall.m_funcName.c_str(), indexStr.c_str(),
-				cxrCall.m_funcName.c_str(), indexStr.c_str());
-			else
+					callName.c_str(), indexStr.c_str(),
+					callName.c_str(), indexStr.c_str());
+			} else {
 				cxrPostReg.Append("\t\tc_SendCallBusy_%s%s = r_t%d_asyncCall%s_rtnCntFull%s",
-				cxrCall.m_funcName.c_str(), indexStr.c_str(),
-				mod.m_execStg, cxrCall.m_funcName.c_str(), indexStr.c_str());
+					callName.c_str(), indexStr.c_str(),
+					mod.m_execStg, callName.c_str(), indexStr.c_str());
+			}
 
 			const char * pSeparator = "\n\t\t\t|| ";
 			for (size_t intfIdx = 0; intfIdx < modInst.m_cxrIntfList.size(); intfIdx += 1) {
@@ -2301,25 +2427,25 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 		string indexStr = bDestAuto ? "" : "[destId]";
 
 		g_appArgs.GetDsnRpt().AddLevel("bool SendCallBusy_%s(%s)\n",
-			cxrCall.m_funcName.c_str(), paramStr.c_str());
+			cxrCall.m_modEntry.c_str(), paramStr.c_str());
 		g_appArgs.GetDsnRpt().EndLevel();
 
 		m_cxrFuncDecl.Append("\tbool SendCallBusy_%s(%s);\n",
-			cxrCall.m_funcName.c_str(), paramStr.c_str());
-		m_cxrMacros.Append("bool CPers%s%s%s::SendCallBusy_%s(%s)\n",
-			unitNameUc.c_str(), mod.m_modName.Uc().c_str(), instIdStr.c_str(),
-			cxrCall.m_funcName.c_str(), paramStr.c_str());
+			cxrCall.m_modEntry.c_str(), paramStr.c_str());
+		m_cxrMacros.Append("bool CPers%s%s::SendCallBusy_%s(%s)\n",
+			unitNameUc.c_str(), modInst.m_instName.Uc().c_str(),
+			cxrCall.m_modEntry.c_str(), paramStr.c_str());
 		m_cxrMacros.Append("{\n");
 
 		m_cxrMacros.Append("\tassert_msg(r_t%d_htValid, \"Runtime check failed in CPers%s::SendCallBusy_%s()"
-			" - thread is not valid\");\n", mod.m_execStg, mod.m_modName.Uc().c_str(), cxrCall.m_funcName.c_str());
+			" - thread is not valid\");\n", mod.m_execStg, modInst.m_instName.Uc().c_str(), callName.c_str());
 		m_cxrMacros.Append("\n");
 
 		m_cxrMacros.Append("\tc_SendCallAvail_%s%s = !c_SendCallBusy_%s%s;\n",
-			cxrCall.m_funcName.c_str(), indexStr.c_str(),
-			cxrCall.m_funcName.c_str(), indexStr.c_str());
+			callName.c_str(), indexStr.c_str(),
+			callName.c_str(), indexStr.c_str());
 		m_cxrMacros.Append("\treturn c_SendCallBusy_%s%s;\n",
-			cxrCall.m_funcName.c_str(), indexStr.c_str());
+			callName.c_str(), indexStr.c_str());
 
 		m_cxrMacros.Append("}\n");
 		m_cxrMacros.Append("\n");
@@ -2329,12 +2455,12 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 		paramStr = bDestAuto ? "" : VA(", ht_uint%d%s destId", replCntW == 0 ? 1 : replCntW, replCntW == 0 ? " ht_noload" : "");
 
 		g_appArgs.GetDsnRpt().AddLevel("void SendCallFork_%s(ht_uint%d rtnInstr%s",
-			cxrCall.m_funcName.c_str(), mod.m_instrW, paramStr.c_str());
+			cxrCall.m_modEntry.c_str(), mod.m_instrW, paramStr.c_str());
 		m_cxrFuncDecl.Append("\tvoid SendCallFork_%s(ht_uint%d rtnInstr%s",
-			cxrCall.m_funcName.c_str(), mod.m_instrW, paramStr.c_str());
-		m_cxrMacros.Append("void CPers%s%s%s::SendCallFork_%s(ht_uint%d rtnInstr%s",
-			unitNameUc.c_str(), mod.m_modName.Uc().c_str(), instIdStr.c_str(),
-			cxrCall.m_funcName.c_str(), mod.m_instrW, paramStr.c_str());
+			callName.c_str(), mod.m_instrW, paramStr.c_str());
+		m_cxrMacros.Append("void CPers%s%s::SendCallFork_%s(ht_uint%d rtnInstr%s",
+			unitNameUc.c_str(), modInst.m_instName.Uc().c_str(),
+			callName.c_str(), mod.m_instrW, paramStr.c_str());
 
 		for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
 			CField * pField = pCxrEntry->m_paramList[fldIdx];
@@ -2350,10 +2476,10 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 		m_cxrMacros.Append(")\n{\n");
 
 		m_cxrMacros.Append("\tassert_msg(r_t%d_htValid, \"Runtime check failed in CPers%s::SendCallFork_%s()"
-			" - thread is not valid\");\n", mod.m_execStg, mod.m_modName.Uc().c_str(), cxrCall.m_funcName.c_str());
+			" - thread is not valid\");\n", mod.m_execStg, modInst.m_instName.Uc().c_str(), callName.c_str());
 		m_cxrMacros.Append("\tassert_msg(c_SendCallAvail_%s%s, \"Runtime check failed in CPers%s::SendCallFork_%s()"
 			" - expected SendCallBusy_%s() to be called and not busy\");\n",
-			funcName.c_str(), indexStr.c_str(), mod.m_modName.Uc().c_str(), funcName.c_str(), funcName.c_str());
+			callName.c_str(), indexStr.c_str(), modInst.m_instName.Uc().c_str(), callName.c_str(), callName.c_str());
 		m_cxrMacros.Append("\n");
 
 		bool bReplIntf = false;
@@ -2376,7 +2502,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 				if (cxrCall.m_dest == "auto")
 					m_cxrMacros.Append("\tc_%s_%sRdy%s = r_%sCall_roundRobin == %dUL;\n",
 					cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(),
-					cxrCall.m_funcName.c_str(), cxrIntf.GetPortReplId());
+					cxrCall.m_modEntry.c_str(), cxrIntf.GetPortReplId());
 				else
 					m_cxrMacros.Append("\tc_%s_%sRdy%s = destId == %dUL;\n",
 					cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(),
@@ -2426,7 +2552,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 
 		if (bReplIntf && cxrCall.m_dest == "auto") {
 			m_cxrMacros.Append("\tc_%sCall_roundRobin = (r_%sCall_roundRobin + 1U) %% %dU;\n",
-				cxrCall.m_funcName.c_str(), cxrCall.m_funcName.c_str(), replCnt);
+				cxrCall.m_modEntry.c_str(), cxrCall.m_modEntry.c_str(), replCnt);
 			m_cxrMacros.Append("\n");
 		}
 
@@ -2434,33 +2560,33 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 		if (htIdW == 0) {
 			m_cxrMacros.Append("\t// Should not happen - verify generated code properly limits outstanding calls\n");
 			m_cxrMacros.Append("\tassert(c_asyncCall%s_rtnCnt%s < 0x%x);\n",
-				cxrCall.m_funcName.c_str(), indexStr.c_str(),
+				cxrCall.m_modEntry.c_str(), indexStr.c_str(),
 				(1 << forkCntW) - 1);
 			m_cxrMacros.Append("\tc_asyncCall%s_rtnCntFull%s = c_asyncCall%s_rtnCnt%s == 0x%x;\n",
-				cxrCall.m_funcName.c_str(), indexStr.c_str(),
-				cxrCall.m_funcName.c_str(), indexStr.c_str(),
+				cxrCall.m_modEntry.c_str(), indexStr.c_str(),
+				cxrCall.m_modEntry.c_str(), indexStr.c_str(),
 				(1 << forkCntW) - 2);
 			m_cxrMacros.Append("\tc_asyncCall%s_rtnCnt%s += 1u;\n",
-				cxrCall.m_funcName.c_str(), indexStr.c_str());
+				cxrCall.m_modEntry.c_str(), indexStr.c_str());
 		} else {
 			m_cxrMacros.Append("\tif (r_t%d_htId == r_t%d_htId && r_t%d_htValid)\n",
 				mod.m_execStg - 1, mod.m_execStg, mod.m_execStg - 1);
 			m_cxrMacros.Append("\t\tc_t%d_asyncCall%s_rtnCntFull%s = m_asyncCall%s_rtnCnt%s.read_mem() == 0x%x;\n",
-				mod.m_execStg - 1, cxrCall.m_funcName.c_str(), indexStr.c_str(),
-				cxrCall.m_funcName.c_str(), indexStr.c_str(),
+				mod.m_execStg - 1, cxrCall.m_modEntry.c_str(), indexStr.c_str(),
+				cxrCall.m_modEntry.c_str(), indexStr.c_str(),
 				(1 << forkCntW) - 2);
 			m_cxrMacros.Append("\n");
 
 			m_cxrMacros.Append("\t// Should not happen - verify generated code properly limits outstanding calls\n");
 			m_cxrMacros.Append("\tassert(m_asyncCall%s_rtnCnt%s.read_mem() < 0x%x);\n",
-				cxrCall.m_funcName.c_str(), indexStr.c_str(),
+				cxrCall.m_modEntry.c_str(), indexStr.c_str(),
 				(1 << forkCntW) - 1);
 			m_cxrMacros.Append("\tm_asyncCall%s_rtnCnt%s.write_mem(m_asyncCall%s_rtnCnt%s.read_mem() + 1u);\n",
-				cxrCall.m_funcName.c_str(), indexStr.c_str(),
-				cxrCall.m_funcName.c_str(), indexStr.c_str());
+				cxrCall.m_modEntry.c_str(), indexStr.c_str(),
+				cxrCall.m_modEntry.c_str(), indexStr.c_str());
 			m_cxrMacros.Append("\tm_asyncCall%s_rtnCntFull%s.write_mem(m_asyncCall%s_rtnCnt%s.read_mem() == 0x%x);\n",
-				cxrCall.m_funcName.c_str(), indexStr.c_str(),
-				cxrCall.m_funcName.c_str(), indexStr.c_str(),
+				cxrCall.m_modEntry.c_str(), indexStr.c_str(),
+				cxrCall.m_modEntry.c_str(), indexStr.c_str(),
 				(1 << forkCntW) - 2);
 		}
 
@@ -2469,7 +2595,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 			m_cxrMacros.Append("#\tifndef _HTV\n");
 			m_cxrMacros.Append("\tif (Ht::g_instrTraceFp)\n");
 			m_cxrMacros.Append("\t\tfprintf(Ht::g_instrTraceFp, \"Send%s_%s(",
-				cxrCall.m_bXfer ? "Transfer" : "Call", cxrCall.m_funcName.c_str());
+				cxrCall.m_bXfer ? "Transfer" : "Call", cxrCall.m_modEntry.c_str());
 
 			char const * pSeparater = "";
 			for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
@@ -2528,40 +2654,40 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 		indexStr = bDestAuto ? "" : "[destId]";
 
 		g_appArgs.GetDsnRpt().AddLevel("void RecvReturnPause_%s(ht_uint%d rsmInstr%s)\n",
-			cxrCall.m_funcName.c_str(), mod.m_instrW, paramStr.c_str());
+			cxrCall.m_modEntry.c_str(), mod.m_instrW, paramStr.c_str());
 		g_appArgs.GetDsnRpt().EndLevel();
 
 		m_cxrFuncDecl.Append("\tvoid RecvReturnPause_%s(ht_uint%d rsmInstr%s);\n",
-			cxrCall.m_funcName.c_str(), mod.m_instrW, paramStr.c_str());
-		m_cxrMacros.Append("void CPers%s%s%s::RecvReturnPause_%s(ht_uint%d rsmInstr%s)\n",
-			unitNameUc.c_str(), mod.m_modName.Uc().c_str(), instIdStr.c_str(),
-			cxrCall.m_funcName.c_str(), mod.m_instrW, paramStr.c_str());
+			cxrCall.m_modEntry.c_str(), mod.m_instrW, paramStr.c_str());
+		m_cxrMacros.Append("void CPers%s%s::RecvReturnPause_%s(ht_uint%d rsmInstr%s)\n",
+			unitNameUc.c_str(), modInst.m_instName.Uc().c_str(),
+			cxrCall.m_modEntry.c_str(), mod.m_instrW, paramStr.c_str());
 		m_cxrMacros.Append("{\n");
 
 		m_cxrMacros.Append("\tassert_msg(r_t%d_htValid, \"Runtime check failed in CPers%s::RecvReturnPause_%s()"
-			" - thread is not valid\");\n", mod.m_execStg, mod.m_modName.Uc().c_str(), cxrCall.m_funcName.c_str());
+			" - thread is not valid\");\n", mod.m_execStg, modInst.m_instName.Uc().c_str(), cxrCall.m_modEntry.c_str());
 		m_cxrMacros.Append("\n");
 
 		if (htIdW == 0) {
-			m_cxrMacros.Append("\tassert_msg(c_t%d_htCtrl == HT_INVALID, \"Runtime check failed in CPers%s%s::RecvReturnPause_%s()"
-				" - an Ht control routine was already called\");\n", mod.m_execStg, mod.m_modName.Uc().c_str(), instIdStr.c_str(), cxrCall.m_funcName.c_str());
+			m_cxrMacros.Append("\tassert_msg(c_t%d_htCtrl == HT_INVALID, \"Runtime check failed in CPers%s::RecvReturnPause_%s()"
+				" - an Ht control routine was already called\");\n", mod.m_execStg, modInst.m_instName.Uc().c_str(), cxrCall.m_modEntry.c_str());
 			m_cxrMacros.Append("\tassert (!c_asyncCall%s_waiting%s);\n",
-				cxrCall.m_funcName.c_str(), indexStr.c_str());
+				cxrCall.m_modEntry.c_str(), indexStr.c_str());
 			m_cxrMacros.Append("\tif (c_asyncCall%s_rtnCnt%s == 0)\n",
-				cxrCall.m_funcName.c_str(), indexStr.c_str());
+				cxrCall.m_modEntry.c_str(), indexStr.c_str());
 			m_cxrMacros.Append("\t\tHtContinue(rsmInstr);\n");
 			m_cxrMacros.Append("\telse {\n");
 			m_cxrMacros.Append("\t\tc_asyncCall%s_waiting%s = true;\n",
-				cxrCall.m_funcName.c_str(), indexStr.c_str());
+				cxrCall.m_modEntry.c_str(), indexStr.c_str());
 			m_cxrMacros.Append("\t\tc_asyncCall%s_rsmInstr%s = rsmInstr;\n",
-				cxrCall.m_funcName.c_str(), indexStr.c_str());
+				cxrCall.m_modEntry.c_str(), indexStr.c_str());
 			m_cxrMacros.Append("\t\tc_t%d_htCtrl = HT_PAUSE;\n", mod.m_execStg);
 			m_cxrMacros.Append("\t}\n");
 		} else {
 			CCxrIntf &cxrIntf = modInst.m_cxrIntfList[callIntfIdx];
 
-			m_cxrMacros.Append("\tassert_msg(c_t%d_htCtrl == HT_INVALID, \"Runtime check failed in CPers%s%s::RecvReturnPause_%s()"
-				" - an Ht control routine was already called\");\n", mod.m_execStg, mod.m_modName.Uc().c_str(), instIdStr.c_str(), cxrCall.m_funcName.c_str());
+			m_cxrMacros.Append("\tassert_msg(c_t%d_htCtrl == HT_INVALID, \"Runtime check failed in CPers%s::RecvReturnPause_%s()"
+				" - an Ht control routine was already called\");\n", mod.m_execStg, modInst.m_instName.Uc().c_str(), cxrCall.m_modEntry.c_str());
 
 			m_cxrMacros.Append("\tassert (");
 
@@ -2581,7 +2707,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 				}
 			}
 			m_cxrMacros.Append("!m_asyncCall%s_waiting%s.read_mem());\n",
-				cxrCall.m_funcName.c_str(), indexStr.c_str());
+				cxrCall.m_modEntry.c_str(), indexStr.c_str());
 
 			m_cxrMacros.Append("\tif (");
 
@@ -2602,14 +2728,14 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 			}
 
 			m_cxrMacros.Append("m_asyncCall%s_rtnCnt%s.read_mem() == 0) {\n",
-				cxrCall.m_funcName.c_str(), indexStr.c_str());
+				cxrCall.m_modEntry.c_str(), indexStr.c_str());
 
 			m_cxrMacros.Append("\t\tHtContinue(rsmInstr);\n");
 			m_cxrMacros.Append("\t} else {\n");
 			m_cxrMacros.Append("\t\tm_asyncCall%s_waiting%s.write_mem(true);\n",
-				cxrCall.m_funcName.c_str(), indexStr.c_str());
+				cxrCall.m_modEntry.c_str(), indexStr.c_str());
 			m_cxrMacros.Append("\t\tm_asyncCall%s_rsmInstr%s.write_mem(rsmInstr);\n",
-				cxrCall.m_funcName.c_str(), indexStr.c_str());
+				cxrCall.m_modEntry.c_str(), indexStr.c_str());
 			m_cxrMacros.Append("\t\tc_t%d_htCtrl = HT_PAUSE;\n", mod.m_execStg);
 			m_cxrMacros.Append("\t}\n");
 		}
@@ -2623,66 +2749,66 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 		indexStr = bDestAuto ? "" : "[destId]";
 
 		g_appArgs.GetDsnRpt().AddLevel("void RecvReturnJoin_%s(%s)\n",
-			cxrCall.m_funcName.c_str(), paramStr.c_str());
+			cxrCall.m_modEntry.c_str(), paramStr.c_str());
 		g_appArgs.GetDsnRpt().EndLevel();
 
 		m_cxrFuncDecl.Append("\tvoid RecvReturnJoin_%s(%s);\n",
-			cxrCall.m_funcName.c_str(), paramStr.c_str());
-		m_cxrMacros.Append("void CPers%s%s%s::RecvReturnJoin_%s(%s)\n",
-			unitNameUc.c_str(), mod.m_modName.Uc().c_str(), instIdStr.c_str(),
-			cxrCall.m_funcName.c_str(), paramStr.c_str());
+			cxrCall.m_modEntry.c_str(), paramStr.c_str());
+		m_cxrMacros.Append("void CPers%s%s::RecvReturnJoin_%s(%s)\n",
+			unitNameUc.c_str(), modInst.m_instName.Uc().c_str(),
+			cxrCall.m_modEntry.c_str(), paramStr.c_str());
 		m_cxrMacros.Append("{\n");
 
 		m_cxrMacros.Append("\tassert_msg(r_t%d_htValid, \"Runtime check failed in CPers%s::RecvReturnJoin_%s()"
-			" - thread is not valid\");\n", mod.m_execStg, mod.m_modName.Uc().c_str(), cxrCall.m_funcName.c_str());
+			" - thread is not valid\");\n", mod.m_execStg, modInst.m_instName.Uc().c_str(), cxrCall.m_modEntry.c_str());
 		m_cxrMacros.Append("\n");
 
 		if (htIdW == 0) {
 			m_cxrMacros.Append("\t// verify that an async call is outstanding\n");
 			m_cxrMacros.Append("\tassert (r_asyncCall%s_rtnCnt%s > 0);\n",
-				cxrCall.m_funcName.c_str(), indexStr.c_str());
+				cxrCall.m_modEntry.c_str(), indexStr.c_str());
 			m_cxrMacros.Append("\tc_asyncCall%s_rtnCntFull%s = false;\n",
-				cxrCall.m_funcName.c_str(), indexStr.c_str());
+				cxrCall.m_modEntry.c_str(), indexStr.c_str());
 			m_cxrMacros.Append("\tc_asyncCall%s_rtnCnt%s -= 1u;\n",
-				cxrCall.m_funcName.c_str(), indexStr.c_str());
+				cxrCall.m_modEntry.c_str(), indexStr.c_str());
 			m_cxrMacros.Append("\n");
-			m_cxrMacros.Append("\tassert_msg(c_t%d_htCtrl == HT_INVALID, \"Runtime check failed in CPers%s%s::RecvReturnJoin_%s()"
-				" - an Ht control routine was already called\");\n", mod.m_execStg, mod.m_modName.Uc().c_str(), instIdStr.c_str(), cxrCall.m_funcName.c_str());
+			m_cxrMacros.Append("\tassert_msg(c_t%d_htCtrl == HT_INVALID, \"Runtime check failed in CPers%s::RecvReturnJoin_%s()"
+				" - an Ht control routine was already called\");\n", mod.m_execStg, modInst.m_instName.Uc().c_str(), cxrCall.m_modEntry.c_str());
 			m_cxrMacros.Append("\tif (c_asyncCall%s_rtnCnt%s == 0 && r_asyncCall%s_waiting%s) {\n",
-				cxrCall.m_funcName.c_str(), indexStr.c_str(),
-				cxrCall.m_funcName.c_str(), indexStr.c_str());
+				cxrCall.m_modEntry.c_str(), indexStr.c_str(),
+				cxrCall.m_modEntry.c_str(), indexStr.c_str());
 			m_cxrMacros.Append("\t\tc_asyncCall%s_waiting%s = false;\n",
-				cxrCall.m_funcName.c_str(), indexStr.c_str());
+				cxrCall.m_modEntry.c_str(), indexStr.c_str());
 			m_cxrMacros.Append("\t\tc_t%d_htNextInstr = r_asyncCall%s_rsmInstr%s;\n",
-				mod.m_execStg, cxrCall.m_funcName.c_str(), indexStr.c_str());
+				mod.m_execStg, cxrCall.m_modEntry.c_str(), indexStr.c_str());
 			m_cxrMacros.Append("\t\tc_t%d_htCtrl = HT_JOIN_AND_CONT;\n", mod.m_execStg);
 			m_cxrMacros.Append("\t} else\n");
 			m_cxrMacros.Append("\t\tc_t%d_htCtrl = HT_JOIN;\n", mod.m_execStg);
 		} else {
 			m_cxrMacros.Append("\t// verify that an async call is outstanding\n");
 			m_cxrMacros.Append("\tassert (m_asyncCall%s_rtnCnt%s.read_mem() > 0);\n",
-				cxrCall.m_funcName.c_str(), indexStr.c_str());
+				cxrCall.m_modEntry.c_str(), indexStr.c_str());
 			m_cxrMacros.Append("\tm_asyncCall%s_rtnCnt%s.write_mem(m_asyncCall%s_rtnCnt%s.read_mem() - 1u);\n",
-				cxrCall.m_funcName.c_str(), indexStr.c_str(),
-				cxrCall.m_funcName.c_str(), indexStr.c_str());
+				cxrCall.m_modEntry.c_str(), indexStr.c_str(),
+				cxrCall.m_modEntry.c_str(), indexStr.c_str());
 			m_cxrMacros.Append("\tm_asyncCall%s_rtnCntFull%s.write_mem(false);\n",
-				cxrCall.m_funcName.c_str(), indexStr.c_str());
+				cxrCall.m_modEntry.c_str(), indexStr.c_str());
 			m_cxrMacros.Append("\n");
 			m_cxrMacros.Append("\tif (r_t%d_htId == r_t%d_htId && r_t%d_htValid)\n",
 				mod.m_execStg - 1, mod.m_execStg, mod.m_execStg - 1);
 			m_cxrMacros.Append("\t\tc_t%d_asyncCall%s_rtnCntFull%s = false;\n",
-				mod.m_execStg - 1, cxrCall.m_funcName.c_str(), indexStr.c_str());
+				mod.m_execStg - 1, cxrCall.m_modEntry.c_str(), indexStr.c_str());
 			m_cxrMacros.Append("\n");
 
-			m_cxrMacros.Append("\tassert_msg(c_t%d_htCtrl == HT_INVALID, \"Runtime check failed in CPers%s%s::RecvReturnJoin_%s()"
-				" - an Ht control routine was already called\");\n", mod.m_execStg, mod.m_modName.Uc().c_str(), instIdStr.c_str(), cxrCall.m_funcName.c_str());
+			m_cxrMacros.Append("\tassert_msg(c_t%d_htCtrl == HT_INVALID, \"Runtime check failed in CPers%s::RecvReturnJoin_%s()"
+				" - an Ht control routine was already called\");\n", mod.m_execStg, modInst.m_instName.Uc().c_str(), cxrCall.m_modEntry.c_str());
 			m_cxrMacros.Append("\tif (m_asyncCall%s_rtnCnt%s.read_mem() == 1 && m_asyncCall%s_waiting%s.read_mem()) {\n",
-				cxrCall.m_funcName.c_str(), indexStr.c_str(),
-				cxrCall.m_funcName.c_str(), indexStr.c_str());
+				cxrCall.m_modEntry.c_str(), indexStr.c_str(),
+				cxrCall.m_modEntry.c_str(), indexStr.c_str());
 			m_cxrMacros.Append("\t\tm_asyncCall%s_waiting%s.write_mem(false);\n",
-				cxrCall.m_funcName.c_str(), indexStr.c_str());
+				cxrCall.m_modEntry.c_str(), indexStr.c_str());
 			m_cxrMacros.Append("\t\tc_t%d_htNextInstr = m_asyncCall%s_rsmInstr%s.read_mem();\n",
-				mod.m_execStg, cxrCall.m_funcName.c_str(), indexStr.c_str());
+				mod.m_execStg, cxrCall.m_modEntry.c_str(), indexStr.c_str());
 			m_cxrMacros.Append("\t\tc_t%d_htCtrl = HT_JOIN_AND_CONT;\n", mod.m_execStg);
 			m_cxrMacros.Append("\t} else\n");
 			m_cxrMacros.Append("\t\tc_t%d_htCtrl = HT_JOIN;\n", mod.m_execStg);
@@ -2702,7 +2828,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 
 		if (cxrIntf.m_cxrDir == CxrOut) continue;
 
-		HtdFile::EClkRate srcClkRate = cxrIntf.m_pSrcMod->m_clkRate;
+		HtdFile::EClkRate srcClkRate = cxrIntf.m_pSrcModInst->m_pMod->m_clkRate;
 		CHtCode & srcCxrT0Stage = srcClkRate == eClk1x ? m_cxrT0Stage1x : m_cxrT0Stage2x;
 
 		if (cxrIntf.GetQueDepthW() == 0) {
@@ -2852,7 +2978,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 						cxrIntf.GetPortNameDstToSrcLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 				}
 
-				if (mod.m_clkRate != eClk1x || cxrIntf.m_pSrcMod->m_clkRate != eClk1x) {
+				if (mod.m_clkRate != eClk1x || cxrIntf.m_pSrcModInst->m_pMod->m_clkRate != eClk1x) {
 					if (cxrIntf.GetPortReplCnt() <= 1) {
 						cxrT0Stage.Append("\tbool c_%s_%sQueEmpty%s =\n",
 							cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
@@ -3037,15 +3163,15 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 		if (replCnt > 1 && cxrCall.m_dest == "auto") {
 			int replIdxW = FindLg2(replCnt - 1);
 			m_cxrRegDecl.Append("\tht_uint%d c_%sCall_roundRobin;\n",
-				replIdxW, cxrCall.m_funcName.c_str());
+				replIdxW, cxrCall.m_modEntry.c_str());
 			m_cxrRegDecl.Append("\tht_uint%d r_%sCall_roundRobin;\n",
-				replIdxW, cxrCall.m_funcName.c_str());
+				replIdxW, cxrCall.m_modEntry.c_str());
 
 			cxrTsStage.Append("\tc_%sCall_roundRobin = r_%sCall_roundRobin;\n",
-				cxrCall.m_funcName.c_str(), cxrCall.m_funcName.c_str());
+				cxrCall.m_modEntry.c_str(), cxrCall.m_modEntry.c_str());
 
 			iplReg.Append("\tr_%sCall_roundRobin = %s ? (ht_uint%d)0 : c_%sCall_roundRobin;\n",
-				cxrCall.m_funcName.c_str(), reset.c_str(), replIdxW, cxrCall.m_funcName.c_str());
+				cxrCall.m_modEntry.c_str(), reset.c_str(), replIdxW, cxrCall.m_modEntry.c_str());
 		}
 
 		cxrTsStage.Append("\n");
@@ -3108,7 +3234,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 
 		if (cxrIntf.m_cxrDir == CxrIn) {
 			if (cxrIntf.GetPortReplCnt() <= 1 || cxrIntf.GetPortReplId() == 0) {
-				HtdFile::EClkRate srcClkRate = cxrIntf.m_pSrcMod->m_clkRate;
+				HtdFile::EClkRate srcClkRate = cxrIntf.m_pSrcModInst->m_pMod->m_clkRate;
 
 				if (mod.m_clkRate == srcClkRate || cxrIntf.IsCallOrXfer())
 					m_cxrRegDecl.Append("\tbool r_%s_%sAvl%s;\n",
@@ -3129,7 +3255,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 
 			if (cxrIntf.GetQueDepthW() > 0 && cxrIntf.GetPortReplId() == 0) {
 				if (cxrIntf.m_bCxrIntfFields) {
-					if (mod.m_clkRate != eClk1x || cxrIntf.m_pSrcMod->m_clkRate != eClk1x) {
+					if (mod.m_clkRate != eClk1x || cxrIntf.m_pSrcModInst->m_pMod->m_clkRate != eClk1x) {
 						m_cxrRegDecl.Append("\tbool r_%s_%sQueEmpty%s;\n",
 							cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplDecl());
 						m_cxrRegDecl.Append("\tC%s_%s r_%s_%sQueFront%s;\n",
@@ -3141,7 +3267,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 
 		} else {
 			if (cxrIntf.GetPortReplCnt() <= 1 || cxrIntf.GetPortReplId() == 0) {
-				HtdFile::EClkRate dstClkRate = cxrIntf.m_pDstMod->m_clkRate;
+				HtdFile::EClkRate dstClkRate = cxrIntf.m_pDstModInst->m_pMod->m_clkRate;
 
 				if (mod.m_clkRate == dstClkRate || !cxrIntf.IsCallOrXfer())
 					m_cxrRegDecl.Append("\tbool r_%s_%sRdy%s;\n",
@@ -3190,7 +3316,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 		if (!cxrIntf.m_bCxrIntfFields) continue;
 
 		if (cxrIntf.GetPortReplCnt() <= 1 || cxrIntf.GetPortReplId() == 0) {
-			HtdFile::EClkRate dstClkRate = cxrIntf.m_pDstMod->m_clkRate;
+			HtdFile::EClkRate dstClkRate = cxrIntf.m_pDstModInst->m_pMod->m_clkRate;
 
 			if (mod.m_clkRate == dstClkRate || !cxrIntf.IsCallOrXfer())
 				m_cxrRegDecl.Append("\tC%s_%sIntf r_%s_%s%s;\n",
@@ -3222,7 +3348,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 		CCxrIntf &cxrIntf = modInst.m_cxrIntfList[intfIdx];
 
 		if (cxrIntf.m_cxrDir == CxrIn) {
-			HtdFile::EClkRate srcClkRate = cxrIntf.m_pSrcMod->m_clkRate;
+			HtdFile::EClkRate srcClkRate = cxrIntf.m_pSrcModInst->m_pMod->m_clkRate;
 
 			if (mod.m_clkRate == srcClkRate || cxrIntf.IsCallOrXfer())
 				iplReg.Append("\tr_%s_%sAvl%s = !%s && c_%s_%sAvl%s;\n",
@@ -3265,7 +3391,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 
 			if (cxrIntf.GetQueDepthW() > 0) {
 				if (cxrIntf.m_bCxrIntfFields) {
-					if (mod.m_clkRate != eClk1x || cxrIntf.m_pSrcMod->m_clkRate != eClk1x) {
+					if (mod.m_clkRate != eClk1x || cxrIntf.m_pSrcModInst->m_pMod->m_clkRate != eClk1x) {
 						iplReg.Append("\tr_%s_%sQueEmpty%s = %s || c_%s_%sQueEmpty%s;\n",
 							cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(),
 							reset.c_str(),
@@ -3279,7 +3405,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 			}
 
 		} else {
-			HtdFile::EClkRate dstClkRate = cxrIntf.m_pDstMod->m_clkRate;
+			HtdFile::EClkRate dstClkRate = cxrIntf.m_pDstModInst->m_pMod->m_clkRate;
 
 			if (cxrIntf.m_bCxrIntfFields)
 				iplReg.Append("\tr_%s_%s%s = c_%s_%s%s;\n",
@@ -3407,7 +3533,7 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 		CCxrIntf &cxrIntf = modInst.m_cxrIntfList[intfIdx];
 
 		if (cxrIntf.m_cxrDir == CxrIn) {
-			HtdFile::EClkRate srcClkRate = cxrIntf.m_pSrcMod->m_clkRate;
+			HtdFile::EClkRate srcClkRate = cxrIntf.m_pSrcModInst->m_pMod->m_clkRate;
 
 			if (mod.m_clkRate == srcClkRate || cxrIntf.IsCallOrXfer())
 				cxrOut.Append("\to_%s_%sAvl%s = r_%s_%sAvl%s;\n",
@@ -3429,14 +3555,14 @@ void CDsnInfo::GenModCxrStatements(CModule &mod, int modInstIdx)
 					cxrIntf.GetPortNameDstToSrcLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 			}
 		} else {
-			HtdFile::EClkRate dstClkRate = cxrIntf.m_pDstMod->m_clkRate;
+			HtdFile::EClkRate dstClkRate = cxrIntf.m_pDstModInst->m_pMod->m_clkRate;
 
 			if (mod.m_clkRate == dstClkRate || !cxrIntf.IsCallOrXfer()) {
 				cxrOut.Append("\to_%s_%sRdy%s = r_%s_%sRdy%s;\n",
 					cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(),
 					cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 
-				if (mod.m_bGvIwComp && cxrIntf.m_pDstMod->m_modName.AsStr() != "hif") {
+				if (mod.m_bGvIwComp && cxrIntf.m_pDstModInst->m_pMod->m_modName.AsStr() != "hif") {
 					cxrOut.Append("\to_%s_%sCompRdy%s = r_%s_%sCompRdy%s;\n",
 						cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(),
 						cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());

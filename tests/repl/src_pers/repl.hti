@@ -1,2 +1,1 @@
-AddModInstParams(unit=Au, modPath="Ctl/ModA/ModX", instId=3, replCnt=2);
-//AddModInstParams(unit=Au, modPath="Ctl/ModB/ModX", replCnt=2);
+AddModInstParams(unit=Au, modPath="Ctl/ModA/ModX", instName=ModXx, replCnt=2);

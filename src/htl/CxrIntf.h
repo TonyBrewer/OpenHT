@@ -14,17 +14,18 @@
 struct CThreads;
 struct CField;
 struct CModule;
+struct CModInst;
 
 // Call/return module interface
 enum ECxrType { CxrCall, CxrReturn, CxrTransfer };
 enum ECxrDir { CxrIn, CxrOut };
 
 struct CCxrIntf {
-	CCxrIntf(CHtString &funcName, CModule &srcMod, int srcInstIdx, CThreads *pSrcGroup, CModule &dstMod,
-		int dstInstIdx, CThreads *pDstGroup, ECxrType cxrType, ECxrDir cxrDir, int queueW, vector<CField *> * pFieldList)
-		: m_funcName(funcName), m_pSrcMod(&srcMod), m_srcInstIdx(srcInstIdx), m_pSrcGroup(pSrcGroup),
-		m_pDstMod(&dstMod), m_dstInstIdx(dstInstIdx), m_pDstGroup(pDstGroup),
-		m_cxrType(cxrType), m_cxrDir(cxrDir), m_queueW(queueW), m_pFieldList(pFieldList), m_bCxrIntfFields(true),
+	CCxrIntf(CHtString &modEntry, CModInst &srcModInst, CThreads *pSrcGroup, CModInst &dstModInst,
+		CThreads *pDstGroup, ECxrType cxrType, ECxrDir cxrDir, int queueW, vector<CField *> * pFieldList)
+		: m_modEntry(modEntry), m_pSrcModInst(&srcModInst), m_pSrcGroup(pSrcGroup),
+		m_pDstModInst(&dstModInst), m_pDstGroup(pDstGroup), m_cxrType(cxrType), m_cxrDir(cxrDir),
+		m_queueW(queueW), m_pFieldList(pFieldList), m_bCxrIntfFields(true),
 		m_bRtnJoin(false), m_bMultiInstRtn(false), m_reserveCnt(0)
 	{
 		m_instCnt = 1;
@@ -77,7 +78,7 @@ struct CCxrIntf {
 	const char * GetIntfName()
 	{
 		if (m_intfName.size() == 0)
-			m_intfName = m_funcName.Uc() + GetCxrTypeName();
+			m_intfName = m_modEntry.Uc() + GetCxrTypeName();
 		return m_intfName.c_str();
 	}
 
@@ -85,12 +86,10 @@ struct CCxrIntf {
 	bool IsXfer() { return m_cxrType == CxrTransfer; }
 	bool IsCallOrXfer() { return m_cxrType == CxrCall || m_cxrType == CxrTransfer; }
 
-	CHtString			m_funcName;
-	CModule *			m_pSrcMod;
-	int					m_srcInstIdx;
+	CHtString			m_modEntry;
+	CModInst *			m_pSrcModInst;
 	CThreads *			m_pSrcGroup;
-	CModule *			m_pDstMod;
-	int					m_dstInstIdx;
+	CModInst *			m_pDstModInst;
 	CThreads *			m_pDstGroup;
 	ECxrType			m_cxrType;
 	ECxrDir				m_cxrDir;

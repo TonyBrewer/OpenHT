@@ -830,7 +830,7 @@ void CDsnInfo::GenerateHifFiles()
 		}
 
 		fprintf(incFile, "\tpublic:\n");
-		fprintf(incFile, "\t\tstruct CCallArgs_%s {\n", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\t\tstruct CCallArgs_%s {\n", cxrCall.m_modEntry.c_str());
 
 		for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
 			CField * pParam = pCxrEntry->m_paramList[fldIdx];
@@ -841,7 +841,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\t\t};\n");
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\tprivate:\n");
-		fprintf(incFile, "\t\tstruct CCallArgv_%s {\n", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\t\tstruct CCallArgv_%s {\n", cxrCall.m_modEntry.c_str());
 
 		int argQwCnt = 0;
 		for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
@@ -859,12 +859,12 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\tpublic:\n");
 		fprintf(incFile, "\t\tbool SendCall_%s(CCallArgs_%s &args) {\n",
-			cxrCall.m_funcName.c_str(), cxrCall.m_funcName.c_str());
+			cxrCall.m_modEntry.c_str(), cxrCall.m_modEntry.c_str());
 
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\t\t\tint argc = %d;\n", (int)pCxrEntry->m_paramList.size());
 		fprintf(incFile, "\t\t\tint argw[%d];\n", max(1, (int)pCxrEntry->m_paramList.size()));
-		fprintf(incFile, "\t\t\tCCallArgv_%s argv;\n", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\t\t\tCCallArgv_%s argv;\n", cxrCall.m_modEntry.c_str());
 
 		for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
 			CField * pParam = pCxrEntry->m_paramList[fldIdx];
@@ -896,7 +896,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\t\t}\n");
 
 		fprintf(incFile, "\n");
-		fprintf(incFile, "\t\tbool SendCall_%s(", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\t\tbool SendCall_%s(", cxrCall.m_modEntry.c_str());
 
 		pSeparator = "";
 
@@ -912,7 +912,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\t\t\tint argc = %d;\n", (int)pCxrEntry->m_paramList.size());
 		fprintf(incFile, "\t\t\tint argw[%d];\n", max(1, (int)pCxrEntry->m_paramList.size()));
-		fprintf(incFile, "\t\t\tCCallArgv_%s argv;\n", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\t\t\tCCallArgv_%s argv;\n", cxrCall.m_modEntry.c_str());
 
 		for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
 			CField * pParam = pCxrEntry->m_paramList[fldIdx];
@@ -944,7 +944,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\t\t}\n");
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\tpublic:\n");
-		fprintf(incFile, "\t\tstruct CRtnArgs_%s {\n", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\t\tstruct CRtnArgs_%s {\n", cxrCall.m_modEntry.c_str());
 
 		for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
 			CField * pParam = cxrReturn.m_paramList[fldIdx];
@@ -955,7 +955,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\t\t};\n");
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\tprivate:\n");
-		fprintf(incFile, "\t\tstruct CRtnArgv_%s {\n", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\t\tstruct CRtnArgv_%s {\n", cxrCall.m_modEntry.c_str());
 
 		int rtnQwCnt = 0;
 		for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
@@ -973,11 +973,11 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\tpublic:\n");
 		fprintf(incFile, "\t\tbool RecvReturn_%s(CRtnArgs_%s &args) {\n",
-			cxrCall.m_funcName.c_str(), cxrCall.m_funcName.c_str());
+			cxrCall.m_modEntry.c_str(), cxrCall.m_modEntry.c_str());
 
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\t\t\tint argc = %d;\n", rtnQwCnt);
-		fprintf(incFile, "\t\t\tCRtnArgv_%s argv;\n", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\t\t\tCRtnArgv_%s argv;\n", cxrCall.m_modEntry.c_str());
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\t\t\tif (!CHtUnitBase::RecvReturn(argc, (uint64_t *)&argv))\n");
 		fprintf(incFile, "\t\t\t\treturn false;\n");
@@ -1007,7 +1007,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\t\t\treturn true;\n");
 		fprintf(incFile, "\t\t}\n");
 		fprintf(incFile, "\n");
-		fprintf(incFile, "\t\tbool RecvReturn_%s(", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\t\tbool RecvReturn_%s(", cxrCall.m_modEntry.c_str());
 
 		pSeparator = "";
 
@@ -1022,7 +1022,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, ") {\n");
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\t\t\tint argc = %d;\n", rtnQwCnt);
-		fprintf(incFile, "\t\t\tCRtnArgv_%s argv;\n", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\t\t\tCRtnArgv_%s argv;\n", cxrCall.m_modEntry.c_str());
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\t\t\tif (!CHtUnitBase::RecvReturn(argc, (uint64_t *)&argv))\n");
 		fprintf(incFile, "\t\t\t\treturn false;\n");
@@ -1138,7 +1138,7 @@ void CDsnInfo::GenerateHifFiles()
 		}
 
 		fprintf(incFile, "public:\n");
-		fprintf(incFile, "\tstruct CCallArgs_%s {\n", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\tstruct CCallArgs_%s {\n", cxrCall.m_modEntry.c_str());
 
 		for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
 			CField * pParam = pCxrEntry->m_paramList[fldIdx];
@@ -1149,7 +1149,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\t};\n");
 		fprintf(incFile, "\n");
 		fprintf(incFile, "private:\n");
-		fprintf(incFile, "\tstruct CCallArgv_%s {\n", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\tstruct CCallArgv_%s {\n", cxrCall.m_modEntry.c_str());
 
 		for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
 			CField * pParam = pCxrEntry->m_paramList[fldIdx];
@@ -1161,11 +1161,11 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\n");
 		fprintf(incFile, "public:\n");
 		fprintf(incFile, "\tbool SendCall_%s(CCallArgs_%s &args) {\n",
-			cxrCall.m_funcName.c_str(), cxrCall.m_funcName.c_str());
+			cxrCall.m_modEntry.c_str(), cxrCall.m_modEntry.c_str());
 
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\t\tint argc = %d;\n", (int)pCxrEntry->m_paramList.size());
-		fprintf(incFile, "\t\tCCallArgv_%s argv;\n", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\t\tCCallArgv_%s argv;\n", cxrCall.m_modEntry.c_str());
 		fprintf(incFile, "\n");
 
 		for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
@@ -1179,7 +1179,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\t}\n");
 
 		fprintf(incFile, "\n");
-		fprintf(incFile, "\tbool SendCall_%s(", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\tbool SendCall_%s(", cxrCall.m_modEntry.c_str());
 
 		pSeparator = "";
 
@@ -1194,7 +1194,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, ") {\n");
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\t\tint argc = %d;\n", (int)pCxrEntry->m_paramList.size());
-		fprintf(incFile, "\t\tCCallArgv_%s argv;\n", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\t\tCCallArgv_%s argv;\n", cxrCall.m_modEntry.c_str());
 		fprintf(incFile, "\n");
 
 		for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
@@ -1208,7 +1208,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\t}\n");
 		fprintf(incFile, "\n");
 		fprintf(incFile, "public:\n");
-		fprintf(incFile, "\tstruct CRtnArgs_%s {\n", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\tstruct CRtnArgs_%s {\n", cxrCall.m_modEntry.c_str());
 
 		for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
 			CField * pParam = cxrReturn.m_paramList[fldIdx];
@@ -1219,7 +1219,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\t};\n");
 		fprintf(incFile, "\n");
 		fprintf(incFile, "private:\n");
-		fprintf(incFile, "\tstruct CRtnArgv_%s {\n", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\tstruct CRtnArgv_%s {\n", cxrCall.m_modEntry.c_str());
 
 		for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
 			CField * pParam = cxrReturn.m_paramList[fldIdx];
@@ -1231,11 +1231,11 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\n");
 		fprintf(incFile, "public:\n");
 		fprintf(incFile, "\tbool RecvReturn_%s(CRtnArgs_%s &args) {\n",
-			cxrCall.m_funcName.c_str(), cxrCall.m_funcName.c_str());
+			cxrCall.m_modEntry.c_str(), cxrCall.m_modEntry.c_str());
 
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\t\tint argc = %d;\n", (int)cxrReturn.m_paramList.size());
-		fprintf(incFile, "\t\tCRtnArgv_%s argv;\n", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\t\tCRtnArgv_%s argv;\n", cxrCall.m_modEntry.c_str());
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\t\tif (!RecvReturnBase(argc, (uint64_t *)&argv))\n");
 		fprintf(incFile, "\t\t\treturn false;\n");
@@ -1251,7 +1251,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\t\treturn true;\n");
 		fprintf(incFile, "\t}\n");
 		fprintf(incFile, "\n");
-		fprintf(incFile, "\tbool RecvReturn_%s(", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\tbool RecvReturn_%s(", cxrCall.m_modEntry.c_str());
 
 		pSeparator = "";
 
@@ -1266,7 +1266,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, ") {\n");
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\t\tint argc = %d;\n", (int)cxrReturn.m_paramList.size());
-		fprintf(incFile, "\t\tCRtnArgv_%s argv;\n", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\t\tCRtnArgv_%s argv;\n", cxrCall.m_modEntry.c_str());
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\t\tif (!RecvReturnBase(argc, (uint64_t *)&argv))\n");
 		fprintf(incFile, "\t\t\treturn false;\n");
@@ -1453,7 +1453,7 @@ void CDsnInfo::GenerateHifFiles()
 		}
 
 		fprintf(incFile, "\tpublic:\n");
-		fprintf(incFile, "\t\tstruct CCallArgs_%s {\n", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\t\tstruct CCallArgs_%s {\n", cxrCall.m_modEntry.c_str());
 
 		for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
 			CField * pParam = pCxrEntry->m_paramList[fldIdx];
@@ -1464,7 +1464,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\t\t};\n");
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\tprivate:\n");
-		fprintf(incFile, "\t\tstruct CCallArgv_%s {\n", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\t\tstruct CCallArgv_%s {\n", cxrCall.m_modEntry.c_str());
 
 		for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
 			CField * pParam = pCxrEntry->m_paramList[fldIdx];
@@ -1476,11 +1476,11 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\tpublic:\n");
 		fprintf(incFile, "\t\tbool RecvCall_%s(CCallArgs_%s &args) {\n",
-			cxrCall.m_funcName.c_str(), cxrCall.m_funcName.c_str());
+			cxrCall.m_modEntry.c_str(), cxrCall.m_modEntry.c_str());
 
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\t\t\tint argc = %d;\n", (int)pCxrEntry->m_paramList.size());
-		fprintf(incFile, "\t\t\tCCallArgv_%s argv;\n", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\t\t\tCCallArgv_%s argv;\n", cxrCall.m_modEntry.c_str());
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\t\t\tif (!CHtModelUnitBase::RecvCall(argc, (uint64_t *)&argv))\n");
 		fprintf(incFile, "\t\t\t\treturn false;\n");
@@ -1497,7 +1497,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\t\t}\n");
 
 		fprintf(incFile, "\n");
-		fprintf(incFile, "\t\tbool RecvCall_%s(", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\t\tbool RecvCall_%s(", cxrCall.m_modEntry.c_str());
 
 		pSeparator = "";
 
@@ -1512,7 +1512,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, ") {\n");
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\t\t\tint argc = %d;\n", (int)pCxrEntry->m_paramList.size());
-		fprintf(incFile, "\t\t\tCCallArgv_%s argv;\n", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\t\t\tCCallArgv_%s argv;\n", cxrCall.m_modEntry.c_str());
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\t\t\tif (!CHtModelUnitBase::RecvCall(argc, (uint64_t *)&argv))\n");
 		fprintf(incFile, "\t\t\t\treturn false;\n");
@@ -1529,7 +1529,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\t\t}\n");
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\tpublic:\n");
-		fprintf(incFile, "\t\tstruct CRtnArgs_%s {\n", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\t\tstruct CRtnArgs_%s {\n", cxrCall.m_modEntry.c_str());
 
 		for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
 			CField * pParam = cxrReturn.m_paramList[fldIdx];
@@ -1540,7 +1540,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\t\t};\n");
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\tprivate:\n");
-		fprintf(incFile, "\t\tstruct CRtnArgv_%s {\n", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\t\tstruct CRtnArgv_%s {\n", cxrCall.m_modEntry.c_str());
 
 		for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
 			CField * pParam = cxrReturn.m_paramList[fldIdx];
@@ -1552,11 +1552,11 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\tpublic:\n");
 		fprintf(incFile, "\t\tbool SendReturn_%s(CRtnArgs_%s &args) {\n",
-			cxrCall.m_funcName.c_str(), cxrCall.m_funcName.c_str());
+			cxrCall.m_modEntry.c_str(), cxrCall.m_modEntry.c_str());
 
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\t\t\tint argc = %d;\n", (int)cxrReturn.m_paramList.size());
-		fprintf(incFile, "\t\t\tCRtnArgv_%s argv;\n", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\t\t\tCRtnArgv_%s argv;\n", cxrCall.m_modEntry.c_str());
 		fprintf(incFile, "\n");
 
 		for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
@@ -1568,7 +1568,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\t\t\treturn CHtModelUnitBase::SendReturn(argc, (uint64_t *)&argv);\n");
 		fprintf(incFile, "\t\t}\n");
 		fprintf(incFile, "\n");
-		fprintf(incFile, "\t\tbool SendReturn_%s(", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\t\tbool SendReturn_%s(", cxrCall.m_modEntry.c_str());
 
 		pSeparator = "";
 
@@ -1583,7 +1583,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, ") {\n");
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\t\t\tint argc = %d;\n", (int)cxrReturn.m_paramList.size());
-		fprintf(incFile, "\t\t\tCRtnArgv_%s argv;\n", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\t\t\tCRtnArgv_%s argv;\n", cxrCall.m_modEntry.c_str());
 		fprintf(incFile, "\n");
 
 		for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
@@ -1708,7 +1708,7 @@ void CDsnInfo::GenerateHifFiles()
 		}
 
 		fprintf(incFile, "public:\n");
-		fprintf(incFile, "\tstruct CCallArgs_%s {\n", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\tstruct CCallArgs_%s {\n", cxrCall.m_modEntry.c_str());
 
 		for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
 			CField * pParam = pCxrEntry->m_paramList[fldIdx];
@@ -1719,7 +1719,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\t};\n");
 		fprintf(incFile, "\n");
 		fprintf(incFile, "private:\n");
-		fprintf(incFile, "\tstruct CCallArgv_%s {\n", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\tstruct CCallArgv_%s {\n", cxrCall.m_modEntry.c_str());
 
 		for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
 			CField * pParam = pCxrEntry->m_paramList[fldIdx];
@@ -1731,11 +1731,11 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\n");
 		fprintf(incFile, "public:\n");
 		fprintf(incFile, "\tbool RecvCall_%s(CCallArgs_%s &args) {\n",
-			cxrCall.m_funcName.c_str(), cxrCall.m_funcName.c_str());
+			cxrCall.m_modEntry.c_str(), cxrCall.m_modEntry.c_str());
 
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\t\tint argc = %d;\n", (int)pCxrEntry->m_paramList.size());
-		fprintf(incFile, "\t\tCCallArgv_%s argv;\n", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\t\tCCallArgv_%s argv;\n", cxrCall.m_modEntry.c_str());
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\t\tif (!RecvCallBase(argc, (uint64_t *)&argv))\n");
 		fprintf(incFile, "\t\t\treturn false;\n");
@@ -1752,7 +1752,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\t}\n");
 
 		fprintf(incFile, "\n");
-		fprintf(incFile, "\tbool RecvCall_%s(", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\tbool RecvCall_%s(", cxrCall.m_modEntry.c_str());
 
 		pSeparator = "";
 
@@ -1767,7 +1767,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, ") {\n");
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\t\tint argc = %d;\n", (int)pCxrEntry->m_paramList.size());
-		fprintf(incFile, "\t\tCCallArgv_%s argv;\n", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\t\tCCallArgv_%s argv;\n", cxrCall.m_modEntry.c_str());
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\t\tif (!RecvCallBase(argc, (uint64_t *)&argv))\n");
 		fprintf(incFile, "\t\t\treturn false;\n");
@@ -1784,7 +1784,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\t}\n");
 		fprintf(incFile, "\n");
 		fprintf(incFile, "public:\n");
-		fprintf(incFile, "\tstruct CRtnArgs_%s {\n", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\tstruct CRtnArgs_%s {\n", cxrCall.m_modEntry.c_str());
 
 		for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
 			CField * pParam = cxrReturn.m_paramList[fldIdx];
@@ -1795,7 +1795,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\t};\n");
 		fprintf(incFile, "\n");
 		fprintf(incFile, "private:\n");
-		fprintf(incFile, "\tstruct CRtnArgv_%s {\n", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\tstruct CRtnArgv_%s {\n", cxrCall.m_modEntry.c_str());
 
 		for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
 			CField * pParam = cxrReturn.m_paramList[fldIdx];
@@ -1807,11 +1807,11 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\n");
 		fprintf(incFile, "public:\n");
 		fprintf(incFile, "\tbool SendReturn_%s(CRtnArgs_%s &args) {\n",
-			cxrCall.m_funcName.c_str(), cxrCall.m_funcName.c_str());
+			cxrCall.m_modEntry.c_str(), cxrCall.m_modEntry.c_str());
 
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\t\tint argc = %d;\n", (int)cxrReturn.m_paramList.size());
-		fprintf(incFile, "\t\tCRtnArgv_%s argv;\n", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\t\tCRtnArgv_%s argv;\n", cxrCall.m_modEntry.c_str());
 		fprintf(incFile, "\n");
 
 		for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
@@ -1823,7 +1823,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\t\treturn SendReturnBase(argc, (uint64_t *)&argv);\n");
 		fprintf(incFile, "\t}\n");
 		fprintf(incFile, "\n");
-		fprintf(incFile, "\tbool SendReturn_%s(", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\tbool SendReturn_%s(", cxrCall.m_modEntry.c_str());
 
 		pSeparator = "";
 
@@ -1838,7 +1838,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, ") {\n");
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\t\tint argc = %d;\n", (int)cxrReturn.m_paramList.size());
-		fprintf(incFile, "\t\tCRtnArgv_%s argv;\n", cxrCall.m_funcName.c_str());
+		fprintf(incFile, "\t\tCRtnArgv_%s argv;\n", cxrCall.m_modEntry.c_str());
 		fprintf(incFile, "\n");
 
 		for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {

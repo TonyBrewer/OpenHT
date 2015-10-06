@@ -60,8 +60,8 @@ CDsnInfo::GenerateHtiFiles()
 	bool bCallCmdFields = callIntf.m_bCxrIntfFields;
 	bool bRtnCmdFields = rtnIntf.m_bCxrIntfFields;
 
-	bool bCallClk2x = callIntf.m_pDstMod->m_clkRate == eClk2x;
-	bool bRtnClk2x = rtnIntf.m_pSrcMod->m_clkRate == eClk2x;
+	bool bCallClk2x = callIntf.m_pDstModInst->m_pMod->m_clkRate == eClk2x;
+	bool bRtnClk2x = rtnIntf.m_pSrcModInst->m_pMod->m_clkRate == eClk2x;
 
 	fprintf(incFile, "// internal states\n");
 	fprintf(incFile, "#define HTI_IDLE	0\n");

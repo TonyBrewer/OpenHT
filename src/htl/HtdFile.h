@@ -24,6 +24,7 @@ struct CModule;
 struct CRecord;
 struct CDsnInfo;
 struct CCxrReturn;
+struct CCxrCall;
 struct CMifRd;
 struct CMifWr;
 struct CRam;
@@ -65,6 +66,7 @@ public:
 		EParamType	m_paramType;
 		bool		m_bDeprecated;
 		bool		m_bPresent;
+		int			m_dupIdx;
 	};
 
 	class HtdList {
@@ -157,6 +159,8 @@ public:
 		//HtdList			m_sharedVariableList;
 		HtdList			m_mifRdDstList;
 		HtdList			m_mifWrSrcList;
+		HtdList			m_callInstParamList;
+		HtdList			m_modInstParamList;
 	};
 
 private:
@@ -181,6 +185,7 @@ private:
 	void ParseMifRdMethods();
 	void ParseMifWrMethods();
 	void ParseIhmMethods();
+	void ParseCallMethods();
 
 	bool ParseParameters(CParamList *params);
 	bool ParseIntRange(vector<int> * pIntList);
@@ -203,8 +208,6 @@ private:
 	virtual bool IsInTypeList(string &name) = 0;
 	virtual bool IsInStructList(string &name) = 0;
 
-	virtual void AddCall(void * pModule, string funcName, bool bCall, bool bFork, string queueW, string dest) = 0;
-	virtual void AddXfer(void * pModule, string funcName, string queueW) = 0;
 	virtual void AddThreads(void * pModule, string htIdW, string resetInstr, bool bPause) = 0;
 	virtual void AddInstr(void * pModule, string name) = 0;
 	virtual void AddTrace(void * pModule, string name) = 0;
@@ -226,6 +229,7 @@ private:
 	CRecord * m_pOpenRecord;
 	CStage * m_pOpenStage;
 	vector<CRam *> * m_pOpenGlobal;
+	CCxrCall * m_pOpenCall;
 	CCxrReturn * m_pOpenReturn;
 	void * m_pOpenIhm;
 	CFunction * m_pOpenFunction;

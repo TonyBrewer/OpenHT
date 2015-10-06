@@ -111,9 +111,10 @@ struct CHtSelName {
 	string m_replIndex;
 };
 
-void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
+void CDsnInfo::GenModIplStatements(CModInst &modInst)
 {
-	string vcdModName = VA("Pers%s", mod.m_modName.Uc().c_str());
+	CModule &mod = *modInst.m_pMod;
+	string vcdModName = VA("Pers%s", modInst.m_instName.Uc().c_str());
 
 	g_appArgs.GetDsnRpt().AddLevel("Module Attributes\n");
 	if (mod.m_bHasThreads)
@@ -127,9 +128,6 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 
 	if (!bStateMachine) return;
 
-	CModInst & modInst = mod.m_modInstList[modInstIdx];
-
-	string instIdStr = GenIndexStr(mod.m_instIdCnt > 1, "%d", modInst.m_instParams.m_instId);
 	string unitNameUc = !g_appArgs.IsModuleUnitNamesEnabled() ? m_unitName.Uc() : "";
 
 	CHtCode	& iplT0Stg = mod.m_clkRate == eClk1x ? m_iplT0Stg1x : m_iplT0Stg2x;
@@ -148,13 +146,13 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 	int maxInstrLen = 0;
 	m_iplMacros.Append("#ifndef _HTV\n");
 	if (g_appArgs.IsInstrTraceEnabled()) {
-		m_iplMacros.Append("char const * CPers%s%s%s::m_pHtCtrlNames[] = {\n\t\"INVALID\",\n\t\"CONTINUE\",\n\t\"CALL\",\n\t\"RETURN\",\n",
-			unitNameUc.c_str(), mod.m_modName.Uc().c_str(), instIdStr.c_str());
+		m_iplMacros.Append("char const * CPers%s%s::m_pHtCtrlNames[] = {\n\t\"INVALID\",\n\t\"CONTINUE\",\n\t\"CALL\",\n\t\"RETURN\",\n",
+			unitNameUc.c_str(), modInst.m_instName.Uc().c_str());
 		m_iplMacros.Append("\t\"JOIN\",\n\t\"RETRY\",\n\t\"TERMINATE\",\n\t\"PAUSE\",\n\t\"JOIN_AND_CONT\"\n};\n");
 	}
 
-	m_iplMacros.Append("char const * CPers%s%s%s::m_pInstrNames[] = {\n",
-		unitNameUc.c_str(), mod.m_modName.Uc().c_str(), instIdStr.c_str());
+	m_iplMacros.Append("char const * CPers%s%s::m_pInstrNames[] = {\n",
+		unitNameUc.c_str(), modInst.m_instName.Uc().c_str());
 	for (size_t instrIdx = 0; instrIdx < mod.m_instrList.size(); instrIdx += 1) {
 		m_iplMacros.Append("\t\"%s\",\n", mod.m_instrList[instrIdx].c_str());
 		int instrLen = mod.m_instrList[instrIdx].size();
@@ -179,12 +177,12 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 	g_appArgs.GetDsnRpt().EndLevel();
 
 	m_iplFuncDecl.Append("\tvoid HtRetry();\n");
-	m_iplMacros.Append("void CPers%s%s%s::HtRetry()\n",
-		unitNameUc.c_str(), mod.m_modName.Uc().c_str(), instIdStr.c_str());
+	m_iplMacros.Append("void CPers%s%s::HtRetry()\n",
+		unitNameUc.c_str(), modInst.m_instName.Uc().c_str());
 	m_iplMacros.Append("{\n");
 
 	m_iplMacros.Append("\tassert_msg(c_t%d_htCtrl == HT_INVALID, \"Runtime check failed in CPers%s::HtRetry()"
-		" - an Ht control routine was already called\");\n", mod.m_execStg, mod.m_modName.Uc().c_str());
+		" - an Ht control routine was already called\");\n", mod.m_execStg, modInst.m_instName.Uc().c_str());
 
 	m_iplMacros.Append("\tc_t%d_htCtrl = HT_RETRY;\n", mod.m_execStg);
 	m_iplMacros.Append("}\n");
@@ -194,11 +192,11 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 	g_appArgs.GetDsnRpt().EndLevel();
 
 	m_iplFuncDecl.Append("\tvoid HtContinue(ht_uint%d nextInstr);\n", mod.m_instrW);
-	m_iplMacros.Append("void CPers%s%s%s::HtContinue(ht_uint%d nextInstr)\n",
-		unitNameUc.c_str(), mod.m_modName.Uc().c_str(), instIdStr.c_str(), mod.m_instrW);
+	m_iplMacros.Append("void CPers%s%s::HtContinue(ht_uint%d nextInstr)\n",
+		unitNameUc.c_str(), modInst.m_instName.Uc().c_str(), mod.m_instrW);
 	m_iplMacros.Append("{\n");
 	m_iplMacros.Append("\tassert_msg(c_t%d_htCtrl == HT_INVALID, \"Runtime check failed in CPers%s::HtContinue()"
-		" - an Ht control routine was already called\");\n", mod.m_execStg, mod.m_modName.Uc().c_str());
+		" - an Ht control routine was already called\");\n", mod.m_execStg, modInst.m_instName.Uc().c_str());
 	m_iplMacros.Append("\tc_t%d_htCtrl = HT_CONT;\n", mod.m_execStg);
 	m_iplMacros.Append("\tc_t%d_htNextInstr = nextInstr;\n", mod.m_execStg);
 	m_iplMacros.Append("}\n");
@@ -208,11 +206,11 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 		g_appArgs.GetDsnRpt().AddLevel("void HtPause(ht_uint%d nextInstr)\n", mod.m_instrW);
 		g_appArgs.GetDsnRpt().EndLevel();
 		m_iplFuncDecl.Append("\tvoid HtPause(ht_uint%d nextInstr);\n", mod.m_instrW);
-		m_iplMacros.Append("void CPers%s%s%s::HtPause(ht_uint%d nextInstr)\n",
-			unitNameUc.c_str(), mod.m_modName.Uc().c_str(), instIdStr.c_str(), mod.m_instrW);
+		m_iplMacros.Append("void CPers%s%s::HtPause(ht_uint%d nextInstr)\n",
+			unitNameUc.c_str(), modInst.m_instName.Uc().c_str(), mod.m_instrW);
 		m_iplMacros.Append("{\n");
 		m_iplMacros.Append("\tassert_msg(c_t%d_htCtrl == HT_INVALID, \"Runtime check failed in CPers%s::HtPause()"
-			" - an Ht control routine was already called\");\n", mod.m_execStg, mod.m_modName.Uc().c_str());
+			" - an Ht control routine was already called\");\n", mod.m_execStg, modInst.m_instName.Uc().c_str());
 		m_iplMacros.Append("\tc_t%d_htCtrl = HT_PAUSE;\n", mod.m_execStg);
 		if (mod.m_threads.m_htIdW.AsInt() > 0) {
 			m_iplMacros.Append("\tm_htRsmInstr.write_addr(r_t%d_htId);\n", mod.m_execStg);
@@ -236,27 +234,27 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 			g_appArgs.GetDsnRpt().EndLevel();
 
 			m_iplFuncDecl.Append("\tvoid HtResume(sc_uint<%s_HTID_W> htId);\n", mod.m_modName.Upper().c_str());
-			m_iplMacros.Append("void CPers%s%s%s::HtResume(sc_uint<%s_HTID_W> htId)\n",
-				unitNameUc.c_str(), mod.m_modName.Uc().c_str(), instIdStr.c_str(), mod.m_modName.Upper().c_str());
+			m_iplMacros.Append("void CPers%s%s::HtResume(sc_uint<%s_HTID_W> htId)\n",
+				unitNameUc.c_str(), modInst.m_instName.Uc().c_str(), mod.m_modName.Upper().c_str());
 		} else if (mod.m_threads.m_htIdW.size() > 0) {
 			g_appArgs.GetDsnRpt().AddLevel("void HtResume(ht_uint1 htId)\n");
 			g_appArgs.GetDsnRpt().EndLevel();
 
 			m_iplFuncDecl.Append("\tvoid HtResume(ht_uint1 htId);\n");
-			m_iplMacros.Append("void CPers%s%s%s::HtResume(ht_uint1 ht_noload htId)\n",
-				unitNameUc.c_str(), mod.m_modName.Uc().c_str(), instIdStr.c_str());
+			m_iplMacros.Append("void CPers%s%s::HtResume(ht_uint1 ht_noload htId)\n",
+				unitNameUc.c_str(), modInst.m_instName.Uc().c_str());
 		} else {
 			g_appArgs.GetDsnRpt().AddLevel("void HtResume()\n");
 			g_appArgs.GetDsnRpt().EndLevel();
 
 			m_iplFuncDecl.Append("\tvoid HtResume();\n");
-			m_iplMacros.Append("void CPers%s%s%s::HtResume()\n",
-				unitNameUc.c_str(), mod.m_modName.Uc().c_str(), instIdStr.c_str());
+			m_iplMacros.Append("void CPers%s%s::HtResume()\n",
+				unitNameUc.c_str(), modInst.m_instName.Uc().c_str());
 		}
 		m_iplMacros.Append("{\n");
 		if (mod.m_threads.m_htIdW.size() > 0 && mod.m_threads.m_htIdW.AsInt() == 0)
 			m_iplMacros.Append("\tassert_msg(htId == 0, \"Runtime check failed in CPers%s::HtResume()"
-			" - expected htId parameter value to be zero\");\n", mod.m_modName.Uc().c_str());
+			" - expected htId parameter value to be zero\");\n", modInst.m_instName.Uc().c_str());
 		if (mod.m_threads.m_htIdW.AsInt() > 0) {
 			if (mod.m_rsmSrcCnt > 1) {
 				m_iplMacros.Append("\tCHtCmd rsm;\n");
@@ -290,11 +288,11 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 	g_appArgs.GetDsnRpt().EndLevel();
 
 	m_iplFuncDecl.Append("\tvoid HtTerminate();\n");
-	m_iplMacros.Append("void CPers%s%s%s::HtTerminate()\n",
-		unitNameUc.c_str(), mod.m_modName.Uc().c_str(), instIdStr.c_str());
+	m_iplMacros.Append("void CPers%s%s::HtTerminate()\n",
+		unitNameUc.c_str(), modInst.m_instName.Uc().c_str());
 	m_iplMacros.Append("{\n");
 	m_iplMacros.Append("\tassert_msg(c_t%d_htCtrl == HT_INVALID, \"Runtime check failed in CPers%s::HtTerminate()"
-		" - an Ht control routine was already called\");\n", mod.m_execStg, mod.m_modName.Uc().c_str());
+		" - an Ht control routine was already called\");\n", mod.m_execStg, modInst.m_instName.Uc().c_str());
 	m_iplMacros.Append("\tc_t%d_htCtrl = HT_TERM;\n", mod.m_execStg);
 	m_iplMacros.Append("}\n");
 	m_iplMacros.Append("\n");
@@ -357,7 +355,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 		mod.m_threads.m_htPriv.m_bCStyle = false;
 		GenUserStructs(m_iplRegDecl, &mod.m_threads.m_htPriv, "\t");
 
-		string privStructName = VA("CPers%s::CHtPriv", mod.m_modName.Uc().c_str());
+		string privStructName = VA("CPers%s::CHtPriv", modInst.m_instName.Uc().c_str());
 
 		GenUserStructBadData(m_iplBadDecl, true, privStructName,
 			mod.m_threads.m_htPriv.m_fieldList, mod.m_threads.m_htPriv.m_bCStyle, "");
@@ -580,7 +578,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 		CCxrIntf &cxrIntf = modInst.m_cxrIntfList[intfIdx];
 
 		if (cxrIntf.m_cxrDir == CxrOut) continue;
-		if (!cxrIntf.m_pSrcMod->m_bGvIwComp) continue;
+		if (!cxrIntf.m_pSrcModInst->m_pMod->m_bGvIwComp) continue;
 
 		if (cxrIntf.GetPortReplId() == 0) {
 			vector<CHtString> replDim;
@@ -593,19 +591,19 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 			GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, VA("ht_uint%d", cxrIntf.GetQueDepthW() + 1), VA("r_%s_%sCompCnt", cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName()), replDim);
 			m_iplRegDecl.Append("\tht_uint%d c_%s_%sCompCnt%s;\n", cxrIntf.GetQueDepthW() + 1, cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplDecl());
 
-			if (cxrIntf.m_pSrcMod->m_clkRate == eClk2x && mod.m_clkRate == eClk1x) {
+			if (cxrIntf.m_pSrcModInst->m_pMod->m_clkRate == eClk2x && mod.m_clkRate == eClk1x) {
 				GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, "sc_signal<ht_uint2>", VA("r_%s_%sCompCnt_2x", cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName()), replDim);
 				m_iplRegDecl.Append("\tht_uint2 c_%s_%sCompCnt_2x%s;\n", cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplDecl());
 			}
 		}
 
-		if (cxrIntf.m_pSrcMod->m_clkRate == eClk2x && mod.m_clkRate == eClk1x) {
+		if (cxrIntf.m_pSrcModInst->m_pMod->m_clkRate == eClk2x && mod.m_clkRate == eClk1x) {
 			pIplTxStg->Append("\tc_%s_%sCompCnt%s = r_%s_%sCompCnt%s + r_%s_%sCompCnt_2x%s.read();\n",
 				cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(),
 				cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(),
 				cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 
-		} else if (cxrIntf.m_pSrcMod->m_clkRate == eClk1x && mod.m_clkRate == eClk1x) {
+		} else if (cxrIntf.m_pSrcModInst->m_pMod->m_clkRate == eClk1x && mod.m_clkRate == eClk1x) {
 			pIplTxStg->Append("\tc_%s_%sCompCnt%s = r_%s_%sCompCnt%s + (i_%s_%sCompRdy%s.read() ? 1u : 0u);\n",
 				cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(),
 				cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(),
@@ -618,7 +616,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 			cxrIntf.GetQueDepthW() + 1,
 			cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 
-		if (cxrIntf.m_pSrcMod->m_clkRate == eClk2x && mod.m_clkRate == eClk1x) {
+		if (cxrIntf.m_pSrcModInst->m_pMod->m_clkRate == eClk2x && mod.m_clkRate == eClk1x) {
 
 			m_iplPostInstr2x.Append("\tc_%s_%sCompCnt_2x%s = r_phase == 0 ? (ht_uint2)0 : r_%s_%sCompCnt_2x%s;\n",
 				cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(),
@@ -702,7 +700,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 
 		if (cxrIntf.GetQueDepthW() > 0) {
 			if (cxrIntf.m_bCxrIntfFields) {
-				if (mod.m_clkRate == eClk1x && cxrIntf.m_pSrcMod->m_clkRate == eClk1x)
+				if (mod.m_clkRate == eClk1x && cxrIntf.m_pSrcModInst->m_pMod->m_clkRate == eClk1x)
 					pIplTxStg->Append("!m_%s_%sQue%s.empty()",
 					cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 				else
@@ -731,7 +729,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 			pIplTxStg->Append(" && r_htCompQueAvlCnt > 0u", cxrIntf.GetIntfName());
 		}
 
-		if (cxrIntf.m_pSrcMod->m_bGvIwComp) {
+		if (cxrIntf.m_pSrcModInst->m_pMod->m_bGvIwComp) {
 			pIplTxStg->Append(" && r_%s_%sCompCnt%s > 0u", cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 		}
 
@@ -810,7 +808,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 		if (!cxrIntf.m_bCxrIntfFields) continue;
 
 		if (cxrIntf.GetQueDepthW() > 0) {
-			if (mod.m_clkRate == eClk1x && cxrIntf.m_pSrcMod->m_clkRate == eClk1x) {
+			if (mod.m_clkRate == eClk1x && cxrIntf.m_pSrcModInst->m_pMod->m_clkRate == eClk1x) {
 				if (cxrIntf.GetPortReplCnt() <= 1)
 					pIplTxStg->Append("\tC%s_%s c_t1_%s_%s = m_%s_%sQue.front();\n",
 					cxrIntf.GetSrcToDstUc(), cxrIntf.GetIntfName(),
@@ -983,10 +981,10 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 		pIplTxStg->Append(") {\n");
 
 		m_htSelDef.Append("#define %s_HT_SEL_RESET %d\n",
-			mod.m_modName.Upper().c_str(), htSelCnt++);
+			modInst.m_instName.Upper().c_str(), htSelCnt++);
 
 		pIplTxStg->Append("\t\tc_t1_htSel = %s_HT_SEL_RESET;\n",
-			mod.m_modName.Upper().c_str());
+			modInst.m_instName.Upper().c_str());
 
 		if (mod.m_threads.m_htIdW.AsInt() > 0)
 			pIplTxStg->Append("\t\tc_t1_htId = c_t1_htIdPool;\n");
@@ -1012,7 +1010,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 
 		pIplTxStg->Append(") {\n");
 
-		pIplTxStg->Append("\t\tc_t1_htSel = %s_HT_SEL_SM;\n", mod.m_modName.Upper().c_str());
+		pIplTxStg->Append("\t\tc_t1_htSel = %s_HT_SEL_SM;\n", modInst.m_instName.Upper().c_str());
 
 		if (mod.m_threads.m_htIdW.AsInt() == 0) {
 
@@ -1048,7 +1046,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 
 		if (cxrIntf.GetQueDepthW() > 0) {
 			if (cxrIntf.m_bCxrIntfFields) {
-				if (mod.m_clkRate == eClk1x && cxrIntf.m_pSrcMod->m_clkRate == eClk1x)
+				if (mod.m_clkRate == eClk1x && cxrIntf.m_pSrcModInst->m_pMod->m_clkRate == eClk1x)
 					pIplTxStg->Append("%sif (!m_%s_%sQue%s.empty()", pFirst,
 					cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 				else
@@ -1087,10 +1085,10 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 		pIplTxStg->Append(") {\n");
 
 		m_htSelDef.Append("#define %s_HT_SEL_%s_%d_%s %d\n",
-			mod.m_modName.Upper().c_str(), cxrIntf.m_srcInstName.Upper().c_str(), cxrIntf.GetPortReplId(), cxrIntf.m_funcName.Upper().c_str(),
+			modInst.m_instName.Upper().c_str(), cxrIntf.m_pSrcModInst->m_instName.Upper().c_str(), cxrIntf.GetPortReplId(), cxrIntf.m_modEntry.Upper().c_str(),
 			htSelCnt++);
 		pIplTxStg->Append("\t\tc_t1_htSel = %s_HT_SEL_%s_%d_%s;\n",
-			mod.m_modName.Upper().c_str(), cxrIntf.m_srcInstName.Upper().c_str(), cxrIntf.GetPortReplId(), cxrIntf.m_funcName.Upper().c_str());
+			modInst.m_instName.Upper().c_str(), cxrIntf.m_pSrcModInst->m_instName.Upper().c_str(), cxrIntf.GetPortReplId(), cxrIntf.m_modEntry.Upper().c_str());
 
 		if (cxrIntf.m_pDstGroup->m_htIdW.AsInt() > 0) {
 			if (cxrIntf.m_cxrType == CxrCall || cxrIntf.m_cxrType == CxrTransfer) {
@@ -1108,7 +1106,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 			cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 		else {
 			if (cxrIntf.m_bCxrIntfFields) {
-				if (mod.m_clkRate != eClk1x || cxrIntf.m_pSrcMod->m_clkRate != eClk1x)
+				if (mod.m_clkRate != eClk1x || cxrIntf.m_pSrcModInst->m_pMod->m_clkRate != eClk1x)
 					pIplTxStg->Append("\t\tc_%s_%sQueEmpty%s = true;\n",
 					cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 				else
@@ -1146,7 +1144,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 			}
 		}
 
-		if (cxrIntf.m_pSrcMod->m_bGvIwComp) {
+		if (cxrIntf.m_pSrcModInst->m_pMod->m_bGvIwComp) {
 			pIplTxStg->Append("\t\tc_%s_%sCompCnt%s -= 1u;\n", cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 		}
 
@@ -1170,10 +1168,10 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 		pIplTxStg->Append(") {\n");
 
 		m_htSelDef.Append("#define %s_HT_SEL_%s_%d_%s %d\n",
-			mod.m_modName.Upper().c_str(), cxrIntf.m_srcInstName.Upper().c_str(), cxrIntf.GetPortReplId(), cxrIntf.m_funcName.Upper().c_str(),
+			modInst.m_instName.Upper().c_str(), cxrIntf.m_pSrcModInst->m_instName.Upper().c_str(), cxrIntf.GetPortReplId(), cxrIntf.m_modEntry.Upper().c_str(),
 			htSelCnt++);
 		pIplTxStg->Append("\t\tc_t1_htSel = %s_HT_SEL_%s_%d_%s;\n",
-			mod.m_modName.Upper().c_str(), cxrIntf.m_srcInstName.Upper().c_str(), cxrIntf.GetPortReplId(), cxrIntf.m_funcName.Upper().c_str());
+			modInst.m_instName.Upper().c_str(), cxrIntf.m_pSrcModInst->m_instName.Upper().c_str(), cxrIntf.GetPortReplId(), cxrIntf.m_modEntry.Upper().c_str());
 
 		if (cxrIntf.m_pDstGroup->m_htIdW.AsInt() > 0)
 			pIplTxStg->Append("\t\tc_t1_htId = c_t1_%s_%sHtId%s;\n",
@@ -1187,7 +1185,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 				cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 			else {
 				if (cxrIntf.m_bCxrIntfFields) {
-					if (mod.m_clkRate != eClk1x || cxrIntf.m_pSrcMod->m_clkRate != eClk1x)
+					if (mod.m_clkRate != eClk1x || cxrIntf.m_pSrcModInst->m_pMod->m_clkRate != eClk1x)
 						pIplTxStg->Append("\t\tc_%s_%sQueEmpty%s = true;\n",
 						cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 					else
@@ -1206,7 +1204,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 			else
 				pIplTxStg->Append("\t\tc_htSelRr = 0x%x;\n", 1 << (selRrIdx + 1));
 
-			if (cxrIntf.m_pSrcMod->m_bGvIwComp)
+			if (cxrIntf.m_pSrcModInst->m_pMod->m_bGvIwComp)
 				pIplTxStg->Append("\t\tc_%s_%sCompCnt%s -= 1;\n", cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 
 		} else {
@@ -1219,7 +1217,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 					cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 				else {
 					if (cxrIntf.m_bCxrIntfFields) {
-						if (mod.m_clkRate != eClk1x || cxrIntf.m_pSrcMod->m_clkRate != eClk1x)
+						if (mod.m_clkRate != eClk1x || cxrIntf.m_pSrcModInst->m_pMod->m_clkRate != eClk1x)
 							pIplTxStg->Append("\t\tc_%s_%sQueEmpty%s = true;\n",
 							cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 						else
@@ -1238,7 +1236,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 				else
 					pIplTxStg->Append("\t\tc_htSelRr = 0x%x;\n", 1 << (selRrIdx + 1));
 
-				if (cxrIntf.m_pSrcMod->m_bGvIwComp)
+				if (cxrIntf.m_pSrcModInst->m_pMod->m_bGvIwComp)
 					pIplTxStg->Append("\t\tc_%s_%sCompCnt%s -= 1u;\n", cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 
 				pIplTxStg->Append("\t\tc_htPrivLk = true;\n");
@@ -1262,7 +1260,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 					cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 				else {
 					if (cxrIntf.m_bCxrIntfFields) {
-						if (mod.m_clkRate != eClk1x || cxrIntf.m_pSrcMod->m_clkRate != eClk1x)
+						if (mod.m_clkRate != eClk1x || cxrIntf.m_pSrcModInst->m_pMod->m_clkRate != eClk1x)
 							pIplTxStg->Append("\t\t\tc_%s_%sQueEmpty%s = true;\n",
 							cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 						else
@@ -1281,7 +1279,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 				else
 					pIplTxStg->Append("\t\t\tc_htSelRr = 0x%x;\n", 1 << (selRrIdx + 1));
 
-				if (cxrIntf.m_pSrcMod->m_bGvIwComp)
+				if (cxrIntf.m_pSrcModInst->m_pMod->m_bGvIwComp)
 					pIplTxStg->Append("\t\t\tc_%s_%sCompCnt%s -= 1u;\n", cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
 
 				pIplTxStg->Append("\t\t}\n");
@@ -1303,9 +1301,9 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 	if (modInst.m_cxrSrcCnt > 1) {
 
 		m_htSelDef.Append("#define %s_HT_SEL_SM %d\n",
-			mod.m_modName.Upper().c_str(), htSelCnt++);
+			modInst.m_instName.Upper().c_str(), htSelCnt++);
 		pIplTxStg->Append("\t\tc_t1_htSel = %s_HT_SEL_SM;\n",
-			mod.m_modName.Upper().c_str());
+			modInst.m_instName.Upper().c_str());
 	}
 
 	if (!mod.m_bCallFork || mod.m_threads.m_htIdW.AsInt() == 0) {
@@ -1363,9 +1361,9 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 		if (modInst.m_cxrSrcCnt > 1) {
 
 			m_htSelDef.Append("#define %s_HT_SEL_POLL %d\n",
-				mod.m_modName.Upper().c_str(), htSelCnt++);
+				modInst.m_instName.Upper().c_str(), htSelCnt++);
 			pIplTxStg->Append("\t\tc_t1_htSel = %s_HT_SEL_POLL;\n",
-				mod.m_modName.Upper().c_str());
+				modInst.m_instName.Upper().c_str());
 		}
 
 		if (!mod.m_bCallFork || mod.m_threads.m_htIdW.AsInt() == 0) {
@@ -1975,7 +1973,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 		pIplTxStg->Append("\tswitch (%s_htSel) {\n", pOutStg);
 
 		if (mod.m_threads.m_resetInstr.size() > 0) {
-			pIplTxStg->Append("\tcase %s_HT_SEL_RESET:\n", mod.m_modName.Upper().c_str());
+			pIplTxStg->Append("\tcase %s_HT_SEL_RESET:\n", modInst.m_instName.Upper().c_str());
 			pIplTxStg->Append("\t\t%s_htInstr = %s;\n", pOutStg, mod.m_threads.m_resetInstr.c_str());
 			pIplTxStg->Append("\t\tbreak;\n");
 		}
@@ -1986,7 +1984,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 			if (cxrIntf.m_cxrDir == CxrOut) continue;
 
 			pIplTxStg->Append("\tcase %s_HT_SEL_%s_%d_%s:\n",
-				mod.m_modName.Upper().c_str(), cxrIntf.m_srcInstName.Upper().c_str(), cxrIntf.GetPortReplId(), cxrIntf.m_funcName.Upper().c_str());
+				modInst.m_instName.Upper().c_str(), cxrIntf.m_pSrcModInst->m_instName.Upper().c_str(), cxrIntf.GetPortReplId(), cxrIntf.m_modEntry.Upper().c_str());
 
 			if (cxrIntf.IsCallOrXfer()) {
 				pIplTxStg->Append("\t\t%s_htInstr = %s;\n",
@@ -2009,7 +2007,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 
 				// call and xfer must save caller's htId, returns do not
 				if (cxrIntf.IsCall()) {
-					if (cxrIntf.m_pSrcMod->m_instrW > 0)
+					if (cxrIntf.m_pSrcModInst->m_pMod->m_instrW > 0)
 						pIplTxStg->Append("\t\t%s_htPriv.m_rtnInstr = (%sRtnInstr_t)%s_%s_%s%s.m_rtnInstr;\n",
 						pOutStg,
 						mod.m_modName.Uc().c_str(),
@@ -2020,10 +2018,11 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 						pOutStg,
 						mod.m_modName.Uc().c_str(),
 						pOutStg, cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
-					if (mod.m_cxrEntryReserveCnt > 0)
+					if (mod.m_cxrEntryReserveCnt > 0) {
 						pIplTxStg->Append("\t\t%s_htPriv.m_rtnRsvSel = %s_HT_SEL_%s_%d_%s;\n",
-						pOutStg,
-						mod.m_modName.Upper().c_str(), cxrIntf.m_srcInstName.Upper().c_str(), cxrIntf.GetPortReplId(), cxrIntf.m_funcName.Upper().c_str());
+							pOutStg,
+							modInst.m_instName.Upper().c_str(), cxrIntf.m_pSrcModInst->m_instName.Upper().c_str(), cxrIntf.GetPortReplId(), cxrIntf.m_modEntry.Upper().c_str());
+					}
 				} else {
 					if (cxrIntf.m_pSrcGroup->m_rtnInstrW > 0)
 						pIplTxStg->Append("\t\t%s_htPriv.m_rtnInstr = (%sRtnInstr_t)%s_%s_%s%s.m_rtnInstr;\n",
@@ -2080,7 +2079,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 			pIplTxStg->Append("\t\tbreak;\n");
 		}
 
-		pIplTxStg->Append("\tcase %s_HT_SEL_SM:\n", mod.m_modName.Upper().c_str());
+		pIplTxStg->Append("\tcase %s_HT_SEL_SM:\n", modInst.m_instName.Upper().c_str());
 
 		if (mod.m_rsmSrcCnt > 0) {
 			pIplTxStg->Append("\t\tif (%s_rsmHtRdy)\n", pOutStg);
@@ -2092,7 +2091,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 		pIplTxStg->Append("\t\tbreak;\n");
 
 		if (bNeedMifPollQue) {
-			pIplTxStg->Append("\tcase %s_HT_SEL_POLL:\n", mod.m_modName.Upper().c_str());
+			pIplTxStg->Append("\tcase %s_HT_SEL_POLL:\n", modInst.m_instName.Upper().c_str());
 			pIplTxStg->Append("\t\t%s_htInstr = %s_mifPollCmd.m_htInstr;\n", pOutStg, pOutStg);
 			pIplTxStg->Append("\t\tbreak;\n");
 		}
@@ -3094,8 +3093,8 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 		iplPostInstr.Append("\tc_htAssert = 0;\n");
 		if (mod.m_clkRate == eClk2x) {
 			iplPostInstr.Append("#\tifdef HT_ASSERT\n");
-			iplPostInstr.Append("\tif (r_%sToHta_assert.read().m_bAssert && r_phase && !%s)\n", mod.m_modName.Lc().c_str(), reset.c_str());
-			iplPostInstr.Append("\t\tc_htAssert = r_%sToHta_assert;\n", mod.m_modName.Lc().c_str());
+			iplPostInstr.Append("\tif (r_%sToHta_assert.read().m_bAssert && r_phase && !%s)\n", modInst.m_instName.Lc().c_str(), reset.c_str());
+			iplPostInstr.Append("\t\tc_htAssert = r_%sToHta_assert;\n", modInst.m_instName.Lc().c_str());
 			iplPostInstr.Append("#\tendif\n");
 		}
 		iplPostInstr.Append("\n");
@@ -3109,7 +3108,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 		iplPostInstr.Append("\tassert_msg(!r_t%d_htValid || c_t%d_htCtrl != HT_INVALID, \"Runtime check failed in CPers%s::Pers%s_%s()"
 			" - expected an Ht control routine to have been called\");\n",
 			mod.m_execStg, mod.m_execStg,
-			mod.m_modName.Uc().c_str(), mod.m_modName.Uc().c_str(), mod.m_clkRate == eClk1x ? "1x" : "2x");
+			modInst.m_instName.Uc().c_str(), mod.m_modName.Uc().c_str(), mod.m_clkRate == eClk1x ? "1x" : "2x");
 		iplPostInstr.Append("\n");
 
 		////////////////////////////////////////////////////////////////////////////
@@ -3141,19 +3140,19 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 					string stg = VA("r_t%d", reqStg);
 					if (mif.m_bMifWr) {
 						iplPostInstr.Append("\tif (%s_%sToMif_reqRdy && %s_%sToMif_req.m_type == MEM_REQ_RD) {\n",
-							stg.c_str(), mod.m_modName.Lc().c_str(), stg.c_str(), mod.m_modName.Lc().c_str());
+							stg.c_str(), modInst.m_instName.Lc().c_str(), stg.c_str(), modInst.m_instName.Lc().c_str());
 					} else {
 						iplPostInstr.Append("\tif (%s_%sToMif_reqRdy) {\n",
-							stg.c_str(), mod.m_modName.Lc().c_str());
+							stg.c_str(), modInst.m_instName.Lc().c_str());
 					}
 
 					if (mif.m_mifRd.m_bMultiQwRdReq) {
 						iplPostInstr.Append("\t\tHt::g_syscMon.UpdateModuleMemReads(m_htMonModId, 0, 1);\n");
 						iplPostInstr.Append("\t\tHt::g_syscMon.UpdateModuleMemRead64s(m_htMonModId, 0, (r_t%d_%sToMif_req.m_tid >> 29) != 0 ? 1 : 0);\n",
-							reqStg, mod.m_modName.Lc().c_str());
+							reqStg, modInst.m_instName.Lc().c_str());
 						iplPostInstr.Append("\t\tHt::g_syscMon.UpdateModuleMemReadBytes(m_htMonModId, 0, (1LL << r_t%d_%sToMif_req.m_size) * ((r_t%d_%sToMif_req.m_tid >> 29) + 1));\n",
-							reqStg, mod.m_modName.Lc().c_str(),
-							reqStg, mod.m_modName.Lc().c_str());
+							reqStg, modInst.m_instName.Lc().c_str(),
+							reqStg, modInst.m_instName.Lc().c_str());
 					} else {
 						iplPostInstr.Append("\t\tHt::g_syscMon.UpdateModuleMemReads(m_htMonModId, 0, 1);\n");
 						iplPostInstr.Append("\t\tHt::g_syscMon.UpdateModuleMemReadBytes(m_htMonModId, 0, 8);\n");
@@ -3165,27 +3164,27 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 				if (mif.m_bMifWr) {
 					if (mif.m_bMifRd) {
 						iplPostInstr.Append("\tif (r_t%d_%sToMif_reqRdy && r_t%d_%sToMif_req.m_type == MEM_REQ_WR) {\n",
-							mod.m_execStg + 1 + mod.m_mif.m_mifReqStgCnt, mod.m_modName.Lc().c_str(),
-							mod.m_execStg + 1 + mod.m_mif.m_mifReqStgCnt, mod.m_modName.Lc().c_str());
+							mod.m_execStg + 1 + mod.m_mif.m_mifReqStgCnt, modInst.m_instName.Lc().c_str(),
+							mod.m_execStg + 1 + mod.m_mif.m_mifReqStgCnt, modInst.m_instName.Lc().c_str());
 					} else {
 						iplPostInstr.Append("\tif (r_t%d_%sToMif_reqRdy) {\n",
-							mod.m_execStg + 1 + mod.m_mif.m_mifReqStgCnt, mod.m_modName.Lc().c_str());
+							mod.m_execStg + 1 + mod.m_mif.m_mifReqStgCnt, modInst.m_instName.Lc().c_str());
 					}
 
 					if (mif.m_mifWr.m_bMultiQwWrReq) {
 						iplPostInstr.Append("\t\tbool bWrite64B = (r_t%d_%sToMif_req.m_tid >> 29) == 7 && (r_t%d_%sToMif_req.m_addr & 0x38) == 0;\n",
-							mod.m_execStg + 1 + mod.m_mif.m_mifReqStgCnt, mod.m_modName.Lc().c_str(),
-							mod.m_execStg + 1 + mod.m_mif.m_mifReqStgCnt, mod.m_modName.Lc().c_str());
+							mod.m_execStg + 1 + mod.m_mif.m_mifReqStgCnt, modInst.m_instName.Lc().c_str(),
+							mod.m_execStg + 1 + mod.m_mif.m_mifReqStgCnt, modInst.m_instName.Lc().c_str());
 						iplPostInstr.Append("\t\tbool bWrite8B = (r_t%d_%sToMif_req.m_tid >> 29) == 0;\n",
-							mod.m_execStg + 1 + mod.m_mif.m_mifReqStgCnt, mod.m_modName.Lc().c_str());
+							mod.m_execStg + 1 + mod.m_mif.m_mifReqStgCnt, modInst.m_instName.Lc().c_str());
 						iplPostInstr.Append("\t\tHt::g_syscMon.UpdateModuleMemWrites(m_htMonModId, 0, bWrite8B ? 1 : 0);\n");
 						iplPostInstr.Append("\t\tHt::g_syscMon.UpdateModuleMemWrite64s(m_htMonModId, 0, bWrite64B ? 1 : 0);\n");
 						iplPostInstr.Append("\t\tHt::g_syscMon.UpdateModuleMemWriteBytes(m_htMonModId, 0, 1 << r_t%d_%sToMif_req.m_size);\n",
-							mod.m_execStg + 1 + mod.m_mif.m_mifReqStgCnt, mod.m_modName.Lc().c_str());
+							mod.m_execStg + 1 + mod.m_mif.m_mifReqStgCnt, modInst.m_instName.Lc().c_str());
 					} else {
 						iplPostInstr.Append("\t\tHt::g_syscMon.UpdateModuleMemWrites(m_htMonModId, 0, 1);\n");
 						iplPostInstr.Append("\t\tHt::g_syscMon.UpdateModuleMemWriteBytes(m_htMonModId, 0, 1 << r_t%d_%sToMif_req.m_size);\n",
-							mod.m_execStg + 1 + mod.m_mif.m_mifReqStgCnt, mod.m_modName.Lc().c_str());
+							mod.m_execStg + 1 + mod.m_mif.m_mifReqStgCnt, modInst.m_instName.Lc().c_str());
 					}
 					iplPostInstr.Append("\t}\n");
 					iplPostInstr.Append("\n");
@@ -3235,8 +3234,6 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 
 			char lineStr[128];
 			line = "\t\t\t";
-			if (mod.m_modInstList.size() > 1)
-				line += "(int)i_instId.read(), ";
 			if (mod.m_bMultiThread) {
 				sprintf(lineStr, "(int)r_t%d_htId, ", mod.m_execStg);
 				line += lineStr;
@@ -3260,7 +3257,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 
 		if (mod.m_ohm.m_bOutHostMsg) {
 			iplPostInstr.Append("\tassert_msg(!c_%sToHti_ohm.m_bValid || c_bSendHostMsgAvail, \"Runtime check failed in CPers%s::Pers%s_%s()"
-				" - expected SendHostMsgBusy() to have been called and not busy\");\n", mod.m_modName.Lc().c_str(), mod.m_modName.Uc().c_str(),
+				" - expected SendHostMsgBusy() to have been called and not busy\");\n", modInst.m_instName.Lc().c_str(), modInst.m_instName.Uc().c_str(),
 				mod.m_modName.Uc().c_str(), mod.m_clkRate == eClk1x ? "1x" : "2x");
 		}
 
@@ -3309,9 +3306,10 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 
 		iplPostInstr.Append("\tswitch (r_t%d_htSel) {\n", mod.m_wrStg - 1);
 
-		if (mod.m_threads.m_resetInstr.size() > 0)
+		if (mod.m_threads.m_resetInstr.size() > 0) {
 			iplPostInstr.Append("\tcase %s_HT_SEL_RESET:\n",
-			mod.m_modName.Upper().c_str());
+				modInst.m_instName.Upper().c_str());
+		}
 
 		for (size_t intfIdx = 0; intfIdx < modInst.m_cxrIntfList.size(); intfIdx += 1) {
 			CCxrIntf &cxrIntf = modInst.m_cxrIntfList[intfIdx];
@@ -3320,13 +3318,13 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 			if (cxrIntf.m_pDstGroup != &mod.m_threads) continue;
 
 			iplPostInstr.Append("\tcase %s_HT_SEL_%s_%d_%s:\n",
-				mod.m_modName.Upper().c_str(), cxrIntf.m_srcInstName.Upper().c_str(), cxrIntf.GetPortReplId(), cxrIntf.m_funcName.Upper().c_str());
+				modInst.m_instName.Upper().c_str(), cxrIntf.m_pSrcModInst->m_instName.Upper().c_str(), cxrIntf.GetPortReplId(), cxrIntf.m_modEntry.Upper().c_str());
 		}
 
-		iplPostInstr.Append("\tcase %s_HT_SEL_SM:\n", mod.m_modName.Upper().c_str());
+		iplPostInstr.Append("\tcase %s_HT_SEL_SM:\n", modInst.m_instName.Upper().c_str());
 
 		if (bNeedMifPollQue)
-			iplPostInstr.Append("\tcase %s_HT_SEL_POLL:\n", mod.m_modName.Upper().c_str());
+			iplPostInstr.Append("\tcase %s_HT_SEL_POLL:\n", modInst.m_instName.Upper().c_str());
 
 		if (mod.m_bMultiThread) {
 			iplPostInstr.Append("\t\tc_t%d_htPrivWe = r_t%d_htValid;\n",
@@ -3387,7 +3385,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 			iplPostInstr.Append("c_t%d_htCtrl == HT_JOIN || c_t%d_htCtrl == HT_JOIN_AND_CONT,\n\t\t\"Runtime check failed in CPers%s::Pers%s_%s()"
 				" - expected return from a forked call to performan HtJoin on the entry instruction\");\n",
 				mod.m_wrStg - 1, mod.m_wrStg - 1,
-				mod.m_modName.Uc().c_str(), mod.m_modName.Uc().c_str(), mod.m_clkRate == eClk1x ? "1x" : "2x");
+				modInst.m_instName.Uc().c_str(), mod.m_modName.Uc().c_str(), mod.m_clkRate == eClk1x ? "1x" : "2x");
 
 			iplPostInstr.Append("\n");
 		}
@@ -3399,7 +3397,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 
 			if (mod.m_threads.m_resetInstr.size() > 0) {
 				iplPostInstr.Append("\t\tcase %s_HT_SEL_RESET:\n",
-					mod.m_modName.Upper().c_str());
+					modInst.m_instName.Upper().c_str());
 				iplPostInstr.Append("\t\t\tbreak;\n");
 			}
 
@@ -3409,7 +3407,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 				if (cxrIntf.m_cxrDir == CxrOut) continue;
 
 				iplPostInstr.Append("\t\tcase %s_HT_SEL_%s_%d_%s:\n",
-					mod.m_modName.Upper().c_str(), cxrIntf.m_srcInstName.Upper().c_str(), cxrIntf.GetPortReplId(), cxrIntf.m_funcName.Upper().c_str());
+					modInst.m_instName.Upper().c_str(), cxrIntf.m_pSrcModInst->m_instName.Upper().c_str(), cxrIntf.GetPortReplId(), cxrIntf.m_modEntry.Upper().c_str());
 
 				if (cxrIntf.m_cxrType == CxrCall || cxrIntf.m_cxrType == CxrTransfer) {
 
@@ -3430,10 +3428,10 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 				iplPostInstr.Append("\t\t\tbreak;\n");
 			}
 
-			iplPostInstr.Append("\t\tcase %s_HT_SEL_SM:\n", mod.m_modName.Upper().c_str());
+			iplPostInstr.Append("\t\tcase %s_HT_SEL_SM:\n", modInst.m_instName.Upper().c_str());
 
 			if (bNeedMifPollQue)
-				iplPostInstr.Append("\t\tcase %s_HT_SEL_POLL:\n", mod.m_modName.Upper().c_str());
+				iplPostInstr.Append("\t\tcase %s_HT_SEL_POLL:\n", modInst.m_instName.Upper().c_str());
 
 			iplPostInstr.Append("\t\t\tbreak;\n");
 
@@ -3452,7 +3450,7 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 				if (cxrIntf.m_cxrDir == CxrIn) continue;
 				if (cxrIntf.IsCall()) continue;
 
-				if (cxrIntf.IsXfer() && cxrIntf.m_pDstMod->m_clkRate == eClk1x && cxrIntf.m_pDstMod->m_clkRate != mod.m_clkRate)
+				if (cxrIntf.IsXfer() && cxrIntf.m_pDstModInst->m_pMod->m_clkRate == eClk1x && cxrIntf.m_pDstModInst->m_pMod->m_clkRate != mod.m_clkRate)
 					iplPostInstr.Append("\tif (r_%s_%sRdy%s && !r_%s_%sHold%s)\n",
 					cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(),
 					cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
@@ -3595,11 +3593,11 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 		}
 
 		if (mod.m_bHasThreads) {
-			iplReg.Append("\tr_%sToHta_assert = c_htAssert;\n", mod.m_modName.Lc().c_str());
+			iplReg.Append("\tr_%sToHta_assert = c_htAssert;\n", modInst.m_instName.Lc().c_str());
 
 			if (mod.m_clkRate == eClk2x) {
 				m_iplReg1x.Append("\tr_%sToHta_assert_1x = r_%sToHta_assert;\n",
-					mod.m_modName.Lc().c_str(), mod.m_modName.Lc().c_str());
+					modInst.m_instName.Lc().c_str(), modInst.m_instName.Lc().c_str());
 				m_iplReg1x.NewLine();
 			}
 		}
@@ -3733,10 +3731,10 @@ void CDsnInfo::GenModIplStatements(CModule &mod, int modInstIdx)
 	if (mod.m_bHasThreads) {
 		if (mod.m_clkRate == eClk1x) {
 			iplOut.Append("\n");
-			iplOut.Append("\to_%sToHta_assert = r_%sToHta_assert;\n", mod.m_modName.Lc().c_str(), mod.m_modName.Lc().c_str());
+			iplOut.Append("\to_%sToHta_assert = r_%sToHta_assert;\n", modInst.m_instName.Lc().c_str(), modInst.m_instName.Lc().c_str());
 		} else {
 			m_iplOut1x.Append("\n");
-			m_iplOut1x.Append("\to_%sToHta_assert = r_%sToHta_assert_1x;\n", mod.m_modName.Lc().c_str(), mod.m_modName.Lc().c_str());
+			m_iplOut1x.Append("\to_%sToHta_assert = r_%sToHta_assert_1x;\n", modInst.m_instName.Lc().c_str(), modInst.m_instName.Lc().c_str());
 		}
 	}
 }

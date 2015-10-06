@@ -87,21 +87,18 @@ void CDsnInfo::GenMsvsProjectFiles()
 
 			if (!mod.m_bIsUsed || mod.m_bHostIntf) continue;
 
-			int prevInstId = -1;
+			if (mod.m_nonReplInstCnt > 1)
+				msvs.AddFile(Include, string("..\\ht\\sysc\\Pers" + unitNameUc + mod.m_modName.Uc() + ".h"), "ht\\sysc");
+
 			for (size_t modInstIdx = 0; modInstIdx < mod.m_modInstList.size(); modInstIdx += 1) {
 				CModInst &modInst = mod.m_modInstList[modInstIdx];
 
-				if (modInst.m_instParams.m_instId == prevInstId)
-					continue;
+				if (modInst.m_replId > 0) continue;
 
-				prevInstId = modInst.m_instParams.m_instId;
-
-				string instIdStr = GenIndexStr(mod.m_instIdCnt > 1, "%d", modInst.m_instParams.m_instId);
-
-				msvs.AddFile(Include, string("..\\ht\\sysc\\Pers" + unitNameUc + mod.m_modName.Uc() + instIdStr + ".h"), "ht\\sysc");
+				msvs.AddFile(Include, string("..\\ht\\sysc\\Pers" + unitNameUc + modInst.m_fileName.Uc() + ".h"), "ht\\sysc");
 
 				if (mod.m_barrierList.size() > 0 && mod.m_modInstList.size() > 1)
-					msvs.AddFile(Include, string("..\\ht\\sysc\\Pers" + unitNameUc + mod.m_modName.Uc() + instIdStr + "BarCtl.h"), "ht\\sysc");
+					msvs.AddFile(Include, string("..\\ht\\sysc\\Pers" + unitNameUc + modInst.m_instName.Uc() + "BarCtl.h"), "ht\\sysc");
 			}
 		}
 
@@ -169,21 +166,15 @@ void CDsnInfo::GenMsvsProjectFiles()
 
 			if (!mod.m_bIsUsed || mod.m_bHostIntf) continue;
 
-			int prevInstId = -1;
 			for (size_t modInstIdx = 0; modInstIdx < mod.m_modInstList.size(); modInstIdx += 1) {
 				CModInst &modInst = mod.m_modInstList[modInstIdx];
 
-				if (modInst.m_instParams.m_instId == prevInstId)
-					continue;
+				if (modInst.m_replId > 0) continue;
 
-				prevInstId = modInst.m_instParams.m_instId;
-
-				string instIdStr = GenIndexStr(mod.m_instIdCnt > 1, "%d", modInst.m_instParams.m_instId);
-
-				msvs.AddFile(Compile, string("..\\ht\\sysc\\Pers" + unitNameUc + mod.m_modName.Uc() + instIdStr + ".cpp"), "ht\\sysc");
+				msvs.AddFile(Compile, string("..\\ht\\sysc\\Pers" + unitNameUc + modInst.m_fileName.Uc() + ".cpp"), "ht\\sysc");
 
 				if (mod.m_barrierList.size() > 0 && mod.m_modInstList.size() > 1)
-					msvs.AddFile(Compile, string("..\\ht\\sysc\\Pers" + unitNameUc + mod.m_modName.Uc() + instIdStr + "BarCtl.cpp"), "ht\\sysc");
+					msvs.AddFile(Compile, string("..\\ht\\sysc\\Pers" + unitNameUc + modInst.m_instName.Uc() + "BarCtl.cpp"), "ht\\sysc");
 			}
 
 			msvs.AddFile(Compile, string("..\\src_pers\\Pers" + unitNameUc + mod.m_modName.Uc() + "_src.cpp"), "src_pers");
@@ -260,10 +251,16 @@ void CDsnInfo::GenMsvsProjectFiles()
 
 			bool bGenFx = mod.m_modName == g_appArgs.GetFxModName();
 
-			msvs.AddFile(Custom, string("..\\ht\\verilog\\Pers" + unitNameUc + mod.m_modName.Uc() + ".v_"), "ht\\verilog", "", bGenFx);
+			for (size_t modInstIdx = 0; modInstIdx < mod.m_modInstList.size(); modInstIdx += 1) {
+				CModInst &modInst = mod.m_modInstList[modInstIdx];
 
-			if (mod.m_barrierList.size() > 0 && mod.m_modInstList.size() > 1)
-				msvs.AddFile(Custom, string("..\\ht\\verilog\\Pers" + unitNameUc + mod.m_modName.Uc() + "BarCtl.v_"), "ht\\verilog", "", bGenFx);
+				if (modInst.m_replId > 0) continue;
+
+				msvs.AddFile(Custom, string("..\\ht\\verilog\\Pers" + unitNameUc + modInst.m_fileName.Uc() + ".v_"), "ht\\verilog", "", bGenFx);
+
+				if (mod.m_barrierList.size() > 0 && mod.m_modInstList.size() > 1)
+					msvs.AddFile(Custom, string("..\\ht\\verilog\\Pers" + unitNameUc + modInst.m_instName.Uc() + "BarCtl.v_"), "ht\\verilog", "", bGenFx);
+			}
 		}
 
 		for (size_t gvIdx = 0; gvIdx < m_ngvList.size(); gvIdx += 1) {
@@ -1960,7 +1957,7 @@ void CMsvsProject::GenMsvsProjectFiles(FILE *fp, EMsvsFile eFileType)
 					case CR64: condName = "Release|x64"; break;
 					case CH64: condName = "Htl_Htv|x64"; break;
 					}
-					if (i == 4 || bSrcModel && !m_idg[i].m_bHtModel || bSrcPers && m_idg[i].m_bHtModel) {
+					if (i < 4 || i == 4 || bSrcModel && !m_idg[i].m_bHtModel || bSrcPers && m_idg[i].m_bHtModel) {
 						if (!bProp) {
 							fprintf(fp, "\n");
 							bProp = true;

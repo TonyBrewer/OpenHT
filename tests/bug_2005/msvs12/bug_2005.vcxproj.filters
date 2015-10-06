@@ -1,37 +1,37 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="ht_lib">
-      <UniqueIdentifier>{d1a8c96d-b6ec-4480-bc4f-9e1de27bbc36}</UniqueIdentifier>
+      <UniqueIdentifier>{a393d9c4-7352-4b9c-b066-7de4cc5a3ad6}</UniqueIdentifier>
     </Filter>
     <Filter Include="ht">
-      <UniqueIdentifier>{a822e0e4-9169-4c03-af92-cd7f2a137036}</UniqueIdentifier>
+      <UniqueIdentifier>{991624e5-9669-4ee9-b45c-36f135f9ef45}</UniqueIdentifier>
     </Filter>
     <Filter Include="ht_lib\host">
-      <UniqueIdentifier>{f830af45-2a88-45a3-9bea-a18eecc3232f}</UniqueIdentifier>
+      <UniqueIdentifier>{d8cda3d4-eb32-4714-b1ec-4cdb8ba262be}</UniqueIdentifier>
       <Extensions>h;cpp;c</Extensions>
     </Filter>
     <Filter Include="ht_lib\sysc">
-      <UniqueIdentifier>{e5d9bb0a-ac27-44c5-a368-167536f60829}</UniqueIdentifier>
+      <UniqueIdentifier>{84cb91e0-b823-47d8-b81d-5d2a0a6ead67}</UniqueIdentifier>
       <Extensions>h;cpp;c</Extensions>
     </Filter>
     <Filter Include="ht\verilog">
-      <UniqueIdentifier>{92f6c40a-9883-4eb1-94d8-2edefc370488}</UniqueIdentifier>
+      <UniqueIdentifier>{fdaada35-c493-481c-a2fa-96542702a3fa}</UniqueIdentifier>
     </Filter>
     <Filter Include="ht\sysc">
-      <UniqueIdentifier>{004224d3-e052-4b43-ae62-0e30ee0044b2}</UniqueIdentifier>
+      <UniqueIdentifier>{a674dc2b-9687-4a22-a8b4-61858cfcadbb}</UniqueIdentifier>
       <Extensions>h;cpp;c</Extensions>
     </Filter>
     <Filter Include="src">
-      <UniqueIdentifier>{55c29c7b-1094-41c5-9883-b59eb12e80a6}</UniqueIdentifier>
+      <UniqueIdentifier>{16c98ca3-0c0f-4458-878f-22749612c6aa}</UniqueIdentifier>
       <Extensions>h;cpp;c</Extensions>
     </Filter>
     <Filter Include="src_pers">
-      <UniqueIdentifier>{31896ddd-7d5d-4ff6-be24-0fb71f79974b}</UniqueIdentifier>
+      <UniqueIdentifier>{fc608ee8-b2b9-4989-86ab-236cd83f79c1}</UniqueIdentifier>
       <Extensions>h;cpp;c</Extensions>
     </Filter>
     <Filter Include="src_model">
-      <UniqueIdentifier>{526662d6-1a61-4fa8-b827-295b9de11269}</UniqueIdentifier>
+      <UniqueIdentifier>{c3779b77-0fcb-44c8-9981-ad8802030fec}</UniqueIdentifier>
       <Extensions>h;cpp;c</Extensions>
     </Filter>
   </ItemGroup>
@@ -64,6 +64,9 @@
       <Filter>ht\sysc</Filter>
     </ClInclude>
     <ClInclude Include="..\ht\sysc\PersCtl.h">
+      <Filter>ht\sysc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ht\sysc\PersAdd.h">
       <Filter>ht\sysc</Filter>
     </ClInclude>
     <ClInclude Include="..\ht\sysc\PersAdd.h">
@@ -138,6 +141,9 @@
     <ClInclude Include="$(HtToolsPath)\ht_lib\sysc\SyscMon.h">
       <Filter>ht_lib\sysc</Filter>
     </ClInclude>
+    <ClInclude Include="..\ht\sysc\PersAdd.h">
+      <Filter>ht_lib\host</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\ht\sysc\UnitIntf.cpp">
@@ -209,12 +215,6 @@
     <ClCompile Include="$(HtToolsPath)\ht_lib\sysc\SyscMonLib.cpp">
       <Filter>ht_lib\sysc</Filter>
     </ClCompile>
-    <ClCompile Include="..\src_model\Model.cpp">
-      <Filter>src_model</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\Main.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\src_pers\vadd.htl">
@@ -243,9 +243,6 @@
     </CustomBuild>
     <CustomBuild Include="..\ht\verilog\PersAdd.v_">
       <Filter>ht\verilog</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\src_model\model.htl">
-      <Filter>src_model</Filter>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
@@ -313,15 +310,6 @@
     </None>
     <None Include="..\ht\verilog\PersMoStub.v">
       <Filter>ht\verilog</Filter>
-    </None>
-    <None Include="..\src_pers\model.htd">
-      <Filter>src_pers</Filter>
-    </None>
-    <None Include="..\src_pers\vadd.hti">
-      <Filter>src_pers</Filter>
-    </None>
-    <None Include="..\src_model\model.htd">
-      <Filter>src_model</Filter>
     </None>
   </ItemGroup>
 </Project>

@@ -1,0 +1,49 @@
+// Module capabilities
+
+dsnInfo.AddModule(name=Ctl, htIdW=0);
+
+Ctl.AddInstr(name=CTL_INST1);
+Ctl.AddInstr(name=CTL_INST2);
+Ctl.AddInstr(name=CTL_RTN);
+
+
+Ctl.AddEntry(func=htmain, instr=CTL_INST1, host=true);
+
+Ctl.AddReturn(func=htmain);
+
+Ctl.AddCall(modEntry=inst, callName=inst1, modInst=inst1); // func == modEntry, inst == modInst, name == callName
+Ctl.AddCall(modEntry=inst, callName=inst2, modInst=inst2); // func == modEntry, inst == modInst, name == callName
+
+
+dsnInfo.AddModule(name=inst, htIdW=0);
+
+inst.AddInstr(name=INST_REPL);
+inst.AddInstr(name=INST_RTN);
+
+inst.AddEntry(func=inst, instr=INST_REPL)
+	.AddParam(type=uint8_t, name=instInstId)
+	;
+
+inst.AddPrivate()
+	.AddVar(type=uint8_t, name=instInstId)
+	;
+
+inst.AddReturn(func=inst);
+
+inst.AddCall(modEntry=repl);
+
+dsnInfo.AddModule(name=repl, htIdW=2);
+
+repl.AddInstr(name=REPL_RTN);
+
+repl.AddEntry(func=repl, instr=REPL_RTN)
+	.AddParam(type=uint8_t, name=instInstId)
+	.AddParam(type=uint8_t, name=instReplId)
+	;
+
+repl.AddPrivate()
+	.AddVar(type=uint8_t, name=instInstId)
+	.AddVar(type=uint8_t, name=instReplId)
+	;
+
+repl.AddReturn(func=repl);

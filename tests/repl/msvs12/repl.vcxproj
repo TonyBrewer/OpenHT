@@ -210,6 +210,8 @@
     </ClInclude>
     <ClInclude Include="..\ht\sysc\PersModX.h">
     </ClInclude>
+    <ClInclude Include="..\ht\sysc\PersModX.h">
+    </ClInclude>
     <ClInclude Include="..\ht\sysc\SyscAeTop.h">
     </ClInclude>
     <ClInclude Include="..\ht\sysc\SyscTop.h">
@@ -277,18 +279,30 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\src_pers\PersCtl_src.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\ht\sysc\PersModA.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\src_pers\PersModA_src.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\ht\sysc\PersModX.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\src_pers\PersModX_src.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\ht\sysc\SyscMon.cpp">
@@ -333,9 +347,6 @@
     <ClCompile Include="$(HtToolsPath)\ht_lib\sysc\SyscMonLib.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\src\Main.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\src_pers\repl.htl">
@@ -351,8 +362,8 @@
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">htl %(Filename) ...</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">htl %(Filename) ...</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\ht\sysc\HostIntf.h</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\ht\sysc\HostIntf.h;..\ht\sysc\UnitIntf.h;..\ht\sysc\PersCommon.h;..\ht\sysc\PersAeTop.h;..\ht\sysc\PersAuTop.h;..\ht\sysc\PersHif.h;..\ht\sysc\PersAuHti.h;..\ht\sysc\PersAuHta.h;..\ht\sysc\PersAuMif0.h;..\ht\sysc\PersCtl.h;..\ht\sysc\PersModA.h;..\ht\sysc\PersModX.h;..\ht\sysc\SyscAeTop.h;..\ht\sysc\SyscTop.h;..\ht\sysc\UnitIntf.cpp;..\ht\sysc\PersHif.cpp;..\ht\sysc\PersAuHti.cpp;..\ht\sysc\PersAuHta.cpp;..\ht\sysc\PersAuMif0.cpp;..\ht\sysc\PersCtl.cpp;..\ht\sysc\PersModA.cpp;..\ht\sysc\PersModX.cpp;..\ht\sysc\SyscMon.cpp;..\ht\sysc\PersAuTop.sc;..\ht\sysc\PersAeTop.sc;..\ht\verilog\PersHif.v_;..\ht\verilog\PersAuHti.v_;..\ht\verilog\PersAuHta.v_;..\ht\verilog\PersAuMif0.v_;..\ht\verilog\PersCtl.v_;..\ht\verilog\PersModA.v_;..\ht\verilog\PersModX.v_;..\ht\verilog\PersUnitCnt.v_;..\ht\verilog\PersXbarStub.v_;..\ht\verilog\PersMiStub.v_;..\ht\verilog\PersMoStub.v_</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">..\ht\sysc\HostIntf.h;..\ht\sysc\UnitIntf.h;..\ht\sysc\PersCommon.h;..\ht\sysc\PersAeTop.h;..\ht\sysc\PersAuTop.h;..\ht\sysc\PersHif.h;..\ht\sysc\PersAuHti.h;..\ht\sysc\PersAuHta.h;..\ht\sysc\PersAuMif0.h;..\ht\sysc\PersCtl.h;..\ht\sysc\PersModA.h;..\ht\sysc\PersModX.h;..\ht\sysc\SyscAeTop.h;..\ht\sysc\SyscTop.h;..\ht\sysc\UnitIntf.cpp;..\ht\sysc\PersHif.cpp;..\ht\sysc\PersAuHti.cpp;..\ht\sysc\PersAuHta.cpp;..\ht\sysc\PersAuMif0.cpp;..\ht\sysc\PersCtl.cpp;..\ht\sysc\PersModA.cpp;..\ht\sysc\PersModX.cpp;..\ht\sysc\SyscMon.cpp;..\ht\sysc\PersAuTop.sc;..\ht\sysc\PersAeTop.sc;..\ht\verilog\PersHif.v_;..\ht\verilog\PersAuHti.v_;..\ht\verilog\PersAuHta.v_;..\ht\verilog\PersAuMif0.v_;..\ht\verilog\PersCtl.v_;..\ht\verilog\PersModA.v_;..\ht\verilog\PersModX.v_;..\ht\verilog\PersUnitCnt.v_;..\ht\verilog\PersXbarStub.v_;..\ht\verilog\PersMiStub.v_;..\ht\verilog\PersMoStub.v_</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\ht\sysc\HostIntf.h;..\ht\sysc\UnitIntf.h;..\ht\sysc\PersCommon.h;..\ht\sysc\PersAeTop.h;..\ht\sysc\PersAuTop.h;..\ht\sysc\PersHif.h;..\ht\sysc\PersAuHti.h;..\ht\sysc\PersAuHta.h;..\ht\sysc\PersAuMif0.h;..\ht\sysc\PersCtl.h;..\ht\sysc\PersModA.h;..\ht\sysc\PersModX.h;..\ht\sysc\PersModX.h;..\ht\sysc\SyscAeTop.h;..\ht\sysc\SyscTop.h;..\ht\sysc\UnitIntf.cpp;..\ht\sysc\PersHif.cpp;..\ht\sysc\PersAuHti.cpp;..\ht\sysc\PersAuHta.cpp;..\ht\sysc\PersAuMif0.cpp;..\ht\sysc\PersCtl.cpp;..\ht\sysc\PersModA.cpp;..\ht\sysc\PersModX.cpp;..\ht\sysc\SyscMon.cpp;..\ht\sysc\PersAuTop.sc;..\ht\sysc\PersAeTop.sc;..\ht\verilog\PersHif.v_;..\ht\verilog\PersAuHti.v_;..\ht\verilog\PersAuHta.v_;..\ht\verilog\PersAuMif0.v_;..\ht\verilog\PersCtl.v_;..\ht\verilog\PersModA.v_;..\ht\verilog\PersModX.v_;..\ht\verilog\PersUnitCnt.v_;..\ht\verilog\PersXbarStub.v_;..\ht\verilog\PersMiStub.v_;..\ht\verilog\PersMoStub.v_</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">..\ht\sysc\HostIntf.h;..\ht\sysc\UnitIntf.h;..\ht\sysc\PersCommon.h;..\ht\sysc\PersAeTop.h;..\ht\sysc\PersAuTop.h;..\ht\sysc\PersHif.h;..\ht\sysc\PersAuHti.h;..\ht\sysc\PersAuHta.h;..\ht\sysc\PersAuMif0.h;..\ht\sysc\PersCtl.h;..\ht\sysc\PersModA.h;..\ht\sysc\PersModX.h;..\ht\sysc\PersModX.h;..\ht\sysc\SyscAeTop.h;..\ht\sysc\SyscTop.h;..\ht\sysc\UnitIntf.cpp;..\ht\sysc\PersHif.cpp;..\ht\sysc\PersAuHti.cpp;..\ht\sysc\PersAuHta.cpp;..\ht\sysc\PersAuMif0.cpp;..\ht\sysc\PersCtl.cpp;..\ht\sysc\PersModA.cpp;..\ht\sysc\PersModX.cpp;..\ht\sysc\SyscMon.cpp;..\ht\sysc\PersAuTop.sc;..\ht\sysc\PersAeTop.sc;..\ht\verilog\PersHif.v_;..\ht\verilog\PersAuHti.v_;..\ht\verilog\PersAuHta.v_;..\ht\verilog\PersAuMif0.v_;..\ht\verilog\PersCtl.v_;..\ht\verilog\PersModA.v_;..\ht\verilog\PersModX.v_;..\ht\verilog\PersUnitCnt.v_;..\ht\verilog\PersXbarStub.v_;..\ht\verilog\PersMiStub.v_;..\ht\verilog\PersMoStub.v_</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\ht\sysc\HostIntf.h</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\ht\sysc\HostIntf.h</Outputs>
     </CustomBuild>
@@ -732,8 +743,7 @@
     </None>
     <None Include="..\ht\verilog\PersMoStub.v">
     </None>
-    <None Include="..\src_pers\repl.hti">
-    </None>
+    <None Include="..\src_pers\repl.hti" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

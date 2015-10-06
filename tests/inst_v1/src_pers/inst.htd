@@ -1,0 +1,22 @@
+// Module capabilities
+
+dsnInfo.AddModule(name=Ctl, htIdW=0);
+
+Ctl.AddInstr(name=CTL_INST1);
+Ctl.AddInstr(name=CTL_RTN);
+
+
+Ctl.AddEntry(func=htmain, instr=CTL_INST1, host=true);
+
+Ctl.AddReturn(func=htmain);
+
+Ctl.AddCall(modEntry=inst, callName=inst1, modInst=inst1); // func == modEntry, inst == modInst, name == callName
+
+
+dsnInfo.AddModule(name=Inst, htIdW=0);
+
+Inst.AddInstr(name=INST_RTN);
+
+Inst.AddEntry(func=inst, instr=INST_RTN);
+
+Inst.AddReturn(func=inst);

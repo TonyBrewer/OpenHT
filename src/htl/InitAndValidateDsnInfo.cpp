@@ -1630,24 +1630,17 @@ void CDsnInfo::DrawModuleCmdRelationships()
 				if (cxr_seen.find(key) != cxr_seen.end()) continue;
 				cxr_seen.insert(pair<string, bool>(key, true));
 
-				int destUnitCnt = (int)cxrIntf.m_pDstMod->m_modInstList.size();
+				int destUnitCnt = (int)cxrIntf.m_pDstModInst->m_replCnt;
 				int numArcs = 1;
 				if (destUnitCnt > modInstCnt) {
 					numArcs = destUnitCnt - modInstCnt + 1;
 				}
 				for (int arc = 0; arc < numArcs; arc++) {
-					string destRepStr = "";
-					if (destUnitCnt == 1)
-						destRepStr = "";
-					else if (destUnitCnt > modInstCnt)
-						destRepStr = "01234567"[arc];
-					else
-						destRepStr = "01234567"[rep];
 
-					string destName = cxrIntf.m_pDstMod->m_modName.Uc() + destRepStr;
+					string destName = cxrIntf.m_pDstModInst->m_replInstName.Uc();
 
 					string label = " [label=\"";
-					label += cxrIntf.m_funcName.c_str();
+					label += cxrIntf.m_modEntry.c_str();
 					label += "\"";
 					label += cxrIntf.IsCall() ? " color=red" :
 						cxrIntf.IsXfer() ? " color=deeppink" : " color=green";

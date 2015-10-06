@@ -165,7 +165,7 @@ void CDsnInfo::GenerateAeTopFile()
 					}
 
 					for (size_t modInstIdx = 0; modInstIdx < pMod->m_modInstList.size(); modInstIdx += 1) {
-						CHtString &modInstName = pMod->m_modInstList[modInstIdx].m_instName;
+						CHtString &modInstName = pMod->m_modInstList[modInstIdx].m_replInstName;
 
 						vector<int> portRefList(dimenList.size());
 						do {
@@ -222,8 +222,8 @@ void CDsnInfo::GenerateAeTopFile()
 						int inModInstIdx = max(0, pConn->m_inMsgIntf.m_replIdx);
 						int outModInstIdx = max(0, pConn->m_outMsgIntf.m_replIdx);
 
-						CHtString & inModInstName = pConn->m_inMsgIntf.m_pMod->m_modInstList[inModInstIdx].m_instName;
-						CHtString & outModInstName = pConn->m_outMsgIntf.m_pMod->m_modInstList[outModInstIdx].m_instName;
+						CHtString & inModInstName = pConn->m_inMsgIntf.m_pMod->m_modInstList[inModInstIdx].m_replInstName;
+						CHtString & outModInstName = pConn->m_outMsgIntf.m_pMod->m_modInstList[outModInstIdx].m_replInstName;
 
 						CMsgIntf * pInMsgIntf = pConn->m_inMsgIntf.m_pMsgIntf;
 						CMsgIntf * pOutMsgIntf = pConn->m_outMsgIntf.m_pMsgIntf;

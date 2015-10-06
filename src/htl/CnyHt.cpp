@@ -18,7 +18,7 @@ CDsnInfo * g_pDsnInfo = 0;
 
 int main(int argc, char const **argv)
 {
-	InstallSigHandler();
+//	InstallSigHandler();
 
 	g_appArgs.Parse(argc, argv);
 
