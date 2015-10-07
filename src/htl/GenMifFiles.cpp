@@ -28,20 +28,20 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 	bool bMultiQwSupport = g_appArgs.GetCoprocInfo().IsMultiQwSuppported();
 
 	for (size_t dsnInstIdx = 0; dsnInstIdx < m_dsnInstList.size(); dsnInstIdx += 1) {
-		CModInst &modInst = m_dsnInstList[dsnInstIdx];
-		if (!modInst.m_pMod->m_bIsUsed) continue;
+		CModInst * pModInst = m_dsnInstList[dsnInstIdx];
+		if (!pModInst->m_pMod->m_bIsUsed) continue;
 
-		for (size_t memPortIdx = 0; memPortIdx < modInst.m_pMod->m_memPortList.size(); memPortIdx += 1) {
-			CModMemPort &modMemPort = *modInst.m_pMod->m_memPortList[memPortIdx];
+		for (size_t memPortIdx = 0; memPortIdx < pModInst->m_pMod->m_memPortList.size(); memPortIdx += 1) {
+			CModMemPort &modMemPort = *pModInst->m_pMod->m_memPortList[memPortIdx];
 
-			if (modInst.m_instParams.m_memPortList[memPortIdx] != mifId)
+			if (pModInst->m_instParams.m_memPortList[memPortIdx] != mifId)
 				continue;
 
-			mifInstList.push_back(CMifModInst(modMemPort, modInst));
+			mifInstList.push_back(CMifModInst(modMemPort, *pModInst));
 
 			mifIntfCnt += 1;
 
-			bClk2x |= modInst.m_pMod->m_clkRate == eClk2x;
+			bClk2x |= pModInst->m_pMod->m_clkRate == eClk2x;
 			bMifRead |= modMemPort.m_bRead;
 			bMifWrite |= modMemPort.m_bWrite;
 		}
@@ -92,29 +92,29 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 
 	for (size_t instIdx = 0; instIdx < mifInstList.size(); instIdx += 1) {
 		CMifModInst & mifInst = mifInstList[instIdx];
-		CModInst & modInst = *mifInst.m_pModInst;
+		CModInst * pModInst = mifInst.m_pModInst;
 		CModMemPort & modMemPort = *mifInst.m_pModMemPort;
 
 		fprintf(incFile, "\t// Pers%s%s%d Interface\n",
-			m_unitName.Uc().c_str(), modInst.m_replInstName.Uc().c_str(), mifId);
+			m_unitName.Uc().c_str(), pModInst->m_replInstName.Uc().c_str(), mifId);
 		GenModDecl(eVcdAll, incCode, vcdModName, "sc_in<bool>",
-			VA("i_%sP%dToMif%d_reqRdy", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx, mifId));
+			VA("i_%sP%dToMif%d_reqRdy", pModInst->m_replInstName.Lc().c_str(), modMemPort.m_portIdx, mifId));
 		GenModDecl(eVcdAll, incCode, vcdModName, "sc_in<CMemRdWrReqIntf>",
-			VA("i_%sP%dToMif%d_req", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx, mifId));
+			VA("i_%sP%dToMif%d_req", pModInst->m_replInstName.Lc().c_str(), modMemPort.m_portIdx, mifId));
 		GenModDecl(eVcdAll, incCode, vcdModName, "sc_out<bool>",
-			VA("o_mif%dTo%sP%d_reqAvl", mifId, modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx));
+			VA("o_mif%dTo%sP%d_reqAvl", mifId, pModInst->m_replInstName.Uc().c_str(), modMemPort.m_portIdx));
 		fprintf(incFile, "\n");
 
 		if (modMemPort.m_bRead) {
-			GenModDecl(eVcdAll, incCode, vcdModName, "sc_out<bool>", VA("o_mif%dTo%sP%d_rdRspRdy", mifId, modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx));
-			GenModDecl(eVcdAll, incCode, vcdModName, "sc_out<CMemRdRspIntf>", VA("o_mif%dTo%sP%d_rdRsp", mifId, modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx));
-			GenModDecl(eVcdAll, incCode, vcdModName, "sc_in<bool>", VA("i_%sP%dToMif%d_rdRspFull", modInst.m_replInstName.Lc().c_str(), modMemPort.m_portIdx, mifId));
+			GenModDecl(eVcdAll, incCode, vcdModName, "sc_out<bool>", VA("o_mif%dTo%sP%d_rdRspRdy", mifId, pModInst->m_replInstName.Uc().c_str(), modMemPort.m_portIdx));
+			GenModDecl(eVcdAll, incCode, vcdModName, "sc_out<CMemRdRspIntf>", VA("o_mif%dTo%sP%d_rdRsp", mifId, pModInst->m_replInstName.Uc().c_str(), modMemPort.m_portIdx));
+			GenModDecl(eVcdAll, incCode, vcdModName, "sc_in<bool>", VA("i_%sP%dToMif%d_rdRspFull", pModInst->m_replInstName.Lc().c_str(), modMemPort.m_portIdx, mifId));
 			fprintf(incFile, "\n");
 		}
 
 		if (modMemPort.m_bWrite) {
-			GenModDecl(eVcdAll, incCode, vcdModName, "sc_out<bool>", VA("o_mif%dTo%sP%d_wrRspRdy", mifId, modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx));
-			GenModDecl(eVcdAll, incCode, vcdModName, "sc_out<sc_uint<MIF_TID_W> >", VA("o_mif%dTo%sP%d_wrRspTid", mifId, modInst.m_replInstName.Uc().c_str(), modMemPort.m_portIdx));
+			GenModDecl(eVcdAll, incCode, vcdModName, "sc_out<bool>", VA("o_mif%dTo%sP%d_wrRspRdy", mifId, pModInst->m_replInstName.Uc().c_str(), modMemPort.m_portIdx));
+			GenModDecl(eVcdAll, incCode, vcdModName, "sc_out<sc_uint<MIF_TID_W> >", VA("o_mif%dTo%sP%d_wrRspTid", mifId, pModInst->m_replInstName.Uc().c_str(), modMemPort.m_portIdx));
 			fprintf(incFile, "\n");
 		}
 	}

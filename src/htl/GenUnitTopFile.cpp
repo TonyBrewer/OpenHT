@@ -35,16 +35,16 @@ void CDsnInfo::GenerateUnitTopFile()
 		} else {
 
 			for (size_t modInstIdx = 0; modInstIdx < mod.m_modInstList.size(); modInstIdx += 1) {
-				CModInst &modInst = mod.m_modInstList[modInstIdx];
+				CModInst * pModInst = mod.m_modInstList[modInstIdx];
 
-				if (modInst.m_replId > 0) continue;
+				if (pModInst->m_replId > 0) continue;
 
 				fprintf(scFile, "#include \"Pers%s%s.h\"\n",
-					unitNameUc.c_str(), modInst.m_fileName.Uc().c_str());
+					unitNameUc.c_str(), pModInst->m_fileName.Uc().c_str());
 
 				if (mod.m_barrierList.size() > 0 && mod.m_modInstList.size() > 1) {
 					fprintf(scFile, "#include \"Pers%s%sBarCtl.h\"\n",
-						unitNameUc.c_str(), modInst.m_instName.Uc().c_str());
+						unitNameUc.c_str(), pModInst->m_instName.Uc().c_str());
 				}
 			}
 		}
@@ -83,19 +83,19 @@ void CDsnInfo::GenerateUnitTopFile()
 		} else {
 
 			for (size_t modInstIdx = 0; modInstIdx < mod.m_modInstList.size(); modInstIdx += 1) {
-				CModInst &modInst = mod.m_modInstList[modInstIdx];
+				CModInst * pModInst = mod.m_modInstList[modInstIdx];
 
-				if (modInst.m_replId > 0) continue;
+				if (pModInst->m_replId > 0) continue;
 
-				string replDeclStr = modInst.m_replCnt <= 1 ? "" : VA("[%d]", modInst.m_replCnt);
+				string replDeclStr = pModInst->m_replCnt <= 1 ? "" : VA("[%d]", pModInst->m_replCnt);
 
 				fprintf(scFile, "\tCPers%s * pPers%s%s;\n",
-					modInst.m_instName.Uc().c_str(),
-					modInst.m_instName.Uc().c_str(), replDeclStr.c_str());
+					pModInst->m_instName.Uc().c_str(),
+					pModInst->m_instName.Uc().c_str(), replDeclStr.c_str());
 
 				if (mod.m_barrierList.size() > 0 && mod.m_modInstList.size() > 1) {
 					fprintf(scFile, "\tCPers%sBarCtl * pPers%sBarCtl;\n",
-						modInst.m_instName.Uc().c_str(), modInst.m_instName.Uc().c_str());
+						pModInst->m_instName.Uc().c_str(), pModInst->m_instName.Uc().c_str());
 				}
 			}
 		}
@@ -153,7 +153,7 @@ void CDsnInfo::GenerateUnitTopFile()
 		if (!mod.m_bIsUsed) continue;
 
 		for (size_t modInstIdx = 0; modInstIdx < mod.m_modInstList.size(); modInstIdx += 1) {
-			CModInst & modInst = mod.m_modInstList[modInstIdx];
+			CModInst * pModInst = mod.m_modInstList[modInstIdx];
 
 			string instName;
 			if (bHifFlag)
@@ -161,16 +161,16 @@ void CDsnInfo::GenerateUnitTopFile()
 			else if (bHtiFlag)
 				instName = "Pers" + m_unitName.Uc() + "Hti";
 			else
-				instName = "Pers" + unitNameUc + modInst.m_instName.Uc();
+				instName = "Pers" + unitNameUc + pModInst->m_instName.Uc();
 
-			string replIdx = modInst.m_replCnt > 1 ? VA("[%d]", modInst.m_replId) : string();
+			string replIdx = pModInst->m_replCnt > 1 ? VA("[%d]", pModInst->m_replId) : string();
 
 			fprintf(scFile, "\t\tp%s%s = new C%s(\"%s%s\");\n",
 				instName.c_str(), replIdx.c_str(), instName.c_str(), instName.c_str(), replIdx.c_str());
 
 			if (!bHifFlag && !bHtiFlag) {
 				fprintf(scFile, "\t\tp%s%s->i_replId(replId%d);\n",
-					instName.c_str(), replIdx.c_str(), modInst.m_replId);
+					instName.c_str(), replIdx.c_str(), pModInst->m_replId);
 			}
 
 			if (bHifFlag) {
@@ -179,13 +179,13 @@ void CDsnInfo::GenerateUnitTopFile()
 			} else if (!bHtiFlag && mod.m_bHasThreads) {
 				fprintf(scFile, "\t\tp%s%s->o_%sToHta_assert(%sToHta_assert%s);\n",
 					instName.c_str(), replIdx.c_str(),
-					modInst.m_instName.Lc().c_str(),
-					modInst.m_instName.Lc().c_str(), replIdx.c_str());
+					pModInst->m_instName.Lc().c_str(),
+					pModInst->m_instName.Lc().c_str(), replIdx.c_str());
 			}
 
 			// generate memory interface
 			if (mod.m_memPortList.size() > 0) {
-				vector<int> &instMemPortList = modInst.m_instParams.m_memPortList;
+				vector<int> &instMemPortList = pModInst->m_instParams.m_memPortList;
 				string modInstIdxStr = GenIndexStr(mod.m_modInstList.size() > 1, "%d", modInstIdx);
 
 				if (bHtiFlag) {
@@ -241,62 +241,62 @@ void CDsnInfo::GenerateUnitTopFile()
 			}
 
 			// Generate call/transfer/return interfaces
-			for (size_t intfIdx = 0; intfIdx < modInst.m_cxrIntfList.size(); intfIdx += 1) {
-				CCxrIntf &cxrIntf = modInst.m_cxrIntfList[intfIdx];
+			for (size_t intfIdx = 0; intfIdx < pModInst->m_cxrIntfList.size(); intfIdx += 1) {
+				CCxrIntf * pCxrIntf = pModInst->m_cxrIntfList[intfIdx];
 
 				if (bHifFlag) break;
 
-				string replIdxStr = cxrIntf.m_instCnt <= 1 ? "" : VA("[%d]", cxrIntf.m_instIdx);
+				string replIdxStr = pCxrIntf->m_instCnt <= 1 ? "" : VA("[%d]", pCxrIntf->m_instIdx);
 
-				if (cxrIntf.m_cxrDir == CxrIn) {
+				if (pCxrIntf->m_cxrDir == CxrIn) {
 
 					fprintf(scFile, "\t\tp%s%s->i_%s_%sRdy%s(%s_%sRdy%s);\n",
 						instName.c_str(), replIdx.c_str(),
-						cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(),
-						cxrIntf.GetSignalNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetSignalIndexSrcToDst());
+						pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex(),
+						pCxrIntf->GetSignalNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetSignalIndexSrcToDst());
 
-					if (cxrIntf.m_bCxrIntfFields) {
+					if (pCxrIntf->m_bCxrIntfFields) {
 						fprintf(scFile, "\t\tp%s%s->i_%s_%s%s(%s_%s%s);\n",
 							instName.c_str(), replIdx.c_str(),
-							cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(),
-							cxrIntf.GetSignalNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetSignalIndexSrcToDst());
+							pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex(),
+							pCxrIntf->GetSignalNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetSignalIndexSrcToDst());
 					}
 
 					fprintf(scFile, "\t\tp%s%s->o_%s_%sAvl%s(%s_%sAvl%s);\n",
 						instName.c_str(), replIdx.c_str(),
-						cxrIntf.GetPortNameDstToSrcLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(),
-						cxrIntf.GetSignalNameDstToSrcLc(), cxrIntf.GetIntfName(), cxrIntf.GetSignalIndexDstToSrc());
+						pCxrIntf->GetPortNameDstToSrcLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex(),
+						pCxrIntf->GetSignalNameDstToSrcLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetSignalIndexDstToSrc());
 
-					if (cxrIntf.m_pSrcModInst->m_pMod->m_bGvIwComp) {
+					if (pCxrIntf->m_pSrcModInst->m_pMod->m_bGvIwComp) {
 						fprintf(scFile, "\t\tp%s%s->i_%s_%sCompRdy%s(%s_%sCompRdy%s);\n",
 							instName.c_str(), replIdx.c_str(),
-							cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(),
-							cxrIntf.GetSignalNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetSignalIndexSrcToDst());
+							pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex(),
+							pCxrIntf->GetSignalNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetSignalIndexSrcToDst());
 					}
 
 				} else {
 
 					fprintf(scFile, "\t\tp%s%s->o_%s_%sRdy%s(%s_%sRdy%s);\n",
 						instName.c_str(), replIdx.c_str(),
-						cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(),
-						cxrIntf.GetSignalNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetSignalIndexSrcToDst());
+						pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex(),
+						pCxrIntf->GetSignalNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetSignalIndexSrcToDst());
 
-					if (cxrIntf.m_bCxrIntfFields)
+					if (pCxrIntf->m_bCxrIntfFields)
 						fprintf(scFile, "\t\tp%s%s->o_%s_%s%s(%s_%s%s);\n",
 						instName.c_str(), replIdx.c_str(),
-						cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(),
-						cxrIntf.GetSignalNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetSignalIndexSrcToDst());
+						pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex(),
+						pCxrIntf->GetSignalNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetSignalIndexSrcToDst());
 
 					fprintf(scFile, "\t\tp%s%s->i_%s_%sAvl%s(%s_%sAvl%s);\n",
 						instName.c_str(), replIdx.c_str(),
-						cxrIntf.GetPortNameDstToSrcLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(),
-						cxrIntf.GetSignalNameDstToSrcLc(), cxrIntf.GetIntfName(), cxrIntf.GetSignalIndexDstToSrc());
+						pCxrIntf->GetPortNameDstToSrcLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex(),
+						pCxrIntf->GetSignalNameDstToSrcLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetSignalIndexDstToSrc());
 
-					if (mod.m_bGvIwComp && cxrIntf.m_pDstModInst->m_pMod->m_modName.AsStr() != "hif") {
+					if (mod.m_bGvIwComp && pCxrIntf->m_pDstModInst->m_pMod->m_modName.AsStr() != "hif") {
 						fprintf(scFile, "\t\tp%s%s->o_%s_%sCompRdy%s(%s_%sCompRdy%s);\n",
 							instName.c_str(), replIdx.c_str(),
-							cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(),
-							cxrIntf.GetSignalNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetSignalIndexSrcToDst());
+							pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex(),
+							pCxrIntf->GetSignalNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetSignalIndexSrcToDst());
 					}
 				}
 			}
@@ -587,7 +587,7 @@ void CDsnInfo::GenerateUnitTopFile()
 
 						string signalIdx = IndexStr(signalRefList);
 
-						CHtString &modInstName = mod.m_modInstList[modInstIdx].m_replInstName;
+						CHtString &modInstName = mod.m_modInstList[modInstIdx]->m_replInstName;
 
 						if (pMsgIntf->m_bAeConn) {
 
@@ -616,7 +616,7 @@ void CDsnInfo::GenerateUnitTopFile()
 
 							CMsgIntfConn * pConn = pMsgIntf->m_msgIntfInstList[msgIntfInstIdx][0];
 							int outModInstIdx = max(0, pConn->m_outMsgIntf.m_replIdx);
-							CHtString & outModInstName = pConn->m_outMsgIntf.m_pMod->m_modInstList[outModInstIdx].m_replInstName;
+							CHtString & outModInstName = pConn->m_outMsgIntf.m_pMod->m_modInstList[outModInstIdx]->m_replInstName;
 
 							fprintf(scFile, "\t\tp%s%s->i_%sToAu_%sMsgRdy%s(%sToAu_%sMsgRdy%s);\n",
 								instName.c_str(), replIdx.c_str(),
@@ -661,7 +661,7 @@ void CDsnInfo::GenerateUnitTopFile()
 
 						string signalIdx = IndexStr(signalRefList);
 
-						CHtString &modInstName = mod.m_modInstList[modInstIdx].m_replInstName;
+						CHtString &modInstName = mod.m_modInstList[modInstIdx]->m_replInstName;
 
 						if (pMsgIntf->m_bAeConn) {
 							fprintf(scFile, "\t\tp%s%s->o_%sToAu_%sMsgRdy%s(o_%sToAe_%sMsgRdy%s);\n",
@@ -700,7 +700,7 @@ void CDsnInfo::GenerateUnitTopFile()
 				}
 			}
 
-			if (mod.m_barrierList.size() > 0 && modInst.m_replCnt > 1) {
+			if (mod.m_barrierList.size() > 0 && pModInst->m_replCnt > 1) {
 				for (size_t barIdx = 0; barIdx < mod.m_barrierList.size(); barIdx += 1) {
 					CBarrier * pBar = mod.m_barrierList[barIdx];
 
@@ -731,7 +731,7 @@ void CDsnInfo::GenerateUnitTopFile()
 
 			fprintf(scFile, "\n");
 
-			if (mod.m_barrierList.size() > 0 && modInst.m_replCnt > 1 && modInst.m_replId == modInst.m_replCnt - 1) {
+			if (mod.m_barrierList.size() > 0 && pModInst->m_replCnt > 1 && pModInst->m_replId == pModInst->m_replCnt - 1) {
 
 				fprintf(scFile, "\t\tp%sBarCtl = new C%sBarCtl(\"%sBarCtl\");\n",
 					instName.c_str(), instName.c_str(), instName.c_str());
@@ -803,13 +803,13 @@ void CDsnInfo::GenerateUnitTopFile()
 
 		//			size_t memPortIdx;
 		//			for (memPortIdx = 0; memPortIdx < mod.m_memPortList.size(); memPortIdx += 1)
-		//				if (modInst.m_instParams.m_memPortList[memPortIdx] == instMifId)
+		//				if (pModInst->m_instParams.m_memPortList[memPortIdx] == instMifId)
 		//					break;
 
 		//			if (memPortIdx == mod.m_memPortList.size())
 		//				continue;
 
-		//			string replIdStr = GenIndexStr(modInst.m_replCnt > 1, "%d", modInst.m_replId);
+		//			string replIdStr = GenIndexStr(pModInst->m_replCnt > 1, "%d", pModInst->m_replId);
 		//			string modInstIdxStr = GenIndexStr(mod.m_modInstList.size() > 1, "%d", modInstIdx);
 
 		//			// generate memory interface
@@ -885,25 +885,25 @@ void CDsnInfo::GenerateUnitTopFile()
 		modName.c_str(), modName.c_str(), modName.c_str());
 
 	for (size_t instIdx = 0; instIdx < m_dsnInstList.size(); instIdx += 1) {
-		CModInst & modInst = m_dsnInstList[instIdx];
-		if (!modInst.m_pMod->m_bIsUsed) continue;
+		CModInst * pModInst = m_dsnInstList[instIdx];
+		if (!pModInst->m_pMod->m_bIsUsed) continue;
 
-		if (!modInst.m_pMod->m_bHasThreads && !modInst.m_pMod->m_bHostIntf)
+		if (!pModInst->m_pMod->m_bHasThreads && !pModInst->m_pMod->m_bHostIntf)
 			continue;
 
-		string replIdxStr = modInst.m_replCnt <= 1 ? "" : VA("[%d]", modInst.m_replId);
+		string replIdxStr = pModInst->m_replCnt <= 1 ? "" : VA("[%d]", pModInst->m_replId);
 
 		// generate memory interface
-		if (modInst.m_pMod->m_bHostIntf)
+		if (pModInst->m_pMod->m_bHostIntf)
 			fprintf(scFile, "\t\tp%s->o_htaTo%s_assert%s(htaTo%s_assert%s);\n",
 			modName.c_str(),
-			modInst.m_instName.Uc().c_str(), replIdxStr.c_str(),
-			modInst.m_instName.Uc().c_str(), replIdxStr.c_str());
+			pModInst->m_instName.Uc().c_str(), replIdxStr.c_str(),
+			pModInst->m_instName.Uc().c_str(), replIdxStr.c_str());
 		else
 			fprintf(scFile, "\t\tp%s->i_%sToHta_assert%s(%sToHta_assert%s);\n",
 			modName.c_str(),
-			modInst.m_instName.Lc().c_str(), replIdxStr.c_str(),
-			modInst.m_instName.Lc().c_str(), replIdxStr.c_str());
+			pModInst->m_instName.Lc().c_str(), replIdxStr.c_str(),
+			pModInst->m_instName.Lc().c_str(), replIdxStr.c_str());
 	}
 	fprintf(scFile, "\n");
 

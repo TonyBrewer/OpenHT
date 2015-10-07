@@ -184,8 +184,8 @@ CMifWr * CDsnInfo::AddWriteMem(CModule * pModule, string queueW, string rspGrpId
 CCxrCall * CDsnInfo::AddCall(void * pHandle, string const &modEntry, string const &callName, string const &modInst, bool bCall, bool bFork, string const &queueW, string const &dest)
 {
 	CModule * pModule = (CModule *)pHandle;
-	pModule->m_cxrCallList.push_back(CCxrCall(modEntry, callName, modInst, bCall, bFork, queueW, dest, false));
-	return &pModule->m_cxrCallList.back();
+	pModule->m_cxrCallList.push_back(new CCxrCall(modEntry, callName, modInst, bCall, bFork, queueW, dest, false));
+	return pModule->m_cxrCallList.back();
 }
 
 CCxrCall * CDsnInfo::AddXfer(void * pHandle, string const &modEntry, string const &xferName, string const &modInst, string const &queueW)
@@ -196,8 +196,8 @@ CCxrCall * CDsnInfo::AddXfer(void * pHandle, string const &modEntry, string cons
 	bool bFork = false;
 	bool bXfer = true;
 
-	pModule->m_cxrCallList.push_back(CCxrCall(modEntry, xferName, modInst, bCall, bFork, queueW, dest, bXfer));
-	return &pModule->m_cxrCallList.back();
+	pModule->m_cxrCallList.push_back(new CCxrCall(modEntry, xferName, modInst, bCall, bFork, queueW, dest, bXfer));
+	return pModule->m_cxrCallList.back();
 }
 
 CCxrEntry * CDsnInfo::AddEntry(CModule * pModule, string funcName, string entryInstr, string reserve, bool &bHost)
@@ -214,8 +214,8 @@ CCxrEntry * CDsnInfo::AddEntry(CModule * pModule, string funcName, string entryI
 CCxrReturn * CDsnInfo::AddReturn(void * pHandle, string func)
 {
 	CModule * pModule = (CModule *)pHandle;
-	pModule->m_cxrReturnList.push_back(CCxrReturn(func));
-	return &pModule->m_cxrReturnList.back();
+	pModule->m_cxrReturnList.push_back(new CCxrReturn(func));
+	return pModule->m_cxrReturnList.back();
 }
 
 CStage * CDsnInfo::AddStage(CModule * pModule, string privWrStg, string execStg)

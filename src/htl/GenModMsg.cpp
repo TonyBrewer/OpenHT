@@ -307,7 +307,7 @@ void CDsnInfo::InitAndValidateModMsg()
 
 							if (pMsgIntf->m_dir == "in") continue;
 
-							string &modPath = pMod->m_modInstList[0].m_modPaths[0];
+							string &modPath = pMod->m_modInstList[0]->m_modPaths[0];
 
 							char const * pStr = modPath.c_str();
 							while (*pStr != ':' && *pStr != '\0') pStr += 1;
@@ -319,7 +319,7 @@ void CDsnInfo::InitAndValidateModMsg()
 							if (g_appArgs.GetAeUnitCnt() > 1)
 								unitIdxStr = VA("[0-%d]", g_appArgs.GetAeUnitCnt() - 1);
 
-							int replCnt = pMod->m_modInstList[0].m_replCnt;
+							int replCnt = pMod->m_modInstList[0]->m_replCnt;
 							string replStr;
 							if (replCnt > 1)
 								replStr = VA("[0-%d]", replCnt - 1);
@@ -354,7 +354,7 @@ void CDsnInfo::InitAndValidateModMsg()
 
 							if (pMsgIntf->m_dir != "in") continue;
 
-							string &modPath = pMod->m_modInstList[0].m_modPaths[0];
+							string &modPath = pMod->m_modInstList[0]->m_modPaths[0];
 
 							char const * pStr = modPath.c_str();
 							while (*pStr != ':' && *pStr != '\0') pStr += 1;
@@ -366,7 +366,7 @@ void CDsnInfo::InitAndValidateModMsg()
 							if (g_appArgs.GetAeUnitCnt() > 1)
 								unitIdxStr = VA("[0-%d]", g_appArgs.GetAeUnitCnt() - 1);
 
-							int replCnt = pMod->m_modInstList[0].m_replCnt;
+							int replCnt = pMod->m_modInstList[0]->m_replCnt;
 							string replStr;
 							if (replCnt > 1)
 								replStr = VA("[0-%d]", replCnt - 1);
@@ -428,7 +428,7 @@ void CDsnInfo::InitAndValidateModMsg()
 			if (pMsgIntf->m_bAutoConn) continue;
 
 			int unitCnt = g_appArgs.GetAeUnitCnt();
-			int modReplCnt = mod.m_modInstList[0].m_replCnt;
+			int modReplCnt = mod.m_modInstList[0]->m_replCnt;
 			int msgFanCnt = max(1, pMsgIntf->m_fanCnt.AsInt());
 			int msgDimenCnt = max(1, pMsgIntf->m_dimen.AsInt());
 
@@ -443,7 +443,7 @@ void CDsnInfo::InitAndValidateModMsg()
 				int modReplIdx = (idx / (msgDimenCnt * msgFanCnt)) % modReplCnt;
 				int unitIdx = idx / (msgDimenCnt * msgFanCnt * modReplCnt);
 
-				string &path = mod.m_modInstList[0].m_modPaths[0];
+				string &path = mod.m_modInstList[0]->m_modPaths[0];
 				char const * pStr = path.c_str();
 				while (*pStr != ':' && *pStr != '\0') pStr += 1;
 				string unitStr = path.substr(0, pStr - path.c_str());
@@ -465,7 +465,7 @@ void CDsnInfo::InitAndValidateModMsg()
 void CDsnInfo::SetMsgIntfConnUsedFlags(bool bInBound, CMsgIntfConn * pConn, CModule &mod, CMsgIntf * pMsgIntf)
 {
 	int unitCnt = g_appArgs.GetAeUnitCnt();
-	int modReplCnt = mod.m_modInstList[0].m_replCnt;
+	int modReplCnt = mod.m_modInstList[0]->m_replCnt;
 	int msgFanCnt = max(1, pMsgIntf->m_fanCnt.AsInt());
 	int msgDimenCnt = max(1, pMsgIntf->m_dimen.AsInt());
 

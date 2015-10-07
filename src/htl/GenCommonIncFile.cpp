@@ -270,15 +270,15 @@ void CDsnInfo::GenerateCommonIncludeFile()
 		if (!mod.m_bIsUsed) continue;
 
 		for (size_t modInstIdx = 0; modInstIdx < mod.m_modInstList.size(); modInstIdx += 1) {
-			CModInst &modInst = mod.m_modInstList[modInstIdx];
+			CModInst * pModInst = mod.m_modInstList[modInstIdx];
 
-			for (size_t intfIdx = 0; intfIdx < modInst.m_cxrIntfList.size(); intfIdx += 1) {
-				CCxrIntf &cxrIntf = modInst.m_cxrIntfList[intfIdx];
+			for (size_t intfIdx = 0; intfIdx < pModInst->m_cxrIntfList.size(); intfIdx += 1) {
+				CCxrIntf * pCxrIntf = pModInst->m_cxrIntfList[intfIdx];
 
-				if (cxrIntf.m_cxrDir == CxrOut) continue;
+				if (pCxrIntf->m_cxrDir == CxrOut) continue;
 
 				char intfName[256];
-				sprintf(intfName, "C%s_%s", cxrIntf.GetSrcToDstUc(), cxrIntf.GetIntfName());
+				sprintf(intfName, "C%s_%s", pCxrIntf->GetSrcToDstUc(), pCxrIntf->GetIntfName());
 
 				size_t i;
 				for (i = 0; i < intfNameList.size(); i += 1) {
@@ -291,57 +291,57 @@ void CDsnInfo::GenerateCommonIncludeFile()
 
 				intfNameList.push_back(intfName);
 
-				cxrIntf.m_fullFieldList = *cxrIntf.m_pFieldList;
+				pCxrIntf->m_fullFieldList = *pCxrIntf->m_pFieldList;
 				CLineInfo lineInfo;
 
-				if (cxrIntf.m_cxrType == CxrCall) {
+				if (pCxrIntf->m_cxrType == CxrCall) {
 
-					if (cxrIntf.m_pSrcGroup->m_htIdW.AsInt() > 0) {
-						cxrIntf.m_fullFieldList.push_back(new CField(cxrIntf.m_pSrcGroup->m_pHtIdType, "rtnHtId"));
-						cxrIntf.m_fullFieldList.back()->InitDimen(lineInfo);
+					if (pCxrIntf->m_pSrcGroup->m_htIdW.AsInt() > 0) {
+						pCxrIntf->m_fullFieldList.push_back(new CField(pCxrIntf->m_pSrcGroup->m_pHtIdType, "rtnHtId"));
+						pCxrIntf->m_fullFieldList.back()->InitDimen(lineInfo);
 					}
-					if (cxrIntf.m_pSrcModInst->m_pMod->m_pInstrType) {
-						cxrIntf.m_fullFieldList.push_back(new CField(cxrIntf.m_pSrcModInst->m_pMod->m_pInstrType, "rtnInstr"));
-						cxrIntf.m_fullFieldList.back()->InitDimen(lineInfo);
+					if (pCxrIntf->m_pSrcModInst->m_pMod->m_pInstrType) {
+						pCxrIntf->m_fullFieldList.push_back(new CField(pCxrIntf->m_pSrcModInst->m_pMod->m_pInstrType, "rtnInstr"));
+						pCxrIntf->m_fullFieldList.back()->InitDimen(lineInfo);
 					}
 
-				} else if (cxrIntf.m_cxrType == CxrTransfer) { // else Transfer
+				} else if (pCxrIntf->m_cxrType == CxrTransfer) { // else Transfer
 
-					if (cxrIntf.m_pSrcGroup->m_rtnSelW > 0) {
-						cxrIntf.m_fullFieldList.push_back(new CField(cxrIntf.m_pSrcGroup->m_pRtnSelType, "rtnSel"));
-						cxrIntf.m_fullFieldList.back()->InitDimen(lineInfo);
+					if (pCxrIntf->m_pSrcGroup->m_rtnSelW > 0) {
+						pCxrIntf->m_fullFieldList.push_back(new CField(pCxrIntf->m_pSrcGroup->m_pRtnSelType, "rtnSel"));
+						pCxrIntf->m_fullFieldList.back()->InitDimen(lineInfo);
 					}
-					if (cxrIntf.m_pSrcGroup->m_rtnHtIdW > 0) {
-						cxrIntf.m_fullFieldList.push_back(new CField(cxrIntf.m_pSrcGroup->m_pRtnHtIdType, "rtnHtId"));
-						cxrIntf.m_fullFieldList.back()->InitDimen(lineInfo);
+					if (pCxrIntf->m_pSrcGroup->m_rtnHtIdW > 0) {
+						pCxrIntf->m_fullFieldList.push_back(new CField(pCxrIntf->m_pSrcGroup->m_pRtnHtIdType, "rtnHtId"));
+						pCxrIntf->m_fullFieldList.back()->InitDimen(lineInfo);
 					}
-					if (cxrIntf.m_pSrcGroup->m_rtnInstrW > 0) {
-						cxrIntf.m_fullFieldList.push_back(new CField(cxrIntf.m_pSrcGroup->m_pRtnInstrType, "rtnInstr"));
-						cxrIntf.m_fullFieldList.back()->InitDimen(lineInfo);
+					if (pCxrIntf->m_pSrcGroup->m_rtnInstrW > 0) {
+						pCxrIntf->m_fullFieldList.push_back(new CField(pCxrIntf->m_pSrcGroup->m_pRtnInstrType, "rtnInstr"));
+						pCxrIntf->m_fullFieldList.back()->InitDimen(lineInfo);
 					}
 
 				} else { // CxrReturn
 
-					if (cxrIntf.m_pDstGroup->m_htIdW.AsInt() > 0) {
-						cxrIntf.m_fullFieldList.push_back(new CField(cxrIntf.m_pDstGroup->m_pHtIdType, "rtnHtId"));
-						cxrIntf.m_fullFieldList.back()->InitDimen(lineInfo);
+					if (pCxrIntf->m_pDstGroup->m_htIdW.AsInt() > 0) {
+						pCxrIntf->m_fullFieldList.push_back(new CField(pCxrIntf->m_pDstGroup->m_pHtIdType, "rtnHtId"));
+						pCxrIntf->m_fullFieldList.back()->InitDimen(lineInfo);
 					}
-					if (cxrIntf.m_pDstModInst->m_pMod->m_pInstrType != 0) {
-						cxrIntf.m_fullFieldList.push_back(new CField(cxrIntf.m_pDstModInst->m_pMod->m_pInstrType, "rtnInstr"));
-						cxrIntf.m_fullFieldList.back()->InitDimen(lineInfo);
+					if (pCxrIntf->m_pDstModInst->m_pMod->m_pInstrType != 0) {
+						pCxrIntf->m_fullFieldList.push_back(new CField(pCxrIntf->m_pDstModInst->m_pMod->m_pInstrType, "rtnInstr"));
+						pCxrIntf->m_fullFieldList.back()->InitDimen(lineInfo);
 					}
 
 				}
 
-				if (cxrIntf.m_bRtnJoin) {
-					cxrIntf.m_fullFieldList.push_back(new CField(&g_bool, "rtnJoin"));
-					cxrIntf.m_fullFieldList.back()->InitDimen(lineInfo);
+				if (pCxrIntf->m_bRtnJoin) {
+					pCxrIntf->m_fullFieldList.push_back(new CField(&g_bool, "rtnJoin"));
+					pCxrIntf->m_fullFieldList.back()->InitDimen(lineInfo);
 				}
 
-				if (cxrIntf.m_fullFieldList.size() == 0)
+				if (pCxrIntf->m_fullFieldList.size() == 0)
 					continue;
 
-				GenIntfStruct(incFile, intfName, cxrIntf.m_fullFieldList, false, false, false, false);
+				GenIntfStruct(incFile, intfName, pCxrIntf->m_fullFieldList, false, false, false, false);
 			}
 		}
 	}

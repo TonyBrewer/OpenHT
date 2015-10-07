@@ -749,13 +749,36 @@ private:
 
 struct CModIdx {
 	CModIdx() : m_bIsUsed(false) {}
-	CModIdx(CModule & mod, size_t idx, string modPath)
-		: m_pMod(&mod), m_idx(idx), m_bIsUsed(true), m_modPath(modPath)
+	CModIdx(CModInst * pModInst, CCxrCall * pCxrCall, size_t callIdx, string modPath)
+		: m_pModInst(pModInst), m_pCxrCall(pCxrCall), m_callIdx(callIdx), m_bIsUsed(true), m_modPath(modPath)
+	{
+	}
+	CModIdx(CModInst * pModInst, CCxrEntry * pCxrEntry, size_t entryIdx, string modPath)
+		: m_pModInst(pModInst), m_pCxrEntry(pCxrEntry), m_entryIdx(entryIdx), m_bIsUsed(true), m_modPath(modPath)
+	{
+	}
+	CModIdx(CModInst * pModInst, CCxrReturn * pCxrReturn, size_t returnIdx, string modPath)
+		: m_pModInst(pModInst), m_pCxrReturn(pCxrReturn), m_returnIdx(returnIdx), m_bIsUsed(true), m_modPath(modPath)
 	{
 	}
 
-	CModule	*	m_pMod;
-	size_t		m_idx;
+	CCxrCall * GetCxrCall();
+	CCxrEntry * GetCxrEntry();
+	CCxrReturn * GetCxrReturn();
+
+	CModInst *	m_pModInst;
+	union {
+		size_t		m_callIdx;
+		size_t		m_entryIdx;
+		size_t		m_returnIdx;
+	};
+private:
+	union {
+		CCxrCall * m_pCxrCall;
+		CCxrEntry * m_pCxrEntry;
+		CCxrReturn * m_pCxrReturn;
+	};
+public:
 	bool		m_bIsUsed;
 	int			m_replCnt;
 	string		m_modPath;
@@ -814,11 +837,11 @@ struct CCxrCallList {
 	void Insert(CModIdx &modIdx)
 	{
 		for (size_t i = 0; i < m_modIdxList.size(); i += 1)
-			if (m_modIdxList[i].m_pMod == modIdx.m_pMod && m_modIdxList[i].m_idx == modIdx.m_idx)
+			if (m_modIdxList[i].m_pModInst == modIdx.m_pModInst && m_modIdxList[i].m_callIdx == modIdx.m_callIdx)
 				return;
 		m_modIdxList.push_back(modIdx);
 	}
-	CCxrCall &GetCxrCall(size_t listIdx);
+	CCxrCall * GetCxrCall(size_t listIdx);
 	size_t size() { return m_modIdxList.size(); }
 	CModIdx & operator [] (size_t i) { return m_modIdxList[i]; }
 
@@ -1530,7 +1553,7 @@ struct CModInst {
 	vector<CCallInstParam>	m_callInstParamList;
 	vector<CCxrInstRtn>	m_cxrInstRtnList;
 	int					m_cxrSrcCnt;
-	vector<CCxrIntf>	m_cxrIntfList;	// List of interfaces for instance
+	vector<CCxrIntf *>	m_cxrIntfList;	// List of interfaces for instance
 	CHtString			m_replInstName;		// module replicated instance name
 	int					m_replCnt;
 	int					m_replId;
@@ -1699,10 +1722,10 @@ public:
 	int					m_gvIwCompStg;
 
 	int					m_nonReplInstCnt;
-	vector<CModInst>	m_modInstList;		// module instance list
-	vector<CCxrCall>	m_cxrCallList;
+	vector<CModInst *>	m_modInstList;		// module instance list
+	vector<CCxrCall *>	m_cxrCallList;
 	vector<CCxrEntry *>	m_cxrEntryList;
-	vector<CCxrReturn>	m_cxrReturnList;
+	vector<CCxrReturn *>	m_cxrReturnList;
 	vector<CRam *>		m_ngvList;
 	vector<CQueIntf>	m_queIntfList;
 	vector<string>		m_instrList;		// instruction list
@@ -2097,7 +2120,7 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 
 	string GenIndexStr(bool bGen, char const * pFormat, int index);
 	void InitCxrIntfInfo();
-	bool IsCallDest(CModInst & srcModInst, CModInst & dstModInst);
+	bool IsCallDest(CModInst * pSrcModInst, CModInst * pDstModInst);
 	bool AreModInstancesLinked(CModInst & srcModInst, CModInst & dstModInst);
 	void CheckRequiredEntryNames(vector<CModIdx> &callStk);
 	bool CheckTransferReturn(vector<CModIdx> &callStk);
@@ -2255,7 +2278,7 @@ public:
 	vector<CHtInt *>	m_htIntList;
 	vector<CHtInt *>	m_scBigIntList;
 	vector<CModule *>	m_modList;
-	vector<CModInst>	m_dsnInstList;
+	vector<CModInst *>	m_dsnInstList;
 	CDefineTable		m_defineTable;
 	vector<CTypeDef>	m_typedefList;
 	vector<CType>		m_typeList;
@@ -2270,7 +2293,7 @@ public:
 	void GenModTDSUStatements(CModule &mod); // typedef/define/struct/union
 	void GenModMsgStatements(CModule &mod);
 	void GenModBarStatements(CModule &mod);
-	void GenModIplStatements(CModInst &modInst);
+	void GenModIplStatements(CModInst * pModInst);
 	void GenModIhmStatements(CModule &mod);
 	void GenModOhmStatements(CModule &mod);
 	void GenModCxrStatements(CModule &mod, int modInstIdx);
@@ -2293,8 +2316,8 @@ public:
 
 	void SetMsgIntfConnUsedFlags(bool bInBound, CMsgIntfConn * pConn, CModule &mod, CMsgIntf * pMsgIntf);
 
-	void WritePersCppFile(CModInst & modInst, bool bNeedClk2x);
-	void WritePersIncFile(CModInst & modInst, bool bNeedClk2x);
+	void WritePersCppFile(CModInst * pModInst, bool bNeedClk2x);
+	void WritePersIncFile(CModInst * pModInst, bool bNeedClk2x);
 	//void GenStruct(string intfName, CRecord &ram, EGenStructMode mode, bool bEmptyContructor);
 	void GenRamIntfStruct(CHtCode &code, char const * pTabs, string intfName, CRam &ram, EStructType type);
 	void GenRamWrEn(CHtCode &code, char const * pTabs, string intfName, CRecord &ram);
@@ -2303,7 +2326,7 @@ public:
 
 	string GenRamAddr(CModInst & modInst, CRam &ram, CHtCode *pCode, string accessSelW, string accessSelName, const char *pInStg, const char *pOutStg, bool bWrite, bool bNoSelectAssign = false);
 	//void GenRamAddr(CModInst &modInst, CHtCode &ramPreSm, string &addrType, CRam &ram, string ramAddrName, const char *pInStg, const char *pOutStg, bool bNoSelectAssign=true);
-	int CountPhaseResetFanout(CModInst &modInst);
+	int CountPhaseResetFanout(CModInst * pModInst);
 	void GenDimenInfo(CDimenList & ramList, CDimenList & fieldList, vector<int> & dimenList, string & dimenDecl, string & dimenIndex, string * pVarIndex = 0, string * pFldIndex = 0);
 	string GenRamIndexLoops(CHtCode &ramCode, vector<int> & dimenList, bool bOpenParen = false);
 	string GenRamIndexLoops(CHtCode &ramCode, const char *pTabs, CDimenList &dimenList, bool bOpenParen = false, int idxInit = 0, string * pScTraceIndex = 0);
@@ -2572,4 +2595,17 @@ inline CModInst::CModInst(CModule *pMod, string const & instName, string const &
 	m_modPaths.push_back(modPath);
 	m_instName = instName.size() == 0 ? pMod->m_modName : CHtString(instName);
 	m_cxrInstRtnList.resize(cxrRtnCnt);
+}
+
+inline CCxrCall * CModIdx::GetCxrCall() {
+	HtlAssert(m_pCxrCall == m_pModInst->m_pMod->m_cxrCallList[m_callIdx]);
+	return m_pCxrCall;
+}
+inline CCxrEntry * CModIdx::GetCxrEntry() {
+	HtlAssert(m_pCxrEntry == m_pModInst->m_pMod->m_cxrEntryList[m_callIdx]);
+	return m_pCxrEntry;
+}
+inline CCxrReturn * CModIdx::GetCxrReturn() {
+	HtlAssert(m_pCxrReturn == m_pModInst->m_pMod->m_cxrReturnList[m_callIdx]);
+	return m_pCxrReturn;
 }

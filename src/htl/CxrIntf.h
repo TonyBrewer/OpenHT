@@ -21,10 +21,10 @@ enum ECxrType { CxrCall, CxrReturn, CxrTransfer };
 enum ECxrDir { CxrIn, CxrOut };
 
 struct CCxrIntf {
-	CCxrIntf(CHtString &modEntry, CModInst &srcModInst, CThreads *pSrcGroup, CModInst &dstModInst,
+	CCxrIntf(CHtString &modEntry, CModInst * pSrcModInst, CThreads *pSrcGroup, CModInst * pDstModInst,
 		CThreads *pDstGroup, ECxrType cxrType, ECxrDir cxrDir, int queueW, vector<CField *> * pFieldList)
-		: m_modEntry(modEntry), m_pSrcModInst(&srcModInst), m_pSrcGroup(pSrcGroup),
-		m_pDstModInst(&dstModInst), m_pDstGroup(pDstGroup), m_cxrType(cxrType), m_cxrDir(cxrDir),
+		: m_modEntry(modEntry), m_pSrcModInst(pSrcModInst), m_pSrcGroup(pSrcGroup),
+		m_pDstModInst(pDstModInst), m_pDstGroup(pDstGroup), m_cxrType(cxrType), m_cxrDir(cxrDir),
 		m_queueW(queueW), m_pFieldList(pFieldList), m_bCxrIntfFields(true),
 		m_bRtnJoin(false), m_bMultiInstRtn(false), m_reserveCnt(0)
 	{

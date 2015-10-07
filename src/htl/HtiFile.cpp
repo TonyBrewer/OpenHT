@@ -483,10 +483,10 @@ bool HtiFile::isMsgPathMatch(CLineInfo & lineInfo, CMsgIntfInfo & info, CModule 
 		return false;
 
 	for (size_t modInstIdx = 0; modInstIdx < mod.m_modInstList.size(); modInstIdx += 1) {
-		CModInst & modInst = mod.m_modInstList[modInstIdx];
+		CModInst * pModInst = mod.m_modInstList[modInstIdx];
 
-		for (size_t modPathIdx = 0; modPathIdx < modInst.m_modPaths.size(); modPathIdx += 1) {
-			string &modPath = modInst.m_modPaths[modPathIdx];
+		for (size_t modPathIdx = 0; modPathIdx < pModInst->m_modPaths.size(); modPathIdx += 1) {
+			string &modPath = pModInst->m_modPaths[modPathIdx];
 
 			char const * pStr = modPath.c_str();
 			while (*pStr != ':' && *pStr != '\0') pStr += 1;

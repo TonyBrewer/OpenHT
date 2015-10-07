@@ -33,35 +33,35 @@ CDsnInfo::GenerateHtiFiles()
 			bIhm = true;
 	}
 
-	if (mod.m_modInstList.size() != 1 || mod.m_modInstList[0].m_cxrIntfList.size() != 2)
+	if (mod.m_modInstList.size() != 1 || mod.m_modInstList[0]->m_cxrIntfList.size() != 2)
 		ParseMsg(Fatal, "Expected host interface to have a single call and a single return interface");
 
-	CModInst & modInst = mod.m_modInstList[0];
+	CModInst * pModInst = mod.m_modInstList[0];
 
 	int callIdx = -1;
 	int rtnIdx = -1;
 
-	if (modInst.m_cxrIntfList[0].m_cxrType == CxrCall && modInst.m_cxrIntfList[0].m_cxrDir == CxrOut)
+	if (pModInst->m_cxrIntfList[0]->m_cxrType == CxrCall && pModInst->m_cxrIntfList[0]->m_cxrDir == CxrOut)
 		callIdx = 0;
-	else if (modInst.m_cxrIntfList[1].m_cxrType == CxrCall && modInst.m_cxrIntfList[1].m_cxrDir == CxrOut)
+	else if (pModInst->m_cxrIntfList[1]->m_cxrType == CxrCall && pModInst->m_cxrIntfList[1]->m_cxrDir == CxrOut)
 		callIdx = 1;
 
-	if (modInst.m_cxrIntfList[0].m_cxrType == CxrReturn && modInst.m_cxrIntfList[0].m_cxrDir == CxrIn)
+	if (pModInst->m_cxrIntfList[0]->m_cxrType == CxrReturn && pModInst->m_cxrIntfList[0]->m_cxrDir == CxrIn)
 		rtnIdx = 0;
-	else if (modInst.m_cxrIntfList[1].m_cxrType == CxrReturn && modInst.m_cxrIntfList[1].m_cxrDir == CxrIn)
+	else if (pModInst->m_cxrIntfList[1]->m_cxrType == CxrReturn && pModInst->m_cxrIntfList[1]->m_cxrDir == CxrIn)
 		rtnIdx = 1;
 
 	if (callIdx < 0 || rtnIdx < 0)
 		ParseMsg(Fatal, "Expected host interface to have a single call and a single return interface");
 
-	CCxrIntf & rtnIntf = modInst.m_cxrIntfList[rtnIdx];
-	CCxrIntf & callIntf = modInst.m_cxrIntfList[callIdx];
+	CCxrIntf * pRtnIntf = pModInst->m_cxrIntfList[rtnIdx];
+	CCxrIntf * pCallIntf = pModInst->m_cxrIntfList[callIdx];
 
-	bool bCallCmdFields = callIntf.m_bCxrIntfFields;
-	bool bRtnCmdFields = rtnIntf.m_bCxrIntfFields;
+	bool bCallCmdFields = pCallIntf->m_bCxrIntfFields;
+	bool bRtnCmdFields = pRtnIntf->m_bCxrIntfFields;
 
-	bool bCallClk2x = callIntf.m_pDstModInst->m_pMod->m_clkRate == eClk2x;
-	bool bRtnClk2x = rtnIntf.m_pSrcModInst->m_pMod->m_clkRate == eClk2x;
+	bool bCallClk2x = pCallIntf->m_pDstModInst->m_pMod->m_clkRate == eClk2x;
+	bool bRtnClk2x = pRtnIntf->m_pSrcModInst->m_pMod->m_clkRate == eClk2x;
 
 	fprintf(incFile, "// internal states\n");
 	fprintf(incFile, "#define HTI_IDLE	0\n");
@@ -117,28 +117,28 @@ CDsnInfo::GenerateHtiFiles()
 	}
 
 	fprintf(incFile, "\tsc_out<bool> o_%s_%sRdy;\n",
-		callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
+		pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName());
 
 	if (bCallCmdFields)
 		fprintf(incFile, "\tsc_out<C%s_%sIntf> o_%s_%s;\n",
-		callIntf.GetSrcToDstUc(), callIntf.GetIntfName(),
-		callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
+		pCallIntf->GetSrcToDstUc(), pCallIntf->GetIntfName(),
+		pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName());
 
 	fprintf(incFile, "\tsc_in<bool> i_%s_%sAvl;\n",
-		callIntf.GetDstToSrcLc(), callIntf.GetIntfName());
+		pCallIntf->GetDstToSrcLc(), pCallIntf->GetIntfName());
 
 	fprintf(incFile, "\n");
 
 	fprintf(incFile, "\tsc_in<bool> i_%s_%sRdy;\n",
-		rtnIntf.GetSrcToDstLc(), rtnIntf.GetIntfName());
+		pRtnIntf->GetSrcToDstLc(), pRtnIntf->GetIntfName());
 
 	if (bRtnCmdFields)
 		fprintf(incFile, "\tsc_in<C%s_%sIntf> i_%s_%s;\n",
-		rtnIntf.GetSrcToDstUc(), rtnIntf.GetIntfName(),
-		rtnIntf.GetSrcToDstLc(), rtnIntf.GetIntfName());
+		pRtnIntf->GetSrcToDstUc(), pRtnIntf->GetIntfName(),
+		pRtnIntf->GetSrcToDstLc(), pRtnIntf->GetIntfName());
 
 	fprintf(incFile, "\tsc_out<bool> o_%s_%sAvl;\n",
-		rtnIntf.GetDstToSrcLc(), rtnIntf.GetIntfName());
+		pRtnIntf->GetDstToSrcLc(), pRtnIntf->GetIntfName());
 
 	fprintf(incFile, "\n");
 
@@ -227,7 +227,7 @@ CDsnInfo::GenerateHtiFiles()
 	fprintf(incFile, "\tht_dist_que<CHostDataQueIntf, 5> m_iDatQue;\n");
 	if (bRtnCmdFields)
 		fprintf(incFile, "\tht_dist_que<C%s_%sIntf, 5> m_oCmdQue;\n",
-		rtnIntf.GetSrcToDstUc(), rtnIntf.GetIntfName());
+		pRtnIntf->GetSrcToDstUc(), pRtnIntf->GetIntfName());
 	else
 		fprintf(incFile, "\tsc_uint<5> r_oCmdCnt;\n");
 
@@ -250,30 +250,30 @@ CDsnInfo::GenerateHtiFiles()
 		fprintf(incFile, "\tCHostCtrlMsgIntf r_hifTo%s_ihm;\n", m_unitName.Uc().c_str());
 
 	if (bCallClk2x) {
-		fprintf(incFile, "\tsc_signal<bool> r_%s_%sRdy;\n", callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
-		fprintf(incFile, "\tbool r_%s_%sRdy_2x;\n", callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
+		fprintf(incFile, "\tsc_signal<bool> r_%s_%sRdy;\n", pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName());
+		fprintf(incFile, "\tbool r_%s_%sRdy_2x;\n", pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName());
 	} else
-		fprintf(incFile, "\tbool r_%s_%sRdy;\n", callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
+		fprintf(incFile, "\tbool r_%s_%sRdy;\n", pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName());
 
 	if (bCallCmdFields)
 		fprintf(incFile, "\tC%s_%sIntf r_%s_%s;\n",
-		callIntf.GetSrcToDstUc(), callIntf.GetIntfName(),
-		callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
+		pCallIntf->GetSrcToDstUc(), pCallIntf->GetIntfName(),
+		pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName());
 
 	if (bCallClk2x) {
-		fprintf(incFile, "\tsc_signal<ht_uint1> r_%s_%sAvl_2x1;\n", callIntf.GetDstToSrcLc(), callIntf.GetIntfName());
-		fprintf(incFile, "\tsc_signal<ht_uint1> r_%s_%sAvl_2x2;\n", callIntf.GetDstToSrcLc(), callIntf.GetIntfName());
+		fprintf(incFile, "\tsc_signal<ht_uint1> r_%s_%sAvl_2x1;\n", pCallIntf->GetDstToSrcLc(), pCallIntf->GetIntfName());
+		fprintf(incFile, "\tsc_signal<ht_uint1> r_%s_%sAvl_2x2;\n", pCallIntf->GetDstToSrcLc(), pCallIntf->GetIntfName());
 	}
 
-	fprintf(incFile, "\tht_uint1 r_%s_%sAvlCnt;\n", callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
+	fprintf(incFile, "\tht_uint1 r_%s_%sAvlCnt;\n", pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName());
 
 	if (bRtnClk2x) {
-		fprintf(incFile, "\tsc_signal<bool> r_%s_%sAvl;\n", rtnIntf.GetDstToSrcLc(), rtnIntf.GetIntfName());
-		fprintf(incFile, "\tbool r_%s_%sAvl_2x;\n", rtnIntf.GetDstToSrcLc(), rtnIntf.GetIntfName());
+		fprintf(incFile, "\tsc_signal<bool> r_%s_%sAvl;\n", pRtnIntf->GetDstToSrcLc(), pRtnIntf->GetIntfName());
+		fprintf(incFile, "\tbool r_%s_%sAvl_2x;\n", pRtnIntf->GetDstToSrcLc(), pRtnIntf->GetIntfName());
 		if (!bRtnCmdFields)
-			fprintf(incFile, "\tsc_signal<bool> r_%s_%sRdy_2x;\n", rtnIntf.GetSrcToDstLc(), rtnIntf.GetIntfName());
+			fprintf(incFile, "\tsc_signal<bool> r_%s_%sRdy_2x;\n", pRtnIntf->GetSrcToDstLc(), pRtnIntf->GetIntfName());
 	} else
-		fprintf(incFile, "\tbool r_%s_%sAvl;\n", rtnIntf.GetDstToSrcLc(), rtnIntf.GetIntfName());
+		fprintf(incFile, "\tbool r_%s_%sAvl;\n", pRtnIntf->GetDstToSrcLc(), pRtnIntf->GetIntfName());
 
 	fprintf(incFile, "\n");
 	fprintf(incFile, "\tsc_uint<2> r_rtnState;\n");
@@ -360,7 +360,7 @@ CDsnInfo::GenerateHtiFiles()
 	fprintf(incFile, "\t{\n");
 	fprintf(incFile, "\t\tassert(r_htiToHif_ctlAvlCnt == 1);\n");
 	fprintf(incFile, "\t\tassert(r_htiToHif_datAvlCnt == 32);\n");
-	fprintf(incFile, "\t\tassert(r_%s_%sAvlCnt == 1);\n", callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
+	fprintf(incFile, "\t\tassert(r_%s_%sAvlCnt == 1);\n", pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName());
 	fprintf(incFile, "\t}\n");
 	fprintf(incFile, "\t#endif\n");
 	fprintf(incFile, "};\n");
@@ -415,12 +415,12 @@ CDsnInfo::GenerateHtiFiles()
 	fprintf(cppFile, "\tuint8_t c_callActiveCnt = r_callActiveCnt;\n");
 	fprintf(cppFile, "\n");
 
-	fprintf(cppFile, "\tbool c_%s_%sRdy = false;\n", callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
+	fprintf(cppFile, "\tbool c_%s_%sRdy = false;\n", pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName());
 	if (bCallCmdFields)
 		fprintf(cppFile, "\tC%s_%sIntf c_%s_%s = r_%s_%s;\n",
-		callIntf.GetSrcToDstUc(), callIntf.GetIntfName(),
-		callIntf.GetSrcToDstLc(), callIntf.GetIntfName(),
-		callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
+		pCallIntf->GetSrcToDstUc(), pCallIntf->GetIntfName(),
+		pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName(),
+		pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName());
 	fprintf(cppFile, "\n");
 
 	if (pInQueIntf) {
@@ -443,8 +443,8 @@ CDsnInfo::GenerateHtiFiles()
 	fprintf(cppFile, "\n");
 
 	int callQwCnt = 0;
-	for (size_t fldIdx = 0; fldIdx < callIntf.m_pFieldList->size(); fldIdx += 1) {
-		CField * pField = (*callIntf.m_pFieldList)[fldIdx];
+	for (size_t fldIdx = 0; fldIdx < pCallIntf->m_pFieldList->size(); fldIdx += 1) {
+		CField * pField = (*pCallIntf->m_pFieldList)[fldIdx];
 
 		int fldQwCnt = (FindHostTypeWidth(pField) + 63) / 64;
 		callQwCnt += fldQwCnt;
@@ -499,17 +499,17 @@ CDsnInfo::GenerateHtiFiles()
 		fprintf(cppFile, "\t\tswitch (r_callArgCnt) {\n");
 
 		int argQwIdx = 0;
-		for (size_t fldIdx = 0; fldIdx < callIntf.m_pFieldList->size(); fldIdx += 1) {
-			CField * pField = (*callIntf.m_pFieldList)[fldIdx];
+		for (size_t fldIdx = 0; fldIdx < pCallIntf->m_pFieldList->size(); fldIdx += 1) {
+			CField * pField = (*pCallIntf->m_pFieldList)[fldIdx];
 
 			if (pField->m_pType->IsInt()) {
 				fprintf(cppFile, "\t\tcase %d: {\n", callQwCnt - argQwIdx);
 				if (pField->m_pType->m_typeName == "bool") {
 					fprintf(cppFile, "\t\t\tc_%s_%s.m_%s = (iDatQueDat.m_data & 1) != 0;\n",
-						callIntf.GetSrcToDstLc(), callIntf.GetIntfName(), pField->m_name.c_str());
+						pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName(), pField->m_name.c_str());
 				} else {
 					fprintf(cppFile, "\t\t\tc_%s_%s.m_%s = (%s)iDatQueDat.m_data;\n",
-						callIntf.GetSrcToDstLc(), callIntf.GetIntfName(), pField->m_name.c_str(),
+						pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName(), pField->m_name.c_str(),
 						pField->m_pType->m_typeName.c_str());
 				}
 				fprintf(cppFile, "\t\t\tbreak;\n");
@@ -537,18 +537,18 @@ CDsnInfo::GenerateHtiFiles()
 						fprintf(cppFile, "\t\t\t} arg;\n");
 
 						fprintf(cppFile, "\t\t\targ.m_%s = c_%s_%s.m_%s;\n", pField->m_name.c_str(),
-							callIntf.GetSrcToDstLc(), callIntf.GetIntfName(), pField->m_name.c_str());
+							pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName(), pField->m_name.c_str());
 						fprintf(cppFile, "\t\t\targ.m_data[%d] = iDatQueDat.m_data;\n", fldQwIdx);
 						fprintf(cppFile, "\t\t\tc_%s_%s.m_%s = arg.m_%s;\n",
-							callIntf.GetSrcToDstLc(), callIntf.GetIntfName(), pField->m_name.c_str(),
+							pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName(), pField->m_name.c_str(),
 							pField->m_name.c_str());
 					} else {
 						if (pField->m_pType->m_typeName == "bool") {
 							fprintf(cppFile, "\t\t\tc_%s_%s.m_%s = (iDatQueDat.m_data & 1) != 0;\n",
-								callIntf.GetSrcToDstLc(), callIntf.GetIntfName(), pField->m_name.c_str());
+								pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName(), pField->m_name.c_str());
 						} else {
 							fprintf(cppFile, "\t\t\tc_%s_%s.m_%s = (%s)iDatQueDat.m_data;\n",
-								callIntf.GetSrcToDstLc(), callIntf.GetIntfName(), pField->m_name.c_str(),
+								pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName(), pField->m_name.c_str(),
 								pField->m_pType->m_typeName.c_str());
 						}
 					}
@@ -570,7 +570,7 @@ CDsnInfo::GenerateHtiFiles()
 	fprintf(cppFile, "\t\tbreak;\n");
 	fprintf(cppFile, "\tcase HTI_CMD:\n");
 
-	fprintf(cppFile, "\t\tif (r_%s_%sAvlCnt == 0)\n", callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
+	fprintf(cppFile, "\t\tif (r_%s_%sAvlCnt == 0)\n", pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName());
 	fprintf(cppFile, "\t\t\tbreak;\n");
 	fprintf(cppFile, "\n");
 
@@ -578,7 +578,7 @@ CDsnInfo::GenerateHtiFiles()
 	fprintf(cppFile, "\n");
 
 	fprintf(cppFile, "\t\tc_callState = HTI_DATA;\n");
-	fprintf(cppFile, "\t\tc_%s_%sRdy = true;\n", callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
+	fprintf(cppFile, "\t\tc_%s_%sRdy = true;\n", pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName());
 
 	fprintf(cppFile, "\t\tbreak;\n");
 
@@ -614,17 +614,17 @@ CDsnInfo::GenerateHtiFiles()
 	fprintf(cppFile, "\n");
 
 	fprintf(cppFile, "\tht_uint1 c_%s_%sAvlCnt = r_%s_%sAvlCnt\n",
-		callIntf.GetSrcToDstLc(), callIntf.GetIntfName(),
-		callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
+		pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName(),
+		pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName());
 	if (bCallClk2x)
 		fprintf(cppFile, "\t\t+ r_%s_%sAvl_2x1.read() + r_%s_%sAvl_2x2.read() - c_%s_%sRdy;\n",
-		callIntf.GetDstToSrcLc(), callIntf.GetIntfName(),
-		callIntf.GetDstToSrcLc(), callIntf.GetIntfName(),
-		callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
+		pCallIntf->GetDstToSrcLc(), pCallIntf->GetIntfName(),
+		pCallIntf->GetDstToSrcLc(), pCallIntf->GetIntfName(),
+		pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName());
 	else
 		fprintf(cppFile, "\t\t+ i_%s_%sAvl.read() - c_%s_%sRdy;\n",
-		callIntf.GetDstToSrcLc(), callIntf.GetIntfName(),
-		callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
+		pCallIntf->GetDstToSrcLc(), pCallIntf->GetIntfName(),
+		pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName());
 
 	fprintf(cppFile, "\n");
 
@@ -664,27 +664,27 @@ CDsnInfo::GenerateHtiFiles()
 	if (bRtnCmdFields) {
 		if (!bRtnClk2x) {
 			fprintf(cppFile, "\tif (i_%s_%sRdy.read())\n",
-				rtnIntf.GetSrcToDstLc(), rtnIntf.GetIntfName());
+				pRtnIntf->GetSrcToDstLc(), pRtnIntf->GetIntfName());
 			fprintf(cppFile, "\t\tm_oCmdQue.push(i_%s_%s);\n",
-				rtnIntf.GetSrcToDstLc(), rtnIntf.GetIntfName());
+				pRtnIntf->GetSrcToDstLc(), pRtnIntf->GetIntfName());
 		}
 	} else {
 		fprintf(cppFile, "\tsc_uint<5> c_oCmdCnt = r_oCmdCnt;\n");
 
 		if (!bRtnClk2x)
 			fprintf(cppFile, "\tif (i_%s_%sRdy.read())\n",
-			rtnIntf.GetSrcToDstLc(), rtnIntf.GetIntfName());
+			pRtnIntf->GetSrcToDstLc(), pRtnIntf->GetIntfName());
 		else
 			fprintf(cppFile, "\tif (r_%s_%sRdy_2x.read())\n",
-			rtnIntf.GetSrcToDstLc(), rtnIntf.GetIntfName());
+			pRtnIntf->GetSrcToDstLc(), pRtnIntf->GetIntfName());
 		fprintf(cppFile, "\t\tc_oCmdCnt += 1;\n");
 	}
 
 	fprintf(cppFile, "\tbool c_%s_%sAvl = false;\n",
-		rtnIntf.GetDstToSrcLc(), rtnIntf.GetIntfName());
+		pRtnIntf->GetDstToSrcLc(), pRtnIntf->GetIntfName());
 	if (bRtnCmdFields)
 		fprintf(cppFile, "\tC%s_%sIntf oCmdQueDat = m_oCmdQue.front();\n",
-		rtnIntf.GetSrcToDstUc(), rtnIntf.GetIntfName());
+		pRtnIntf->GetSrcToDstUc(), pRtnIntf->GetIntfName());
 
 	fprintf(cppFile, "\tsc_uint<2> c_rtnState = r_rtnState;\n");
 	fprintf(cppFile, "\tuint8_t c_rtnCnt = r_rtnCnt;\n");
@@ -708,8 +708,8 @@ CDsnInfo::GenerateHtiFiles()
 	}
 
 	int rtnQwCnt = 0;
-	for (size_t fldIdx = 0; fldIdx < rtnIntf.m_pFieldList->size(); fldIdx += 1) {
-		CField * pField = (*rtnIntf.m_pFieldList)[fldIdx];
+	for (size_t fldIdx = 0; fldIdx < pRtnIntf->m_pFieldList->size(); fldIdx += 1) {
+		CField * pField = (*pRtnIntf->m_pFieldList)[fldIdx];
 
 		int fldQwCnt = (FindHostTypeWidth(pField) + 63) / 64;
 		rtnQwCnt += fldQwCnt;
@@ -765,7 +765,7 @@ CDsnInfo::GenerateHtiFiles()
 	else
 		fprintf(cppFile, "\t\t\tc_oCmdCnt -= 1;\n");
 
-	fprintf(cppFile, "\t\t\tc_%s_%sAvl = true;\n", rtnIntf.GetDstToSrcLc(), rtnIntf.GetIntfName());
+	fprintf(cppFile, "\t\t\tc_%s_%sAvl = true;\n", pRtnIntf->GetDstToSrcLc(), pRtnIntf->GetIntfName());
 	fprintf(cppFile, "\t\t\tbreak;\n");
 	fprintf(cppFile, "\t\t}\n");
 	fprintf(cppFile, "\n");
@@ -778,8 +778,8 @@ CDsnInfo::GenerateHtiFiles()
 		fprintf(cppFile, "\t\tswitch (r_rtnCnt) {\n");
 
 		int argQwIdx = 0;
-		for (size_t fldIdx = 0; fldIdx < rtnIntf.m_pFieldList->size(); fldIdx += 1) {
-			CField * pField = (*rtnIntf.m_pFieldList)[fldIdx];
+		for (size_t fldIdx = 0; fldIdx < pRtnIntf->m_pFieldList->size(); fldIdx += 1) {
+			CField * pField = (*pRtnIntf->m_pFieldList)[fldIdx];
 
 			if (pField->m_pType->IsInt()) {
 				fprintf(cppFile, "\t\tcase %d: {\n", rtnQwCnt - argQwIdx);
@@ -976,15 +976,15 @@ CDsnInfo::GenerateHtiFiles()
 	}
 
 	fprintf(cppFile, "\tr_%s_%sRdy = c_%s_%sRdy;\n",
-		callIntf.GetSrcToDstLc(), callIntf.GetIntfName(),
-		callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
+		pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName(),
+		pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName());
 	if (bCallCmdFields)
 		fprintf(cppFile, "\tr_%s_%s = c_%s_%s;\n",
-		callIntf.GetSrcToDstLc(), callIntf.GetIntfName(),
-		callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
+		pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName(),
+		pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName());
 	fprintf(cppFile, "\tr_%s_%sAvlCnt = r_reset1x ? (ht_uint1)1 : c_%s_%sAvlCnt;\n",
-		callIntf.GetSrcToDstLc(), callIntf.GetIntfName(),
-		callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
+		pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName(),
+		pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName());
 
 	fprintf(cppFile, "\tr_rtnState = r_reset1x ? (sc_uint<2>)HTI_IDLE : c_rtnState;\n");
 	fprintf(cppFile, "\tr_rtnCnt = c_rtnCnt;\n");
@@ -997,8 +997,8 @@ CDsnInfo::GenerateHtiFiles()
 	fprintf(cppFile, "\n");
 
 	fprintf(cppFile, "\tr_%s_%sAvl = c_%s_%sAvl;\n",
-		rtnIntf.GetDstToSrcLc(), rtnIntf.GetIntfName(),
-		rtnIntf.GetDstToSrcLc(), rtnIntf.GetIntfName());
+		pRtnIntf->GetDstToSrcLc(), pRtnIntf->GetIntfName(),
+		pRtnIntf->GetDstToSrcLc(), pRtnIntf->GetIntfName());
 
 	fprintf(cppFile, "\tr_htiToHif_ctlRdy = c_htiToHif_ctlRdy;\n");
 	fprintf(cppFile, "\n");
@@ -1065,16 +1065,16 @@ CDsnInfo::GenerateHtiFiles()
 
 	if (!bCallClk2x)
 		fprintf(cppFile, "\to_%s_%sRdy = r_%s_%sRdy;\n",
-		callIntf.GetSrcToDstLc(), callIntf.GetIntfName(),
-		callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
+		pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName(),
+		pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName());
 	if (bCallCmdFields)
 		fprintf(cppFile, "\to_%s_%s = r_%s_%s;\n",
-		callIntf.GetSrcToDstLc(), callIntf.GetIntfName(),
-		callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
+		pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName(),
+		pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName());
 	if (!bRtnClk2x)
 		fprintf(cppFile, "\to_%s_%sAvl = r_%s_%sAvl;\n",
-		rtnIntf.GetDstToSrcLc(), rtnIntf.GetIntfName(),
-		rtnIntf.GetDstToSrcLc(), rtnIntf.GetIntfName());
+		pRtnIntf->GetDstToSrcLc(), pRtnIntf->GetIntfName(),
+		pRtnIntf->GetDstToSrcLc(), pRtnIntf->GetIntfName());
 	fprintf(cppFile, "\n");
 
 	if (pInQueIntf) {
@@ -1110,9 +1110,9 @@ CDsnInfo::GenerateHtiFiles()
 
 		if (bRtnClk2x && bRtnCmdFields) {
 			fprintf(cppFile, "\tif (i_%s_%sRdy.read())\n",
-				rtnIntf.GetSrcToDstLc(), rtnIntf.GetIntfName());
+				pRtnIntf->GetSrcToDstLc(), pRtnIntf->GetIntfName());
 			fprintf(cppFile, "\t\tm_oCmdQue.push(i_%s_%s);\n",
-				rtnIntf.GetSrcToDstLc(), rtnIntf.GetIntfName());
+				pRtnIntf->GetSrcToDstLc(), pRtnIntf->GetIntfName());
 			fprintf(cppFile, "\n");
 		}
 
@@ -1135,29 +1135,29 @@ CDsnInfo::GenerateHtiFiles()
 
 		if (bCallClk2x) {
 			fprintf(cppFile, "\tr_%s_%sRdy_2x = r_%s_%sRdy & r_phase;\n",
-				callIntf.GetSrcToDstLc(), callIntf.GetIntfName(),
-				callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
+				pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName(),
+				pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName());
 			fprintf(cppFile, "\n");
 
 			fprintf(cppFile, "\tr_%s_%sAvl_2x2 = r_%s_%sAvl_2x1;\n",
-				callIntf.GetDstToSrcLc(), callIntf.GetIntfName(),
-				callIntf.GetDstToSrcLc(), callIntf.GetIntfName());
+				pCallIntf->GetDstToSrcLc(), pCallIntf->GetIntfName(),
+				pCallIntf->GetDstToSrcLc(), pCallIntf->GetIntfName());
 			fprintf(cppFile, "\tr_%s_%sAvl_2x1 = i_%s_%sAvl.read();\n",
-				callIntf.GetDstToSrcLc(), callIntf.GetIntfName(),
-				callIntf.GetDstToSrcLc(), callIntf.GetIntfName());
+				pCallIntf->GetDstToSrcLc(), pCallIntf->GetIntfName(),
+				pCallIntf->GetDstToSrcLc(), pCallIntf->GetIntfName());
 			fprintf(cppFile, "\n");
 		}
 
 		if (bRtnClk2x) {
 			if (!bRtnCmdFields)
 				fprintf(cppFile, "\tr_%s_%sRdy_2x = i_%s_%sRdy || r_%s_%sRdy_2x && r_phase;\n",
-				rtnIntf.GetSrcToDstLc(), rtnIntf.GetIntfName(),
-				rtnIntf.GetSrcToDstLc(), rtnIntf.GetIntfName(),
-				rtnIntf.GetSrcToDstLc(), rtnIntf.GetIntfName());
+				pRtnIntf->GetSrcToDstLc(), pRtnIntf->GetIntfName(),
+				pRtnIntf->GetSrcToDstLc(), pRtnIntf->GetIntfName(),
+				pRtnIntf->GetSrcToDstLc(), pRtnIntf->GetIntfName());
 
 			fprintf(cppFile, "\tr_%s_%sAvl_2x = r_%s_%sAvl & r_phase;\n\n",
-				rtnIntf.GetDstToSrcLc(), rtnIntf.GetIntfName(),
-				rtnIntf.GetDstToSrcLc(), rtnIntf.GetIntfName());
+				pRtnIntf->GetDstToSrcLc(), pRtnIntf->GetIntfName(),
+				pRtnIntf->GetDstToSrcLc(), pRtnIntf->GetIntfName());
 		}
 
 		if (bIhdClk2x) {
@@ -1181,13 +1181,13 @@ CDsnInfo::GenerateHtiFiles()
 
 		if (bCallClk2x)
 			fprintf(cppFile, "\to_%s_%sRdy = r_%s_%sRdy_2x;\n",
-			callIntf.GetSrcToDstLc(), callIntf.GetIntfName(),
-			callIntf.GetSrcToDstLc(), callIntf.GetIntfName());
+			pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName(),
+			pCallIntf->GetSrcToDstLc(), pCallIntf->GetIntfName());
 
 		if (bRtnClk2x)
 			fprintf(cppFile, "\to_%s_%sAvl = r_%s_%sAvl_2x;\n",
-			rtnIntf.GetDstToSrcLc(), rtnIntf.GetIntfName(),
-			rtnIntf.GetDstToSrcLc(), rtnIntf.GetIntfName());
+			pRtnIntf->GetDstToSrcLc(), pRtnIntf->GetIntfName(),
+			pRtnIntf->GetDstToSrcLc(), pRtnIntf->GetIntfName());
 
 		fprintf(cppFile, "}\n");
 	}

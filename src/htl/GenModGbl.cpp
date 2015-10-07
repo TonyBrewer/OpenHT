@@ -1793,7 +1793,7 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 		}
 	}
 
-	CModInst & modInst = mod.m_modInstList[0];
+	CModInst * pModInst = mod.m_modInstList[0];
 
 	if (bInstrWrite) {
 		// ht completion struct
@@ -1815,14 +1815,14 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 				htComp.AddStructField(&g_bool, VA("m_%sIwComp", pGv->m_gblName.c_str()), "", "", pGv->m_dimenList);
 		}
 
-		for (size_t intfIdx = 0; intfIdx < modInst.m_cxrIntfList.size(); intfIdx += 1) {
-			CCxrIntf &cxrIntf = modInst.m_cxrIntfList[intfIdx];
+		for (size_t intfIdx = 0; intfIdx < pModInst->m_cxrIntfList.size(); intfIdx += 1) {
+			CCxrIntf * pCxrIntf = pModInst->m_cxrIntfList[intfIdx];
 
-			if (cxrIntf.m_cxrDir == CxrIn) continue;
-			if (cxrIntf.m_pDstModInst->m_pMod->m_modName.AsStr() == "hif") continue;
-			if (cxrIntf.GetPortReplId() != 0) continue;
+			if (pCxrIntf->m_cxrDir == CxrIn) continue;
+			if (pCxrIntf->m_pDstModInst->m_pMod->m_modName.AsStr() == "hif") continue;
+			if (pCxrIntf->GetPortReplId() != 0) continue;
 
-			htComp.AddStructField(&g_bool, VA("m_%sCompRdy", cxrIntf.GetIntfName()), "", "", cxrIntf.GetPortReplDimen());
+			htComp.AddStructField(&g_bool, VA("m_%sCompRdy", pCxrIntf->GetIntfName()), "", "", pCxrIntf->GetPortReplDimen());
 		}
 
 		if (mod.m_threads.m_bCallFork && mod.m_threads.m_htIdW.AsInt() > 2)
@@ -3166,20 +3166,20 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 
 		gblReg.Append("\tr_htCompQueAvlCnt = r_reset1x ? (ht_uint%d)0x%x : c_htCompQueAvlCnt;\n", queDepthW + 1, 1 << queDepthW);
 
-		for (size_t intfIdx = 0; intfIdx < modInst.m_cxrIntfList.size(); intfIdx += 1) {
-			CCxrIntf &cxrIntf = modInst.m_cxrIntfList[intfIdx];
+		for (size_t intfIdx = 0; intfIdx < pModInst->m_cxrIntfList.size(); intfIdx += 1) {
+			CCxrIntf * pCxrIntf = pModInst->m_cxrIntfList[intfIdx];
 
-			if (cxrIntf.m_cxrDir == CxrIn) continue;
-			if (cxrIntf.m_pDstModInst->m_pMod->m_modName.AsStr() == "hif") continue;
+			if (pCxrIntf->m_cxrDir == CxrIn) continue;
+			if (pCxrIntf->m_pDstModInst->m_pMod->m_modName.AsStr() == "hif") continue;
 
-			if (cxrIntf.GetPortReplId() == 0) {
-				m_gblRegDecl.Append("\tbool c_%s_%sCompRdy%s;\n", cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplDecl());
-				GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, "bool", VA("r_%s_%sCompRdy", cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName()), cxrIntf.GetPortReplDimen());
+			if (pCxrIntf->GetPortReplId() == 0) {
+				m_gblRegDecl.Append("\tbool c_%s_%sCompRdy%s;\n", pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplDecl());
+				GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, "bool", VA("r_%s_%sCompRdy", pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName()), pCxrIntf->GetPortReplDimen());
 			}
 
 			gblReg.Append("\tr_%s_%sCompRdy%s = c_%s_%sCompRdy%s;\n",
-				cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(),
-				cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
+				pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex(),
+				pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
 		}
 
 		if (mod.m_threads.m_htIdW.AsInt() == 0) {
@@ -3227,18 +3227,18 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 
 		gblPostInstr.Append("\t\thtComp.m_htCmdRdy = r_t%d_htCmdRdy;\n", mod.m_gvIwCompStg);
 
-		for (size_t intfIdx = 0; intfIdx < modInst.m_cxrIntfList.size(); intfIdx += 1) {
-			CCxrIntf &cxrIntf = modInst.m_cxrIntfList[intfIdx];
+		for (size_t intfIdx = 0; intfIdx < pModInst->m_cxrIntfList.size(); intfIdx += 1) {
+			CCxrIntf * pCxrIntf = pModInst->m_cxrIntfList[intfIdx];
 
-			if (cxrIntf.m_cxrDir == CxrIn) continue;
+			if (pCxrIntf->m_cxrDir == CxrIn) continue;
 
 			string intfRdy;
 			if (mod.m_execStg + 1 == mod.m_gvIwCompStg)
-				intfRdy = VA("r_%s_%sRdy%s", cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
+				intfRdy = VA("r_%s_%sRdy%s", pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
 			else
-				intfRdy = VA("r_t%d_%s_%sRdy%s", mod.m_gvIwCompStg, cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
+				intfRdy = VA("r_t%d_%s_%sRdy%s", mod.m_gvIwCompStg, pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
 
-			if (cxrIntf.m_pDstModInst->m_pMod->m_modName.AsStr() == "hif") {
+			if (pCxrIntf->m_pDstModInst->m_pMod->m_modName.AsStr() == "hif") {
 				gblPostInstr.Append("\t\tif (%s)\n", intfRdy.c_str());
 
 				if (mod.m_threads.m_htIdW.AsInt() > 0)
@@ -3247,7 +3247,7 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 					gblPostInstr.Append("\t\t\tc_htBusy = false; \n");
 			} else {
 				gblPostInstr.Append("\t\thtComp.m_%sCompRdy%s = %s;\n",
-					cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex(),
+					pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex(),
 					intfRdy.c_str());
 			}
 		}
@@ -3324,14 +3324,14 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 			if (mod.m_threads.m_htIdW.AsInt() <= 2) {
 				// no code for registered version
 			} else {
-				for (size_t intfIdx = 0; intfIdx < modInst.m_cxrIntfList.size(); intfIdx += 1) {
-					CCxrIntf &cxrIntf = modInst.m_cxrIntfList[intfIdx];
+				for (size_t intfIdx = 0; intfIdx < pModInst->m_cxrIntfList.size(); intfIdx += 1) {
+					CCxrIntf * pCxrIntf = pModInst->m_cxrIntfList[intfIdx];
 
-					if (cxrIntf.m_cxrDir == CxrOut) continue;
-					if (cxrIntf.m_cxrType == CxrCall || cxrIntf.m_cxrType == CxrTransfer) continue;
+					if (pCxrIntf->m_cxrDir == CxrOut) continue;
+					if (pCxrIntf->m_cxrType == CxrCall || pCxrIntf->m_cxrType == CxrTransfer) continue;
 
 					gblPostInstr.Append("\tm_%s_%sPrivLk1%s.write_addr(r_c2_htCompQueFront.m_htId);\n",
-						cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
+						pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
 				}
 				gblPostInstr.Append("\tm_htCmdPrivLk1.write_addr(r_c2_htCompQueFront.m_htId);\n");
 
@@ -3342,14 +3342,14 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 			}
 		}
 
-		for (size_t intfIdx = 0; intfIdx < modInst.m_cxrIntfList.size(); intfIdx += 1) {
-			CCxrIntf &cxrIntf = modInst.m_cxrIntfList[intfIdx];
+		for (size_t intfIdx = 0; intfIdx < pModInst->m_cxrIntfList.size(); intfIdx += 1) {
+			CCxrIntf * pCxrIntf = pModInst->m_cxrIntfList[intfIdx];
 
-			if (cxrIntf.m_cxrDir == CxrIn) continue;
-			if (cxrIntf.m_pDstModInst->m_pMod->m_modName.AsStr() == "hif") continue;
+			if (pCxrIntf->m_cxrDir == CxrIn) continue;
+			if (pCxrIntf->m_pDstModInst->m_pMod->m_modName.AsStr() == "hif") continue;
 
 			gblPostInstr.Append("\tc_%s_%sCompRdy%s = false;\n",
-				cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
+				pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
 		}
 
 		if (mod.m_threads.m_htIdW.AsInt() == 0) {
@@ -3365,24 +3365,24 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 		else
 			gblPostInstr.Append("\t\t\tc_htCmdRdyCnt += 1u;\n");
 
-		for (size_t intfIdx = 0; intfIdx < modInst.m_cxrIntfList.size(); intfIdx += 1) {
-			CCxrIntf &cxrIntf = modInst.m_cxrIntfList[intfIdx];
+		for (size_t intfIdx = 0; intfIdx < pModInst->m_cxrIntfList.size(); intfIdx += 1) {
+			CCxrIntf * pCxrIntf = pModInst->m_cxrIntfList[intfIdx];
 
-			if (cxrIntf.m_cxrDir == CxrIn) continue;
-			if (cxrIntf.m_pDstModInst->m_pMod->m_modName.AsStr() == "hif") continue;
+			if (pCxrIntf->m_cxrDir == CxrIn) continue;
+			if (pCxrIntf->m_pDstModInst->m_pMod->m_modName.AsStr() == "hif") continue;
 
-			if (cxrIntf.m_cxrType == CxrCall) {
+			if (pCxrIntf->m_cxrType == CxrCall) {
 				gblPostInstr.Append("\t\tif (r_%shtCompQueFront.m_%sCompRdy%s)\n",
 					c2StgStr.c_str(),
-					cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
+					pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
 				gblPostInstr.Append("\t\t\tc_%s_%sCompRdy%s = true;\n",
-					cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
+					pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
 			} else {
 				gblPostInstr.Append("\t\tif (r_%shtCompQueFront.m_%sCompRdy%s) {\n",
 					c2StgStr.c_str(),
-					cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
+					pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
 				gblPostInstr.Append("\t\t\tc_%s_%sCompRdy%s = true;\n",
-					cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
+					pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
 
 				if (mod.m_threads.m_htIdW.AsInt() == 0) {
 					gblPostInstr.Append("\t\t\tc_htBusy = false;\n");
@@ -3402,14 +3402,14 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 			else if (mod.m_threads.m_htIdW.AsInt() <= 2)
 				gblPostInstr.Append("\t\tc_htPrivLk[INT(r_c2_htCompQueFront.m_htId)] = 0;\n");
 			else {
-				for (size_t intfIdx = 0; intfIdx < modInst.m_cxrIntfList.size(); intfIdx += 1) {
-					CCxrIntf &cxrIntf = modInst.m_cxrIntfList[intfIdx];
+				for (size_t intfIdx = 0; intfIdx < pModInst->m_cxrIntfList.size(); intfIdx += 1) {
+					CCxrIntf * pCxrIntf = pModInst->m_cxrIntfList[intfIdx];
 
-					if (cxrIntf.m_cxrDir == CxrOut) continue;
-					if (cxrIntf.m_cxrType == CxrCall || cxrIntf.m_cxrType == CxrTransfer) continue;
+					if (pCxrIntf->m_cxrDir == CxrOut) continue;
+					if (pCxrIntf->m_cxrType == CxrCall || pCxrIntf->m_cxrType == CxrTransfer) continue;
 
 					gblPostInstr.Append("\t\tm_%s_%sPrivLk1%s.write_mem(r_c2_htCompQueFront.m_htPrivLkData);\n",
-						cxrIntf.GetPortNameSrcToDstLc(), cxrIntf.GetIntfName(), cxrIntf.GetPortReplIndex());
+						pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
 				}
 				gblPostInstr.Append("\t\tm_htCmdPrivLk1.write_mem(r_c2_htCompQueFront.m_htPrivLkData);\n");
 

@@ -76,9 +76,9 @@ void CDsnInfo::ValidateDesignInfo()
 		//	mod.m_stage.m_bStageNums = true;
 
 		for (size_t callIdx = 0; callIdx < mod.m_cxrCallList.size(); callIdx += 1) {
-			CCxrCall & cxrCall = mod.m_cxrCallList[callIdx];
+			CCxrCall * pCxrCall = mod.m_cxrCallList[callIdx];
 
-			cxrCall.m_queueW.InitValue(cxrCall.m_lineInfo);
+			pCxrCall->m_queueW.InitValue(pCxrCall->m_lineInfo);
 		}
 
 		if (mod.m_bHasThreads) {
@@ -1621,32 +1621,32 @@ void CDsnInfo::DrawModuleCmdRelationships()
 			fs << "n" << modName << " [shape=\"box\", label=\"" << mtext << "\\n\"];\n";
 
 			// cxr
-			CModInst &modInst = mod.m_modInstList[rep];
+			CModInst * pModInst = mod.m_modInstList[rep];
 			map<string, bool> cxr_seen;
-			for (size_t intfIdx = 0; intfIdx < modInst.m_cxrIntfList.size(); intfIdx += 1) {
-				CCxrIntf &cxrIntf = modInst.m_cxrIntfList[intfIdx];
+			for (size_t intfIdx = 0; intfIdx < pModInst->m_cxrIntfList.size(); intfIdx += 1) {
+				CCxrIntf * pCxrIntf = pModInst->m_cxrIntfList[intfIdx];
 
-				string key = cxrIntf.GetIntfName();
+				string key = pCxrIntf->GetIntfName();
 				if (cxr_seen.find(key) != cxr_seen.end()) continue;
 				cxr_seen.insert(pair<string, bool>(key, true));
 
-				int destUnitCnt = (int)cxrIntf.m_pDstModInst->m_replCnt;
+				int destUnitCnt = (int)pCxrIntf->m_pDstModInst->m_replCnt;
 				int numArcs = 1;
 				if (destUnitCnt > modInstCnt) {
 					numArcs = destUnitCnt - modInstCnt + 1;
 				}
 				for (int arc = 0; arc < numArcs; arc++) {
 
-					string destName = cxrIntf.m_pDstModInst->m_replInstName.Uc();
+					string destName = pCxrIntf->m_pDstModInst->m_replInstName.Uc();
 
 					string label = " [label=\"";
-					label += cxrIntf.m_modEntry.c_str();
+					label += pCxrIntf->m_modEntry.c_str();
 					label += "\"";
-					label += cxrIntf.IsCall() ? " color=red" :
-						cxrIntf.IsXfer() ? " color=deeppink" : " color=green";
+					label += pCxrIntf->IsCall() ? " color=red" :
+						pCxrIntf->IsXfer() ? " color=deeppink" : " color=green";
 					label += "]";
 
-					if (cxrIntf.m_cxrDir == CxrOut) {
+					if (pCxrIntf->m_cxrDir == CxrOut) {
 						fs << "n" << modName << " -> n" << destName;
 						fs << label << ";\n";
 					}

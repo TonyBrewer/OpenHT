@@ -773,10 +773,10 @@ void CDsnInfo::InitAndValidateModMif()
 		if (!mod.m_bIsUsed) continue;
 
 		for (size_t modInstIdx = 0; modInstIdx < mod.m_modInstList.size(); modInstIdx += 1) {
-			CModInst & modInst = mod.m_modInstList[modInstIdx];
+			CModInst * pModInst = mod.m_modInstList[modInstIdx];
 
-			for (size_t memPortIdx = 0; memPortIdx < modInst.m_instParams.m_memPortList.size(); memPortIdx += 1) {
-				int instMemPort = modInst.m_instParams.m_memPortList[memPortIdx];
+			for (size_t memPortIdx = 0; memPortIdx < pModInst->m_instParams.m_memPortList.size(); memPortIdx += 1) {
+				int instMemPort = pModInst->m_instParams.m_memPortList[memPortIdx];
 
 				size_t mifInstIdx;
 				for (mifInstIdx = 0; mifInstIdx < m_mifInstList.size(); mifInstIdx += 1) {
