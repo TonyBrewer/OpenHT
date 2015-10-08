@@ -768,29 +768,31 @@ void CDsnInfo::InitAndValidateModMif()
 
 	// fill unit wide mifInstList
 	for (size_t modIdx = 0; modIdx < m_modList.size(); modIdx += 1) {
-		CModule &mod = *m_modList[modIdx];
+		CModule * pMod = m_modList[modIdx];
 
-		if (!mod.m_bIsUsed) continue;
+		if (!pMod->m_bIsUsed) continue;
 
-		for (size_t modInstIdx = 0; modInstIdx < mod.m_modInstList.size(); modInstIdx += 1) {
-			CModInst * pModInst = mod.m_modInstList[modInstIdx];
+		for (int instIdx = 0; instIdx < pMod->m_instSet.GetInstCnt(); instIdx += 1) {
+			for (int replIdx = 0; replIdx < pMod->m_instSet.GetReplCnt(instIdx); replIdx += 1) {
+				CModInst * pModInst = pMod->m_instSet.GetInst(instIdx, replIdx);
 
-			for (size_t memPortIdx = 0; memPortIdx < pModInst->m_instParams.m_memPortList.size(); memPortIdx += 1) {
-				int instMemPort = pModInst->m_instParams.m_memPortList[memPortIdx];
+				for (size_t memPortIdx = 0; memPortIdx < pModInst->m_instParams.m_memPortList.size(); memPortIdx += 1) {
+					int instMemPort = pModInst->m_instParams.m_memPortList[memPortIdx];
 
-				size_t mifInstIdx;
-				for (mifInstIdx = 0; mifInstIdx < m_mifInstList.size(); mifInstIdx += 1) {
-					if (m_mifInstList[mifInstIdx].m_mifId == instMemPort)
-						break;
+					size_t mifInstIdx;
+					for (mifInstIdx = 0; mifInstIdx < m_mifInstList.size(); mifInstIdx += 1) {
+						if (m_mifInstList[mifInstIdx].m_mifId == instMemPort)
+							break;
+					}
+
+					if (mifInstIdx < m_mifInstList.size()) {
+						m_mifInstList[mifInstIdx].m_bMifWrite |= pMod->m_memPortList[memPortIdx]->m_bWrite;
+						m_mifInstList[mifInstIdx].m_bMifRead |= pMod->m_memPortList[memPortIdx]->m_bRead;
+						continue;
+					}
+
+					m_mifInstList.push_back(CMifInst(instMemPort, pMod->m_memPortList[memPortIdx]->m_bRead, pMod->m_memPortList[memPortIdx]->m_bWrite));
 				}
-
-				if (mifInstIdx < m_mifInstList.size()) {
-					m_mifInstList[mifInstIdx].m_bMifWrite |= mod.m_memPortList[memPortIdx]->m_bWrite;
-					m_mifInstList[mifInstIdx].m_bMifRead |= mod.m_memPortList[memPortIdx]->m_bRead;
-					continue;
-				}
-
-				m_mifInstList.push_back(CMifInst(instMemPort, mod.m_memPortList[memPortIdx]->m_bRead, mod.m_memPortList[memPortIdx]->m_bWrite));
 			}
 		}
 	}

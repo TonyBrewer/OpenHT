@@ -482,37 +482,39 @@ bool HtiFile::isMsgPathMatch(CLineInfo & lineInfo, CMsgIntfInfo & info, CModule 
 	if (info.m_msgIntfName != pMsgIntf->m_name || pMsgIntf->m_dir == "out" && info.m_bInBound)
 		return false;
 
-	for (size_t modInstIdx = 0; modInstIdx < mod.m_modInstList.size(); modInstIdx += 1) {
-		CModInst * pModInst = mod.m_modInstList[modInstIdx];
+	for (int instIdx = 0; instIdx < mod.m_instSet.GetInstCnt(); instIdx += 1) {
+		for (int replIdx = 0; replIdx < mod.m_instSet.GetReplCnt(instIdx); replIdx += 1) {
+			CModInst * pModInst = mod.m_instSet.GetInst(instIdx, replIdx);
 
-		for (size_t modPathIdx = 0; modPathIdx < pModInst->m_modPaths.size(); modPathIdx += 1) {
-			string &modPath = pModInst->m_modPaths[modPathIdx];
+			for (size_t modPathIdx = 0; modPathIdx < pModInst->m_modPaths.size(); modPathIdx += 1) {
+				string &modPath = pModInst->m_modPaths[modPathIdx];
 
-			char const * pStr = modPath.c_str();
-			while (*pStr != ':' && *pStr != '\0') pStr += 1;
-			string unitName(modPath.c_str(), pStr - modPath.c_str());
+				char const * pStr = modPath.c_str();
+				while (*pStr != ':' && *pStr != '\0') pStr += 1;
+				string unitName(modPath.c_str(), pStr - modPath.c_str());
 
-			if (*pStr != ':' || pStr[1] != '/') {
-				CPreProcess::ParseMsg(Error, lineInfo, "Invalid module path syntax '%s'", modPath.c_str());
-				return false;
-			}
-
-			pStr += 1;
-			string pathName = pStr;
-
-			if (info.m_unitName.size() > 0 && info.m_unitName != unitName) continue;
-			if (info.m_modPath != pathName) continue;
-
-			if (pMsgIntf->m_bAutoConn) {
-				CPreProcess::ParseMsg(Error, lineInfo, "message interface match to interface with auto connect enabled");
-				static bool bErrMsg = true;
-				if (bErrMsg) {
-					bErrMsg = false;
-					CPreProcess::ParseMsg(Info, lineInfo, "use AddMsgIntf(autoConn=false) to allow HTI connection");
+				if (*pStr != ':' || pStr[1] != '/') {
+					CPreProcess::ParseMsg(Error, lineInfo, "Invalid module path syntax '%s'", modPath.c_str());
+					return false;
 				}
-			}
 
-			return true;
+				pStr += 1;
+				string pathName = pStr;
+
+				if (info.m_unitName.size() > 0 && info.m_unitName != unitName) continue;
+				if (info.m_modPath != pathName) continue;
+
+				if (pMsgIntf->m_bAutoConn) {
+					CPreProcess::ParseMsg(Error, lineInfo, "message interface match to interface with auto connect enabled");
+					static bool bErrMsg = true;
+					if (bErrMsg) {
+						bErrMsg = false;
+						CPreProcess::ParseMsg(Info, lineInfo, "use AddMsgIntf(autoConn=false) to allow HTI connection");
+					}
+				}
+
+				return true;
+			}
 		}
 	}
 

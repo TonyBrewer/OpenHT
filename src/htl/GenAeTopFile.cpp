@@ -142,7 +142,7 @@ void CDsnInfo::GenerateAeTopFile()
 				if (pMsgIntf->m_bAutoConn || !pMsgIntf->m_bAeConn) continue;
 
 				int unitCnt = g_appArgs.GetAeUnitCnt();
-				int modReplCnt = pMod->m_modInstList[0]->m_replCnt;
+				int modReplCnt = pMod->m_instSet.GetReplCnt(0);
 				int msgFanCnt = max(1, pMsgIntf->m_fanCnt.AsInt());
 				int msgDimenCnt = max(1, pMsgIntf->m_dimen.AsInt());
 
@@ -164,8 +164,9 @@ void CDsnInfo::GenerateAeTopFile()
 						dimenList.push_back(pMsgIntf->m_fanCnt);
 					}
 
-					for (size_t modInstIdx = 0; modInstIdx < pMod->m_modInstList.size(); modInstIdx += 1) {
-						CHtString &modInstName = pMod->m_modInstList[modInstIdx]->m_replInstName;
+					HtlAssert(pMod->m_instSet.GetInstCnt() == 1);
+					for (int replIdx = 0; replIdx < pMod->m_instSet.GetReplCnt(0); replIdx += 1) {
+						CHtString &modInstName = pMod->m_instSet.GetInst(0, replIdx)->m_replInstName;
 
 						vector<int> portRefList(dimenList.size());
 						do {
@@ -173,7 +174,7 @@ void CDsnInfo::GenerateAeTopFile()
 
 							int msgDimenIdx = dimenCntIdx < 0 ? 0 : portRefList[dimenCntIdx];
 							int msgFanIdx = fanCntIdx < 0 ? 0 : portRefList[fanCntIdx];
-							int msgIntfInstIdx = ((unitIdx * modReplCnt + modInstIdx) * msgFanCnt + msgFanIdx) * msgDimenCnt + msgDimenIdx;
+							int msgIntfInstIdx = ((unitIdx * modReplCnt + replIdx) * msgFanCnt + msgFanIdx) * msgDimenCnt + msgDimenIdx;
 							CMsgIntfConn * pConn = pMsgIntf->m_msgIntfInstList[msgIntfInstIdx][0];
 
 							string sigMsgRdy, sigMsg, sigMsgFull;
@@ -222,8 +223,8 @@ void CDsnInfo::GenerateAeTopFile()
 						int inModInstIdx = max(0, pConn->m_inMsgIntf.m_replIdx);
 						int outModInstIdx = max(0, pConn->m_outMsgIntf.m_replIdx);
 
-						CHtString & inModInstName = pConn->m_inMsgIntf.m_pMod->m_modInstList[inModInstIdx]->m_replInstName;
-						CHtString & outModInstName = pConn->m_outMsgIntf.m_pMod->m_modInstList[outModInstIdx]->m_replInstName;
+						CHtString & inModInstName = pConn->m_inMsgIntf.m_pMod->m_instSet.GetInst(0, inModInstIdx)->m_replInstName;
+						CHtString & outModInstName = pConn->m_outMsgIntf.m_pMod->m_instSet.GetInst(0, outModInstIdx)->m_replInstName;
 
 						CMsgIntf * pInMsgIntf = pConn->m_inMsgIntf.m_pMsgIntf;
 						CMsgIntf * pOutMsgIntf = pConn->m_outMsgIntf.m_pMsgIntf;

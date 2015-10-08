@@ -1578,6 +1578,31 @@ struct CModuleInstParam {
 	CLineInfo m_lineInfo;
 };
 
+struct CInstSet {
+	CInstSet() {
+		m_totalInstCnt = 0;
+	}
+	int GetTotalCnt() { return m_totalInstCnt; }
+	int GetInstCnt() { return (int)m_instSet.size(); }
+	int GetReplCnt(int instIdx) { return (int)m_instSet[instIdx].size(); }
+
+	void AddInst(CModInst * pModInst) {
+		if (pModInst->m_replId == 0) {
+			vector<CModInst *> tmp;
+			m_instSet.push_back(tmp);
+		}
+		m_instSet.back().push_back(pModInst);
+		m_totalInstCnt += 1;
+	}
+
+	CModInst * GetInst(int instCnt, int replCnt=0) {
+		return m_instSet[instCnt][replCnt];
+	}
+private:
+	int m_totalInstCnt;	// includes replicated inst count
+	vector<vector<CModInst *> > m_instSet;
+};
+
 struct CModule {
 	CModule(string modName, HtdFile::EClkRate clkRate, bool bIsUsed)
 	{
@@ -1721,8 +1746,7 @@ public:
 	bool				m_bGvIwComp;
 	int					m_gvIwCompStg;
 
-	int					m_nonReplInstCnt;
-	vector<CModInst *>	m_modInstList;		// module instance list
+	CInstSet			m_instSet;
 	vector<CCxrCall *>	m_cxrCallList;
 	vector<CCxrEntry *>	m_cxrEntryList;
 	vector<CCxrReturn *>	m_cxrReturnList;

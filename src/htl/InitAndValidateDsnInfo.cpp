@@ -523,7 +523,7 @@ void CDsnInfo::InitBramUsage()
 			for (size_t i = 0; i < mod.m_threads.m_htPriv.m_fieldList.size(); i += 1) {
 				target.m_width += mod.m_threads.m_htPriv.m_fieldList[i]->m_pType->GetPackedBitWidth() * mod.m_threads.m_htPriv.m_fieldList[i]->m_elemCnt;
 			}
-			target.m_copies = (int)mod.m_modInstList.size();
+			target.m_copies = mod.m_instSet.GetTotalCnt();
 			target.m_slices = FindSliceCnt(target.m_depth, target.m_width);
 			target.m_brams = FindBramCnt(target.m_depth, target.m_width);
 			target.m_slicePerBramRatio = (float)target.m_slices / (float)target.m_brams;
@@ -542,7 +542,7 @@ void CDsnInfo::InitBramUsage()
 				target.m_pRamType = &pRam->m_ramType;
 				target.m_depth = 1 << pRam->m_addrW;
 				target.m_width = pRam->m_pType->GetPackedBitWidth();
-				target.m_copies = (int)mod.m_modInstList.size();
+				target.m_copies = mod.m_instSet.GetTotalCnt();
 				target.m_copies *= pRam->m_elemCnt;
 				target.m_copies *= (pRam->m_bReadForInstrRead ? 1 : 0) + (pRam->m_bReadForMifWrite ? 1 : 0);
 
@@ -566,7 +566,7 @@ void CDsnInfo::InitBramUsage()
 				target.m_pRamType = &pRam->m_ramType;
 				target.m_depth = 1 << pRam->m_addrW;
 				target.m_width = pRam->m_pType->GetPackedBitWidth();
-				target.m_copies = (int)mod.m_modInstList.size();
+				target.m_copies = mod.m_instSet.GetTotalCnt();
 				target.m_copies *= pRam->m_elemCnt;
 				target.m_copies *= (pRam->m_bReadForInstrRead ? 1 : 0) + (pRam->m_bReadForMifWrite ? 1 : 0);
 				target.m_slices = FindSliceCnt(target.m_depth, target.m_width);
@@ -595,7 +595,7 @@ void CDsnInfo::InitBramUsage()
 
 			target.m_width = pShared->m_pType->GetPackedBitWidth();
 			target.m_width *= pShared->m_elemCnt;
-			target.m_copies = (int)mod.m_modInstList.size();
+			target.m_copies = mod.m_instSet.GetTotalCnt();
 			target.m_copies *= pShared->m_elemCnt;
 			target.m_slices = FindSliceCnt(target.m_depth, target.m_width);
 			target.m_brams = FindBramCnt(target.m_depth, target.m_width);
@@ -1605,7 +1605,7 @@ void CDsnInfo::DrawModuleCmdRelationships()
 
 		if (!mod.m_bIsUsed) continue;
 
-		int modInstCnt = (int)mod.m_modInstList.size();
+		int modInstCnt = mod.m_instSet.GetReplCnt(0);
 		HtlAssert(modInstCnt <= 8 && "bad replication count");
 		string rankstr = "";
 		for (int rep = 0; rep < modInstCnt; rep++) {
@@ -1621,7 +1621,7 @@ void CDsnInfo::DrawModuleCmdRelationships()
 			fs << "n" << modName << " [shape=\"box\", label=\"" << mtext << "\\n\"];\n";
 
 			// cxr
-			CModInst * pModInst = mod.m_modInstList[rep];
+			CModInst * pModInst = mod.m_instSet.GetInst(0, rep);
 			map<string, bool> cxr_seen;
 			for (size_t intfIdx = 0; intfIdx < pModInst->m_cxrIntfList.size(); intfIdx += 1) {
 				CCxrIntf * pCxrIntf = pModInst->m_cxrIntfList[intfIdx];
@@ -1665,7 +1665,7 @@ void CDsnInfo::DrawModuleCmdRelationships()
 						if (pMsgIntf->m_dir != "in") continue;
 						if (pMsgIntf->m_name != pOutMsgIntf->m_name) continue;
 
-						int destUnitCnt = (int)mod2.m_modInstList.size();
+						int destUnitCnt = (int)mod2.m_instSet.GetReplCnt(0);
 						int numArcs = 1;
 						if (destUnitCnt > modInstCnt) {
 							numArcs = destUnitCnt - modInstCnt + 1;

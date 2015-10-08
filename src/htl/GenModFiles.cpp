@@ -13,19 +13,8 @@
 void
 CDsnInfo::GenerateModuleFiles(CModule &mod)
 {
-	mod.m_nonReplInstCnt = 0;
-	for (size_t modInstIdx = 0; modInstIdx < mod.m_modInstList.size(); modInstIdx += 1) {
-		CModInst * pModInst = mod.m_modInstList[modInstIdx];
-
-		if (pModInst->m_replId > 0) continue;
-
-		mod.m_nonReplInstCnt += 1;
-	}
-
-	for (size_t modInstIdx = 0; modInstIdx < mod.m_modInstList.size(); modInstIdx += 1) {
-		CModInst * pModInst = mod.m_modInstList[modInstIdx];
-
-		if (pModInst->m_replId > 0) continue;
+	for (int modInstIdx = 0; modInstIdx < mod.m_instSet.GetInstCnt(); modInstIdx += 1) {
+		CModInst * pModInst = mod.m_instSet.GetInst(modInstIdx);
 
 		g_appArgs.GetDsnRpt().AddLevel("Pers%s\n", pModInst->m_instName.c_str());
 
@@ -47,7 +36,7 @@ CDsnInfo::GenerateModuleFiles(CModule &mod)
 
 		bool bNeedClk2x = NeedClk2x();
 
-		if (mod.m_nonReplInstCnt > 1)
+		if (mod.m_instSet.GetInstCnt() > 1)
 			pModInst->m_fileName = mod.m_modName == pModInst->m_instName ? mod.m_modName.AsStr() + "_" : pModInst->m_instName;
 		else
 			pModInst->m_fileName = mod.m_modName;
@@ -58,7 +47,7 @@ CDsnInfo::GenerateModuleFiles(CModule &mod)
 		g_appArgs.GetDsnRpt().EndLevel();
 	}
 
-	if (mod.m_nonReplInstCnt > 1)
+	if (mod.m_instSet.GetInstCnt() > 1)
 		GenModInstInc(mod);
 }
 
@@ -71,10 +60,8 @@ void CDsnInfo::GenModInstInc(CModule &mod)
 
 	GenPersBanner(incFile, "", mod.m_modName.Uc().c_str(), true);
 
-	for (size_t modInstIdx = 0; modInstIdx < mod.m_modInstList.size(); modInstIdx += 1) {
-		CModInst * pModInst = mod.m_modInstList[modInstIdx];
-
-		if (pModInst->m_replId > 0) continue;
+	for (int modInstIdx = 0; modInstIdx < mod.m_instSet.GetInstCnt(); modInstIdx += 1) {
+		CModInst * pModInst = mod.m_instSet.GetInst(modInstIdx);
 
 		if (modInstIdx == 0)
 			fprintf(incFile, "#if defined(PERS_%s)\n", pModInst->m_instName.Upper().c_str());
@@ -866,9 +853,9 @@ CDsnInfo::WritePersIncFile(CModInst * pModInst, bool bNeedClk2x)
 	}
 
 	string path("");
-	if (pMod->m_modInstList.size() && pMod->m_modInstList[0]->m_modPaths.size()) {
+	if (pMod->m_instSet.GetInstCnt() > 0 && pMod->m_instSet.GetInst(0)->m_modPaths.size()) {
 		size_t pos;
-		path = pMod->m_modInstList[0]->m_modPaths[0];
+		path = pMod->m_instSet.GetInst(0)->m_modPaths[0];
 		pos = path.find_last_of("/");
 		if (pos < path.size()) path.erase(pos, path.size() - pos);
 		pos = path.find_first_of(":/");

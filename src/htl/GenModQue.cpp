@@ -21,10 +21,10 @@ void CDsnInfo::InitAndValidateModIhd()
 			CQueIntf & queIntf = mod.m_queIntfList[queIdx];
 
 			if (queIntf.m_queType == Push) {
-				if (mod.m_modInstList.size() > 1)
+				if (mod.m_instSet.GetTotalCnt() > 1)
 					ParseMsg(Error, queIntf.m_lineInfo, "Inbound host data to replicated/multi-instance module not supported");
 			} else {
-				if (mod.m_modInstList.size() > 1)
+				if (mod.m_instSet.GetTotalCnt() > 1)
 					ParseMsg(Error, queIntf.m_lineInfo, "Outbound host data from replicated/multi-instance module not supported");
 			}
 		}

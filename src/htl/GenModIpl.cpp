@@ -483,7 +483,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 	for (size_t barIdx = 0; barIdx < mod.m_barrierList.size(); barIdx += 1) {
 		CBarrier * pBar = mod.m_barrierList[barIdx];
 
-		bool bMimicHtCont = mod.m_threads.m_htIdW.AsInt() == 0 && mod.m_modInstList.size() == 1;
+		bool bMimicHtCont = mod.m_threads.m_htIdW.AsInt() == 0 && mod.m_instSet.GetReplCnt(0) == 1;
 
 		if (bMimicHtCont || pBar->m_barIdW.AsInt() <= 2) continue;
 
@@ -3220,7 +3220,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 			iplPostInstr.Append("\t{\n");
 
 			string line = "\t\tfprintf(Ht::g_instrTraceFp, \"" + mod.m_modName.Upper();
-			if (mod.m_modInstList.size() > 1)
+			if (mod.m_instSet.GetReplCnt(0) > 1)
 				line += "%%d:";
 			else
 				line += ":";

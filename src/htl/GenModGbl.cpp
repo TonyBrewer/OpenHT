@@ -69,7 +69,7 @@ void CDsnInfo::InitOptNgv()
 				m_ngvList[gvIdx]->m_modInfoList.push_back(CNgvModInfo(&mod, pMgv));
 				pMgv->m_pNgvInfo = m_ngvList[gvIdx];
 
-				if (pMgv->m_pNgvInfo->m_ngvReplCnt != (int)mod.m_modInstList.size())
+				if (pMgv->m_pNgvInfo->m_ngvReplCnt != mod.m_instSet.GetReplCnt(0))
 					ParseMsg(Error, pMgv->m_lineInfo, "global variable '%s' accessed from modules with inconsistent replication count", pMgv->m_gblName.c_str());
 
 			} else {
@@ -79,7 +79,7 @@ void CDsnInfo::InitOptNgv()
 				m_ngvList.back()->m_ramType = pMgv->m_ramType;
 				pMgv->m_pNgvInfo = m_ngvList.back();
 
-				pMgv->m_pNgvInfo->m_ngvReplCnt = (int)mod.m_modInstList.size();
+				pMgv->m_pNgvInfo->m_ngvReplCnt = mod.m_instSet.GetReplCnt(0);
 			}
 		}
 	}
@@ -1793,7 +1793,7 @@ void CDsnInfo::GenModNgvStatements(CModule &mod)
 		}
 	}
 
-	CModInst * pModInst = mod.m_modInstList[0];
+	CModInst * pModInst = mod.m_instSet.GetInst(0);
 
 	if (bInstrWrite) {
 		// ht completion struct

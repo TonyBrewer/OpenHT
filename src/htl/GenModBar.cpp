@@ -42,7 +42,7 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 	string reset = mod.m_clkRate == eClk1x ? "r_reset1x" : "c_reset2x";
 
 	int rlsCntBits = 0;
-	switch (mod.m_modInstList.size()) {
+	switch (mod.m_instSet.GetTotalCnt()) {
 	case 1: rlsCntBits = 1; break;
 	case 2: rlsCntBits = 2; break;
 	case 3: rlsCntBits = 2; break;
@@ -58,7 +58,7 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 	for (size_t barIdx = 0; barIdx < mod.m_barrierList.size(); barIdx += 1) {
 		CBarrier * pBar = mod.m_barrierList[barIdx];
 
-		bool bMimicHtCont = mod.m_threads.m_htIdW.AsInt() == 0 && mod.m_modInstList.size() == 1;
+		bool bMimicHtCont = mod.m_threads.m_htIdW.AsInt() == 0 && mod.m_instSet.GetTotalCnt() == 1;
 
 		CHtCode & barPreInstr = mod.m_clkRate == eClk2x ? m_barPreInstr2x : m_barPreInstr1x;
 		CHtCode & barPostInstr = mod.m_clkRate == eClk2x ? m_barPostInstr2x : m_barPostInstr1x;
@@ -116,7 +116,7 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 
 		if (bMimicHtCont) continue;
 
-		if (mod.m_modInstList.size() > 1) {
+		if (mod.m_instSet.GetTotalCnt() > 1) {
 			m_barIoDecl.Append("\t// Centralized bar%s interface\n", pBar->m_name.Uc().c_str());
 			m_barIoDecl.Append("\tsc_out<bool> o_%sToBarCtl_bar%sEnter;\n",
 				mod.m_modName.Lc().c_str(), pBar->m_name.Uc().c_str());
@@ -195,7 +195,7 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 			barReg.Append("\tr_bar%sActive = !%s && c_bar%sActive;\n",
 				pBar->m_name.Uc().c_str(), reset.c_str(), pBar->m_name.Uc().c_str());
 
-			if (mod.m_modInstList.size() == 1) {
+			if (mod.m_instSet.GetTotalCnt() == 1) {
 				GenModDecl(eVcdAll, m_barRegDecl, vcdModName, VA("sc_uint<%s_HTID_W+%d>", mod.m_modName.Upper().c_str(), rlsCntBits),
 					VA("r_bar%sEnterCnt", pBar->m_name.Uc().c_str()));
 				barPreInstr.Append("\tsc_uint<%s_HTID_W+%d> c_bar%sEnterCnt = r_bar%sEnterCnt;\n",
@@ -225,7 +225,7 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 			m_barRegDecl.Append("\tht_dist_ram<bool, %d> m_bar%sActive;\n",
 				pBar->m_barIdW.AsInt(), pBar->m_name.Uc().c_str());
 
-			if (mod.m_modInstList.size() == 1) {
+			if (mod.m_instSet.GetTotalCnt() == 1) {
 				barPreInstr.Append("\tm_bar%sActive.read_addr(r_t%d_bar%sId);\n",
 					pBar->m_name.Uc().c_str(), mod.m_execStg + 1, pBar->m_name.Uc().c_str());
 				barPreInstr.Append("\tm_bar%sActive.write_addr(r_t%d_bar%sId);\n",
@@ -241,7 +241,7 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 			barPreInstr.Append("\tbool c_bar%sActive = m_bar%sActive.read_mem();\n", pBar->m_name.Uc().c_str(), pBar->m_name.Uc().c_str());
 			barReg.Append("\tm_bar%sActive.clock();\n", pBar->m_name.Uc().c_str());
 
-			if (mod.m_modInstList.size() == 1) {
+			if (mod.m_instSet.GetTotalCnt() == 1) {
 				m_barRegDecl.Append("\tht_dist_ram<sc_uint<%s_HTID_W+%d>, %d> m_bar%sEnterCnt;\n",
 					mod.m_modName.Upper().c_str(), rlsCntBits, pBar->m_barIdW.AsInt(), pBar->m_name.Uc().c_str());
 				barPreInstr.Append("\tm_bar%sEnterCnt.read_addr(r_t%d_bar%sId);\n",
@@ -253,7 +253,7 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 				barReg.Append("\tm_bar%sEnterCnt.clock();\n", pBar->m_name.Uc().c_str());
 			}
 
-			if (mod.m_modInstList.size() == 1) {
+			if (mod.m_instSet.GetTotalCnt() == 1) {
 				m_barRegDecl.Append("#\tif !defined(_HTV) || defined(HT_ASSERT)\n");
 				m_barRegDecl.Append("\tht_dist_ram<sc_uint<%s_HTID_W+%d>, %d> m_bar%sReleaseCnt;\n",
 					mod.m_modName.Upper().c_str(), rlsCntBits, pBar->m_barIdW.AsInt(), pBar->m_name.Uc().c_str());
@@ -275,7 +275,7 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 
 			m_barRegDecl.Append("\tht_dist_ram<CBarRlsInfo, %d> m_bar%sRlsHead;\n",
 				pBar->m_barIdW.AsInt(), pBar->m_name.Uc().c_str());
-			if (mod.m_modInstList.size() == 1) {
+			if (mod.m_instSet.GetTotalCnt() == 1) {
 				barPreInstr.Append("\tm_bar%sRlsHead.read_addr(r_t%d_bar%sId);\n",
 					pBar->m_name.Uc().c_str(), mod.m_execStg + 1, pBar->m_name.Uc().c_str());
 				barPreInstr.Append("\tm_bar%sRlsHead.write_addr(r_t%d_bar%sId);\n",
@@ -302,7 +302,7 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 		barPreInstr.Append("\tCBarRlsInfo c_bar%sRlsNext = r_bar%sRlsNext;\n", pBar->m_name.Uc().c_str(), pBar->m_name.Uc().c_str());
 		barReg.Append("\tr_bar%sRlsNext = c_bar%sRlsNext;\n", pBar->m_name.Uc().c_str(), pBar->m_name.Uc().c_str());
 
-		if (mod.m_modInstList.size() > 1) {
+		if (mod.m_instSet.GetTotalCnt() > 1) {
 			GenModDecl(eVcdAll, m_barRegDecl, vcdModName, "bool", VA("r_bar%sRelease", pBar->m_name.Uc().c_str()));
 			barPreInstr.Append("\tbool c_bar%sRelease = r_bar%sRelease;\n", pBar->m_name.Uc().c_str(), pBar->m_name.Uc().c_str());
 			barReg.Append("\tr_bar%sRelease = !%s && c_bar%sRelease;\n",
@@ -334,7 +334,7 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 			barReg.Append("\tm_bar%sRlsQue.clock(%s);\n", pBar->m_name.Uc().c_str(), reset.c_str());
 		}
 
-		if (mod.m_modInstList.size() > 1 && mod.m_threads.m_htIdW.AsInt() > 0) {
+		if (mod.m_instSet.GetTotalCnt() > 1 && mod.m_threads.m_htIdW.AsInt() > 0) {
 			if (pBar->m_barIdW.AsInt() > 0) {
 				m_barRegDecl.Append("\tht_dist_que<ht_uint%d, %d> m_bar%sRlsIdQue;\n",
 					pBar->m_barIdW.AsInt(), mod.m_threads.m_htIdW.AsInt(), pBar->m_name.Uc().c_str());
@@ -357,7 +357,7 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 			barPostInstr.Append("\t\tif (!c_bar%sActive) {\n", pBar->m_name.Uc().c_str());
 			barPostInstr.Append("\t\t\tc_bar%sActive = true;\n", pBar->m_name.Uc().c_str());
 
-			if (mod.m_modInstList.size() == 1) {
+			if (mod.m_instSet.GetTotalCnt() == 1) {
 				barPostInstr.Append("\t\t\tc_bar%sEnterCnt = r_t%d_bar%sReleaseCnt;\n",
 					pBar->m_name.Uc().c_str(), mod.m_execStg + 1, pBar->m_name.Uc().c_str());
 				barPostInstr.Append("#\t\t\tif !defined(_HTV) || defined(HT_ASSERT)\n");
@@ -368,7 +368,7 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 
 			barPostInstr.Append("\t\t\tc_bar%sRlsHead.m_link.m_bEol = true;\n", pBar->m_name.Uc().c_str());
 			barPostInstr.Append("\t\t} else {\n");
-			if (mod.m_modInstList.size() == 1) {
+			if (mod.m_instSet.GetTotalCnt() == 1) {
 				barPostInstr.Append("\t\t\tassert_msg(%s || c_bar%sReleaseCnt == r_t%d_bar%sReleaseCnt, \"Runtime check failed in CPersBarrier::PersBarrier()\""
 					"\n\t\t\t\t\" - calls to HtBarrier have inconsistent releaseCnt value\\n\");\n", 
 					reset.c_str(),
@@ -397,7 +397,7 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 				pBar->m_name.Uc().c_str(), mod.m_execStg + 1, pBar->m_name.Uc().c_str());
 		}
 
-		if (mod.m_modInstList.size() == 1) {
+		if (mod.m_instSet.GetTotalCnt() == 1) {
 			barPostInstr.Append("\n");
 			barPostInstr.Append("\t\tif (c_bar%sEnterCnt == 1) {\n",
 				pBar->m_name.Uc().c_str());
@@ -430,13 +430,13 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 			barPostInstr.Append("\tht_uint%d c_bar%sInitCnt = r_bar%sInitCnt;\n",
 				pBar->m_barIdW.AsInt() + 1, pBar->m_name.Uc().c_str(), pBar->m_name.Uc().c_str());
 
-			if (mod.m_modInstList.size() > 1)
+			if (mod.m_instSet.GetTotalCnt() > 1)
 				barPostInstr.Append("\tht_uint%d c_bar%sRlsId = r_bar%sRlsId;\n",
 				pBar->m_barIdW.AsInt(), pBar->m_name.Uc().c_str(), pBar->m_name.Uc().c_str());
 
 			barPostInstr.Append("\tif (%s)\n", reset.c_str());
 
-			if (mod.m_modInstList.size() == 1)
+			if (mod.m_instSet.GetTotalCnt() == 1)
 				barPostInstr.Append("\t\tc_t%d_bar%sId = 0;\n", mod.m_execStg, pBar->m_name.Uc().c_str());
 			else
 				barPostInstr.Append("\t\tc_bar%sRlsId = 0;\n", pBar->m_name.Uc().c_str());
@@ -446,7 +446,7 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 			barPostInstr.Append("\t\tc_bar%sInitCnt = r_bar%sInitCnt + 1;\n",
 				pBar->m_name.Uc().c_str(), pBar->m_name.Uc().c_str());
 
-			if (mod.m_modInstList.size() == 1)
+			if (mod.m_instSet.GetTotalCnt() == 1)
 				barPostInstr.Append("\t\tc_t%d_bar%sId = c_bar%sInitCnt(%d,0);\n",
 				mod.m_execStg, pBar->m_name.Uc().c_str(), pBar->m_name.Uc().c_str(), pBar->m_barIdW.AsInt() - 1);
 			else {
@@ -463,7 +463,7 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 			barPostInstr.Append("\tm_bar%sActive.write_mem(c_bar%sActive);\n", pBar->m_name.Uc().c_str(), pBar->m_name.Uc().c_str());
 			barPostInstr.Append("\tm_bar%sRlsHead.write_mem(c_bar%sRlsHead);\n", pBar->m_name.Uc().c_str(), pBar->m_name.Uc().c_str());
 
-			if (mod.m_modInstList.size() == 1) {
+			if (mod.m_instSet.GetTotalCnt() == 1) {
 				barPostInstr.Append("\tm_bar%sEnterCnt.write_mem(c_bar%sEnterCnt);\n", pBar->m_name.Uc().c_str(), pBar->m_name.Uc().c_str());
 				barPostInstr.Append("#\tif !defined(_HTV) || defined(HT_ASSERT)\n");
 				barPostInstr.Append("\tm_bar%sReleaseCnt.write_mem(c_bar%sReleaseCnt);\n", pBar->m_name.Uc().c_str(), pBar->m_name.Uc().c_str());
@@ -472,7 +472,7 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 		}
 		barPostInstr.Append("\n");
 
-		if (mod.m_modInstList.size() > 1) {
+		if (mod.m_instSet.GetTotalCnt() > 1) {
 			barPostInstr.Append("\tif (i_barCtlTo%s_bar%sRelease) {\n", mod.m_modName.Uc().c_str(), pBar->m_name.Uc().c_str());
 
 			if (mod.m_threads.m_htIdW.AsInt() > 0) {
@@ -543,7 +543,7 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 		barPostInstr.Append("\tc_bar%sRlsNext.m_link.m_bEol = %s || c_bar%sRlsNext.m_link.m_bEol;\n",
 			pBar->m_name.Uc().c_str(), reset.c_str(), pBar->m_name.Uc().c_str());
 
-		if (mod.m_modInstList.size() > 1) {
+		if (mod.m_instSet.GetTotalCnt() > 1) {
 			barOut.Append("\n");
 			barOut.Append("\to_%sToBarCtl_bar%sEnter = r_t%d_bar%sEnter;\n",
 				mod.m_modName.Lc().c_str(), pBar->m_name.Uc().c_str(), mod.m_execStg + 1, pBar->m_name.Uc().c_str());
@@ -562,7 +562,7 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 
 	g_appArgs.GetDsnRpt().EndLevel();
 
-	if (mod.m_modInstList.size() == 1) return;
+	if (mod.m_instSet.GetTotalCnt() == 1) return;
 
 	// Generate barrier centralized control module
 	string incName = VA("Pers%sBarCtl.h", mod.m_modName.Uc().c_str());
@@ -588,7 +588,7 @@ void CDsnInfo::GenModBarStatements(CModule &mod)
 	fprintf(incFile, "\tsc_in<bool> i_reset;\n");
 	fprintf(incFile, "\n");
 
-	int replCnt = mod.m_modInstList.size();
+	int replCnt = mod.m_instSet.GetTotalCnt();
 
 	for (size_t barIdx = 0; barIdx < mod.m_barrierList.size(); barIdx += 1) {
 		CBarrier * pBar = mod.m_barrierList[barIdx];

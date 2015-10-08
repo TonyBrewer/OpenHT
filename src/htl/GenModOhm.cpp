@@ -20,7 +20,7 @@ void CDsnInfo::InitAndValidateModOhm()
 
 		if (!mod.m_bIsUsed || !mod.m_ohm.m_bOutHostMsg) continue;
 
-		if (mod.m_modInstList.size() > 1)
+		if (mod.m_instSet.GetTotalCnt() > 1)
 			ParseMsg(Error, mod.m_ohm.m_lineInfo, "Outbound host message from replicated/multi-instance module not currently supported");
 	}
 }

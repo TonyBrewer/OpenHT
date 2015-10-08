@@ -49,8 +49,10 @@ void CDsnInfo::InitAndValidateModMsg()
 
 			if (pOutMsgIntf->m_dir != "out") continue;
 
+			HtlAssert(mod.m_instSet.GetInstCnt() == 1);
+
 			pOutMsgIntf->m_srcFanout = pOutMsgIntf->m_fanCnt.AsInt() > 0 ? pOutMsgIntf->m_fanCnt.AsInt() : 1;
-			pOutMsgIntf->m_srcReplCnt = (int)mod.m_modInstList.size();
+			pOutMsgIntf->m_srcReplCnt = mod.m_instSet.GetReplCnt(0);
 			pOutMsgIntf->m_srcClkRate = mod.m_clkRate;
 
 			if (!pOutMsgIntf->m_bAutoConn) continue;
@@ -95,8 +97,10 @@ void CDsnInfo::InitAndValidateModMsg()
 								pMsgIntf->m_name.c_str());
 							ParseMsg(Info, pOutMsgIntf->m_lineInfo, "  previous message interface");
 						}
+
+						HtlAssert(mod.m_instSet.GetInstCnt() == 1);
 						pMsgIntf->m_srcFanout = pMsgIntf->m_fanCnt.AsInt() > 0 ? pMsgIntf->m_fanCnt.AsInt() : 1;
-						pMsgIntf->m_srcReplCnt = (int)mod.m_modInstList.size();
+						pMsgIntf->m_srcReplCnt = mod.m_instSet.GetReplCnt(0);
 						pMsgIntf->m_srcClkRate = mod2.m_clkRate;
 
 						if (pMsgIntf->m_queueW.AsInt() > 0)
@@ -105,12 +109,13 @@ void CDsnInfo::InitAndValidateModMsg()
 						bFoundIn = true;
 						pMsgIntf->m_outModName = mod.m_modName.AsStr();
 
+						HtlAssert(mod2.m_instSet.GetInstCnt() == 1);
 						pMsgIntf->m_srcFanout = pOutMsgIntf->m_srcFanout;
 						pMsgIntf->m_srcReplCnt = pOutMsgIntf->m_srcReplCnt;
 						pMsgIntf->m_srcClkRate = pOutMsgIntf->m_srcClkRate;
 
 						int dstFanin = pMsgIntf->m_fanCnt.AsInt() > 0 ? pMsgIntf->m_fanCnt.AsInt() : 1;
-						int dstReplCnt = (int)mod2.m_modInstList.size();
+						int dstReplCnt = mod2.m_instSet.GetReplCnt(0);
 
 						int totalReserve = pOutMsgIntf->m_reserve.AsInt() + 6;
 
@@ -273,10 +278,10 @@ void CDsnInfo::InitAndValidateModMsg()
 		if ((pMsgIntfConn->m_aePrev || pMsgIntfConn->m_aeNext) && pMsgIntfConn->m_outMsgIntf.m_pMsgIntf->m_fanCnt.size() != 0)
 			ParseMsg(Error, pMsgIntfConn->m_lineInfo, "message connection with aePrev=true or aeNext=true using a message interface with fanIn or fanOut specified not supported");
 
-		if ((pMsgIntfConn->m_aePrev || pMsgIntfConn->m_aeNext) && pMsgIntfConn->m_inMsgIntf.m_pMod->m_modInstList.size() != 1)
+		if ((pMsgIntfConn->m_aePrev || pMsgIntfConn->m_aeNext) && pMsgIntfConn->m_inMsgIntf.m_pMod->m_instSet.GetTotalCnt() != 1)
 			ParseMsg(Error, pMsgIntfConn->m_lineInfo, "message connection with aePrev=true or aeNext=true to a replicated module not supported");
 
-		if ((pMsgIntfConn->m_aePrev || pMsgIntfConn->m_aeNext) && pMsgIntfConn->m_outMsgIntf.m_pMod->m_modInstList.size() != 1)
+		if ((pMsgIntfConn->m_aePrev || pMsgIntfConn->m_aeNext) && pMsgIntfConn->m_outMsgIntf.m_pMod->m_instSet.GetTotalCnt() != 1)
 			ParseMsg(Error, pMsgIntfConn->m_lineInfo, "message connection with aePrev=true or aeNext=true to a replicated module not supported");
 
 		if ((pMsgIntfConn->m_aePrev || pMsgIntfConn->m_aeNext) && pMsgIntfConn->m_inMsgIntf.m_pMod->m_clkRate == eClk2x)
@@ -307,7 +312,8 @@ void CDsnInfo::InitAndValidateModMsg()
 
 							if (pMsgIntf->m_dir == "in") continue;
 
-							string &modPath = pMod->m_modInstList[0]->m_modPaths[0];
+							HtlAssert(pMod->m_instSet.GetInstCnt() == 1);
+							string &modPath = pMod->m_instSet.GetInst(0)->m_modPaths[0];
 
 							char const * pStr = modPath.c_str();
 							while (*pStr != ':' && *pStr != '\0') pStr += 1;
@@ -319,7 +325,7 @@ void CDsnInfo::InitAndValidateModMsg()
 							if (g_appArgs.GetAeUnitCnt() > 1)
 								unitIdxStr = VA("[0-%d]", g_appArgs.GetAeUnitCnt() - 1);
 
-							int replCnt = pMod->m_modInstList[0]->m_replCnt;
+							int replCnt = pMod->m_instSet.GetInst(0)->m_replCnt;
 							string replStr;
 							if (replCnt > 1)
 								replStr = VA("[0-%d]", replCnt - 1);
@@ -354,7 +360,8 @@ void CDsnInfo::InitAndValidateModMsg()
 
 							if (pMsgIntf->m_dir != "in") continue;
 
-							string &modPath = pMod->m_modInstList[0]->m_modPaths[0];
+							HtlAssert(pMod->m_instSet.GetInstCnt() == 1);
+							string &modPath = pMod->m_instSet.GetInst(0)->m_modPaths[0];
 
 							char const * pStr = modPath.c_str();
 							while (*pStr != ':' && *pStr != '\0') pStr += 1;
@@ -366,7 +373,7 @@ void CDsnInfo::InitAndValidateModMsg()
 							if (g_appArgs.GetAeUnitCnt() > 1)
 								unitIdxStr = VA("[0-%d]", g_appArgs.GetAeUnitCnt() - 1);
 
-							int replCnt = pMod->m_modInstList[0]->m_replCnt;
+							int replCnt = pMod->m_instSet.GetInst(0)->m_replCnt;
 							string replStr;
 							if (replCnt > 1)
 								replStr = VA("[0-%d]", replCnt - 1);
@@ -427,8 +434,9 @@ void CDsnInfo::InitAndValidateModMsg()
 
 			if (pMsgIntf->m_bAutoConn) continue;
 
+			HtlAssert(mod.m_instSet.GetInstCnt() == 1);
 			int unitCnt = g_appArgs.GetAeUnitCnt();
-			int modReplCnt = mod.m_modInstList[0]->m_replCnt;
+			int modReplCnt = mod.m_instSet.GetInst(0)->m_replCnt;
 			int msgFanCnt = max(1, pMsgIntf->m_fanCnt.AsInt());
 			int msgDimenCnt = max(1, pMsgIntf->m_dimen.AsInt());
 
@@ -443,7 +451,7 @@ void CDsnInfo::InitAndValidateModMsg()
 				int modReplIdx = (idx / (msgDimenCnt * msgFanCnt)) % modReplCnt;
 				int unitIdx = idx / (msgDimenCnt * msgFanCnt * modReplCnt);
 
-				string &path = mod.m_modInstList[0]->m_modPaths[0];
+				string &path = mod.m_instSet.GetInst(0)->m_modPaths[0];
 				char const * pStr = path.c_str();
 				while (*pStr != ':' && *pStr != '\0') pStr += 1;
 				string unitStr = path.substr(0, pStr - path.c_str());
@@ -464,8 +472,9 @@ void CDsnInfo::InitAndValidateModMsg()
 
 void CDsnInfo::SetMsgIntfConnUsedFlags(bool bInBound, CMsgIntfConn * pConn, CModule &mod, CMsgIntf * pMsgIntf)
 {
+	HtlAssert(mod.m_instSet.GetInstCnt() == 1);
 	int unitCnt = g_appArgs.GetAeUnitCnt();
-	int modReplCnt = mod.m_modInstList[0]->m_replCnt;
+	int modReplCnt = mod.m_instSet.GetInst(0)->m_replCnt;
 	int msgFanCnt = max(1, pMsgIntf->m_fanCnt.AsInt());
 	int msgDimenCnt = max(1, pMsgIntf->m_dimen.AsInt());
 

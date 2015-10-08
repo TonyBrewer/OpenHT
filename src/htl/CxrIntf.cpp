@@ -71,7 +71,7 @@ CCxrIntf::GetSignalIndexDstToSrc()
 
 			m_signalIndexDstToSrc += VA("[%d]", m_pDstModInst->m_replId);
 
-		} else if (m_pSrcModInst->m_pMod->m_modInstList.size() > 1) {
+		} else if (m_pSrcModInst->m_pMod->m_instSet.GetTotalCnt() > 1) {
 
 			m_signalIndexDstToSrc += VA("[%d]", m_pSrcModInst->m_replId);
 		}
@@ -87,7 +87,7 @@ CCxrIntf::GetSignalIndexSrcToDst()
 
 			m_signalIndexSrcToDst += VA("[%d]", m_pSrcModInst->m_replId);
 
-		} else if (m_pDstModInst->m_pMod->m_modInstList.size() > 1) {
+		} else if (m_pDstModInst->m_pMod->m_instSet.GetTotalCnt() > 1) {
 
 			m_signalIndexSrcToDst += VA("[%d]", m_pDstModInst->m_replId);
 		}
