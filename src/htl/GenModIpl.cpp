@@ -16,90 +16,90 @@ void CDsnInfo::InitAndValidateModIpl()
 {
 	// foreach module, determine if any group has multiple threads
 	for (size_t modIdx = 0; modIdx < m_modList.size(); modIdx += 1) {
-		CModule &mod = *m_modList[modIdx];
+		CModule * pMod = m_modList[modIdx];
 
-		if (!mod.m_bIsUsed) continue;
+		if (!pMod->m_bIsUsed) continue;
 
-		mod.m_bMultiThread = false;
-		mod.m_bHtId = false;
+		pMod->m_bMultiThread = false;
+		pMod->m_bHtId = false;
 
-		mod.m_rsmSrcCnt += mod.m_threads.m_bPause ? 1 : 0;
+		pMod->m_rsmSrcCnt += pMod->m_threads.m_bPause ? 1 : 0;
 
-		if ((mod.m_instrList.size() > 0) != (mod.m_cxrEntryList.size() > 0)) {
-			if (mod.m_instrList.size() > 0)
-				ParseMsg(Error, mod.m_threads.m_lineInfo, "module has AddInstr, but no AddEntry");
+		if ((pMod->m_instrList.size() > 0) != (pMod->m_cxrEntryList.size() > 0)) {
+			if (pMod->m_instrList.size() > 0)
+				ParseMsg(Error, pMod->m_threads.m_lineInfo, "module has AddInstr, but no AddEntry");
 			else
-				ParseMsg(Error, mod.m_threads.m_lineInfo, "module has AddEntry, but no AddInstr");
+				ParseMsg(Error, pMod->m_threads.m_lineInfo, "module has AddEntry, but no AddInstr");
 		} else {
-			if (mod.m_instrList.size() == 0) {
-				mod.m_bHasThreads = false;
+			if (pMod->m_instrList.size() == 0) {
+				pMod->m_bHasThreads = false;
 
-				if (mod.m_threads.m_resetInstr.size() > 0)
-					ParseMsg(Error, mod.m_threads.m_lineInfo, "module has AddModule( resetInstr= ), but no AddInstr");
+				if (pMod->m_threads.m_resetInstr.size() > 0)
+					ParseMsg(Error, pMod->m_threads.m_lineInfo, "module has AddModule( resetInstr= ), but no AddInstr");
 
-				if (mod.m_threads.m_bPause)
-					ParseMsg(Error, mod.m_threads.m_lineInfo, "module has AddModule( pause=true ), but no AddInstr");
+				if (pMod->m_threads.m_bPause)
+					ParseMsg(Error, pMod->m_threads.m_lineInfo, "module has AddModule( pause=true ), but no AddInstr");
 			}
 		}
 
-		if (mod.m_bHasThreads) {
-			mod.m_threads.m_htIdW.InitValue(mod.m_threads.m_lineInfo);
+		if (pMod->m_bHasThreads) {
+			pMod->m_threads.m_htIdW.InitValue(pMod->m_threads.m_lineInfo);
 
-			mod.m_bMultiThread |= mod.m_threads.m_htIdW.AsInt() > 0;
+			pMod->m_bMultiThread |= pMod->m_threads.m_htIdW.AsInt() > 0;
 
 			char defineName[64];
-			sprintf(defineName, "%s_HTID_W", mod.m_modName.Upper().c_str());
+			sprintf(defineName, "%s_HTID_W", pMod->m_modName.Upper().c_str());
 
 			int defineHtIdW;
 			bool bIsSigned;
-			if (!m_defineTable.FindStringValue(mod.m_threads.m_lineInfo, string(defineName), defineHtIdW, bIsSigned))
-				AddDefine(&mod.m_threads, defineName, VA("%d", mod.m_threads.m_htIdW.AsInt()));
-			else if (defineHtIdW != mod.m_threads.m_htIdW.AsInt())
-				ParseMsg(Error, mod.m_threads.m_lineInfo, "user defined identifier '%s'=%d has different value from AddThreads '%s'=%d",
-				defineName, defineHtIdW, mod.m_threads.m_htIdW.AsStr().c_str(), mod.m_threads.m_htIdW.AsInt());
+			if (!m_defineTable.FindStringValue(pMod->m_threads.m_lineInfo, string(defineName), defineHtIdW, bIsSigned))
+				AddDefine(&pMod->m_threads, defineName, VA("%d", pMod->m_threads.m_htIdW.AsInt()));
+			else if (defineHtIdW != pMod->m_threads.m_htIdW.AsInt())
+				ParseMsg(Error, pMod->m_threads.m_lineInfo, "user defined identifier '%s'=%d has different value from AddThreads '%s'=%d",
+				defineName, defineHtIdW, pMod->m_threads.m_htIdW.AsStr().c_str(), pMod->m_threads.m_htIdW.AsInt());
 
-			if (mod.m_threads.m_htIdW.AsInt() > 0) {
+			if (pMod->m_threads.m_htIdW.AsInt() > 0) {
 				char typeName[64];
-				sprintf(typeName, "%sHtId_t", mod.m_modName.Uc().c_str());
+				sprintf(typeName, "%sHtId_t", pMod->m_modName.Uc().c_str());
 
 				if (!FindTypeDef(typeName))
 					AddTypeDef(typeName, "uint32_t", defineName, true);
 
-				mod.m_bHtId = true;
+				pMod->m_bHtId = true;
 			}
 		}
 
 		// determine write stage
 		int tsStg = 2;
-		if (mod.m_bMultiThread)
-			tsStg += mod.m_clkRate == eClk2x ? 3 : 1;
+		if (pMod->m_bMultiThread)
+			tsStg += pMod->m_clkRate == eClk2x ? 3 : 1;
 		else
-			tsStg += mod.m_clkRate == eClk2x ? 1 : 0;
+			tsStg += pMod->m_clkRate == eClk2x ? 1 : 0;
 
-		mod.m_gblBlockRam = false;
-		mod.m_gblDistRam = false;
-		for (size_t ngvIdx = 0; ngvIdx < mod.m_ngvList.size(); ngvIdx += 1) {
+		pMod->m_gblBlockRam = false;
+		pMod->m_gblDistRam = false;
+		for (size_t ngvIdx = 0; ngvIdx < pMod->m_ngvList.size(); ngvIdx += 1) {
 
-			if (mod.m_ngvList[ngvIdx]->m_addr1W.AsInt() == 0) continue;
+			if (pMod->m_ngvList[ngvIdx]->m_addr1W.AsInt() == 0) continue;
 
-			if (mod.m_ngvList[ngvIdx]->m_pNgvInfo->m_ramType == eBlockRam)
-				mod.m_gblBlockRam = true;
+			if (pMod->m_ngvList[ngvIdx]->m_pNgvInfo->m_ramType == eBlockRam)
+				pMod->m_gblBlockRam = true;
 			else
-				mod.m_gblDistRam = true;
+				pMod->m_gblDistRam = true;
 		}
 
-		if (mod.m_gblBlockRam)
+		if (pMod->m_gblBlockRam)
 			tsStg += 3;
-		else if (mod.m_gblDistRam)
+		else if (pMod->m_gblDistRam)
 			tsStg += 2;
 
-		if (mod.m_stage.m_privWrStg.AsInt() < mod.m_stage.m_execStg.AsInt())
-			ParseMsg(Error, mod.m_stage.m_lineInfo, "execStg must be less than or equal to privWrStg");
+		if (pMod->m_stage.m_privWrStg.AsInt() < pMod->m_stage.m_execStg.AsInt())
+			ParseMsg(Error, pMod->m_stage.m_lineInfo, "execStg must be less than or equal to privWrStg");
 
-		mod.m_tsStg = tsStg;
-		mod.m_execStg = tsStg + mod.m_stage.m_execStg.AsInt() - 1;
-		mod.m_wrStg = tsStg + mod.m_stage.m_privWrStg.AsInt();
-		mod.m_gvIwCompStg += tsStg;
+		pMod->m_tsStg = tsStg;
+		pMod->m_execStg = tsStg + pMod->m_stage.m_execStg.AsInt() - 1;
+		pMod->m_wrStg = tsStg + pMod->m_stage.m_privWrStg.AsInt();
+		pMod->m_gvIwCompStg += tsStg;
 	}
 }
 
@@ -113,35 +113,35 @@ struct CHtSelName {
 
 void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 {
-	CModule &mod = *pModInst->m_pMod;
+	CModule * pMod = pModInst->m_pMod;
 	string vcdModName = VA("Pers%s", pModInst->m_instName.Uc().c_str());
 
 	g_appArgs.GetDsnRpt().AddLevel("Module Attributes\n");
-	if (mod.m_bHasThreads)
-		g_appArgs.GetDsnRpt().AddItem("HtIdW = %d\n", mod.m_threads.m_htIdW.AsInt());
+	if (pMod->m_bHasThreads)
+		g_appArgs.GetDsnRpt().AddItem("HtIdW = %d\n", pMod->m_threads.m_htIdW.AsInt());
 	else
 		g_appArgs.GetDsnRpt().AddItem("No Instruction state machine\n");
-	g_appArgs.GetDsnRpt().AddItem("Clock rate = %s\n", mod.m_clkRate == eClk2x ? "2x" : "1x");
+	g_appArgs.GetDsnRpt().AddItem("Clock rate = %s\n", pMod->m_clkRate == eClk2x ? "2x" : "1x");
 	g_appArgs.GetDsnRpt().EndLevel();
 
-	bool bStateMachine = mod.m_bHasThreads;
+	bool bStateMachine = pMod->m_bHasThreads;
 
 	if (!bStateMachine) return;
 
 	string unitNameUc = !g_appArgs.IsModuleUnitNamesEnabled() ? m_unitName.Uc() : "";
 
-	CHtCode	& iplT0Stg = mod.m_clkRate == eClk1x ? m_iplT0Stg1x : m_iplT0Stg2x;
-	CHtCode	& iplT1Stg = mod.m_clkRate == eClk1x ? m_iplT1Stg1x : m_iplT1Stg2x;
-	CHtCode	& iplT2Stg = mod.m_clkRate == eClk1x ? m_iplT2Stg1x : m_iplT2Stg2x;
-	CHtCode	& iplTsStg = mod.m_clkRate == eClk1x ? m_iplTsStg1x : m_iplTsStg2x;
-	CHtCode	& iplPostInstr = mod.m_clkRate == eClk1x ? m_iplPostInstr1x : m_iplPostInstr2x;
-	CHtCode	& iplReg = mod.m_clkRate == eClk1x ? m_iplReg1x : m_iplReg2x;
-	CHtCode	& iplOut = mod.m_clkRate == eClk1x ? m_iplOut1x : m_iplOut2x;
-	CHtCode & iplReset = mod.m_clkRate == eClk1x ? m_iplReset1x : m_iplReset2x;
+	CHtCode	& iplT0Stg = pMod->m_clkRate == eClk1x ? m_iplT0Stg1x : m_iplT0Stg2x;
+	CHtCode	& iplT1Stg = pMod->m_clkRate == eClk1x ? m_iplT1Stg1x : m_iplT1Stg2x;
+	CHtCode	& iplT2Stg = pMod->m_clkRate == eClk1x ? m_iplT2Stg1x : m_iplT2Stg2x;
+	CHtCode	& iplTsStg = pMod->m_clkRate == eClk1x ? m_iplTsStg1x : m_iplTsStg2x;
+	CHtCode	& iplPostInstr = pMod->m_clkRate == eClk1x ? m_iplPostInstr1x : m_iplPostInstr2x;
+	CHtCode	& iplReg = pMod->m_clkRate == eClk1x ? m_iplReg1x : m_iplReg2x;
+	CHtCode	& iplOut = pMod->m_clkRate == eClk1x ? m_iplOut1x : m_iplOut2x;
+	CHtCode & iplReset = pMod->m_clkRate == eClk1x ? m_iplReset1x : m_iplReset2x;
 
-	string reset = mod.m_clkRate == eClk1x ? "r_reset1x" : "c_reset2x";
+	string reset = pMod->m_clkRate == eClk1x ? "r_reset1x" : "c_reset2x";
 
-	bool bMultiThread = mod.m_threads.m_htIdW.AsInt() > 0;
+	bool bMultiThread = pMod->m_threads.m_htIdW.AsInt() > 0;
 
 	int maxInstrLen = 0;
 	m_iplMacros.Append("#ifndef _HTV\n");
@@ -153,9 +153,9 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 	m_iplMacros.Append("char const * CPers%s%s::m_pInstrNames[] = {\n",
 		unitNameUc.c_str(), pModInst->m_instName.Uc().c_str());
-	for (size_t instrIdx = 0; instrIdx < mod.m_instrList.size(); instrIdx += 1) {
-		m_iplMacros.Append("\t\"%s\",\n", mod.m_instrList[instrIdx].c_str());
-		int instrLen = mod.m_instrList[instrIdx].size();
+	for (size_t instrIdx = 0; instrIdx < pMod->m_instrList.size(); instrIdx += 1) {
+		m_iplMacros.Append("\t\"%s\",\n", pMod->m_instrList[instrIdx].c_str());
+		int instrLen = pMod->m_instrList[instrIdx].size();
 		if (maxInstrLen < instrLen)
 			maxInstrLen = instrLen;
 	}
@@ -166,7 +166,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 	///////////////////////////////////////////////////////////////////////
 	// Generate instruction pipe line macros
 
-	m_iplMacros.Append("#define %s_RND_RETRY %s\n", mod.m_modName.Upper().c_str(), m_bRndRetry ? "true" : "false");
+	m_iplMacros.Append("#define %s_RND_RETRY %s\n", pModInst->m_instName.Upper().c_str(), m_bRndRetry ? "true" : "false");
 	m_iplMacros.Append("\n");
 
 	m_iplMacros.Append("// Hardware thread methods\n");
@@ -182,42 +182,42 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 	m_iplMacros.Append("{\n");
 
 	m_iplMacros.Append("\tassert_msg(c_t%d_htCtrl == HT_INVALID, \"Runtime check failed in CPers%s::HtRetry()"
-		" - an Ht control routine was already called\");\n", mod.m_execStg, pModInst->m_instName.Uc().c_str());
+		" - an Ht control routine was already called\");\n", pMod->m_execStg, pModInst->m_instName.Uc().c_str());
 
-	m_iplMacros.Append("\tc_t%d_htCtrl = HT_RETRY;\n", mod.m_execStg);
+	m_iplMacros.Append("\tc_t%d_htCtrl = HT_RETRY;\n", pMod->m_execStg);
 	m_iplMacros.Append("}\n");
 	m_iplMacros.Append("\n");
 
-	g_appArgs.GetDsnRpt().AddLevel("HtContinue(ht_uint%d nextInstr)\n", mod.m_instrW);
+	g_appArgs.GetDsnRpt().AddLevel("HtContinue(ht_uint%d nextInstr)\n", pMod->m_instrW);
 	g_appArgs.GetDsnRpt().EndLevel();
 
-	m_iplFuncDecl.Append("\tvoid HtContinue(ht_uint%d nextInstr);\n", mod.m_instrW);
+	m_iplFuncDecl.Append("\tvoid HtContinue(ht_uint%d nextInstr);\n", pMod->m_instrW);
 	m_iplMacros.Append("void CPers%s%s::HtContinue(ht_uint%d nextInstr)\n",
-		unitNameUc.c_str(), pModInst->m_instName.Uc().c_str(), mod.m_instrW);
+		unitNameUc.c_str(), pModInst->m_instName.Uc().c_str(), pMod->m_instrW);
 	m_iplMacros.Append("{\n");
 	m_iplMacros.Append("\tassert_msg(c_t%d_htCtrl == HT_INVALID, \"Runtime check failed in CPers%s::HtContinue()"
-		" - an Ht control routine was already called\");\n", mod.m_execStg, pModInst->m_instName.Uc().c_str());
-	m_iplMacros.Append("\tc_t%d_htCtrl = HT_CONT;\n", mod.m_execStg);
-	m_iplMacros.Append("\tc_t%d_htNextInstr = nextInstr;\n", mod.m_execStg);
+		" - an Ht control routine was already called\");\n", pMod->m_execStg, pModInst->m_instName.Uc().c_str());
+	m_iplMacros.Append("\tc_t%d_htCtrl = HT_CONT;\n", pMod->m_execStg);
+	m_iplMacros.Append("\tc_t%d_htNextInstr = nextInstr;\n", pMod->m_execStg);
 	m_iplMacros.Append("}\n");
 	m_iplMacros.Append("\n");
 
-	if (mod.m_threads.m_bPause) {
-		g_appArgs.GetDsnRpt().AddLevel("void HtPause(ht_uint%d nextInstr)\n", mod.m_instrW);
+	if (pMod->m_threads.m_bPause) {
+		g_appArgs.GetDsnRpt().AddLevel("void HtPause(ht_uint%d nextInstr)\n", pMod->m_instrW);
 		g_appArgs.GetDsnRpt().EndLevel();
-		m_iplFuncDecl.Append("\tvoid HtPause(ht_uint%d nextInstr);\n", mod.m_instrW);
+		m_iplFuncDecl.Append("\tvoid HtPause(ht_uint%d nextInstr);\n", pMod->m_instrW);
 		m_iplMacros.Append("void CPers%s%s::HtPause(ht_uint%d nextInstr)\n",
-			unitNameUc.c_str(), pModInst->m_instName.Uc().c_str(), mod.m_instrW);
+			unitNameUc.c_str(), pModInst->m_instName.Uc().c_str(), pMod->m_instrW);
 		m_iplMacros.Append("{\n");
 		m_iplMacros.Append("\tassert_msg(c_t%d_htCtrl == HT_INVALID, \"Runtime check failed in CPers%s::HtPause()"
-			" - an Ht control routine was already called\");\n", mod.m_execStg, pModInst->m_instName.Uc().c_str());
-		m_iplMacros.Append("\tc_t%d_htCtrl = HT_PAUSE;\n", mod.m_execStg);
-		if (mod.m_threads.m_htIdW.AsInt() > 0) {
-			m_iplMacros.Append("\tm_htRsmInstr.write_addr(r_t%d_htId);\n", mod.m_execStg);
+			" - an Ht control routine was already called\");\n", pMod->m_execStg, pModInst->m_instName.Uc().c_str());
+		m_iplMacros.Append("\tc_t%d_htCtrl = HT_PAUSE;\n", pMod->m_execStg);
+		if (pMod->m_threads.m_htIdW.AsInt() > 0) {
+			m_iplMacros.Append("\tm_htRsmInstr.write_addr(r_t%d_htId);\n", pMod->m_execStg);
 			m_iplMacros.Append("\tm_htRsmInstr.write_mem(nextInstr);\n");
 			m_iplMacros.Append("#\tifndef _HTV\n");
-			m_iplMacros.Append("\tassert(m_htRsmWait.read_mem_debug(r_t%d_htId) == false);\n", mod.m_execStg);
-			m_iplMacros.Append("\tm_htRsmWait.write_mem_debug(r_t%d_htId) = true;\n", mod.m_execStg);
+			m_iplMacros.Append("\tassert(m_htRsmWait.read_mem_debug(r_t%d_htId) == false);\n", pMod->m_execStg);
+			m_iplMacros.Append("\tm_htRsmWait.write_mem_debug(r_t%d_htId) = true;\n", pMod->m_execStg);
 			m_iplMacros.Append("#\tendif\n");
 		} else {
 			m_iplMacros.Append("\tc_htRsmInstr = nextInstr;\n");
@@ -229,14 +229,14 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		m_iplMacros.Append("}\n");
 		m_iplMacros.Append("\n");
 
-		if (mod.m_threads.m_htIdW.AsInt() > 0) {
-			g_appArgs.GetDsnRpt().AddLevel("void HtResume(ht_uint<%s_HTID_W> htId)\n", mod.m_modName.Upper().c_str());
+		if (pMod->m_threads.m_htIdW.AsInt() > 0) {
+			g_appArgs.GetDsnRpt().AddLevel("void HtResume(ht_uint<%s_HTID_W> htId)\n", pMod->m_modName.Upper().c_str());
 			g_appArgs.GetDsnRpt().EndLevel();
 
-			m_iplFuncDecl.Append("\tvoid HtResume(sc_uint<%s_HTID_W> htId);\n", mod.m_modName.Upper().c_str());
+			m_iplFuncDecl.Append("\tvoid HtResume(sc_uint<%s_HTID_W> htId);\n", pMod->m_modName.Upper().c_str());
 			m_iplMacros.Append("void CPers%s%s::HtResume(sc_uint<%s_HTID_W> htId)\n",
-				unitNameUc.c_str(), pModInst->m_instName.Uc().c_str(), mod.m_modName.Upper().c_str());
-		} else if (mod.m_threads.m_htIdW.size() > 0) {
+				unitNameUc.c_str(), pModInst->m_instName.Uc().c_str(), pMod->m_modName.Upper().c_str());
+		} else if (pMod->m_threads.m_htIdW.size() > 0) {
 			g_appArgs.GetDsnRpt().AddLevel("void HtResume(ht_uint1 htId)\n");
 			g_appArgs.GetDsnRpt().EndLevel();
 
@@ -252,11 +252,11 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 				unitNameUc.c_str(), pModInst->m_instName.Uc().c_str());
 		}
 		m_iplMacros.Append("{\n");
-		if (mod.m_threads.m_htIdW.size() > 0 && mod.m_threads.m_htIdW.AsInt() == 0)
+		if (pMod->m_threads.m_htIdW.size() > 0 && pMod->m_threads.m_htIdW.AsInt() == 0)
 			m_iplMacros.Append("\tassert_msg(htId == 0, \"Runtime check failed in CPers%s::HtResume()"
 			" - expected htId parameter value to be zero\");\n", pModInst->m_instName.Uc().c_str());
-		if (mod.m_threads.m_htIdW.AsInt() > 0) {
-			if (mod.m_rsmSrcCnt > 1) {
+		if (pMod->m_threads.m_htIdW.AsInt() > 0) {
+			if (pMod->m_rsmSrcCnt > 1) {
 				m_iplMacros.Append("\tCHtCmd rsm;\n");
 				m_iplMacros.Append("\trsm.m_htId = htId;\n");
 				m_iplMacros.Append("\tm_htRsmInstr.read_addr(htId);\n");
@@ -292,8 +292,8 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		unitNameUc.c_str(), pModInst->m_instName.Uc().c_str());
 	m_iplMacros.Append("{\n");
 	m_iplMacros.Append("\tassert_msg(c_t%d_htCtrl == HT_INVALID, \"Runtime check failed in CPers%s::HtTerminate()"
-		" - an Ht control routine was already called\");\n", mod.m_execStg, pModInst->m_instName.Uc().c_str());
-	m_iplMacros.Append("\tc_t%d_htCtrl = HT_TERM;\n", mod.m_execStg);
+		" - an Ht control routine was already called\");\n", pMod->m_execStg, pModInst->m_instName.Uc().c_str());
+	m_iplMacros.Append("\tc_t%d_htCtrl = HT_TERM;\n", pMod->m_execStg);
 	m_iplMacros.Append("}\n");
 	m_iplMacros.Append("\n");
 
@@ -301,10 +301,10 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 	CHtCode *pIplTxStg = &iplT0Stg;
 
-	bool bNeedMifPollQue = (mod.m_mif.m_mifRd.m_bPoll || mod.m_mif.m_mifWr.m_bPoll) && mod.m_threads.m_htIdW.AsInt() > 2;
+	bool bNeedMifPollQue = (pMod->m_mif.m_mifRd.m_bPoll || pMod->m_mif.m_mifWr.m_bPoll) && pMod->m_threads.m_htIdW.AsInt() > 2;
 
 	// determine HT_SEL type width
-	int rsvSelCnt = mod.m_threads.m_resetInstr.size() > 0 ? 1 : 0;
+	int rsvSelCnt = pMod->m_threads.m_resetInstr.size() > 0 ? 1 : 0;
 	for (size_t intfIdx = 0; intfIdx < pModInst->m_cxrIntfList.size(); intfIdx += 1) {
 		CCxrIntf * pCxrIntf = pModInst->m_cxrIntfList[intfIdx];
 
@@ -318,16 +318,16 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		rsvSelCnt += 1;
 	int rsvSelW = FindLg2(rsvSelCnt);
 
-	if (mod.m_cxrEntryReserveCnt > 0) {
+	if (pMod->m_cxrEntryReserveCnt > 0) {
 		char typeName[32];
 		sprintf(typeName, "ht_uint%d", rsvSelW);
-		mod.m_threads.m_htPriv.AddStructField(FindType(typeName), "rtnRsvSel");
+		pMod->m_threads.m_htPriv.AddStructField(FindType(typeName), "rtnRsvSel");
 	}
 
 	char htIdTypeStr[128];
-	sprintf(htIdTypeStr, "sc_uint<%s_HTID_W>", mod.m_modName.Upper().c_str());
+	sprintf(htIdTypeStr, "sc_uint<%s_HTID_W>", pMod->m_modName.Upper().c_str());
 	char htInstrTypeStr[128];
-	sprintf(htInstrTypeStr, "sc_uint<%s_INSTR_W> ht_noload", mod.m_modName.Upper().c_str());
+	sprintf(htInstrTypeStr, "sc_uint<%s_INSTR_W> ht_noload", pMod->m_modName.Upper().c_str());
 
 	{
 		m_iplRegDecl.Append("\tstruct CHtCmd {\n");
@@ -335,52 +335,52 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		m_iplRegDecl.Append("\t\tCHtCmd() {} // avoid run-time uninitialized error\n");
 		m_iplRegDecl.Append("#\t\tendif\n");
 		m_iplRegDecl.Append("\n");
-		m_iplRegDecl.Append("\t\tuint32_t\t\tm_htInstr : %s_INSTR_W;\n", mod.m_modName.Upper().c_str());
-		if (mod.m_threads.m_htIdW.AsInt() > 0)
-			m_iplRegDecl.Append("\t\tuint32_t\t\tm_htId : %s_HTID_W;\n", mod.m_modName.Upper().c_str());
+		m_iplRegDecl.Append("\t\tuint32_t\t\tm_htInstr : %s_INSTR_W;\n", pMod->m_modName.Upper().c_str());
+		if (pMod->m_threads.m_htIdW.AsInt() > 0)
+			m_iplRegDecl.Append("\t\tuint32_t\t\tm_htId : %s_HTID_W;\n", pMod->m_modName.Upper().c_str());
 		m_iplRegDecl.Append("\t};\n");
 		m_iplRegDecl.Append("\n");
 
 		// if no private variables then declare one to avoid zero width struct
-		bool bFoundField = mod.m_threads.m_htPriv.m_fieldList.size() > 0;
+		bool bFoundField = pMod->m_threads.m_htPriv.m_fieldList.size() > 0;
 
 		if (bFoundField == false) {
 			string name = "null";
 
-			mod.m_threads.m_htPriv.AddStructField(&g_bool, name);
-			mod.m_threads.m_htPriv.m_fieldList.back()->InitDimen(mod.m_threads.m_lineInfo);
+			pMod->m_threads.m_htPriv.AddStructField(&g_bool, name);
+			pMod->m_threads.m_htPriv.m_fieldList.back()->InitDimen(pMod->m_threads.m_lineInfo);
 		}
 
-		mod.m_threads.m_htPriv.m_typeName = "CHtPriv";
-		mod.m_threads.m_htPriv.m_bCStyle = false;
-		GenUserStructs(m_iplRegDecl, &mod.m_threads.m_htPriv, "\t");
+		pMod->m_threads.m_htPriv.m_typeName = "CHtPriv";
+		pMod->m_threads.m_htPriv.m_bCStyle = false;
+		GenUserStructs(m_iplRegDecl, &pMod->m_threads.m_htPriv, "\t");
 
 		string privStructName = VA("CPers%s::CHtPriv", pModInst->m_instName.Uc().c_str());
 
 		GenUserStructBadData(m_iplBadDecl, true, privStructName,
-			mod.m_threads.m_htPriv.m_fieldList, mod.m_threads.m_htPriv.m_bCStyle, "");
+			pMod->m_threads.m_htPriv.m_fieldList, pMod->m_threads.m_htPriv.m_bCStyle, "");
 
-		if (mod.m_threads.m_htIdW.AsInt() == 0) {
+		if (pMod->m_threads.m_htIdW.AsInt() == 0) {
 
 			m_iplRegDecl.Append("\tCHtCmd r_htCmd;\n");
 			m_iplRegDecl.Append("\tCHtPriv r_htPriv;\n");
 
 		} else {
 			m_iplRegDecl.Append("\tht_dist_que<CHtCmd, %s_HTID_W> m_htCmdQue;\n",
-				mod.m_modName.Upper().c_str());
-			if (mod.m_threads.m_ramType == eDistRam)
+				pMod->m_modName.Upper().c_str());
+			if (pMod->m_threads.m_ramType == eDistRam)
 				m_iplRegDecl.Append("\tht_dist_ram<CHtPriv, %s_HTID_W> m_htPriv;\n",
-				mod.m_modName.Upper().c_str());
+				pMod->m_modName.Upper().c_str());
 			else
 				m_iplRegDecl.Append("\tht_block_ram<CHtPriv, %s_HTID_W> m_htPriv;\n",
-				mod.m_modName.Upper().c_str());
+				pMod->m_modName.Upper().c_str());
 		}
 
-		if (mod.m_threads.m_bCallFork) {
-			if (mod.m_threads.m_htIdW.AsInt() <= 2) {
-				GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, VA("ht_uint%d", 1 << mod.m_threads.m_htIdW.AsInt()), VA("r_htPrivLk"));
+		if (pMod->m_threads.m_bCallFork) {
+			if (pMod->m_threads.m_htIdW.AsInt() <= 2) {
+				GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, VA("ht_uint%d", 1 << pMod->m_threads.m_htIdW.AsInt()), VA("r_htPrivLk"));
 				iplReg.Append("\tr_htPrivLk = %s ? (ht_uint%d)0 : c_htPrivLk;\n", reset.c_str(),
-					1 << mod.m_threads.m_htIdW.AsInt());
+					1 << pMod->m_threads.m_htIdW.AsInt());
 			} else {
 				for (size_t intfIdx = 0; intfIdx < pModInst->m_cxrIntfList.size(); intfIdx += 1) {
 					CCxrIntf * pCxrIntf = pModInst->m_cxrIntfList[intfIdx];
@@ -390,22 +390,22 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 					if (pCxrIntf->m_srcReplCnt > 1 && pCxrIntf->m_srcReplId != 0) continue;
 
 					m_iplRegDecl.Append("\tht_dist_ram<bool, %s_HTID_W> m_%s_%sPrivLk0%s;\n",
-						mod.m_modName.Upper().c_str(),
+						pMod->m_modName.Upper().c_str(),
 						pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplDecl());
 					m_iplRegDecl.Append("\tht_dist_ram<bool, %s_HTID_W> m_%s_%sPrivLk1%s;\n",
-						mod.m_modName.Upper().c_str(),
+						pMod->m_modName.Upper().c_str(),
 						pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplDecl());
 				}
 				m_iplRegDecl.Append("\tht_dist_ram<bool, %s_HTID_W> m_htCmdPrivLk0;\n",
-					mod.m_modName.Upper().c_str());
+					pMod->m_modName.Upper().c_str());
 				m_iplRegDecl.Append("\tht_dist_ram<bool, %s_HTID_W> m_htCmdPrivLk1;\n",
-					mod.m_modName.Upper().c_str());
+					pMod->m_modName.Upper().c_str());
 
-				if (mod.m_rsmSrcCnt > 0) {
+				if (pMod->m_rsmSrcCnt > 0) {
 					m_iplRegDecl.Append("\tht_dist_ram<bool, %s_HTID_W> m_rsmPrivLk0;\n",
-						mod.m_modName.Upper().c_str());
+						pMod->m_modName.Upper().c_str());
 					m_iplRegDecl.Append("\tht_dist_ram<bool, %s_HTID_W> m_rsmPrivLk1;\n",
-						mod.m_modName.Upper().c_str());
+						pMod->m_modName.Upper().c_str());
 				}
 
 				m_iplRegDecl.Append("\n");
@@ -423,7 +423,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 	string htSelType;
 	{
 		int htSelCnt = 1;
-		if (mod.m_threads.m_resetInstr.size() > 0) htSelCnt += 1;
+		if (pMod->m_threads.m_resetInstr.size() > 0) htSelCnt += 1;
 
 		for (size_t intfIdx = 0; intfIdx < pModInst->m_cxrIntfList.size(); intfIdx += 1) {
 			CCxrIntf * pCxrIntf = pModInst->m_cxrIntfList[intfIdx];
@@ -442,14 +442,14 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 	pIplTxStg->Append("\tbool c_t1_htValid = false;\n");
 
-	if (mod.m_threads.m_htIdW.AsInt() == 0) {
+	if (pMod->m_threads.m_htIdW.AsInt() == 0) {
 
 		pIplTxStg->Append("\tbool c_htBusy = r_htBusy;\n");
 		pIplTxStg->Append("\tbool c_htCmdValid = r_htCmdValid;\n");
 
-		if (mod.m_threads.m_bCallFork && mod.m_threads.m_htIdW.AsInt() == 0)
+		if (pMod->m_threads.m_bCallFork && pMod->m_threads.m_htIdW.AsInt() == 0)
 			pIplTxStg->Append("\tht_uint%d c_htPrivLk = r_htPrivLk;\n",
-			1 << mod.m_threads.m_htIdW.AsInt());
+			1 << pMod->m_threads.m_htIdW.AsInt());
 	}
 
 	pIplTxStg->NewLine();
@@ -460,30 +460,30 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 	bool bResetCnt = false;
 	char const * pResetCompStr = "\tbool c_resetComplete = ";
 
-	if (mod.m_mif.m_bMifRd && mod.m_mif.m_mifRd.m_rspGrpIdW > 2) {
+	if (pMod->m_mif.m_bMifRd && pMod->m_mif.m_mifRd.m_rspGrpIdW > 2) {
 		pIplTxStg->Append("%sr_rdRspGrpInitCnt[%s_RD_GRP_ID_W] != 0",
-			pResetCompStr, mod.m_modName.Upper().c_str());
+			pResetCompStr, pModInst->m_instName.Upper().c_str());
 		pResetCompStr = " &&\n\t\t";
 		bResetCnt = true;
 	}
 
-	if (mod.m_mif.m_bMifWr && mod.m_mif.m_mifWr.m_rspGrpIdW > 2) {
+	if (pMod->m_mif.m_bMifWr && pMod->m_mif.m_mifWr.m_rspGrpIdW > 2) {
 		pIplTxStg->Append("%sr_wrRspGrpInitCnt[%s_WR_GRP_ID_W] != 0",
-			pResetCompStr, mod.m_modName.Upper().c_str());
+			pResetCompStr, pModInst->m_instName.Upper().c_str());
 		pResetCompStr = " &&\n\t\t";
 		bResetCnt = true;
 	}
 
-	if (mod.m_bHtIdInit) {
-		pIplTxStg->Append("%s!r_t%d_htIdInit", pResetCompStr, mod.m_execStg);
+	if (pMod->m_bHtIdInit) {
+		pIplTxStg->Append("%s!r_t%d_htIdInit", pResetCompStr, pMod->m_execStg);
 		pResetCompStr = " &&\n\t\t";
 		bResetCnt = true;
 	}
 
-	for (size_t barIdx = 0; barIdx < mod.m_barrierList.size(); barIdx += 1) {
-		CBarrier * pBar = mod.m_barrierList[barIdx];
+	for (size_t barIdx = 0; barIdx < pMod->m_barrierList.size(); barIdx += 1) {
+		CBarrier * pBar = pMod->m_barrierList[barIdx];
 
-		bool bMimicHtCont = mod.m_threads.m_htIdW.AsInt() == 0 && mod.m_instSet.GetReplCnt(0) == 1;
+		bool bMimicHtCont = pMod->m_threads.m_htIdW.AsInt() == 0 && pMod->m_instSet.GetReplCnt(0) == 1;
 
 		if (bMimicHtCont || pBar->m_barIdW.AsInt() <= 2) continue;
 
@@ -492,10 +492,10 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		bResetCnt = true;
 	}
 
-	if (mod.m_threads.m_htIdW.AsInt() > 0) {
+	if (pMod->m_threads.m_htIdW.AsInt() > 0) {
 
 		pIplTxStg->Append("%sr_htIdPoolCnt[%s_HTID_W] != 0",
-			pResetCompStr, mod.m_modName.Upper().c_str());
+			pResetCompStr, pMod->m_modName.Upper().c_str());
 
 		pResetCompStr = " &&\n\t\t";
 		bResetCnt = true;
@@ -517,7 +517,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 	m_iplRegDecl.NewLine();
 	iplReg.NewLine();
 
-	if (mod.m_threads.m_resetInstr.size() > 0) {
+	if (pMod->m_threads.m_resetInstr.size() > 0) {
 		m_iplRegDecl.Append("\tbool r_resetInstrStarted;\n");
 		pIplTxStg->Append("\tbool c_resetInstrStarted = r_resetInstrStarted;\n");
 		iplReg.Append("\tr_resetInstrStarted = !%s && c_resetInstrStarted;\n", reset.c_str());
@@ -539,19 +539,19 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 			m_iplRegDecl.Append("\tbool r_%s_%sRsvLimitEmpty%s;\n",
 				pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplDecl());
 			m_iplRegDecl.Append("\tsc_uint<%s> r_%s_%sRsvLimit%s;\n",
-				mod.m_threads.m_htIdW.c_str(),
+				pMod->m_threads.m_htIdW.c_str(),
 				pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplDecl());
 		}
 
 		if (pCxrIntf->GetPortReplCnt() <= 1) {
 			pIplTxStg->Append("\tsc_uint<%s> c_%s_%sRsvLimit = r_%s_%sRsvLimit;\n",
-				mod.m_threads.m_htIdW.c_str(),
+				pMod->m_threads.m_htIdW.c_str(),
 				pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(),
 				pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName());
 		} else {
 			if (pCxrIntf->GetPortReplId() == 0)
 				pIplTxStg->Append("\tsc_uint<%s> c_%s_%sRsvLimit%s;\n",
-				mod.m_threads.m_htIdW.c_str(),
+				pMod->m_threads.m_htIdW.c_str(),
 				pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplDecl());
 
 			pIplTxStg->Append("\tc_%s_%sRsvLimit%s = r_%s_%sRsvLimit%s;\n",
@@ -565,8 +565,8 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		iplReg.Append("\tr_%s_%sRsvLimit%s = %s ? (sc_uint<%s>)%d : c_%s_%sRsvLimit%s;\n",
 			pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex(),
 			reset.c_str(),
-			mod.m_threads.m_htIdW.c_str(),
-			(1 << mod.m_threads.m_htIdW.AsInt()) - pCxrIntf->m_reserveCnt,
+			pMod->m_threads.m_htIdW.c_str(),
+			(1 << pMod->m_threads.m_htIdW.AsInt()) - pCxrIntf->m_reserveCnt,
 			pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
 	}
 
@@ -591,19 +591,19 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 			GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, VA("ht_uint%d", pCxrIntf->GetQueDepthW() + 1), VA("r_%s_%sCompCnt", pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName()), replDim);
 			m_iplRegDecl.Append("\tht_uint%d c_%s_%sCompCnt%s;\n", pCxrIntf->GetQueDepthW() + 1, pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplDecl());
 
-			if (pCxrIntf->m_pSrcModInst->m_pMod->m_clkRate == eClk2x && mod.m_clkRate == eClk1x) {
+			if (pCxrIntf->m_pSrcModInst->m_pMod->m_clkRate == eClk2x && pMod->m_clkRate == eClk1x) {
 				GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, "sc_signal<ht_uint2>", VA("r_%s_%sCompCnt_2x", pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName()), replDim);
 				m_iplRegDecl.Append("\tht_uint2 c_%s_%sCompCnt_2x%s;\n", pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplDecl());
 			}
 		}
 
-		if (pCxrIntf->m_pSrcModInst->m_pMod->m_clkRate == eClk2x && mod.m_clkRate == eClk1x) {
+		if (pCxrIntf->m_pSrcModInst->m_pMod->m_clkRate == eClk2x && pMod->m_clkRate == eClk1x) {
 			pIplTxStg->Append("\tc_%s_%sCompCnt%s = r_%s_%sCompCnt%s + r_%s_%sCompCnt_2x%s.read();\n",
 				pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex(),
 				pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex(),
 				pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
 
-		} else if (pCxrIntf->m_pSrcModInst->m_pMod->m_clkRate == eClk1x && mod.m_clkRate == eClk1x) {
+		} else if (pCxrIntf->m_pSrcModInst->m_pMod->m_clkRate == eClk1x && pMod->m_clkRate == eClk1x) {
 			pIplTxStg->Append("\tc_%s_%sCompCnt%s = r_%s_%sCompCnt%s + (i_%s_%sCompRdy%s.read() ? 1u : 0u);\n",
 				pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex(),
 				pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex(),
@@ -616,7 +616,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 			pCxrIntf->GetQueDepthW() + 1,
 			pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
 
-		if (pCxrIntf->m_pSrcModInst->m_pMod->m_clkRate == eClk2x && mod.m_clkRate == eClk1x) {
+		if (pCxrIntf->m_pSrcModInst->m_pMod->m_clkRate == eClk2x && pMod->m_clkRate == eClk1x) {
 
 			m_iplPostInstr2x.Append("\tc_%s_%sCompCnt_2x%s = r_phase == 0 ? (ht_uint2)0 : r_%s_%sCompCnt_2x%s;\n",
 				pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex(),
@@ -641,22 +641,22 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 	int selRrCnt = 1;
 
 	htSelNameList.push_back(CHtSelName("htCmd", "", ""));
-	if (mod.m_threads.m_htIdW.AsInt() == 0) {
-		if (!mod.m_bGvIwComp) {
+	if (pMod->m_threads.m_htIdW.AsInt() == 0) {
+		if (!pMod->m_bGvIwComp) {
 			pIplTxStg->Append("\tbool c_htCmdRdy = r_htCmdValid");
-			if (mod.m_threads.m_bCallFork)
+			if (pMod->m_threads.m_bCallFork)
 				pIplTxStg->Append(" && !r_htPrivLk");
 			pIplTxStg->Append(";\n");
 		} else {
 			pIplTxStg->Append("\tc_htCompQueAvlCnt = r_htCompQueAvlCnt;\n");
 			pIplTxStg->Append("\tc_htCompRdy = r_htCompRdy;\n");
-			if (mod.m_bCallFork)
+			if (pMod->m_bCallFork)
 				pIplTxStg->Append("\tbool c_htCmdRdy = r_htCmdValid && !r_htPrivLk && r_htCompRdy;\n");
 			else
 				pIplTxStg->Append("\tbool c_htCmdRdy = r_htCmdValid && r_htCompRdy;\n");
 		}
 	} else {
-		if (!mod.m_bGvIwComp)
+		if (!pMod->m_bGvIwComp)
 			pIplTxStg->Append("\tbool c_htCmdRdy = !m_htCmdQue.empty();\n");
 		else {
 			pIplTxStg->Append("\tc_htCompQueAvlCnt = r_htCompQueAvlCnt;\n");
@@ -670,7 +670,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		htSelNameList.push_back(CHtSelName("mifPoll", "", ""));
 		selRrCnt += 1;
 
-		if (!mod.m_bGvIwComp)
+		if (!pMod->m_bGvIwComp)
 			pIplTxStg->Append("\tbool c_mifPollRdy = !m_mifPollQue.empty();\n");
 		else {
 			pIplTxStg->Append("\tc_mifPollRdyCnt = r_mifPollRdyCnt;\n");
@@ -700,7 +700,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 		if (pCxrIntf->GetQueDepthW() > 0) {
 			if (pCxrIntf->m_bCxrIntfFields) {
-				if (mod.m_clkRate == eClk1x && pCxrIntf->m_pSrcModInst->m_pMod->m_clkRate == eClk1x)
+				if (pMod->m_clkRate == eClk1x && pCxrIntf->m_pSrcModInst->m_pMod->m_clkRate == eClk1x)
 					pIplTxStg->Append("!m_%s_%sQue%s.empty()",
 					pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
 				else
@@ -720,12 +720,12 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 			if (pCxrCall->m_pGroup->m_htIdW.AsInt() > 0) {
 			} else {
-				if (mod.m_bCallFork)
+				if (pMod->m_bCallFork)
 					pIplTxStg->Append(" && !r_htPrivLk");
 			}
 		}
 
-		if (mod.m_bGvIwComp) {
+		if (pMod->m_bGvIwComp) {
 			pIplTxStg->Append(" && r_htCompQueAvlCnt > 0u", pCxrIntf->GetIntfName());
 		}
 
@@ -808,7 +808,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		if (!pCxrIntf->m_bCxrIntfFields) continue;
 
 		if (pCxrIntf->GetQueDepthW() > 0) {
-			if (mod.m_clkRate == eClk1x && pCxrIntf->m_pSrcModInst->m_pMod->m_clkRate == eClk1x) {
+			if (pMod->m_clkRate == eClk1x && pCxrIntf->m_pSrcModInst->m_pMod->m_clkRate == eClk1x) {
 				if (pCxrIntf->GetPortReplCnt() <= 1)
 					pIplTxStg->Append("\tC%s_%s c_t1_%s_%s = m_%s_%sQue.front();\n",
 					pCxrIntf->GetSrcToDstUc(), pCxrIntf->GetIntfName(),
@@ -859,16 +859,16 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 			}
 		}
 
-		if (pCxrIntf->m_cxrType == CxrReturn && mod.m_threads.m_htIdW.AsInt() > 0) {
+		if (pCxrIntf->m_cxrType == CxrReturn && pMod->m_threads.m_htIdW.AsInt() > 0) {
 			if (pCxrIntf->GetPortReplCnt() <= 1)
 				pIplTxStg->Append("\tsc_uint<%s> c_t1_%s_%sHtId%s = c_t1_%s_%s%s.m_rtnHtId;\n",
-				mod.m_threads.m_htIdW.c_str(),
+				pMod->m_threads.m_htIdW.c_str(),
 				pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex(),
 				pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
 			else {
 				if (pCxrIntf->GetPortReplId() == 0)
 					pIplTxStg->Append("\tsc_uint<%s> c_t1_%s_%sHtId%s;\n",
-					mod.m_threads.m_htIdW.c_str(),
+					pMod->m_threads.m_htIdW.c_str(),
 					pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplDecl());
 
 				pIplTxStg->Append("\tc_t1_%s_%sHtId%s = c_t1_%s_%s%s.m_rtnHtId;\n",
@@ -876,7 +876,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 					pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
 			}
 
-			if (mod.m_bCallFork && mod.m_threads.m_htIdW.AsInt() > 2) {
+			if (pMod->m_bCallFork && pMod->m_threads.m_htIdW.AsInt() > 2) {
 				pIplTxStg->Append("\tm_%s_%sPrivLk0%s.read_addr(c_t1_%s_%sHtId%s);\n",
 					pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex(),
 					pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
@@ -891,26 +891,26 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 	m_iplRegDecl.NewLine();
 	iplReg.NewLine();
 
-	if (mod.m_threads.m_htIdW.AsInt() == 0)
+	if (pMod->m_threads.m_htIdW.AsInt() == 0)
 		pIplTxStg->Append("\tCHtCmd c_t1_htCmd = r_htCmd;\n");
 	else
 		pIplTxStg->Append("\tCHtCmd c_t1_htCmd = m_htCmdQue.front();\n");
 
-	if (mod.m_threads.m_htIdW.AsInt() > 0) {
+	if (pMod->m_threads.m_htIdW.AsInt() > 0) {
 		pIplTxStg->Append("\tsc_uint<%s_HTID_W> c_t1_htCmdHtId = c_t1_htCmd.m_htId;\n",
-			mod.m_modName.Upper().c_str());
+			pMod->m_modName.Upper().c_str());
 
-		if (mod.m_bCallFork && mod.m_threads.m_htIdW.AsInt() > 2) {
+		if (pMod->m_bCallFork && pMod->m_threads.m_htIdW.AsInt() > 2) {
 			pIplTxStg->Append("\tm_htCmdPrivLk0.read_addr(c_t1_htCmdHtId);\n");
 			pIplTxStg->Append("\tm_htCmdPrivLk1.read_addr(c_t1_htCmdHtId);\n");
 		}
 
 		pIplTxStg->Append("\tsc_uint<%s_HTID_W> c_t1_htIdPool = m_htIdPool.front();\n",
-			mod.m_modName.Upper().c_str());
+			pMod->m_modName.Upper().c_str());
 		pIplTxStg->Append("\tsc_uint<%s_HTID_W> c_t1_htId = 0;\n",
-			mod.m_modName.Upper().c_str());
+			pMod->m_modName.Upper().c_str());
 
-		if (mod.m_threads.m_htIdW.AsInt() > 2 && mod.m_bCallFork) {
+		if (pMod->m_threads.m_htIdW.AsInt() > 2 && pMod->m_bCallFork) {
 			pIplTxStg->Append("\tbool c_t1_htPrivLkData = false;\n");
 			GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, VA("bool"), VA("r_t2_htPrivLkData"));
 			iplReg.Append("\tr_t2_htPrivLkData = c_t1_htPrivLkData;\n");
@@ -925,36 +925,36 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		pIplTxStg->Append("\tCHtCmd c_t1_mifPollCmd = m_mifPollQue.front();\n");
 
 		pIplTxStg->Append("\tsc_uint<%s_HTID_W> c_t1_mifPollHtId = c_t1_mifPollCmd.m_htId;\n",
-			mod.m_modName.Upper().c_str());
+			pMod->m_modName.Upper().c_str());
 	}
 
 	pIplTxStg->NewLine();
 	m_iplRegDecl.NewLine();
 	iplReg.NewLine();
 
-	if (mod.m_rsmSrcCnt > 0) {
+	if (pMod->m_rsmSrcCnt > 0) {
 
 		pIplTxStg->Append("\tbool c_t1_rsmHtRdy = r_t1_rsmHtRdy;\n");
-		if (mod.m_clkRate == eClk2x) {
+		if (pMod->m_clkRate == eClk2x) {
 			m_iplRegDecl.Append("\tbool r_t2_rsmHtRdy;\n");
 			iplReg.Append("\tr_t2_rsmHtRdy = c_t1_rsmHtRdy;\n");
 		}
 
-		if (mod.m_threads.m_htIdW.AsInt() > 0) {
-			pIplTxStg->Append("\tsc_uint<%s_HTID_W> c_t1_rsmHtId = r_t1_rsmHtId;\n", mod.m_modName.Upper().c_str());
-			//if (mod.m_clkRate == eClk2x) {
-			//	m_iplRegDecl.Append("\tsc_uint<%s> r_t2_rsmHtId;\n", mod.m_threads.m_htIdW.c_str());
+		if (pMod->m_threads.m_htIdW.AsInt() > 0) {
+			pIplTxStg->Append("\tsc_uint<%s_HTID_W> c_t1_rsmHtId = r_t1_rsmHtId;\n", pMod->m_modName.Upper().c_str());
+			//if (pMod->m_clkRate == eClk2x) {
+			//	m_iplRegDecl.Append("\tsc_uint<%s> r_t2_rsmHtId;\n", pMod->m_threads.m_htIdW.c_str());
 			//	iplReg.Append("\tr_t2_rsmHtId = c_t1_rsmHtId;\n");
 			//}
 		}
 
-		pIplTxStg->Append("\tsc_uint<%s_INSTR_W> c_t1_rsmHtInstr = r_t1_rsmHtInstr;\n", mod.m_modName.Upper().c_str());
-		if (mod.m_clkRate == eClk2x) {
-			m_iplRegDecl.Append("\tsc_uint<%s_INSTR_W> r_t2_rsmHtInstr;\n", mod.m_modName.Upper().c_str());
+		pIplTxStg->Append("\tsc_uint<%s_INSTR_W> c_t1_rsmHtInstr = r_t1_rsmHtInstr;\n", pMod->m_modName.Upper().c_str());
+		if (pMod->m_clkRate == eClk2x) {
+			m_iplRegDecl.Append("\tsc_uint<%s_INSTR_W> r_t2_rsmHtInstr;\n", pMod->m_modName.Upper().c_str());
 			iplReg.Append("\tr_t2_rsmHtInstr = c_t1_rsmHtInstr;\n");
 		}
 
-		if (mod.m_bCallFork && mod.m_threads.m_htIdW.AsInt() > 2) {
+		if (pMod->m_bCallFork && pMod->m_threads.m_htIdW.AsInt() > 2) {
 			pIplTxStg->Append("\tm_rsmPrivLk0.read_addr(c_t1_rsmHtId);\n");
 			pIplTxStg->Append("\tm_rsmPrivLk1.read_addr(c_t1_rsmHtId);\n");
 		}
@@ -967,11 +967,11 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 	char *pFirst = "\t";
 
 	int htSelCnt = 0;
-	if (mod.m_threads.m_resetInstr.size() > 0) {
+	if (pMod->m_threads.m_resetInstr.size() > 0) {
 
 		pIplTxStg->Append("%sif (!r_resetInstrStarted", pFirst);
 
-		if (mod.m_threads.m_htIdW.AsInt() > 0)
+		if (pMod->m_threads.m_htIdW.AsInt() > 0)
 			pIplTxStg->Append(" && !m_htIdPool.empty()");
 		else
 			pIplTxStg->Append(" && !r_htBusy");
@@ -986,12 +986,12 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		pIplTxStg->Append("\t\tc_t1_htSel = %s_HT_SEL_RESET;\n",
 			pModInst->m_instName.Upper().c_str());
 
-		if (mod.m_threads.m_htIdW.AsInt() > 0)
+		if (pMod->m_threads.m_htIdW.AsInt() > 0)
 			pIplTxStg->Append("\t\tc_t1_htId = c_t1_htIdPool;\n");
 
 		pIplTxStg->Append("\t\tc_t1_htValid = true;\n");
 
-		if (mod.m_threads.m_htIdW.AsInt() > 0) {
+		if (pMod->m_threads.m_htIdW.AsInt() > 0) {
 			pIplTxStg->Append("\t\tm_htIdPool.pop();\n");
 		} else {
 			pIplTxStg->Append("\t\tc_htBusy = true;\n");
@@ -1003,7 +1003,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		pFirst = "";
 	}
 
-	if (mod.m_rsmSrcCnt > 0) {
+	if (pMod->m_rsmSrcCnt > 0) {
 		pIplTxStg->Append("%sif (r_t1_rsmHtRdy", pFirst);
 
 		if (bResetCnt) pIplTxStg->Append(" && r_resetComplete");
@@ -1012,15 +1012,15 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 		pIplTxStg->Append("\t\tc_t1_htSel = %s_HT_SEL_SM;\n", pModInst->m_instName.Upper().c_str());
 
-		if (mod.m_threads.m_htIdW.AsInt() == 0) {
+		if (pMod->m_threads.m_htIdW.AsInt() == 0) {
 
 			pIplTxStg->Append("\t\tc_t1_htValid = true;\n");
 
 		} else {
 			pIplTxStg->Append("\t\tc_t1_htId = c_t1_rsmHtId;\n");
 
-			if (mod.m_bCallFork) {
-				if (mod.m_threads.m_htIdW.AsInt() <= 2)
+			if (pMod->m_bCallFork) {
+				if (pMod->m_threads.m_htIdW.AsInt() <= 2)
 					pIplTxStg->Append("\t\tc_t1_htValid = !r_htPrivLk[INT(c_t1_rsmHtId)];\n");
 				else {
 					pIplTxStg->Append("\t\tc_t1_htValid = m_rsmPrivLk0.read_mem() == m_rsmPrivLk1.read_mem();\n");
@@ -1046,7 +1046,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 		if (pCxrIntf->GetQueDepthW() > 0) {
 			if (pCxrIntf->m_bCxrIntfFields) {
-				if (mod.m_clkRate == eClk1x && pCxrIntf->m_pSrcModInst->m_pMod->m_clkRate == eClk1x)
+				if (pMod->m_clkRate == eClk1x && pCxrIntf->m_pSrcModInst->m_pMod->m_clkRate == eClk1x)
 					pIplTxStg->Append("%sif (!m_%s_%sQue%s.empty()", pFirst,
 					pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
 				else
@@ -1061,7 +1061,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 		if (pCxrIntf->m_cxrType == CxrCall || pCxrIntf->m_cxrType == CxrTransfer) {
 			if (pCxrIntf->m_pDstGroup->m_htIdW.AsInt() > 0) {
-				if (mod.m_cxrEntryReserveCnt > 0) {
+				if (pMod->m_cxrEntryReserveCnt > 0) {
 
 					for (size_t intfIdx2 = 0; intfIdx2 < pModInst->m_cxrIntfList.size(); intfIdx2 += 1) {
 						CCxrIntf * pCxrIntf2 = pModInst->m_cxrIntfList[intfIdx2];
@@ -1106,7 +1106,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 			pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
 		else {
 			if (pCxrIntf->m_bCxrIntfFields) {
-				if (mod.m_clkRate != eClk1x || pCxrIntf->m_pSrcModInst->m_pMod->m_clkRate != eClk1x)
+				if (pMod->m_clkRate != eClk1x || pCxrIntf->m_pSrcModInst->m_pMod->m_clkRate != eClk1x)
 					pIplTxStg->Append("\t\tc_%s_%sQueEmpty%s = true;\n",
 					pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
 				else
@@ -1120,7 +1120,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		pIplTxStg->Append("\t\tc_%s_%sAvl%s = true;\n",
 			pCxrIntf->GetPortNameDstToSrcLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
 
-		if (mod.m_threads.m_htIdW.AsInt() == 0 && mod.m_bCallFork)
+		if (pMod->m_threads.m_htIdW.AsInt() == 0 && pMod->m_bCallFork)
 			pIplTxStg->Append("\t\tc_htPrivLk = true;\n");
 
 		if (pCxrIntf->m_cxrType == CxrCall || pCxrIntf->m_cxrType == CxrTransfer) {
@@ -1177,7 +1177,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 			pIplTxStg->Append("\t\tc_t1_htId = c_t1_%s_%sHtId%s;\n",
 			pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
 
-		if (!mod.m_bCallFork) {
+		if (!pMod->m_bCallFork) {
 			pIplTxStg->Append("\t\tc_t1_htValid = true;\n");
 
 			if (pCxrIntf->GetQueDepthW() == 0)
@@ -1185,7 +1185,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 				pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
 			else {
 				if (pCxrIntf->m_bCxrIntfFields) {
-					if (mod.m_clkRate != eClk1x || pCxrIntf->m_pSrcModInst->m_pMod->m_clkRate != eClk1x)
+					if (pMod->m_clkRate != eClk1x || pCxrIntf->m_pSrcModInst->m_pMod->m_clkRate != eClk1x)
 						pIplTxStg->Append("\t\tc_%s_%sQueEmpty%s = true;\n",
 						pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
 					else
@@ -1209,7 +1209,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 		} else {
 
-			if (mod.m_threads.m_htIdW.AsInt() == 0) {
+			if (pMod->m_threads.m_htIdW.AsInt() == 0) {
 				pIplTxStg->Append("\t\tc_t1_htValid = true;\n");
 
 				if (pCxrIntf->GetQueDepthW() == 0)
@@ -1217,7 +1217,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 					pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
 				else {
 					if (pCxrIntf->m_bCxrIntfFields) {
-						if (mod.m_clkRate != eClk1x || pCxrIntf->m_pSrcModInst->m_pMod->m_clkRate != eClk1x)
+						if (pMod->m_clkRate != eClk1x || pCxrIntf->m_pSrcModInst->m_pMod->m_clkRate != eClk1x)
 							pIplTxStg->Append("\t\tc_%s_%sQueEmpty%s = true;\n",
 							pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
 						else
@@ -1242,7 +1242,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 				pIplTxStg->Append("\t\tc_htPrivLk = true;\n");
 
 			} else {
-				if (mod.m_threads.m_htIdW.AsInt() <= 2)
+				if (pMod->m_threads.m_htIdW.AsInt() <= 2)
 					pIplTxStg->Append("\t\tc_t1_htValid = !r_htPrivLk[INT(c_t1_htId)];\n");
 				else {
 					pIplTxStg->Append("\t\tc_t1_htValid = m_%s_%sPrivLk0%s.read_mem() == m_%s_%sPrivLk1%s.read_mem();\n",
@@ -1260,7 +1260,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 					pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
 				else {
 					if (pCxrIntf->m_bCxrIntfFields) {
-						if (mod.m_clkRate != eClk1x || pCxrIntf->m_pSrcModInst->m_pMod->m_clkRate != eClk1x)
+						if (pMod->m_clkRate != eClk1x || pCxrIntf->m_pSrcModInst->m_pMod->m_clkRate != eClk1x)
 							pIplTxStg->Append("\t\t\tc_%s_%sQueEmpty%s = true;\n",
 							pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
 						else
@@ -1306,19 +1306,19 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 			pModInst->m_instName.Upper().c_str());
 	}
 
-	if (!mod.m_bCallFork || mod.m_threads.m_htIdW.AsInt() == 0) {
+	if (!pMod->m_bCallFork || pMod->m_threads.m_htIdW.AsInt() == 0) {
 		pIplTxStg->Append("\t\tc_t1_htValid = true;\n");
 
-		if (mod.m_threads.m_htIdW.AsInt() > 0) {
+		if (pMod->m_threads.m_htIdW.AsInt() > 0) {
 			pIplTxStg->Append("\t\tc_t1_htId = c_t1_htCmdHtId;\n");
 			pIplTxStg->Append("\t\tm_htCmdQue.pop();\n");
-			if (mod.m_bGvIwComp)
+			if (pMod->m_bGvIwComp)
 				pIplTxStg->Append("\t\tc_htCmdRdyCnt -= 1u;\n");
 		} else {
 			pIplTxStg->Append("\t\tc_htCmdValid = false;\n");
-			if (mod.m_bGvIwComp)
+			if (pMod->m_bGvIwComp)
 				pIplTxStg->Append("\t\tc_htCompRdy = false;\n");
-			if (mod.m_threads.m_bCallFork)
+			if (pMod->m_threads.m_bCallFork)
 				pIplTxStg->Append("\t\tc_htPrivLk = true;\n");
 		}
 
@@ -1328,7 +1328,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 	} else {
 		pIplTxStg->Append("\t\tc_t1_htId = c_t1_htCmdHtId;\n");
 
-		if (mod.m_threads.m_htIdW.AsInt() <= 2)
+		if (pMod->m_threads.m_htIdW.AsInt() <= 2)
 			pIplTxStg->Append("\t\tc_t1_htValid = !r_htPrivLk[INT(c_t1_htCmdHtId)];\n");
 		else {
 			pIplTxStg->Append("\t\tc_t1_htValid = m_htCmdPrivLk0.read_mem() == m_htCmdPrivLk1.read_mem();\n");
@@ -1338,7 +1338,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 		pIplTxStg->Append("\t\tif (c_t1_htValid) {\n");
 		pIplTxStg->Append("\t\t\tm_htCmdQue.pop();\n");
-		if (mod.m_bGvIwComp)
+		if (pMod->m_bGvIwComp)
 			pIplTxStg->Append("\t\t\tc_htCmdRdyCnt -= 1u;\n");
 
 		if (selRrCnt > 1)
@@ -1366,17 +1366,17 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 				pModInst->m_instName.Upper().c_str());
 		}
 
-		if (!mod.m_bCallFork || mod.m_threads.m_htIdW.AsInt() == 0) {
+		if (!pMod->m_bCallFork || pMod->m_threads.m_htIdW.AsInt() == 0) {
 			pIplTxStg->Append("\t\tc_t1_htValid = true;\n");
 
-			if (mod.m_threads.m_htIdW.AsInt() > 0) {
+			if (pMod->m_threads.m_htIdW.AsInt() > 0) {
 				pIplTxStg->Append("\t\tc_t1_htId = c_t1_mifPollHtId;\n");
 				pIplTxStg->Append("\t\tm_mifPollQue.pop();\n");
-				if (mod.m_bGvIwComp)
+				if (pMod->m_bGvIwComp)
 					pIplTxStg->Append("\t\tc_mifPollRdyCnt -= 1u;\n");
 			} else {
 				pIplTxStg->Append("\t\tc_htCmdValid = false;\n");
-				if (mod.m_threads.m_bCallFork)
+				if (pMod->m_threads.m_bCallFork)
 					pIplTxStg->Append("\t\tc_htPrivLk = true;\n");
 			}
 
@@ -1385,7 +1385,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		} else {
 			pIplTxStg->Append("\t\tc_t1_htId = c_t1_mifPollHtId;\n");
 
-			if (mod.m_threads.m_htIdW.AsInt() <= 2)
+			if (pMod->m_threads.m_htIdW.AsInt() <= 2)
 				pIplTxStg->Append("\t\tc_t1_htValid = !r_htPrivLk[INT(c_t1_mifPollHtId)];\n");
 			else {
 				pIplTxStg->Append("\t\tc_t1_htValid = m_htCmdPrivLk0.read_mem() == m_htCmdPrivLk1.read_mem();\n");
@@ -1409,7 +1409,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 	HtlAssert(rsvSelCnt == htSelCnt);
 
-	if (mod.m_bGvIwComp) {
+	if (pMod->m_bGvIwComp) {
 		pIplTxStg->Append("\tif (c_t1_htValid)\n");
 		pIplTxStg->Append("\t\tc_htCompQueAvlCnt -= 1;\n");
 		pIplTxStg->NewLine();
@@ -1425,7 +1425,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 	int iplStg = 1;
 
-	if (mod.m_clkRate == eClk2x) {
+	if (pMod->m_clkRate == eClk2x) {
 
 		sprintf(inStgStr, "r_t%d", iplStg);
 		sprintf(outStgStr, "c_t%d", iplStg);
@@ -1434,7 +1434,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, htSelType, VA("%s_htSel", pRegStg));
 		iplReg.Append("\t%s_htSel = %s_htSel;\n", pRegStg, pOutStg);
 
-		if (mod.m_threads.m_htIdW.AsInt() > 0) {
+		if (pMod->m_threads.m_htIdW.AsInt() > 0) {
 			GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, htIdTypeStr, VA("%s_htId", pRegStg));
 			iplReg.Append("\t%s_htId = %s_htId;\n", pRegStg, pOutStg);
 		}
@@ -1487,21 +1487,21 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 	if (bMultiThread) {
 
-		if (mod.m_clkRate == eClk2x)
+		if (pMod->m_clkRate == eClk2x)
 			pIplTxStg->Append("\tbool %s_htValid = %s_htValid;\n", pOutStg, pInStg);
 		GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, "bool", VA("%s_htValid", pRegStg));
 		iplReg.Append("\t%s_htValid = !%s && %s_htValid;\n", pRegStg, reset.c_str(), pOutStg);
 
 		if (pModInst->m_cxrSrcCnt > 1) {
-			if (mod.m_clkRate == eClk2x)
+			if (pMod->m_clkRate == eClk2x)
 				pIplTxStg->Append("\t%s %s_htSel = %s_htSel;\n", htSelType.c_str(), pOutStg, pInStg);
 			GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, htSelType, VA("%s_htSel", pRegStg));
 			iplReg.Append("\t%s_htSel = %s_htSel;\n", pRegStg, pOutStg);
 		}
 
-		if (mod.m_clkRate == eClk2x)
-			pIplTxStg->Append("\tsc_uint<%s_HTID_W> %s_htId = %s_htId;\n", mod.m_modName.Upper().c_str(), pOutStg, pInStg);
-		GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, VA("sc_uint<%s_HTID_W>", mod.m_modName.Upper().c_str()), VA("%s_htId", pRegStg));
+		if (pMod->m_clkRate == eClk2x)
+			pIplTxStg->Append("\tsc_uint<%s_HTID_W> %s_htId = %s_htId;\n", pMod->m_modName.Upper().c_str(), pOutStg, pInStg);
+		GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, VA("sc_uint<%s_HTID_W>", pMod->m_modName.Upper().c_str()), VA("%s_htId", pRegStg));
 		iplReg.Append("\t%s_htId = %s_htId;\n", pRegStg, pOutStg);
 
 		// generate cmds
@@ -1511,7 +1511,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 			if (pCxrIntf->m_cxrDir == CxrOut) continue;
 			if (!pCxrIntf->m_bCxrIntfFields) continue;
 
-			if (mod.m_clkRate == eClk2x) {
+			if (pMod->m_clkRate == eClk2x) {
 				if (pCxrIntf->GetPortReplCnt() <= 1)
 					pIplTxStg->Append("\tC%s_%s %s_%s_%s = %s_%s_%s;\n",
 					pCxrIntf->GetSrcToDstUc(), pCxrIntf->GetIntfName(),
@@ -1540,22 +1540,22 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 				pOutStg, pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
 		}
 
-		if (mod.m_clkRate == eClk2x)
+		if (pMod->m_clkRate == eClk2x)
 			pIplTxStg->Append("\tCHtCmd %s_htCmd = %s_htCmd;\n", pOutStg, pInStg);
 
 		m_iplRegDecl.Append("\tCHtCmd %s_htCmd;\n", pRegStg);
 		iplReg.Append("\t%s_htCmd = %s_htCmd;\n", pRegStg, pOutStg);
 
 		if (bNeedMifPollQue) {
-			if (mod.m_clkRate == eClk2x)
+			if (pMod->m_clkRate == eClk2x)
 				pIplTxStg->Append("\tCHtCmd %s_mifPollCmd = %s_mifPollCmd;\n", pOutStg, pInStg);
 
 			m_iplRegDecl.Append("\tCHtCmd %s_mifPollCmd;\n", pRegStg);
 			iplReg.Append("\t%s_mifPollCmd = %s_mifPollCmd;\n", pRegStg, pOutStg);
 		}
 
-		if (mod.m_threads.m_htIdW.AsInt() > 2 && mod.m_bCallFork) {
-			if (mod.m_clkRate == eClk2x) {
+		if (pMod->m_threads.m_htIdW.AsInt() > 2 && pMod->m_bCallFork) {
+			if (pMod->m_clkRate == eClk2x) {
 				pIplTxStg->Append("\tbool %s_htPrivLkData = %s_htPrivLkData;\n",
 					pOutStg, pInStg);
 				GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, VA("bool"), VA("%s_htPrivLkData", pRegStg));
@@ -1565,31 +1565,31 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 		IplNewLine(pIplTxStg);
 
-		if (mod.m_rsmSrcCnt > 0) {
+		if (pMod->m_rsmSrcCnt > 0) {
 
-			if (mod.m_clkRate == eClk2x || !mod.m_bMultiThread)
+			if (pMod->m_clkRate == eClk2x || !pMod->m_bMultiThread)
 				pIplTxStg->Append("\tbool %s_rsmHtRdy = %s_rsmHtRdy;\n", pOutStg, pInStg);
 
-			if (mod.m_bMultiThread) {
+			if (pMod->m_bMultiThread) {
 				m_iplRegDecl.Append("\tbool %s_rsmHtRdy;\n", pRegStg);
 				iplReg.Append("\t%s_rsmHtRdy = %s_rsmHtRdy;\n", pRegStg, pOutStg);
 			}
 
-			if (mod.m_clkRate == eClk2x || !mod.m_bMultiThread)
-				pIplTxStg->Append("\tsc_uint<%s_INSTR_W> %s_rsmHtInstr = %s_rsmHtInstr;\n", mod.m_modName.Upper().c_str(), pOutStg, pInStg);
+			if (pMod->m_clkRate == eClk2x || !pMod->m_bMultiThread)
+				pIplTxStg->Append("\tsc_uint<%s_INSTR_W> %s_rsmHtInstr = %s_rsmHtInstr;\n", pMod->m_modName.Upper().c_str(), pOutStg, pInStg);
 
-			if (mod.m_bMultiThread) {
-				m_iplRegDecl.Append("\tsc_uint<%s_INSTR_W> %s_rsmHtInstr;\n", mod.m_modName.Upper().c_str(), pRegStg);
+			if (pMod->m_bMultiThread) {
+				m_iplRegDecl.Append("\tsc_uint<%s_INSTR_W> %s_rsmHtInstr;\n", pMod->m_modName.Upper().c_str(), pRegStg);
 				iplReg.Append("\t%s_rsmHtInstr = %s_rsmHtInstr;\n", pRegStg, pOutStg);
 			}
 		}
 
 		IplNewLine(pIplTxStg);
 
-		if (mod.m_bCallFork) {
-			if (mod.m_threads.m_htIdW.AsInt() <= 2) {
+		if (pMod->m_bCallFork) {
+			if (pMod->m_threads.m_htIdW.AsInt() <= 2) {
 				pIplTxStg->Append("\tht_uint%d c_htPrivLk = r_htPrivLk;\n",
-					1 << mod.m_threads.m_htIdW.AsInt());
+					1 << pMod->m_threads.m_htIdW.AsInt());
 				pIplTxStg->NewLine();
 
 				pIplTxStg->Append("\tif (c_t1_htValid)\n");
@@ -1611,7 +1611,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 				pIplTxStg->Append("\t\tm_htCmdPrivLk0.write_addr(c_t1_htId);\n");
 				pIplTxStg->Append("\t\tm_htCmdPrivLk0.write_mem(c_t1_htPrivLkData);\n");
 
-				if (mod.m_rsmSrcCnt > 0) {
+				if (pMod->m_rsmSrcCnt > 0) {
 					pIplTxStg->Append("\t\tm_rsmPrivLk0.write_addr(c_t1_htId);\n");
 					pIplTxStg->Append("\t\tm_rsmPrivLk0.write_mem(c_t1_htPrivLkData);\n");
 				}
@@ -1625,7 +1625,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 	///////////////////////////////////////////////////////////////////////
 	// Third stage: htPriv ram read, input is registered
 
-	if (mod.m_bMultiThread) {
+	if (pMod->m_bMultiThread) {
 		iplStg += 1;
 
 		sprintf(inStgStr, "r_t%d", iplStg);
@@ -1638,7 +1638,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 		pIplTxStg->Append("\tbool %s_htValid = %s_htValid;\n",
 			pOutStg, pInStg);
-		if (mod.m_clkRate == eClk2x) {
+		if (pMod->m_clkRate == eClk2x) {
 			m_iplRegDecl.Append("\tbool %s_htValid;\n",
 				pRegStg);
 			iplReg.Append("\t%s_htValid = !%s && %s_htValid;\n",
@@ -1647,22 +1647,22 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 		if (pModInst->m_cxrSrcCnt > 1) {
 			pIplTxStg->Append("\t%s %s_htSel = %s_htSel;\n", htSelType.c_str(), pOutStg, pInStg);
-			if (mod.m_clkRate == eClk2x) {
+			if (pMod->m_clkRate == eClk2x) {
 				GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, htSelType, VA("%s_htSel", pRegStg));
 				iplReg.Append("\t%s_htSel = %s_htSel;\n", pRegStg, pOutStg);
 			}
 		}
 
 		if (bMultiThread) {
-			if (mod.m_bHtIdInit && iplStg == mod.m_execStg - 1) {
+			if (pMod->m_bHtIdInit && iplStg == pMod->m_execStg - 1) {
 				pIplTxStg->Append("\tsc_uint<%s_HTID_W> %s_htId = %s_htIdInit ? (sc_uint<%s_HTID_W>)(%s_htId+1) : %s_htId;\n",
-					mod.m_modName.Upper().c_str(), pOutStg, pRegStg, mod.m_modName.Upper().c_str(), pRegStg, pInStg);
+					pMod->m_modName.Upper().c_str(), pOutStg, pRegStg, pMod->m_modName.Upper().c_str(), pRegStg, pInStg);
 				pIplTxStg->Append("\tbool %s_htIdInit = %s_htIdInit && %s_htId != 0x%x;\n",
-					pOutStg, pRegStg, pRegStg, (1 << mod.m_threads.m_htIdW.AsInt()) - 1);
+					pOutStg, pRegStg, pRegStg, (1 << pMod->m_threads.m_htIdW.AsInt()) - 1);
 			} else
-				pIplTxStg->Append("\tsc_uint<%s_HTID_W> %s_htId = %s_htId;\n", mod.m_modName.Upper().c_str(), pOutStg, pInStg);
+				pIplTxStg->Append("\tsc_uint<%s_HTID_W> %s_htId = %s_htId;\n", pMod->m_modName.Upper().c_str(), pOutStg, pInStg);
 
-			if (mod.m_clkRate == eClk2x) {
+			if (pMod->m_clkRate == eClk2x) {
 				GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, htIdTypeStr, VA("%s_htId", pRegStg));
 				iplReg.Append("\t%s_htId = %s_htId;\n", pRegStg, pOutStg);
 			}
@@ -1674,7 +1674,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 			if (pCxrIntf->m_cxrDir == CxrOut) continue;
 			if (!pCxrIntf->m_bCxrIntfFields) continue;
 
-			if (mod.m_clkRate == eClk2x) {
+			if (pMod->m_clkRate == eClk2x) {
 				if (pCxrIntf->GetPortReplId() == 0)
 					m_iplRegDecl.Append("\tC%s_%s %s_%s_%s%s;\n",
 					pCxrIntf->GetSrcToDstUc(), pCxrIntf->GetIntfName(),
@@ -1702,7 +1702,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 			}
 		}
 
-		if (mod.m_clkRate == eClk2x) {
+		if (pMod->m_clkRate == eClk2x) {
 			m_iplRegDecl.Append("\tCHtCmd %s_htCmd;\n", pRegStg);
 
 			iplReg.Append("\t%s_htCmd = %s_htCmd;\n", pRegStg, pOutStg);
@@ -1713,7 +1713,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		IplNewLine(pIplTxStg);
 
 		if (bNeedMifPollQue) {
-			if (mod.m_clkRate == eClk2x) {
+			if (pMod->m_clkRate == eClk2x) {
 				m_iplRegDecl.Append("\tCHtCmd %s_mifPollCmd;\n", pRegStg);
 
 				iplReg.Append("\t%s_mifPollCmd = %s_mifPollCmd;\n", pRegStg, pOutStg);
@@ -1724,12 +1724,12 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 		IplNewLine(pIplTxStg);
 
-		if (mod.m_clkRate == eClk2x) {
+		if (pMod->m_clkRate == eClk2x) {
 			GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, VA("CHtPriv"), VA("%s_htPriv", pRegStg));
 			iplReg.Append("\t%s_htPriv = %s_htPriv;\n",
 				pRegStg, pOutStg);
 
-			if (mod.m_threads.m_htIdW.AsInt() > 2 && mod.m_bCallFork) {
+			if (pMod->m_threads.m_htIdW.AsInt() > 2 && pMod->m_bCallFork) {
 				pIplTxStg->Append("\tbool %s_htPrivLkData = %s_htPrivLkData;\n", pOutStg, pInStg);
 				GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, VA("bool"), VA("%s_htPrivLkData", pRegStg));
 				iplReg.Append("\t%s_htPrivLkData = %s_htPrivLkData;\n", pRegStg, pOutStg);
@@ -1738,7 +1738,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 		IplNewLine(pIplTxStg);
 
-		if (mod.m_threads.m_ramType == eDistRam)
+		if (pMod->m_threads.m_ramType == eDistRam)
 			pIplTxStg->Append("\tm_htPriv.read_addr(%s_htId);\n", pInStg);
 		else {
 			string prevOutStg = pOutStg;
@@ -1754,23 +1754,23 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 	IplNewLine(pIplTxStg);
 
-	if (mod.m_rsmSrcCnt > 0) {
+	if (pMod->m_rsmSrcCnt > 0) {
 
-		if (mod.m_threads.m_htIdW.AsInt() > 0) {
+		if (pMod->m_threads.m_htIdW.AsInt() > 0) {
 			m_iplRegDecl.Append("#\tifndef _HTV\n");
-			m_iplRegDecl.Append("\tht_dist_ram<bool, %s_HTID_W> m_htRsmWait;\n", mod.m_modName.Upper().c_str());
+			m_iplRegDecl.Append("\tht_dist_ram<bool, %s_HTID_W> m_htRsmWait;\n", pMod->m_modName.Upper().c_str());
 			m_iplRegDecl.Append("#\tendif\n");
 
 			iplReg.Append("#\tifndef _HTV\n");
 			iplReg.Append("\tm_htRsmWait.clock();\n");
 			iplReg.Append("#\tendif\n");
 
-			m_iplCtorInit.Append("\t\tfor (int i = 0; i < (1 << %s_HTID_W); i += 1)\n", mod.m_modName.Upper().c_str());
+			m_iplCtorInit.Append("\t\tfor (int i = 0; i < (1 << %s_HTID_W); i += 1)\n", pMod->m_modName.Upper().c_str());
 			m_iplCtorInit.Append("\t\t\tm_htRsmWait.write_mem_debug(i) = false;\n");
 		} else {
 			m_iplRegDecl.Append("#\tifndef _HTV\n");
 			m_iplRegDecl.Append("\tbool c_htRsmWait;\n");
-			m_iplRegDecl.Append("\tbool r_htRsmWait;\n", mod.m_modName.Upper().c_str());
+			m_iplRegDecl.Append("\tbool r_htRsmWait;\n");
 			m_iplRegDecl.Append("#\tendif\n");
 
 			iplPostInstr.Append("#\tifndef _HTV\n");
@@ -1784,20 +1784,20 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 			m_iplCtorInit.Append("\t\tr_htRsmWait = false;\n");
 		}
 
-		if (mod.m_threads.m_bPause) {
-			if (mod.m_threads.m_htIdW.AsInt() > 0 && mod.m_rsmSrcCnt > 1) {
-				m_iplRegDecl.Append("\tht_dist_que<CHtCmd, %s_HTID_W> m_htRsmQue;\n", mod.m_modName.Upper().c_str());
+		if (pMod->m_threads.m_bPause) {
+			if (pMod->m_threads.m_htIdW.AsInt() > 0 && pMod->m_rsmSrcCnt > 1) {
+				m_iplRegDecl.Append("\tht_dist_que<CHtCmd, %s_HTID_W> m_htRsmQue;\n", pMod->m_modName.Upper().c_str());
 				iplReg.Append("\tm_htRsmQue.clock(%s);\n", reset.c_str());
 			}
 
-			if (mod.m_threads.m_htIdW.AsInt() > 0) {
+			if (pMod->m_threads.m_htIdW.AsInt() > 0) {
 				m_iplRegDecl.Append("\tht_dist_ram<sc_uint<%s_INSTR_W>, %s_HTID_W> m_htRsmInstr;\n",
-					mod.m_modName.Upper().c_str(), mod.m_modName.Upper().c_str());
+					pMod->m_modName.Upper().c_str(), pMod->m_modName.Upper().c_str());
 				iplReg.Append("\tm_htRsmInstr.clock();\n");
 			} else {
-				m_iplRegDecl.Append("\tsc_uint<%s_INSTR_W> c_htRsmInstr;\n", mod.m_modName.Upper().c_str());
+				m_iplRegDecl.Append("\tsc_uint<%s_INSTR_W> c_htRsmInstr;\n", pMod->m_modName.Upper().c_str());
 				iplPostInstr.Append("\tc_htRsmInstr = r_htRsmInstr;\n");
-				m_iplRegDecl.Append("\tsc_uint<%s_INSTR_W> r_htRsmInstr;\n", mod.m_modName.Upper().c_str());
+				m_iplRegDecl.Append("\tsc_uint<%s_INSTR_W> r_htRsmInstr;\n", pMod->m_modName.Upper().c_str());
 				iplReg.Append("\tr_htRsmInstr = c_htRsmInstr;\n");
 			}
 		}
@@ -1807,20 +1807,20 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		m_iplRegDecl.Append("\tbool r_t1_rsmHtRdy;\n");
 		iplReg.Append("\tr_t1_rsmHtRdy = c_t0_rsmHtRdy;\n");
 
-		if (mod.m_threads.m_htIdW.AsInt() > 0) {
-			m_iplRegDecl.Append("\tsc_uint<%s_HTID_W> c_t0_rsmHtId;\n", mod.m_modName.Upper().c_str());
+		if (pMod->m_threads.m_htIdW.AsInt() > 0) {
+			m_iplRegDecl.Append("\tsc_uint<%s_HTID_W> c_t0_rsmHtId;\n", pMod->m_modName.Upper().c_str());
 			iplT0Stg.Append("\tc_t0_rsmHtId = r_t1_rsmHtId;\n");
-			m_iplRegDecl.Append("\tsc_uint<%s_HTID_W> r_t1_rsmHtId;\n", mod.m_modName.Upper().c_str());
+			m_iplRegDecl.Append("\tsc_uint<%s_HTID_W> r_t1_rsmHtId;\n", pMod->m_modName.Upper().c_str());
 			iplReg.Append("\tr_t1_rsmHtId = c_t0_rsmHtId;\n");
 		}
 
-		m_iplRegDecl.Append("\tsc_uint<%s_INSTR_W> c_t0_rsmHtInstr;\n", mod.m_modName.Upper().c_str());
+		m_iplRegDecl.Append("\tsc_uint<%s_INSTR_W> c_t0_rsmHtInstr;\n", pMod->m_modName.Upper().c_str());
 		iplT0Stg.Append("\tc_t0_rsmHtInstr = r_t1_rsmHtInstr;\n");
-		m_iplRegDecl.Append("\tsc_uint<%s_INSTR_W> r_t1_rsmHtInstr;\n", mod.m_modName.Upper().c_str());
+		m_iplRegDecl.Append("\tsc_uint<%s_INSTR_W> r_t1_rsmHtInstr;\n", pMod->m_modName.Upper().c_str());
 		iplReg.Append("\tr_t1_rsmHtInstr = c_t0_rsmHtInstr;\n");
 
-		if (mod.m_threads.m_bPause) {
-			if (mod.m_threads.m_htIdW.AsInt() > 0 && mod.m_rsmSrcCnt > 1) {
+		if (pMod->m_threads.m_bPause) {
+			if (pMod->m_threads.m_htIdW.AsInt() > 0 && pMod->m_rsmSrcCnt > 1) {
 				iplPostInstr.Append("\tif (!m_htRsmQue.empty() && !c_t0_rsmHtRdy) {\n");
 				iplPostInstr.Append("\t\tc_t0_rsmHtRdy = true;\n");
 				iplPostInstr.Append("\t\tc_t0_rsmHtId = m_htRsmQue.front().m_htId;\n");
@@ -1833,20 +1833,20 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		iplPostInstr.NewLine();
 		m_iplRegDecl.NewLine();
 
-		if (mod.m_bMultiThread)
+		if (pMod->m_bMultiThread)
 			pIplTxStg->Append("\tbool %s_rsmHtRdy = %s_rsmHtRdy;\n", pOutStg, pInStg);
 
-		if (mod.m_clkRate == eClk2x && mod.m_bMultiThread) {
+		if (pMod->m_clkRate == eClk2x && pMod->m_bMultiThread) {
 			m_iplRegDecl.Append("\tbool %s_rsmHtRdy;\n", pRegStg);
 			iplReg.Append("\t%s_rsmHtRdy = %s_rsmHtRdy;\n", pRegStg, pOutStg);
 		}
 
-		if (mod.m_bMultiThread)
+		if (pMod->m_bMultiThread)
 			pIplTxStg->Append("\tsc_uint<%s_INSTR_W> %s_rsmHtInstr = %s_rsmHtInstr;\n",
-			mod.m_modName.Upper().c_str(), pOutStg, pInStg);
+			pMod->m_modName.Upper().c_str(), pOutStg, pInStg);
 
-		if (mod.m_clkRate == eClk2x && mod.m_bMultiThread) {
-			m_iplRegDecl.Append("\tsc_uint<%s_INSTR_W> %s_rsmHtInstr;\n", mod.m_modName.Upper().c_str(), pRegStg);
+		if (pMod->m_clkRate == eClk2x && pMod->m_bMultiThread) {
+			m_iplRegDecl.Append("\tsc_uint<%s_INSTR_W> %s_rsmHtInstr;\n", pMod->m_modName.Upper().c_str(), pRegStg);
 			iplReg.Append("\t%s_rsmHtInstr = %s_rsmHtInstr;\n", pRegStg, pOutStg);
 		}
 	}
@@ -1858,7 +1858,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 	int rdPrivLkStg;
 	{
-		if (mod.m_clkRate == eClk2x && bMultiThread)
+		if (pMod->m_clkRate == eClk2x && bMultiThread)
 			iplStg += 1;
 
 		rdPrivLkStg = iplStg;
@@ -1867,11 +1867,11 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		sprintf(outStgStr, "c_t%d", iplStg);
 		sprintf(regStgStr, "r_t%d", iplStg + 1);
 
-		pIplTxStg = mod.m_bMultiThread ? &iplT2Stg : &iplT1Stg;
+		pIplTxStg = pMod->m_bMultiThread ? &iplT2Stg : &iplT1Stg;
 
 		pIplTxStg->Append("\t// htPriv / input command select\n");
 
-		if (mod.m_clkRate == eClk2x)
+		if (pMod->m_clkRate == eClk2x)
 			pIplTxStg->Append("\tbool %s_htValid = %s_htValid;\n",
 			pOutStg, pInStg);
 		GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, "bool", VA("%s_htValid", pRegStg));
@@ -1879,7 +1879,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 			pRegStg, reset.c_str(), pOutStg);
 
 		if (pModInst->m_cxrSrcCnt > 1) {
-			if (mod.m_clkRate == eClk2x)
+			if (pMod->m_clkRate == eClk2x)
 				pIplTxStg->Append("\t%s %s_htSel = %s_htSel;\n", htSelType.c_str(), pOutStg, pInStg);
 			GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, htSelType, VA("%s_htSel", pRegStg));
 			iplReg.Append("\t%s_htSel = %s_htSel;\n", pRegStg, pOutStg);
@@ -1889,53 +1889,53 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 			GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, htIdTypeStr, VA("%s_htId", pRegStg));
 
-			if (mod.m_bHtIdInit && iplStg == mod.m_execStg - 1) {
+			if (pMod->m_bHtIdInit && iplStg == pMod->m_execStg - 1) {
 				m_iplRegDecl.Append("\tbool %s_htIdInit;\n", pRegStg);
 
-				if (mod.m_clkRate == eClk2x) {
+				if (pMod->m_clkRate == eClk2x) {
 					pIplTxStg->Append("\tbool %s_htIdInit = %s_htIdInit && %s_htId != 0x%x;\n",
-						pOutStg, pRegStg, pRegStg, (1 << mod.m_threads.m_htIdW.AsInt()) - 1);
+						pOutStg, pRegStg, pRegStg, (1 << pMod->m_threads.m_htIdW.AsInt()) - 1);
 
 					pIplTxStg->Append("\tsc_uint<%s_HTID_W> %s_htId = %s_htIdInit ? (sc_uint<%s_HTID_W>)(%s_htId+1) : %s_htId;\n",
-						mod.m_modName.Upper().c_str(), pOutStg, pRegStg, mod.m_modName.Upper().c_str(), pRegStg, pInStg);
+						pMod->m_modName.Upper().c_str(), pOutStg, pRegStg, pMod->m_modName.Upper().c_str(), pRegStg, pInStg);
 				}
 
-				iplReg.Append("\t%s_htId = %s ? (sc_uint<%s>)0 : %s_htId;\n", pRegStg, reset.c_str(), mod.m_threads.m_htIdW.c_str(), pOutStg);
+				iplReg.Append("\t%s_htId = %s ? (sc_uint<%s>)0 : %s_htId;\n", pRegStg, reset.c_str(), pMod->m_threads.m_htIdW.c_str(), pOutStg);
 
 				iplReg.Append("\t%s_htIdInit = %s || %s_htIdInit;\n", pRegStg, reset.c_str(), pOutStg);
 			} else {
-				if (mod.m_clkRate == eClk2x)
-					pIplTxStg->Append("\tsc_uint<%s_HTID_W> %s_htId = %s_htId;\n", mod.m_modName.Upper().c_str(), pOutStg, pInStg);
+				if (pMod->m_clkRate == eClk2x)
+					pIplTxStg->Append("\tsc_uint<%s_HTID_W> %s_htId = %s_htId;\n", pMod->m_modName.Upper().c_str(), pOutStg, pInStg);
 				iplReg.Append("\t%s_htId = %s_htId;\n", pRegStg, pOutStg);
 			}
 		}
 
-		if (mod.m_threads.m_htIdW.AsInt() == 0)
+		if (pMod->m_threads.m_htIdW.AsInt() == 0)
 			pIplTxStg->Append("\tCHtPriv %s_htPriv = r_htPriv;\n", pOutStg);
-		else if (mod.m_clkRate == eClk2x)
+		else if (pMod->m_clkRate == eClk2x)
 			pIplTxStg->Append("\tCHtPriv %s_htPriv = %s_htPriv;\n", pOutStg, pInStg);
 
 		GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, VA("CHtPriv"), VA("%s_htPriv", pRegStg));
 		iplReg.Append("\t%s_htPriv = %s_htPriv;\n", pRegStg, pOutStg);
 
-		if (mod.m_threads.m_htIdW.AsInt() > 2 && mod.m_bCallFork) {
+		if (pMod->m_threads.m_htIdW.AsInt() > 2 && pMod->m_bCallFork) {
 			pIplTxStg->Append("\tbool %s_htPrivLkData = %s_htPrivLkData;\n", pOutStg, pInStg);
 			GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, VA("bool"), VA("%s_htPrivLkData", pRegStg));
 			iplReg.Append("\t%s_htPrivLkData = %s_htPrivLkData;\n", pRegStg, pOutStg);
 		}
 
-		pIplTxStg->Append("\tsc_uint<%s_INSTR_W> %s_htInstr;\n", mod.m_modName.Upper().c_str(), pOutStg);
+		pIplTxStg->Append("\tsc_uint<%s_INSTR_W> %s_htInstr;\n", pMod->m_modName.Upper().c_str(), pOutStg);
 		GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, htInstrTypeStr, VA("%s_htInstr", pRegStg));
 		iplReg.Append("\t%s_htInstr = %s_htInstr;\n", pRegStg, pOutStg);
 		pIplTxStg->Append("\n");
 
-		if (mod.m_bCallFork) {
+		if (pMod->m_bCallFork) {
 			pIplTxStg->Append("\tbool %s_rtnJoin = false;\n", pOutStg);
 			m_iplRegDecl.Append("\tbool ht_noload %s_rtnJoin;\n", pRegStg);
 			iplReg.Append("\t%s_rtnJoin = %s_rtnJoin;\n", pRegStg, pOutStg);
 		}
 
-		if (mod.m_clkRate == eClk2x) {
+		if (pMod->m_clkRate == eClk2x) {
 			for (size_t intfIdx = 0; intfIdx < pModInst->m_cxrIntfList.size(); intfIdx += 1) {
 				CCxrIntf * pCxrIntf = pModInst->m_cxrIntfList[intfIdx];
 
@@ -1961,10 +1961,10 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 			pIplTxStg->Append("\tCHtCmd %s_htCmd = %s_htCmd;\n", pOutStg, pInStg);
 
-			if (mod.m_rsmSrcCnt > 0) {
+			if (pMod->m_rsmSrcCnt > 0) {
 				pIplTxStg->Append("\tbool %s_rsmHtRdy = %s_rsmHtRdy;\n", pOutStg, pInStg);
 
-				pIplTxStg->Append("\tsc_uint<%s_INSTR_W> %s_rsmHtInstr = %s_rsmHtInstr;\n", mod.m_modName.Upper().c_str(), pOutStg, pInStg);
+				pIplTxStg->Append("\tsc_uint<%s_INSTR_W> %s_rsmHtInstr = %s_rsmHtInstr;\n", pMod->m_modName.Upper().c_str(), pOutStg, pInStg);
 			}
 		}
 
@@ -1972,9 +1972,9 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 		pIplTxStg->Append("\tswitch (%s_htSel) {\n", pOutStg);
 
-		if (mod.m_threads.m_resetInstr.size() > 0) {
+		if (pMod->m_threads.m_resetInstr.size() > 0) {
 			pIplTxStg->Append("\tcase %s_HT_SEL_RESET:\n", pModInst->m_instName.Upper().c_str());
-			pIplTxStg->Append("\t\t%s_htInstr = %s;\n", pOutStg, mod.m_threads.m_resetInstr.c_str());
+			pIplTxStg->Append("\t\t%s_htInstr = %s;\n", pOutStg, pMod->m_threads.m_resetInstr.c_str());
 			pIplTxStg->Append("\t\tbreak;\n");
 		}
 
@@ -2011,15 +2011,15 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 					if (pCxrIntf->m_pSrcModInst->m_pMod->m_instrW > 0)
 						pIplTxStg->Append("\t\t%s_htPriv.m_rtnInstr = (%sRtnInstr_t)%s_%s_%s%s.m_rtnInstr;\n",
 						pOutStg,
-						mod.m_modName.Uc().c_str(),
+						pMod->m_modName.Uc().c_str(),
 						pOutStg, pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
 
 					if (pCxrIntf->m_pSrcGroup->m_htIdW.AsInt() > 0)
 						pIplTxStg->Append("\t\t%s_htPriv.m_rtnHtId = (%sRtnHtId_t)%s_%s_%s%s.m_rtnHtId;\n",
 						pOutStg,
-						mod.m_modName.Uc().c_str(),
+						pMod->m_modName.Uc().c_str(),
 						pOutStg, pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
-					if (mod.m_cxrEntryReserveCnt > 0) {
+					if (pMod->m_cxrEntryReserveCnt > 0) {
 						pIplTxStg->Append("\t\t%s_htPriv.m_rtnRsvSel = %s_HT_SEL_%s_%d_%s;\n",
 							pOutStg,
 							pModInst->m_instName.Upper().c_str(), pCxrIntf->m_pSrcModInst->m_instName.Upper().c_str(), pCxrIntf->GetPortReplId(), pCxrIntf->m_modEntry.Upper().c_str());
@@ -2028,17 +2028,17 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 					if (pCxrIntf->m_pSrcGroup->m_rtnInstrW > 0)
 						pIplTxStg->Append("\t\t%s_htPriv.m_rtnInstr = (%sRtnInstr_t)%s_%s_%s%s.m_rtnInstr;\n",
 						pOutStg,
-						mod.m_modName.Uc().c_str(),
+						pMod->m_modName.Uc().c_str(),
 						pOutStg, pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
 
 					if (pCxrIntf->m_pSrcGroup->m_rtnHtIdW > 0)
 						pIplTxStg->Append("\t\t%s_htPriv.m_rtnHtId = (%sRtnHtId_t)%s_%s_%s%s.m_rtnHtId;\n",
 						pOutStg,
-						mod.m_modName.Uc().c_str(),
+						pMod->m_modName.Uc().c_str(),
 						pOutStg, pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
 				}
 
-				if (mod.m_bRtnJoin) {
+				if (pMod->m_bRtnJoin) {
 					if (pCxrIntf->m_bRtnJoin)
 						pIplTxStg->Append("\t\t%s_htPriv.m_rtnJoin = %s_%s_%s%s.m_rtnJoin;\n",
 						pOutStg,
@@ -2048,7 +2048,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 						pOutStg);
 				}
 
-				if (mod.m_maxRtnReplCnt > 1) {
+				if (pMod->m_maxRtnReplCnt > 1) {
 					pIplTxStg->Append("\t\t%s_htPriv.m_rtnReplSel = %d;\n",
 						pOutStg,
 						pCxrIntf->m_rtnReplId);
@@ -2082,7 +2082,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 		pIplTxStg->Append("\tcase %s_HT_SEL_SM:\n", pModInst->m_instName.Upper().c_str());
 
-		if (mod.m_rsmSrcCnt > 0) {
+		if (pMod->m_rsmSrcCnt > 0) {
 			pIplTxStg->Append("\t\tif (%s_rsmHtRdy)\n", pOutStg);
 			pIplTxStg->Append("\t\t\t%s_htInstr = %s_rsmHtInstr;\n", pOutStg, pOutStg);
 			pIplTxStg->Append("\t\telse\n\t");
@@ -2103,7 +2103,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 		IplNewLine(pIplTxStg);
 
-		if (mod.m_gblBlockRam) {
+		if (pMod->m_gblBlockRam) {
 			IplComment(pIplTxStg, iplReg, "\t// External ram stage #1\n");
 
 			iplStg += 1;
@@ -2122,16 +2122,16 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 			}
 
 			if (bMultiThread) {
-				pIplTxStg->Append("\tsc_uint<%s_HTID_W> %s_htId = %s_htId;\n", mod.m_modName.Upper().c_str(), pOutStg, pInStg);
+				pIplTxStg->Append("\tsc_uint<%s_HTID_W> %s_htId = %s_htId;\n", pMod->m_modName.Upper().c_str(), pOutStg, pInStg);
 				GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, htIdTypeStr, VA("%s_htId", pRegStg));
 				iplReg.Append("\t%s_htId = %s_htId;\n", pRegStg, pOutStg);
 			}
 
-			pIplTxStg->Append("\tsc_uint<%s_INSTR_W> %s_htInstr = %s_htInstr;\n", mod.m_modName.Upper().c_str(), pOutStg, pInStg);
+			pIplTxStg->Append("\tsc_uint<%s_INSTR_W> %s_htInstr = %s_htInstr;\n", pMod->m_modName.Upper().c_str(), pOutStg, pInStg);
 			GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, htInstrTypeStr, VA("%s_htInstr", pRegStg));
 			iplReg.Append("\t%s_htInstr = %s_htInstr;\n", pRegStg, pOutStg);
 
-			if (mod.m_bCallFork) {
+			if (pMod->m_bCallFork) {
 				pIplTxStg->Append("\tbool %s_rtnJoin = %s_rtnJoin;\n", pOutStg, pInStg);
 				m_iplRegDecl.Append("\tbool %s_rtnJoin;\n", pRegStg);
 				iplReg.Append("\t%s_rtnJoin = %s_rtnJoin;\n", pRegStg, pOutStg);
@@ -2141,7 +2141,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 			GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, VA("CHtPriv"), VA("%s_htPriv", pRegStg));
 			iplReg.Append("\t%s_htPriv = %s_htPriv;\n", pRegStg, pOutStg);
 
-			if (mod.m_threads.m_htIdW.AsInt() > 2 && mod.m_bCallFork) {
+			if (pMod->m_threads.m_htIdW.AsInt() > 2 && pMod->m_bCallFork) {
 				pIplTxStg->Append("\tbool %s_htPrivLkData = %s_htPrivLkData;\n", pOutStg, pInStg);
 				GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, VA("bool"), VA("%s_htPrivLkData", pRegStg));
 				iplReg.Append("\t%s_htPrivLkData = %s_htPrivLkData;\n", pRegStg, pOutStg);
@@ -2165,16 +2165,16 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 			}
 
 			if (bMultiThread) {
-				pIplTxStg->Append("\tsc_uint<%s_HTID_W> %s_htId = %s_htId;\n", mod.m_modName.Upper().c_str(), pOutStg, pInStg);
+				pIplTxStg->Append("\tsc_uint<%s_HTID_W> %s_htId = %s_htId;\n", pMod->m_modName.Upper().c_str(), pOutStg, pInStg);
 				GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, htIdTypeStr, VA("%s_htId", pRegStg));
 				iplReg.Append("\t%s_htId = %s_htId;\n", pRegStg, pOutStg);
 			}
 
-			pIplTxStg->Append("\tsc_uint<%s_INSTR_W> %s_htInstr = %s_htInstr;\n", mod.m_modName.Upper().c_str(), pOutStg, pInStg);
+			pIplTxStg->Append("\tsc_uint<%s_INSTR_W> %s_htInstr = %s_htInstr;\n", pMod->m_modName.Upper().c_str(), pOutStg, pInStg);
 			GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, htInstrTypeStr, VA("%s_htInstr", pRegStg));
 			iplReg.Append("\t%s_htInstr = %s_htInstr;\n", pRegStg, pOutStg);
 
-			if (mod.m_bCallFork) {
+			if (pMod->m_bCallFork) {
 				pIplTxStg->Append("\tbool %s_rtnJoin = %s_rtnJoin;\n", pOutStg, pInStg);
 				m_iplRegDecl.Append("\tbool %s_rtnJoin;\n", pRegStg);
 				iplReg.Append("\t%s_rtnJoin = %s_rtnJoin;\n", pRegStg, pOutStg);
@@ -2184,7 +2184,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 			GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, VA("CHtPriv"), VA("%s_htPriv", pRegStg));
 			iplReg.Append("\t%s_htPriv = %s_htPriv;\n", pRegStg, pOutStg);
 
-			if (mod.m_threads.m_htIdW.AsInt() > 2 && mod.m_bCallFork) {
+			if (pMod->m_threads.m_htIdW.AsInt() > 2 && pMod->m_bCallFork) {
 				pIplTxStg->Append("\tbool %s_htPrivLkData = %s_htPrivLkData;\n", pOutStg, pInStg);
 				GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, VA("bool"), VA("%s_htPrivLkData", pRegStg));
 				iplReg.Append("\t%s_htPrivLkData = %s_htPrivLkData;\n", pRegStg, pOutStg);
@@ -2210,28 +2210,28 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 			if (bMultiThread) {
 				GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, htIdTypeStr, VA("%s_htId", pRegStg));
 
-				if (mod.m_bHtIdInit && iplStg == mod.m_execStg - 1) {
+				if (pMod->m_bHtIdInit && iplStg == pMod->m_execStg - 1) {
 					m_iplRegDecl.Append("\tbool %s_htIdInit;\n", pRegStg);
 					pIplTxStg->Append("\tbool %s_htIdInit = %s_htIdInit && %s_htId != 0x%x;\n",
-						pOutStg, pRegStg, pRegStg, (1 << mod.m_threads.m_htIdW.AsInt()) - 1);
+						pOutStg, pRegStg, pRegStg, (1 << pMod->m_threads.m_htIdW.AsInt()) - 1);
 
 					pIplTxStg->Append("\tsc_uint<%s_HTID_W> %s_htId = %s_htIdInit ? (sc_uint<%s_HTID_W>)(%s_htId+1) : %s_htId;\n",
-						mod.m_modName.Upper().c_str(), pOutStg, pRegStg, mod.m_modName.Upper().c_str(), pRegStg, pInStg);
+						pMod->m_modName.Upper().c_str(), pOutStg, pRegStg, pMod->m_modName.Upper().c_str(), pRegStg, pInStg);
 					iplReg.Append("\t%s_htId = %s ? (sc_uint<%s>)0 : %s_htId;\n",
-						pRegStg, reset.c_str(), mod.m_threads.m_htIdW.c_str(), pOutStg);
+						pRegStg, reset.c_str(), pMod->m_threads.m_htIdW.c_str(), pOutStg);
 
 					iplReg.Append("\t%s_htIdInit = %s || %s_htIdInit;\n", pRegStg, reset.c_str(), pOutStg);
 				} else {
-					pIplTxStg->Append("\tsc_uint<%s_HTID_W> %s_htId = %s_htId;\n", mod.m_modName.Upper().c_str(), pOutStg, pInStg);
+					pIplTxStg->Append("\tsc_uint<%s_HTID_W> %s_htId = %s_htId;\n", pMod->m_modName.Upper().c_str(), pOutStg, pInStg);
 					iplReg.Append("\t%s_htId = %s_htId;\n", pRegStg, pOutStg);
 				}
 			}
 
-			pIplTxStg->Append("\tsc_uint<%s_INSTR_W> %s_htInstr = %s_htInstr;\n", mod.m_modName.Upper().c_str(), pOutStg, pInStg);
+			pIplTxStg->Append("\tsc_uint<%s_INSTR_W> %s_htInstr = %s_htInstr;\n", pMod->m_modName.Upper().c_str(), pOutStg, pInStg);
 			GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, htInstrTypeStr, VA("%s_htInstr", pRegStg));
 			iplReg.Append("\t%s_htInstr = %s_htInstr;\n", pRegStg, pOutStg);
 
-			if (mod.m_bCallFork) {
+			if (pMod->m_bCallFork) {
 				pIplTxStg->Append("\tbool %s_rtnJoin = %s_rtnJoin;\n", pOutStg, pInStg);
 				m_iplRegDecl.Append("\tbool ht_noload %s_rtnJoin;\n", pRegStg);
 				iplReg.Append("\t%s_rtnJoin = %s_rtnJoin;\n", pRegStg, pOutStg);
@@ -2241,7 +2241,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 			GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, VA("CHtPriv"), VA("%s_htPriv", pRegStg));
 			iplReg.Append("\t%s_htPriv = %s_htPriv;\n", pRegStg, pOutStg);
 
-			if (mod.m_threads.m_htIdW.AsInt() > 2 && mod.m_bCallFork) {
+			if (pMod->m_threads.m_htIdW.AsInt() > 2 && pMod->m_bCallFork) {
 				pIplTxStg->Append("\tbool %s_htPrivLkData = %s_htPrivLkData;\n", pOutStg, pInStg);
 				GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, VA("bool"), VA("%s_htPrivLkData", pRegStg));
 				iplReg.Append("\t%s_htPrivLkData = %s_htPrivLkData;\n", pRegStg, pOutStg);
@@ -2251,7 +2251,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 			m_iplRegDecl.NewLine();
 			iplReg.NewLine();
 
-		} else if (mod.m_gblDistRam) {
+		} else if (pMod->m_gblDistRam) {
 			IplComment(pIplTxStg, iplReg, "\t// Internal ram stage #1\n");
 
 			iplStg += 1;
@@ -2267,7 +2267,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 			GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, VA("CHtPriv"), VA("%s_htPriv", pRegStg));
 			iplReg.Append("\t%s_htPriv = %s_htPriv;\n", pRegStg, pOutStg);
 
-			if (mod.m_threads.m_htIdW.AsInt() > 2 && mod.m_bCallFork) {
+			if (pMod->m_threads.m_htIdW.AsInt() > 2 && pMod->m_bCallFork) {
 				pIplTxStg->Append("\tbool %s_htPrivLkData = %s_htPrivLkData;\n", pOutStg, pInStg);
 				GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, VA("bool"), VA("%s_htPrivLkData", pRegStg));
 				iplReg.Append("\t%s_htPrivLkData = %s_htPrivLkData;\n", pRegStg, pOutStg);
@@ -2280,16 +2280,16 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 			}
 
 			if (bMultiThread) {
-				pIplTxStg->Append("\tsc_uint<%s_HTID_W> %s_htId = %s_htId;\n", mod.m_modName.Upper().c_str(), pOutStg, pInStg);
+				pIplTxStg->Append("\tsc_uint<%s_HTID_W> %s_htId = %s_htId;\n", pMod->m_modName.Upper().c_str(), pOutStg, pInStg);
 				GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, htIdTypeStr, VA("%s_htId", pRegStg));
 				iplReg.Append("\t%s_htId = %s_htId;\n", pRegStg, pOutStg);
 			}
 
-			pIplTxStg->Append("\tsc_uint<%s_INSTR_W> %s_htInstr = %s_htInstr;\n", mod.m_modName.Upper().c_str(), pOutStg, pInStg);
+			pIplTxStg->Append("\tsc_uint<%s_INSTR_W> %s_htInstr = %s_htInstr;\n", pMod->m_modName.Upper().c_str(), pOutStg, pInStg);
 			GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, htInstrTypeStr, VA("%s_htInstr", pRegStg));
 			iplReg.Append("\t%s_htInstr = %s_htInstr;\n", pRegStg, pOutStg);
 
-			if (mod.m_bCallFork) {
+			if (pMod->m_bCallFork) {
 				pIplTxStg->Append("\tbool %s_rtnJoin = %s_rtnJoin;\n", pOutStg, pInStg);
 				m_iplRegDecl.Append("\tbool %s_rtnJoin;\n", pRegStg);
 				iplReg.Append("\t%s_rtnJoin = %s_rtnJoin;\n", pRegStg, pOutStg);
@@ -2315,7 +2315,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 			iplReg.Append("\t%s_htPriv = %s_htPriv;\n", pRegStg, pOutStg);
 			pIplTxStg->Append("\n");
 
-			if (mod.m_threads.m_htIdW.AsInt() > 2 && mod.m_bCallFork) {
+			if (pMod->m_threads.m_htIdW.AsInt() > 2 && pMod->m_bCallFork) {
 				pIplTxStg->Append("\tbool %s_htPrivLkData = %s_htPrivLkData;\n", pOutStg, pInStg);
 				GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, VA("bool"), VA("%s_htPrivLkData", pRegStg));
 				iplReg.Append("\t%s_htPrivLkData = %s_htPrivLkData;\n", pRegStg, pOutStg);
@@ -2330,28 +2330,28 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 			if (bMultiThread) {
 				GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, htIdTypeStr, VA("%s_htId", pRegStg));
 
-				if (mod.m_bHtIdInit && iplStg == mod.m_execStg - 1) {
+				if (pMod->m_bHtIdInit && iplStg == pMod->m_execStg - 1) {
 					m_iplRegDecl.Append("\tbool %s_htIdInit;\n", pRegStg);
 					pIplTxStg->Append("\tbool %s_htIdInit = %s_htIdInit && %s_htId != 0x%x;\n",
-						pOutStg, pRegStg, pRegStg, (1 << mod.m_threads.m_htIdW.AsInt()) - 1);
+						pOutStg, pRegStg, pRegStg, (1 << pMod->m_threads.m_htIdW.AsInt()) - 1);
 
 					pIplTxStg->Append("\tsc_uint<%s_HTID_W> %s_htId = %s_htIdInit ? (sc_uint<%s_HTID_W>)(%s_htId+1) : %s_htId;\n",
-						mod.m_modName.Upper().c_str(), pOutStg, pRegStg, mod.m_modName.Upper().c_str(), pRegStg, pInStg);
+						pMod->m_modName.Upper().c_str(), pOutStg, pRegStg, pMod->m_modName.Upper().c_str(), pRegStg, pInStg);
 					iplReg.Append("\t%s_htId = %s ? (sc_uint<%s_HTID_W>)0 : %s_htId;\n",
-						pRegStg, reset.c_str(), mod.m_modName.Upper().c_str(), pOutStg);
+						pRegStg, reset.c_str(), pMod->m_modName.Upper().c_str(), pOutStg);
 
 					iplReg.Append("\t%s_htIdInit = %s || %s_htIdInit;\n", pRegStg, reset.c_str(), pOutStg);
 				} else {
-					pIplTxStg->Append("\tsc_uint<%s_HTID_W> %s_htId = %s_htId;\n", mod.m_modName.Upper().c_str(), pOutStg, pInStg);
+					pIplTxStg->Append("\tsc_uint<%s_HTID_W> %s_htId = %s_htId;\n", pMod->m_modName.Upper().c_str(), pOutStg, pInStg);
 					iplReg.Append("\t%s_htId = %s_htId;\n", pRegStg, pOutStg);
 				}
 			}
 
-			pIplTxStg->Append("\tsc_uint<%s_INSTR_W> %s_htInstr = %s_htInstr;\n", mod.m_modName.Upper().c_str(), pOutStg, pInStg);
+			pIplTxStg->Append("\tsc_uint<%s_INSTR_W> %s_htInstr = %s_htInstr;\n", pMod->m_modName.Upper().c_str(), pOutStg, pInStg);
 			GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, htInstrTypeStr, VA("%s_htInstr", pRegStg));
 			iplReg.Append("\t%s_htInstr = %s_htInstr;\n", pRegStg, pOutStg);
 
-			if (mod.m_bCallFork) {
+			if (pMod->m_bCallFork) {
 				pIplTxStg->Append("\tbool %s_rtnJoin = %s_rtnJoin;\n", pOutStg, pInStg);
 				m_iplRegDecl.Append("\tbool ht_noload %s_rtnJoin;\n", pRegStg);
 				iplReg.Append("\t%s_rtnJoin = %s_rtnJoin;\n", pRegStg, pOutStg);
@@ -2368,7 +2368,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 	{
 		// Pipe stages
-		for (int tsIdx = 0; tsIdx < mod.m_stage.m_privWrStg.AsInt(); tsIdx += 1) {
+		for (int tsIdx = 0; tsIdx < pMod->m_stage.m_privWrStg.AsInt(); tsIdx += 1) {
 			pIplTxStg->Append("\n");
 			m_iplRegDecl.Append("\n");
 			iplReg.Append("\n");
@@ -2382,25 +2382,25 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 			sprintf(outStgStr, "c_t%d", iplStg);
 			sprintf(regStgStr, "r_t%d", iplStg + 1);
 
-			if (tsIdx < mod.m_stage.m_privWrStg.AsInt() - 1 || mod.m_bGvIwComp) {
+			if (tsIdx < pMod->m_stage.m_privWrStg.AsInt() - 1 || pMod->m_bGvIwComp) {
 
 				pIplTxStg->Append("\tbool %s_htValid = %s_htValid;\n", pOutStg, pInStg);
 				GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, "bool", VA("%s_htValid", pRegStg));
 				iplReg.Append("\t%s_htValid = !%s && %s_htValid;\n", pRegStg, reset.c_str(), pOutStg);
 			}
 
-			if (tsIdx < mod.m_stage.m_privWrStg.AsInt() - 1) {
+			if (tsIdx < pMod->m_stage.m_privWrStg.AsInt() - 1) {
 				pIplTxStg->Append("\t%s %s_htSel = %s_htSel;\n", htSelType.c_str(), pOutStg, pInStg);
 				iplReg.Append("\t%s_htSel = %s_htSel;\n", pRegStg, pOutStg);
 				GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, htSelType, VA("%s_htSel", pRegStg));
 			}
 
-			if (tsIdx < mod.m_stage.m_privWrStg.AsInt() - 1) {
-				pIplTxStg->Append("\tsc_uint<%s_INSTR_W> %s_htInstr = %s_htInstr;\n", mod.m_modName.Upper().c_str(), pOutStg, pInStg);
+			if (tsIdx < pMod->m_stage.m_privWrStg.AsInt() - 1) {
+				pIplTxStg->Append("\tsc_uint<%s_INSTR_W> %s_htInstr = %s_htInstr;\n", pMod->m_modName.Upper().c_str(), pOutStg, pInStg);
 				GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, htInstrTypeStr, VA("%s_htInstr", pRegStg));
 				iplReg.Append("\t%s_htInstr = %s_htInstr;\n", pRegStg, pOutStg);
 
-				if (mod.m_bCallFork) {
+				if (pMod->m_bCallFork) {
 					pIplTxStg->Append("\tbool %s_rtnJoin = %s_rtnJoin;\n", pOutStg, pInStg);
 					m_iplRegDecl.Append("\tbool %s_rtnJoin;\n", pRegStg);
 					iplReg.Append("\t%s_rtnJoin = %s_rtnJoin;\n", pRegStg, pOutStg);
@@ -2410,19 +2410,19 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 			if (bMultiThread) {
 				GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, htIdTypeStr, VA("%s_htId", pRegStg));
 
-				if (mod.m_bHtIdInit && iplStg == mod.m_execStg - 1) {
+				if (pMod->m_bHtIdInit && iplStg == pMod->m_execStg - 1) {
 					m_iplRegDecl.Append("\tbool %s_htIdInit;\n", pRegStg);
 					pIplTxStg->Append("\tbool %s_htIdInit = %s_htIdInit && %s_htId != 0x%x;\n",
-						pOutStg, pRegStg, pRegStg, (1 << mod.m_threads.m_htIdW.AsInt()) - 1);
+						pOutStg, pRegStg, pRegStg, (1 << pMod->m_threads.m_htIdW.AsInt()) - 1);
 
 					pIplTxStg->Append("\tsc_uint<%s_HTID_W> %s_htId = %s_htIdInit ? (sc_uint<%s_HTID_W>)(%s_htId+1) : %s_htId;\n",
-						mod.m_modName.Upper().c_str(), pOutStg, pRegStg, mod.m_modName.Upper().c_str(), pRegStg, pInStg);
+						pMod->m_modName.Upper().c_str(), pOutStg, pRegStg, pMod->m_modName.Upper().c_str(), pRegStg, pInStg);
 					iplReg.Append("\t%s_htId = %s ? (sc_uint<%s_HTID_W>)0 : %s_htId;\n",
-						pRegStg, reset.c_str(), mod.m_modName.Upper().c_str(), pOutStg);
+						pRegStg, reset.c_str(), pMod->m_modName.Upper().c_str(), pOutStg);
 
 					iplReg.Append("\t%s_htIdInit = %s || %s_htIdInit;\n", pRegStg, reset.c_str(), pOutStg);
 				} else {
-					pIplTxStg->Append("\tsc_uint<%s_HTID_W> %s_htId = %s_htId;\n", mod.m_modName.Upper().c_str(), pOutStg, pInStg);
+					pIplTxStg->Append("\tsc_uint<%s_HTID_W> %s_htId = %s_htId;\n", pMod->m_modName.Upper().c_str(), pOutStg, pInStg);
 					iplReg.Append("\t%s_htId = %s_htId;\n", pRegStg, pOutStg);
 				}
 			}
@@ -2430,12 +2430,12 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 			m_iplRegDecl.Append("\tCHtPriv %s_htPriv;\n", pOutStg);
 			pIplTxStg->Append("\t%s_htPriv = %s_htPriv;\n", pOutStg, pInStg);
 
-			if (bMultiThread || tsIdx < mod.m_stage.m_privWrStg.AsInt() - 1) {
+			if (bMultiThread || tsIdx < pMod->m_stage.m_privWrStg.AsInt() - 1) {
 				GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, VA("CHtPriv"), VA("%s_htPriv", pRegStg));
 				iplReg.Append("\t%s_htPriv = %s_htPriv;\n", pRegStg, pOutStg);
 			}
 
-			if (mod.m_threads.m_htIdW.AsInt() > 2 && mod.m_bCallFork) {
+			if (pMod->m_threads.m_htIdW.AsInt() > 2 && pMod->m_bCallFork) {
 				pIplTxStg->Append("\tbool %s_htPrivLkData = %s_htPrivLkData;\n", pOutStg, pInStg);
 				GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, VA("bool"), VA("%s_htPrivLkData", pRegStg));
 				iplReg.Append("\t%s_htPrivLkData = %s_htPrivLkData;\n", pRegStg, pOutStg);
@@ -2443,9 +2443,9 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 			IplNewLine(pIplTxStg);
 
-			if (iplStg >= mod.m_execStg) {
+			if (iplStg >= pMod->m_execStg) {
 
-				if (iplStg == mod.m_execStg) {
+				if (iplStg == pMod->m_execStg) {
 					m_iplRegDecl.Append("\tsc_uint<4> c_t%d_htCtrl;\n", iplStg);
 					pIplTxStg->Append("\tc_t%d_htCtrl = HT_INVALID;\n", iplStg);
 				} else {
@@ -2453,27 +2453,27 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 					pIplTxStg->Append("\tc_t%d_htCtrl = r_t%d_htCtrl;\n", iplStg, iplStg);
 				}
 
-				if (mod.m_wrStg - 1 > iplStg) {
+				if (pMod->m_wrStg - 1 > iplStg) {
 					m_iplRegDecl.Append("\tsc_uint<4> r_t%d_htCtrl;\n", iplStg + 1);
 					iplReg.Append("\tr_t%d_htCtrl = c_t%d_htCtrl;\n", iplStg + 1, iplStg);
 				}
 
-				if (iplStg == mod.m_execStg) {
-					m_iplRegDecl.Append("\tsc_uint<%s_INSTR_W> c_t%d_htNextInstr;\n", mod.m_modName.Upper().c_str(), iplStg);
+				if (iplStg == pMod->m_execStg) {
+					m_iplRegDecl.Append("\tsc_uint<%s_INSTR_W> c_t%d_htNextInstr;\n", pMod->m_modName.Upper().c_str(), iplStg);
 					pIplTxStg->Append("\tc_t%d_htNextInstr = r_t%d_htInstr;\n", iplStg, iplStg);
 				} else {
-					m_iplRegDecl.Append("\tsc_uint<%s_INSTR_W> c_t%d_htNextInstr;\n", mod.m_modName.Upper().c_str(), iplStg);
+					m_iplRegDecl.Append("\tsc_uint<%s_INSTR_W> c_t%d_htNextInstr;\n", pMod->m_modName.Upper().c_str(), iplStg);
 					pIplTxStg->Append("\tc_t%d_htNextInstr = r_t%d_htNextInstr;\n", iplStg, iplStg);
 				}
 
-				if (mod.m_wrStg - 1 > iplStg) {
-					m_iplRegDecl.Append("\tsc_uint<%s_INSTR_W> r_t%d_htNextInstr;\n", mod.m_modName.Upper().c_str(), iplStg + 1);
+				if (pMod->m_wrStg - 1 > iplStg) {
+					m_iplRegDecl.Append("\tsc_uint<%s_INSTR_W> r_t%d_htNextInstr;\n", pMod->m_modName.Upper().c_str(), iplStg + 1);
 					iplReg.Append("\tr_t%d_htNextInstr = c_t%d_htNextInstr;\n", iplStg + 1, iplStg);
 				}
 			}
 		}
 
-		for (int gvIwIdx = mod.m_tsStg + mod.m_stage.m_privWrStg.AsInt(); gvIwIdx < mod.m_gvIwCompStg; gvIwIdx += 1) {
+		for (int gvIwIdx = pMod->m_tsStg + pMod->m_stage.m_privWrStg.AsInt(); gvIwIdx < pMod->m_gvIwCompStg; gvIwIdx += 1) {
 			pIplTxStg->Append("\n");
 			m_iplRegDecl.Append("\n");
 			iplReg.Append("\n");
@@ -2482,7 +2482,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 			sprintf(outStgStr, "c_t%d", gvIwIdx);
 			sprintf(regStgStr, "r_t%d", gvIwIdx + 1);
 
-			if (gvIwIdx < mod.m_stage.m_privWrStg.AsInt() - 1 || mod.m_bGvIwComp) {
+			if (gvIwIdx < pMod->m_stage.m_privWrStg.AsInt() - 1 || pMod->m_bGvIwComp) {
 
 				pIplTxStg->Append("\tbool %s_htValid = %s_htValid;\n", pOutStg, pInStg);
 				GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, "bool", VA("%s_htValid", pRegStg));
@@ -2492,7 +2492,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 			if (bMultiThread) {
 				GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, htIdTypeStr, VA("%s_htId", pRegStg));
 
-				pIplTxStg->Append("\tsc_uint<%s_HTID_W> %s_htId = %s_htId;\n", mod.m_modName.Upper().c_str(), pOutStg, pInStg);
+				pIplTxStg->Append("\tsc_uint<%s_HTID_W> %s_htId = %s_htId;\n", pMod->m_modName.Upper().c_str(), pOutStg, pInStg);
 				iplReg.Append("\t%s_htId = %s_htId;\n", pRegStg, pOutStg);
 			}
 
@@ -2508,9 +2508,9 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		/////////////////////////////////
 		// declare primitives
 
-		for (size_t primIdx = 0; primIdx < mod.m_scPrimList.size(); primIdx += 1) {
-			m_iplRegDecl.Append("\t%s;\n", mod.m_scPrimList[primIdx].m_scPrimDecl.c_str());
-			iplReg.Append("\t%s;\n", mod.m_scPrimList[primIdx].m_scPrimFunc.c_str());
+		for (size_t primIdx = 0; primIdx < pMod->m_scPrimList.size(); primIdx += 1) {
+			m_iplRegDecl.Append("\t%s;\n", pMod->m_scPrimList[primIdx].m_scPrimDecl.c_str());
+			iplReg.Append("\t%s;\n", pMod->m_scPrimList[primIdx].m_scPrimFunc.c_str());
 		}
 
 		pIplTxStg->NewLine();
@@ -2520,8 +2520,8 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		/////////////////////////////////
 		// declare shared variables
 
-		for (size_t fieldIdx = 0; fieldIdx < mod.m_shared.m_fieldList.size(); fieldIdx += 1) {
-			CField * pField = mod.m_shared.m_fieldList[fieldIdx];
+		for (size_t fieldIdx = 0; fieldIdx < pMod->m_shared.m_fieldList.size(); fieldIdx += 1) {
+			CField * pField = pMod->m_shared.m_fieldList[fieldIdx];
 
 			string type = GenFieldType(pField, false);
 
@@ -2577,14 +2577,14 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		/////////////////////////////////
 		// declare staged variables
 
-		for (size_t fieldIdx = 0; fieldIdx < mod.m_stage.m_fieldList.size(); fieldIdx += 1) {
-			CField * pField = mod.m_stage.m_fieldList[fieldIdx];
+		for (size_t fieldIdx = 0; fieldIdx < pMod->m_stage.m_fieldList.size(); fieldIdx += 1) {
+			CField * pField = pMod->m_stage.m_fieldList[fieldIdx];
 
 			// declare combinatorial variables
 			int stgIdx = (pField->m_bInit ? 1 : 0) + pField->m_rngLow.AsInt();
 			int lastStgIdx = pField->m_rngHigh.AsInt() + 1;
 			for (; stgIdx <= lastStgIdx; stgIdx += 1) {
-				int varStg = mod.m_tsStg + stgIdx - 1;
+				int varStg = pMod->m_tsStg + stgIdx - 1;
 				if (stgIdx != pField->m_rngLow.AsInt()) {
 					const char *pNoLoad = stgIdx == pField->m_rngHigh.AsInt() + 1 ? " ht_noload" : "";
 
@@ -2622,7 +2622,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 				stgIdx = (pField->m_bInit ? 1 : 0) + pField->m_rngLow.AsInt();
 				for (; stgIdx <= pField->m_rngHigh.AsInt() + 1; stgIdx += 1) {
-					int varStg = mod.m_tsStg + stgIdx - 1;
+					int varStg = pMod->m_tsStg + stgIdx - 1;
 					if (stgIdx != pField->m_rngLow.AsInt()) {
 						iplTsStg.Append("%s\tc_t%d__STG__%s%s = r_t%d__STG__%s%s;\n", pTabs,
 							varStg, pField->m_name.c_str(), pField->m_dimenIndex.c_str(),
@@ -2647,7 +2647,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 			pTabs = "";
 			for (stgIdx = pField->m_rngLow.AsInt(); stgIdx <= pField->m_rngHigh.AsInt(); stgIdx += 1) {
-				int varStg = mod.m_tsStg + stgIdx - 1;
+				int varStg = pMod->m_tsStg + stgIdx - 1;
 
 				m_iplRegDecl.Append("\t%s r_t%d__STG__%s%s;\n",
 					pField->m_pType->m_typeName.c_str(), varStg + 1, pField->m_name.c_str(), pField->m_dimenDecl.c_str());
@@ -2659,7 +2659,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 					iplReg.Append("%s\tr_t%d__STG__%s%s = %sc_t%d_htPriv.m_%s%s;\n", pTabs,
 					varStg + 1, pField->m_name.c_str(), pField->m_dimenIndex.c_str(),
 					resetStr,
-					mod.m_tsStg, pField->m_name.c_str(), pField->m_dimenIndex.c_str());
+					pMod->m_tsStg, pField->m_name.c_str(), pField->m_dimenIndex.c_str());
 				else
 					iplReg.Append("%s\tr_t%d__STG__%s%s = %sc_t%d__STG__%s%s;\n", pTabs,
 					varStg + 1, pField->m_name.c_str(), pField->m_dimenIndex.c_str(),
@@ -2684,21 +2684,21 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 		pIplTxStg->Append("\n");
 
-		if (mod.m_mif.m_bMifRd) {
-			m_iplRegDecl.Append("\tbool ht_noload c_t%d_bReadMemBusy;\n", mod.m_execStg);
-			m_iplRegDecl.Append("\tbool ht_noload c_t%d_bReadMemAvail;\n", mod.m_execStg);
-			GenModTrace(eVcdUser, vcdModName, "ReadMemBusy()", VA("c_t%d_bReadMemBusy", mod.m_execStg));
-			pIplTxStg->Append("\tc_t%d_bReadMemAvail = false;\n", mod.m_execStg);
+		if (pMod->m_mif.m_bMifRd) {
+			m_iplRegDecl.Append("\tbool ht_noload c_t%d_bReadMemBusy;\n", pMod->m_execStg);
+			m_iplRegDecl.Append("\tbool ht_noload c_t%d_bReadMemAvail;\n", pMod->m_execStg);
+			GenModTrace(eVcdUser, vcdModName, "ReadMemBusy()", VA("c_t%d_bReadMemBusy", pMod->m_execStg));
+			pIplTxStg->Append("\tc_t%d_bReadMemAvail = false;\n", pMod->m_execStg);
 		}
 
-		if (mod.m_mif.m_bMifWr) {
-			m_iplRegDecl.Append("\tbool ht_noload c_t%d_bWriteMemBusy;\n", mod.m_execStg);
-			m_iplRegDecl.Append("\tbool ht_noload c_t%d_bWriteMemAvail;\n", mod.m_execStg);
-			GenModTrace(eVcdUser, vcdModName, "WriteMemBusy()", VA("c_t%d_bWriteMemBusy", mod.m_execStg));
-			pIplTxStg->Append("\tc_t%d_bWriteMemAvail = false;\n", mod.m_execStg);
+		if (pMod->m_mif.m_bMifWr) {
+			m_iplRegDecl.Append("\tbool ht_noload c_t%d_bWriteMemBusy;\n", pMod->m_execStg);
+			m_iplRegDecl.Append("\tbool ht_noload c_t%d_bWriteMemAvail;\n", pMod->m_execStg);
+			GenModTrace(eVcdUser, vcdModName, "WriteMemBusy()", VA("c_t%d_bWriteMemBusy", pMod->m_execStg));
+			pIplTxStg->Append("\tc_t%d_bWriteMemAvail = false;\n", pMod->m_execStg);
 		}
 
-		if (mod.m_ohm.m_bOutHostMsg) {
+		if (pMod->m_ohm.m_bOutHostMsg) {
 			m_iplRegDecl.Append("\tbool ht_noload c_bSendHostMsgBusy;\n");
 			m_iplRegDecl.Append("\tbool ht_noload c_bSendHostMsgAvail;\n");
 			GenModTrace(eVcdUser, vcdModName, "SendHostMsgBusy()", "c_bSendHostMsgBusy");
@@ -2707,20 +2707,20 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 	}
 
 	iplStg += 1;
-	sprintf(inStgStr, "r_t%d", mod.m_wrStg - 1);
-	sprintf(outStgStr, "c_t%d", mod.m_wrStg - 1);
-	sprintf(regStgStr, "r_t%d", mod.m_wrStg);
+	sprintf(inStgStr, "r_t%d", pMod->m_wrStg - 1);
+	sprintf(outStgStr, "c_t%d", pMod->m_wrStg - 1);
+	sprintf(regStgStr, "r_t%d", pMod->m_wrStg);
 
 	////////////////////////////////////////////////////////////////////////////
 	// Variable macro/references
 
 	bool bFirstModVar = true;
 
-	if (!mod.m_bHtId) {
+	if (!pMod->m_bHtId) {
 		m_iplDefines.Append("#if !defined(TOPOLOGY_HEADER)\n");
-		for (int privWrIdx = 1; privWrIdx <= mod.m_stage.m_privWrStg.AsInt(); privWrIdx += 1) {
+		for (int privWrIdx = 1; privWrIdx <= pMod->m_stage.m_privWrStg.AsInt(); privWrIdx += 1) {
 			char privIdxStr[8];
-			if (mod.m_stage.m_bStageNums)
+			if (pMod->m_stage.m_bStageNums)
 				sprintf(privIdxStr, "%d", privWrIdx);
 			else
 				privIdxStr[0] = '\0';
@@ -2731,12 +2731,12 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 	} else
 		m_iplDefines.Append("#if !defined(TOPOLOGY_HEADER) && defined(_HTV)\n");
 
-	for (int privWrIdx = 1; privWrIdx <= mod.m_stage.m_privWrStg.AsInt(); privWrIdx += 1) {
+	for (int privWrIdx = 1; privWrIdx <= pMod->m_stage.m_privWrStg.AsInt(); privWrIdx += 1) {
 
-		int privStg = mod.m_tsStg + privWrIdx - 1;
+		int privStg = pMod->m_tsStg + privWrIdx - 1;
 
 		char privIdxStr[8];
-		if (mod.m_stage.m_bStageNums) {
+		if (pMod->m_stage.m_bStageNums) {
 			g_appArgs.GetDsnRpt().AddLevel("Private Variables - Stage %d\n", privWrIdx);
 			sprintf(privIdxStr, "%d", privWrIdx);
 		} else {
@@ -2746,7 +2746,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 		if (g_appArgs.IsVariableReportEnabled()) {
 			fprintf(g_appArgs.GetVarRptFp(), "%s PR%s_htId r_t%d_htId\n",
-				mod.m_modName.Uc().c_str(),
+				pMod->m_modName.Uc().c_str(),
 				privIdxStr,
 				privStg);
 		}
@@ -2754,23 +2754,23 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		g_appArgs.GetDsnRpt().AddLevel("Read Only (PR_)\n");
 
 		// PR_htId macro
-		if (mod.m_bHtId) {
-			g_appArgs.GetDsnRpt().AddItem("sc_uint<%s> PR%s_htId\n", mod.m_threads.m_htIdW.c_str(), privIdxStr);
+		if (pMod->m_bHtId) {
+			g_appArgs.GetDsnRpt().AddItem("sc_uint<%s> PR%s_htId\n", pMod->m_threads.m_htIdW.c_str(), privIdxStr);
 			GenModVar(eVcdUser, vcdModName, bFirstModVar,
-				VA("sc_uint<%s_HTID_W> const", mod.m_modName.Upper().c_str()),
+				VA("sc_uint<%s_HTID_W> const", pMod->m_modName.Upper().c_str()),
 				"", // dimen
 				VA("PR%s_htId", privIdxStr), VA("r_t%d_htId", privStg));
 		} else {
 			g_appArgs.GetDsnRpt().AddItem("int PR%s_htId\n", privIdxStr);
 		}
 
-		g_appArgs.GetDsnRpt().AddItem("sc_uint<%s_INSTR_W> PR%s_htInstr\n", mod.m_modName.Upper().c_str(), privIdxStr);
+		g_appArgs.GetDsnRpt().AddItem("sc_uint<%s_INSTR_W> PR%s_htInstr\n", pMod->m_modName.Upper().c_str(), privIdxStr);
 		GenModVar(eVcdUser, vcdModName, bFirstModVar,
-			VA("sc_uint<%s_INSTR_W> const", mod.m_modName.Upper().c_str()),
+			VA("sc_uint<%s_INSTR_W> const", pMod->m_modName.Upper().c_str()),
 			"", // dimen
 			VA("PR%s_htInst", privIdxStr), VA("r_t%d_htInstr", privStg));
 		GenModVar(eVcdUser, vcdModName, bFirstModVar,
-			VA("sc_uint<%s_INSTR_W> const", mod.m_modName.Upper().c_str()),
+			VA("sc_uint<%s_INSTR_W> const", pMod->m_modName.Upper().c_str()),
 			"", // dimen
 			VA("PR%s_htInstr", privIdxStr), VA("r_t%d_htInstr", privStg));
 		m_iplDefines.Append("\n");
@@ -2780,11 +2780,11 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		GenModVar(eVcdUser, vcdModName, bFirstModVar,
 			"bool const", "", VA("PR%s_htValid", privIdxStr), VA("r_t%d_htValid", privStg));
 
-		if (mod.m_threads.m_htPriv.m_fieldList.size() == 0) continue;
+		if (pMod->m_threads.m_htPriv.m_fieldList.size() == 0) continue;
 
 		// PR variables
-		for (size_t privIdx = 0; privIdx < mod.m_threads.m_htPriv.m_fieldList.size(); privIdx += 1) {
-			CField * pPriv = mod.m_threads.m_htPriv.m_fieldList[privIdx];
+		for (size_t privIdx = 0; privIdx < pMod->m_threads.m_htPriv.m_fieldList.size(); privIdx += 1) {
+			CField * pPriv = pMod->m_threads.m_htPriv.m_fieldList[privIdx];
 
 			g_appArgs.GetDsnRpt().AddItem("%s PR%s_%s%s\n", pPriv->m_pType->m_typeName.c_str(), privIdxStr, pPriv->m_name.c_str(), pPriv->m_dimenDecl.c_str());
 
@@ -2796,8 +2796,8 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 				pPriv->m_dimenList);
 		}
 
-		for (size_t ngvIdx = 0; ngvIdx < mod.m_ngvList.size(); ngvIdx += 1) {
-			CRam * pNgv = mod.m_ngvList[ngvIdx];
+		for (size_t ngvIdx = 0; ngvIdx < pMod->m_ngvList.size(); ngvIdx += 1) {
+			CRam * pNgv = pMod->m_ngvList[ngvIdx];
 
 			if (!pNgv->m_bPrivGbl) continue;
 
@@ -2805,7 +2805,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 			if (pNgv->m_addrW == 0) {
 				GenModVar(eVcdUser, vcdModName, bFirstModVar,
-					VA("%s const", /*(privWrIdx == 1 || pNgv->m_addrW > mod.m_threads.m_htIdW.AsInt())
+					VA("%s const", /*(privWrIdx == 1 || pNgv->m_addrW > pMod->m_threads.m_htIdW.AsInt())
 					? */pNgv->m_type.c_str()/* : VA("CGW_%s", pNgv->m_pNgvInfo->m_ngvWrType.c_str()).c_str()*/),
 					pNgv->m_dimenDecl,
 					VA("PR%s_%s", privIdxStr, pNgv->m_privName.c_str()),
@@ -2813,11 +2813,11 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 					pNgv->m_dimenList);
 			} else {
 				GenModVar(eVcdUser, vcdModName, bFirstModVar,
-					VA("%s const", (privWrIdx == 1 || pNgv->m_addrW > mod.m_threads.m_htIdW.AsInt())
+					VA("%s const", (privWrIdx == 1 || pNgv->m_addrW > pMod->m_threads.m_htIdW.AsInt())
 					? pNgv->m_type.c_str() : VA("CGW_%s", pNgv->m_pNgvInfo->m_ngvWrType.c_str()).c_str()),
 					pNgv->m_dimenDecl,
 					VA("PR%s_%s", privIdxStr, pNgv->m_privName.c_str()),
-					VA("r_t%d_%sI%cData", privStg, pNgv->m_gblName.c_str(), (privWrIdx == 1 || pNgv->m_addrW > mod.m_threads.m_htIdW.AsInt()) ? 'r' : 'w'),
+					VA("r_t%d_%sI%cData", privStg, pNgv->m_gblName.c_str(), (privWrIdx == 1 || pNgv->m_addrW > pMod->m_threads.m_htIdW.AsInt()) ? 'r' : 'w'),
 					pNgv->m_dimenList);
 			}
 		}
@@ -2826,8 +2826,8 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		g_appArgs.GetDsnRpt().AddLevel("Read/Write (P_)\n");
 
 		// P variables
-		for (size_t privIdx = 0; privIdx < mod.m_threads.m_htPriv.m_fieldList.size(); privIdx += 1) {
-			CField * pPriv = mod.m_threads.m_htPriv.m_fieldList[privIdx];
+		for (size_t privIdx = 0; privIdx < pMod->m_threads.m_htPriv.m_fieldList.size(); privIdx += 1) {
+			CField * pPriv = pMod->m_threads.m_htPriv.m_fieldList[privIdx];
 
 			g_appArgs.GetDsnRpt().AddItem("%s P%s_%s%s\n", pPriv->m_pType->m_typeName.c_str(), privIdxStr, pPriv->m_name.c_str(), pPriv->m_dimenDecl.c_str());
 
@@ -2840,12 +2840,12 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		}
 
 		bool bWriteOnly = false;
-		for (size_t ngvIdx = 0; ngvIdx < mod.m_ngvList.size(); ngvIdx += 1) {
-			CRam * pNgv = mod.m_ngvList[ngvIdx];
+		for (size_t ngvIdx = 0; ngvIdx < pMod->m_ngvList.size(); ngvIdx += 1) {
+			CRam * pNgv = pMod->m_ngvList[ngvIdx];
 
 			if (!pNgv->m_bPrivGbl) continue;
 
-			bool bVarWriteOnly = pNgv->m_addrW > mod.m_threads.m_htIdW.AsInt() || pNgv->m_pType->IsEmbeddedUnion();
+			bool bVarWriteOnly = pNgv->m_addrW > pMod->m_threads.m_htIdW.AsInt() || pNgv->m_pType->IsEmbeddedUnion();
 			bWriteOnly |= bVarWriteOnly;
 			if (bVarWriteOnly) continue;
 
@@ -2862,12 +2862,12 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		if (bWriteOnly) {
 			g_appArgs.GetDsnRpt().AddLevel("Write Only (PW_)\n");
 
-			for (size_t ngvIdx = 0; ngvIdx < mod.m_ngvList.size(); ngvIdx += 1) {
-				CRam * pNgv = mod.m_ngvList[ngvIdx];
+			for (size_t ngvIdx = 0; ngvIdx < pMod->m_ngvList.size(); ngvIdx += 1) {
+				CRam * pNgv = pMod->m_ngvList[ngvIdx];
 
 				if (!pNgv->m_bPrivGbl) continue;
 
-				bWriteOnly = pNgv->m_addrW > mod.m_threads.m_htIdW.AsInt() || pNgv->m_pType->IsEmbeddedUnion();
+				bWriteOnly = pNgv->m_addrW > pMod->m_threads.m_htIdW.AsInt() || pNgv->m_pType->IsEmbeddedUnion();
 				if (!bWriteOnly) continue;
 
 				g_appArgs.GetDsnRpt().AddItem("%s PW%s_%s%s\n", pNgv->m_type.c_str(), privIdxStr, pNgv->m_gblName.c_str(), pNgv->m_dimenDecl.c_str());
@@ -2885,8 +2885,8 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 		if (g_appArgs.IsVariableReportEnabled()) {
 			int privPos = 0;
-			for (size_t privIdx = 0; privIdx < mod.m_threads.m_htPriv.m_fieldList.size(); privIdx += 1) {
-				CField * pPriv = mod.m_threads.m_htPriv.m_fieldList[privIdx];
+			for (size_t privIdx = 0; privIdx < pMod->m_threads.m_htPriv.m_fieldList.size(); privIdx += 1) {
+				CField * pPriv = pMod->m_threads.m_htPriv.m_fieldList[privIdx];
 
 				int privWidth = pPriv->m_pType->GetPackedBitWidth();
 
@@ -2896,7 +2896,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 					string dimIdx = IndexStr(refList);
 
 					fprintf(g_appArgs.GetVarRptFp(), "%s PR%s_%s%s r_t%d_htPriv[%d:%d]\n",
-						mod.m_modName.Uc().c_str(),
+						pMod->m_modName.Uc().c_str(),
 						privIdxStr, pPriv->m_name.c_str(), dimIdx.c_str(),
 						privStg,
 						privPos + privWidth - 1, privPos);
@@ -2913,13 +2913,13 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 	}
 
 	// staged variables
-	if (mod.m_stage.m_fieldList.size() > 0) {
+	if (pMod->m_stage.m_fieldList.size() > 0) {
 
 		g_appArgs.GetDsnRpt().AddLevel("Stage Variables\n");
 		g_appArgs.GetDsnRpt().AddLevel("Read Only (TR_)\n");
 
-		for (size_t fieldIdx = 0; fieldIdx < mod.m_stage.m_fieldList.size(); fieldIdx += 1) {
-			CField * pField = mod.m_stage.m_fieldList[fieldIdx];
+		for (size_t fieldIdx = 0; fieldIdx < pMod->m_stage.m_fieldList.size(); fieldIdx += 1) {
+			CField * pField = pMod->m_stage.m_fieldList[fieldIdx];
 
 			int stgIdx = (pField->m_bInit ? 1 : 0) + pField->m_rngLow.AsInt();
 			int highIdx = pField->m_rngHigh.AsInt() + 1;
@@ -2933,8 +2933,8 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		g_appArgs.GetDsnRpt().EndLevel();
 		g_appArgs.GetDsnRpt().AddLevel("Read/Write (T_)\n");
 
-		for (size_t fieldIdx = 0; fieldIdx < mod.m_stage.m_fieldList.size(); fieldIdx += 1) {
-			CField * pField = mod.m_stage.m_fieldList[fieldIdx];
+		for (size_t fieldIdx = 0; fieldIdx < pMod->m_stage.m_fieldList.size(); fieldIdx += 1) {
+			CField * pField = pMod->m_stage.m_fieldList[fieldIdx];
 
 			int stgIdx = (pField->m_bInit ? 1 : 0) + pField->m_rngLow.AsInt();
 			int highIdx = pField->m_rngHigh.AsInt() + 1;
@@ -2948,14 +2948,14 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		g_appArgs.GetDsnRpt().EndLevel();
 		g_appArgs.GetDsnRpt().EndLevel();
 
-		for (size_t fieldIdx = 0; fieldIdx < mod.m_stage.m_fieldList.size(); fieldIdx += 1) {
-			CField * pField = mod.m_stage.m_fieldList[fieldIdx];
+		for (size_t fieldIdx = 0; fieldIdx < pMod->m_stage.m_fieldList.size(); fieldIdx += 1) {
+			CField * pField = pMod->m_stage.m_fieldList[fieldIdx];
 
 			int stgIdx = (pField->m_bInit ? 1 : 0) + pField->m_rngLow.AsInt();
 			int highIdx = pField->m_rngHigh.AsInt() + 1;
 			int varStg;
 			for (; stgIdx < highIdx; stgIdx += 1) {
-				varStg = mod.m_tsStg + stgIdx - 1;
+				varStg = pMod->m_tsStg + stgIdx - 1;
 
 				GenModVar(eVcdNone, vcdModName, bFirstModVar,
 					VA("%s", pField->m_pType->m_typeName.c_str()),
@@ -2971,7 +2971,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 					pField->m_dimenList);
 			}
 
-			varStg = mod.m_tsStg + stgIdx - 1;
+			varStg = pMod->m_tsStg + stgIdx - 1;
 			GenModVar(eVcdUser, vcdModName, bFirstModVar,
 				VA("%s", pField->m_pType->m_typeName.c_str()),
 				pField->m_dimenDecl,
@@ -2985,13 +2985,13 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 	{
 		// Shared variable access macros
-		if (mod.m_shared.m_fieldList.size() > 0) {
+		if (pMod->m_shared.m_fieldList.size() > 0) {
 
 			g_appArgs.GetDsnRpt().AddLevel("Shared Variables\n");
 
 			bool bFirst = true;
-			for (size_t shIdx = 0; shIdx < mod.m_shared.m_fieldList.size(); shIdx += 1) {
-				CField * pShared = mod.m_shared.m_fieldList[shIdx];
+			for (size_t shIdx = 0; shIdx < pMod->m_shared.m_fieldList.size(); shIdx += 1) {
+				CField * pShared = pMod->m_shared.m_fieldList[shIdx];
 
 				if (pShared->m_queueW.AsInt() == 0/* && pShared->m_addr1W.AsInt() == 0*/) {
 					if (bFirst) {
@@ -3010,8 +3010,8 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 			g_appArgs.GetDsnRpt().AddLevel("Read/Write (S_)\n");
 
-			for (size_t shIdx = 0; shIdx < mod.m_shared.m_fieldList.size(); shIdx += 1) {
-				CField * pShared = mod.m_shared.m_fieldList[shIdx];
+			for (size_t shIdx = 0; shIdx < pMod->m_shared.m_fieldList.size(); shIdx += 1) {
+				CField * pShared = pMod->m_shared.m_fieldList[shIdx];
 
 				if (pShared->m_bIhmReadOnly && pShared->m_queueW.size() == 0)
 					continue;
@@ -3059,8 +3059,8 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 			g_appArgs.GetDsnRpt().EndLevel();
 			g_appArgs.GetDsnRpt().EndLevel();
 
-			for (size_t shIdx = 0; shIdx < mod.m_shared.m_fieldList.size(); shIdx += 1) {
-				CField * pShared = mod.m_shared.m_fieldList[shIdx];
+			for (size_t shIdx = 0; shIdx < pMod->m_shared.m_fieldList.size(); shIdx += 1) {
+				CField * pShared = pMod->m_shared.m_fieldList[shIdx];
 
 				char preCh = 'c';
 				char regCh = 'r';
@@ -3092,7 +3092,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 		m_iplRegDecl.Append("\tCHtAssertIntf c_htAssert;\n");
 		iplPostInstr.Append("\tc_htAssert = 0;\n");
-		if (mod.m_clkRate == eClk2x) {
+		if (pMod->m_clkRate == eClk2x) {
 			iplPostInstr.Append("#\tifdef HT_ASSERT\n");
 			iplPostInstr.Append("\tif (r_%sToHta_assert.read().m_bAssert && r_phase && !%s)\n", pModInst->m_instName.Lc().c_str(), reset.c_str());
 			iplPostInstr.Append("\t\tc_htAssert = r_%sToHta_assert;\n", pModInst->m_instName.Lc().c_str());
@@ -3104,12 +3104,12 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		// Instruction execution
 
 		iplPostInstr.Append("\tPers%s%s();\n",
-			unitNameUc.c_str(), mod.m_modName.Uc().c_str());
+			unitNameUc.c_str(), pMod->m_modName.Uc().c_str());
 		iplPostInstr.Append("\n");
 		iplPostInstr.Append("\tassert_msg(!r_t%d_htValid || c_t%d_htCtrl != HT_INVALID, \"Runtime check failed in CPers%s::Pers%s_%s()"
 			" - expected an Ht control routine to have been called\");\n",
-			mod.m_execStg, mod.m_execStg,
-			pModInst->m_instName.Uc().c_str(), mod.m_modName.Uc().c_str(), mod.m_clkRate == eClk1x ? "1x" : "2x");
+			pMod->m_execStg, pMod->m_execStg,
+			pModInst->m_instName.Uc().c_str(), pMod->m_modName.Uc().c_str(), pMod->m_clkRate == eClk1x ? "1x" : "2x");
 		iplPostInstr.Append("\n");
 
 		////////////////////////////////////////////////////////////////////////////
@@ -3118,42 +3118,42 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		if (m_bPerfMon) {
 			iplPostInstr.Append("#\tifndef _HTV\n");
 			iplPostInstr.Append("\tif (");
-			iplPostInstr.Append("r_t%d_htValid", mod.m_execStg);
-			iplPostInstr.Append(")\n", mod.m_execStg);
-			if (mod.m_bHasThreads)
-				iplPostInstr.Append("\t\tHt::g_syscMon.UpdateValidInstrCnt(m_htMonModId, (int)r_t%d_htInstr);\n", mod.m_execStg);
+			iplPostInstr.Append("r_t%d_htValid", pMod->m_execStg);
+			iplPostInstr.Append(")\n", pMod->m_execStg);
+			if (pMod->m_bHasThreads)
+				iplPostInstr.Append("\t\tHt::g_syscMon.UpdateValidInstrCnt(m_htMonModId, (int)r_t%d_htInstr);\n", pMod->m_execStg);
 			else
-				iplPostInstr.Append("\t\tHt::g_syscMon.UpdateValidInstrCnt(m_htMonModId, (int)r_t%d_htInstr);\n", mod.m_execStg);
+				iplPostInstr.Append("\t\tHt::g_syscMon.UpdateValidInstrCnt(m_htMonModId, (int)r_t%d_htInstr);\n", pMod->m_execStg);
 			iplPostInstr.Append("\n");
 
-			iplPostInstr.Append("\tif (c_t%d_htCtrl == HT_RETRY)\n", mod.m_execStg);
-			if (mod.m_bHasThreads)
-				iplPostInstr.Append("\t\tHt::g_syscMon.UpdateRetryInstrCnt(m_htMonModId, (int)r_t%d_htInstr);\n", mod.m_execStg);
+			iplPostInstr.Append("\tif (c_t%d_htCtrl == HT_RETRY)\n", pMod->m_execStg);
+			if (pMod->m_bHasThreads)
+				iplPostInstr.Append("\t\tHt::g_syscMon.UpdateRetryInstrCnt(m_htMonModId, (int)r_t%d_htInstr);\n", pMod->m_execStg);
 			else
-				iplPostInstr.Append("\t\tHt::g_syscMon.UpdateRetryInstrCnt(m_htMonModId, (int)r_t%d_htInstr);\n", mod.m_execStg);
+				iplPostInstr.Append("\t\tHt::g_syscMon.UpdateRetryInstrCnt(m_htMonModId, (int)r_t%d_htInstr);\n", pMod->m_execStg);
 			iplPostInstr.Append("\n");
 
-			if (mod.m_mif.m_bMif) {
-				CMif & mif = mod.m_mif;
+			if (pMod->m_mif.m_bMif) {
+				CMif & mif = pMod->m_mif;
 
 				if (mif.m_bMifRd) {
-					int reqStg = mod.m_execStg + mod.m_mif.m_mifReqStgCnt + 1;
+					int reqStg = pMod->m_execStg + pMod->m_mif.m_mifReqStgCnt + 1;
 					string stg = VA("r_t%d", reqStg);
 					if (mif.m_bMifWr) {
 						iplPostInstr.Append("\tif (%s_%sToMif_reqRdy && %s_%sToMif_req.m_type == MEM_REQ_RD) {\n",
-							stg.c_str(), pModInst->m_instName.Lc().c_str(), stg.c_str(), pModInst->m_instName.Lc().c_str());
+							stg.c_str(), pMod->m_modName.Lc().c_str(), stg.c_str(), pMod->m_modName.Lc().c_str());
 					} else {
 						iplPostInstr.Append("\tif (%s_%sToMif_reqRdy) {\n",
-							stg.c_str(), pModInst->m_instName.Lc().c_str());
+							stg.c_str(), pMod->m_modName.Lc().c_str());
 					}
 
 					if (mif.m_mifRd.m_bMultiQwRdReq) {
 						iplPostInstr.Append("\t\tHt::g_syscMon.UpdateModuleMemReads(m_htMonModId, 0, 1);\n");
 						iplPostInstr.Append("\t\tHt::g_syscMon.UpdateModuleMemRead64s(m_htMonModId, 0, (r_t%d_%sToMif_req.m_tid >> 29) != 0 ? 1 : 0);\n",
-							reqStg, pModInst->m_instName.Lc().c_str());
+							reqStg, pMod->m_modName.Lc().c_str());
 						iplPostInstr.Append("\t\tHt::g_syscMon.UpdateModuleMemReadBytes(m_htMonModId, 0, (1LL << r_t%d_%sToMif_req.m_size) * ((r_t%d_%sToMif_req.m_tid >> 29) + 1));\n",
-							reqStg, pModInst->m_instName.Lc().c_str(),
-							reqStg, pModInst->m_instName.Lc().c_str());
+							reqStg, pMod->m_modName.Lc().c_str(),
+							reqStg, pMod->m_modName.Lc().c_str());
 					} else {
 						iplPostInstr.Append("\t\tHt::g_syscMon.UpdateModuleMemReads(m_htMonModId, 0, 1);\n");
 						iplPostInstr.Append("\t\tHt::g_syscMon.UpdateModuleMemReadBytes(m_htMonModId, 0, 8);\n");
@@ -3165,27 +3165,27 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 				if (mif.m_bMifWr) {
 					if (mif.m_bMifRd) {
 						iplPostInstr.Append("\tif (r_t%d_%sToMif_reqRdy && r_t%d_%sToMif_req.m_type == MEM_REQ_WR) {\n",
-							mod.m_execStg + 1 + mod.m_mif.m_mifReqStgCnt, pModInst->m_instName.Lc().c_str(),
-							mod.m_execStg + 1 + mod.m_mif.m_mifReqStgCnt, pModInst->m_instName.Lc().c_str());
+							pMod->m_execStg + 1 + pMod->m_mif.m_mifReqStgCnt, pMod->m_modName.Lc().c_str(),
+							pMod->m_execStg + 1 + pMod->m_mif.m_mifReqStgCnt, pMod->m_modName.Lc().c_str());
 					} else {
 						iplPostInstr.Append("\tif (r_t%d_%sToMif_reqRdy) {\n",
-							mod.m_execStg + 1 + mod.m_mif.m_mifReqStgCnt, pModInst->m_instName.Lc().c_str());
+							pMod->m_execStg + 1 + pMod->m_mif.m_mifReqStgCnt, pMod->m_modName.Lc().c_str());
 					}
 
 					if (mif.m_mifWr.m_bMultiQwWrReq) {
 						iplPostInstr.Append("\t\tbool bWrite64B = (r_t%d_%sToMif_req.m_tid >> 29) == 7 && (r_t%d_%sToMif_req.m_addr & 0x38) == 0;\n",
-							mod.m_execStg + 1 + mod.m_mif.m_mifReqStgCnt, pModInst->m_instName.Lc().c_str(),
-							mod.m_execStg + 1 + mod.m_mif.m_mifReqStgCnt, pModInst->m_instName.Lc().c_str());
+							pMod->m_execStg + 1 + pMod->m_mif.m_mifReqStgCnt, pMod->m_modName.Lc().c_str(),
+							pMod->m_execStg + 1 + pMod->m_mif.m_mifReqStgCnt, pMod->m_modName.Lc().c_str());
 						iplPostInstr.Append("\t\tbool bWrite8B = (r_t%d_%sToMif_req.m_tid >> 29) == 0;\n",
-							mod.m_execStg + 1 + mod.m_mif.m_mifReqStgCnt, pModInst->m_instName.Lc().c_str());
+							pMod->m_execStg + 1 + pMod->m_mif.m_mifReqStgCnt, pMod->m_modName.Lc().c_str());
 						iplPostInstr.Append("\t\tHt::g_syscMon.UpdateModuleMemWrites(m_htMonModId, 0, bWrite8B ? 1 : 0);\n");
 						iplPostInstr.Append("\t\tHt::g_syscMon.UpdateModuleMemWrite64s(m_htMonModId, 0, bWrite64B ? 1 : 0);\n");
 						iplPostInstr.Append("\t\tHt::g_syscMon.UpdateModuleMemWriteBytes(m_htMonModId, 0, 1 << r_t%d_%sToMif_req.m_size);\n",
-							mod.m_execStg + 1 + mod.m_mif.m_mifReqStgCnt, pModInst->m_instName.Lc().c_str());
+							pMod->m_execStg + 1 + pMod->m_mif.m_mifReqStgCnt, pMod->m_modName.Lc().c_str());
 					} else {
 						iplPostInstr.Append("\t\tHt::g_syscMon.UpdateModuleMemWrites(m_htMonModId, 0, 1);\n");
 						iplPostInstr.Append("\t\tHt::g_syscMon.UpdateModuleMemWriteBytes(m_htMonModId, 0, 1 << r_t%d_%sToMif_req.m_size);\n",
-							mod.m_execStg + 1 + mod.m_mif.m_mifReqStgCnt, pModInst->m_instName.Lc().c_str());
+							pMod->m_execStg + 1 + pMod->m_mif.m_mifReqStgCnt, pMod->m_modName.Lc().c_str());
 					}
 					iplPostInstr.Append("\t}\n");
 					iplPostInstr.Append("\n");
@@ -3193,19 +3193,19 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 				}
 			}
 
-			if (mod.m_threads.m_htIdW.AsInt() == 0) {
+			if (pMod->m_threads.m_htIdW.AsInt() == 0) {
 				iplPostInstr.Append("\tHt::g_syscMon.UpdateActiveClks(m_htMonModId, r_htBusy ? 1 : 0);\n");
 
 			} else {
 				iplPostInstr.Append("\tif (!m_htIdPool.full() && r_resetComplete) {\n");
 				iplPostInstr.Append("\t\tuint32_t activeCnt = (1ul << %s_HTID_W) - m_htIdPool.size();\n",
-					mod.m_modName.Upper().c_str());
+					pMod->m_modName.Upper().c_str());
 				iplPostInstr.Append("\t\tHt::g_syscMon.UpdateActiveCnt(m_htMonModId, activeCnt);\n");
 				iplPostInstr.Append("\t}\n");
 				iplPostInstr.Append("\n");
 
 				iplPostInstr.Append("\tuint32_t runningCnt = m_htCmdQue.size() + (r_t%d_htValid ? 1 : 0);\n",
-					mod.m_execStg);
+					pMod->m_execStg);
 				iplPostInstr.Append("\tHt::g_syscMon.UpdateRunningCnt(m_htMonModId, runningCnt);\n");
 			}
 
@@ -3216,36 +3216,35 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		if (g_appArgs.IsInstrTraceEnabled()) {
 			iplPostInstr.Append("#\tifndef _HTV\n");
 			iplPostInstr.Append("\tif (Ht::g_instrTraceFp && (");
-			iplPostInstr.Append("r_t%d_htValid", mod.m_execStg);
+			iplPostInstr.Append("r_t%d_htValid", pMod->m_execStg);
 			iplPostInstr.Append("))\n");
 			iplPostInstr.Append("\t{\n");
 
-			string line = "\t\tfprintf(Ht::g_instrTraceFp, \"" + mod.m_modName.Upper();
-			if (mod.m_instSet.GetReplCnt(0) > 1)
+			string line = "\t\tfprintf(Ht::g_instrTraceFp, \"" + pModInst->m_instName.Upper();
+			if (pMod->m_instSet.GetReplCnt(pModInst->m_instId) > 1)
 				line += "%%d:";
 			else
 				line += ":";
-			if (mod.m_bMultiThread)
+			if (pMod->m_bMultiThread)
 				line += " HtId=0x%%x,";
 			line += " Instr=%%-%ds, Ctrl=%%-9s -> Instr=%%-%ds";
-			for (size_t i = 0; i < mod.m_traceList.size(); i += 1)
-				line += ", " + mod.m_traceList[i] + "=0x%%llx";
+			for (size_t i = 0; i < pMod->m_traceList.size(); i += 1)
+				line += ", " + pMod->m_traceList[i] + "=0x%%llx";
 			line += " @ %%lld\\n\",\n";
 			iplPostInstr.Append(line.c_str(), maxInstrLen, maxInstrLen);
 
-			char lineStr[128];
 			line = "\t\t\t";
-			if (mod.m_bMultiThread) {
-				sprintf(lineStr, "(int)r_t%d_htId, ", mod.m_execStg);
-				line += lineStr;
+			if (pMod->m_instSet.GetReplCnt(pModInst->m_instId) > 1) {
+				line += "(int)i_replId, ";
 			}
-			sprintf(lineStr, "m_pInstrNames[(int)r_t%d_htInstr], m_pHtCtrlNames[(int)c_t%d_htCtrl], m_pInstrNames[(int)c_t%d_htNextInstr], ",
-				mod.m_execStg, mod.m_execStg, mod.m_execStg);
-			line += lineStr;
+			if (pMod->m_bMultiThread) {
+				line += VA("(int)r_t%d_htId, ", pMod->m_execStg);
+			}
+			line += VA("m_pInstrNames[(int)r_t%d_htInstr], m_pHtCtrlNames[(int)c_t%d_htCtrl], m_pInstrNames[(int)c_t%d_htNextInstr], ",
+				pMod->m_execStg, pMod->m_execStg, pMod->m_execStg);
 
-			for (size_t i = 0; i < mod.m_traceList.size(); i += 1) {
-				sprintf(lineStr, "(long long)c_t%d_htPriv.", mod.m_execStg);
-				line += lineStr + mod.m_traceList[i] + ", ";
+			for (size_t i = 0; i < pMod->m_traceList.size(); i += 1) {
+				line += VA("(long long)c_t%d_htPriv.", pMod->m_execStg);
 			}
 			line += "(long long)sc_time_stamp().value() / 10000);\n";
 			iplPostInstr.Append(line.c_str());
@@ -3256,58 +3255,58 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 			iplPostInstr.Append("\n");
 		}
 
-		if (mod.m_ohm.m_bOutHostMsg) {
+		if (pMod->m_ohm.m_bOutHostMsg) {
 			iplPostInstr.Append("\tassert_msg(!c_%sToHti_ohm.m_bValid || c_bSendHostMsgAvail, \"Runtime check failed in CPers%s::Pers%s_%s()"
 				" - expected SendHostMsgBusy() to have been called and not busy\");\n", pModInst->m_instName.Lc().c_str(), pModInst->m_instName.Uc().c_str(),
-				mod.m_modName.Uc().c_str(), mod.m_clkRate == eClk1x ? "1x" : "2x");
+				pMod->m_modName.Uc().c_str(), pMod->m_clkRate == eClk1x ? "1x" : "2x");
 		}
 
 		iplPostInstr.Append("\n");
 
 		char regStr[8];
 		pRegStg = regStr;
-		sprintf(regStr, "r_t%d", mod.m_wrStg);
+		sprintf(regStr, "r_t%d", pMod->m_wrStg);
 
 		// htCtrl
-		if (mod.m_bMultiThread) {
-			iplPostInstr.Append("\tbool c_t%d_htPrivWe = false;\n", mod.m_wrStg - 1);
-			GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, "bool", VA("r_t%d_htPrivWe", mod.m_wrStg));
-			iplReg.Append("\tr_t%d_htPrivWe = c_t%d_htPrivWe;\n", mod.m_wrStg, mod.m_wrStg - 1);
+		if (pMod->m_bMultiThread) {
+			iplPostInstr.Append("\tbool c_t%d_htPrivWe = false;\n", pMod->m_wrStg - 1);
+			GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, "bool", VA("r_t%d_htPrivWe", pMod->m_wrStg));
+			iplReg.Append("\tr_t%d_htPrivWe = c_t%d_htPrivWe;\n", pMod->m_wrStg, pMod->m_wrStg - 1);
 
-			iplPostInstr.Append("\tbool c_t%d_htCmdRdy = false;\n", mod.m_wrStg - 1);
-			GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, "bool", VA("r_t%d_htCmdRdy", mod.m_wrStg));
-			iplReg.Append("\tr_t%d_htCmdRdy = c_t%d_htCmdRdy;\n", mod.m_wrStg, mod.m_wrStg - 1);
+			iplPostInstr.Append("\tbool c_t%d_htCmdRdy = false;\n", pMod->m_wrStg - 1);
+			GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, "bool", VA("r_t%d_htCmdRdy", pMod->m_wrStg));
+			iplReg.Append("\tr_t%d_htCmdRdy = c_t%d_htCmdRdy;\n", pMod->m_wrStg, pMod->m_wrStg - 1);
 
-			iplPostInstr.Append("\tCHtCmd c_t%d_htCmd;\n", mod.m_wrStg - 1);
+			iplPostInstr.Append("\tCHtCmd c_t%d_htCmd;\n", pMod->m_wrStg - 1);
 		} else {
 			iplPostInstr.Append("\tCHtPriv c_htPriv = r_htPriv;\n");
 			iplPostInstr.Append("\tCHtCmd c_htCmd = r_htCmd;\n");
 
-			if (mod.m_bGvIwComp) {
-				GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, "bool", VA("r_t%d_htCmdRdy", mod.m_wrStg));
-				iplPostInstr.Append("\tbool c_t%d_htCmdRdy = false;\n", mod.m_wrStg - 1);
+			if (pMod->m_bGvIwComp) {
+				GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, "bool", VA("r_t%d_htCmdRdy", pMod->m_wrStg));
+				iplPostInstr.Append("\tbool c_t%d_htCmdRdy = false;\n", pMod->m_wrStg - 1);
 			}
 		}
 
-		if (mod.m_threads.m_htIdW.AsInt() == 0)
+		if (pMod->m_threads.m_htIdW.AsInt() == 0)
 			iplReg.Append("\tr_htCmd = c_htCmd;\n");
 		else {
-			//GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, "CHtCmd", VA("r_t%d_htCmd", mod.m_wrStg) );
-			m_iplRegDecl.Append("\tCHtCmd r_t%d_htCmd;\n", mod.m_wrStg);
-			iplReg.Append("\tr_t%d_htCmd = c_t%d_htCmd;\n", mod.m_wrStg, mod.m_wrStg - 1);
+			//GenModDecl(eVcdAll, m_iplRegDecl, vcdModName, "CHtCmd", VA("r_t%d_htCmd", pMod->m_wrStg) );
+			m_iplRegDecl.Append("\tCHtCmd r_t%d_htCmd;\n", pMod->m_wrStg);
+			iplReg.Append("\tr_t%d_htCmd = c_t%d_htCmd;\n", pMod->m_wrStg, pMod->m_wrStg - 1);
 		}
 
-		if (mod.m_threads.m_resetInstr.size() > 0) {
-			m_iplRegDecl.Append("\tbool r_t%d_htTerm;\n", mod.m_wrStg);
-			iplReg.Append("\tr_t%d_htTerm = c_t%d_htTerm;\n", mod.m_wrStg, mod.m_wrStg - 1);
-			iplPostInstr.Append("\tbool c_t%d_htTerm = false;\n", mod.m_wrStg - 1);
+		if (pMod->m_threads.m_resetInstr.size() > 0) {
+			m_iplRegDecl.Append("\tbool r_t%d_htTerm;\n", pMod->m_wrStg);
+			iplReg.Append("\tr_t%d_htTerm = c_t%d_htTerm;\n", pMod->m_wrStg, pMod->m_wrStg - 1);
+			iplPostInstr.Append("\tbool c_t%d_htTerm = false;\n", pMod->m_wrStg - 1);
 		}
 
 		iplPostInstr.Append("\n");
 
-		iplPostInstr.Append("\tswitch (r_t%d_htSel) {\n", mod.m_wrStg - 1);
+		iplPostInstr.Append("\tswitch (r_t%d_htSel) {\n", pMod->m_wrStg - 1);
 
-		if (mod.m_threads.m_resetInstr.size() > 0) {
+		if (pMod->m_threads.m_resetInstr.size() > 0) {
 			iplPostInstr.Append("\tcase %s_HT_SEL_RESET:\n",
 				pModInst->m_instName.Upper().c_str());
 		}
@@ -3316,7 +3315,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 			CCxrIntf * pCxrIntf = pModInst->m_cxrIntfList[intfIdx];
 
 			if (pCxrIntf->m_cxrDir == CxrOut) continue;
-			if (pCxrIntf->m_pDstGroup != &mod.m_threads) continue;
+			if (pCxrIntf->m_pDstGroup != &pMod->m_threads) continue;
 
 			iplPostInstr.Append("\tcase %s_HT_SEL_%s_%d_%s:\n",
 				pModInst->m_instName.Upper().c_str(), pCxrIntf->m_pSrcModInst->m_instName.Upper().c_str(), pCxrIntf->GetPortReplId(), pCxrIntf->m_modEntry.Upper().c_str());
@@ -3327,48 +3326,48 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		if (bNeedMifPollQue)
 			iplPostInstr.Append("\tcase %s_HT_SEL_POLL:\n", pModInst->m_instName.Upper().c_str());
 
-		if (mod.m_bMultiThread) {
+		if (pMod->m_bMultiThread) {
 			iplPostInstr.Append("\t\tc_t%d_htPrivWe = r_t%d_htValid;\n",
-				mod.m_wrStg - 1, mod.m_wrStg - 1);
+				pMod->m_wrStg - 1, pMod->m_wrStg - 1);
 
 			iplPostInstr.Append("\t\tc_t%d_htCmdRdy = c_t%d_htCtrl == HT_CONT || c_t%d_htCtrl == HT_JOIN_AND_CONT || c_t%d_htCtrl == HT_RETRY",
-				mod.m_wrStg - 1, mod.m_wrStg - 1, mod.m_wrStg - 1, mod.m_wrStg - 1);
+				pMod->m_wrStg - 1, pMod->m_wrStg - 1, pMod->m_wrStg - 1, pMod->m_wrStg - 1);
 
 			iplPostInstr.Append(";\n");
 
-			if (mod.m_threads.m_htIdW.AsInt() > 0)
+			if (pMod->m_threads.m_htIdW.AsInt() > 0)
 				iplPostInstr.Append("\t\tc_t%d_htCmd.m_htId = r_t%d_htId;\n",
-				mod.m_wrStg - 1, mod.m_wrStg - 1);
+				pMod->m_wrStg - 1, pMod->m_wrStg - 1);
 			iplPostInstr.Append("\t\tc_t%d_htCmd.m_htInstr = c_t%d_htNextInstr;\n",
-				mod.m_wrStg - 1, mod.m_wrStg - 1);
+				pMod->m_wrStg - 1, pMod->m_wrStg - 1);
 		} else {
-			if (mod.m_threads.m_bCallFork && mod.m_threads.m_htIdW.AsInt() == 0)
-				iplPostInstr.Append("\t\tif (r_t%d_htValid) {\n", mod.m_wrStg - 1);
+			if (pMod->m_threads.m_bCallFork && pMod->m_threads.m_htIdW.AsInt() == 0)
+				iplPostInstr.Append("\t\tif (r_t%d_htValid) {\n", pMod->m_wrStg - 1);
 			else
-				iplPostInstr.Append("\t\tif (r_t%d_htValid)\n", mod.m_wrStg - 1);
+				iplPostInstr.Append("\t\tif (r_t%d_htValid)\n", pMod->m_wrStg - 1);
 
 			iplPostInstr.Append("\t\t\tc_htPriv = c_t%d_htPriv;\n",
-				mod.m_wrStg - 1);
+				pMod->m_wrStg - 1);
 
-			if (mod.m_threads.m_bCallFork && mod.m_threads.m_htIdW.AsInt() == 0) {
+			if (pMod->m_threads.m_bCallFork && pMod->m_threads.m_htIdW.AsInt() == 0) {
 				iplPostInstr.Append("\t\t\tc_htPrivLk = false;\n");
 				iplPostInstr.Append("\t\t}\n");
 			}
 
 			iplPostInstr.Append("\t\tif (r_t%d_htValid && c_t%d_htCtrl != HT_JOIN) {\n",
-				mod.m_wrStg - 1, mod.m_wrStg - 1);
+				pMod->m_wrStg - 1, pMod->m_wrStg - 1);
 			iplPostInstr.Append("\t\t\tc_htCmdValid = c_t%d_htCtrl == HT_CONT || c_t%d_htCtrl == HT_JOIN_AND_CONT || c_t%d_htCtrl == HT_RETRY;\n",
-				mod.m_wrStg - 1, mod.m_wrStg - 1, mod.m_wrStg - 1);
-			if (mod.m_bGvIwComp)
-				iplPostInstr.Append("\t\t\tc_t%d_htCmdRdy = c_htCmdValid;\n", mod.m_wrStg - 1);
+				pMod->m_wrStg - 1, pMod->m_wrStg - 1, pMod->m_wrStg - 1);
+			if (pMod->m_bGvIwComp)
+				iplPostInstr.Append("\t\t\tc_t%d_htCmdRdy = c_htCmdValid;\n", pMod->m_wrStg - 1);
 			iplPostInstr.Append("\t\t\tc_htCmd.m_htInstr = c_t%d_htNextInstr;\n",
-				mod.m_wrStg - 1);
+				pMod->m_wrStg - 1);
 			iplPostInstr.Append("\t\t}\n");
 		}
 
-		if (mod.m_threads.m_resetInstr.size() > 0)
+		if (pMod->m_threads.m_resetInstr.size() > 0)
 			iplPostInstr.Append("\t\tc_t%d_htTerm = c_t%d_htCtrl == HT_TERM;\n",
-			mod.m_wrStg - 1, mod.m_wrStg - 1);
+			pMod->m_wrStg - 1, pMod->m_wrStg - 1);
 
 		iplPostInstr.Append("\t\tbreak;\n");
 
@@ -3377,26 +3376,26 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		iplPostInstr.Append("\t}\n");
 		iplPostInstr.Append("\n");
 
-		if (mod.m_bCallFork) {
+		if (pMod->m_bCallFork) {
 
-			iplPostInstr.Append("\tassert_msg(%s || !r_t%d_htValid || ", reset.c_str(), mod.m_wrStg - 1);
+			iplPostInstr.Append("\tassert_msg(%s || !r_t%d_htValid || ", reset.c_str(), pMod->m_wrStg - 1);
 
-			if (mod.m_bCallFork)
-				iplPostInstr.Append("!r_t%d_rtnJoin || ", mod.m_wrStg - 1);
+			if (pMod->m_bCallFork)
+				iplPostInstr.Append("!r_t%d_rtnJoin || ", pMod->m_wrStg - 1);
 			iplPostInstr.Append("c_t%d_htCtrl == HT_JOIN || c_t%d_htCtrl == HT_JOIN_AND_CONT,\n\t\t\"Runtime check failed in CPers%s::Pers%s_%s()"
 				" - expected return from a forked call to performan HtJoin on the entry instruction\");\n",
-				mod.m_wrStg - 1, mod.m_wrStg - 1,
-				pModInst->m_instName.Uc().c_str(), mod.m_modName.Uc().c_str(), mod.m_clkRate == eClk1x ? "1x" : "2x");
+				pMod->m_wrStg - 1, pMod->m_wrStg - 1,
+				pModInst->m_instName.Uc().c_str(), pMod->m_modName.Uc().c_str(), pMod->m_clkRate == eClk1x ? "1x" : "2x");
 
 			iplPostInstr.Append("\n");
 		}
 
 		// decrement reserved limit counts
-		if (mod.m_cxrEntryReserveCnt > 0) {
-			iplPostInstr.Append("\tif (c_t%d_htCtrl == HT_RTN) {\n", mod.m_wrStg - 1);
-			iplPostInstr.Append("\t\tswitch (r_t%d_htPriv.m_rtnRsvSel) {\n", mod.m_wrStg - 1);
+		if (pMod->m_cxrEntryReserveCnt > 0) {
+			iplPostInstr.Append("\tif (c_t%d_htCtrl == HT_RTN) {\n", pMod->m_wrStg - 1);
+			iplPostInstr.Append("\t\tswitch (r_t%d_htPriv.m_rtnRsvSel) {\n", pMod->m_wrStg - 1);
 
-			if (mod.m_threads.m_resetInstr.size() > 0) {
+			if (pMod->m_threads.m_resetInstr.size() > 0) {
 				iplPostInstr.Append("\t\tcase %s_HT_SEL_RESET:\n",
 					pModInst->m_instName.Upper().c_str());
 				iplPostInstr.Append("\t\t\tbreak;\n");
@@ -3444,14 +3443,14 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		}
 
 		// m_htIdPool push
-		if (!mod.m_bGvIwComp) {
+		if (!pMod->m_bGvIwComp) {
 			for (size_t intfIdx = 0; intfIdx < pModInst->m_cxrIntfList.size(); intfIdx += 1) {
 				CCxrIntf * pCxrIntf = pModInst->m_cxrIntfList[intfIdx];
 
 				if (pCxrIntf->m_cxrDir == CxrIn) continue;
 				if (pCxrIntf->IsCall()) continue;
 
-				if (pCxrIntf->IsXfer() && pCxrIntf->m_pDstModInst->m_pMod->m_clkRate == eClk1x && pCxrIntf->m_pDstModInst->m_pMod->m_clkRate != mod.m_clkRate)
+				if (pCxrIntf->IsXfer() && pCxrIntf->m_pDstModInst->m_pMod->m_clkRate == eClk1x && pCxrIntf->m_pDstModInst->m_pMod->m_clkRate != pMod->m_clkRate)
 					iplPostInstr.Append("\tif (r_%s_%sRdy%s && !r_%s_%sHold%s)\n",
 					pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex(),
 					pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
@@ -3462,27 +3461,27 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 				if (pCxrIntf->m_pSrcGroup->m_htIdW.AsInt() == 0)
 					iplPostInstr.Append("\t\tc_htBusy = false;\n");
 				else
-					iplPostInstr.Append("\t\tm_htIdPool.push(r_t%d_htId);\n", mod.m_execStg + 1);
+					iplPostInstr.Append("\t\tm_htIdPool.push(r_t%d_htId);\n", pMod->m_execStg + 1);
 				iplPostInstr.Append("\n");
 			}
 		}
 
-		if (mod.m_threads.m_resetInstr.size() > 0) {
+		if (pMod->m_threads.m_resetInstr.size() > 0) {
 
-			iplPostInstr.Append("\tif (r_t%d_htTerm)\n", mod.m_execStg + 1);
+			iplPostInstr.Append("\tif (r_t%d_htTerm)\n", pMod->m_execStg + 1);
 
-			if (mod.m_threads.m_htIdW.AsInt() == 0)
+			if (pMod->m_threads.m_htIdW.AsInt() == 0)
 				iplPostInstr.Append("\t\tc_htBusy = false;\n");
 			else
-				iplPostInstr.Append("\t\tm_htIdPool.push(r_t%d_htId);\n", mod.m_execStg + 1);
+				iplPostInstr.Append("\t\tm_htIdPool.push(r_t%d_htId);\n", pMod->m_execStg + 1);
 
 			iplPostInstr.Append("\n");
 		}
 
-		if (mod.m_bMultiThread) {
+		if (pMod->m_bMultiThread) {
 
-			if (mod.m_threads.m_bCallFork && !mod.m_bGvIwComp) {
-				if (mod.m_threads.m_htIdW.AsInt() <= 2) {
+			if (pMod->m_threads.m_bCallFork && !pMod->m_bGvIwComp) {
+				if (pMod->m_threads.m_htIdW.AsInt() <= 2) {
 					// no code for registered version
 				} else {
 					for (size_t intfIdx = 0; intfIdx < pModInst->m_cxrIntfList.size(); intfIdx += 1) {
@@ -3493,41 +3492,41 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 						iplPostInstr.Append("\tm_%s_%sPrivLk1%s.write_addr(r_t%d_htId);\n",
 							pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex(),
-							mod.m_wrStg);
+							pMod->m_wrStg);
 					}
-					iplPostInstr.Append("\tm_htCmdPrivLk1.write_addr(r_t%d_htId);\n", mod.m_wrStg);
+					iplPostInstr.Append("\tm_htCmdPrivLk1.write_addr(r_t%d_htId);\n", pMod->m_wrStg);
 
-					if (mod.m_rsmSrcCnt > 0)
-						iplPostInstr.Append("\tm_rsmPrivLk1.write_addr(r_t%d_htId);\n", mod.m_wrStg);
+					if (pMod->m_rsmSrcCnt > 0)
+						iplPostInstr.Append("\tm_rsmPrivLk1.write_addr(r_t%d_htId);\n", pMod->m_wrStg);
 
 					iplPostInstr.Append("\n");
 				}
 			}
 
-			if (mod.m_threads.m_htIdW.AsInt() == 0)
+			if (pMod->m_threads.m_htIdW.AsInt() == 0)
 				iplPostInstr.Append("\tCHtPriv c_htPriv = r_htPriv;\n");
 			else
 				iplPostInstr.Append("\tm_htPriv.write_addr(r_t%d_htId);\n",
-				mod.m_wrStg);
+				pMod->m_wrStg);
 
-			if (mod.m_threads.m_bCallFork && !mod.m_bGvIwComp)
-				iplPostInstr.Append("\tif (r_t%d_htPrivWe) {\n", mod.m_wrStg);
+			if (pMod->m_threads.m_bCallFork && !pMod->m_bGvIwComp)
+				iplPostInstr.Append("\tif (r_t%d_htPrivWe) {\n", pMod->m_wrStg);
 			else
-				iplPostInstr.Append("\tif (r_t%d_htPrivWe)\n", mod.m_wrStg);
+				iplPostInstr.Append("\tif (r_t%d_htPrivWe)\n", pMod->m_wrStg);
 
-			if (mod.m_threads.m_htIdW.AsInt() > 0)
+			if (pMod->m_threads.m_htIdW.AsInt() > 0)
 				iplPostInstr.Append("\t\tm_htPriv.write_mem(r_t%d_htPriv);\n",
-				mod.m_wrStg);
+				pMod->m_wrStg);
 			else
 				iplPostInstr.Append("\t\tc_htPriv = r_t%d_htPriv;\n",
-				mod.m_wrStg);
+				pMod->m_wrStg);
 			iplPostInstr.Append("\n");
 
-			if (mod.m_threads.m_bCallFork && !mod.m_bGvIwComp) {
-				if (mod.m_threads.m_htIdW.AsInt() == 0)
+			if (pMod->m_threads.m_bCallFork && !pMod->m_bGvIwComp) {
+				if (pMod->m_threads.m_htIdW.AsInt() == 0)
 					iplPostInstr.Append("\t\tc_htPrivLk = 0;\n");
-				else if (mod.m_threads.m_htIdW.AsInt() <= 2)
-					iplPostInstr.Append("\t\tc_htPrivLk[INT(r_t%d_htId)] = 0;\n", mod.m_wrStg);
+				else if (pMod->m_threads.m_htIdW.AsInt() <= 2)
+					iplPostInstr.Append("\t\tc_htPrivLk[INT(r_t%d_htId)] = 0;\n", pMod->m_wrStg);
 				else {
 					for (size_t intfIdx = 0; intfIdx < pModInst->m_cxrIntfList.size(); intfIdx += 1) {
 						CCxrIntf * pCxrIntf = pModInst->m_cxrIntfList[intfIdx];
@@ -3537,12 +3536,12 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 						iplPostInstr.Append("\t\tm_%s_%sPrivLk1%s.write_mem(r_t%d_htPrivLkData);\n",
 							pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex(),
-							mod.m_wrStg);
+							pMod->m_wrStg);
 					}
-					iplPostInstr.Append("\t\tm_htCmdPrivLk1.write_mem(r_t%d_htPrivLkData);\n", mod.m_wrStg);
+					iplPostInstr.Append("\t\tm_htCmdPrivLk1.write_mem(r_t%d_htPrivLkData);\n", pMod->m_wrStg);
 
-					if (mod.m_rsmSrcCnt > 0)
-						iplPostInstr.Append("\t\tm_rsmPrivLk1.write_mem(r_t%d_htPrivLkData);\n", mod.m_wrStg);
+					if (pMod->m_rsmSrcCnt > 0)
+						iplPostInstr.Append("\t\tm_rsmPrivLk1.write_mem(r_t%d_htPrivLkData);\n", pMod->m_wrStg);
 				}
 
 				iplPostInstr.Append("\t}\n");
@@ -3554,49 +3553,49 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		int stg;
 		sscanf(pRegStg, "r_t%d", &stg);
 
-		if (mod.m_bMultiThread) {
+		if (pMod->m_bMultiThread) {
 			iplPostInstr.Append("\tif (r_t%d_htCmdRdy)\n",
-				mod.m_wrStg);
+				pMod->m_wrStg);
 
-			if (mod.m_threads.m_htIdW.AsInt() == 0)
+			if (pMod->m_threads.m_htIdW.AsInt() == 0)
 				iplPostInstr.Append("\t\tc_htCmdValid = true;\n",
 				pRegStg);
 			else
 				iplPostInstr.Append("\t\tm_htCmdQue.push(r_t%d_htCmd);\n",
-				mod.m_wrStg);
+				pMod->m_wrStg);
 		}
 
 		iplPostInstr.Append("\n");
 
-		if (mod.m_threads.m_htIdW.AsInt() > 0) {
+		if (pMod->m_threads.m_htIdW.AsInt() > 0) {
 
 			iplPostInstr.Append("\tsc_uint<%s_HTID_W + 1> c_htIdPoolCnt = r_htIdPoolCnt;\n",
-				mod.m_modName.Upper().c_str());
+				pMod->m_modName.Upper().c_str());
 
 			iplPostInstr.Append("\tif (r_htIdPoolCnt < (1ul << %s_HTID_W)) {\n",
-				mod.m_modName.Upper().c_str());
+				pMod->m_modName.Upper().c_str());
 
 			iplPostInstr.Append("\t\tm_htIdPool.push(r_htIdPoolCnt & ((1ul << %s_HTID_W) - 1));\n",
-				mod.m_modName.Upper().c_str());
+				pMod->m_modName.Upper().c_str());
 
 			iplPostInstr.Append("\t\tc_htIdPoolCnt = r_htIdPoolCnt + 1;\n");
 
-			if (mod.m_threads.m_bCallFork && !(mod.m_threads.m_htIdW.AsInt() <= 2)) {
+			if (pMod->m_threads.m_bCallFork && !(pMod->m_threads.m_htIdW.AsInt() <= 2)) {
 				iplPostInstr.Append("\n");
 				iplPostInstr.Append("\t\tc_t%d_htId = r_htIdPoolCnt & ((1ul << %s_HTID_W) - 1);\n",
-					rdPrivLkStg - 1, mod.m_modName.Upper().c_str());
+					rdPrivLkStg - 1, pMod->m_modName.Upper().c_str());
 				iplPostInstr.Append("\t\tc_t%d_htId = r_htIdPoolCnt & ((1ul << %s_HTID_W) - 1);\n",
-					mod.m_wrStg - 1, mod.m_modName.Upper().c_str());
+					pMod->m_wrStg - 1, pMod->m_modName.Upper().c_str());
 			}
 
 			iplPostInstr.Append("\t}\n");
 			iplPostInstr.Append("\n");
 		}
 
-		if (mod.m_bHasThreads) {
+		if (pMod->m_bHasThreads) {
 			iplReg.Append("\tr_%sToHta_assert = c_htAssert;\n", pModInst->m_instName.Lc().c_str());
 
-			if (mod.m_clkRate == eClk2x) {
+			if (pMod->m_clkRate == eClk2x) {
 				m_iplReg1x.Append("\tr_%sToHta_assert_1x = r_%sToHta_assert;\n",
 					pModInst->m_instName.Lc().c_str(), pModInst->m_instName.Lc().c_str());
 				m_iplReg1x.NewLine();
@@ -3607,8 +3606,8 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 	////////////////////////////////////////////////////////////////////////////
 	// IPL register assignments
 
-	for (size_t fieldIdx = 0; fieldIdx < mod.m_shared.m_fieldList.size(); fieldIdx += 1) {
-		CField * pField = mod.m_shared.m_fieldList[fieldIdx];
+	for (size_t fieldIdx = 0; fieldIdx < pMod->m_shared.m_fieldList.size(); fieldIdx += 1) {
+		CField * pField = pMod->m_shared.m_fieldList[fieldIdx];
 
 		if (pField->m_queueW.AsInt() == 0 && pField->m_addr1W.AsInt() == 0)
 			continue;
@@ -3622,7 +3621,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 			iplReg.Append("\tm__SHR__%s%s.clock(%s);\n", pField->m_name.c_str(), pField->m_dimenIndex.c_str(), reset.c_str());
 	}
 
-	if (mod.m_threads.m_htIdW.AsInt() == 0) {
+	if (pMod->m_threads.m_htIdW.AsInt() == 0) {
 		iplReg.Append("\tr_htCmdValid = !%s && c_htCmdValid;\n", reset.c_str());
 		iplReg.Append("\tr_htPriv = c_htPriv;\n");
 		iplReg.Append("\tr_htBusy = !%s && c_htBusy;\n", reset.c_str());
@@ -3634,7 +3633,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		iplReg.Append("\n");
 	}
 
-	if (mod.m_threads.m_bCallFork && !(mod.m_threads.m_htIdW.AsInt() <= 2)) {
+	if (pMod->m_threads.m_bCallFork && !(pMod->m_threads.m_htIdW.AsInt() <= 2)) {
 		for (size_t intfIdx = 0; intfIdx < pModInst->m_cxrIntfList.size(); intfIdx += 1) {
 			CCxrIntf * pCxrIntf = pModInst->m_cxrIntfList[intfIdx];
 
@@ -3649,7 +3648,7 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 		iplReg.Append("\tm_htCmdPrivLk0.clock();\n");
 		iplReg.Append("\tm_htCmdPrivLk1.clock();\n");
 
-		if (mod.m_rsmSrcCnt > 0) {
+		if (pMod->m_rsmSrcCnt > 0) {
 			iplReg.Append("\tm_rsmPrivLk0.clock();\n");
 			iplReg.Append("\tm_rsmPrivLk1.clock();\n");
 		}
@@ -3683,11 +3682,11 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 	////////////////////////////////////////////
 	// clear shared variables without depth
 
-	for (size_t shIdx = 0; shIdx < mod.m_shared.m_fieldList.size(); shIdx += 1) {
-		CField * pShared = mod.m_shared.m_fieldList[shIdx];
+	for (size_t shIdx = 0; shIdx < pMod->m_shared.m_fieldList.size(); shIdx += 1) {
+		CField * pShared = pMod->m_shared.m_fieldList[shIdx];
 
 		if (pShared->m_queueW.AsInt() > 0 || pShared->m_addr1W.AsInt() > 0) continue;
-		if (pShared->m_reset == "false" || pShared->m_reset == "" && !mod.m_bResetShared) continue;
+		if (pShared->m_reset == "false" || pShared->m_reset == "" && !pMod->m_bResetShared) continue;
 
 		if (pShared->m_elemCnt < 4) {
 			vector<int> refList(pShared->m_dimenList.size(), 0);
@@ -3704,33 +3703,33 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 
 	//#########################################
 
-	if (mod.m_threads.m_htIdW.AsInt() == 0) {
+	if (pMod->m_threads.m_htIdW.AsInt() == 0) {
 		m_iplRegDecl.Append("\tbool r_htBusy;\n");
 
 		m_iplRegDecl.Append("\tbool r_htCmdValid;\n");
 	} else {
 		m_iplRegDecl.Append("\tsc_uint<%s_HTID_W + 1> r_htIdPoolCnt;\n",
-			mod.m_modName.Upper().c_str());
+			pMod->m_modName.Upper().c_str());
 
 		m_iplRegDecl.Append("\tht_dist_que<sc_uint<%s_HTID_W>, %s_HTID_W> m_htIdPool;\n",
-			mod.m_modName.Upper().c_str(), mod.m_modName.Upper().c_str());
+			pMod->m_modName.Upper().c_str(), pMod->m_modName.Upper().c_str());
 
 		iplReg.Append("\tr_htIdPoolCnt = %s ? (sc_uint<%s_HTID_W + 1>) 0 : c_htIdPoolCnt;\n", reset.c_str(),
-			mod.m_modName.Upper().c_str());
+			pMod->m_modName.Upper().c_str());
 
-		if (mod.m_threads.m_resetInstr.size() > 0)
+		if (pMod->m_threads.m_resetInstr.size() > 0)
 			m_iplEosChecks.Append("\t\tassert(m_htIdPool.size() >= %d);\n",
-			(1 << mod.m_threads.m_htIdW.AsInt()) - 1);
+			(1 << pMod->m_threads.m_htIdW.AsInt()) - 1);
 		else
 			m_iplEosChecks.Append("\t\tassert(m_htIdPool.size() == %d);\n",
-			1 << mod.m_threads.m_htIdW.AsInt());
+			1 << pMod->m_threads.m_htIdW.AsInt());
 	}
 
 	////////////////////////////////////////////////////////////////////////////
 	// IPL output assignments
 
-	if (mod.m_bHasThreads) {
-		if (mod.m_clkRate == eClk1x) {
+	if (pMod->m_bHasThreads) {
+		if (pMod->m_clkRate == eClk1x) {
 			iplOut.Append("\n");
 			iplOut.Append("\to_%sToHta_assert = r_%sToHta_assert;\n", pModInst->m_instName.Lc().c_str(), pModInst->m_instName.Lc().c_str());
 		} else {

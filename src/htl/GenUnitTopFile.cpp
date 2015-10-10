@@ -185,7 +185,6 @@ void CDsnInfo::GenerateUnitTopFile()
 				// generate memory interface
 				if (mod.m_memPortList.size() > 0) {
 					vector<int> &instMemPortList = pModInst->m_instParams.m_memPortList;
-					string modInstIdxStr = GenIndexStr(mod.m_instSet.GetTotalCnt() > 1, "%d", modInstIdx);
 
 					if (bHtiFlag) {
 						fprintf(scFile, "\n");
@@ -198,43 +197,43 @@ void CDsnInfo::GenerateUnitTopFile()
 
 						CModMemPort &modMemPort = *mod.m_memPortList[memPortIdx];
 
-						fprintf(scFile, "\t\tp%s%s->o_%sP%dToMif_reqRdy(%s%sP%dToMif%d_reqRdy);\n",
+						fprintf(scFile, "\t\tp%s%s->o_%sP%dToMif_reqRdy(%sP%dToMif%d_reqRdy);\n",
 							instName.c_str(), replIdx.c_str(),
 							mod.m_modName.Lc().c_str(), (int)memPortIdx,
-							mod.m_modName.Lc().c_str(), modInstIdxStr.c_str(), (int)memPortIdx, instMemPortList[memPortIdx]);
-						fprintf(scFile, "\t\tp%s%s->o_%sP%dToMif_req(%s%sP%dToMif%d_req);\n",
+							pModInst->m_replInstName.Lc().c_str(), (int)memPortIdx, instMemPortList[memPortIdx]);
+						fprintf(scFile, "\t\tp%s%s->o_%sP%dToMif_req(%sP%dToMif%d_req);\n",
 							instName.c_str(), replIdx.c_str(),
 							mod.m_modName.Lc().c_str(), (int)memPortIdx,
-							mod.m_modName.Lc().c_str(), modInstIdxStr.c_str(), (int)memPortIdx, instMemPortList[memPortIdx]);
-						fprintf(scFile, "\t\tp%s%s->i_mifTo%sP%d_reqAvl(mif%dTo%s%sP%d_reqAvl);\n",
+							pModInst->m_replInstName.Lc().c_str(), (int)memPortIdx, instMemPortList[memPortIdx]);
+						fprintf(scFile, "\t\tp%s%s->i_mifTo%sP%d_reqAvl(mif%dTo%sP%d_reqAvl);\n",
 							instName.c_str(), replIdx.c_str(),
 							mod.m_modName.Uc().c_str(), (int)memPortIdx,
-							instMemPortList[memPortIdx], mod.m_modName.Uc().c_str(), modInstIdxStr.c_str(), (int)memPortIdx);
+							instMemPortList[memPortIdx], pModInst->m_replInstName.Uc().c_str(), (int)memPortIdx);
 
 						if (modMemPort.m_bRead) {
-							fprintf(scFile, "\t\tp%s%s->i_mifTo%sP%d_rdRspRdy(mif%dTo%s%sP%d_rdRspRdy);\n",
+							fprintf(scFile, "\t\tp%s%s->i_mifTo%sP%d_rdRspRdy(mif%dTo%sP%d_rdRspRdy);\n",
 								instName.c_str(), replIdx.c_str(),
 								mod.m_modName.Uc().c_str(), (int)memPortIdx,
-								instMemPortList[memPortIdx], mod.m_modName.Uc().c_str(), modInstIdxStr.c_str(), (int)memPortIdx);
-							fprintf(scFile, "\t\tp%s%s->i_mifTo%sP%d_rdRsp(mif%dTo%s%sP%d_rdRsp);\n",
+								instMemPortList[memPortIdx], pModInst->m_replInstName.Uc().c_str(), (int)memPortIdx);
+							fprintf(scFile, "\t\tp%s%s->i_mifTo%sP%d_rdRsp(mif%dTo%sP%d_rdRsp);\n",
 								instName.c_str(), replIdx.c_str(),
 								mod.m_modName.Uc().c_str(), (int)memPortIdx,
-								instMemPortList[memPortIdx], mod.m_modName.Uc().c_str(), modInstIdxStr.c_str(), (int)memPortIdx);
-							fprintf(scFile, "\t\tp%s%s->o_%sP%dToMif_rdRspFull(%s%sP%dToMif%d_rdRspFull);\n",
+								instMemPortList[memPortIdx], pModInst->m_replInstName.Uc().c_str(), (int)memPortIdx);
+							fprintf(scFile, "\t\tp%s%s->o_%sP%dToMif_rdRspFull(%sP%dToMif%d_rdRspFull);\n",
 								instName.c_str(), replIdx.c_str(),
 								mod.m_modName.Lc().c_str(), (int)memPortIdx,
-								mod.m_modName.Lc().c_str(), modInstIdxStr.c_str(), (int)memPortIdx, instMemPortList[memPortIdx]);
+								pModInst->m_replInstName.Lc().c_str(), (int)memPortIdx, instMemPortList[memPortIdx]);
 						}
 
 						if (modMemPort.m_bWrite/*mif.m_bMifWr*/) {
-							fprintf(scFile, "\t\tp%s%s->i_mifTo%sP%d_wrRspRdy(mif%dTo%s%sP%d_wrRspRdy);\n",
+							fprintf(scFile, "\t\tp%s%s->i_mifTo%sP%d_wrRspRdy(mif%dTo%sP%d_wrRspRdy);\n",
 								instName.c_str(), replIdx.c_str(),
 								mod.m_modName.Uc().c_str(), (int)memPortIdx,
-								instMemPortList[memPortIdx], mod.m_modName.Uc().c_str(), modInstIdxStr.c_str(), (int)memPortIdx);
-							fprintf(scFile, "\t\tp%s%s->i_mifTo%sP%d_wrRspTid(mif%dTo%s%sP%d_wrRspTid);\n",
+								instMemPortList[memPortIdx], pModInst->m_replInstName.Uc().c_str(), (int)memPortIdx);
+							fprintf(scFile, "\t\tp%s%s->i_mifTo%sP%d_wrRspTid(mif%dTo%sP%d_wrRspTid);\n",
 								instName.c_str(), replIdx.c_str(),
 								mod.m_modName.Uc().c_str(), (int)memPortIdx,
-								instMemPortList[memPortIdx], mod.m_modName.Uc().c_str(), modInstIdxStr.c_str(), (int)memPortIdx);
+								instMemPortList[memPortIdx], pModInst->m_replInstName.Uc().c_str(), (int)memPortIdx);
 						}
 					}
 				}

@@ -30,14 +30,14 @@ CDsnInfo::GenerateModuleFiles(CModule &mod)
 		GenModIhmStatements(mod);
 		GenModMsgStatements(mod);
 		GenModBarStatements(pModInst);
-		GenModOhmStatements(mod);
-		GenModCxrStatements(mod, modInstIdx);
-		GenModIhdStatements(mod);
-		GenModOhdStatements(mod);
-		GenModMifStatements(mod);
-		GenModStrmStatements(mod);
+		GenModOhmStatements(pModInst);
+		GenModCxrStatements(pModInst);
+		GenModIhdStatements(pModInst);
+		GenModOhdStatements(pModInst);
+		GenModMifStatements(pModInst);
+		GenModStrmStatements(pModInst);
 		GenModStBufStatements(&mod);
-		GenModNgvStatements(mod);
+		GenModNgvStatements(pModInst);
 
 		bool bNeedClk2x = NeedClk2x();
 
@@ -871,7 +871,7 @@ CDsnInfo::WritePersIncFile(CModInst * pModInst, bool bNeedClk2x)
 	fprintf(incFile, "\n");
 	fprintf(incFile, "#\t\tifndef _HTV\n");
 	fprintf(incFile, "\t\tm_htMonModId = Ht::g_syscMon.RegisterModule(\"%s\", name(), %s_HTID_W, %s_INSTR_W, m_pInstrNames, %d);\n",
-		(path + pMod->m_modName.Upper()).c_str(), pMod->m_modName.Upper().c_str(), pMod->m_modName.Upper().c_str(), (int)pMod->m_memPortList.size());
+		(path + pModInst->m_instName.Upper()).c_str(), pMod->m_modName.Upper().c_str(), pMod->m_modName.Upper().c_str(), (int)pMod->m_memPortList.size());
 	fprintf(incFile, "#\t\tendif\n");
 
 	fprintf(incFile, "\t}\n");

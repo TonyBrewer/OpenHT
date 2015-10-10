@@ -858,6 +858,7 @@
     </None>
     <None Include="..\ht\verilog\PersMoStub.v">
     </None>
+    <None Include="..\src_pers\msg_12621.hti" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

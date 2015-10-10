@@ -144,6 +144,9 @@
     <ClInclude Include="..\ht\sysc\PersAdd.h">
       <Filter>ht_lib\host</Filter>
     </ClInclude>
+    <ClInclude Include="..\ht\sysc\PersAdd.h">
+      <Filter>ht_lib\host</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\ht\sysc\UnitIntf.cpp">
@@ -310,6 +313,9 @@
     </None>
     <None Include="..\ht\verilog\PersMoStub.v">
       <Filter>ht\verilog</Filter>
+    </None>
+    <None Include="..\src_pers\vadd.hti">
+      <Filter>src_pers</Filter>
     </None>
   </ItemGroup>
 </Project>

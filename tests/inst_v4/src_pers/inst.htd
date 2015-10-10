@@ -11,7 +11,7 @@ Ctl.AddEntry(func=htmain, instr=CTL_INST1, host=true);
 
 Ctl.AddReturn(func=htmain);
 
-Ctl.AddCall(modEntry=inst, callName=inst1, modInst=inst1)
+Ctl.AddCall(modEntry=inst, callName=inst1, instName=inst1)
 	.AddInstParam(name=STR, value="sss")
 	.AddInstParam(name=INTEGER, value=4)
 	;

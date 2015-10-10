@@ -2329,17 +2329,15 @@ public:
 	void GenModBarStatements(CModInst * pModInst);
 	void GenModIplStatements(CModInst * pModInst);
 	void GenModIhmStatements(CModule &mod);
-	void GenModOhmStatements(CModule &mod);
-	void GenModCxrStatements(CModule &mod, int modInstIdx);
-	//void GenModRamStatements(CModInst &modInst);
-	void GenModIhdStatements(CModule &mod);
-	void GenModOhdStatements(CModule &mod);
-	void GenModMifStatements(CModule &mod);
-	void GenModMifStatements2(CModule &mod);
+	void GenModOhmStatements(CModInst * pModInst);
+	void GenModCxrStatements(CModInst * pModInst);
+	void GenModIhdStatements(CModInst * pModInst);
+	void GenModOhdStatements(CModInst * pModInst);
+	void GenModMifStatements(CModInst * pModInst);
 	void GenRamPreRegStatements(HtdFile::EClkRate eClk2x);
-	void GenModStrmStatements(CModule &mod);
+	void GenModStrmStatements(CModInst * pModInst);
 	void GenModStBufStatements(CModule * pMod);
-	void GenModNgvStatements(CModule &mod);
+	void GenModNgvStatements(CModInst * pModInst);
 	void GenModOptNgvStatements(CModule * mod, CRam * pGv);
 
 	void FindSpanningWriteFields(CNgvInfo * pNgvInfo);

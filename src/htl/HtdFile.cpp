@@ -848,7 +848,7 @@ void HtdFile::ParseModuleMethods()
 	} else if (m_pLex->GetTkString() == "AddCall") {
 
 		string modEntry;
-		string modInst;
+		string instName;
 		string callName;
 		string call;
 		string fork = "false";
@@ -858,7 +858,7 @@ void HtdFile::ParseModuleMethods()
 		CParamList params[] = {
 			{ "func", &modEntry, false, ePrmIdent, 0, 0, 1 },
 			{ "modEntry", &modEntry, true, ePrmIdent, 0, 0 },
-			{ "modInst", &modInst, false, ePrmIdent, 0, 0 },
+			{ "instName", &instName, false, ePrmIdent, 0, 0 },
 			{ "callName", &callName, false, ePrmIdent, 0, 0 },
 			{ "call", &call, false, ePrmIdent, 0, 0 },
 			{ "fork", &fork, false, ePrmIdent, 0, 0 },
@@ -868,7 +868,7 @@ void HtdFile::ParseModuleMethods()
 		};
 
 		if (!ParseParameters(params))
-			CPreProcess::ParseMsg(Error, "expected <module>.AddCall( func {, callName=<name>} {, modInst=<name>} {, call=true} {, fork=false} {, queueW=5 } {, dest=auto } )");
+			CPreProcess::ParseMsg(Error, "expected <module>.AddCall( func {, callName=<name>} {, instName=<name>} {, call=true} {, fork=false} {, queueW=5 } {, dest=auto } )");
 
 		if (callName.size() == 0)
 			callName = modEntry;
@@ -896,7 +896,7 @@ void HtdFile::ParseModuleMethods()
 			CPreProcess::ParseMsg(Error, "duplicate call name '%s'", callName.c_str());
 		else {
 			m_pOpenMod->m_callList.insert(callName);
-			m_pOpenCall = m_pDsnInfo->AddCall(m_pOpenMod->m_pModule, modEntry, callName, modInst, bCall, bFork, queueW, dest);
+			m_pOpenCall = m_pDsnInfo->AddCall(m_pOpenMod->m_pModule, modEntry, callName, instName, bCall, bFork, queueW, dest);
 			m_pDsn->m_callInstParamList.clear();
 		}
 
@@ -906,21 +906,21 @@ void HtdFile::ParseModuleMethods()
 	} else if (m_pLex->GetTkString() == "AddTransfer") {
 
 		string modEntry;
-		string modInst;
+		string instName;
 		string callName;
 		string queueW = "5";
 
 		CParamList params[] = {
 			{ "func", &modEntry, false, ePrmIdent, 0, 0, 1 },
 			{ "modEntry", &modEntry, true, ePrmIdent, 0, 0 },
-			{ "modInst", &modInst, false, ePrmIdent, 0, 0 },
+			{ "instName", &instName, false, ePrmIdent, 0, 0 },
 			{ "xferName", &callName, false, ePrmIdent, 0, 0 },
 			{ "queueW", &queueW, false, ePrmInteger, 0, 0 },
 			{ 0, 0, 0, ePrmUnknown, 0, 0 }
 		};
 
 		if (!ParseParameters(params))
-			CPreProcess::ParseMsg(Error, "expected <module>.AddTransfer( func {, xferName=<name>} {, modInst=<name>} {, queueW=5 } )");
+			CPreProcess::ParseMsg(Error, "expected <module>.AddTransfer( func {, xferName=<name>} {, instName=<name>} {, queueW=5 } )");
 
 		if (callName.size() == 0)
 			callName = modEntry;
@@ -929,7 +929,7 @@ void HtdFile::ParseModuleMethods()
 			CPreProcess::ParseMsg(Error, "duplicate call name '%s'", modEntry.c_str());
 		else {
 			m_pOpenMod->m_callList.insert(callName);
-			m_pDsnInfo->AddXfer(m_pOpenMod->m_pModule, modEntry, callName, modInst, queueW);
+			m_pDsnInfo->AddXfer(m_pOpenMod->m_pModule, modEntry, callName, instName, queueW);
 		}
 
 		m_pLex->GetNextTk();

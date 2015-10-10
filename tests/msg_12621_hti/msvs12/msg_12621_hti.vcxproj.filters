@@ -168,6 +168,15 @@
     <ClInclude Include="..\ht\sysc\PersModD.h">
       <Filter>ht_lib\host</Filter>
     </ClInclude>
+    <ClInclude Include="..\ht\sysc\PersModB.h">
+      <Filter>ht_lib\host</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ht\sysc\PersModC.h">
+      <Filter>ht_lib\host</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ht\sysc\PersModD.h">
+      <Filter>ht_lib\host</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\ht\sysc\UnitIntf.cpp">
@@ -382,6 +391,9 @@
     </None>
     <None Include="..\ht\verilog\PersMoStub.v">
       <Filter>ht\verilog</Filter>
+    </None>
+    <None Include="..\src_pers\msg_12621.hti">
+      <Filter>src_pers</Filter>
     </None>
   </ItemGroup>
 </Project>
