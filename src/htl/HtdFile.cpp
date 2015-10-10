@@ -893,7 +893,7 @@ void HtdFile::ParseModuleMethods()
 			CPreProcess::ParseMsg(Error, "unsupported parameter value for dest");
 
 		if (m_pOpenMod->m_callList.isInList(callName))
-			CPreProcess::ParseMsg(Error, "duplicate call name '%s'", modEntry.c_str());
+			CPreProcess::ParseMsg(Error, "duplicate call name '%s'", callName.c_str());
 		else {
 			m_pOpenMod->m_callList.insert(callName);
 			m_pOpenCall = m_pDsnInfo->AddCall(m_pOpenMod->m_pModule, modEntry, callName, modInst, bCall, bFork, queueW, dest);

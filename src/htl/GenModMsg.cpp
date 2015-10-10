@@ -279,10 +279,10 @@ void CDsnInfo::InitAndValidateModMsg()
 			ParseMsg(Error, pMsgIntfConn->m_lineInfo, "message connection with aePrev=true or aeNext=true using a message interface with fanIn or fanOut specified not supported");
 
 		if ((pMsgIntfConn->m_aePrev || pMsgIntfConn->m_aeNext) && pMsgIntfConn->m_inMsgIntf.m_pMod->m_instSet.GetTotalCnt() != 1)
-			ParseMsg(Error, pMsgIntfConn->m_lineInfo, "message connection with aePrev=true or aeNext=true to a replicated module not supported");
+			ParseMsg(Error, pMsgIntfConn->m_lineInfo, "message connection with aePrev=true or aeNext=true to a replicated/multi-instance module not supported");
 
 		if ((pMsgIntfConn->m_aePrev || pMsgIntfConn->m_aeNext) && pMsgIntfConn->m_outMsgIntf.m_pMod->m_instSet.GetTotalCnt() != 1)
-			ParseMsg(Error, pMsgIntfConn->m_lineInfo, "message connection with aePrev=true or aeNext=true to a replicated module not supported");
+			ParseMsg(Error, pMsgIntfConn->m_lineInfo, "message connection with aePrev=true or aeNext=true to a replicated/multi-instance module not supported");
 
 		if ((pMsgIntfConn->m_aePrev || pMsgIntfConn->m_aeNext) && pMsgIntfConn->m_inMsgIntf.m_pMod->m_clkRate == eClk2x)
 			ParseMsg(Error, pMsgIntfConn->m_lineInfo, "message connection with aePrev=true or aeNext=true to a module with 2x clock not supported");

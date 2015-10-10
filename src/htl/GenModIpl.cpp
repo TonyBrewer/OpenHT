@@ -1995,14 +1995,15 @@ void CDsnInfo::GenModIplStatements(CModInst * pModInst)
 					pOutStg);
 
 				if (pCxrIntf->m_pDstGroup->m_rtnSelW > 0) {
-					if (pCxrIntf->IsCall())
+					if (pCxrIntf->IsCall()) {
 						pIplTxStg->Append("\t\t%s_htPriv.m_rtnSel = %d;\n",
-						pOutStg,
-						pCxrIntf->m_rtnSelId);
-					else
+							pOutStg,
+							pCxrIntf->m_rtnSelId);
+					} else {
 						pIplTxStg->Append("\t\t%s_htPriv.m_rtnSel = %s_%s_%s%s.m_rtnSel;\n",
-						pOutStg,
-						pOutStg, pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
+							pOutStg,
+							pOutStg, pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
+					}
 				}
 
 				// call and xfer must save caller's htId, returns do not

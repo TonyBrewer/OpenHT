@@ -856,6 +856,7 @@ struct CCxrEntry {
 		m_lineInfo = CPreProcess::m_lineInfo;
 		m_bCallFork = false;
 		m_bXferFork = false;
+		m_bIsUsed = false;
 	}
 
 	CCxrEntry & AddParam(string hostType, CType * pType, string paramName, bool bIsUsed)
@@ -870,12 +871,12 @@ struct CCxrEntry {
 
 	CModule *		m_pMod;
 	CThreads *		m_pGroup;
-	CCxrCallList	m_pairedCallList;
 
 	vector<CField *>	m_paramList;
 
 	bool m_bCallFork;
 	bool m_bXferFork;
+	bool m_bIsUsed;
 
 	CLineInfo	m_lineInfo;
 };
@@ -1536,14 +1537,19 @@ struct CInstanceParams {
 	CLineInfo m_lineInfo;
 };
 
-struct CCxrInstRtn {
-	vector<CModInst *> m_cxrEntryList;
+struct CCxrInstReturn {
+	vector<CModIdx> m_callerList;
+};
+
+struct CCxrInstEntry {
+	vector<CModIdx> m_callerList;
 };
 
 // Instance info for a module
 struct CModInst {
 	CModInst() {}
-	CModInst(CModule *pMod, string const & instName, string const & modPath, CInstanceParams &modInstParams, int cxrSrcCnt, size_t csrRtnCnt, int replCnt = 1, int replId = 0);
+	CModInst(CModule *pMod, string const & instName, string const & modPath, CInstanceParams &modInstParams,
+		int cxrSrcCnt, size_t cxrReturnSize, size_t cxrEntrySize, int replCnt = 1, int replId = 0);
 
 	CModule *			m_pMod;
 	CInstanceParams		m_instParams;
@@ -1551,10 +1557,12 @@ struct CModInst {
 	CHtString			m_fileName;
 	vector<string>		m_modPaths;		// module instance path name if specified in instance file
 	vector<CCallInstParam>	m_callInstParamList;
-	vector<CCxrInstRtn>	m_cxrInstRtnList;
+	vector<CCxrInstReturn>	m_cxrInstReturnList;
 	int					m_cxrSrcCnt;
+	vector<CCxrInstEntry> m_cxrInstEntryList;
 	vector<CCxrIntf *>	m_cxrIntfList;	// List of interfaces for instance
 	CHtString			m_replInstName;		// module replicated instance name
+	int					m_instId;
 	int					m_replCnt;
 	int					m_replId;
 };
@@ -1593,6 +1601,9 @@ struct CInstSet {
 		}
 		m_instSet.back().push_back(pModInst);
 		m_totalInstCnt += 1;
+
+		pModInst->m_instId = (int)m_instSet.size() - 1;
+		pModInst->m_replId = (int)m_instSet.back().size() - 1;
 	}
 
 	CModInst * GetInst(int instCnt, int replCnt=0) {
@@ -2145,7 +2156,6 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 	string GenIndexStr(bool bGen, char const * pFormat, int index);
 	void InitCxrIntfInfo();
 	bool IsCallDest(CModInst * pSrcModInst, CModInst * pDstModInst);
-	bool AreModInstancesLinked(CModInst & srcModInst, CModInst & dstModInst);
 	void CheckRequiredEntryNames(vector<CModIdx> &callStk);
 	bool CheckTransferReturn(vector<CModIdx> &callStk);
 	void CreateDirectoryStructure();
@@ -2316,7 +2326,7 @@ public:
 	void GenPrimStateStatements(CModule &mod);
 	void GenModTDSUStatements(CModule &mod); // typedef/define/struct/union
 	void GenModMsgStatements(CModule &mod);
-	void GenModBarStatements(CModule &mod);
+	void GenModBarStatements(CModInst * pModInst);
 	void GenModIplStatements(CModInst * pModInst);
 	void GenModIhmStatements(CModule &mod);
 	void GenModOhmStatements(CModule &mod);
@@ -2613,12 +2623,14 @@ struct CLoopInfo {
 	int m_preDimCnt;
 };
 
-inline CModInst::CModInst(CModule *pMod, string const & instName, string const & modPath, CInstanceParams &modInstParams, int cxrSrcCnt, size_t cxrRtnCnt, int replCnt, int replId)
+inline CModInst::CModInst(CModule *pMod, string const & instName, string const & modPath, CInstanceParams &modInstParams, 
+	int cxrSrcCnt, size_t cxrReturnSize, size_t cxrEntrySize, int replCnt, int replId)
 	: m_pMod(pMod), m_instParams(modInstParams), m_cxrSrcCnt(cxrSrcCnt), m_replCnt(replCnt), m_replId(replId)
 {
 	m_modPaths.push_back(modPath);
 	m_instName = instName.size() == 0 ? pMod->m_modName : CHtString(instName);
-	m_cxrInstRtnList.resize(cxrRtnCnt);
+	m_cxrInstReturnList.resize(cxrReturnSize);
+	m_cxrInstEntryList.resize(cxrEntrySize);
 }
 
 inline CCxrCall * CModIdx::GetCxrCall() {

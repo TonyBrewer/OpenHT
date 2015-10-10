@@ -1,5 +1,5 @@
-// -cl $(HtToolsPath)/tests/inst_v2/src_pers/inst.htl
--wd $(HtToolsPath)/tests/inst_v2/msvs12/
+// -cl $(HtToolsPath)/tests/inst_v6/src_pers/inst.htl"
+-wd $(HtToolsPath)/tests/inst_v6/msvs12/
 
 -cp hc-2
 -mt				// enable memory tracing
@@ -7,7 +7,8 @@
 -un Au			// unit name
 -df 150			// default frequence
 //-mo
--pn inst_v2
+-pn inst_v6
+-if ../src_pers/inst.hti
 
 ../src_pers/inst.htd	// design file location
 ../ht/sysc				// location for output files

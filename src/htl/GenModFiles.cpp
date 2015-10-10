@@ -16,6 +16,11 @@ CDsnInfo::GenerateModuleFiles(CModule &mod)
 	for (int modInstIdx = 0; modInstIdx < mod.m_instSet.GetInstCnt(); modInstIdx += 1) {
 		CModInst * pModInst = mod.m_instSet.GetInst(modInstIdx);
 
+		if (mod.m_instSet.GetInstCnt() > 1)
+			pModInst->m_fileName = mod.m_modName == pModInst->m_instName ? mod.m_modName.AsStr() + "_" : pModInst->m_instName;
+		else
+			pModInst->m_fileName = mod.m_modName;
+
 		g_appArgs.GetDsnRpt().AddLevel("Pers%s\n", pModInst->m_instName.c_str());
 
 		// Generate statements seperate lists of statements for each module feature
@@ -24,7 +29,7 @@ CDsnInfo::GenerateModuleFiles(CModule &mod)
 		GenModIplStatements(pModInst);
 		GenModIhmStatements(mod);
 		GenModMsgStatements(mod);
-		GenModBarStatements(mod);
+		GenModBarStatements(pModInst);
 		GenModOhmStatements(mod);
 		GenModCxrStatements(mod, modInstIdx);
 		GenModIhdStatements(mod);
@@ -35,11 +40,6 @@ CDsnInfo::GenerateModuleFiles(CModule &mod)
 		GenModNgvStatements(mod);
 
 		bool bNeedClk2x = NeedClk2x();
-
-		if (mod.m_instSet.GetInstCnt() > 1)
-			pModInst->m_fileName = mod.m_modName == pModInst->m_instName ? mod.m_modName.AsStr() + "_" : pModInst->m_instName;
-		else
-			pModInst->m_fileName = mod.m_modName;
 
 		WritePersCppFile(pModInst, bNeedClk2x);
 		WritePersIncFile(pModInst, bNeedClk2x);
@@ -422,6 +422,11 @@ CDsnInfo::WritePersIncFile(CModInst * pModInst, bool bNeedClk2x)
 	CHtCode incCode(incFile);
 
 	GenPersBanner(incFile, unitNameUc.c_str(), pModInst->m_instName.Uc().c_str(), true);
+
+	if (pMod->m_instSet.GetInstCnt() == 1 && pModInst->m_instName != pMod->m_modName) {
+		fprintf(incFile, "#define CPers%s CPers%s\n",
+			pMod->m_modName.Uc().c_str(), pModInst->m_instName.Uc().c_str());
+	}
 
 	bool bStateMachine = pMod->m_bHasThreads;
 

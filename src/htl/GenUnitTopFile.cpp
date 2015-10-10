@@ -42,7 +42,7 @@ void CDsnInfo::GenerateUnitTopFile()
 
 				if (mod.m_barrierList.size() > 0 && mod.m_instSet.GetReplCnt(modInstIdx) > 1) {
 					fprintf(scFile, "#include \"Pers%s%sBarCtl.h\"\n",
-						unitNameUc.c_str(), pModInst->m_instName.Uc().c_str());
+						unitNameUc.c_str(), pModInst->m_fileName.Uc().c_str());
 				}
 			}
 		}
@@ -710,25 +710,25 @@ void CDsnInfo::GenerateUnitTopFile()
 						fprintf(scFile, "\t\tp%s%s->o_%sToBarCtl_bar%sEnter(%sToBarCtl_bar%sEnter%s);\n",
 							instName.c_str(), replIdx.c_str(),
 							mod.m_modName.Lc().c_str(), pBar->m_name.Uc().c_str(),
-							mod.m_modName.Lc().c_str(), pBar->m_name.Uc().c_str(), replIdx.c_str());
+							pModInst->m_instName.Lc().c_str(), pBar->m_name.Uc().c_str(), replIdx.c_str());
 						if (pBar->m_barIdW.AsInt() > 0)
 							fprintf(scFile, "\t\tp%s%s->o_%sToBarCtl_bar%sId(%sToBarCtl_bar%sId%s);\n",
 							instName.c_str(), replIdx.c_str(),
 							mod.m_modName.Lc().c_str(), pBar->m_name.Uc().c_str(),
-							mod.m_modName.Lc().c_str(), pBar->m_name.Uc().c_str(), replIdx.c_str());
+							pModInst->m_instName.Lc().c_str(), pBar->m_name.Uc().c_str(), replIdx.c_str());
 						fprintf(scFile, "\t\tp%s%s->o_%sToBarCtl_bar%sReleaseCnt(%sToBarCtl_bar%sReleaseCnt%s);\n",
 							instName.c_str(), replIdx.c_str(),
 							mod.m_modName.Lc().c_str(), pBar->m_name.Uc().c_str(),
-							mod.m_modName.Lc().c_str(), pBar->m_name.Uc().c_str(), replIdx.c_str());
+							pModInst->m_instName.Lc().c_str(), pBar->m_name.Uc().c_str(), replIdx.c_str());
 						fprintf(scFile, "\t\tp%s%s->i_barCtlTo%s_bar%sRelease(barCtlTo%s_bar%sRelease);\n",
 							instName.c_str(), replIdx.c_str(),
 							mod.m_modName.Uc().c_str(), pBar->m_name.Uc().c_str(),
-							mod.m_modName.Uc().c_str(), pBar->m_name.Uc().c_str());
+							pModInst->m_instName.Uc().c_str(), pBar->m_name.Uc().c_str());
 						if (pBar->m_barIdW.AsInt() > 0)
 							fprintf(scFile, "\t\tp%s%s->i_barCtlTo%s_bar%sId(barCtlTo%s_bar%sId);\n",
 							instName.c_str(), replIdx.c_str(),
 							mod.m_modName.Uc().c_str(), pBar->m_name.Uc().c_str(),
-							mod.m_modName.Uc().c_str(), pBar->m_name.Uc().c_str());
+							pModInst->m_instName.Uc().c_str(), pBar->m_name.Uc().c_str());
 					}
 				}
 
@@ -742,23 +742,22 @@ void CDsnInfo::GenerateUnitTopFile()
 					for (size_t barIdx = 0; barIdx < mod.m_barrierList.size(); barIdx += 1) {
 						CBarrier * pBar = mod.m_barrierList[barIdx];
 
-						HtlAssert(mod.m_instSet.GetInstCnt() == 1);
-						string instNum = mod.m_instSet.GetReplCnt(0) == 1 ? "" : "[0]";
-						for (int instReplIdx = 0; instReplIdx < mod.m_instSet.GetReplCnt(0); instReplIdx += 1) {
+						string instNum = mod.m_instSet.GetReplCnt(pModInst->m_instId) == 1 ? "" : "[0]";
+						for (int instReplIdx = 0; instReplIdx < mod.m_instSet.GetReplCnt(pModInst->m_instId); instReplIdx += 1) {
 
 							fprintf(scFile, "\t\tp%sBarCtl->i_%sToBarCtl_bar%sEnter%s(%sToBarCtl_bar%sEnter%s);\n",
 								instName.c_str(),
 								mod.m_modName.Lc().c_str(), pBar->m_name.Uc().c_str(), instNum.c_str(),
-								mod.m_modName.Lc().c_str(), pBar->m_name.Uc().c_str(), instNum.c_str());
+								pModInst->m_instName.Lc().c_str(), pBar->m_name.Uc().c_str(), instNum.c_str());
 							if (pBar->m_barIdW.AsInt() > 0)
 								fprintf(scFile, "\t\tp%sBarCtl->i_%sToBarCtl_bar%sId%s(%sToBarCtl_bar%sId%s);\n",
 								instName.c_str(),
 								mod.m_modName.Lc().c_str(), pBar->m_name.Uc().c_str(), instNum.c_str(),
-								mod.m_modName.Lc().c_str(), pBar->m_name.Uc().c_str(), instNum.c_str());
+								pModInst->m_instName.Lc().c_str(), pBar->m_name.Uc().c_str(), instNum.c_str());
 							fprintf(scFile, "\t\tp%sBarCtl->i_%sToBarCtl_bar%sReleaseCnt%s(%sToBarCtl_bar%sReleaseCnt%s);\n",
 								instName.c_str(),
 								mod.m_modName.Lc().c_str(), pBar->m_name.Uc().c_str(), instNum.c_str(),
-								mod.m_modName.Lc().c_str(), pBar->m_name.Uc().c_str(), instNum.c_str());
+								pModInst->m_instName.Lc().c_str(), pBar->m_name.Uc().c_str(), instNum.c_str());
 
 							if (instNum.size() > 0)
 								instNum[instNum.size() - 2] += 1;
@@ -767,12 +766,12 @@ void CDsnInfo::GenerateUnitTopFile()
 						fprintf(scFile, "\t\tp%sBarCtl->o_barCtlTo%s_bar%sRelease(barCtlTo%s_bar%sRelease);\n",
 							instName.c_str(),
 							mod.m_modName.Uc().c_str(), pBar->m_name.Uc().c_str(),
-							mod.m_modName.Uc().c_str(), pBar->m_name.Uc().c_str());
+							pModInst->m_instName.Uc().c_str(), pBar->m_name.Uc().c_str());
 						if (pBar->m_barIdW.AsInt() > 0)
 							fprintf(scFile, "\t\tp%sBarCtl->o_barCtlTo%s_bar%sId(barCtlTo%s_bar%sId);\n",
 							instName.c_str(),
 							mod.m_modName.Uc().c_str(), pBar->m_name.Uc().c_str(),
-							mod.m_modName.Uc().c_str(), pBar->m_name.Uc().c_str());
+							pModInst->m_instName.Uc().c_str(), pBar->m_name.Uc().c_str());
 					}
 
 					fprintf(scFile, "\n");

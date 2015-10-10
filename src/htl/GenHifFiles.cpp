@@ -17,8 +17,8 @@ void CDsnInfo::InitAndValidateHif()
 
 	// Verify that call and return types are known to host
 	CCxrCall & cxrCall = *hifMod.m_cxrCallList[0];
-	CCxrEntry * pCxrEntry = cxrCall.m_pairedFunc.GetCxrEntry();// m_pModInst->m_pMod->m_cxrEntryList[cxrCall.m_pairedFunc.m_idx];
-	CCxrReturn & cxrReturn = *cxrCall.m_pairedReturnList[0].GetCxrReturn();// m_pModInst->m_pMod->m_cxrReturnList[cxrCall.m_pairedReturnList[0].m_idx];
+	CCxrEntry * pCxrEntry = cxrCall.m_pairedFunc.GetCxrEntry();
+	CCxrReturn & cxrReturn = *cxrCall.m_pairedReturnList[0].GetCxrReturn();
 
 	for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
 		CField * pParam = pCxrEntry->m_paramList[fldIdx];
@@ -703,8 +703,8 @@ void CDsnInfo::GenerateHifFiles()
 		char * pSeparator;
 
 		CCxrCall * pCxrCall = hifMod.m_cxrCallList[0];
-		CCxrEntry * pCxrEntry = pCxrCall->m_pairedFunc.GetCxrEntry();// m_pModInst->m_pMod->m_cxrEntryList[pCxrCall->m_pairedFunc.m_idx];
-		CCxrReturn * pCxrReturn = pCxrCall->m_pairedReturnList[0].GetCxrReturn();// m_pModInst->m_pMod->m_cxrReturnList[pCxrCall->m_pairedReturnList[0].m_idx];
+		CCxrEntry * pCxrEntry = pCxrCall->m_pairedFunc.GetCxrEntry();
+		CCxrReturn * pCxrReturn = pCxrCall->m_pairedReturnList[0].GetCxrReturn();
 
 #ifndef OLD_UNIT_INTF
 
