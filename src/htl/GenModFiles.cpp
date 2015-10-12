@@ -14,7 +14,7 @@ void
 CDsnInfo::GenerateModuleFiles(CModule &mod)
 {
 	for (int modInstIdx = 0; modInstIdx < mod.m_instSet.GetInstCnt(); modInstIdx += 1) {
-		CModInst * pModInst = mod.m_instSet.GetInst(modInstIdx);
+		CInstance * pModInst = mod.m_instSet.GetInst(modInstIdx);
 
 		if (mod.m_instSet.GetInstCnt() > 1)
 			pModInst->m_fileName = mod.m_modName == pModInst->m_instName ? mod.m_modName.AsStr() + "_" : pModInst->m_instName;
@@ -61,7 +61,7 @@ void CDsnInfo::GenModInstInc(CModule &mod)
 	GenPersBanner(incFile, "", mod.m_modName.Uc().c_str(), true);
 
 	for (int modInstIdx = 0; modInstIdx < mod.m_instSet.GetInstCnt(); modInstIdx += 1) {
-		CModInst * pModInst = mod.m_instSet.GetInst(modInstIdx);
+		CInstance * pModInst = mod.m_instSet.GetInst(modInstIdx);
 
 		if (modInstIdx == 0)
 			fprintf(incFile, "#if defined(PERS_%s)\n", pModInst->m_instName.Upper().c_str());
@@ -106,7 +106,7 @@ bool CDsnInfo::NeedClk2x()
 }
 
 void
-CDsnInfo::WritePersCppFile(CModInst * pModInst, bool bNeedClk2x)
+CDsnInfo::WritePersCppFile(CInstance * pModInst, bool bNeedClk2x)
 {
 	CModule * pMod = pModInst->m_pMod;
 
@@ -407,7 +407,7 @@ CDsnInfo::WritePersCppFile(CModInst * pModInst, bool bNeedClk2x)
 }
 
 void
-CDsnInfo::WritePersIncFile(CModInst * pModInst, bool bNeedClk2x)
+CDsnInfo::WritePersIncFile(CInstance * pModInst, bool bNeedClk2x)
 {
 	CModule * pMod = pModInst->m_pMod;
 
@@ -913,7 +913,7 @@ CDsnInfo::WritePersIncFile(CModInst * pModInst, bool bNeedClk2x)
 }
 
 string
-CDsnInfo::GenRamAddr(CModInst & modInst, CRam &ram, CHtCode *pCode, string accessSelW, string accessSelName, const char *pInStg, const char *pOutStg, bool bWrite, bool bNoSelectAssign)
+CDsnInfo::GenRamAddr(CInstance & modInst, CRam &ram, CHtCode *pCode, string accessSelW, string accessSelName, const char *pInStg, const char *pOutStg, bool bWrite, bool bNoSelectAssign)
 {
 	// construct address for ram access
 	//   simple case is when there is a single thread group
@@ -1044,7 +1044,7 @@ CDsnInfo::GenRamAddr(CModInst & modInst, CRam &ram, CHtCode *pCode, string acces
 	return accessSelName;
 }
 
-int CDsnInfo::CountPhaseResetFanout(CModInst * pModInst)
+int CDsnInfo::CountPhaseResetFanout(CInstance * pModInst)
 {
 	//CModule &mod = *modInst.m_pMod;
 

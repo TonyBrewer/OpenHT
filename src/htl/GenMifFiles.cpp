@@ -11,10 +11,10 @@
 #include "DsnInfo.h"
 
 struct CMifModInst {
-	CMifModInst(CModMemPort &modMemPort, CModInst &modInst) : m_pModMemPort(&modMemPort), m_pModInst(&modInst) {}
+	CMifModInst(CModMemPort &modMemPort, CInstance &modInst) : m_pModMemPort(&modMemPort), m_pModInst(&modInst) {}
 
 	CModMemPort *	m_pModMemPort;
-	CModInst *		m_pModInst;
+	CInstance *		m_pModInst;
 };
 
 void CDsnInfo::GenerateMifFiles(int mifId)
@@ -28,7 +28,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 	bool bMultiQwSupport = g_appArgs.GetCoprocInfo().IsMultiQwSuppported();
 
 	for (size_t dsnInstIdx = 0; dsnInstIdx < m_dsnInstList.size(); dsnInstIdx += 1) {
-		CModInst * pModInst = m_dsnInstList[dsnInstIdx];
+		CInstance * pModInst = m_dsnInstList[dsnInstIdx];
 		if (!pModInst->m_pMod->m_bIsUsed) continue;
 
 		for (size_t memPortIdx = 0; memPortIdx < pModInst->m_pMod->m_memPortList.size(); memPortIdx += 1) {
@@ -92,7 +92,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 
 	for (size_t instIdx = 0; instIdx < mifInstList.size(); instIdx += 1) {
 		CMifModInst & mifInst = mifInstList[instIdx];
-		CModInst * pModInst = mifInst.m_pModInst;
+		CInstance * pModInst = mifInst.m_pModInst;
 		CModMemPort & modMemPort = *mifInst.m_pModMemPort;
 
 		fprintf(incFile, "\t// Pers%s%s%d Interface\n",
@@ -154,7 +154,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 
 	for (size_t instIdx = 0; instIdx < mifInstList.size(); instIdx += 1) {
 		CMifModInst & mifInst = mifInstList[instIdx];
-		CModInst &modInst = *mifInst.m_pModInst;
+		CInstance &modInst = *mifInst.m_pModInst;
 		CModMemPort & modMemPort = *mifInst.m_pModMemPort;
 
 
@@ -174,7 +174,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 
 	for (size_t instIdx = 0; instIdx < mifInstList.size(); instIdx += 1) {
 		CMifModInst & mifInst = mifInstList[instIdx];
-		CModInst &modInst = *mifInst.m_pModInst;
+		CInstance &modInst = *mifInst.m_pModInst;
 		CModMemPort & modMemPort = *mifInst.m_pModMemPort;
 
 		CModule * pMod = modInst.m_pMod;
@@ -213,7 +213,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 
 	for (size_t instIdx = 0; instIdx < mifInstList.size(); instIdx += 1) {
 		CMifModInst & mifInst = mifInstList[instIdx];
-		CModInst &modInst = *mifInst.m_pModInst;
+		CInstance &modInst = *mifInst.m_pModInst;
 		CModMemPort & modMemPort = *mifInst.m_pModMemPort;
 
 
@@ -245,7 +245,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 
 	for (size_t instIdx = 0; instIdx < mifInstList.size(); instIdx += 1) {
 		CMifModInst & mifInst = mifInstList[instIdx];
-		CModInst &modInst = *mifInst.m_pModInst;
+		CInstance &modInst = *mifInst.m_pModInst;
 		CModMemPort & modMemPort = *mifInst.m_pModMemPort;
 
 
@@ -294,7 +294,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 	bool bNewLine = false;
 	for (size_t instIdx = 0; instIdx < mifInstList.size(); instIdx += 1) {
 		CMifModInst & mifInst = mifInstList[instIdx];
-		CModInst &modInst = *mifInst.m_pModInst;
+		CInstance &modInst = *mifInst.m_pModInst;
 		CModMemPort & modMemPort = *mifInst.m_pModMemPort;
 
 		if (!modMemPort.m_bRead && !modMemPort.m_bWrite) continue;
@@ -359,7 +359,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 
 	for (size_t instIdx = 0; instIdx < mifInstList.size(); instIdx += 1) {
 		CMifModInst & mifInst = mifInstList[instIdx];
-		CModInst &modInst = *mifInst.m_pModInst;
+		CInstance &modInst = *mifInst.m_pModInst;
 		CModMemPort & modMemPort = *mifInst.m_pModMemPort;
 
 
@@ -380,7 +380,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 
 	for (size_t instIdx = 0, i = 0; instIdx < mifInstList.size(); instIdx += 1) {
 		CMifModInst & mifInst = mifInstList[instIdx];
-		CModInst &modInst = *mifInst.m_pModInst;
+		CInstance &modInst = *mifInst.m_pModInst;
 		CModMemPort & modMemPort = *mifInst.m_pModMemPort;
 
 
@@ -402,7 +402,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 			uint32_t mask3 = (mask2 & mask1) | (mask2 >> mifIntfCnt);
 
 			CMifModInst & mifInstK = mifInstList[k];
-			CModInst &modInstK = *mifInstK.m_pModInst;
+			CInstance &modInstK = *mifInstK.m_pModInst;
 			CModMemPort & modMemPortK = *mifInstK.m_pModMemPort;
 
 			fprintf(cppFile, "\t\t(c_%sP%dReqRdy && (r_reqRr & 0x%x) != 0)%s\n",
@@ -435,7 +435,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 	int i = 0;
 	for (size_t instIdx = 0; instIdx < mifInstList.size(); instIdx += 1) {
 		CMifModInst & mifInst = mifInstList[instIdx];
-		CModInst &modInst = *mifInst.m_pModInst;
+		CInstance &modInst = *mifInst.m_pModInst;
 		CModMemPort & modMemPort = *mifInst.m_pModMemPort;
 
 
@@ -561,7 +561,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 	i = 0;
 	for (size_t instIdx = 0; instIdx < mifInstList.size(); instIdx += 1) {
 		CMifModInst & mifInst = mifInstList[instIdx];
-		CModInst &modInst = *mifInst.m_pModInst;
+		CInstance &modInst = *mifInst.m_pModInst;
 		CModMemPort & modMemPort = *mifInst.m_pModMemPort;
 
 		if (!modMemPort.m_bRead && !modMemPort.m_bWrite) continue;
@@ -592,7 +592,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 
 	for (size_t instIdx = 0; instIdx < mifInstList.size(); instIdx += 1) {
 		CMifModInst & mifInst = mifInstList[instIdx];
-		CModInst &modInst = *mifInst.m_pModInst;
+		CInstance &modInst = *mifInst.m_pModInst;
 		CModMemPort & modMemPort = *mifInst.m_pModMemPort;
 
 		CModule * pMod = modInst.m_pMod;
@@ -653,7 +653,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 	// Clock queues
 	for (size_t instIdx = 0; instIdx < mifInstList.size(); instIdx += 1) {
 		CMifModInst & mifInst = mifInstList[instIdx];
-		CModInst &modInst = *mifInst.m_pModInst;
+		CInstance &modInst = *mifInst.m_pModInst;
 		CModMemPort & modMemPort = *mifInst.m_pModMemPort;
 
 		CModule * pMod = modInst.m_pMod;
@@ -670,7 +670,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 
 	for (size_t instIdx = 0; instIdx < mifInstList.size(); instIdx += 1) {
 		CMifModInst & mifInst = mifInstList[instIdx];
-		CModInst &modInst = *mifInst.m_pModInst;
+		CInstance &modInst = *mifInst.m_pModInst;
 		CModMemPort & modMemPort = *mifInst.m_pModMemPort;
 
 		CModule * pMod = modInst.m_pMod;
@@ -691,7 +691,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 	bNewLine = false;
 	for (size_t instIdx = 0; instIdx < mifInstList.size(); instIdx += 1) {
 		CMifModInst & mifInst = mifInstList[instIdx];
-		CModInst &modInst = *mifInst.m_pModInst;
+		CInstance &modInst = *mifInst.m_pModInst;
 		CModMemPort & modMemPort = *mifInst.m_pModMemPort;
 
 		CModule * pMod = modInst.m_pMod;
@@ -727,7 +727,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 	bNewLine = false;
 	for (size_t instIdx = 0; instIdx < mifInstList.size(); instIdx += 1) {
 		CMifModInst & mifInst = mifInstList[instIdx];
-		CModInst &modInst = *mifInst.m_pModInst;
+		CInstance &modInst = *mifInst.m_pModInst;
 		CModMemPort & modMemPort = *mifInst.m_pModMemPort;
 
 		CModule * pMod = modInst.m_pMod;
@@ -760,7 +760,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 		string separator;
 		for (size_t instIdx = 0; instIdx < mifInstList.size(); instIdx += 1) {
 			CMifModInst & mifInst = mifInstList[instIdx];
-			CModInst &modInst = *mifInst.m_pModInst;
+			CInstance &modInst = *mifInst.m_pModInst;
 			CModMemPort & modMemPort = *mifInst.m_pModMemPort;
 
 			if (!modMemPort.m_bRead) continue;
@@ -781,7 +781,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 
 	for (size_t instIdx = 0; instIdx < mifInstList.size(); instIdx += 1) {
 		CMifModInst & mifInst = mifInstList[instIdx];
-		CModInst &modInst = *mifInst.m_pModInst;
+		CInstance &modInst = *mifInst.m_pModInst;
 		CModMemPort & modMemPort = *mifInst.m_pModMemPort;
 
 
@@ -802,7 +802,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 	// register output signals to unit modules
 	for (size_t instIdx = 0; instIdx < mifInstList.size(); instIdx += 1) {
 		CMifModInst & mifInst = mifInstList[instIdx];
-		CModInst &modInst = *mifInst.m_pModInst;
+		CInstance &modInst = *mifInst.m_pModInst;
 		CModMemPort & modMemPort = *mifInst.m_pModMemPort;
 
 
@@ -841,7 +841,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 
 	for (size_t instIdx = 0; instIdx < mifInstList.size(); instIdx += 1) {
 		CMifModInst & mifInst = mifInstList[instIdx];
-		CModInst &modInst = *mifInst.m_pModInst;
+		CInstance &modInst = *mifInst.m_pModInst;
 		CModMemPort & modMemPort = *mifInst.m_pModMemPort;
 
 		CModule * pMod = modInst.m_pMod;
@@ -869,7 +869,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 
 	for (size_t instIdx = 0; instIdx < mifInstList.size(); instIdx += 1) {
 		CMifModInst & mifInst = mifInstList[instIdx];
-		CModInst &modInst = *mifInst.m_pModInst;
+		CInstance &modInst = *mifInst.m_pModInst;
 		CModMemPort & modMemPort = *mifInst.m_pModMemPort;
 
 
@@ -916,7 +916,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 
 		for (size_t instIdx = 0; instIdx < mifInstList.size(); instIdx += 1) {
 			CMifModInst & mifInst = mifInstList[instIdx];
-			CModInst &modInst = *mifInst.m_pModInst;
+			CInstance &modInst = *mifInst.m_pModInst;
 			CModMemPort & modMemPort = *mifInst.m_pModMemPort;
 
 			CModule * pMod = modInst.m_pMod;
@@ -950,7 +950,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 		// register output flow control signals
 		for (size_t instIdx = 0; instIdx < mifInstList.size(); instIdx += 1) {
 			CMifModInst & mifInst = mifInstList[instIdx];
-			CModInst &modInst = *mifInst.m_pModInst;
+			CInstance &modInst = *mifInst.m_pModInst;
 			CModMemPort & modMemPort = *mifInst.m_pModMemPort;
 
 			CModule * pMod = modInst.m_pMod;
@@ -971,7 +971,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 		// Clock queues
 		for (size_t instIdx = 0; instIdx < mifInstList.size(); instIdx += 1) {
 			CMifModInst & mifInst = mifInstList[instIdx];
-			CModInst &modInst = *mifInst.m_pModInst;
+			CInstance &modInst = *mifInst.m_pModInst;
 			CModMemPort & modMemPort = *mifInst.m_pModMemPort;
 
 			CModule * pMod = modInst.m_pMod;
@@ -986,7 +986,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 		// register output flow control signals
 		for (size_t instIdx = 0; instIdx < mifInstList.size(); instIdx += 1) {
 			CMifModInst & mifInst = mifInstList[instIdx];
-			CModInst &modInst = *mifInst.m_pModInst;
+			CInstance &modInst = *mifInst.m_pModInst;
 			CModMemPort & modMemPort = *mifInst.m_pModMemPort;
 
 			CModule * pMod = modInst.m_pMod;
@@ -1028,7 +1028,7 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 
 		for (size_t instIdx = 0; instIdx < mifInstList.size(); instIdx += 1) {
 			CMifModInst & mifInst = mifInstList[instIdx];
-			CModInst &modInst = *mifInst.m_pModInst;
+			CInstance &modInst = *mifInst.m_pModInst;
 			CModMemPort & modMemPort = *mifInst.m_pModMemPort;
 
 			CModule * pMod = modInst.m_pMod;

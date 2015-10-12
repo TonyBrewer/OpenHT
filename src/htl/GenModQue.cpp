@@ -32,7 +32,7 @@ void CDsnInfo::InitAndValidateModIhd()
 }
 
 void
-CDsnInfo::GenModIhdStatements(CModInst * pModInst)
+CDsnInfo::GenModIhdStatements(CInstance * pModInst)
 {
 	CModule * pMod = pModInst->m_pMod;
 
@@ -284,7 +284,7 @@ CDsnInfo::GenModIhdStatements(CModInst * pModInst)
 }
 
 void
-CDsnInfo::GenModOhdStatements(CModInst * pModInst)
+CDsnInfo::GenModOhdStatements(CInstance * pModInst)
 {
 	CModule * pMod = pModInst->m_pMod;
 

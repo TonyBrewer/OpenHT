@@ -749,15 +749,15 @@ private:
 
 struct CModIdx {
 	CModIdx() : m_bIsUsed(false) {}
-	CModIdx(CModInst * pModInst, CCxrCall * pCxrCall, size_t callIdx, string modPath)
+	CModIdx(CInstance * pModInst, CCxrCall * pCxrCall, size_t callIdx, string modPath)
 		: m_pModInst(pModInst), m_pCxrCall(pCxrCall), m_callIdx(callIdx), m_bIsUsed(true), m_modPath(modPath)
 	{
 	}
-	CModIdx(CModInst * pModInst, CCxrEntry * pCxrEntry, size_t entryIdx, string modPath)
+	CModIdx(CInstance * pModInst, CCxrEntry * pCxrEntry, size_t entryIdx, string modPath)
 		: m_pModInst(pModInst), m_pCxrEntry(pCxrEntry), m_entryIdx(entryIdx), m_bIsUsed(true), m_modPath(modPath)
 	{
 	}
-	CModIdx(CModInst * pModInst, CCxrReturn * pCxrReturn, size_t returnIdx, string modPath)
+	CModIdx(CInstance * pModInst, CCxrReturn * pCxrReturn, size_t returnIdx, string modPath)
 		: m_pModInst(pModInst), m_pCxrReturn(pCxrReturn), m_returnIdx(returnIdx), m_bIsUsed(true), m_modPath(modPath)
 	{
 	}
@@ -766,7 +766,7 @@ struct CModIdx {
 	CCxrEntry * GetCxrEntry();
 	CCxrReturn * GetCxrReturn();
 
-	CModInst *	m_pModInst;
+	CInstance *	m_pModInst;
 	union {
 		size_t		m_callIdx;
 		size_t		m_entryIdx;
@@ -822,7 +822,6 @@ public:
 	CCxrEntry *		m_pPairedEntry;
 	CModIdx			m_pairedEntry;
 	CModIdx			m_pairedFunc;
-	vector<CModIdx>	m_pairedReturnList;
 	int				m_forkCntW;
 
 	bool			m_bCallFork;
@@ -831,21 +830,6 @@ public:
 	vector<CCallInstParam> m_instParamList;
 
 	CLineInfo		m_lineInfo;
-};
-
-struct CCxrCallList {
-	void Insert(CModIdx &modIdx)
-	{
-		for (size_t i = 0; i < m_modIdxList.size(); i += 1)
-			if (m_modIdxList[i].m_pModInst == modIdx.m_pModInst && m_modIdxList[i].m_callIdx == modIdx.m_callIdx)
-				return;
-		m_modIdxList.push_back(modIdx);
-	}
-	CCxrCall * GetCxrCall(size_t listIdx);
-	size_t size() { return m_modIdxList.size(); }
-	CModIdx & operator [] (size_t i) { return m_modIdxList[i]; }
-
-	vector<CModIdx>		m_modIdxList;
 };
 
 struct CCxrEntry {
@@ -896,8 +880,6 @@ struct CCxrReturn {
 	}
 
 	CHtString		m_modEntry;
-
-	CCxrCallList	m_pairedCallList;
 
 	CThreads *		m_pGroup;
 	vector<CField *>	m_paramList;
@@ -1537,19 +1519,32 @@ struct CInstanceParams {
 	CLineInfo m_lineInfo;
 };
 
+struct CCxrInstCall {
+	CCxrInstCall(CCxrCall * pCxrCall) : m_pCxrCall(pCxrCall) {}
+
+	CCxrCall * m_pCxrCall;
+	vector<CModIdx> m_returnList;
+};
+
 struct CCxrInstReturn {
+	CCxrInstReturn(CCxrReturn * pCxrReturn) : m_pCxrReturn(pCxrReturn) {}
+
+	CCxrReturn * m_pCxrReturn;
 	vector<CModIdx> m_callerList;
 };
 
 struct CCxrInstEntry {
+	CCxrInstEntry(CCxrEntry * pCxrEntry) : m_pCxrEntry(pCxrEntry) {}
+
+	CCxrEntry * m_pCxrEntry;
 	vector<CModIdx> m_callerList;
 };
 
 // Instance info for a module
-struct CModInst {
-	CModInst() {}
-	CModInst(CModule *pMod, string const & instName, string const & modPath, CInstanceParams &modInstParams,
-		int cxrSrcCnt, size_t cxrReturnSize, size_t cxrEntrySize, int replCnt = 1, int replId = 0);
+struct CInstance {
+	//CInstance() {}
+	CInstance(CModule *pMod, string const & instName, string const & modPath, CInstanceParams &modInstParams,
+		int cxrSrcCnt, int replCnt = 1, int replId = 0);
 
 	CModule *			m_pMod;
 	CInstanceParams		m_instParams;
@@ -1558,6 +1553,7 @@ struct CModInst {
 	vector<string>		m_modPaths;		// module instance path name if specified in instance file
 	vector<CCallInstParam>	m_callInstParamList;
 	vector<CCxrInstReturn>	m_cxrInstReturnList;
+	vector<CCxrInstCall> m_cxrInstCallList;
 	int					m_cxrSrcCnt;
 	vector<CCxrInstEntry> m_cxrInstEntryList;
 	vector<CCxrIntf *>	m_cxrIntfList;	// List of interfaces for instance
@@ -1594,9 +1590,9 @@ struct CInstSet {
 	int GetInstCnt() { return (int)m_instSet.size(); }
 	int GetReplCnt(int instIdx) { return (int)m_instSet[instIdx].size(); }
 
-	void AddInst(CModInst * pModInst) {
+	void AddInst(CInstance * pModInst) {
 		if (pModInst->m_replId == 0) {
-			vector<CModInst *> tmp;
+			vector<CInstance *> tmp;
 			m_instSet.push_back(tmp);
 		}
 		m_instSet.back().push_back(pModInst);
@@ -1606,12 +1602,12 @@ struct CInstSet {
 		pModInst->m_replId = (int)m_instSet.back().size() - 1;
 	}
 
-	CModInst * GetInst(int instCnt, int replCnt=0) {
+	CInstance * GetInst(int instCnt, int replCnt=0) {
 		return m_instSet[instCnt][replCnt];
 	}
 private:
 	int m_totalInstCnt;	// includes replicated inst count
-	vector<vector<CModInst *> > m_instSet;
+	vector<vector<CInstance *> > m_instSet;
 };
 
 struct CModule {
@@ -2155,7 +2151,7 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 
 	string GenIndexStr(bool bGen, char const * pFormat, int index);
 	void InitCxrIntfInfo();
-	bool IsCallDest(CModInst * pSrcModInst, CModInst * pDstModInst);
+	bool IsCallDest(CInstance * pSrcModInst, CInstance * pDstModInst);
 	void CheckRequiredEntryNames(vector<CModIdx> &callStk);
 	bool CheckTransferReturn(vector<CModIdx> &callStk);
 	void CreateDirectoryStructure();
@@ -2312,7 +2308,7 @@ public:
 	vector<CHtInt *>	m_htIntList;
 	vector<CHtInt *>	m_scBigIntList;
 	vector<CModule *>	m_modList;
-	vector<CModInst *>	m_dsnInstList;
+	vector<CInstance *>	m_dsnInstList;
 	CDefineTable		m_defineTable;
 	vector<CTypeDef>	m_typedefList;
 	vector<CType>		m_typeList;
@@ -2326,18 +2322,18 @@ public:
 	void GenPrimStateStatements(CModule &mod);
 	void GenModTDSUStatements(CModule &mod); // typedef/define/struct/union
 	void GenModMsgStatements(CModule &mod);
-	void GenModBarStatements(CModInst * pModInst);
-	void GenModIplStatements(CModInst * pModInst);
+	void GenModBarStatements(CInstance * pModInst);
+	void GenModIplStatements(CInstance * pModInst);
 	void GenModIhmStatements(CModule &mod);
-	void GenModOhmStatements(CModInst * pModInst);
-	void GenModCxrStatements(CModInst * pModInst);
-	void GenModIhdStatements(CModInst * pModInst);
-	void GenModOhdStatements(CModInst * pModInst);
-	void GenModMifStatements(CModInst * pModInst);
+	void GenModOhmStatements(CInstance * pModInst);
+	void GenModCxrStatements(CInstance * pModInst);
+	void GenModIhdStatements(CInstance * pModInst);
+	void GenModOhdStatements(CInstance * pModInst);
+	void GenModMifStatements(CInstance * pModInst);
 	void GenRamPreRegStatements(HtdFile::EClkRate eClk2x);
-	void GenModStrmStatements(CModInst * pModInst);
+	void GenModStrmStatements(CInstance * pModInst);
 	void GenModStBufStatements(CModule * pMod);
-	void GenModNgvStatements(CModInst * pModInst);
+	void GenModNgvStatements(CInstance * pModInst);
 	void GenModOptNgvStatements(CModule * mod, CRam * pGv);
 
 	void FindSpanningWriteFields(CNgvInfo * pNgvInfo);
@@ -2348,17 +2344,17 @@ public:
 
 	void SetMsgIntfConnUsedFlags(bool bInBound, CMsgIntfConn * pConn, CModule &mod, CMsgIntf * pMsgIntf);
 
-	void WritePersCppFile(CModInst * pModInst, bool bNeedClk2x);
-	void WritePersIncFile(CModInst * pModInst, bool bNeedClk2x);
+	void WritePersCppFile(CInstance * pModInst, bool bNeedClk2x);
+	void WritePersIncFile(CInstance * pModInst, bool bNeedClk2x);
 	//void GenStruct(string intfName, CRecord &ram, EGenStructMode mode, bool bEmptyContructor);
 	void GenRamIntfStruct(CHtCode &code, char const * pTabs, string intfName, CRam &ram, EStructType type);
 	void GenRamWrEn(CHtCode &code, char const * pTabs, string intfName, CRecord &ram);
 	bool DimenIter(vector<CHtString> const &dimenList, vector<int> &refList);
 	string IndexStr(vector<int> &refList, int startPos = -1, int endPos = -1, bool bParamStr = false);
 
-	string GenRamAddr(CModInst & modInst, CRam &ram, CHtCode *pCode, string accessSelW, string accessSelName, const char *pInStg, const char *pOutStg, bool bWrite, bool bNoSelectAssign = false);
-	//void GenRamAddr(CModInst &modInst, CHtCode &ramPreSm, string &addrType, CRam &ram, string ramAddrName, const char *pInStg, const char *pOutStg, bool bNoSelectAssign=true);
-	int CountPhaseResetFanout(CModInst * pModInst);
+	string GenRamAddr(CInstance & modInst, CRam &ram, CHtCode *pCode, string accessSelW, string accessSelName, const char *pInStg, const char *pOutStg, bool bWrite, bool bNoSelectAssign = false);
+	//void GenRamAddr(CInstance &modInst, CHtCode &ramPreSm, string &addrType, CRam &ram, string ramAddrName, const char *pInStg, const char *pOutStg, bool bNoSelectAssign=true);
+	int CountPhaseResetFanout(CInstance * pModInst);
 	void GenDimenInfo(CDimenList & ramList, CDimenList & fieldList, vector<int> & dimenList, string & dimenDecl, string & dimenIndex, string * pVarIndex = 0, string * pFldIndex = 0);
 	string GenRamIndexLoops(CHtCode &ramCode, vector<int> & dimenList, bool bOpenParen = false);
 	string GenRamIndexLoops(CHtCode &ramCode, const char *pTabs, CDimenList &dimenList, bool bOpenParen = false, int idxInit = 0, string * pScTraceIndex = 0);
@@ -2621,14 +2617,21 @@ struct CLoopInfo {
 	int m_preDimCnt;
 };
 
-inline CModInst::CModInst(CModule *pMod, string const & instName, string const & modPath, CInstanceParams &modInstParams, 
-	int cxrSrcCnt, size_t cxrReturnSize, size_t cxrEntrySize, int replCnt, int replId)
+inline CInstance::CInstance(CModule *pMod, string const & instName, string const & modPath, CInstanceParams &modInstParams, 
+	int cxrSrcCnt, int replCnt, int replId)
 	: m_pMod(pMod), m_instParams(modInstParams), m_cxrSrcCnt(cxrSrcCnt), m_replCnt(replCnt), m_replId(replId)
 {
 	m_modPaths.push_back(modPath);
 	m_instName = instName.size() == 0 ? pMod->m_modName : CHtString(instName);
-	m_cxrInstReturnList.resize(cxrReturnSize);
-	m_cxrInstEntryList.resize(cxrEntrySize);
+
+	for (size_t i = 0; i < pMod->m_cxrReturnList.size(); i += 1)
+		m_cxrInstReturnList.push_back(CCxrInstReturn(pMod->m_cxrReturnList[i]));
+
+	for (size_t i = 0; i < pMod->m_cxrEntryList.size(); i += 1)
+		m_cxrInstEntryList.push_back(CCxrInstEntry(pMod->m_cxrEntryList[i]));
+
+	for (size_t i = 0; i < pMod->m_cxrCallList.size(); i += 1)
+		m_cxrInstCallList.push_back(CCxrInstCall(pMod->m_cxrCallList[i]));
 }
 
 inline CCxrCall * CModIdx::GetCxrCall() {

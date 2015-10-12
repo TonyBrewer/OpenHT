@@ -36,7 +36,7 @@ CDsnInfo::GenerateHtiFiles()
 	if (mod.m_instSet.GetTotalCnt() != 1 || mod.m_instSet.GetInst(0, 0)->m_cxrIntfList.size() != 2)
 		ParseMsg(Fatal, "Expected host interface to have a single call and a single return interface");
 
-	CModInst * pModInst = mod.m_instSet.GetInst(0, 0);
+	CInstance * pModInst = mod.m_instSet.GetInst(0, 0);
 
 	int callIdx = -1;
 	int rtnIdx = -1;

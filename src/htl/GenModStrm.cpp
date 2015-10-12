@@ -146,7 +146,7 @@ void CDsnInfo::InitAndValidateModStrm()
 	}
 }
 
-void CDsnInfo::GenModStrmStatements(CModInst * pModInst)
+void CDsnInfo::GenModStrmStatements(CInstance * pModInst)
 {
 	CModule * pMod = pModInst->m_pMod;
 

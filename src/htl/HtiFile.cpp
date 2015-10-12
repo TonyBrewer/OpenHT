@@ -484,7 +484,7 @@ bool HtiFile::isMsgPathMatch(CLineInfo & lineInfo, CMsgIntfInfo & info, CModule 
 
 	for (int instIdx = 0; instIdx < mod.m_instSet.GetInstCnt(); instIdx += 1) {
 		for (int replIdx = 0; replIdx < mod.m_instSet.GetReplCnt(instIdx); replIdx += 1) {
-			CModInst * pModInst = mod.m_instSet.GetInst(instIdx, replIdx);
+			CInstance * pModInst = mod.m_instSet.GetInst(instIdx, replIdx);
 
 			for (size_t modPathIdx = 0; modPathIdx < pModInst->m_modPaths.size(); modPathIdx += 1) {
 				string &modPath = pModInst->m_modPaths[modPathIdx];

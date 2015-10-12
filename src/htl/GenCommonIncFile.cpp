@@ -270,7 +270,7 @@ void CDsnInfo::GenerateCommonIncludeFile()
 		if (!mod.m_bIsUsed) continue;
 
 		for (int modInstIdx = 0; modInstIdx < mod.m_instSet.GetInstCnt(); modInstIdx += 1) {
-			CModInst * pModInst = mod.m_instSet.GetInst(modInstIdx);
+			CInstance * pModInst = mod.m_instSet.GetInst(modInstIdx);
 
 			for (size_t intfIdx = 0; intfIdx < pModInst->m_cxrIntfList.size(); intfIdx += 1) {
 				CCxrIntf * pCxrIntf = pModInst->m_cxrIntfList[intfIdx];

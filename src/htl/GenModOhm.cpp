@@ -25,7 +25,7 @@ void CDsnInfo::InitAndValidateModOhm()
 	}
 }
 
-void CDsnInfo::GenModOhmStatements(CModInst * pModInst)
+void CDsnInfo::GenModOhmStatements(CInstance * pModInst)
 {
 	CModule * pMod = pModInst->m_pMod;
 

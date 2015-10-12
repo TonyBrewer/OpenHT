@@ -1621,7 +1621,7 @@ void CDsnInfo::DrawModuleCmdRelationships()
 			fs << "n" << modName << " [shape=\"box\", label=\"" << mtext << "\\n\"];\n";
 
 			// cxr
-			CModInst * pModInst = mod.m_instSet.GetInst(0, rep);
+			CInstance * pModInst = mod.m_instSet.GetInst(0, rep);
 			map<string, bool> cxr_seen;
 			for (size_t intfIdx = 0; intfIdx < pModInst->m_cxrIntfList.size(); intfIdx += 1) {
 				CCxrIntf * pCxrIntf = pModInst->m_cxrIntfList[intfIdx];

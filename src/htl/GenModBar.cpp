@@ -31,7 +31,7 @@ void CDsnInfo::InitAndValidateModBar()
 
 }
 
-void CDsnInfo::GenModBarStatements(CModInst * pModInst)
+void CDsnInfo::GenModBarStatements(CInstance * pModInst)
 {
 	if (pModInst->m_pMod->m_barrierList.size() == 0)
 		return;

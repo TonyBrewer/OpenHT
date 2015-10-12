@@ -14,14 +14,14 @@
 struct CThreads;
 struct CField;
 struct CModule;
-struct CModInst;
+struct CInstance;
 
 // Call/return module interface
 enum ECxrType { CxrCall, CxrReturn, CxrTransfer };
 enum ECxrDir { CxrIn, CxrOut };
 
 struct CCxrIntf {
-	CCxrIntf(CHtString &modEntry, CModInst * pSrcModInst, CThreads *pSrcGroup, CModInst * pDstModInst,
+	CCxrIntf(CHtString &modEntry, CInstance * pSrcModInst, CThreads *pSrcGroup, CInstance * pDstModInst,
 		CThreads *pDstGroup, ECxrType cxrType, ECxrDir cxrDir, int queueW, vector<CField *> * pFieldList)
 		: m_modEntry(modEntry), m_pSrcModInst(pSrcModInst), m_pSrcGroup(pSrcGroup),
 		m_pDstModInst(pDstModInst), m_pDstGroup(pDstGroup), m_cxrType(cxrType), m_cxrDir(cxrDir),
@@ -87,9 +87,9 @@ struct CCxrIntf {
 	bool IsCallOrXfer() { return m_cxrType == CxrCall || m_cxrType == CxrTransfer; }
 
 	CHtString			m_modEntry;
-	CModInst *			m_pSrcModInst;
+	CInstance *			m_pSrcModInst;
 	CThreads *			m_pSrcGroup;
-	CModInst *			m_pDstModInst;
+	CInstance *			m_pDstModInst;
 	CThreads *			m_pDstGroup;
 	ECxrType			m_cxrType;
 	ECxrDir				m_cxrDir;
@@ -114,6 +114,8 @@ struct CCxrIntf {
 	CHtString			m_srcInstName;
 	CHtString			m_dstInstName;
 	bool				m_bCxrIntfFields;
+
+	CCxrIntf *			m_pPairedIntf;
 
 	bool				m_bRtnJoin;
 

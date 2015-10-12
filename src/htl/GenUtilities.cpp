@@ -1000,11 +1000,6 @@ CRecord * CDsnInfo::FindRecord(string recordName)
 	return 0;
 }
 
-CCxrCall * CCxrCallList::GetCxrCall(size_t listIdx)
-{
-	return m_modIdxList[listIdx].GetCxrCall();// m_pModInst->m_pMod->m_cxrCallList[m_modIdxList[listIdx].m_idx];
-}
-
 void CDsnInfo::GenUserStructFieldList(FILE *incFp, bool bIsHtPriv, vector<CField *> &fieldList, bool bCStyle, EFieldListMode mode, string tabs, bool bUnion)
 {
 	CHtCode	htFile(incFp);

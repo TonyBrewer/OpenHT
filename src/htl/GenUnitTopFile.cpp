@@ -35,7 +35,7 @@ void CDsnInfo::GenerateUnitTopFile()
 		} else {
 
 			for (int modInstIdx = 0; modInstIdx < mod.m_instSet.GetInstCnt(); modInstIdx += 1) {
-				CModInst * pModInst = mod.m_instSet.GetInst(modInstIdx);
+				CInstance * pModInst = mod.m_instSet.GetInst(modInstIdx);
 
 				fprintf(scFile, "#include \"Pers%s%s.h\"\n",
 					unitNameUc.c_str(), pModInst->m_fileName.Uc().c_str());
@@ -81,7 +81,7 @@ void CDsnInfo::GenerateUnitTopFile()
 		} else {
 
 			for (int modInstIdx = 0; modInstIdx < mod.m_instSet.GetInstCnt(); modInstIdx += 1) {
-				CModInst * pModInst = mod.m_instSet.GetInst(modInstIdx);
+				CInstance * pModInst = mod.m_instSet.GetInst(modInstIdx);
 
 				string replDeclStr = pModInst->m_replCnt <= 1 ? "" : VA("[%d]", pModInst->m_replCnt);
 
@@ -152,7 +152,7 @@ void CDsnInfo::GenerateUnitTopFile()
 		for (int instIdx = 0; instIdx < mod.m_instSet.GetInstCnt(); instIdx += 1) {
 			for (int instReplIdx = 0; instReplIdx < mod.m_instSet.GetReplCnt(instIdx); instReplIdx += 1, modInstIdx += 1) {
 
-				CModInst * pModInst = mod.m_instSet.GetInst(instIdx, instReplIdx);
+				CInstance * pModInst = mod.m_instSet.GetInst(instIdx, instReplIdx);
 
 				string instName;
 				if (bHifFlag)
@@ -803,7 +803,7 @@ void CDsnInfo::GenerateUnitTopFile()
 		modName.c_str(), modName.c_str(), modName.c_str());
 
 	for (size_t instIdx = 0; instIdx < m_dsnInstList.size(); instIdx += 1) {
-		CModInst * pModInst = m_dsnInstList[instIdx];
+		CInstance * pModInst = m_dsnInstList[instIdx];
 		if (!pModInst->m_pMod->m_bIsUsed) continue;
 
 		if (!pModInst->m_pMod->m_bHasThreads && !pModInst->m_pMod->m_bHostIntf)

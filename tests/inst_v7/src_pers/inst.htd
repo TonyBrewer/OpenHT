@@ -1,0 +1,41 @@
+// Module capabilities
+
+dsnInfo.AddModule(name=Ctl, htIdW=3);
+
+Ctl.AddInstr(name=CTL_INST1);
+Ctl.AddInstr(name=CTL_INST2);
+Ctl.AddInstr(name=CTL_INST3);
+Ctl.AddInstr(name=CTL_RTN);
+
+Ctl.AddPrivate()
+	.AddVar(type=ht_uint48, name=addr);
+
+Ctl.AddEntry(func=htmain, instr=CTL_INST1, host=true)
+	.AddParam(type=ht_uint48, hostType=uint8_t *, name=addr);
+
+Ctl.AddReturn(func=htmain);
+
+Ctl.AddCall(modEntry=inst, callName=inst1, instName=InstA); // func == modEntry, inst == modInst, name == callName
+Ctl.AddCall(modEntry=inst, callName=inst2, instName=InstB); // func == modEntry, inst == modInst, name == callName
+Ctl.AddCall(modEntry=inst, callName=inst3, instName=InstC); // func == modEntry, inst == modInst, name == callName
+
+
+dsnInfo.AddModule(name=Inst, htIdW=3);
+
+Inst.AddInstr(name=INST_ENTRY);
+Inst.AddInstr(name=INST_RTN);
+
+Inst.AddEntry(func=inst, instr=INST_ENTRY)
+	.AddParam(type=ht_uint48, name=addr);
+
+Inst.AddReturn(func=inst);
+
+Inst.AddPrivate()
+	.AddVar(type=ht_uint48, name=addr)
+	.AddVar(type=uint8_t, name=data);
+
+Inst.AddReadMem()
+	.AddDst(var=data, memSrc=host);
+
+Inst.AddWriteMem()
+	.AddSrc(var=data, memDst=host);

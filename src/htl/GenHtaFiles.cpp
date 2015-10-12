@@ -25,7 +25,7 @@ void CDsnInfo::GenerateHtaFiles()
 	fprintf(incFile, "\tsc_in<bool> i_clock1x;\n");
 
 	for (size_t instIdx = 0; instIdx < m_dsnInstList.size(); instIdx += 1) {
-		CModInst * pModInst = m_dsnInstList[instIdx];
+		CInstance * pModInst = m_dsnInstList[instIdx];
 		if (!pModInst->m_pMod->m_bIsUsed) continue;
 
 		if (!pModInst->m_pMod->m_bHasThreads || pModInst->m_pMod->m_bHostIntf)
@@ -48,7 +48,7 @@ void CDsnInfo::GenerateHtaFiles()
 	fprintf(incFile, "\n");
 
 	for (size_t instIdx = 0; instIdx < m_dsnInstList.size(); instIdx += 1) {
-		CModInst * pModInst = m_dsnInstList[instIdx];
+		CInstance * pModInst = m_dsnInstList[instIdx];
 		if (!pModInst->m_pMod->m_bIsUsed) continue;
 
 		if (!pModInst->m_pMod->m_bHasThreads || pModInst->m_pMod->m_bHostIntf)
@@ -106,7 +106,7 @@ void CDsnInfo::GenerateHtaFiles()
 
 	int moduleIdx = 0;
 	for (size_t instIdx = 0; instIdx < m_dsnInstList.size(); instIdx += 1) {
-		CModInst * pModInst = m_dsnInstList[instIdx];
+		CInstance * pModInst = m_dsnInstList[instIdx];
 		if (!pModInst->m_pMod->m_bIsUsed) continue;
 
 		if (!pModInst->m_pMod->m_bHasThreads || pModInst->m_pMod->m_bHostIntf)
@@ -123,7 +123,7 @@ void CDsnInfo::GenerateHtaFiles()
 	fprintf(cppFile, "\tc_htaToHif_assert.m_info = 0;\n");
 
 	for (size_t instIdx = 0; instIdx < m_dsnInstList.size(); instIdx += 1) {
-		CModInst * pModInst = m_dsnInstList[instIdx];
+		CInstance * pModInst = m_dsnInstList[instIdx];
 		if (!pModInst->m_pMod->m_bIsUsed) continue;
 
 		if (!pModInst->m_pMod->m_bHasThreads || pModInst->m_pMod->m_bHostIntf)
@@ -139,7 +139,7 @@ void CDsnInfo::GenerateHtaFiles()
 	fprintf(cppFile, "\tc_htaToHif_assert.m_lineNum = 0;\n");
 
 	for (size_t instIdx = 0; instIdx < m_dsnInstList.size(); instIdx += 1) {
-		CModInst * pModInst = m_dsnInstList[instIdx];
+		CInstance * pModInst = m_dsnInstList[instIdx];
 		if (!pModInst->m_pMod->m_bIsUsed) continue;
 
 		if (!pModInst->m_pMod->m_bHasThreads || pModInst->m_pMod->m_bHostIntf)
@@ -154,7 +154,7 @@ void CDsnInfo::GenerateHtaFiles()
 
 	int modIdx = 0;
 	for (size_t instIdx = 0; instIdx < m_dsnInstList.size(); instIdx += 1) {
-		CModInst * pModInst = m_dsnInstList[instIdx];
+		CInstance * pModInst = m_dsnInstList[instIdx];
 		if (!pModInst->m_pMod->m_bIsUsed) continue;
 
 		if (!pModInst->m_pMod->m_bHasThreads || pModInst->m_pMod->m_bHostIntf)
@@ -163,7 +163,7 @@ void CDsnInfo::GenerateHtaFiles()
 		instIdx += 1;
 
 		for (; instIdx < m_dsnInstList.size(); instIdx += 1) {
-			CModInst * pModInst2 = m_dsnInstList[instIdx];
+			CInstance * pModInst2 = m_dsnInstList[instIdx];
 
 			if (!pModInst2->m_pMod->m_bHasThreads || pModInst2->m_pMod->m_bHostIntf)
 				continue;
@@ -225,7 +225,7 @@ void CDsnInfo::GenerateHtaFiles()
 	fprintf(cppFile, "\n");
 
 	for (size_t instIdx = 0; instIdx < m_dsnInstList.size(); instIdx += 1) {
-		CModInst * pModInst = m_dsnInstList[instIdx];
+		CInstance * pModInst = m_dsnInstList[instIdx];
 		if (!pModInst->m_pMod->m_bIsUsed) continue;
 
 		if (!pModInst->m_pMod->m_bHasThreads || pModInst->m_pMod->m_bHostIntf)

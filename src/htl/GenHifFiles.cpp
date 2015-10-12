@@ -16,9 +16,12 @@ void CDsnInfo::InitAndValidateHif()
 	CModule & hifMod = *m_modList[0];
 
 	// Verify that call and return types are known to host
-	CCxrCall & cxrCall = *hifMod.m_cxrCallList[0];
-	CCxrEntry * pCxrEntry = cxrCall.m_pairedFunc.GetCxrEntry();
-	CCxrReturn & cxrReturn = *cxrCall.m_pairedReturnList[0].GetCxrReturn();
+	CInstance * pHifInst = hifMod.m_instSet.GetInst(0);
+	CCxrInstCall & cxrInstCall = pHifInst->m_cxrInstCallList[0];
+
+	CCxrCall * pCxrCall = cxrInstCall.m_pCxrCall;
+	CCxrEntry * pCxrEntry = pCxrCall->m_pairedFunc.GetCxrEntry();
+	CCxrReturn * pCxrReturn = cxrInstCall.m_returnList[0].GetCxrReturn();
 
 	for (size_t fldIdx = 0; fldIdx < pCxrEntry->m_paramList.size(); fldIdx += 1) {
 		CField * pParam = pCxrEntry->m_paramList[fldIdx];
@@ -36,8 +39,8 @@ void CDsnInfo::InitAndValidateHif()
 		}
 	}
 
-	for (size_t fldIdx = 0; fldIdx < cxrReturn.m_paramList.size(); fldIdx += 1) {
-		CField * pParam = cxrReturn.m_paramList[fldIdx];
+	for (size_t fldIdx = 0; fldIdx < pCxrReturn->m_paramList.size(); fldIdx += 1) {
+		CField * pParam = pCxrReturn->m_paramList[fldIdx];
 
 		FindHostTypeWidth(pParam->m_name, pParam->m_hostType, pParam->m_fieldWidth, pCxrEntry->m_lineInfo);
 
@@ -702,9 +705,11 @@ void CDsnInfo::GenerateHifFiles()
 
 		char * pSeparator;
 
-		CCxrCall * pCxrCall = hifMod.m_cxrCallList[0];
+		CInstance * pHifInst = hifMod.m_instSet.GetInst(0);
+		CCxrInstCall & cxrInstCall = pHifInst->m_cxrInstCallList[0];
+		CCxrCall * pCxrCall = cxrInstCall.m_pCxrCall;
 		CCxrEntry * pCxrEntry = pCxrCall->m_pairedFunc.GetCxrEntry();
-		CCxrReturn * pCxrReturn = pCxrCall->m_pairedReturnList[0].GetCxrReturn();
+		CCxrReturn * pCxrReturn = cxrInstCall.m_returnList[0].GetCxrReturn();
 
 #ifndef OLD_UNIT_INTF
 

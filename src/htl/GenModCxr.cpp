@@ -118,14 +118,13 @@ void CDsnInfo::InitAndValidateModCxr()
 		CModule * pHifMod = m_modList[0];
 		HtlAssert(pHifMod->m_modName == "hif");
 
-		CModInst * pModInst = new CModInst;
-		pModInst->m_pMod = pHifMod;
+		CInstanceParams modInstParams;
+		modInstParams.m_memPortList.push_back(0);
+
+		int cxrSrcCnt = (pHifMod->m_bHasThreads ? 1 : 0) + pHifMod->m_resetInstrCnt;
+		CInstance * pModInst = new CInstance(pHifMod, pHifMod->m_modName, "", modInstParams, cxrSrcCnt);
+
 		pModInst->m_replInstName = pHifMod->m_modName;
-		pModInst->m_instName = pHifMod->m_modName;
-		pModInst->m_instParams.m_memPortList.push_back(0);
-		pModInst->m_cxrSrcCnt = (pHifMod->m_bHasThreads ? 1 : 0) + pHifMod->m_resetInstrCnt;
-		pModInst->m_replCnt = 1;
-		pModInst->m_replId = 0;
 
 		pHifMod->m_instSet.AddInst(pModInst);
 	}
@@ -202,7 +201,7 @@ void CDsnInfo::InitAndValidateModCxr()
 		// set module instance names
 		for (int instIdx = 0; instIdx < pMod->m_instSet.GetInstCnt(); instIdx += 1) {
 			for (int replIdx = 0; replIdx < pMod->m_instSet.GetReplCnt(instIdx); replIdx += 1) {
-				CModInst * pModInst = pMod->m_instSet.GetInst(instIdx, replIdx);
+				CInstance * pModInst = pMod->m_instSet.GetInst(instIdx, replIdx);
 
 				if (pModInst->m_replCnt > 1) {
 					pModInst->m_replInstName = VA("%s%d", pModInst->m_instName.c_str(), pModInst->m_replId);
@@ -220,7 +219,7 @@ void CDsnInfo::InitAndValidateModCxr()
 
 		for (int instIdx = 0; instIdx < pMod->m_instSet.GetInstCnt(); instIdx += 1) {
 			for (int replIdx = 0; replIdx < pMod->m_instSet.GetReplCnt(instIdx); replIdx += 1) {
-				CModInst * pModInst = pMod->m_instSet.GetInst(instIdx, replIdx);
+				CInstance * pModInst = pMod->m_instSet.GetInst(instIdx, replIdx);
 
 				m_dsnInstList.push_back(pModInst);
 			}
@@ -351,7 +350,7 @@ void CDsnInfo::CheckRequiredEntryNames(vector<CModIdx> &callStk)
 						(int)pMod->m_memPortList.size(), (int)replModInstParams.m_memPortList.size());
 
 					// check if requested instName is new
-					CModInst * pModInst = 0;
+					CInstance * pModInst = 0;
 					for (instIdx = 0; instIdx < pMod->m_instSet.GetInstCnt(); instIdx += 1) {
 						if (pMod->m_instSet.GetInst(instIdx)->m_instName == pCxrCallee->m_instName) {
 							if (pMod->m_instSet.GetReplCnt(instIdx) > replIdx) {
@@ -366,8 +365,8 @@ void CDsnInfo::CheckRequiredEntryNames(vector<CModIdx> &callStk)
 						// new instName specified
 
 						int cxrSrcCnt = (pMod->m_bHasThreads ? 1 : 0) + pMod->m_resetInstrCnt;
-						pModInst = new CModInst(pMod, pCxrCallee->m_instName, modPath, replModInstParams,
-							cxrSrcCnt, pMod->m_cxrReturnList.size(), pMod->m_cxrEntryList.size(), modInstParams.m_replCnt, replIdx);
+						pModInst = new CInstance(pMod, pCxrCallee->m_instName, modPath, replModInstParams,
+							cxrSrcCnt, modInstParams.m_replCnt, replIdx);
 						pMod->m_instSet.AddInst(pModInst);
 
 						for (size_t modPrmIdx = 0; modPrmIdx < pMod->m_instParamList.size(); modPrmIdx += 1) {
@@ -447,7 +446,7 @@ void CDsnInfo::CheckRequiredEntryNames(vector<CModIdx> &callStk)
 				if (!bFound) {
 					// new instName specified
 					int cxrSrcCnt = (pMod->m_bHasThreads ? 1 : 0) + pMod->m_resetInstrCnt;
-					CModInst * pModInst = new CModInst(pMod, pCxrCallee->m_instName, modPath, modInstParams, cxrSrcCnt, pMod->m_cxrReturnList.size(), pMod->m_cxrEntryList.size());
+					CInstance * pModInst = new CInstance(pMod, pCxrCallee->m_instName, modPath, modInstParams, cxrSrcCnt);
 					pMod->m_instSet.AddInst(pModInst);
 
 					for (size_t modPrmIdx = 0; modPrmIdx < pMod->m_instParamList.size(); modPrmIdx += 1) {
@@ -468,7 +467,7 @@ void CDsnInfo::CheckRequiredEntryNames(vector<CModIdx> &callStk)
 					}
 				} else {
 					// add new modPath to modInst
-					CModInst * pModInst = pMod->m_instSet.GetInst(instIdx, replIdx);
+					CInstance * pModInst = pMod->m_instSet.GetInst(instIdx, replIdx);
 					pModInst->m_modPaths.push_back(modPath);
 
 					// verify callInstParams are the same
@@ -504,9 +503,11 @@ void CDsnInfo::CheckRequiredEntryNames(vector<CModIdx> &callStk)
 
 		modCall.GetCxrCall()->m_pairedFunc = CModIdx(pMod->m_instSet.GetInst(instIdx), pCxrEntry, entryIdx, modPath);
 
-		vector<CModIdx> & callerList = pMod->m_instSet.GetInst(instIdx)->m_cxrInstEntryList[entryIdx].m_callerList;
-		callerList.push_back(modCall);
-		pMod->m_threads.m_rtnSelW = max(pMod->m_threads.m_rtnSelW, FindLg2(callerList.size() - 1, false));
+		CCxrInstEntry & cxrInstEntry = pMod->m_instSet.GetInst(instIdx)->m_cxrInstEntryList[entryIdx];
+
+		cxrInstEntry.m_pCxrEntry = pCxrEntry;
+		cxrInstEntry.m_callerList.push_back(modCall);
+		pMod->m_threads.m_rtnSelW = max(pMod->m_threads.m_rtnSelW, FindLg2(cxrInstEntry.m_callerList.size() - 1, false));
 
 		pCxrEntry->m_bIsUsed = true;
 
@@ -515,12 +516,13 @@ void CDsnInfo::CheckRequiredEntryNames(vector<CModIdx> &callStk)
 
 		// find previous call (skip transfers)
 		int callStkIdx;
-		CModule * pPrevCxrCallMod = 0;
+		CInstance * pPrevCxrCallInst = 0;
 		CCxrCall * pPrevCxrCall = 0;
+		int prevCallIdx = 0;
 		for (callStkIdx = (int)callStk.size() - 1; callStkIdx >= 0; callStkIdx -= 1) {
-			pPrevCxrCallMod = callStk[callStkIdx].m_pModInst->m_pMod;
-			int prevCallIdx = callStk[callStkIdx].m_callIdx;
-			pPrevCxrCall = pPrevCxrCallMod->m_cxrCallList[prevCallIdx];
+			pPrevCxrCallInst = callStk[callStkIdx].m_pModInst;
+			prevCallIdx = callStk[callStkIdx].m_callIdx;
+			pPrevCxrCall = pPrevCxrCallInst->m_pMod->m_cxrCallList[prevCallIdx];
 			if (!pPrevCxrCall->m_bXfer)
 				break;
 		}
@@ -531,10 +533,11 @@ void CDsnInfo::CheckRequiredEntryNames(vector<CModIdx> &callStk)
 		for (size_t rtnIdx = 0; rtnIdx < m_modList[modIdx]->m_cxrReturnList.size(); rtnIdx += 1) {
 			CCxrReturn * pCxrReturn = m_modList[modIdx]->m_cxrReturnList[rtnIdx];
 			CCxrInstReturn & cxrInstReturn = m_modList[modIdx]->m_instSet.GetInst(instIdx)->m_cxrInstReturnList[rtnIdx];
+			CCxrInstCall & cxrInstCall = pPrevCxrCallInst->m_cxrInstCallList[prevCallIdx];
 
 			if (pCxrReturn->m_modEntry == pPrevCxrCall->m_modEntry) {
-				pPrevCxrCall->m_pairedReturnList.push_back(CModIdx(m_modList[modIdx]->m_instSet.GetInst(0), pCxrReturn, rtnIdx, modPath));
-				pCxrReturn->m_pairedCallList.Insert(callStk[callStkIdx]);
+
+				cxrInstCall.m_returnList.push_back(CModIdx(m_modList[modIdx]->m_instSet.GetInst(instIdx), pCxrReturn, rtnIdx, modPath));
 
 				cxrInstReturn.m_callerList.push_back(callStk[callStkIdx]);
 
@@ -544,7 +547,7 @@ void CDsnInfo::CheckRequiredEntryNames(vector<CModIdx> &callStk)
 
 				bFoundRtn = true;
 
-				if (pPrevCxrCallMod->m_bHostIntf) continue;
+				if (pPrevCxrCallInst->m_pMod->m_bHostIntf) continue;
 
 				// verify that caller has private variables for return parameters
 				for (size_t prmIdx = 0; prmIdx < pCxrReturn->m_paramList.size(); prmIdx += 1) {
@@ -556,15 +559,17 @@ void CDsnInfo::CheckRequiredEntryNames(vector<CModIdx> &callStk)
 						CField * pField = fieldList[fldIdx];
 
 						if (pField->m_name == pParam->m_name) {
-							if (pField->m_pType->m_typeName != pParam->m_pType->m_typeName)
+							if (pField->m_pType->m_typeName != pParam->m_pType->m_typeName) {
 								ParseMsg(Error, pParam->m_lineInfo, "parameter and caller's (%s) private variable have different types",
-								pPrevCxrCallMod->m_modName.c_str());
+									pPrevCxrCallInst->m_pMod->m_modName.c_str());
+							}
 							bFound = true;
 						}
 					}
-					if (!bFound)
+					if (!bFound) {
 						ParseMsg(Error, pParam->m_lineInfo, "parameter was not declared as a private variable in caller (%s)",
-						pPrevCxrCallMod->m_modName.c_str());
+							pPrevCxrCallInst->m_pMod->m_modName.c_str());
+					}
 				}
 			}
 		}
@@ -577,9 +582,9 @@ void CDsnInfo::CheckRequiredEntryNames(vector<CModIdx> &callStk)
 			if (pCxrCall->m_bXfer)
 				pCxrCall->m_bXferFork |= pCxrCallee->m_bCallFork || pCxrCallee->m_bXferFork;
 
-			pCxrCall->m_pairedEntry = CModIdx(pMod->m_instSet.GetInst(0), pCxrEntry, entryIdx, modPath);
+			pCxrCall->m_pairedEntry = CModIdx(pMod->m_instSet.GetInst(instIdx), pCxrEntry, entryIdx, modPath);
 
-			callStk.push_back(CModIdx(pMod->m_instSet.GetInst(0), pCxrCall, callIdx, modPath));
+			callStk.push_back(CModIdx(pMod->m_instSet.GetInst(instIdx), pCxrCall, callIdx, modPath));
 
 			// for xfer, check that a return to previous call exists
 			//   It may not exist and be okay if multiple calls to same
@@ -612,7 +617,7 @@ void CDsnInfo::CheckRequiredEntryNames(vector<CModIdx> &callStk)
 bool CDsnInfo::CheckTransferReturn(vector<CModIdx> &callStk)
 {
 	CModIdx & modCall = callStk.back();
-	CCxrCall * pCxrCallee = modCall.GetCxrCall();// m_pModInst->m_pMod->m_cxrCallList[modCall.m_idx];
+	CCxrCall * pCxrCallee = modCall.GetCxrCall();
 	CHtString & modEntry = pCxrCallee->m_modEntry;
 
 	// search for matching entry in list of modules
@@ -644,8 +649,8 @@ bool CDsnInfo::CheckTransferReturn(vector<CModIdx> &callStk)
 	} else if (m_modList[modIdx]->m_bActiveCall) {
 		ParseMsg(Error, pCxrCallee->m_lineInfo, "found recursion in call chain");
 		for (size_t stkIdx = 1; stkIdx < callStk.size(); stkIdx += 1) {
-			CCxrCall * pCxrCaller = callStk[stkIdx - 1].GetCxrCall();// m_pModInst->m_pMod->m_cxrCallList[callStk[stkIdx - 1].m_idx];
-			CCxrCall * pCxrCallee = callStk[stkIdx].GetCxrCall();// m_pModInst->m_pMod->m_cxrCallList[callStk[stkIdx].m_idx];
+			CCxrCall * pCxrCaller = callStk[stkIdx - 1].GetCxrCall();
+			CCxrCall * pCxrCallee = callStk[stkIdx].GetCxrCall();
 
 			ParseMsg(Info, pCxrCaller->m_lineInfo, "    Module %s, entry %s, called %s\n",
 				callStk[stkIdx].m_pModInst->m_pMod->m_modName.Lc().c_str(),
@@ -758,7 +763,7 @@ void CDsnInfo::InitCxrIntfInfo()
 
 			if (pMod->m_threads.m_htIdW.AsInt() > 0) {
 				sprintf(typeName, "%sHtId_t", pMod->m_modName.Uc().c_str());
-				pMod->m_threads.m_pHtIdType = FindHtIntType(eUnsigned, pMod->m_threads.m_htIdW.AsInt());;
+					pMod->m_threads.m_pHtIdType = FindHtIntType(eUnsigned, pMod->m_threads.m_htIdW.AsInt());;
 			}
 		}
 	}
@@ -770,7 +775,7 @@ void CDsnInfo::InitCxrIntfInfo()
 		if (!pMod->m_bIsUsed) continue;	// only check required modules
 
 		for (int instIdx = 0; instIdx < pMod->m_instSet.GetInstCnt(); instIdx += 1) {
-			CModInst * pModInst = pMod->m_instSet.GetInst(instIdx);
+			CInstance * pModInst = pMod->m_instSet.GetInst(instIdx);
 
 			// Transfer info from module's entry list
 			for (size_t entryIdx = 0; entryIdx < pModInst->m_cxrInstEntryList.size(); entryIdx += 1) {
@@ -865,7 +870,7 @@ void CDsnInfo::InitCxrIntfInfo()
 
 			ECxrType cxrType = pCxrCall->m_bXfer ? CxrTransfer : CxrCall;
 
-			CModInst * pDstModInst = pCxrCall->m_pairedFunc.m_pModInst;
+			CInstance * pDstModInst = pCxrCall->m_pairedFunc.m_pModInst;
 
 			CModule * pDstMod = pCxrCall->m_pairedFunc.m_pModInst->m_pMod;
 			int dstEntryIdx = pCxrCall->m_pairedFunc.m_entryIdx;
@@ -876,16 +881,6 @@ void CDsnInfo::InitCxrIntfInfo()
 
 			if (pCxrCall->m_instName.size() == 0)
 				pCxrCall->m_instName = pDstMod->m_modName;
-
-			// find return select ID
-			int rtnSelId = -1;
-			for (size_t callListIdx = 0; callListIdx < dstCxrEntry.m_callerList.size(); callListIdx += 1) {
-				CModIdx & callModIdx = dstCxrEntry.m_callerList[callListIdx];
-
-				if (callModIdx.m_pModInst->m_pMod == pSrcMod && callModIdx.m_callIdx == callIdx)
-					rtnSelId = (int)callListIdx;
-			}
-			HtlAssert(rtnSelId >= 0);
 
 			// check if interface structure is empty
 			bool bCxrIntfFields;
@@ -901,17 +896,29 @@ void CDsnInfo::InitCxrIntfInfo()
 
 			}
 
-			// Loop through instances for both src and dst
 			bool bFoundLinkInfo = false;
 			for (int srcInstIdx = 0; srcInstIdx < pSrcMod->m_instSet.GetInstCnt(); srcInstIdx += 1) {
+				CInstance * pSrcModInst1 = pSrcMod->m_instSet.GetInst(srcInstIdx, 0);
+
+				// find return select ID
+				int rtnSelId = -1;
+				for (size_t callListIdx = 0; callListIdx < dstCxrEntry.m_callerList.size(); callListIdx += 1) {
+					CModIdx & callModIdx = dstCxrEntry.m_callerList[callListIdx];
+
+					if (callModIdx.m_pModInst == pSrcModInst1 && callModIdx.m_callIdx == callIdx)
+						rtnSelId = (int)callListIdx;
+				}
+				HtlAssert(rtnSelId >= 0);
+
+				// Loop through instances for both src and dst
 				for (int srcReplIdx = 0; srcReplIdx < pSrcMod->m_instSet.GetReplCnt(srcInstIdx); srcReplIdx += 1) {
-					CModInst * pSrcModInst = pSrcMod->m_instSet.GetInst(srcInstIdx, srcReplIdx);
+					CInstance * pSrcModInst = pSrcMod->m_instSet.GetInst(srcInstIdx, srcReplIdx);
 
 					// Find number of destination instances
 					int instCnt = 0;
 					for (int dstInstIdx = 0; dstInstIdx < pDstMod->m_instSet.GetInstCnt(); dstInstIdx += 1) {
 						for (int dstReplIdx = 0; dstReplIdx < pDstMod->m_instSet.GetReplCnt(dstInstIdx); dstReplIdx += 1) {
-							CModInst * pDstModInst = pDstMod->m_instSet.GetInst(dstInstIdx, dstReplIdx);
+							CInstance * pDstModInst = pDstMod->m_instSet.GetInst(dstInstIdx, dstReplIdx);
 
 							// check if instance file had information for this link
 							if (pDstModInst->m_instName != pCxrCall->m_instName) continue;
@@ -924,7 +931,7 @@ void CDsnInfo::InitCxrIntfInfo()
 					int instIdx = 0;
 					for (int dstInstIdx = 0; dstInstIdx < pDstMod->m_instSet.GetInstCnt(); dstInstIdx += 1) {
 						for (int dstReplIdx = 0; dstReplIdx < pDstMod->m_instSet.GetReplCnt(dstInstIdx); dstReplIdx += 1) {
-							CModInst * pDstModInst = pDstMod->m_instSet.GetInst(dstInstIdx, dstReplIdx);
+							CInstance * pDstModInst = pDstMod->m_instSet.GetInst(dstInstIdx, dstReplIdx);
 
 							//// check if instance file had information for this link
 							if (pDstModInst->m_instName != pCxrCall->m_instName) continue;
@@ -958,6 +965,9 @@ void CDsnInfo::InitCxrIntfInfo()
 							pDstCxrIntf->m_bCxrIntfFields = bCxrIntfFields;
 							pDstCxrIntf->m_bRtnJoin = pCxrCall->m_bCallFork || pCxrCall->m_bXferFork;
 
+							pSrcCxrIntf->m_pPairedIntf = pDstCxrIntf;
+							pDstCxrIntf->m_pPairedIntf = pSrcCxrIntf;
+
 							pDstModInst->m_cxrSrcCnt += 1;
 						}
 					}
@@ -970,13 +980,13 @@ void CDsnInfo::InitCxrIntfInfo()
 
 				int srcInstIdx = 0;
 				int srcReplIdx = 0;
-				CModInst * pSrcModInst = pSrcMod->m_instSet.GetInst(srcInstIdx, srcReplIdx);
+				CInstance * pSrcModInst = pSrcMod->m_instSet.GetInst(srcInstIdx, srcReplIdx);
 
 				int instCnt = 1;
 				int instIdx = 0;
 				int dstInstIdx = 0;
 				int dstReplIdx = 0;
-				CModInst * pDstModInst = pDstMod->m_instSet.GetInst(dstInstIdx, dstReplIdx);
+				CInstance * pDstModInst = pDstMod->m_instSet.GetInst(dstInstIdx, dstReplIdx);
 
 				// insert call link
 				pSrcModInst->m_cxrIntfList.push_back(
@@ -987,7 +997,7 @@ void CDsnInfo::InitCxrIntfInfo()
 				pSrcCxrIntf->m_callIdx = callIdx;
 				pSrcCxrIntf->m_instCnt = instCnt;
 				pSrcCxrIntf->m_instIdx = instIdx++;
-				pSrcCxrIntf->m_rtnSelId = rtnSelId;
+				pSrcCxrIntf->m_rtnSelId = 0;
 				pSrcCxrIntf->m_bCxrIntfFields = bCxrIntfFields;
 				pSrcCxrIntf->m_bRtnJoin = pCxrCall->m_bCallFork || pCxrCall->m_bXferFork;
 
@@ -997,7 +1007,7 @@ void CDsnInfo::InitCxrIntfInfo()
 
 				CCxrIntf * pDstCxrIntf = pDstModInst->m_cxrIntfList.back();
 				pDstCxrIntf->m_entryInstr = pDstCxrEntry->m_entryInstr;
-				pDstCxrIntf->m_rtnSelId = rtnSelId;
+				pDstCxrIntf->m_rtnSelId = 0;
 				pDstCxrIntf->m_rtnReplId = pSrcModInst->m_replId;
 				pDstCxrIntf->m_bCxrIntfFields = bCxrIntfFields;
 				pDstCxrIntf->m_bRtnJoin = pCxrCall->m_bCallFork || pCxrCall->m_bXferFork;
@@ -1006,108 +1016,117 @@ void CDsnInfo::InitCxrIntfInfo()
 			}
 		}
 
-		for (size_t rtnIdx = 0; rtnIdx < pSrcMod->m_cxrReturnList.size(); rtnIdx += 1) {
-			CCxrReturn * pCxrReturn = pSrcMod->m_cxrReturnList[rtnIdx];
+		for (int srcInstIdx = 0; srcInstIdx < pSrcMod->m_instSet.GetInstCnt(); srcInstIdx += 1) {
+			CInstance * pSrcModInst1 = pSrcMod->m_instSet.GetInst(srcInstIdx, 0);
 
-			CThreads * pSrcGroup = pCxrReturn->m_pGroup;
-			vector<CField *> * pFieldList = &pCxrReturn->m_paramList;
+			for (size_t rtnIdx = 0; rtnIdx < pSrcModInst1->m_cxrInstReturnList.size(); rtnIdx += 1) {
+				CCxrInstReturn & cxrInstReturn = pSrcModInst1->m_cxrInstReturnList[rtnIdx];
+				CCxrReturn * pCxrReturn = cxrInstReturn.m_pCxrReturn;
 
-			for (size_t callIdx = 0; callIdx < pCxrReturn->m_pairedCallList.size(); callIdx += 1) {
-				CModule * pDstMod = pCxrReturn->m_pairedCallList[callIdx].m_pModInst->m_pMod;
-				int dstCallIdx = pCxrReturn->m_pairedCallList[callIdx].m_callIdx;
-				CCxrCall * pDstCxrCall = pDstMod->m_cxrCallList[dstCallIdx];
-				CThreads * pDstGroup = pDstCxrCall->m_pGroup;
+				CThreads * pSrcGroup = pCxrReturn->m_pGroup;
+				vector<CField *> * pFieldList = &pCxrReturn->m_paramList;
 
-				bool bCxrIntfFields = pDstGroup->m_htIdW.AsInt() > 0 || pDstMod->m_pInstrType != 0
-					|| pFieldList->size() > 0;
+				for (size_t callIdx = 0; callIdx < cxrInstReturn.m_callerList.size(); callIdx += 1) {
+					CInstance * pDstModInst1 = cxrInstReturn.m_callerList[callIdx].m_pModInst;
+					int dstInstIdx = pDstModInst1->m_instId;
 
-				// Loop through instances for both src and dst
-				bool bFoundLinkInfo = false;
-				for (int srcInstIdx = 0; srcInstIdx < pSrcMod->m_instSet.GetInstCnt(); srcInstIdx += 1) {
+					CModule * pDstMod = pDstModInst1->m_pMod;
+					int dstCallIdx = cxrInstReturn.m_callerList[callIdx].m_callIdx;
+
+					CCxrInstCall & cxrInstCall = pDstModInst1->m_cxrInstCallList[dstCallIdx];
+					CCxrCall * pDstCxrCall = cxrInstCall.m_pCxrCall;
+					CThreads * pDstGroup = pDstCxrCall->m_pGroup;
+
+					bool bCxrIntfFields = pDstGroup->m_htIdW.AsInt() > 0 || pDstMod->m_pInstrType != 0
+						|| pFieldList->size() > 0;
+
+					// Loop through instances for both src and dst
+					bool bFoundLinkInfo = false;
 					for (int srcReplIdx = 0; srcReplIdx < pSrcMod->m_instSet.GetReplCnt(srcInstIdx); srcReplIdx += 1) {
-						CModInst * pSrcModInst = pSrcMod->m_instSet.GetInst(srcInstIdx, srcReplIdx);
+						CInstance * pSrcModInst = pSrcMod->m_instSet.GetInst(srcInstIdx, srcReplIdx);
 
 						if (pSrcModInst->m_instName != pDstCxrCall->m_instName) continue;
 
 						int instIdx = 0;
-						for (int dstInstIdx = 0; dstInstIdx < pDstMod->m_instSet.GetInstCnt(); dstInstIdx += 1) {
-							for (int dstReplIdx = 0; dstReplIdx < pDstMod->m_instSet.GetReplCnt(dstInstIdx); dstReplIdx += 1) {
-								CModInst * pDstModInst = pDstMod->m_instSet.GetInst(dstInstIdx, dstReplIdx);
+						for (int dstReplIdx = 0; dstReplIdx < pDstMod->m_instSet.GetReplCnt(dstInstIdx); dstReplIdx += 1) {
+							CInstance * pDstModInst = pDstMod->m_instSet.GetInst(dstInstIdx, dstReplIdx);
 
-								// check if instance file had information for this link
-								if (IsCallDest(pDstModInst, pSrcModInst)) {
+							// check if instance file had information for this link
+							//if (pDstModInst->m_instName != pDstCxrCall->m_instName) continue;
+							if (!IsCallDest(pDstModInst, pSrcModInst)) continue;
 
-									// found link info
-									bFoundLinkInfo = true;
+							// found link info
+							bFoundLinkInfo = true;
 
-									// record replCnt for return dst
-									if (pDstModInst->m_replCnt > pSrcModInst->m_replCnt)
-										pSrcMod->m_maxRtnReplCnt = max(pSrcMod->m_maxRtnReplCnt, pDstModInst->m_replCnt);
+							// record replCnt for return dst
+							if (pDstModInst->m_replCnt > pSrcModInst->m_replCnt)
+								pSrcMod->m_maxRtnReplCnt = max(pSrcMod->m_maxRtnReplCnt, pDstModInst->m_replCnt);
 
-									// insert return link
-									pSrcModInst->m_cxrIntfList.push_back(
-										new CCxrIntf(pDstCxrCall->m_modEntry, pSrcModInst, pSrcGroup, pDstModInst, pDstGroup,
-										CxrReturn, CxrOut, pDstCxrCall->m_queueW.AsInt(), pFieldList));
+							// insert return link
+							pSrcModInst->m_cxrIntfList.push_back(
+								new CCxrIntf(pDstCxrCall->m_modEntry, pSrcModInst, pSrcGroup, pDstModInst, pDstGroup,
+								CxrReturn, CxrOut, pDstCxrCall->m_queueW.AsInt(), pFieldList));
 
-									CCxrIntf * pSrcCxrIntf = pSrcModInst->m_cxrIntfList.back();
-									pSrcCxrIntf->m_rtnIdx = rtnIdx;
-									pSrcCxrIntf->m_callIdx = callIdx;
-									pSrcCxrIntf->m_instIdx = instIdx++;
-									pSrcCxrIntf->m_rtnSelId = callIdx;
-									pSrcCxrIntf->m_rtnReplId = pDstModInst->m_replId;
-									pSrcCxrIntf->m_bCxrIntfFields = bCxrIntfFields;
-									pSrcCxrIntf->m_bRtnJoin = pCxrReturn->m_bRtnJoin;
+							CCxrIntf * pSrcCxrIntf = pSrcModInst->m_cxrIntfList.back();
+							pSrcCxrIntf->m_rtnIdx = rtnIdx;
+							pSrcCxrIntf->m_callIdx = callIdx;
+							pSrcCxrIntf->m_instIdx = instIdx++;
+							pSrcCxrIntf->m_rtnSelId = callIdx;
+							pSrcCxrIntf->m_rtnReplId = pDstModInst->m_replId;
+							pSrcCxrIntf->m_bCxrIntfFields = bCxrIntfFields;
+							pSrcCxrIntf->m_bRtnJoin = pCxrReturn->m_bRtnJoin;
 
-									pDstModInst->m_cxrIntfList.push_back(
-										new CCxrIntf(pDstCxrCall->m_modEntry, pSrcModInst, pSrcGroup, pDstModInst, pDstGroup,
-										CxrReturn, CxrIn, pDstCxrCall->m_queueW.AsInt(), pFieldList));
+							pDstModInst->m_cxrIntfList.push_back(
+								new CCxrIntf(pDstCxrCall->m_modEntry, pSrcModInst, pSrcGroup, pDstModInst, pDstGroup,
+								CxrReturn, CxrIn, pDstCxrCall->m_queueW.AsInt(), pFieldList));
 
-									CCxrIntf * pDstCxrIntf = pDstModInst->m_cxrIntfList.back();
-									pDstCxrIntf->m_bCxrIntfFields = bCxrIntfFields;
-									pDstCxrIntf->m_bRtnJoin = pCxrReturn->m_bRtnJoin;
+							CCxrIntf * pDstCxrIntf = pDstModInst->m_cxrIntfList.back();
+							pDstCxrIntf->m_bCxrIntfFields = bCxrIntfFields;
+							pDstCxrIntf->m_bRtnJoin = pCxrReturn->m_bRtnJoin;
 
-									pDstModInst->m_cxrSrcCnt += 1;
-								}
-							}
+							pSrcCxrIntf->m_pPairedIntf = pDstCxrIntf;
+							pDstCxrIntf->m_pPairedIntf = pSrcCxrIntf;
+
+							pDstModInst->m_cxrSrcCnt += 1;
 						}
 					}
-				}
 
-				if (!bFoundLinkInfo) {
-					// make HIF connection
-					HtlAssert(pSrcMod->m_instSet.GetTotalCnt() == 1 && pDstMod->m_instSet.GetTotalCnt() == 1);
+					if (!bFoundLinkInfo) {
+						// make HIF connection
+						HtlAssert(pSrcMod->m_instSet.GetTotalCnt() == 1 && pDstMod->m_instSet.GetTotalCnt() == 1);
 
-					// 1->1
-					int srcInstIdx = 0;
-					int srcReplIdx = 0;
-					CModInst * pSrcModInst = pSrcMod->m_instSet.GetInst(srcInstIdx, srcReplIdx);
+						// 1->1
+						int srcInstIdx = 0;
+						int srcReplIdx = 0;
+						CInstance * pSrcModInst = pSrcMod->m_instSet.GetInst(srcInstIdx, srcReplIdx);
 
-					int dstInstIdx = 0;
-					int dstReplIdx = 0;
-					CModInst * pDstModInst = pDstMod->m_instSet.GetInst(dstInstIdx, dstReplIdx);
+						int dstInstIdx = 0;
+						int dstReplIdx = 0;
+						CInstance * pDstModInst = pDstMod->m_instSet.GetInst(dstInstIdx, dstReplIdx);
 
-					// insert return link
-					pSrcModInst->m_cxrIntfList.push_back(
-						new CCxrIntf(pDstCxrCall->m_modEntry, pSrcModInst, pSrcGroup, pDstModInst, pDstGroup,
-						CxrReturn, CxrOut, pDstCxrCall->m_queueW.AsInt(), pFieldList));
+						// insert return link
+						pSrcModInst->m_cxrIntfList.push_back(
+							new CCxrIntf(pDstCxrCall->m_modEntry, pSrcModInst, pSrcGroup, pDstModInst, pDstGroup,
+							CxrReturn, CxrOut, pDstCxrCall->m_queueW.AsInt(), pFieldList));
 
-					CCxrIntf * pSrcCxrIntf = pSrcModInst->m_cxrIntfList.back();
-					pSrcCxrIntf->m_rtnIdx = rtnIdx;
-					pSrcCxrIntf->m_callIdx = callIdx;
-					pSrcCxrIntf->m_rtnSelId = callIdx;
-					pSrcCxrIntf->m_rtnReplId = pDstModInst->m_replId;
-					pSrcCxrIntf->m_bCxrIntfFields = bCxrIntfFields;
-					pSrcCxrIntf->m_bRtnJoin = pCxrReturn->m_bRtnJoin;
+						CCxrIntf * pSrcCxrIntf = pSrcModInst->m_cxrIntfList.back();
+						pSrcCxrIntf->m_rtnIdx = rtnIdx;
+						pSrcCxrIntf->m_callIdx = callIdx;
+						pSrcCxrIntf->m_rtnSelId = callIdx;
+						pSrcCxrIntf->m_rtnReplId = pDstModInst->m_replId;
+						pSrcCxrIntf->m_bCxrIntfFields = bCxrIntfFields;
+						pSrcCxrIntf->m_bRtnJoin = pCxrReturn->m_bRtnJoin;
 
-					pDstModInst->m_cxrIntfList.push_back(
-						new CCxrIntf(pDstCxrCall->m_modEntry, pSrcModInst, pSrcGroup, pDstModInst, pDstGroup,
-						CxrReturn, CxrIn, pDstCxrCall->m_queueW.AsInt(), pFieldList));
+						pDstModInst->m_cxrIntfList.push_back(
+							new CCxrIntf(pDstCxrCall->m_modEntry, pSrcModInst, pSrcGroup, pDstModInst, pDstGroup,
+							CxrReturn, CxrIn, pDstCxrCall->m_queueW.AsInt(), pFieldList));
 
-					CCxrIntf * pDstCxrIntf = pDstModInst->m_cxrIntfList.back();
-					pDstCxrIntf->m_bCxrIntfFields = bCxrIntfFields;
-					pDstCxrIntf->m_bRtnJoin = pCxrReturn->m_bRtnJoin;
+						CCxrIntf * pDstCxrIntf = pDstModInst->m_cxrIntfList.back();
+						pDstCxrIntf->m_bCxrIntfFields = bCxrIntfFields;
+						pDstCxrIntf->m_bRtnJoin = pCxrReturn->m_bRtnJoin;
 
-					pDstModInst->m_cxrSrcCnt += 1;
+						pDstModInst->m_cxrSrcCnt += 1;
+					}
 				}
 			}
 		}
@@ -1121,7 +1140,7 @@ void CDsnInfo::InitCxrIntfInfo()
 		// loop through the instances for each module
 		for (int instIdx = 0; instIdx < pMod->m_instSet.GetInstCnt(); instIdx += 1) {
 			for (int replIdx = 0; replIdx < pMod->m_instSet.GetReplCnt(instIdx); replIdx += 1) {
-				CModInst * pModInst = pMod->m_instSet.GetInst(instIdx, replIdx);
+				CInstance * pModInst = pMod->m_instSet.GetInst(instIdx, replIdx);
 
 				// loop through the cxr interfaces looking for inbound return
 				for (size_t rtnIntfIdx = 0; rtnIntfIdx < pModInst->m_cxrIntfList.size(); rtnIntfIdx += 1) {
@@ -1130,7 +1149,7 @@ void CDsnInfo::InitCxrIntfInfo()
 					if (pCxrRtnIntf->m_cxrDir != CxrIn) continue;
 					if (pCxrRtnIntf->m_cxrType != CxrReturn) continue;
 
-					// loop through csr interfaces looking for matching outbound call
+					// loop through cxr interfaces looking for matching outbound call
 					size_t callIntfIdx;
 					for (callIntfIdx = 0; callIntfIdx < pModInst->m_cxrIntfList.size(); callIntfIdx += 1) {
 						CCxrIntf * pCxrCallIntf = pModInst->m_cxrIntfList[callIntfIdx];
@@ -1157,7 +1176,7 @@ void CDsnInfo::InitCxrIntfInfo()
 		// loop through the instances for each module
 		for (int instIdx = 0; instIdx < pMod->m_instSet.GetInstCnt(); instIdx += 1) {
 			for (int replIdx = 0; replIdx < pMod->m_instSet.GetReplCnt(instIdx); replIdx += 1) {
-				CModInst * pModInst = pMod->m_instSet.GetInst(instIdx, replIdx);
+				CInstance * pModInst = pMod->m_instSet.GetInst(instIdx, replIdx);
 
 				// loop through the cxr interfaces for a module's instance
 				for (size_t intfIdx = 0; intfIdx < pModInst->m_cxrIntfList.size(); intfIdx += 1) {
@@ -1267,7 +1286,7 @@ void CDsnInfo::InitCxrIntfInfo()
 		// loop through each modInst and find returns with multiple destinations
 		for (int instIdx = 0; instIdx < pMod->m_instSet.GetInstCnt(); instIdx += 1) {
 			for (int replIdx = 0; replIdx < pMod->m_instSet.GetReplCnt(instIdx); replIdx += 1) {
-				CModInst * pModInst = pMod->m_instSet.GetInst(instIdx, replIdx);
+				CInstance * pModInst = pMod->m_instSet.GetInst(instIdx, replIdx);
 
 				///////////////////////////////////////////////////////////
 				// generate Return_func routine
@@ -1335,7 +1354,7 @@ void CDsnInfo::InitCxrIntfInfo()
 		printf("Fatal - previous errors prevent file generation\n");
 }
 
-bool CDsnInfo::IsCallDest(CModInst * pSrcModInst, CModInst * pDstModInst)
+bool CDsnInfo::IsCallDest(CInstance * pSrcModInst, CInstance * pDstModInst)
 {
 	static bool bErrorReported = false;
 
@@ -1373,7 +1392,7 @@ bool CDsnInfo::IsCallDest(CModInst * pSrcModInst, CModInst * pDstModInst)
 	}
 }
 
-void CDsnInfo::GenModCxrStatements(CModInst * pModInst)
+void CDsnInfo::GenModCxrStatements(CInstance * pModInst)
 {
 	CModule * pMod = pModInst->m_pMod;
 
@@ -1453,9 +1472,9 @@ void CDsnInfo::GenModCxrStatements(CModInst * pModInst)
 
 				} else {
 					cxrPostReg.Append("%sr_t%d_htPriv.m_rtnSel == %d && r_%s_%sAvlCntZero%s",
-						pSeparator, pMod->m_execStg, pCxrIntf->m_callIdx,
+						pSeparator, pMod->m_execStg,
+						pCxrIntf->m_callIdx,
 						pCxrIntf->GetPortNameSrcToDstLc(), pCxrIntf->GetIntfName(), pCxrIntf->GetPortReplIndex());
-
 				}
 				pSeparator = " || ";
 			}

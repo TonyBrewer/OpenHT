@@ -91,7 +91,7 @@ void CDsnInfo::GenMsvsProjectFiles()
 				msvs.AddFile(Include, string("..\\ht\\sysc\\Pers" + unitNameUc + mod.m_modName.Uc() + ".h"), "ht\\sysc");
 
 			for (int modInstIdx = 0; modInstIdx < mod.m_instSet.GetInstCnt(); modInstIdx += 1) {
-				CModInst * pModInst = mod.m_instSet.GetInst(modInstIdx);
+				CInstance * pModInst = mod.m_instSet.GetInst(modInstIdx);
 
 				msvs.AddFile(Include, string("..\\ht\\sysc\\Pers" + unitNameUc + pModInst->m_fileName.Uc() + ".h"), "ht\\sysc");
 
@@ -165,7 +165,7 @@ void CDsnInfo::GenMsvsProjectFiles()
 			if (!mod.m_bIsUsed || mod.m_bHostIntf) continue;
 
 			for (int modInstIdx = 0; modInstIdx < mod.m_instSet.GetInstCnt(); modInstIdx += 1) {
-				CModInst * pModInst = mod.m_instSet.GetInst(modInstIdx);
+				CInstance * pModInst = mod.m_instSet.GetInst(modInstIdx);
 
 				msvs.AddFile(Compile, string("..\\ht\\sysc\\Pers" + unitNameUc + pModInst->m_fileName.Uc() + ".cpp"), "ht\\sysc");
 
@@ -248,7 +248,7 @@ void CDsnInfo::GenMsvsProjectFiles()
 			bool bGenFx = mod.m_modName == g_appArgs.GetFxModName();
 
 			for (int modInstIdx = 0; modInstIdx < mod.m_instSet.GetInstCnt(); modInstIdx += 1) {
-				CModInst * pModInst = mod.m_instSet.GetInst(modInstIdx);
+				CInstance * pModInst = mod.m_instSet.GetInst(modInstIdx);
 
 				if (pModInst->m_replId > 0) continue;
 

@@ -774,7 +774,7 @@ void CDsnInfo::InitAndValidateModMif()
 
 		for (int instIdx = 0; instIdx < pMod->m_instSet.GetInstCnt(); instIdx += 1) {
 			for (int replIdx = 0; replIdx < pMod->m_instSet.GetReplCnt(instIdx); replIdx += 1) {
-				CModInst * pModInst = pMod->m_instSet.GetInst(instIdx, replIdx);
+				CInstance * pModInst = pMod->m_instSet.GetInst(instIdx, replIdx);
 
 				for (size_t memPortIdx = 0; memPortIdx < pModInst->m_instParams.m_memPortList.size(); memPortIdx += 1) {
 					int instMemPort = pModInst->m_instParams.m_memPortList[memPortIdx];
@@ -1088,7 +1088,7 @@ void CDsnInfo::ParseVarRefSpec(CLineInfo & lineInfo, string const & name,
 	pDstType = FindType(fldType, fldWidth, lineInfo);
 }
 
-void CDsnInfo::GenModMifStatements(CModInst * pModInst)
+void CDsnInfo::GenModMifStatements(CInstance * pModInst)
 {
 	CModule * pMod = pModInst->m_pMod;
 

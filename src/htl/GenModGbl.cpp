@@ -1721,7 +1721,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 	}
 }
 
-void CDsnInfo::GenModNgvStatements(CModInst * pModInst)
+void CDsnInfo::GenModNgvStatements(CInstance * pModInst)
 {
 	CModule * pMod = pModInst->m_pMod;
 
@@ -1795,7 +1795,7 @@ void CDsnInfo::GenModNgvStatements(CModInst * pModInst)
 		}
 	}
 
-	CModInst * pModInst = pMod->m_instSet.GetInst(0);
+	CInstance * pModInst = pMod->m_instSet.GetInst(0);
 
 	if (bInstrWrite) {
 		// ht completion struct

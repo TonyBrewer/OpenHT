@@ -111,7 +111,7 @@ struct CHtSelName {
 	string m_replIndex;
 };
 
-void CDsnInfo::GenModIplStatements(CModInst * pModInst)
+void CDsnInfo::GenModIplStatements(CInstance * pModInst)
 {
 	CModule * pMod = pModInst->m_pMod;
 	string vcdModName = VA("Pers%s", pModInst->m_instName.Uc().c_str());
