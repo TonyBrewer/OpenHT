@@ -3,23 +3,7 @@
 
 void CPersModC::PersModC()
 {
-	if (PR_htValid) {
-		switch (PR_htInst) {
-		case MODC:
-		{
-			if (SendReturnBusy_modC()) {
-				HtRetry();
-				break;
-			}
-
-			// Return to host interface
-			SendReturn_modC();
-		}
-		break;
-		default:
-			assert(0);
-		}
-	}
+	HtAssert(!PR_htValid, 0);
 
 	if (!GR_htReset && !RecvMsgBusy_BtoC()) {
 		ht_uint4 msg = RecvMsg_BtoC();

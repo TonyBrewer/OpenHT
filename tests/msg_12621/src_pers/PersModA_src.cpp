@@ -3,23 +3,7 @@
 
 void CPersModA::PersModA()
 {
-	if (PR_htValid) {
-		switch (PR_htInst) {
-		case MODA:
-		{
-			if (SendReturnBusy_modA()) {
-				HtRetry();
-				break;
-			}
-
-			// Return to host interface
-			SendReturn_modA();
-		}
-		break;
-		default:
-			assert(0);
-		}
-	}
+	HtAssert(!PR_htValid, 0);
 
 	if (!GR_htReset && !RecvMsgBusy_CtlToA(2)) {
 		ht_uint4 msg = RecvMsg_CtlToA(2);

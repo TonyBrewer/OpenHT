@@ -4,23 +4,7 @@
 
 void CPersModD::PersModD()
 {
-	if (PR_htValid) {
-		switch (PR_htInst) {
-		case MODD:
-		{
-			if (SendReturnBusy_modD()) {
-				HtRetry();
-				break;
-			}
-
-			// Return to host interface
-			SendReturn_modD();
-		}
-		break;
-		default:
-			assert(0);
-		}
-	}
+	HtAssert(!PR_htValid, 0);
 
 	for (int i = 0; i < C_REPL/D_REPL; i += 1) {
 		if (!GR_htReset && !RecvMsgBusy_CtoD(i)) {

@@ -8,11 +8,6 @@
 
 dsnInfo.AddModule(name=ctl, htIdW=CTL_HTID_W);
 ctl.AddInstr(name=CTL_INIT);
-ctl.AddInstr(name=CTL_A);
-ctl.AddInstr(name=CTL_B);
-ctl.AddInstr(name=CTL_C);
-ctl.AddInstr(name=CTL_D);
-ctl.AddInstr(name=CTL_E);
 ctl.AddInstr(name=CTL_SEND_MSG);
 ctl.AddInstr(name=CTL_RTN);
 

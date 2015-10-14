@@ -1081,7 +1081,7 @@ void HtdFile::ParseModuleMethods()
 				{ "memSrc", &memSrc, false, ePrmIdent, 0, 0 },
 				{ "memPort", &memPort, false, ePrmIntList, 0, 0 },
 				{ "tag", &pTag, false, ePrmType, 0, 0 },
-				{ "rspGrpW", &rspGrpW, false, ePrmInteger, 0, 0 },
+				//{ "rspGrpW", &rspGrpW, false, ePrmInteger, 0, 0 },
 				{ 0, 0, 0, ePrmUnknown, 0, 0 }
 		};
 

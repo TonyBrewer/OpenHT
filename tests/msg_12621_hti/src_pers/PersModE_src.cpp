@@ -4,25 +4,7 @@
 
 void CPersModE::PersModE()
 {
-	if (PR_htValid) {
-		switch (PR_htInst) {
-		case MODE:
-		{
-			if (SendReturnBusy_modE()) {
-				HtRetry();
-				break;
-			}
-
-			S_msgRcvd = 0;
-
-			// Return to host interface
-			SendReturn_modE();
-		}
-		break;
-		default:
-			assert(0);
-		}
-	}
+	HtAssert(!PR_htValid, 0);
 
 	if (!GR_htReset && !RecvMsgBusy_AtoE()) {
 		ht_uint4 msg = RecvMsg_AtoE();
