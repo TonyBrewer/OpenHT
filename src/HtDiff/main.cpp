@@ -57,7 +57,7 @@ bool bIgnoreWhiteSpace = true;
 
 int main(int argc, char **argv)
 {
-	printf("Version 1.05\n");
+	printf("Version 1.06\n");
 
 	string goldDir = "C:/HtGolden";
 
@@ -457,10 +457,15 @@ int main(int argc, char **argv)
 			pCurHtProj = &projList[num];
 
 		} else if (strcmp(cmd, "sa") == 0) {
+
+			printf("Scan all projects and list differences\n");
 			for (size_t pi = 0; pi < projList.size(); pi += 1) {
 				CHtProj & htProj = projList[pi];
 
 				ScanProject(htProj);
+
+				if (projList[pi].m_projStatus == "   ") continue;
+				printf("  %2d   %s  %s\n", (int)pi, projList[pi].m_projStatus.c_str(), projList[pi].m_projName.c_str());
 			}
 
 		} else if (strcmp(cmd, "df") == 0) {
