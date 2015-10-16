@@ -8,10 +8,9 @@ LIB_DIR  = lib_pers
 DIR_HPCC = import/hpcc
 EXE_HPCC = $(DIR_HPCC)/hpcc
 
-ifneq ($(findstring hc,$(CNY_PDK_PLATFORM)),)
-export AE_LIM = 4
-else
 export AE_LIM = 1
+ifneq ($(findstring hc,$(CNY_PDK_PLATFORM)),)
+app:export AE_LIM = 4
 endif
 
 .PHONY: app
