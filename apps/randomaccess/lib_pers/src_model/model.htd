@@ -1,0 +1,13 @@
+dsnInfo.AddModule(name=model);
+model.AddInstr(name=MODEL);
+
+model.AddHostMsg(dir=in, name=SET_INITSEED0);
+model.AddHostMsg(dir=in, name=SET_INITSEED1);
+
+model.AddHostMsg(dir=in, name=OP_SIZE);
+model.AddHostMsg(dir=in, name=OP_UPDCNT);
+model.AddHostMsg(dir=in, name=OP_BASE);
+
+model.AddEntry(func=htmain, instr=MODEL, host=true);
+
+model.AddReturn(func=htmain);

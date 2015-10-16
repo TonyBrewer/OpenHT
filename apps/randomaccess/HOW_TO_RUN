@@ -1,0 +1,43 @@
+--------------------------------------------------------------------------------
+cny_gups example
+--------------------------------------------------------------------------------
+
+1. INSTALL
+
+ Nothing to do.
+ Note that the hpcc GUPS code requires the following packages:
+        openmpi, openmpi-devel, blas, blas-devel
+ Relative to default devel env, then:
+     setenv PATH ${PATH}:/usr/lib64/openmpi/bin
+
+2. BUILD
+
+The cny_gups project is an example of how the library build flow can be used to 
+build the application separately from the HT-specific portion of the code.  The 
+HT code is compiled first, then linked into the main application.
+
+Build the HT libraries and applications:
+
+  make app - build library for the application; then build the app
+  make sysc - build library for the systemC simulation; then build the app
+  make model - build library for the functional model simulation; then build app
+  make vsim - build library for the verilog simulation; then build app
+  make pers - create the binary fpga image
+
+3. RUN
+
+Setup:
+  edit hpccinf.txt.* as needed to customize your run
+    hpccinf.txt.single: runs a single node
+    hpccinf.txt.multi: runs on multiple nodes (ie. multiple Wolverines)
+
+  set hpccinf.txt link appropriately
+
+Execute:
+  ./app (or ./app_sysc or ./app_vsim or ./app_model)
+  or
+  mpirun -np 1 app (or mpirun -np 1 [app|app_sysc|app_vsim|app_model])
+    
+
+  or, for multi-coproc environment:
+  mpirun -np 4 app
