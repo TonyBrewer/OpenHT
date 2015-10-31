@@ -854,6 +854,7 @@ void HtdFile::ParseModuleMethods()
 		string fork = "false";
 		string queueW = "5";
 		string dest = "auto";
+		vector<pair<string, string> > paramPairList;
 
 		CParamList params[] = {
 			{ "func", &modEntry, false, ePrmIdent, 0, 0, 1 },
@@ -864,6 +865,7 @@ void HtdFile::ParseModuleMethods()
 			{ "fork", &fork, false, ePrmIdent, 0, 0 },
 			{ "queueW", &queueW, false, ePrmInteger, 0, 0 },
 			{ "dest", &dest, false, ePrmIdent, 0, 0 },
+			{ "", &paramPairList, false, ePrmParamLst, 0, 0, -1 },
 			{ 0, 0, 0, ePrmUnknown, 0, 0 }
 		};
 
@@ -896,11 +898,10 @@ void HtdFile::ParseModuleMethods()
 			CPreProcess::ParseMsg(Error, "duplicate call name '%s'", callName.c_str());
 		else {
 			m_pOpenMod->m_callList.insert(callName);
-			m_pOpenCall = m_pDsnInfo->AddCall(m_pOpenMod->m_pModule, modEntry, callName, instName, bCall, bFork, queueW, dest);
+			m_pOpenCall = m_pDsnInfo->AddCall(m_pOpenMod->m_pModule, modEntry, callName, instName, bCall, bFork, queueW, dest, paramPairList);
 			m_pDsn->m_callInstParamList.clear();
 		}
 
-		m_pParseMethod = &HtdFile::ParseCallMethods;
 		m_pLex->GetNextTk();
 
 	} else if (m_pLex->GetTkString() == "AddTransfer") {
@@ -1683,35 +1684,6 @@ void HtdFile::ParseReturnMethods()
 		CPreProcess::ParseMsg(Error, "Expected an AddReturn method");
 }
 
-void HtdFile::ParseCallMethods()
-{
-	if (m_pLex->GetTkString() == "AddInstParam") {
-
-		string name;
-		string value;
-
-		CParamList params[] = {
-			{ "name", &name, true, ePrmParamStr, 0, 0 },
-			{ "value", &value, true, ePrmParamStr, 0, 0 },
-			{ 0, 0, 0, ePrmUnknown, 0, 0 }
-		};
-
-		if (!ParseParameters(params))
-			CPreProcess::ParseMsg(Error, "expected AddCall(...).AddInstParam( name=<name>, value=<value> )");
-
-		if (m_pDsn->m_callInstParamList.isInList(name))
-			CPreProcess::ParseMsg(Error, "duplicate instParam name '%s'", name.c_str());
-		else {
-			m_pDsn->m_callInstParamList.insert(name);
-			m_pDsnInfo->AddCallInstParam(m_pOpenCall, name, value);
-		}
-
-		m_pLex->GetNextTk();
-
-	} else
-		CPreProcess::ParseMsg(Error, "Expected an AddCall method");
-}
-
 void HtdFile::ParseGlobalMethods()
 {
 	if (m_pLex->GetTkString() == "AddVar") {
@@ -2161,9 +2133,11 @@ bool HtdFile::ParseParameters(CParamList *params)
 	EToken tk;
 	while ((tk = m_pLex->GetNextTk()) == eTkIdent) {
 		int i;
-		for (i = 0; params[i].m_pName; i += 1)
+		for (i = 0; params[i].m_pName && params[i].m_pName[0] != '\0'; i += 1)
 			if (m_pLex->GetTkString() == params[i].m_pName)
 				break;
+
+		string paramName = m_pLex->GetTkString();
 
 		if (params[i].m_pName == 0) {
 			bError = true;
@@ -2173,7 +2147,7 @@ bool HtdFile::ParseParameters(CParamList *params)
 
 		int dupIdx = params[i].m_dupIdx > 0 ? params[i].m_dupIdx : i;
 
-		if (params[dupIdx].m_bPresent) {
+		if (params[dupIdx].m_bPresent && params[dupIdx].m_pName[0] != '\0') {
 			bError = true;
 			CPreProcess::ParseMsg(Error, "duplicate parameters '%s'", m_pLex->GetTkString().c_str());
 			break;
@@ -2304,7 +2278,6 @@ bool HtdFile::ParseParameters(CParamList *params)
 
 		} else if (params[i].m_paramType == ePrmInt) {
 
-
 			string intParamStr = m_pLex->GetExprStr(',');
 			tk = m_pLex->GetNextTk();
 
@@ -2393,6 +2366,19 @@ bool HtdFile::ParseParameters(CParamList *params)
 			}
 
 			tk = m_pLex->GetNextTk();
+
+		} else if (params[i].m_paramType == ePrmParamLst) {
+
+			vector<pair<string, string> > & paramPairList = *(vector<pair<string, string> > *)params[i].m_pValue;
+			pair<string, string> param;
+
+			param.first = paramName;
+			param.second = m_pLex->GetExprStr(',');
+
+			paramPairList.push_back(param);
+
+			tk = m_pLex->GetNextTk();
+
 		} else {
 			assert(0);
 			*(string *)params[i].m_pValue = m_pLex->GetTkString();
@@ -2617,6 +2603,7 @@ bool HtdFile::ParseRandomParameter(CParamList * pParam)
 			valueStr = rndParamList[rndIdx] ? "true" : "false";
 		} else
 			*(bool *)pParam->m_pValue = bDefParam;
+
 	}
 
 	if (g_appArgs.IsRndTestEnabled())

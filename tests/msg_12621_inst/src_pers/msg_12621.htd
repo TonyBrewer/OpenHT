@@ -1,0 +1,109 @@
+#include "Pers_src.h"
+
+// common defines / types
+#define CTL_HTID_W 5
+
+////////////////////////////////////////////////////
+// Inc Module
+
+dsnInfo.AddModule(name=ctl, htIdW=CTL_HTID_W);
+ctl.AddInstr(name=CTL_INIT);
+ctl.AddInstr(name=CTL_SEND_MSG_0E);
+ctl.AddInstr(name=CTL_SEND_MSG_1E);
+ctl.AddInstr(name=CTL_RTN);
+
+ctl.AddPrivate()
+	.AddVar(type=uint8_t, name=elemCnt)
+	;
+
+ctl.AddEntry(func=htmain, instr=CTL_INIT, host=true)
+	.AddParam(hostType=uint32_t, type=uint8_t, name=elemCnt)
+	;
+
+ctl.AddReturn(func=htmain)
+	.AddParam(hostType=uint32_t, type=uint8_t, name=elemCnt)
+	;
+
+ctl.AddShared()
+	.AddVar(type=bool, name=msgRcvd0E)
+	.AddVar(type=bool, name=msgRcvd1E)
+	;
+
+ctl.AddCall(func=modA, callName=mod0A, instName=mod0A);
+ctl.AddCall(func=modB, callName=mod0B, instName=mod0B);
+ctl.AddCall(func=modC, callName=mod0C, instName=mod0C);
+ctl.AddCall(func=modD, callName=mod0D, instName=mod0D);
+ctl.AddCall(func=modE, callName=mod0E, instName=mod0E);
+
+ctl.AddCall(func=modA, callName=mod1A, instName=mod1A);
+ctl.AddCall(func=modB, callName=mod1B, instName=mod1B);
+ctl.AddCall(func=modC, callName=mod1C, instName=mod1C);
+ctl.AddCall(func=modD, callName=mod1D, instName=mod1D);
+ctl.AddCall(func=modE, callName=mod1E, instName=mod1E);
+
+ctl.AddMsgIntf(dir=out, name=CtlTo0A, type=ht_uint4, dimen=3, autoConn=false );
+ctl.AddMsgIntf(dir=in, name=E0toCtl, type=ht_uint4, autoConn=false );
+
+ctl.AddMsgIntf(dir=out, name=CtlTo1A, type=ht_uint4, dimen=3, autoConn=false );
+ctl.AddMsgIntf(dir=in, name=E1toCtl, type=ht_uint4, autoConn=false );
+
+
+dsnInfo.AddModule(name=modA);
+modA.AddInstParam(name=ATOB_FO, default=1);
+modA.AddInstr(name=MODA);
+modA.AddEntry(func=modA, instr=MODA);
+modA.AddReturn(func=modA);
+modA.AddMsgIntf(dir=in, name=CtlToA, type=ht_uint4, dimen=3, autoConn=false );
+modA.AddMsgIntf(dir=out, name=AtoE, type=ht_uint4 );
+modA.AddMsgIntf(dir=out, name=AtoB, type=ht_uint4, autoConn=false );
+
+
+dsnInfo.AddModule(name=modB);
+modB.AddInstParam(name=BTOC_FO, default=1);
+modB.AddInstr(name=MODB);
+modB.AddEntry(func=modB, instr=MODB);
+modB.AddReturn(func=modB);
+modB.AddMsgIntf(dir=in, name=AtoB, type=ht_uint4, queueW=5, autoConn=false );
+modB.AddMsgIntf(dir=out, name=BtoC, type=ht_uint4 );
+modB.AddMsgIntf(dir=out, name=BtoD, type=ht_uint4, dimen=2 );
+
+
+dsnInfo.AddModule(name=modC);
+modC.AddInstParam(name=BTOC_FI, default=1);
+modC.AddInstr(name=MODC);
+modC.AddEntry(func=modC, instr=MODC);
+modC.AddReturn(func=modC);
+modC.AddMsgIntf(dir=in, name=BtoC, type=ht_uint4 );
+modC.AddMsgIntf(dir=out, name=CtoD, type=ht_uint4 );
+
+modC.AddShared()
+	.AddVar(type=ht_uint1, name=msgRcvd)
+	;
+
+
+dsnInfo.AddModule(name=modD);
+modD.AddInstParam(name=CTOD_FI, default=1);
+modD.AddInstr(name=MODD);
+modD.AddEntry(func=modD, instr=MODD);
+modD.AddReturn(func=modD);
+modD.AddMsgIntf(dir=in, name=CtoD, type=ht_uint4 );
+modD.AddMsgIntf(dir=in, name=BtoD, type=ht_uint4, dimen=2 );
+modD.AddMsgIntf(dir=out, name=DtoE, type=ht_uint4, dimen=4, autoConn=false );
+
+modD.AddShared()
+	.AddVar(type=ht_uint4, name=msgRcvd)
+	;
+
+
+dsnInfo.AddModule(name=modE);
+modE.AddInstParam(name=DTOE_FI, default=1);
+modE.AddInstr(name=MODE);
+modE.AddEntry(func=modE, instr=MODE);
+modE.AddReturn(func=modE);
+modE.AddMsgIntf(dir=in, name=DtoE, type=ht_uint4, dimen=4, queueW=5, autoConn=false );
+modE.AddMsgIntf(dir=in, name=AtoE, type=ht_uint4 );
+modE.AddMsgIntf(dir=out, name=EtoCtl, type=ht_uint4, autoConn=false );
+
+modE.AddShared()
+	.AddVar(type=ht_uint3, name=msgRcvd)
+	;

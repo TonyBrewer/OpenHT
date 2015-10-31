@@ -55,8 +55,8 @@ void CDsnInfo::GenMsvsProjectFiles()
 
 	bool bAeNext = false;
 	bool bAePrev = false;
-	for (size_t connIdx = 0; connIdx < getMsgIntfConnListSize(); connIdx += 1) {
-		HtiFile::CMsgIntfConn * pMsgIntfConn = getMsgIntfConn(connIdx);
+	for (size_t connIdx = 0; connIdx < GetMsgIntfConnListSize(); connIdx += 1) {
+		HtiFile::CMsgIntfConn * pMsgIntfConn = GetMsgIntfConn(connIdx);
 
 		if (pMsgIntfConn->m_aeNext)
 			bAeNext = true;

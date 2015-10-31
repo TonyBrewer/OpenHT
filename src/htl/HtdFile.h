@@ -57,7 +57,7 @@ public:
 
 public:
 
-	enum EParamType { ePrmInteger, ePrmInt, ePrmIdent, ePrmIntRange, ePrmBoolean, ePrmType, ePrmIntList, ePrmString, ePrmParamStr, ePrmIdentRef, ePrmUnknown };
+	enum EParamType { ePrmInteger, ePrmInt, ePrmIdent, ePrmIntRange, ePrmBoolean, ePrmType, ePrmIntList, ePrmString, ePrmParamStr, ePrmIdentRef, ePrmParamLst, ePrmUnknown };
 
 	struct CParamList {
 		const char *m_pName;
@@ -185,7 +185,6 @@ private:
 	void ParseMifRdMethods();
 	void ParseMifWrMethods();
 	void ParseIhmMethods();
-	void ParseCallMethods();
 
 	bool ParseParameters(CParamList *params);
 	bool ParseIntRange(vector<int> * pIntList);

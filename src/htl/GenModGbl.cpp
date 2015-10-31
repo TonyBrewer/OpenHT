@@ -1795,7 +1795,7 @@ void CDsnInfo::GenModNgvStatements(CInstance * pModInst)
 		}
 	}
 
-	CInstance * pModInst = pMod->m_instSet.GetInst(0);
+	//CInstance * pModInst = pMod->m_instSet.GetInst(0);
 
 	if (bInstrWrite) {
 		// ht completion struct

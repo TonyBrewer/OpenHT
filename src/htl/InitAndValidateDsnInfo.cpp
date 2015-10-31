@@ -1656,13 +1656,13 @@ void CDsnInfo::DrawModuleCmdRelationships()
 			// msg
 			for (size_t outIdx = 0; outIdx < mod.m_msgIntfList.size(); outIdx += 1) {
 				CMsgIntf * pOutMsgIntf = mod.m_msgIntfList[outIdx];
-				if (pOutMsgIntf->m_dir != "out") continue;
+				if (pOutMsgIntf->m_bInBound) continue;
 				for (size_t modIdx2 = 0; modIdx2 < m_modList.size(); modIdx2 += 1) {
 					CModule &mod2 = *m_modList[modIdx2];
 					if (!mod2.m_bIsUsed) continue;
 					for (size_t msgIdx = 0; msgIdx < mod2.m_msgIntfList.size(); msgIdx += 1) {
 						CMsgIntf * pMsgIntf = mod2.m_msgIntfList[msgIdx];
-						if (pMsgIntf->m_dir != "in") continue;
+						if (!pMsgIntf->m_bInBound) continue;
 						if (pMsgIntf->m_name != pOutMsgIntf->m_name) continue;
 
 						int destUnitCnt = (int)mod2.m_instSet.GetReplCnt(0);

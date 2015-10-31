@@ -29,7 +29,7 @@ int main(int argc, char const **argv)
 
 	g_pDsnInfo->LoadDefineList();
 
-	g_pDsnInfo->loadHtiFile(g_appArgs.GetInstanceFile());
+	g_pDsnInfo->LoadHtiFile(g_appArgs.GetInstanceFile());
 
 	if (CLex::GetParseErrorCnt() > 0)
 		CPreProcess::ParseMsg(Fatal, "Previous errors prevent generation of files");

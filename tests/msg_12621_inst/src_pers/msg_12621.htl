@@ -1,0 +1,14 @@
+// -cl $(HtToolsPath)/tests/msg_12621_inst/src_pers/msg_12621.htl
+-wd $(HtToolsPath)/tests/msg_12621_inst/msvs12/
+
+-cp wx-690
+-ac 1
+-uc 2
+//-vcd
+-I ../src
+-I ../src_pers
+-D_HTL
+-pn msg_12621_inst
+-if ../src_pers/msg_12621.hti
+../src_pers/msg_12621.htd
+../ht/sysc

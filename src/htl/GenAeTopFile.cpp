@@ -20,8 +20,8 @@ void CDsnInfo::GenerateAeTopFile()
 
 	HtiFile::CMsgIntfConn * pMicAeNext = 0;
 	HtiFile::CMsgIntfConn * pMicAePrev = 0;
-	for (size_t connIdx = 0; connIdx < getMsgIntfConnListSize(); connIdx += 1) {
-		HtiFile::CMsgIntfConn * pMsgIntfConn = getMsgIntfConn(connIdx);
+	for (size_t connIdx = 0; connIdx < GetMsgIntfConnListSize(); connIdx += 1) {
+		HtiFile::CMsgIntfConn * pMsgIntfConn = GetMsgIntfConn(connIdx);
 
 		if (pMsgIntfConn->m_aeNext)
 			pMicAeNext = pMsgIntfConn;
@@ -141,142 +141,154 @@ void CDsnInfo::GenerateAeTopFile()
 
 				if (pMsgIntf->m_bAutoConn || !pMsgIntf->m_bAeConn) continue;
 
-				int unitCnt = g_appArgs.GetAeUnitCnt();
-				int modReplCnt = pMod->m_instSet.GetReplCnt(0);
-				int msgFanCnt = max(1, pMsgIntf->m_fanCnt.AsInt());
-				int msgDimenCnt = max(1, pMsgIntf->m_dimen.AsInt());
+				for (int instIdx = 0; instIdx < pMod->m_instSet.GetInstCnt(); instIdx += 1) {
+					CMsgIntfInst & msgIntfInst = pMsgIntf->m_msgIntfInstList[instIdx];
 
-				int msgIntfInstCnt = unitCnt * modReplCnt * msgFanCnt * msgDimenCnt;
+					int unitCnt = g_appArgs.GetAeUnitCnt();
+					int modReplCnt = pMod->m_instSet.GetReplCnt(instIdx);
+					int msgDimenCnt = max(1, pMsgIntf->m_dimen.AsInt());
 
-				HtlAssert(msgIntfInstCnt == (int)pMsgIntf->m_msgIntfInstList.size());
+					if (!pMsgIntf->m_bInBound) {
 
-				if (pMsgIntf->m_dir == "out") {
+						int srcFanout = pMsgIntf->m_msgIntfInstList[instIdx].m_srcFanout;
 
-					vector<CHtString> dimenList;
-					int dimenCntIdx = -1;
-					if (pMsgIntf->m_dimen.AsInt() > 0) {
-						dimenCntIdx = 0;
-						dimenList.push_back(pMsgIntf->m_dimen);
-					}
-					int fanCntIdx = -1;
-					if (pMsgIntf->m_fanCnt.AsInt() > 0) {
-						fanCntIdx = (int)dimenList.size();
-						dimenList.push_back(pMsgIntf->m_fanCnt);
-					}
+						int msgIntfInstCnt = unitCnt * modReplCnt * srcFanout * msgDimenCnt;
+						HtlAssert(msgIntfInstCnt == (int)msgIntfInst.m_connList.size());
 
-					HtlAssert(pMod->m_instSet.GetInstCnt() == 1);
-					for (int replIdx = 0; replIdx < pMod->m_instSet.GetReplCnt(0); replIdx += 1) {
-						CHtString &modInstName = pMod->m_instSet.GetInst(0, replIdx)->m_replInstName;
+						vector<CHtString> dimenList;
+						int dimenCntIdx = -1;
+						if (pMsgIntf->m_dimen.AsInt() > 0) {
+							dimenCntIdx = 0;
+							dimenList.push_back(pMsgIntf->m_dimen);
+						}
+						int fanCntIdx = -1;
+						if (pMsgIntf->IsFanCntSet(instIdx)) {
+							fanCntIdx = (int)dimenList.size();
+							dimenList.push_back(CHtString(pMsgIntf->GetFanCnt(instIdx)));
+						}
 
-						vector<int> portRefList(dimenList.size());
-						do {
-							string portIdx = IndexStr(portRefList);
+						for (int replIdx = 0; replIdx < pMod->m_instSet.GetReplCnt(instIdx); replIdx += 1) {
+							CHtString &modInstName = pMod->m_instSet.GetInst(instIdx, replIdx)->m_replInstName;
 
-							int msgDimenIdx = dimenCntIdx < 0 ? 0 : portRefList[dimenCntIdx];
-							int msgFanIdx = fanCntIdx < 0 ? 0 : portRefList[fanCntIdx];
-							int msgIntfInstIdx = ((unitIdx * modReplCnt + replIdx) * msgFanCnt + msgFanIdx) * msgDimenCnt + msgDimenIdx;
-							CMsgIntfConn * pConn = pMsgIntf->m_msgIntfInstList[msgIntfInstIdx][0];
+							vector<int> portRefList(dimenList.size());
+							do {
+								string portIdx = IndexStr(portRefList);
+
+								int msgDimenIdx = dimenCntIdx < 0 ? 0 : portRefList[dimenCntIdx];
+								int msgFanIdx = fanCntIdx < 0 ? 0 : portRefList[fanCntIdx];
+								int msgIntfInstIdx = ((unitIdx * modReplCnt + replIdx) * srcFanout + msgFanIdx) * msgDimenCnt + msgDimenIdx;
+								CMsgIntfConn * pConn = msgIntfInst.m_connList[msgIntfInstIdx][0];
+
+								string sigMsgRdy, sigMsg, sigMsgFull;
+								if (pConn->m_aeNext) {
+									sigMsgRdy = monMsgRdy = VA("%s%d%sToMonSb_miMsgRdy", m_unitName.Lc().c_str(), unitIdx, modInstName.Uc().c_str());
+									sigMsg = monMsg = VA("%s%d%sToMonSb_miMsg", m_unitName.Lc().c_str(), unitIdx, modInstName.Uc().c_str());
+									sigMsgFull = monMsgFull = VA("monSbTo%s%d%s_miMsgFull", m_unitName.Uc().c_str(), unitIdx, modInstName.Uc().c_str());
+								} else if (pConn->m_aePrev) {
+									sigMsgRdy = mopMsgRdy = VA("%s%d%sToMopSb_miMsgRdy", m_unitName.Lc().c_str(), unitIdx, modInstName.Uc().c_str());
+									sigMsg = mopMsg = VA("%s%d%sToMopSb_miMsg", m_unitName.Lc().c_str(), unitIdx, modInstName.Uc().c_str());
+									sigMsgFull = mopMsgFull = VA("mopSbTo%s%d%s_miMsgFull", m_unitName.Uc().c_str(), unitIdx, modInstName.Uc().c_str());
+								} else {
+									sigMsgRdy = VA("%s%d%sToAe_%sMsgRdy%s", m_unitName.Lc().c_str(), unitIdx, modInstName.Lc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str());
+									sigMsg = VA("%s%d%sToAe_%sMsg%s", m_unitName.Lc().c_str(), unitIdx, modInstName.Lc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str());
+									sigMsgFull = VA("%s%d%sToAe_%sMsgFull%s", m_unitName.Lc().c_str(), unitIdx, modInstName.Uc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str());
+								}
+
+								fprintf(scFile, "\t\tpPers%sTop[%d]->o_%sToAe_%sMsgRdy%s(%s);\n",
+									m_unitName.Uc().c_str(), unitIdx,
+									modInstName.Lc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str(),
+									sigMsgRdy.c_str());
+
+								fprintf(scFile, "\t\tpPers%sTop[%d]->o_%sToAe_%sMsg%s(%s);\n",
+									m_unitName.Uc().c_str(), unitIdx,
+									modInstName.Lc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str(),
+									sigMsg.c_str());
+
+								if (pMsgIntf->m_bInboundQueue)
+									fprintf(scFile, "\t\tpPers%sTop[%d]->i_aeTo%s_%sMsgFull%s(%s);\n",
+									m_unitName.Uc().c_str(), unitIdx,
+									modInstName.Uc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str(),
+									sigMsgFull.c_str());
+
+							} while (DimenIter(dimenList, portRefList));
+
+							fprintf(scFile, "\n");
+						}
+					} else {
+
+						int dstFanin = pMsgIntf->m_msgIntfInstList[instIdx].m_dstFanin;
+
+						int msgIntfInstCnt = unitCnt * modReplCnt * dstFanin * msgDimenCnt;
+						HtlAssert(msgIntfInstCnt == (int)msgIntfInst.m_connList.size());
+
+						int msgInstSize = modReplCnt * dstFanin * msgDimenCnt;
+						int msgInstIdx = unitIdx * msgInstSize;
+						int msgInstCnt = msgInstIdx + msgInstSize;
+
+						for (; msgInstIdx < msgInstCnt; msgInstIdx += 1) {
+							CMsgIntfConn * pConn = msgIntfInst.m_connList[msgInstIdx][0];
+
+							int inInstIdx = pConn->m_inMsgIntf.m_instIdx;
+							int inInstReplIdx = pConn->m_inMsgIntf.m_replIdx;
+							int outInstIdx = pConn->m_outMsgIntf.m_instIdx;
+							int outInstReplIdx = pConn->m_outMsgIntf.m_replIdx;
+
+							CHtString & inModInstName = pConn->m_inMsgIntf.m_pMod->m_instSet.GetInst(inInstIdx, inInstReplIdx)->m_replInstName;
+							CHtString & outModInstName = pConn->m_outMsgIntf.m_pMod->m_instSet.GetInst(outInstIdx, outInstReplIdx)->m_replInstName;
+
+							CMsgIntf * pInMsgIntf = pConn->m_inMsgIntf.m_pMsgIntf;
+							CMsgIntf * pOutMsgIntf = pConn->m_outMsgIntf.m_pMsgIntf;
+
+							int dimenIdx = pConn->m_inMsgIntf.m_msgIntfIdx.size() - 1;
+							string portIdx;
+							if (pInMsgIntf->m_dimen.size() > 0)
+								portIdx += VA("[%d]", pConn->m_inMsgIntf.m_msgIntfIdx[dimenIdx--]);
+							if (pInMsgIntf->IsFanCntSet(inInstIdx))
+								portIdx += VA("[%d]", pConn->m_inMsgIntf.m_msgIntfIdx[dimenIdx--]);
+
+							dimenIdx = pConn->m_outMsgIntf.m_msgIntfIdx.size() - 1;
+							string signalIdx;
+							if (pOutMsgIntf->m_dimen.size() > 0)
+								signalIdx += VA("[%d]", pConn->m_outMsgIntf.m_msgIntfIdx[dimenIdx--]);
+							if (pOutMsgIntf->IsFanCntSet(outInstIdx))
+								signalIdx += VA("[%d]", pConn->m_outMsgIntf.m_msgIntfIdx[dimenIdx--]);
+
+							int outUnitId = pInMsgIntf->m_msgIntfInstList[instIdx].m_connList[msgInstIdx][0]->m_outMsgIntf.m_unitIdx;
+							if (outUnitId < 0) outUnitId = unitIdx;
 
 							string sigMsgRdy, sigMsg, sigMsgFull;
 							if (pConn->m_aeNext) {
-								sigMsgRdy = monMsgRdy = VA("%s%d%sToMonSb_miMsgRdy", m_unitName.Lc().c_str(), unitIdx, modInstName.Uc().c_str());
-								sigMsg = monMsg = VA("%s%d%sToMonSb_miMsg", m_unitName.Lc().c_str(), unitIdx, modInstName.Uc().c_str());
-								sigMsgFull = monMsgFull = VA("monSbTo%s%d%s_miMsgFull", m_unitName.Uc().c_str(), unitIdx, modInstName.Uc().c_str());
+								sigMsgRdy = mipMsgRdy = VA("mipSbTo%s%d%s_miMsgRdy", m_unitName.Uc().c_str(), unitIdx, inModInstName.Uc().c_str());
+								sigMsg = mipMsg = VA("mipSbTo%s%d%s_miMsg", m_unitName.Uc().c_str(), unitIdx, inModInstName.Uc().c_str());
+								sigMsgFull = mipMsgFull = VA("%s%d%sToMipSb_miMsgFull", m_unitName.Lc().c_str(), unitIdx, inModInstName.Uc().c_str());
 							} else if (pConn->m_aePrev) {
-								sigMsgRdy = mopMsgRdy = VA("%s%d%sToMopSb_miMsgRdy", m_unitName.Lc().c_str(), unitIdx, modInstName.Uc().c_str());
-								sigMsg = mopMsg = VA("%s%d%sToMopSb_miMsg", m_unitName.Lc().c_str(), unitIdx, modInstName.Uc().c_str());
-								sigMsgFull = mopMsgFull = VA("mopSbTo%s%d%s_miMsgFull", m_unitName.Uc().c_str(), unitIdx, modInstName.Uc().c_str());
+								sigMsgRdy = minMsgRdy = VA("minSbTo%s%d%s_miMsgRdy", m_unitName.Uc().c_str(), unitIdx, inModInstName.Uc().c_str());
+								sigMsg = minMsg = VA("minSbTo%s%d%s_miMsg", m_unitName.Uc().c_str(), unitIdx, inModInstName.Uc().c_str());
+								sigMsgFull = minMsgFull = VA("%s%d%sToMinSb_miMsgFull", m_unitName.Lc().c_str(), unitIdx, inModInstName.Uc().c_str());
 							} else {
-								sigMsgRdy = VA("%s%d%sToAe_%sMsgRdy%s", m_unitName.Lc().c_str(), unitIdx, modInstName.Lc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str());
-								sigMsg = VA("%s%d%sToAe_%sMsg%s", m_unitName.Lc().c_str(), unitIdx, modInstName.Lc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str());
-								sigMsgFull = VA("%s%d%sToAe_%sMsgFull%s", m_unitName.Lc().c_str(), unitIdx, modInstName.Uc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str());
+								sigMsgRdy = VA("%s%d%sToAe_%sMsgRdy%s", m_unitName.Lc().c_str(), outUnitId, outModInstName.Lc().c_str(), pOutMsgIntf->m_name.c_str(), signalIdx.c_str());
+								sigMsg = VA("%s%d%sToAe_%sMsg%s", m_unitName.Lc().c_str(), outUnitId, outModInstName.Lc().c_str(), pOutMsgIntf->m_name.c_str(), signalIdx.c_str());
+								sigMsgFull = VA("%s%d%sToAe_%sMsgFull%s", m_unitName.Lc().c_str(), outUnitId, outModInstName.Uc().c_str(), pOutMsgIntf->m_name.c_str(), signalIdx.c_str());
 							}
 
-							fprintf(scFile, "\t\tpPers%sTop[%d]->o_%sToAe_%sMsgRdy%s(%s);\n",
+							fprintf(scFile, "\t\tpPers%sTop[%d]->i_aeTo%s_%sMsgRdy%s(%s);\n",
 								m_unitName.Uc().c_str(), unitIdx,
-								modInstName.Lc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str(),
+								inModInstName.Uc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str(),
 								sigMsgRdy.c_str());
 
-							fprintf(scFile, "\t\tpPers%sTop[%d]->o_%sToAe_%sMsg%s(%s);\n",
+							fprintf(scFile, "\t\tpPers%sTop[%d]->i_aeTo%s_%sMsg%s(%s);\n",
 								m_unitName.Uc().c_str(), unitIdx,
-								modInstName.Lc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str(),
+								inModInstName.Uc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str(),
 								sigMsg.c_str());
 
-							if (pMsgIntf->m_bInboundQueue)
-								fprintf(scFile, "\t\tpPers%sTop[%d]->i_aeTo%s_%sMsgFull%s(%s);\n",
+							if (pOutMsgIntf->m_bInboundQueue)
+								fprintf(scFile, "\t\tpPers%sTop[%d]->o_%sToAe_%sMsgFull%s(%s);\n",
 								m_unitName.Uc().c_str(), unitIdx,
-								modInstName.Uc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str(),
+								inModInstName.Lc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str(),
 								sigMsgFull.c_str());
-
-						} while (DimenIter(dimenList, portRefList));
-
+						}
 						fprintf(scFile, "\n");
 					}
-				} else {
-					int msgInstSize = modReplCnt * msgFanCnt * msgDimenCnt;
-					int msgInstIdx = unitIdx * msgInstSize;
-					int msgInstCnt = msgInstIdx + msgInstSize;
-
-					for (; msgInstIdx < msgInstCnt; msgInstIdx += 1) {
-						CMsgIntfConn * pConn = pMsgIntf->m_msgIntfInstList[msgInstIdx][0];
-
-						int inModInstIdx = max(0, pConn->m_inMsgIntf.m_replIdx);
-						int outModInstIdx = max(0, pConn->m_outMsgIntf.m_replIdx);
-
-						CHtString & inModInstName = pConn->m_inMsgIntf.m_pMod->m_instSet.GetInst(0, inModInstIdx)->m_replInstName;
-						CHtString & outModInstName = pConn->m_outMsgIntf.m_pMod->m_instSet.GetInst(0, outModInstIdx)->m_replInstName;
-
-						CMsgIntf * pInMsgIntf = pConn->m_inMsgIntf.m_pMsgIntf;
-						CMsgIntf * pOutMsgIntf = pConn->m_outMsgIntf.m_pMsgIntf;
-
-						int dimenIdx = pConn->m_inMsgIntf.m_msgIntfIdx.size() - 1;
-						string portIdx;
-						if (pInMsgIntf->m_dimen.size() > 0)
-							portIdx += VA("[%d]", pConn->m_inMsgIntf.m_msgIntfIdx[dimenIdx--]);
-						if (pInMsgIntf->m_fanCnt.size() > 0)
-							portIdx += VA("[%d]", pConn->m_inMsgIntf.m_msgIntfIdx[dimenIdx--]);
-
-						dimenIdx = pConn->m_outMsgIntf.m_msgIntfIdx.size() - 1;
-						string signalIdx;
-						if (pOutMsgIntf->m_dimen.size() > 0)
-							signalIdx += VA("[%d]", pConn->m_outMsgIntf.m_msgIntfIdx[dimenIdx--]);
-						if (pOutMsgIntf->m_fanCnt.size() > 0)
-							signalIdx += VA("[%d]", pConn->m_outMsgIntf.m_msgIntfIdx[dimenIdx--]);
-
-						int outUnitId = pInMsgIntf->m_msgIntfInstList[msgInstIdx][0]->m_outMsgIntf.m_unitIdx;
-
-						string sigMsgRdy, sigMsg, sigMsgFull;
-						if (pConn->m_aeNext) {
-							sigMsgRdy = mipMsgRdy = VA("mipSbTo%s%d%s_miMsgRdy", m_unitName.Uc().c_str(), unitIdx, inModInstName.Uc().c_str());
-							sigMsg = mipMsg = VA("mipSbTo%s%d%s_miMsg", m_unitName.Uc().c_str(), unitIdx, inModInstName.Uc().c_str());
-							sigMsgFull = mipMsgFull = VA("%s%d%sToMipSb_miMsgFull", m_unitName.Lc().c_str(), unitIdx, inModInstName.Uc().c_str());
-						} else if (pConn->m_aePrev) {
-							sigMsgRdy = minMsgRdy = VA("minSbTo%s%d%s_miMsgRdy", m_unitName.Uc().c_str(), unitIdx, inModInstName.Uc().c_str());
-							sigMsg = minMsg = VA("minSbTo%s%d%s_miMsg", m_unitName.Uc().c_str(), unitIdx, inModInstName.Uc().c_str());
-							sigMsgFull = minMsgFull = VA("%s%d%sToMinSb_miMsgFull", m_unitName.Lc().c_str(), unitIdx, inModInstName.Uc().c_str());
-						} else {
-							sigMsgRdy = VA("%s%d%sToAe_%sMsgRdy%s", m_unitName.Lc().c_str(), outUnitId, outModInstName.Lc().c_str(), pOutMsgIntf->m_name.c_str(), signalIdx.c_str());
-							sigMsg = VA("%s%d%sToAe_%sMsg%s", m_unitName.Lc().c_str(), outUnitId, outModInstName.Lc().c_str(), pOutMsgIntf->m_name.c_str(), signalIdx.c_str());
-							sigMsgFull = VA("%s%d%sToAe_%sMsgFull%s", m_unitName.Lc().c_str(), outUnitId, outModInstName.Uc().c_str(), pOutMsgIntf->m_name.c_str(), signalIdx.c_str());
-						}
-
-						fprintf(scFile, "\t\tpPers%sTop[%d]->i_aeTo%s_%sMsgRdy%s(%s);\n",
-							m_unitName.Uc().c_str(), unitIdx,
-							inModInstName.Uc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str(),
-							sigMsgRdy.c_str());
-
-						fprintf(scFile, "\t\tpPers%sTop[%d]->i_aeTo%s_%sMsg%s(%s);\n",
-							m_unitName.Uc().c_str(), unitIdx,
-							inModInstName.Uc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str(),
-							sigMsg.c_str());
-
-						if (pOutMsgIntf->m_bInboundQueue)
-							fprintf(scFile, "\t\tpPers%sTop[%d]->o_%sToAe_%sMsgFull%s(%s);\n",
-							m_unitName.Uc().c_str(), unitIdx,
-							inModInstName.Lc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str(),
-							sigMsgFull.c_str());
-					}
-					fprintf(scFile, "\n");
 				}
 			}
 		}

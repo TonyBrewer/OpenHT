@@ -20,7 +20,7 @@ void HtiFile::SkipTo(EToken skipTk)
 }
 
 
-void HtiFile::loadHtiFile(string fileName)
+void HtiFile::LoadHtiFile(string fileName)
 {
 	if (fileName.size() == 0)
 		return;
@@ -98,6 +98,7 @@ void HtiFile::ParseHtiMethods()
 		vector<int> memPort;
 		string instName;
 		string replCnt;
+		vector<pair<string, string> > paramPairList;
 
 		CParamList params[] = {
 				{ "unit", &unit, true, ePrmIdent, 0, 0 },
@@ -105,6 +106,7 @@ void HtiFile::ParseHtiMethods()
 				{ "memPort", &memPort, false, ePrmIntList, 0, 0 },
 				{ "replCnt", &replCnt, false, ePrmInteger, 0, 0 },
 				{ "instName", &instName, false, ePrmIdent, 0, 0 },
+				{ "", &paramPairList, false, ePrmParamLst, 0, 0 },
 				{ 0, 0, 0, ePrmUnknown, 0, 0 }
 		};
 
@@ -115,7 +117,7 @@ void HtiFile::ParseHtiMethods()
 			if (modPath.size() > 0 && modPath[0] != '/')
 				modPath = "/" + modPath;
 
-			AddModInstParams(unit, modPath, memPort, instName, replCnt);
+			AddModInstParams(unit, modPath, memPort, instName, replCnt, paramPairList);
 		}
 
 	} else if (m_pLex->GetTkString() == "AddMsgIntfConn") {
@@ -128,13 +130,13 @@ void HtiFile::ParseHtiMethods()
 		bool aePrev = false;
 
 		CParamList params[] = {
-				{ "inUnit", &inUnit, false, ePrmParamStr, 0, 0 },
-				{ "outUnit", &outUnit, false, ePrmParamStr, 0, 0 },
-				{ "inPath", &inPath, true, ePrmParamStr, 0, 0 },
-				{ "outPath", &outPath, true, ePrmParamStr, 0, 0 },
-				{ "aeNext", &aeNext, false, ePrmBoolean, 0, 0 },
-				{ "aePrev", &aePrev, false, ePrmBoolean, 0, 0 },
-				{ 0, 0, 0, ePrmUnknown, 0, 0 }
+			{ "inUnit", &inUnit, false, ePrmParamStr, 0, 0 },
+			{ "outUnit", &outUnit, false, ePrmParamStr, 0, 0 },
+			{ "inPath", &inPath, true, ePrmParamStr, 0, 0 },
+			{ "outPath", &outPath, true, ePrmParamStr, 0, 0 },
+			{ "aeNext", &aeNext, false, ePrmBoolean, 0, 0 },
+			{ "aePrev", &aePrev, false, ePrmBoolean, 0, 0 },
+			{ 0, 0, 0, ePrmUnknown, 0, 0 }
 		};
 
 		if (!ParseParameters(params))
@@ -148,6 +150,46 @@ void HtiFile::ParseHtiMethods()
 				inPath = "/" + inPath;
 
 			AddMsgIntfConn(outUnit, outPath, inUnit, inPath, aeNext, aePrev);
+		}
+
+	} else if (m_pLex->GetTkString() == "AddMsgIntfParams") {
+
+		string unit;
+		string outPath;
+		string inPath;
+		string fanout;
+		string fanin;
+
+		CParamList params[] = {
+			{ "unit", &unit, false, ePrmParamStr, 0, 0 },
+			{ "outPath", &outPath, false, ePrmParamStr, 0, 0 },
+			{ "inPath", &inPath, false, ePrmParamStr, 0, 0 },
+			{ "fanout", &fanout, false, ePrmInteger, 0, 0 },
+			{ "fanin", &fanin, false, ePrmInteger, 0, 0 },
+			{ 0, 0, 0, ePrmUnknown, 0, 0 }
+		};
+
+		if (!ParseParameters(params))
+			CPreProcess::ParseMsg(Error, "expected AddMsgIntfParams( { unit, } { outPath=path, fanout=value} | { inPath=path, fanin=value} )");
+
+		else if (inPath.size() == 0 && outPath.size() == 0) {
+			CPreProcess::ParseMsg(Error, "expected either inPath or outPath");
+
+		} else if (inPath.size() > 0 && fanin.size() == 0) {
+			CPreProcess::ParseMsg(Error, "expected require parameter fanin");
+
+		} else if (outPath.size() > 0 && fanout.size() == 0) {
+			CPreProcess::ParseMsg(Error, "expected require parameter fanout");
+
+		} else {
+			string & path = (inPath.size() > 0) ? inPath : outPath;
+			string fanCnt = (inPath.size() > 0) ? fanin : fanout;
+			bool bInBound = inPath.size() > 0;
+
+			if (path.size() > 0 && path[0] != '/')
+				path = "/" + path;
+
+			AddMsgIntfParams(unit, path, bInBound, fanCnt);
 		}
 
 	} else
@@ -171,9 +213,11 @@ bool HtiFile::ParseParameters(CParamList *params)
 	EToken tk;
 	while ((tk = m_pLex->GetNextTk()) == eTkIdent) {
 		int i;
-		for (i = 0; params[i].m_pName; i += 1)
+		for (i = 0; params[i].m_pName && params[i].m_pName[0] != '\0'; i += 1)
 			if (m_pLex->GetTkString() == params[i].m_pName)
 				break;
+
+		string paramName = m_pLex->GetTkString();
 
 		if (params[i].m_pName == 0) {
 			bError = true;
@@ -181,7 +225,7 @@ bool HtiFile::ParseParameters(CParamList *params)
 			break;
 		}
 
-		if (params[i].m_bPresent) {
+		if (params[i].m_bPresent && params[i].m_pName[0] != '\0') {
 			bError = true;
 			CPreProcess::ParseMsg(Error, "duplicate parameters '%s'", m_pLex->GetTkString().c_str());
 			break;
@@ -273,12 +317,8 @@ bool HtiFile::ParseParameters(CParamList *params)
 
 			tk = m_pLex->GetNextTk();
 
-		} else if (params[i].m_paramType == ePrmParamStr) {
-
-			*(string *)params[i].m_pValue = m_pLex->GetExprStr(',');
-			tk = m_pLex->GetNextTk();
-
 		} else if (params[i].m_paramType == ePrmIdent) {
+
 			tk = m_pLex->GetNextTk();
 			if (tk != eTkIdent && tk != eTkString) {
 				bError = true;
@@ -288,16 +328,32 @@ bool HtiFile::ParseParameters(CParamList *params)
 
 			*(string *)params[i].m_pValue = m_pLex->GetTkString();
 			tk = m_pLex->GetNextTk();
-		} else if (params[i].m_paramType == ePrmInteger) {
+
+		} else if (params[i].m_paramType == ePrmInteger || params[i].m_paramType == ePrmParamStr) {
+
+			string & intParamStr = *(string *)params[i].m_pValue;
+			int defValue = 0;
+
+			intParamStr = m_pLex->GetExprStr(',');
 			tk = m_pLex->GetNextTk();
-			if (tk != eTkIdent && tk != eTkInteger && tk != eTkString) {
-				bError = true;
-				CPreProcess::ParseMsg(Error, "expected an identifier or integer for parameter '%s'", params[i].m_pName);
-				break;
+
+			if (params[i].m_paramType == ePrmInteger) {
+				CHtIntParam intParam;
+				intParam.SetValue(CPreProcess::m_lineInfo, intParamStr, params[i].m_bRequired, defValue);
 			}
 
-			*(string *)params[i].m_pValue = m_pLex->GetTkString();
+		} else if (params[i].m_paramType == ePrmParamLst) {
+
+			vector<pair<string, string> > & paramPairList = *(vector<pair<string, string> > *)params[i].m_pValue;
+			pair<string, string> param;
+
+			param.first = paramName;
+			param.second = m_pLex->GetExprStr(',');
+
+			paramPairList.push_back(param);
+
 			tk = m_pLex->GetNextTk();
+
 		} else
 			HtlAssert(0);
 
@@ -367,7 +423,7 @@ bool HtiFile::ParseIntRange(vector<int> * pIntList)
 	return true;
 }
 
-void HtiFile::AddModInstParams(string unit, string modPath, vector<int> &memPortList, string modInstName, string replCnt)
+void HtiFile::AddModInstParams(string unit, string modPath, vector<int> &memPortList, string modInstName, string replCnt, vector<pair<string, string> > & paramPairList)
 {
 	int replCntInt = 1;
 	if (replCnt.size() > 0) {
@@ -380,7 +436,7 @@ void HtiFile::AddModInstParams(string unit, string modPath, vector<int> &memPort
 		replCntInt = replStr.AsInt();
 	}
 
-	m_modInstParamsList.push_back(CModInstParams(unit, modPath, memPortList, modInstName, replCntInt));
+	m_modInstParamsList.push_back(CModInstParams(unit, modPath, memPortList, modInstName, replCntInt, paramPairList));
 }
 
 void HtiFile::AddMsgIntfConn(string &outUnit, string &outPath, string &inUnit, string &inPath, bool aeNext, bool aePrev)
@@ -388,10 +444,15 @@ void HtiFile::AddMsgIntfConn(string &outUnit, string &outPath, string &inUnit, s
 	m_msgIntfConn.push_back(new CMsgIntfConn(outUnit, outPath, inUnit, inPath, aeNext, aePrev));
 }
 
-HtiFile::CMsgIntfInfo::CMsgIntfInfo(bool bInBound, string &msgUnit, string &msgPath)
+void HtiFile::AddMsgIntfParams(string &unit, string &path, bool bInBound, string &fanCnt)
 {
+	m_msgIntfParamsList.push_back(CMsgIntfParams(unit, path, bInBound, fanCnt));
+}
+
+HtiFile::CMsgIntfPath::CMsgIntfPath(string &msgUnit, string &msgPath, bool bInBound)
+{
+	m_lineInfo = CPreProcess::m_lineInfo;
 	m_bInBound = bInBound;
-	m_pMsgIntf = 0;
 
 	// parse msgUnit for unitName and unitIdx
 	char const * pStr = msgUnit.c_str();
@@ -466,7 +527,7 @@ HtiFile::CMsgIntfInfo::CMsgIntfInfo(bool bInBound, string &msgUnit, string &msgP
 		}
 		strIdx -= 1;
 	} else
-		m_replIdx = -1;
+		m_replIdx = 0;
 
 	// parse module path
 	if (strIdx == 0) {
@@ -474,15 +535,46 @@ HtiFile::CMsgIntfInfo::CMsgIntfInfo(bool bInBound, string &msgUnit, string &msgP
 		return;
 	}
 
-	m_modPath = string(pPath, strIdx + 1);
+	m_instPath = string(pPath, strIdx + 1);
 }
 
-bool HtiFile::isMsgPathMatch(CLineInfo & lineInfo, CMsgIntfInfo & info, CModule &mod, CMsgIntf * pMsgIntf)
+bool HtiFile::CMsgIntfPath::IsMatch(CInstance * pInst, string &msgName, bool bInBound, bool &bError)
 {
-	if (info.m_msgIntfName != pMsgIntf->m_name || pMsgIntf->m_dir == "out" && info.m_bInBound)
+	bError = false;
+	if (m_msgIntfName != msgName || bInBound != m_bInBound)
 		return false;
 
-	for (int instIdx = 0; instIdx < mod.m_instSet.GetInstCnt(); instIdx += 1) {
+	for (size_t modPathIdx = 0; modPathIdx < pInst->m_modPaths.size(); modPathIdx += 1) {
+		string &modPath = pInst->m_modPaths[modPathIdx];
+
+		char const * pStr = modPath.c_str();
+		while (*pStr != ':' && *pStr != '\0') pStr += 1;
+		string unitName(modPath.c_str(), pStr - modPath.c_str());
+
+		if (*pStr != ':' || pStr[1] != '/') {
+			CPreProcess::ParseMsg(Error, m_lineInfo, "Invalid instance path syntax '%s'", modPath.c_str());
+			bError = true;
+			return false;
+		}
+
+		pStr += 1;
+		string instPath = pStr;
+
+		if (m_unitName.size() > 0 && m_unitName != unitName) continue;
+		if (m_instPath != instPath) continue;
+
+		return true;
+	}
+
+	return false;
+}
+
+bool HtiFile::IsMsgPathMatch(CLineInfo & lineInfo, CMsgIntfInfo & info, CModule &mod, CMsgIntf * pMsgIntf, int & instIdx)
+{
+	if (info.m_msgIntfName != pMsgIntf->m_name || !pMsgIntf->m_bInBound && info.m_bInBound)
+		return false;
+
+	for (instIdx = 0; instIdx < mod.m_instSet.GetInstCnt(); instIdx += 1) {
 		for (int replIdx = 0; replIdx < mod.m_instSet.GetReplCnt(instIdx); replIdx += 1) {
 			CInstance * pModInst = mod.m_instSet.GetInst(instIdx, replIdx);
 
@@ -502,7 +594,7 @@ bool HtiFile::isMsgPathMatch(CLineInfo & lineInfo, CMsgIntfInfo & info, CModule 
 				string pathName = pStr;
 
 				if (info.m_unitName.size() > 0 && info.m_unitName != unitName) continue;
-				if (info.m_modPath != pathName) continue;
+				if (info.m_instPath != pathName) continue;
 
 				if (pMsgIntf->m_bAutoConn) {
 					CPreProcess::ParseMsg(Error, lineInfo, "message interface match to interface with auto connect enabled");
@@ -521,7 +613,7 @@ bool HtiFile::isMsgPathMatch(CLineInfo & lineInfo, CMsgIntfInfo & info, CModule 
 	return false;
 }
 
-void HtiFile::getModInstParams(string modPath, CInstanceParams & modInstParams)
+void HtiFile::GetModInstParams(string modPath, CInstanceParams & modInstParams)
 {
 	// Look through list of AddModInstParams for specified modPath. May be multiple
 	// matches. Must merge results and check for inconsistencies.
@@ -552,6 +644,8 @@ void HtiFile::getModInstParams(string modPath, CInstanceParams & modInstParams)
 		}
 		modInstParams.m_modInstName = instParams.m_modInstName;
 
+		modInstParams.m_paramPairList.insert(modInstParams.m_paramPairList.end(), instParams.m_paramPairList.begin(), instParams.m_paramPairList.end());
+
 		modInstParams.m_lineInfo = instParams.m_lineInfo;
 	}
 
@@ -559,7 +653,7 @@ void HtiFile::getModInstParams(string modPath, CInstanceParams & modInstParams)
 		modInstParams.m_replCnt = 1;
 }
 
-void HtiFile::checkModInstParamsUsed()
+void HtiFile::CheckModInstParamsUsed()
 {
 	for (size_t i = 0; i < m_modInstParamsList.size(); i += 1) {
 		CModInstParams & instParams = m_modInstParamsList[i];

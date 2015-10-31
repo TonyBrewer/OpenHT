@@ -3,3 +3,5 @@
 AddModInstParams(unit=Au, modPath="ctl/modB", replCnt=B_REPL);
 AddModInstParams(unit=Au, modPath="ctl/modC", replCnt=C_REPL);
 AddModInstParams(unit=Au, modPath="ctl/modD", replCnt=D_REPL);
+
+AddMsgIntfParams(unit=Au, outPath=ctl/modB/BtoC, fanout=C_REPL/B_REPL);

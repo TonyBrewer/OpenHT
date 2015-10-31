@@ -181,10 +181,10 @@ CMifWr * CDsnInfo::AddWriteMem(CModule * pModule, string queueW, string rspGrpId
 	return &mif.m_mifWr;
 }
 
-CCxrCall * CDsnInfo::AddCall(void * pHandle, string const &modEntry, string const &callName, string const &modInst, bool bCall, bool bFork, string const &queueW, string const &dest)
+CCxrCall * CDsnInfo::AddCall(void * pHandle, string const &modEntry, string const &callName, string const &modInst, bool bCall, bool bFork, string const &queueW, string const &dest, vector<pair<string, string> > &paramPairList)
 {
 	CModule * pModule = (CModule *)pHandle;
-	pModule->m_cxrCallList.push_back(new CCxrCall(modEntry, callName, modInst, bCall, bFork, queueW, dest, false));
+	pModule->m_cxrCallList.push_back(new CCxrCall(modEntry, callName, modInst, bCall, bFork, queueW, dest, false, paramPairList));
 	return pModule->m_cxrCallList.back();
 }
 
@@ -196,7 +196,8 @@ CCxrCall * CDsnInfo::AddXfer(void * pHandle, string const &modEntry, string cons
 	bool bFork = false;
 	bool bXfer = true;
 
-	pModule->m_cxrCallList.push_back(new CCxrCall(modEntry, xferName, modInst, bCall, bFork, queueW, dest, bXfer));
+	vector<InstParam_t> instParamList;
+	pModule->m_cxrCallList.push_back(new CCxrCall(modEntry, xferName, modInst, bCall, bFork, queueW, dest, bXfer, instParamList));
 	return pModule->m_cxrCallList.back();
 }
 
@@ -205,7 +206,8 @@ CCxrEntry * CDsnInfo::AddEntry(CModule * pModule, string funcName, string entryI
 	if (bHost) {
 		bool bCall = true;
 		bool bFork = false;
-		AddCall(m_modList[0], funcName, funcName, "", bCall, bFork, string("0"), string("auto"));
+		vector<InstParam_t> instParamList;
+		AddCall(m_modList[0], funcName, funcName, "", bCall, bFork, string("0"), string("auto"), instParamList);
 	}
 
 	return &pModule->AddEntry(funcName, entryInstr, reserve);

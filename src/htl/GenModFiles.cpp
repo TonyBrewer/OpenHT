@@ -14,35 +14,35 @@ void
 CDsnInfo::GenerateModuleFiles(CModule &mod)
 {
 	for (int modInstIdx = 0; modInstIdx < mod.m_instSet.GetInstCnt(); modInstIdx += 1) {
-		CInstance * pModInst = mod.m_instSet.GetInst(modInstIdx);
+		CInstance * pInst = mod.m_instSet.GetInst(modInstIdx);
 
 		if (mod.m_instSet.GetInstCnt() > 1)
-			pModInst->m_fileName = mod.m_modName == pModInst->m_instName ? mod.m_modName.AsStr() + "_" : pModInst->m_instName;
+			pInst->m_fileName = mod.m_modName == pInst->m_instName ? mod.m_modName.AsStr() + "_" : pInst->m_instName;
 		else
-			pModInst->m_fileName = mod.m_modName;
+			pInst->m_fileName = mod.m_modName;
 
-		g_appArgs.GetDsnRpt().AddLevel("Pers%s\n", pModInst->m_instName.c_str());
+		g_appArgs.GetDsnRpt().AddLevel("Pers%s\n", pInst->m_instName.c_str());
 
 		// Generate statements seperate lists of statements for each module feature
 		GenPrimStateStatements(mod);
 		GenModTDSUStatements(mod);		// typedef/define/struct/union
-		GenModIplStatements(pModInst);
+		GenModIplStatements(pInst);
 		GenModIhmStatements(mod);
-		GenModMsgStatements(mod);
-		GenModBarStatements(pModInst);
-		GenModOhmStatements(pModInst);
-		GenModCxrStatements(pModInst);
-		GenModIhdStatements(pModInst);
-		GenModOhdStatements(pModInst);
-		GenModMifStatements(pModInst);
-		GenModStrmStatements(pModInst);
+		GenModMsgStatements(pInst);
+		GenModBarStatements(pInst);
+		GenModOhmStatements(pInst);
+		GenModCxrStatements(pInst);
+		GenModIhdStatements(pInst);
+		GenModOhdStatements(pInst);
+		GenModMifStatements(pInst);
+		GenModStrmStatements(pInst);
 		GenModStBufStatements(&mod);
-		GenModNgvStatements(pModInst);
+		GenModNgvStatements(pInst);
 
 		bool bNeedClk2x = NeedClk2x();
 
-		WritePersCppFile(pModInst, bNeedClk2x);
-		WritePersIncFile(pModInst, bNeedClk2x);
+		WritePersCppFile(pInst, bNeedClk2x);
+		WritePersIncFile(pInst, bNeedClk2x);
 
 		g_appArgs.GetDsnRpt().EndLevel();
 	}
@@ -71,9 +71,9 @@ void CDsnInfo::GenModInstInc(CModule &mod)
 		fprintf(incFile, "\n");
 
 		for (size_t prmIdx = 0; prmIdx < pModInst->m_callInstParamList.size(); prmIdx += 1) {
-			CCallInstParam & instParam = pModInst->m_callInstParamList[prmIdx];
+			InstParam_t & instParam = pModInst->m_callInstParamList[prmIdx];
 
-			fprintf(incFile, "#define %s %s\n", instParam.m_name.c_str(), instParam.m_value.c_str());
+			fprintf(incFile, "#define %s %s\n", instParam.first.c_str(), instParam.second.c_str());
 		}
 
 		if (pModInst->m_callInstParamList.size() > 0)

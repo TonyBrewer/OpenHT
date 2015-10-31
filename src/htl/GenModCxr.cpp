@@ -118,11 +118,11 @@ void CDsnInfo::InitAndValidateModCxr()
 		CModule * pHifMod = m_modList[0];
 		HtlAssert(pHifMod->m_modName == "hif");
 
-		CInstanceParams modInstParams;
-		modInstParams.m_memPortList.push_back(0);
+		CInstanceParams instParams;
+		instParams.m_memPortList.push_back(0);
 
 		int cxrSrcCnt = (pHifMod->m_bHasThreads ? 1 : 0) + pHifMod->m_resetInstrCnt;
-		CInstance * pModInst = new CInstance(pHifMod, pHifMod->m_modName, "", modInstParams, cxrSrcCnt);
+		CInstance * pModInst = new CInstance(pHifMod, pHifMod->m_modName, "", instParams, cxrSrcCnt);
 
 		pModInst->m_replInstName = pHifMod->m_modName;
 
@@ -142,7 +142,7 @@ void CDsnInfo::InitAndValidateModCxr()
 		if (pHifMod->m_cxrCallList.size() == 0)
 			ParseMsg(Fatal, "Unit entry function name must be specified (i.e. use AddEntry(host=true) )");
 
-		string unitName = getUnitName(0);
+		string unitName = GetUnitName(0);
 
 		vector<CModIdx> callStk;
 
@@ -306,38 +306,38 @@ void CDsnInfo::CheckRequiredEntryNames(vector<CModIdx> &callStk)
 			// if it has a 'not seen before' modInstId param value, or has a replCnt > 1,
 			// or uses the default modInst and this is the first time it was used.
 
-			CInstanceParams modInstParams;
-			getModInstParams(modPath, modInstParams);
+			CInstanceParams instParams;
+			GetModInstParams(modPath, instParams);
 
-			if (callStk.size() <= 1 && modInstParams.m_replCnt > 1)
-				ParseMsg(Error, modInstParams.m_lineInfo, "replication not supported for host interface entry module");
+			if (callStk.size() <= 1 && instParams.m_replCnt > 1)
+				ParseMsg(Error, instParams.m_lineInfo, "replication not supported for host interface entry module");
 
-			m_maxReplCnt = max(m_maxReplCnt, modInstParams.m_replCnt);
+			m_maxReplCnt = max(m_maxReplCnt, instParams.m_replCnt);
 
-			if (modInstParams.m_replCnt > 1) {
+			if (instParams.m_replCnt > 1) {
 				// Push replCnt on modInstList
-				for (int replIdx = 0; replIdx < modInstParams.m_replCnt; replIdx += 1) {
+				for (int replIdx = 0; replIdx < instParams.m_replCnt; replIdx += 1) {
 					// check for replicated instance parameters
 					CInstanceParams replModInstParams;
 					char buf[16];
 					sprintf(buf, "[%d]", (int)replIdx);
 					string replModPath = modPath + buf;
-					getModInstParams(replModPath, replModInstParams);
+					GetModInstParams(replModPath, replModInstParams);
 
 					m_maxReplCnt = max(m_maxReplCnt, replModInstParams.m_replCnt);
 
-					replModInstParams.m_replCnt = modInstParams.m_replCnt;
+					replModInstParams.m_replCnt = instParams.m_replCnt;
 
 					if (replModInstParams.m_lineInfo.m_fileName.size() == 0)
-						replModInstParams.m_lineInfo = modInstParams.m_lineInfo;
+						replModInstParams.m_lineInfo = instParams.m_lineInfo;
 
-					if (modInstParams.m_memPortList.size() > 0 && replModInstParams.m_memPortList.size() > 0)
+					if (instParams.m_memPortList.size() > 0 && replModInstParams.m_memPortList.size() > 0)
 						CPreProcess::ParseMsg(Error,
 						"memPort was specified for modPath '%s' and replicated modPath '%s'",
 						modPath.c_str(), replModPath.c_str());
 
-					else if (modInstParams.m_memPortList.size() > 0)
-						replModInstParams.m_memPortList = modInstParams.m_memPortList;
+					else if (instParams.m_memPortList.size() > 0)
+						replModInstParams.m_memPortList = instParams.m_memPortList;
 
 					else if (pMod->m_memPortList.size() > 0 && replModInstParams.m_memPortList.size() == 0) {
 						replModInstParams.m_memPortList.resize(pMod->m_memPortList.size());
@@ -366,22 +366,31 @@ void CDsnInfo::CheckRequiredEntryNames(vector<CModIdx> &callStk)
 
 						int cxrSrcCnt = (pMod->m_bHasThreads ? 1 : 0) + pMod->m_resetInstrCnt;
 						pModInst = new CInstance(pMod, pCxrCallee->m_instName, modPath, replModInstParams,
-							cxrSrcCnt, modInstParams.m_replCnt, replIdx);
+							cxrSrcCnt, instParams.m_replCnt, replIdx);
 						pMod->m_instSet.AddInst(pModInst);
 
 						for (size_t modPrmIdx = 0; modPrmIdx < pMod->m_instParamList.size(); modPrmIdx += 1) {
-							CModuleInstParam & modInstParam = pMod->m_instParamList[modPrmIdx];
+							InstParam_t & modInstParam = pMod->m_instParamList[modPrmIdx];
 
 							size_t callPrmIdx;
-							for (callPrmIdx = 0; callPrmIdx < pCxrCallee->m_instParamList.size(); callPrmIdx += 1)
-								if (modInstParam.m_name == pCxrCallee->m_instParamList[callPrmIdx].m_name)
+							for (callPrmIdx = 0; callPrmIdx < pCxrCallee->m_callParamList.size(); callPrmIdx += 1)
+								if (modInstParam.first == pCxrCallee->m_callParamList[callPrmIdx].first)
 									break;
 
-							if (callPrmIdx < pCxrCallee->m_instParamList.size()) {
-								CCallInstParam &callInstParam = pCxrCallee->m_instParamList[callPrmIdx];
-								pModInst->m_callInstParamList.push_back(callInstParam);
-							} else if (modInstParam.m_default.size() > 0)
-								pModInst->m_callInstParamList.push_back(CCallInstParam(modInstParam.m_name, modInstParam.m_default));
+							size_t instPrmIdx;
+							for (instPrmIdx = 0; instPrmIdx < instParams.m_paramPairList.size(); instPrmIdx += 1) {
+								if (modInstParam.first == instParams.m_paramPairList[instPrmIdx].first)
+									break;
+							}
+
+							if (instPrmIdx < instParams.m_paramPairList.size()) {
+								pModInst->m_callInstParamList.push_back(instParams.m_paramPairList[instPrmIdx]);
+
+							} else if (callPrmIdx < pCxrCallee->m_callParamList.size()) {
+								pModInst->m_callInstParamList.push_back(pCxrCallee->m_callParamList[callPrmIdx]);
+
+							} else if (modInstParam.second.size() > 0)
+								pModInst->m_callInstParamList.push_back(modInstParam);
 							else
 								ParseMsg(Error, pCxrCallee->m_lineInfo, "instParam must have either a default value or AddCall specified value");
 						}
@@ -393,23 +402,32 @@ void CDsnInfo::CheckRequiredEntryNames(vector<CModIdx> &callStk)
 
 						// verify callInstParams are the same
 						for (size_t modPrmIdx = 0; modPrmIdx < pMod->m_instParamList.size(); modPrmIdx += 1) {
-							CModuleInstParam & modInstParam = pMod->m_instParamList[modPrmIdx];
+							InstParam_t & modInstParam = pMod->m_instParamList[modPrmIdx];
 
 							size_t callPrmIdx;
-							for (callPrmIdx = 0; callPrmIdx < pCxrCallee->m_instParamList.size(); callPrmIdx += 1)
-								if (modInstParam.m_name == pCxrCallee->m_instParamList[callPrmIdx].m_name)
+							for (callPrmIdx = 0; callPrmIdx < pCxrCallee->m_callParamList.size(); callPrmIdx += 1)
+								if (modInstParam.first == pCxrCallee->m_callParamList[callPrmIdx].first)
 									break;
 
-							if (callPrmIdx < pCxrCallee->m_instParamList.size()) {
-								CCallInstParam &callInstParam = pCxrCallee->m_instParamList[callPrmIdx];
-								if (callInstParam.m_value != pModInst->m_callInstParamList[modPrmIdx].m_value) {
+							size_t instPrmIdx;
+							for (instPrmIdx = 0; instPrmIdx < instParams.m_paramPairList.size(); instPrmIdx += 1) {
+								if (modInstParam.first == instParams.m_paramPairList[instPrmIdx].first)
+									break;
+							}
+
+							if (instPrmIdx < instParams.m_paramPairList.size()) {
+								pModInst->m_callInstParamList.push_back(instParams.m_paramPairList[instPrmIdx]);
+
+							} else if (callPrmIdx < pCxrCallee->m_callParamList.size()) {
+								InstParam_t &callInstParam = pCxrCallee->m_callParamList[callPrmIdx];
+								if (callInstParam.second != pModInst->m_callInstParamList[modPrmIdx].second) {
 									ParseMsg(Error, pCxrCallee->m_lineInfo, "inconsistent instParam value for param %s on instance %s",
-										callInstParam.m_name.c_str(), pModInst->m_instName.c_str());
+										callInstParam.first.c_str(), pModInst->m_instName.c_str());
 								}
-							} else if (modInstParam.m_default.size() > 0) {
-								if (modInstParam.m_default != pModInst->m_callInstParamList[modPrmIdx].m_value) {
+							} else if (modInstParam.second.size() > 0) {
+								if (modInstParam.second != pModInst->m_callInstParamList[modPrmIdx].second) {
 									ParseMsg(Error, pCxrCallee->m_lineInfo, "inconsistent instParam value for param %s on instance %s",
-										modInstParam.m_default.c_str(), pModInst->m_instName.c_str());
+										modInstParam.second.c_str(), pModInst->m_instName.c_str());
 								}
 							} else
 								ParseMsg(Error, pCxrCallee->m_lineInfo, "instParam must have either a default value or AddCall specified value");
@@ -419,15 +437,15 @@ void CDsnInfo::CheckRequiredEntryNames(vector<CModIdx> &callStk)
 
 			} else {
 
-				if (pMod->m_memPortList.size() > 0 && modInstParams.m_memPortList.size() == 0) {
-					modInstParams.m_memPortList.resize(pMod->m_memPortList.size());
+				if (pMod->m_memPortList.size() > 0 && instParams.m_memPortList.size() == 0) {
+					instParams.m_memPortList.resize(pMod->m_memPortList.size());
 					for (size_t memPortIdx = 0; memPortIdx < pMod->m_memPortList.size(); memPortIdx += 1)
-						modInstParams.m_memPortList[memPortIdx] = memPortIdx;
+						instParams.m_memPortList[memPortIdx] = memPortIdx;
 				}
 
-				if (modInstParams.m_memPortList.size() != pMod->m_memPortList.size()) {
-					ParseMsg(Error, modInstParams.m_lineInfo, "module memory port count (%d) does not match instance memory port count (%d)\n",
-						(int)pMod->m_memPortList.size(), (int)modInstParams.m_memPortList.size());
+				if (instParams.m_memPortList.size() != pMod->m_memPortList.size()) {
+					ParseMsg(Error, instParams.m_lineInfo, "module memory port count (%d) does not match instance memory port count (%d)\n",
+						(int)pMod->m_memPortList.size(), (int)instParams.m_memPortList.size());
 				}
 
 				// check if requested instName is new
@@ -446,22 +464,32 @@ void CDsnInfo::CheckRequiredEntryNames(vector<CModIdx> &callStk)
 				if (!bFound) {
 					// new instName specified
 					int cxrSrcCnt = (pMod->m_bHasThreads ? 1 : 0) + pMod->m_resetInstrCnt;
-					CInstance * pModInst = new CInstance(pMod, pCxrCallee->m_instName, modPath, modInstParams, cxrSrcCnt);
+					CInstance * pModInst = new CInstance(pMod, pCxrCallee->m_instName, modPath, instParams, cxrSrcCnt);
 					pMod->m_instSet.AddInst(pModInst);
 
 					for (size_t modPrmIdx = 0; modPrmIdx < pMod->m_instParamList.size(); modPrmIdx += 1) {
-						CModuleInstParam & modInstParam = pMod->m_instParamList[modPrmIdx];
+						InstParam_t & modInstParam = pMod->m_instParamList[modPrmIdx];
 
 						size_t callPrmIdx;
-						for (callPrmIdx = 0; callPrmIdx < pCxrCallee->m_instParamList.size(); callPrmIdx += 1)
-							if (modInstParam.m_name == pCxrCallee->m_instParamList[callPrmIdx].m_name)
+						for (callPrmIdx = 0; callPrmIdx < pCxrCallee->m_callParamList.size(); callPrmIdx += 1)
+							if (modInstParam.first == pCxrCallee->m_callParamList[callPrmIdx].first)
 								break;
 
-						if (callPrmIdx < pCxrCallee->m_instParamList.size()) {
-							CCallInstParam &callInstParam = pCxrCallee->m_instParamList[callPrmIdx];
-							pModInst->m_callInstParamList.push_back(callInstParam);
-						} else if (modInstParam.m_default.size() > 0)
-							pModInst->m_callInstParamList.push_back(CCallInstParam(modInstParam.m_name, modInstParam.m_default));
+						size_t instPrmIdx;
+						for (instPrmIdx = 0; instPrmIdx < instParams.m_paramPairList.size(); instPrmIdx += 1) {
+							if (modInstParam.first == instParams.m_paramPairList[instPrmIdx].first)
+								break;
+						}
+
+						if (instPrmIdx < instParams.m_paramPairList.size()) {
+							pModInst->m_callInstParamList.push_back(instParams.m_paramPairList[instPrmIdx]);
+
+						} else if (callPrmIdx < pCxrCallee->m_callParamList.size()) {
+							pModInst->m_callInstParamList.push_back(pCxrCallee->m_callParamList[callPrmIdx]);
+
+						} else if (modInstParam.second.size() > 0)
+							pModInst->m_callInstParamList.push_back(modInstParam);
+
 						else
 							ParseMsg(Error, pCxrCallee->m_lineInfo, "instParam must have either a default value or AddCall specified value");
 					}
@@ -472,23 +500,32 @@ void CDsnInfo::CheckRequiredEntryNames(vector<CModIdx> &callStk)
 
 					// verify callInstParams are the same
 					for (size_t modPrmIdx = 0; modPrmIdx < pMod->m_instParamList.size(); modPrmIdx += 1) {
-						CModuleInstParam & modInstParam = pMod->m_instParamList[modPrmIdx];
+						InstParam_t & modInstParam = pMod->m_instParamList[modPrmIdx];
 
 						size_t callPrmIdx;
-						for (callPrmIdx = 0; callPrmIdx < pCxrCallee->m_instParamList.size(); callPrmIdx += 1)
-							if (modInstParam.m_name == pCxrCallee->m_instParamList[callPrmIdx].m_name)
+						for (callPrmIdx = 0; callPrmIdx < pCxrCallee->m_callParamList.size(); callPrmIdx += 1)
+							if (modInstParam.first == pCxrCallee->m_callParamList[callPrmIdx].first)
 								break;
 
-						if (callPrmIdx < pCxrCallee->m_instParamList.size()) {
-							CCallInstParam &callInstParam = pCxrCallee->m_instParamList[callPrmIdx];
-							if (callInstParam.m_value != pModInst->m_callInstParamList[modPrmIdx].m_value) {
+						size_t instPrmIdx;
+						for (instPrmIdx = 0; instPrmIdx < instParams.m_paramPairList.size(); instPrmIdx += 1) {
+							if (modInstParam.first == instParams.m_paramPairList[instPrmIdx].first)
+								break;
+						}
+
+						if (instPrmIdx < instParams.m_paramPairList.size()) {
+							pModInst->m_callInstParamList.push_back(instParams.m_paramPairList[instPrmIdx]);
+
+						} else if (callPrmIdx < pCxrCallee->m_callParamList.size()) {
+							InstParam_t &callInstParam = pCxrCallee->m_callParamList[callPrmIdx];
+							if (callInstParam.second != pModInst->m_callInstParamList[modPrmIdx].second) {
 								ParseMsg(Error, pCxrCallee->m_lineInfo, "inconsistent instParam value for param %s on instance %s",
-									callInstParam.m_name.c_str(), pModInst->m_instName.c_str());
+									callInstParam.first.c_str(), pModInst->m_instName.c_str());
 							}
-						} else if (modInstParam.m_default.size() > 0) {
-							if (modInstParam.m_default != pModInst->m_callInstParamList[modPrmIdx].m_value) {
+						} else if (modInstParam.second.size() > 0) {
+							if (modInstParam.second != pModInst->m_callInstParamList[modPrmIdx].second) {
 								ParseMsg(Error, pCxrCallee->m_lineInfo, "inconsistent instParam value for param %s on instance %s",
-									modInstParam.m_default.c_str(), pModInst->m_instName.c_str());
+									modInstParam.second.c_str(), pModInst->m_instName.c_str());
 							}
 						} else
 							ParseMsg(Error, pCxrCallee->m_lineInfo, "instParam must have either a default value or AddCall specified value");
@@ -1348,7 +1385,7 @@ void CDsnInfo::InitCxrIntfInfo()
 		}
 	}
 
-	checkModInstParamsUsed();
+	CheckModInstParamsUsed();
 
 	if (bError)
 		printf("Fatal - previous errors prevent file generation\n");

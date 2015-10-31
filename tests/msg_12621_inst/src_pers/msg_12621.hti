@@ -1,0 +1,38 @@
+#include "Pers_src.h"
+
+AddModInstParams(unit=Au, modPath="ctl/mod0A", ATOB_FO=B_REPL);
+AddModInstParams(unit=Au, modPath="ctl/mod0B", replCnt=B_REPL, BTOC_FO=C_REPL/B_REPL);
+AddModInstParams(unit=Au, modPath="ctl/mod0C", replCnt=C_REPL, BTOC_FI=C_REPL/B_REPL);
+AddModInstParams(unit=Au, modPath="ctl/mod0D", replCnt=D_REPL, CTOD_FI=C_REPL/D_REPL);
+AddModInstParams(unit=Au, modPath="ctl/mod0E", DTOE_FI=D_REPL);
+
+AddMsgIntfParams(unit=Au, outPath=ctl/mod0A/AtoB, fanout=B_REPL);
+AddMsgIntfParams(unit=Au, outPath=ctl/mod1A/AtoB, fanout=1);
+
+AddMsgIntfParams(unit=Au, outPath=ctl/mod0B/BtoC, fanout=C_REPL/B_REPL);
+AddMsgIntfParams(unit=Au, outPath=ctl/mod1B/BtoC, fanout=1);
+
+AddMsgIntfParams(unit=Au, inPath=ctl/mod0D/CtoD, fanin=C_REPL/B_REPL);
+AddMsgIntfParams(unit=Au, inPath=ctl/mod1D/CtoD, fanin=1);
+
+AddMsgIntfParams(unit=Au, inPath=ctl/mod0E/DtoE, fanin=D_REPL);
+AddMsgIntfParams(unit=Au, inPath=ctl/mod1E/DtoE, fanin=1);
+
+AddMsgIntfConn(outUnit=Au, outPath=ctl/CtlTo0A, inUnit=Au, inPath=ctl/mod0A/CtlToA);
+AddMsgIntfConn(outUnit=Au, outPath=ctl/CtlTo1A, inUnit=Au, inPath=ctl/mod1A/CtlToA);
+
+AddMsgIntfConn(outUnit=Au[0], outPath=ctl/mod0A/AtoB[0], inUnit=Au[0], inPath=ctl/mod0B[0]/AtoB);
+AddMsgIntfConn(outUnit=Au[0], outPath=ctl/mod0A/AtoB[1], inUnit=Au[0], inPath=ctl/mod0B[1]/AtoB);
+
+AddMsgIntfConn(outUnit=Au[1], outPath=ctl/mod0A/AtoB[0], inUnit=Au[1], inPath=ctl/mod0B[0]/AtoB);
+AddMsgIntfConn(outUnit=Au[1], outPath=ctl/mod0A/AtoB[1], inUnit=Au[1], inPath=ctl/mod0B[1]/AtoB);
+
+AddMsgIntfConn(outUnit=Au, outPath=ctl/mod1A/AtoB[0], inUnit=Au, inPath=ctl/mod1B/AtoB);
+
+AddMsgIntfConn(outUnit=Au, outPath=ctl/mod0D[0]/DtoE, inUnit=Au, inPath=ctl/mod0E/DtoE[0]);
+AddMsgIntfConn(outUnit=Au, outPath=ctl/mod0D[1]/DtoE, inUnit=Au, inPath=ctl/mod0E/DtoE[1]);
+
+AddMsgIntfConn(outUnit=Au, outPath=ctl/mod1D/DtoE, inUnit=Au, inPath=ctl/mod1E/DtoE[0]);
+
+AddMsgIntfConn(outUnit=Au, outPath=ctl/mod0E/EtoCtl, inUnit=Au, inPath=ctl/E0toCtl);
+AddMsgIntfConn(outUnit=Au, outPath=ctl/mod1E/EtoCtl, inUnit=Au, inPath=ctl/E1toCtl);

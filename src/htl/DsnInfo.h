@@ -784,28 +784,18 @@ public:
 	string		m_modPath;
 };
 
-struct CCallInstParam {
-	CCallInstParam(string const &name, string const &value) : m_name(name), m_value(value), m_lineInfo(CPreProcess::m_lineInfo) {}
-
-	string m_name;
-	string m_value;
-	CLineInfo m_lineInfo;
-};
+typedef pair<string, string> InstParam_t;
 
 // Call/Transfer/Return interface info
 struct CCxrCall {
 	// Constructor used for AddCall
-	CCxrCall(string const &modEntry, string const &callName, string const &instName, bool bCall, bool bFork, string const &queueW, string const &dest, bool bXfer)
-		: m_modEntry(modEntry), m_callName(callName), m_instName(instName), m_bCall(bCall), m_bFork(bFork), m_queueW(queueW), m_dest(dest), m_bXfer(bXfer)
+	CCxrCall(string const &modEntry, string const &callName, string const &instName, bool bCall, bool bFork, string const &queueW, string const &dest, bool bXfer, vector<InstParam_t> &paramPairList)
+		: m_modEntry(modEntry), m_callName(callName), m_instName(instName), m_bCall(bCall), m_bFork(bFork), m_queueW(queueW), m_dest(dest), m_bXfer(bXfer), m_callParamList(paramPairList)
 	{
 
 		m_lineInfo = CPreProcess::m_lineInfo;
 		m_bCallFork = bFork;
 		m_bXferFork = false;
-	}
-
-	void AddInstParam(string const &name, string const &value) {
-		m_instParamList.push_back(CCallInstParam(name, value));
 	}
 
 public:
@@ -827,7 +817,7 @@ public:
 	bool			m_bCallFork;
 	bool			m_bXferFork;
 
-	vector<CCallInstParam> m_instParamList;
+	vector<InstParam_t> m_callParamList;
 
 	CLineInfo		m_lineInfo;
 };
@@ -1359,19 +1349,47 @@ struct CMsgDst {
 	CLineInfo m_lineInfo;
 };
 
+struct CMsgIntfInst {
+	CMsgIntfInst() { 
+		m_srcReplCnt = 0;
+		m_srcFanout = 0;
+		m_dstFanin = 0;
+		m_bSrcFanCnt = false;
+		m_bDstFanCnt = false;
+	}
+	int m_srcReplCnt;
+	int m_srcFanout;
+	int m_dstFanin;
+	bool m_bSrcFanCnt;
+	bool m_bDstFanCnt;
+	CHtString m_srcInstName;
+	vector<vector<HtiFile::CMsgIntfConn *> > m_connList;
+};
+
 struct CMsgIntf {
-	CMsgIntf(string name, string dir, CType * pType, string dimen, string replCnt, string queueW, string reserve, bool autoConn)
-		: m_name(name), m_dir(dir), m_pType(pType), m_pTypeIntf(pType), m_dimen(dimen),
-		m_fanCnt(replCnt), m_queueW(queueW), m_reserve(reserve), m_bAutoConn(autoConn)
+	CMsgIntf(string name, string dir, CType * pType, string dimen, string fanIoCnt, string queueW, string reserve, bool autoConn)
+		: m_name(name), m_pType(pType), m_pTypeIntf(pType), m_dimen(dimen),
+		m_fanCnt(fanIoCnt), m_queueW(queueW), m_reserve(reserve), m_bAutoConn(autoConn)
 	{
 		m_lineInfo = CPreProcess::m_lineInfo;
 		m_pIntfList = 0;
 		m_bAeConn = false;
 		m_bInboundQueue = false;
+		m_bInBound = dir == "in";
+	}
+
+	int GetFanCnt(int instIdx)
+	{
+		return m_bInBound ? m_msgIntfInstList[instIdx].m_dstFanin : m_msgIntfInstList[instIdx].m_srcFanout;
+	}
+
+	bool IsFanCntSet(int instIdx)
+	{
+		return m_bInBound ? m_msgIntfInstList[instIdx].m_bDstFanCnt : m_msgIntfInstList[instIdx].m_bSrcFanCnt;
 	}
 
 	string	m_name;
-	string	m_dir;
+	bool m_bInBound;
 	CType * m_pType;
 	CType * m_pTypeIntf;
 	CHtString m_dimen;
@@ -1380,11 +1398,10 @@ struct CMsgIntf {
 	CHtString m_reserve;
 	bool m_bAutoConn;
 
-	int			m_srcFanout;
-	int			m_srcReplCnt;
+	//int			m_srcFanout;
 	HtdFile::EClkRate	m_srcClkRate;
 	bool		m_bInboundQueue;
-	vector<vector<HtiFile::CMsgIntfConn *> > m_msgIntfInstList;
+	vector<CMsgIntfInst> m_msgIntfInstList;
 	bool m_bAeConn;
 
 	vector<CMsgIntf *> * m_pIntfList;
@@ -1515,6 +1532,7 @@ struct CInstanceParams {
 	string m_modInstName;
 	vector<int> m_memPortList;
 	int m_replCnt;
+	vector<InstParam_t> m_paramPairList;
 
 	CLineInfo m_lineInfo;
 };
@@ -1551,7 +1569,7 @@ struct CInstance {
 	CHtString			m_instName;
 	CHtString			m_fileName;
 	vector<string>		m_modPaths;		// module instance path name if specified in instance file
-	vector<CCallInstParam>	m_callInstParamList;
+	vector<InstParam_t>	m_callInstParamList;
 	vector<CCxrInstReturn>	m_cxrInstReturnList;
 	vector<CCxrInstCall> m_cxrInstCallList;
 	int					m_cxrSrcCnt;
@@ -1572,14 +1590,6 @@ struct CStage : CRecord {
 	CHtString	m_execStg;
 	CLineInfo	m_lineInfo;
 	bool		m_bStageNums;
-};
-
-struct CModuleInstParam {
-	CModuleInstParam(string const &name, string const &default) : m_name(name), m_default(default), m_lineInfo(CPreProcess::m_lineInfo) {}
-
-	string m_name;
-	string m_default;
-	CLineInfo m_lineInfo;
 };
 
 struct CInstSet {
@@ -1706,7 +1716,7 @@ struct CModule {
 	}
 
 	void AddInstParam(string const &name, string const &default) {
-		m_instParamList.push_back(CModuleInstParam(name, default));
+		m_instParamList.push_back(InstParam_t(name, default));
 	}
 
 public:
@@ -1771,7 +1781,7 @@ public:
 	vector<CStream *>	m_streamList;
 	vector<CModMemPort *> m_memPortList;
 	vector<CStencilBuffer *> m_stencilBufferList;
-	vector<CModuleInstParam> m_instParamList;
+	vector<InstParam_t> m_instParamList;
 
 	CStage				m_stage;
 	CRecord				m_global;
@@ -1952,7 +1962,7 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 	CDsnInfo()
 	{
 		HtdFile::setDsnInfo(this);
-		HtiFile::setLex(this);
+		HtiFile::SetLex(this);
 		HtdFile::setLex(this);
 
 		// fill in command line defined names
@@ -1982,7 +1992,8 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 		if (g_appArgs.GetEntryName().size() > 0) {
 			bool bCall = true;
 			bool bFork = false;
-			AddCall(pHifMod, g_appArgs.GetEntryName(), g_appArgs.GetEntryName(), "", bCall, bFork, string("0"), string("auto"));
+			vector<InstParam_t> paramPairList;
+			AddCall(pHifMod, g_appArgs.GetEntryName(), g_appArgs.GetEntryName(), "", bCall, bFork, string("0"), string("auto"), paramPairList);
 		}
 
 		if (g_appArgs.GetIqModName().size() > 0)
@@ -2019,7 +2030,8 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 	void AddModInstParam(CModule *pModule, string const &name, string const &default);
 	CMifRd * AddReadMem(CModule * pModule, string queueW, string rspGrpId, string rspGrpW, string rspCntW, bool maxBw, bool bPause, bool bPoll, bool bMultiRd = false);
 	CMifWr * AddWriteMem(CModule * pModule, string queueW, string rspGrpId, string rspGrpW, string rspCntW, bool maxBw, bool bPause, bool bPoll, bool bReqPause, bool bMultiWr = false);
-	CCxrCall * AddCall(void * pModule, string const &modEntry, string const &xferName, string const &modInst, bool bCall, bool bFork, string const &queueW, string const &dest);
+	CCxrCall * AddCall(void * pModule, string const &modEntry, string const &xferName, string const &modInst,
+		bool bCall, bool bFork, string const &queueW, string const &dest, vector<InstParam_t> &paramPairList);
 	CCxrCall * AddXfer(void * pModule, string const &modEntry, string const &xferName, string const &modInst, string const &queueW);
 	CCxrEntry * AddEntry(CModule * pModule, string funcName, string entryInstr, string reserve, bool &bHost);
 	CCxrReturn * AddReturn(void * pModule, string func);
@@ -2053,7 +2065,6 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 	void AddEntryParam(CCxrEntry * pEntry, string hostType, CType * pType, string paramName, bool bIsUsed) { pEntry->AddParam(hostType, pType, paramName, bIsUsed); }
 	void AddReturnParam(CCxrReturn * pReturn, string hostType, CType * pType, string paramName, bool bIsUsed) { pReturn->AddParam(hostType, pType, paramName, bIsUsed); }
 	void AddFunctionParam(CFunction * pFunction, string dir, CType * pType, string name) { pFunction->AddParam(dir, pType, name); }
-	void AddCallInstParam(CCxrCall * pCall, string const &name, string const &value) { pCall->AddInstParam(name, value); }
 
 	void * AddMsgDst(void * pOpenIhm, string var, string dataLsb, string addr1Lsb, string addr2Lsb,
 		string idx1Lsb, string idx2Lsb, string field, string fldIdx1Lsb, string fldIdx2Lsb, bool bReadOnly);
@@ -2321,7 +2332,7 @@ public:
 
 	void GenPrimStateStatements(CModule &mod);
 	void GenModTDSUStatements(CModule &mod); // typedef/define/struct/union
-	void GenModMsgStatements(CModule &mod);
+	void GenModMsgStatements(CInstance * pInst);
 	void GenModBarStatements(CInstance * pModInst);
 	void GenModIplStatements(CInstance * pModInst);
 	void GenModIhmStatements(CModule &mod);
@@ -2342,7 +2353,7 @@ public:
 	void GenAeNextMsgIntf(HtiFile::CMsgIntfConn * pMicAeNext);
 	void GenAePrevMsgIntf(HtiFile::CMsgIntfConn * pMicAePrev);
 
-	void SetMsgIntfConnUsedFlags(bool bInBound, CMsgIntfConn * pConn, CModule &mod, CMsgIntf * pMsgIntf);
+	void SetMsgIntfConnUsedFlags(bool bInBound, CMsgIntfConn * pConn, CModule &mod, CMsgIntf * pMsgIntf, int instIdx);
 
 	void WritePersCppFile(CInstance * pModInst, bool bNeedClk2x);
 	void WritePersIncFile(CInstance * pModInst, bool bNeedClk2x);

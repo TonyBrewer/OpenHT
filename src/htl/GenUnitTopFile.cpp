@@ -148,9 +148,8 @@ void CDsnInfo::GenerateUnitTopFile()
 		CModule &mod = *m_modList[modIdx];
 		if (!mod.m_bIsUsed) continue;
 
-		int modInstIdx = 0;
 		for (int instIdx = 0; instIdx < mod.m_instSet.GetInstCnt(); instIdx += 1) {
-			for (int instReplIdx = 0; instReplIdx < mod.m_instSet.GetReplCnt(instIdx); instReplIdx += 1, modInstIdx += 1) {
+			for (int instReplIdx = 0; instReplIdx < mod.m_instSet.GetReplCnt(instIdx); instReplIdx += 1) {
 
 				CInstance * pModInst = mod.m_instSet.GetInst(instIdx, instReplIdx);
 
@@ -435,12 +434,12 @@ void CDsnInfo::GenerateUnitTopFile()
 					if (pMsgIntf->m_dimen.AsInt() > 0) {
 						dimenList.push_back(pMsgIntf->m_dimen);
 					}
-					if (pMsgIntf->m_fanCnt.AsInt() > 0) {
+					if (pMsgIntf->IsFanCntSet(instIdx)) {
 						fanCntIdx = (int)dimenList.size();
-						dimenList.push_back(pMsgIntf->m_fanCnt);
+						dimenList.push_back(CHtString(pMsgIntf->GetFanCnt(instIdx)));
 					}
 
-					if (pMsgIntf->m_dir == "in") {
+					if (pMsgIntf->m_bInBound) {
 
 						vector<int> portRefList(dimenList.size());
 						do {
@@ -453,21 +452,21 @@ void CDsnInfo::GenerateUnitTopFile()
 								refListIdx += 1;
 							}
 
-							HtlAssert(mod.m_instSet.GetInstCnt() == 1);
-							int dstReplCnt = mod.m_instSet.GetReplCnt(0);
-							int dstFanout = pMsgIntf->m_fanCnt.AsInt() > 0 ? pMsgIntf->m_fanCnt.AsInt() : 1;
-							int dstReplIdx = modInstIdx;
+							int dstReplCnt = mod.m_instSet.GetReplCnt(instIdx);
+							int dstFanin = pMsgIntf->m_msgIntfInstList[instIdx].m_dstFanin;
+							int dstReplIdx = instReplIdx;
 							int dstIntfIdx = fanCntIdx < 0 ? 0 : portRefList[fanCntIdx];
 
-							int srcFanout = pMsgIntf->m_srcFanout;
+							int srcFanout = pMsgIntf->m_msgIntfInstList[instIdx].m_srcFanout;
+							CHtString & srcInstName = pMsgIntf->m_msgIntfInstList[instIdx].m_srcInstName;
 
-							int dstTotalCnt = dstFanout * dstReplCnt;
-							int srcTotalCnt = pMsgIntf->m_srcFanout * pMsgIntf->m_srcReplCnt;
+							int dstTotalCnt = dstFanin * dstReplCnt;
+							int srcTotalCnt = pMsgIntf->m_msgIntfInstList[instIdx].m_srcFanout * pMsgIntf->m_msgIntfInstList[instIdx].m_srcReplCnt;
 
 							if (srcTotalCnt > 1) {
 								assert(dstTotalCnt % srcTotalCnt == 0);
 								if (srcFanout == 1)
-									signalRefList.push_back((dstReplIdx * dstFanout + dstIntfIdx) % srcTotalCnt);
+									signalRefList.push_back((dstReplIdx * dstFanin + dstIntfIdx) % srcTotalCnt);
 								else
 									signalRefList.push_back((dstIntfIdx * dstReplCnt + dstReplIdx) % srcTotalCnt);
 							}
@@ -477,18 +476,19 @@ void CDsnInfo::GenerateUnitTopFile()
 							fprintf(scFile, "\t\tp%s%s->i_%sToAu_%sMsgRdy%s(%sToAu_%sMsgRdy%s);\n",
 								instName.c_str(), replIdx.c_str(),
 								pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str(),
-								pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), signalIdx.c_str());
+								srcInstName.Lc().c_str(), pMsgIntf->m_name.c_str(), signalIdx.c_str());
 
 							fprintf(scFile, "\t\tp%s%s->i_%sToAu_%sMsg%s(%sToAu_%sMsg%s);\n",
 								instName.c_str(), replIdx.c_str(),
 								pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str(),
-								pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), signalIdx.c_str());
+								srcInstName.Lc().c_str(), pMsgIntf->m_name.c_str(), signalIdx.c_str());
 
-							if (pMsgIntf->m_queueW.AsInt() > 0)
+							if (pMsgIntf->m_queueW.AsInt() > 0) {
 								fprintf(scFile, "\t\tp%s%s->o_auTo%s_%sMsgFull%s(auTo%s_%sMsgFull%s);\n",
-								instName.c_str(), replIdx.c_str(),
-								pMsgIntf->m_outModName.Uc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str(),
-								pMsgIntf->m_outModName.Uc().c_str(), pMsgIntf->m_name.c_str(), signalIdx.c_str());
+									instName.c_str(), replIdx.c_str(),
+									pMsgIntf->m_outModName.Uc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str(),
+									srcInstName.Uc().c_str(), pMsgIntf->m_name.c_str(), signalIdx.c_str());
+							}
 
 						} while (DimenIter(dimenList, portRefList));
 
@@ -506,9 +506,11 @@ void CDsnInfo::GenerateUnitTopFile()
 								refListIdx += 1;
 							}
 
-							int srcReplCnt = pMsgIntf->m_srcReplCnt;
-							int srcFanout = pMsgIntf->m_fanCnt.AsInt() > 0 ? pMsgIntf->m_fanCnt.AsInt() : 1;
-							int srcReplIdx = modInstIdx;
+							int srcReplCnt = pMsgIntf->m_msgIntfInstList[instIdx].m_srcReplCnt;
+							int srcFanout = pMsgIntf->m_msgIntfInstList[instIdx].m_srcFanout;
+							CHtString & srcInstName = pMsgIntf->m_msgIntfInstList[instIdx].m_srcInstName;
+
+							int srcReplIdx = instReplIdx;
 							int srcIntfIdx = fanCntIdx < 0 ? 0 : portRefList[fanCntIdx];
 
 							if (srcReplCnt > 1 || srcFanout > 1)
@@ -519,18 +521,19 @@ void CDsnInfo::GenerateUnitTopFile()
 							fprintf(scFile, "\t\tp%s%s->o_%sToAu_%sMsgRdy%s(%sToAu_%sMsgRdy%s);\n",
 								instName.c_str(), replIdx.c_str(),
 								mod.m_modName.Lc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str(),
-								mod.m_modName.Lc().c_str(), pMsgIntf->m_name.c_str(), signalIdx.c_str());
+								srcInstName.Lc().c_str(), pMsgIntf->m_name.c_str(), signalIdx.c_str());
 
 							fprintf(scFile, "\t\tp%s%s->o_%sToAu_%sMsg%s(%sToAu_%sMsg%s);\n",
 								instName.c_str(), replIdx.c_str(),
 								mod.m_modName.Lc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str(),
-								mod.m_modName.Lc().c_str(), pMsgIntf->m_name.c_str(), signalIdx.c_str());
+								srcInstName.Lc().c_str(), pMsgIntf->m_name.c_str(), signalIdx.c_str());
 
-							if (pMsgIntf->m_bInboundQueue)
+							if (pMsgIntf->m_bInboundQueue) {
 								fprintf(scFile, "\t\tp%s%s->i_auTo%s_%sMsgFull%s(auTo%s_%sMsgFull%s);\n",
-								instName.c_str(), replIdx.c_str(),
-								mod.m_modName.Uc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str(),
-								mod.m_modName.Uc().c_str(), pMsgIntf->m_name.c_str(), signalIdx.c_str());
+									instName.c_str(), replIdx.c_str(),
+									mod.m_modName.Uc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str(),
+									srcInstName.Uc().c_str(), pMsgIntf->m_name.c_str(), signalIdx.c_str());
+							}
 
 						} while (DimenIter(dimenList, portRefList));
 
@@ -548,12 +551,12 @@ void CDsnInfo::GenerateUnitTopFile()
 					if (pMsgIntf->m_dimen.AsInt() > 0) {
 						dimenList.push_back(pMsgIntf->m_dimen);
 					}
-					if (pMsgIntf->m_fanCnt.AsInt() > 0) {
+					if (pMsgIntf->IsFanCntSet(instIdx)) {
 						fanCntIdx = (int)dimenList.size();
-						dimenList.push_back(pMsgIntf->m_fanCnt);
+						dimenList.push_back(CHtString(pMsgIntf->GetFanCnt(instIdx)));
 					}
 
-					if (pMsgIntf->m_dir == "in") {
+					if (pMsgIntf->m_bInBound) {
 
 						vector<int> portRefList(dimenList.size());
 						do {
@@ -566,28 +569,28 @@ void CDsnInfo::GenerateUnitTopFile()
 								refListIdx += 1;
 							}
 
-							HtlAssert(mod.m_instSet.GetInstCnt() == 1);
-							int dstReplCnt = mod.m_instSet.GetReplCnt(0);
-							int dstFanout = pMsgIntf->m_fanCnt.AsInt() > 0 ? pMsgIntf->m_fanCnt.AsInt() : 1;
-							int dstReplIdx = modInstIdx;
+							int dstReplCnt = mod.m_instSet.GetReplCnt(instIdx);
+							int dstFanin = pMsgIntf->m_msgIntfInstList[instIdx].m_dstFanin;
+
+							int dstReplIdx = instReplIdx;
 							int dstIntfIdx = fanCntIdx < 0 ? 0 : portRefList[fanCntIdx];
 
-							int srcFanout = pMsgIntf->m_srcFanout;
+							int srcFanout = pMsgIntf->m_msgIntfInstList[instIdx].m_srcFanout;
 
-							int dstTotalCnt = dstFanout * dstReplCnt;
-							int srcTotalCnt = pMsgIntf->m_srcFanout * pMsgIntf->m_srcReplCnt;
+							int dstTotalCnt = dstFanin * dstReplCnt;
+							int srcTotalCnt = pMsgIntf->m_msgIntfInstList[instIdx].m_srcFanout * pMsgIntf->m_msgIntfInstList[instIdx].m_srcReplCnt;
 
 							if (srcTotalCnt > 1) {
 								assert(dstTotalCnt % srcTotalCnt == 0);
 								if (srcFanout == 1)
-									signalRefList.push_back((dstReplIdx * dstFanout + dstIntfIdx) % srcTotalCnt);
+									signalRefList.push_back((dstReplIdx * dstFanin + dstIntfIdx) % srcTotalCnt);
 								else
 									signalRefList.push_back((dstIntfIdx * dstReplCnt + dstReplIdx) % srcTotalCnt);
 							}
 
 							string signalIdx = IndexStr(signalRefList);
 
-							CHtString &modInstName = mod.m_instSet.GetInst(0, modInstIdx)->m_replInstName;
+							CHtString &modInstName = pModInst->m_replInstName;
 
 							if (pMsgIntf->m_bAeConn) {
 
@@ -601,40 +604,44 @@ void CDsnInfo::GenerateUnitTopFile()
 									pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str(),
 									modInstName.Uc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str());
 
-								if (pMsgIntf->m_queueW.AsInt() > 0)
+								if (pMsgIntf->m_queueW.AsInt() > 0) {
 									fprintf(scFile, "\t\tp%s%s->o_auTo%s_%sMsgFull%s(o_%sToAe_%sMsgFull%s);\n",
-									instName.c_str(), replIdx.c_str(),
-									pMsgIntf->m_outModName.Uc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str(),
-									modInstName.Lc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str());
+										instName.c_str(), replIdx.c_str(),
+										pMsgIntf->m_outModName.Uc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str(),
+										modInstName.Lc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str());
+								}
 							} else {
 
 								int unitIdx = 0;
 								int msgDimenCnt = pMsgIntf->m_dimen.AsInt() > 0 ? pMsgIntf->m_dimen.AsInt() : 1;
 								int msgDimenIdx = pMsgIntf->m_dimen.AsInt() > 0 ? portRefList[0] : 0;
 
-								int msgIntfInstIdx = ((unitIdx * dstReplCnt + dstReplIdx) * dstFanout + dstIntfIdx) * msgDimenCnt + msgDimenIdx;
+								int msgIntfInstIdx = ((unitIdx * dstReplCnt + dstReplIdx) * dstFanin + dstIntfIdx) * msgDimenCnt + msgDimenIdx;
 
-								CMsgIntfConn * pConn = pMsgIntf->m_msgIntfInstList[msgIntfInstIdx][0];
-								int outModInstIdx = max(0, pConn->m_outMsgIntf.m_replIdx);
-								HtlAssert(pConn->m_outMsgIntf.m_pMod->m_instSet.GetInstCnt() == 1);
-								CHtString & outModInstName = pConn->m_outMsgIntf.m_pMod->m_instSet.GetInst(0, outModInstIdx)->m_replInstName;
+								CMsgIntfConn * pConn = pMsgIntf->m_msgIntfInstList[pModInst->m_instId].m_connList[msgIntfInstIdx][0];
+
+								int outInstIdx = pConn->m_outMsgIntf.m_instIdx;
+								int outInstReplIdx = pConn->m_outMsgIntf.m_replIdx;
+								string & srcMsgName = pConn->m_outMsgIntf.m_pMsgIntf->m_name;
+
+								CHtString & outModInstName = pConn->m_outMsgIntf.m_pMod->m_instSet.GetInst(outInstIdx, outInstReplIdx)->m_replInstName;
 
 								fprintf(scFile, "\t\tp%s%s->i_%sToAu_%sMsgRdy%s(%sToAu_%sMsgRdy%s);\n",
 									instName.c_str(), replIdx.c_str(),
 									pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str(),
-									outModInstName.Lc().c_str(), pMsgIntf->m_name.c_str(), signalIdx.c_str());
+									outModInstName.Lc().c_str(), srcMsgName.c_str(), signalIdx.c_str());
 
 								fprintf(scFile, "\t\tp%s%s->i_%sToAu_%sMsg%s(%sToAu_%sMsg%s);\n",
 									instName.c_str(), replIdx.c_str(),
 									pMsgIntf->m_outModName.Lc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str(),
-									outModInstName.Lc().c_str(), pMsgIntf->m_name.c_str(), signalIdx.c_str());
+									outModInstName.Lc().c_str(), srcMsgName.c_str(), signalIdx.c_str());
 
-								if (pMsgIntf->m_queueW.AsInt() > 0)
+								if (pMsgIntf->m_queueW.AsInt() > 0) {
 									fprintf(scFile, "\t\tp%s%s->o_auTo%s_%sMsgFull%s(%sToAu_%sMsgFull%s);\n",
-									instName.c_str(), replIdx.c_str(),
-									pMsgIntf->m_outModName.Uc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str(),
-									outModInstName.Lc().c_str(), pMsgIntf->m_name.c_str(), signalIdx.c_str());
-
+										instName.c_str(), replIdx.c_str(),
+										pMsgIntf->m_outModName.Uc().c_str(), pMsgIntf->m_name.c_str(), portIdx.c_str(),
+										outModInstName.Lc().c_str(), srcMsgName.c_str(), signalIdx.c_str());
+								}
 							}
 						} while (DimenIter(dimenList, portRefList));
 
@@ -652,9 +659,10 @@ void CDsnInfo::GenerateUnitTopFile()
 								refListIdx += 1;
 							}
 
-							int srcReplCnt = pMsgIntf->m_srcReplCnt;
-							int srcFanout = pMsgIntf->m_fanCnt.AsInt() > 0 ? pMsgIntf->m_fanCnt.AsInt() : 1;
-							int srcReplIdx = modInstIdx;
+							int srcReplCnt = pMsgIntf->m_msgIntfInstList[instIdx].m_srcReplCnt;
+							int srcFanout = pMsgIntf->m_msgIntfInstList[instIdx].m_srcFanout;
+
+							int srcReplIdx = instReplIdx;
 							int srcIntfIdx = fanCntIdx < 0 ? 0 : portRefList[fanCntIdx];
 
 							if (srcReplCnt > 1 || srcFanout > 1)
@@ -662,8 +670,7 @@ void CDsnInfo::GenerateUnitTopFile()
 
 							string signalIdx = IndexStr(signalRefList);
 
-							HtlAssert(mod.m_instSet.GetInstCnt() == 1);
-							CHtString &modInstName = mod.m_instSet.GetInst(0, modInstIdx)->m_replInstName;
+							CHtString &modInstName = pModInst->m_replInstName;
 
 							if (pMsgIntf->m_bAeConn) {
 								fprintf(scFile, "\t\tp%s%s->o_%sToAu_%sMsgRdy%s(o_%sToAe_%sMsgRdy%s);\n",
