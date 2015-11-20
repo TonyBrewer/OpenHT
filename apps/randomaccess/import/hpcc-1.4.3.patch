@@ -1,0 +1,466 @@
+diff -ru hpcc-1.4.3/include/hpcc.h hpcc/include/hpcc.h
+--- hpcc-1.4.3/include/hpcc.h	2012-10-08 22:03:40.000000000 -0500
++++ hpcc/include/hpcc.h	2015-10-16 09:28:25.206730000 -0500
+@@ -147,8 +147,8 @@
+ extern int HPCC_SingleRandomAccess_LCG(HPCC_Params *params);
+ extern int HPCC_StarRandomAccess_LCG(HPCC_Params *params);
+ extern int HPCC_MPIRandomAccess(HPCC_Params *params);
+-extern int HPCC_SingleRandomAccess(HPCC_Params *params);
+-extern int HPCC_StarRandomAccess(HPCC_Params *params);
++extern int HPCC_SingleRandomAccess(HPCC_Params *params, void *extdata);
++extern int HPCC_StarRandomAccess(HPCC_Params *paramsm, void *extdata);
+ extern int HPCC_SingleStream(HPCC_Params *params);
+ extern int HPCC_StarStream(HPCC_Params *params);
+ extern int HPCC_StarFFT(HPCC_Params *params);
+diff -ru hpcc-1.4.3/Makefile hpcc/Makefile
+--- hpcc-1.4.3/Makefile	2009-09-23 15:40:15.000000000 -0500
++++ hpcc/Makefile	2015-10-16 09:28:25.208732000 -0500
+@@ -5,7 +5,7 @@
+ 
+ all:
+ 	- $(MKDIR) hpl/lib/$(arch)
+-	( $(CD) hpl/lib/arch/build ; $(MAKE) arch=$(arch) -f Makefile.hpcc )
++	( $(CD) hpl/lib/arch/build ; $(MAKE) arch=$(arch) LIB_HT=$(LIB_HT) -f Makefile.hpcc )
+ 
+ clean:
+ 	- $(MKDIR) hpl/lib/$(arch)
+diff -ru hpcc-1.4.3/RandomAccess/core_single_cpu.c hpcc/RandomAccess/core_single_cpu.c
+--- hpcc-1.4.3/RandomAccess/core_single_cpu.c	2009-09-23 15:40:15.000000000 -0500
++++ hpcc/RandomAccess/core_single_cpu.c	2015-10-16 09:28:25.234732000 -0500
+@@ -49,11 +49,12 @@
+ 
+ /* Number of updates to table (suggested: 4x number of table entries) */
+ #define NUPDATE (4 * TableSize)
+-
++#define CNY_THREAD_CNT 64
++#define THREADS (AE_LIM * CNY_HT_AEUCNT * CNY_THREAD_CNT)
+ static void
+-RandomAccessUpdate(u64Int TableSize, u64Int *Table) {
++RandomAccessUpdate(u64Int TableSize, u64Int *Table, double *cputime, double *realtime, void *extdata) {
+   u64Int i;
+-  u64Int ran[128];              /* Current random numbers */
++  u64Int ran[THREADS];              /* Current random numbers */
+   int j;
+ 
+   /* Perform updates to main table.  The scalar equivalent is:
+@@ -65,23 +66,49 @@
+    *       table[ran & (TableSize-1)] ^= ran;
+    *     }
+    */
+-  for (j=0; j<128; j++)
+-    ran[j] = HPCC_starts ((NUPDATE/128) * j);
++  for (j=0; j<THREADS; j++)
++    ran[j] = HPCC_starts ((NUPDATE/THREADS) * j);
++
++#ifdef CNY_EXEC
++  // vgups does the following:
++  //   1. construct the personality class
++  //   2. allocate specified coprocessor memory for testing
++  //   3. copy initialized host memory to coprocessor memory
++  //   4. propagate the random seed to each thread of each unit, load operating parameters to each unit
++  //   5. start timers
++  //   6. call the personality
++  //   7. wait for return
++  //   8. stop timers
++  //   9. copy coprocessor memory back to host memory for error detection
++  //  10. free memory, delete personality class
++  //  11. return
++
++  vgups(TableSize, Table, ran, NUPDATE, cputime, realtime, extdata);
++#else
+ 
+-  for (i=0; i<NUPDATE/128; i++) {
++  /* Begin timing here */
++  *cputime = -CPUSEC();
++  *realtime = -RTSEC();
++
++  for (i=0; i<NUPDATE/THREADS; i++) {
+ /* #pragma ivdep */
+ #ifdef _OPENMP
+ #pragma omp parallel for
+ #endif
+-    for (j=0; j<128; j++) {
++    for (j=0; j<THREADS; j++) {
+       ran[j] = (ran[j] << 1) ^ ((s64Int) ran[j] < 0 ? POLY : 0);
+       Table[ran[j] & (TableSize-1)] ^= ran[j];
+     }
+   }
++
++  /* End timed section */
++  *cputime += CPUSEC();
++  *realtime += RTSEC();
++#endif
+ }
+ 
+ int
+-HPCC_RandomAccess(HPCC_Params *params, int doIO, double *GUPs, int *failure) {
++HPCC_RandomAccess(HPCC_Params *params, int doIO, double *GUPs, int *failure, void *extdata) {
+   u64Int i;
+   u64Int temp;
+   double cputime;               /* CPU time to update table */
+@@ -129,15 +156,16 @@
+   /* Initialize main table */
+   for (i=0; i<TableSize; i++) Table[i] = i;
+ 
+-  /* Begin timing here */
+-  cputime = -CPUSEC();
+-  realtime = -RTSEC();
+-
+-  RandomAccessUpdate( TableSize, Table );
+-
+-  /* End timed section */
+-  cputime += CPUSEC();
+-  realtime += RTSEC();
++  // Time measurement pushed into RandomAccessUpdate to exclude coprocessor initialization/postprocessing
++   /* Begin timing here */
++   //  cputime = -CPUSEC();
++   //  realtime = -RTSEC();
++
++  RandomAccessUpdate( TableSize, Table, &cputime, &realtime, extdata );
++
++   /* End timed section */
++   //  cputime += CPUSEC();
++   //  realtime += RTSEC();
+ 
+   /* make sure no division by zero */
+   *GUPs = (realtime > 0.0 ? 1.0 / realtime : -1.0);
+diff -ru hpcc-1.4.3/RandomAccess/RandomAccess.h hpcc/RandomAccess/RandomAccess.h
+--- hpcc-1.4.3/RandomAccess/RandomAccess.h	2012-09-25 19:41:33.000000000 -0500
++++ hpcc/RandomAccess/RandomAccess.h	2015-10-16 09:28:25.244732000 -0500
+@@ -71,7 +71,7 @@
+ extern void HPCC_AnyNodesMPIRandomAccessUpdate_LCG(HPCC_RandomAccess_tabparams_t tparams);
+ extern void HPCC_Power2NodesMPIRandomAccessUpdate_LCG(HPCC_RandomAccess_tabparams_t tparams);
+ 
+-extern int HPCC_RandomAccess(HPCC_Params *params, int doIO, double *GUPs, int *failure);
++extern int HPCC_RandomAccess(HPCC_Params *params, int doIO, double *GUPs, int *failure, void *extdata);
+ extern int HPCC_RandomAccess_LCG(HPCC_Params *params, int doIO, double *GUPs, int *failure);
+ 
+ extern void HPCC_Power2NodesMPIRandomAccessCheck(HPCC_RandomAccess_tabparams_t tparams, s64Int *NumErrors);
+@@ -79,6 +79,9 @@
+ extern void HPCC_Power2NodesMPIRandomAccessCheck_LCG(HPCC_RandomAccess_tabparams_t tparams, s64Int *NumErrors);
+ extern void HPCC_AnyNodesMPIRandomAccessCheck_LCG(HPCC_RandomAccess_tabparams_t tparams, s64Int *NumErrors);
+ 
++// Merlin interface wrapper
++extern u64Int vgups(u64Int tblSize, u64Int *tbl, u64Int *rdnTblPtr, u64Int vecLen, double *cputime, double *realtime, void *extdata);
++
+ #if defined( RA_SANDIA_NOPT )
+ #define HPCC_RA_ALGORITHM 1
+ #elif defined( RA_SANDIA_OPT2 )
+diff -ru hpcc-1.4.3/RandomAccess/single_cpu.c hpcc/RandomAccess/single_cpu.c
+--- hpcc-1.4.3/RandomAccess/single_cpu.c	2009-09-23 15:40:15.000000000 -0500
++++ hpcc/RandomAccess/single_cpu.c	2015-10-16 09:28:25.253726000 -0500
+@@ -12,7 +12,7 @@
+ #include "RandomAccess.h"
+ 
+ int
+-HPCC_SingleRandomAccess(HPCC_Params *params)
++HPCC_SingleRandomAccess(HPCC_Params *params, void *extdata)
+ {
+   int myRank, commSize;
+   int rv, errCount, rank, failure = 0;
+@@ -41,7 +41,7 @@
+   MPI_Bcast( &rank, 1, MPI_INT, 0, comm ); /* broadcast the rank selected on node 0 */
+ 
+   if (myRank == rank) /* if this node has been selected */
+-    rv = HPCC_RandomAccess( params, 0 == myRank, &localGUPs, &failure );
++    rv = HPCC_RandomAccess( params, 0 == myRank, &localGUPs, &failure, extdata );
+ 
+   MPI_Bcast( &rv, 1, MPI_INT, rank, comm ); /* broadcast error code */
+   MPI_Bcast( &localGUPs, 1, MPI_DOUBLE, rank, comm ); /* broadcast GUPs */
+diff -ru hpcc-1.4.3/RandomAccess/star_single_cpu.c hpcc/RandomAccess/star_single_cpu.c
+--- hpcc-1.4.3/RandomAccess/star_single_cpu.c	2009-09-23 15:40:15.000000000 -0500
++++ hpcc/RandomAccess/star_single_cpu.c	2015-10-16 09:28:25.261731000 -0500
+@@ -12,7 +12,7 @@
+ #include "RandomAccess.h"
+ 
+ int
+-HPCC_StarRandomAccess(HPCC_Params *params)
++HPCC_StarRandomAccess(HPCC_Params *params, void *extdata)
+ {
+   int myRank, commSize;
+   int rv, errCount, failure = 0, failureAll = 0;
+@@ -25,7 +25,7 @@
+   MPI_Comm_size( comm, &commSize );
+   MPI_Comm_rank( comm, &myRank );
+ 
+-  rv = HPCC_RandomAccess( params, 0 == myRank, &localGUPs, &failure );
++  rv = HPCC_RandomAccess( params, 0 == myRank, &localGUPs, &failure, extdata );
+   MPI_Reduce( &rv, &errCount, 1, MPI_INT, MPI_SUM, 0, comm );
+   MPI_Allreduce( &failure, &failureAll, 1, MPI_INT, MPI_MAX, comm );
+   if (failureAll) params->Failure = 1;
+diff -ru hpcc-1.4.3/src/extinit.c hpcc/src/extinit.c
+--- hpcc-1.4.3/src/extinit.c	2010-03-27 15:47:25.000000000 -0500
++++ hpcc/src/extinit.c	2015-10-16 09:28:25.269732000 -0500
+@@ -10,5 +10,12 @@
+  */
+ int
+ HPCC_external_init(int argc, char *argv[], void *extdata) {
++  // JPA add processing of power-looping argument
++  if (argc >1 && argc <=2) { // grab our power loop param
++    //power_loop_time = argv[1];
++    *(unsigned long*) extdata = strtoul(argv[1],0,0);
++    // Temp print
++    printf ("power_loop_time argument detected, and set to: %lld seconds\n", *(unsigned long*) extdata);
++  }
+   return 0;
+ }
+diff -ru hpcc-1.4.3/src/hpcc.c hpcc/src/hpcc.c
+--- hpcc-1.4.3/src/hpcc.c	2010-03-27 15:47:25.000000000 -0500
++++ hpcc/src/hpcc.c	2015-10-16 09:28:25.278727000 -0500
+@@ -13,11 +13,12 @@
+   FILE *outputFile;
+   HPCC_Params params;
+   time_t currentTime;
+-  void *extdata;
++  void *extdata=NULL;
+ 
+   MPI_Init( &argc, &argv );
+ 
+-  if (HPCC_external_init( argc, argv, &extdata ))
++  long long time_sec= 0; // Default to 1 second so we do 1 iteration only 
++  if (HPCC_external_init( argc, argv, (void *) &time_sec ))
+     goto hpcc_end;
+ 
+   if (HPCC_Init( &params ))
+@@ -28,6 +29,7 @@
+ 
+   outFname = params.outFname;
+ 
++#ifdef RUNALL
+   /* -------------------------------------------------- */
+   /*                 MPI RandomAccess                   */
+   /* -------------------------------------------------- */
+@@ -46,6 +48,7 @@
+   fprintf( outputFile, "End of MPIRandomAccess section.\n" );
+   END_IO( myRank, outputFile );
+ 
++#endif
+   /* -------------------------------------------------- */
+   /*                  StarRandomAccess                  */
+   /* -------------------------------------------------- */
+@@ -56,7 +59,7 @@
+   fprintf( outputFile, "Begin of StarRandomAccess section.\n" );
+   END_IO( myRank, outputFile );
+ 
+-  if (params.RunStarRandomAccess) HPCC_StarRandomAccess( &params );
++  if (params.RunStarRandomAccess) HPCC_StarRandomAccess( &params,(void *) &time_sec );
+ 
+   time( &currentTime );
+   BEGIN_IO( myRank, outFname, outputFile);
+@@ -64,6 +67,7 @@
+   fprintf( outputFile, "End of StarRandomAccess section.\n" );
+   END_IO( myRank, outputFile );
+ 
++#ifdef RUNALL
+   /* -------------------------------------------------- */
+   /*                 SingleRandomAccess                 */
+   /* -------------------------------------------------- */
+@@ -74,7 +78,7 @@
+   fprintf( outputFile, "Begin of SingleRandomAccess section.\n" );
+   END_IO( myRank, outputFile );
+ 
+-  if (params.RunSingleRandomAccess) HPCC_SingleRandomAccess( &params );
++  if (params.RunSingleRandomAccess) HPCC_SingleRandomAccess( &params, (void *) &time_sec );
+ 
+   time( &currentTime );
+   BEGIN_IO( myRank, outFname, outputFile);
+@@ -313,6 +317,7 @@
+   fprintf( outputFile,"Current time (%ld) is %s\n",(long)currentTime,ctime(&currentTime));
+   fprintf( outputFile, "End of HPL section.\n" );
+   END_IO( myRank, outputFile );
++#endif
+ 
+   hpcc_end:
+ 
+--- /dev/null	2015-04-10 13:37:23.833760144 -0500
++++ hpcc-1.4.3/hpl/Make.OpenHT	2015-02-25 13:48:20.123049000 -0600
+@@ -0,0 +1,189 @@
++#  
++#  -- High Performance Computing Linpack Benchmark (HPL)                
++#     HPL - 2.0 - September 10, 2008                          
++#     Antoine P. Petitet                                                
++#     University of Tennessee, Knoxville                                
++#     Innovative Computing Laboratory                                 
++#     (C) Copyright 2000-2004 All Rights Reserved                       
++#                                                                       
++#  -- Copyright notice and Licensing terms:                             
++#                                                                       
++#  Redistribution  and  use in  source and binary forms, with or without
++#  modification, are  permitted provided  that the following  conditions
++#  are met:                                                             
++#                                                                       
++#  1. Redistributions  of  source  code  must retain the above copyright
++#  notice, this list of conditions and the following disclaimer.        
++#                                                                       
++#  2. Redistributions in binary form must reproduce  the above copyright
++#  notice, this list of conditions,  and the following disclaimer in the
++#  documentation and/or other materials provided with the distribution. 
++#                                                                       
++#  3. All  advertising  materials  mentioning  features  or  use of this
++#  software must display the following acknowledgement:                 
++#  This  product  includes  software  developed  at  the  University  of
++#  Tennessee, Knoxville, Innovative Computing Laboratory.             
++#                                                                       
++#  4. The name of the  University,  the name of the  Laboratory,  or the
++#  names  of  its  contributors  may  not  be used to endorse or promote
++#  products  derived   from   this  software  without  specific  written
++#  permission.                                                          
++#                                                                       
++#  -- Disclaimer:                                                       
++#                                                                       
++#  THIS  SOFTWARE  IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++#  ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,  INCLUDING,  BUT NOT
++#  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++#  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE UNIVERSITY
++#  OR  CONTRIBUTORS  BE  LIABLE FOR ANY  DIRECT,  INDIRECT,  INCIDENTAL,
++#  SPECIAL,  EXEMPLARY,  OR  CONSEQUENTIAL DAMAGES  (INCLUDING,  BUT NOT
++#  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++#  DATA OR PROFITS; OR BUSINESS INTERRUPTION)  HOWEVER CAUSED AND ON ANY
++#  THEORY OF LIABILITY, WHETHER IN CONTRACT,  STRICT LIABILITY,  OR TORT
++#  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++#  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
++# ######################################################################
++#  
++# ----------------------------------------------------------------------
++# - shell --------------------------------------------------------------
++# ----------------------------------------------------------------------
++#
++SHELL        = /bin/sh
++#
++CD           = cd
++CP           = cp
++LN_S         = ln -s
++MKDIR        = mkdir -p
++RM           = /bin/rm -f
++TOUCH        = touch
++#
++# ----------------------------------------------------------------------
++# - Platform identifier ------------------------------------------------
++# ----------------------------------------------------------------------
++#
++ARCH         = $(arch)
++#
++# ----------------------------------------------------------------------
++# - Convey Library Declaration -----------------------------------------
++# ----------------------------------------------------------------------
++#
++CNY_LIB_HT   = ../../../../$(LIB_HT)
++#
++# ----------------------------------------------------------------------
++# - HPL Directory Structure / HPL library ------------------------------
++# ----------------------------------------------------------------------
++TOPdir       = ../../..
++INCdir       = $(TOPdir)/include
++BINdir       = $(TOPdir)/bin/$(ARCH)
++LIBdir       = $(TOPdir)/lib/$(ARCH)
++#
++HPLlib       = $(LIBdir)/libhpl.a
++#
++# ----------------------------------------------------------------------
++# - Message Passing library (MPI) --------------------------------------
++# ----------------------------------------------------------------------
++# MPinc tells the  C  compiler where to find the Message Passing library
++# header files,  MPlib  is defined  to be the name of  the library to be 
++# used. The variable MPdir is only used for defining MPinc and MPlib.
++#
++MPdir        = /usr/lib64/openmpi
++MPinc        = -I/usr/include/openmpi-x86_64
++MPlib        = -L$(MPdir)/lib -lmpi -Wl,-rpath $(MPdir)/lib
++#
++# ----------------------------------------------------------------------
++# - Linear Algebra library (BLAS or VSIPL) -----------------------------
++# ----------------------------------------------------------------------
++# LAinc tells the  C  compiler where to find the Linear Algebra  library
++# header files,  LAlib  is defined  to be the name of  the library to be 
++# used. The variable LAdir is only used for defining LAinc and LAlib.
++#
++LAdir        = /usr/lib64
++LAinc        = 
++LAlib        = -lblas
++#
++# ----------------------------------------------------------------------
++# - F77 / C interface --------------------------------------------------
++# ----------------------------------------------------------------------
++# You can skip this section  if and only if  you are not planning to use
++# a  BLAS  library featuring a Fortran 77 interface.  Otherwise,  it  is
++# necessary  to  fill out the  F2CDEFS  variable  with  the  appropriate
++# options.  **One and only one**  option should be chosen in **each** of
++# the 3 following categories:
++#
++# 1) name space (How C calls a Fortran 77 routine)
++#
++# -DAdd_              : all lower case and a suffixed underscore  (Suns,
++#                       Intel, ...),                           [default]
++# -DNoChange          : all lower case (IBM RS6000),
++# -DUpCase            : all upper case (Cray),
++# -DAdd__             : the FORTRAN compiler in use is f2c.
++#
++# 2) C and Fortran 77 integer mapping
++#
++# -DF77_INTEGER=int   : Fortran 77 INTEGER is a C int,         [default]
++# -DF77_INTEGER=long  : Fortran 77 INTEGER is a C long,
++# -DF77_INTEGER=short : Fortran 77 INTEGER is a C short.
++#
++# 3) Fortran 77 string handling
++#
++# -DStringSunStyle    : The string address is passed at the string loca-
++#                       tion on the stack, and the string length is then
++#                       passed as  an  F77_INTEGER  after  all  explicit
++#                       stack arguments,                       [default]
++# -DStringStructPtr   : The address  of  a  structure  is  passed  by  a
++#                       Fortran 77  string,  and the structure is of the
++#                       form: struct {char *cp; F77_INTEGER len;},
++# -DStringStructVal   : A structure is passed by value for each  Fortran
++#                       77 string,  and  the  structure is  of the form:
++#                       struct {char *cp; F77_INTEGER len;},
++# -DStringCrayStyle   : Special option for  Cray  machines,  which  uses
++#                       Cray  fcd  (fortran  character  descriptor)  for
++#                       interoperation.
++#
++F2CDEFS      = -DAdd_ -DF77_INTEGER=int -DStringSunStyle
++#
++# ----------------------------------------------------------------------
++# - HPL includes / libraries / specifics -------------------------------
++# ----------------------------------------------------------------------
++#
++HPL_INCLUDES = -I$(INCdir) -I$(INCdir)/$(ARCH) $(LAinc) $(MPinc)
++HPL_LIBS     = $(HPLlib) $(LAlib) $(MPlib) $(CNY_LIB_HT) $(CNY_LIBS) -lm -lpthread
++#
++# - Compile time options -----------------------------------------------
++#
++# -DHPL_COPY_L           force the copy of the panel L before bcast;
++# -DHPL_CALL_CBLAS       call the cblas interface;
++# -DHPL_CALL_VSIPL       call the vsip  library;
++# -DHPL_DETAILED_TIMING  enable detailed timers;
++# -DCNY_EXEC             enables Convey acceleration;
++# -DRUNALL               enables full hpcc, instead of SingleRandomAccess only - do not use with CNY_EXEC;
++# -DAE_LIM               limits number of Convey AEs, to compare single AE across platforms;
++#
++# By default HPL will:
++#    *) not copy L before broadcast,
++#    *) call the BLAS Fortran 77 interface,
++#    *) not display detailed timing information.
++#
++HPL_OPTS     =
++# 
++# ----------------------------------------------------------------------
++#
++HPL_DEFS     = $(F2CDEFS) $(HPL_OPTS) $(HPL_INCLUDES) -g -m64 -DAE_LIM=$(AE_LIM) -DCNY_HT_AEUCNT=$(CNY_HT_AEUCNT) -DCNY_EXEC
++#
++# ----------------------------------------------------------------------
++# - Compilers / linkers - Optimization flags ---------------------------
++# ----------------------------------------------------------------------
++#
++CC           = gcc
++CCNOOPT      = $(HPL_DEFS) 
++CCFLAGS      = $(HPL_DEFS) 
++#
++LINKER       = g++
++LINKFLAGS    = 
++#
++ARCHIVER     = ar
++ARFLAGS      = r
++RANLIB       = echo
++#
++# ----------------------------------------------------------------------
++

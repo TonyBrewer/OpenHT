@@ -21,10 +21,6 @@ HTLIB_POBJ = $(HTLIB_SRC:.cpp=.po)
 $(HTLIB_OBJ) $(HTLIB_POBJ): CXXFLAGS += -Iht_lib -I/opt/convey/include
 $(HTLIB_OBJ) $(HTLIB_POBJ): CXXFLAGS += -I./local_systemc/include
 
-ifeq ($(shell uname), Linux)
-CNY_OBJ = ht_lib/host/PersAsm.o
-endif
-
 BLDDTE = $(shell date)
 ifneq (,$(wildcard .svn))
  VCSREV = $(shell svn info | grep Revis | awk -F: '{print $$2}' | sed 's/ //g')
@@ -67,17 +63,14 @@ htv: $(HTV_OBJ)
 vex: $(VEX_OBJ)
 	$(CXX) $(CXXFLAGS) -o $@ $(VEX_OBJ)
 
-ht_lib/host/PersAsm.o: ht_lib/host/PersAsm.s
-	cpp -E $(CXXFLAGS) $? | /opt/convey/bin/cnyas -o $@
-
-ht_lib/libht.a: $(CNY_OBJ) $(HTLIB_OBJ)
-	ar rcs $@ $(CNY_OBJ) $(HTLIB_OBJ)
+ht_lib/libht.a: $(HTLIB_OBJ)
+	ar rcs $@ $(HTLIB_OBJ)
 
 %.po : %.cpp
 	$(CXX) $(CXXFLAGS) -fPIC -c -o $@ $<
 
-ht_lib/libht.pa: $(CNY_OBJ) $(HTLIB_POBJ)
-	ar rcs $@ $(CNY_OBJ) $(HTLIB_POBJ)
+ht_lib/libht.pa: $(HTLIB_POBJ)
+	ar rcs $@ $(HTLIB_POBJ)
 
 prefix install: all
 	rm -rf $(PREFIX)
@@ -86,8 +79,8 @@ prefix install: all
 	cp -rp ht_lib $(PREFIX)
 	sed 's/<VERSION>/$(REL_DIR)/' ht_lib/MakefileInclude.cnyht \
 		> $(PREFIX)/ht_lib/MakefileInclude.cnyht
-	rm -rf $(PREFIX)/ht_lib/host/PersAsm.* $(PREFIX)/ht_lib/*/*Lib.* 
-	rm -rf $(PREFIX)/ht_lib/verilog/*.vpp
+	rm -rf $(PREFIX)/ht_lib/*/*Lib.* 
+	rm -rf $(PREFIX)/ht_lib/platform/convey/verilog/*.vpp
 	rm -rf $(PREFIX)/ht_lib/qt
 	cp -rp html $(PREFIX)
 	mkdir -p $(PREFIX)/doc/man1
@@ -98,8 +91,6 @@ prefix install: all
 	  e=$${ex#*/ex_}; \
 	  cp -rp $$ex $(PREFIX)/examples/$$e; \
 	  rm -rf $(PREFIX)/examples/$$e/msvs*; \
-	  grep -v 'HT_DIR.*releases' \
-		$$ex/Makefile > $(PREFIX)/examples/$$e/Makefile; \
 	done)
 	find $(PREFIX)/examples -name "*.htl" -exec rm {} \;
 	cp -rp local_systemc $(PREFIX)
@@ -136,7 +127,7 @@ clean:
 	$(MAKE) -C import clean
 	rm -f ./*.o ./htl ./htv ./vex
 	rm -f $(HTL)/*.[od] src/Ht*/*.[od] $(VEX)/*.[od]
-	rm -f $(CNY_OBJ) $(HTLIB_OBJ) $(HTLIB_POBJ) ht_lib/libht.*
+	rm -f $(HTLIB_OBJ) $(HTLIB_POBJ) ht_lib/libht.*
 	rm -f $(HTL)/*.d.* src/Ht*/*.d.* $(VEX)/*.d.*
 	rm -rf $(PREFIX) RPMS/*
 

@@ -1,0 +1,70 @@
+#include "vgups.h"
+
+typedef ht_uint48 MemAddr_t;
+typedef sc_uint<THREAD_W> thrdIdx_t;
+
+dsnInfo.AddModule(name=Ctl, htIdW=0);
+Ctl.AddInstr(name=CTL_ENTRY);
+Ctl.AddInstr(name=CTL_JOIN);
+Ctl.AddInstr(name=CTL_RTN);
+
+Ctl.AddHostMsg(dir=in, name=SET_INITSEED0)
+	.AddDst(var=tblIdx0, dataLsb=0, addr1Lsb=32)
+	;
+Ctl.AddHostMsg(dir=in, name=SET_INITSEED1)
+	.AddDst(var=tblIdx1, dataLsb=0, addr1Lsb=32)
+	;
+
+Ctl.AddPrivate()
+	.AddVar(type=thrdIdx_t,  name=thrdIdx)
+	;
+
+Ctl.AddShared()
+	.AddVar(type=uint32_t, name=tblIdx0, addr1W=THREAD_W)
+	.AddVar(type=uint32_t, name=tblIdx1, addr1W=THREAD_W)
+	;
+
+Ctl.AddEntry(func=htmain, instr=CTL_ENTRY, host=true);
+Ctl.AddReturn(func=htmain);
+
+Ctl.AddCall(func=GupsCore, fork=true);
+
+/////
+
+dsnInfo.AddModule(name=GupsCore, htIdW=THREAD_W);
+GupsCore.AddInstr(name=PGC_ENTRY);
+GupsCore.AddInstr(name=PGC_READ);
+GupsCore.AddInstr(name=PGC_WRITE);
+GupsCore.AddInstr(name=PGC_RTN);
+
+GupsCore.AddHostMsg(dir=in, name=OP_SIZE)
+	.AddDst(var=tblSize, dataLsb=0)
+	;
+GupsCore.AddHostMsg(dir=in, name=OP_UPDCNT)
+	.AddDst(var=vecLen, dataLsb=0)
+	;
+GupsCore.AddHostMsg(dir=in, name=OP_BASE)
+	.AddDst(var=base, dataLsb=0)
+	;
+
+GupsCore.AddShared()
+	.AddVar(type=ht_uint45, name=tblSize)
+	.AddVar(type=uint64_t,  name=vecLen)
+	.AddVar(type=MemAddr_t, name=base)
+	;
+
+GupsCore.AddPrivate()
+	.AddVar(type=uint64_t,  name=vecIdx)
+	.AddVar(type=uint64_t,  name=ran)
+	.AddVar(type=uint64_t,  name=intData)
+	;
+
+GupsCore.AddEntry(func=GupsCore, instr=PGC_ENTRY, host=false)
+	.AddParam(type=uint64_t,  name=ran)
+	;
+GupsCore.AddReturn(func=GupsCore);
+
+GupsCore.AddReadMem(maxBw=true)
+	.AddDst(var=intData)
+	;
+GupsCore.AddWriteMem(maxBw=true);

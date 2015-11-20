@@ -3570,6 +3570,16 @@ SgVariableDeclaration *declareHTUnits(SgClassDeclaration *htdecl,
     return units;
 }
 
+SgVariableDeclaration *declareHTMaxUnits(SgVariableDeclaration *htdecl,
+                           SgGlobal *glob_scope) 
+{
+    SgType *type = buildIntType();
+    SgVariableDeclaration *units = 
+        buildVariableDeclaration("__htc_max_units", type, 0, glob_scope);
+    insertStatementAfter(htdecl, units);
+    return units;
+}
+
 SgVariableDeclaration *declareHTUnitIndex(SgClassDeclaration *htdecl,
                            SgScopeStatement *scope) 
 {
@@ -3855,6 +3865,7 @@ void transOmpTarget(SgNode * node, SgExpression * num_teams)
     static SgClassDeclaration *htdecl;
     static SgVariableDeclaration *units;
     static SgVariableDeclaration *unit_index;
+    static SgVariableDeclaration *max_units;
 
     if (!num_teams) {
         num_teams = buildIntVal(1);
@@ -3872,6 +3883,7 @@ void transOmpTarget(SgNode * node, SgExpression * num_teams)
         htdecl = declareCHtHif(getGlobalScope(target));
         units = declareHTUnits(htdecl, getGlobalScope(target));
         unit_index = declareHTUnitIndex(htdecl, getGlobalScope(target));
+        max_units = declareHTMaxUnits(unit_index, getGlobalScope(target));
 
         std::string before_ht = "\n#ifdef CNY_HTC_HOST";
         SageInterface::addTextForUnparser(htdecl, 
@@ -4045,7 +4057,7 @@ void transOmpTarget(SgNode * node, SgExpression * num_teams)
     appendExpression(exp_list_exp, buildIntVal(0));  // parent id
     appendExpression(exp_list_exp, buildIntVal(0));  // thread num
     appendExpression(exp_list_exp, buildIntVal(1));  // team size
-    appendExpression(exp_list_exp, deepCopy(num_teams));  // num teams
+    appendExpression(exp_list_exp, buildVarRefExp(max_units));  // num teams
 
     if (number_of_target_regions > 1) {
         appendExpression(exp_list_exp, buildIntVal(function_selector));
@@ -4073,6 +4085,7 @@ void transOmpTarget(SgNode * node, SgExpression * num_teams)
 
     // Convey version
     SgFunctionCallExp* dispatch_call;
+    SgFunctionCallExp* num_units_call;
     SgFunctionCallExp* return_call;
     SgMemberFunctionSymbol *mf_sym;
     SgMemberFunctionRefExp *mfr;
@@ -4133,10 +4146,32 @@ void transOmpTarget(SgNode * node, SgExpression * num_teams)
     dispatch_call->set_parent(p_scope);
     SgExprStatement *dispatch_stmt = buildExprStatement(dispatch_call);
 
+    SgFunctionCallExp *htc_num_units_call = 
+        buildFunctionCallExp("__htc_get_unit_count",
+                             buildIntType(),
+                             buildExprListExp(),
+                             p_scope);
+
+    SgExprStatement *assign_max_units = 
+        buildAssignStatement(buildVarRefExp(max_units), htc_num_units_call);
+
+
+    SgStatement *if_cond_stmt = 
+        buildExprStatement(
+             buildGreaterThanOp(buildVarRefExp(max_units),
+                                deepCopy(num_teams)));
+    SgStatement* true_body = 
+        buildAssignStatement(buildVarRefExp(max_units), 
+                             deepCopy(num_teams));
+    SgStatement *limit_max_units = buildIfStmt(if_cond_stmt, true_body, NULL);
+
     SgForStatement *fs1 = addUnitCountForLoopTextAroundStmt(dispatch_stmt,
-                                                           unit_index,
-                                                           num_teams);
+                                                            unit_index,
+                                                            buildVarRefExp(max_units));
+
     insertStatementBefore (target, fs1);
+    insertStatementBefore (fs1, assign_max_units);
+    insertStatementBefore (fs1, limit_max_units);
 
     SgMemberFunctionDeclaration *return_function;
     if (ctl_return_function == NULL) {
@@ -4185,7 +4220,8 @@ void transOmpTarget(SgNode * node, SgExpression * num_teams)
     SgForStatement *fs2 = 
         addUnitCountForLoopTextAroundStmt(while_stmt,
                                           unit_index,
-                                          num_teams);
+                                          buildVarRefExp(max_units));
+
     insertStatementAfter(fs1, fs2);
 
     if (save_buf1.size()) {

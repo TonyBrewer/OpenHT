@@ -1,0 +1,16 @@
+How to run:
+   Server:
+     <Build Personality / App / Setup Environment>
+     setenv LD_LIBRARY_PATH <path_to_app>/import/local/lib:$LD_LIBRARY_PATH
+     cd server;
+     make (optionally give HT_TGT=sysc for SystemC simulation)
+     ./jrd --threads <thread count (MUST BE >1)> --stats 5
+
+   Client:
+     setenv LD_LIBRARY_PATH <path_to_app>/import/local/lib:$LD_LIBRARY_PATH
+     cd client;
+     make;
+     ./jrcl --server 127.0.0.1 --threads <thread count> --scale <scale> <in_img> <out_img>
+       OR
+     ./jrcl --server 127.0.0.1 --threads <thread count> --batch <FILES>
+        - look in <path_to_app>/examples/batch for more info on this

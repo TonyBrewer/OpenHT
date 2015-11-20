@@ -22,6 +22,8 @@ OFILT	= $(addsuffix .o, $(basename $(notdir $(CNY_HT_LIBEXCLUDE))))
 LOBJS	= $(filter-out $(OFILT), $(OBJS))
 POBJS	= $(addsuffix .po, $(basename $(LOBJS)))
 
+PLAT_OBJS = $(wildcard $(HT_LIB)/platform/$(OHT_PLAT)/host/*.o)
+
 HT_HTIS =  $(wildcard $(STDIR)/*.hti)
 HT_HTDS =  $(wildcard $(STDIR)/*.htd)
 
@@ -37,7 +39,7 @@ genfiles: HostIntf.h
 app: ../../app
 
 ../../app: $(OBJS)
-	$(CXX) -o $@ $(LDFLAGS) $(OBJS) $(LDLIBS)
+	$(CXX) -o $@ $(LDFLAGS) $(OBJS) $(PLAT_OBJS) $(LDLIBS)
 
 .PHONY: libapp
 ifdef HT_LIB_PIC
@@ -48,12 +50,12 @@ endif
 
 ../../libhtapp.a: $(LOBJS) $(HT_LIB)/libht.a
 	cp $(HT_LIB)/libht.a $@
-	ar rcs $@ $(LOBJS)
+	ar rcs $@ $(LOBJS) $(PLAT_OBJS) 
 	@chmod 644 $@
 
 ../../libhtapp.pa: $(POBJS) $(HT_LIB)/libht.pa
 	cp $(HT_LIB)/libht.pa $@
-	ar rcs $@ $(POBJS)
+	ar rcs $@ $(POBJS) $(PLAT_OBJS)
 	@chmod 644 $@
 
 

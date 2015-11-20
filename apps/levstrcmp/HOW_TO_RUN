@@ -1,0 +1,4 @@
+How to run:
+   Server:
+     <Build Personality / App / Setup Environment>
+     ./app <path to .inp list>

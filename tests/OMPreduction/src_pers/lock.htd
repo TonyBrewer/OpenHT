@@ -5,7 +5,7 @@
 #define LOCK_HTID_W 5
 dsnInfo.AddModule(name=__htc_lock, htIdW=LOCK_HTID_W);
 
-__htc_lock.AddInst(name=LOCK__START);
+__htc_lock.AddInstr(name=LOCK__START);
 
 
 
@@ -23,7 +23,7 @@ __htc_lock.AddShared()
     .AddVar(type=int, name=lk)
     ;
 
-__htc_lock.AddEntry(func=__htc_lock, inst=LOCK__START)
+__htc_lock.AddEntry(func=__htc_lock, instr=LOCK__START)
     .AddParam(type=int, name=op)
     .AddParam(type=omp_lock_t, name=L)
     ;
@@ -42,8 +42,8 @@ __htc_lock.AddReturn(func=__htc_lock)
 #define RHOMP_TEST_LOCK_HTID_W 5
 dsnInfo.AddModule(name=rhomp_test_lock, htIdW=RHOMP_TEST_LOCK_HTID_W);
 
-rhomp_test_lock.AddInst(name=RHOMP_TEST_LOCK__START);
-rhomp_test_lock.AddInst(name=RHOMP_TEST_LOCK__CALL_RTN__14);
+rhomp_test_lock.AddInstr(name=RHOMP_TEST_LOCK__START);
+rhomp_test_lock.AddInstr(name=RHOMP_TEST_LOCK__CALL_RTN__14);
 
 
 
@@ -56,7 +56,7 @@ rhomp_test_lock.AddPrivate()
     .AddVar(type=omp_lock_t, name=L)
     ;
 
-rhomp_test_lock.AddEntry(func=rhomp_test_lock, inst=RHOMP_TEST_LOCK__START)
+rhomp_test_lock.AddEntry(func=rhomp_test_lock, instr=RHOMP_TEST_LOCK__START)
     .AddParam(type=omp_lock_t, name=L)
     ;
 
@@ -74,10 +74,10 @@ rhomp_test_lock.AddCall(func=__htc_lock);
 #define RHOMP_SET_LOCK_HTID_W 5
 dsnInfo.AddModule(name=rhomp_set_lock, htIdW=RHOMP_SET_LOCK_HTID_W);
 
-rhomp_set_lock.AddInst(name=RHOMP_SET_LOCK__START);
-rhomp_set_lock.AddInst(name=RHOMP_SET_LOCK__LOOP_TOP__4);
-rhomp_set_lock.AddInst(name=RHOMP_SET_LOCK__CALL_RTN__15);
-rhomp_set_lock.AddInst(name=RHOMP_SET_LOCK__LOOP_EXIT__4);
+rhomp_set_lock.AddInstr(name=RHOMP_SET_LOCK__START);
+rhomp_set_lock.AddInstr(name=RHOMP_SET_LOCK__LOOP_TOP__4);
+rhomp_set_lock.AddInstr(name=RHOMP_SET_LOCK__CALL_RTN__15);
+rhomp_set_lock.AddInstr(name=RHOMP_SET_LOCK__LOOP_EXIT__4);
 
 
 
@@ -90,7 +90,7 @@ rhomp_set_lock.AddPrivate()
     .AddVar(type=omp_lock_t, name=L)
     ;
 
-rhomp_set_lock.AddEntry(func=rhomp_set_lock, inst=RHOMP_SET_LOCK__START)
+rhomp_set_lock.AddEntry(func=rhomp_set_lock, instr=RHOMP_SET_LOCK__START)
     .AddParam(type=omp_lock_t, name=L)
     ;
 
@@ -107,8 +107,8 @@ rhomp_set_lock.AddCall(func=__htc_lock);
 #define RHOMP_UNSET_LOCK_HTID_W 5
 dsnInfo.AddModule(name=rhomp_unset_lock, htIdW=RHOMP_UNSET_LOCK_HTID_W);
 
-rhomp_unset_lock.AddInst(name=RHOMP_UNSET_LOCK__START);
-rhomp_unset_lock.AddInst(name=RHOMP_UNSET_LOCK__CALL_RTN__16);
+rhomp_unset_lock.AddInstr(name=RHOMP_UNSET_LOCK__START);
+rhomp_unset_lock.AddInstr(name=RHOMP_UNSET_LOCK__CALL_RTN__16);
 
 
 
@@ -121,7 +121,7 @@ rhomp_unset_lock.AddPrivate()
     .AddVar(type=omp_lock_t, name=L)
     ;
 
-rhomp_unset_lock.AddEntry(func=rhomp_unset_lock, inst=RHOMP_UNSET_LOCK__START)
+rhomp_unset_lock.AddEntry(func=rhomp_unset_lock, instr=RHOMP_UNSET_LOCK__START)
     .AddParam(type=omp_lock_t, name=L)
     ;
 
@@ -141,8 +141,8 @@ rhomp_unset_lock.AddCall(func=__htc_lock);
 #define RHOMP_INIT_LOCK_HTID_W 5
 dsnInfo.AddModule(name=rhomp_init_lock, htIdW=RHOMP_INIT_LOCK_HTID_W);
 
-rhomp_init_lock.AddInst(name=RHOMP_INIT_LOCK);
-rhomp_init_lock.AddInst(name=RHOMP_DESTROY_LOCK);
+rhomp_init_lock.AddInstr(name=RHOMP_INIT_LOCK);
+rhomp_init_lock.AddInstr(name=RHOMP_DESTROY_LOCK);
 
 
 
@@ -159,11 +159,11 @@ rhomp_init_lock.AddShared()
     .AddVar(type=int, name=lock_counter)
     .AddVar(type=omp_lock_t, name=Q, queueW=7)
     ;
-rhomp_init_lock.AddEntry(func=rhomp_destroy_lock, inst=RHOMP_DESTROY_LOCK)
+rhomp_init_lock.AddEntry(func=rhomp_destroy_lock, instr=RHOMP_DESTROY_LOCK)
     .AddParam(type=omp_lock_t, name=lk)
     ;
 
-rhomp_init_lock.AddEntry(func=rhomp_init_lock, inst=RHOMP_INIT_LOCK)
+rhomp_init_lock.AddEntry(func=rhomp_init_lock, instr=RHOMP_INIT_LOCK)
     ;
 
 rhomp_init_lock.AddReturn(func=rhomp_init_lock)
@@ -182,15 +182,15 @@ rhomp_init_lock.AddReturn(func=rhomp_destroy_lock)
 #define RHOMP_BEGIN_NAMED_CRITICAL_HTID_W 5
 dsnInfo.AddModule(name=rhomp_begin_named_critical, htIdW=RHOMP_BEGIN_NAMED_CRITICAL_HTID_W);
 
-rhomp_begin_named_critical.AddInst(name=RHOMP_BEGIN_NAMED_CRITICAL__START);
-rhomp_begin_named_critical.AddInst(name=RHOMP_BEGIN_NAMED_CRITICAL__CALL_RTN__17);
-rhomp_begin_named_critical.AddInst(name=RHOMP_BEGIN_NAMED_CRITICAL__IF_ELSE__34);
-rhomp_begin_named_critical.AddInst(name=RHOMP_BEGIN_NAMED_CRITICAL__CALL_RTN__18);
-rhomp_begin_named_critical.AddInst(name=RHOMP_BEGIN_NAMED_CRITICAL__CALL_RTN__19);
-rhomp_begin_named_critical.AddInst(name=RHOMP_BEGIN_NAMED_CRITICAL__IF_JOIN__33);
-rhomp_begin_named_critical.AddInst(name=RHOMP_BEGIN_NAMED_CRITICAL__CALL_RTN__20);
-rhomp_begin_named_critical.AddInst(name=RHOMP_BEGIN_NAMED_CRITICAL__CALL_RTN__21);
-rhomp_begin_named_critical.AddInst(name=RHOMP_BEGIN_NAMED_CRITICAL__IF_JOIN__34);
+rhomp_begin_named_critical.AddInstr(name=RHOMP_BEGIN_NAMED_CRITICAL__START);
+rhomp_begin_named_critical.AddInstr(name=RHOMP_BEGIN_NAMED_CRITICAL__CALL_RTN__17);
+rhomp_begin_named_critical.AddInstr(name=RHOMP_BEGIN_NAMED_CRITICAL__IF_ELSE__34);
+rhomp_begin_named_critical.AddInstr(name=RHOMP_BEGIN_NAMED_CRITICAL__CALL_RTN__18);
+rhomp_begin_named_critical.AddInstr(name=RHOMP_BEGIN_NAMED_CRITICAL__CALL_RTN__19);
+rhomp_begin_named_critical.AddInstr(name=RHOMP_BEGIN_NAMED_CRITICAL__IF_JOIN__33);
+rhomp_begin_named_critical.AddInstr(name=RHOMP_BEGIN_NAMED_CRITICAL__CALL_RTN__20);
+rhomp_begin_named_critical.AddInstr(name=RHOMP_BEGIN_NAMED_CRITICAL__CALL_RTN__21);
+rhomp_begin_named_critical.AddInstr(name=RHOMP_BEGIN_NAMED_CRITICAL__IF_JOIN__34);
 
 
 
@@ -206,7 +206,7 @@ rhomp_begin_named_critical.AddPrivate()
     .AddVar(type=omp_lock_t, name=L)
     ;
 
-rhomp_begin_named_critical.AddEntry(func=rhomp_begin_named_critical, inst=RHOMP_BEGIN_NAMED_CRITICAL__START)
+rhomp_begin_named_critical.AddEntry(func=rhomp_begin_named_critical, instr=RHOMP_BEGIN_NAMED_CRITICAL__START)
     .AddParam(type=omp_lock_t, name=L)
     ;
 

@@ -1,9 +1,10 @@
 DIRS   = $(sort $(patsubst %/,%,$(dir $(wildcard */Makefile))))
 
-# SKIP list needs trailing <space>
-SKIP  += bug_1366 bug_1369 callrtn g500 model
+SKIP  += bug_1366 bug_1369 callrtn model
 SKIP  += $(wildcard OMP*)
-SKIP  += gups 
+SKIP  += memPSGRand
+# SKIP list needs trailing <space>
+SKIP  += 
 
 VSKIP  = $(SKIP)
 VSKIP += jacobi 
@@ -22,9 +23,14 @@ vregress:
 mregress:
 	@$(MAKE) _regress TGT=model 
 
-HT_DIR = $(wildcard $(PWD)/../rpm/prefix)
-ifeq (,$(HT_DIR))
-    HT_DIR = /work/ht_releases/latest
+ifneq (,$(wildcard $(CURDIR)/../rpm/prefix))
+  HT_DIR = $(CURDIR)/../rpm/prefix
+else
+ifneq (,$(wildcard /usr/local/ht_releases/latest))
+  HT_DIR = /usr/local/ht_releases/latest
+else
+  HT_DIR = $(CURDIR)/..
+endif
 endif
 
 RDIRS=$(DIRS)
@@ -108,6 +114,7 @@ sysc vsim:
 
 distclean clean:
 	@$(foreach d, $(DIRS), $(MAKE) -s -C$(d) $@ \
+			    	HT_DIR=$(HT_DIR) \
 			    	CNY_PDK=$(CNY_PDK) \
 			    	CNY_PDK_REV=$(CNY_PDK_REV) 2>&1 > /dev/null;)
 	rm -f */make*.log */regress*.log

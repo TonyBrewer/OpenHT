@@ -1,0 +1,303 @@
+===== HT Variable / Memory RCG Test =====
+
+
+1. Abstract
+2. Files
+3. Switches (To influence random generation)
+4. How to Run
+
+
+======================================
+== 1. Abstract:
+======================================
+  This RCG program is centralized around the concept of creating tests (HT modules) and sub-tests
+within those.  It works by allocating a chunk of memory that's big enough for one module to take,
+then runs each module via blocking SendCall functions.
+
+  Each sub-test is, at its core, made of four steps:
+   1: Write to Source Variable via Instruction
+   2: Write to Memory from Source Variable
+   3: Read from Memory into Destination Variable
+   4: Check Value in Destination Variable against Source Variable
+
+  There are plenty of tweaks to this in the tests via the switches below, but this is the basic idea.
+It's accomplished using loosely Object Oriented Perl.
+
+
+======================================
+== 2. Files:
+======================================
+  ./gen_test.pl    RCG Perl Script to generate a new RCG Test
+  ./HTTest.pm      Perl Module describing a Test Object and all included functions
+  ./HTVar.pm       Perl Module describing a Variable Object and all included functions
+  ./bugify.pl      Perl Script that attempts to make it easier to single out bugs
+  ./Makefile       Standard HT Makefile
+  ./src/Main.cpp   Static Host Code for the HT Project
+
+
+======================================
+== 3. Switches:
+======================================
+  Within gen_test.pl:
+    $numTests
+      - Defines total number of tests (HT Modules) to create in this HT Project
+      - Default = 32
+
+
+  Within HTTest.pm:
+    @ARR_TestCycCnt
+      - Defines acceptable list of number of sub-tests to create within a test (HT Module)
+      - This is an array, so all entries are equally considered to be chosen at random
+      - Default = (1..5)
+
+    $PCT_TestHTIDW_GTZ
+      - Defines the percent chance that a test (HT Module) will have an htIdW > 0
+      - Default = 0.50
+
+    @ARR_TestHTIDW_HTIDW
+      - Defines acceptable list of htIdW for a test (HT Module), given it will have an htIdW > 0
+      - This is an array, so all entries are equally considered to be chosen at random
+      - Default = (1..6)
+
+    $PCT_TestStaging_STG
+      - Defines the percent chance that a test (HT Module) will use staging
+      - Default = 0.50
+
+    $PCT_TestStaging_SAME_PE
+      - Defines the percent chance that a staged test (HT Module) will have PrivWrStg == ExecStg
+      - Default = 0.50
+
+    $PCT_TestStaging_GSAME
+      - Defines the percent chance that a global variable in a staged test (HT Module) will have
+        rdStg == wrStg
+      - Default = 0.50
+
+    $PCT_TestStaging_GDEF
+      - Defines the percent chance that a global variable in a staged test (HT Module) will have
+        rdStg/wrStg defined in the HTD File
+      - Default = 0.50
+
+    @ARR_TestStaging_STG
+      - Defines acceptable list of stage counts for a test (HT Module), given it will have staging
+      - This is an array, so all entries are equally considered to be chosen at random
+      - Default = (1..5)
+
+    $PCT_InstrRW_DEF
+      - Defines the percent chance that a global variable in a test (HT Module) will have
+        instrRead/instrWrite defined in the HTD File
+      - Default = 0.50
+
+    $PCT_InstrRW_TRUE
+      - Defines the percent chance that a global variable in a test (HT Module) will have
+        instrRead/instrWrite forced to true when unnecessary
+      - Default = 0.50
+
+    $PCT_TestClk1x2x_1X
+      - Defines the percent chance that a test (HT Module) will have a 1x Clock
+      - Default = 0.75
+
+    $PCT_TestClk1x2x_CDEF
+      - Defines the percent chance that a test (HT Module) will have its clock defined in the HTD
+        File (it always exists if necessary for 2x clocks)
+      - Default = 0.50
+
+    $PCT_CmnElemCnt_GEN
+      - Defines the percent chance that a sub-test in a test (HT Module) will attempt to read/write
+        multiple elements (if it is able in the first place)
+      - Default = 0.50
+
+    $PCT_CmnElemCnt_MUL
+      - Defines the percent chance that a sub-test in a test (HT Module) which already is reading/writing
+        multiple elements is allowed to actually check more than one of those
+      - Hard to explain, but this is the difference between populating one field and r/w many versus
+        populating many fields and r/w many
+      - Default = 0.75
+
+    @ARR_CmnElemCnt_CNT
+      - Defines acceptable list of element counts for a sub-test in a test (HT Module), given it
+        can read/write multiple elements
+      - This is an array, so all entries are equally considered to be chosen at random
+      - Default = (2..8)
+
+    $CNT_MaxQWPerCyc_MAX
+      - Defines the number of QW alloc'd for each sub-test inside of a test (HT Module)
+      - This is tied to the static source and HTVar.pm, so changing here requires changing there too
+      - Default = 8
+
+
+  Within HTVar.pm:
+    $PCT_VarPSG_P
+      - Defines the percent chance that a variable will be a Private Variable
+      - Default = 0.33
+
+    $PCT_VarPSG_S
+      - Defines the percent chance that a variable will be a Shared Variable
+      - Default = 0.33
+
+    $PCT_VarPSG_G
+      - Defines the percent chance that a variable will be a Global Variable
+      - Default = 0.34
+
+
+    $PCT_VarClass_VAR
+      - Defines the percent chance that a variable will be a plain variable
+      - Default = 0.70
+
+    $PCT_VarClass_STR
+      - Defines the percent chance that a variable will be a structure variable
+      - Default = 0.20
+
+    $PCT_VarClass_UNN
+      - Defines the percent chance that a variable will be a union Variable
+      - Default = 0.10
+
+    $PCT_VarAnon_ANON
+      - Defines the percent chance that a struct/union variable within a struct/union will be
+        anonymous
+      - Default = 0.50
+
+    $PCT_VarWrType_VAR
+      - Defines the percent chance that a variable will use the Variable WriteMem flow instead
+        of the Type WriteMem flow (uses WriteMem_<var> instead of WriteMem_<type>)
+      - Default = 0.50
+
+    $ENB_RtnVar_STR
+      - Switch that allows structs to be written/read to/from memory
+      - Default = 1
+
+    $ENB_RtnVar_UNN
+      - Switch that allows unions to be written/read to/from memory
+      - Default = 1
+
+    $PCT_GetVarFromList_FROMSRC
+      - Defines the percent chance that a destination variable will not be created, and it will
+        use the source variable (or a field within the source struct/union) instead
+      - Default = 0.25
+
+    $PCT_BitField_STRBF
+      - Defines the percent chance that a struct COULD contain members with bit fields
+      - Default = 0.20
+
+    $PCT_BitField_TOTBF
+      - Defines the percent chance that a struct WILL contain all members with bit fields
+      - Default = 0.50
+
+    $PCT_BitField_VAR
+      - Defines the percent chance that a variable in a struct will have a bit field (if allowed)
+      - Default = 0.50
+
+    $PCT_ChkStr_CHKALLUNN
+      - Defines the percent chance that a union read from memory will have all fields with known
+        data checked
+      - This includes fields that were not explictly populated by the initial write to the Source
+        Variable, but have data nonetheless due to it being a union
+      - Default = 1.00
+
+    $CNT_VarFields_MAX = 4
+      - Defines the maximum number of members inside a struct/union
+      - Default = 4
+
+    $CNT_VarDepth_MAX
+      - Defines the maximum depth of members inside a struct/union
+      - Default = 4
+
+    $CNT_MaxQWPerCyc_MAX
+      - Defines the number of QW alloc'd for each sub-test inside of a test (HT Module)
+      - This is tied to the static source and HTTest.pm, so changing here requires changing there too
+      - Default = 8
+
+    $PCT_VarRdSfx_R
+      - Defines the percent chance that a variable will use the R (as in PR/GR) suffix (unless required)
+      - Default = 0.50
+
+    $PCT_VarWrSfx_W
+      - Defines the percent chance that a variable will use the W (as in PW/GW) suffix (unless required)
+      - Default = 0.50
+
+    $PCT_ModVarDimAddr_MOD
+      - Defines the percent chance that a variable will change which addr/dim indices it will use
+      - This is mostly useful when the Destination Variable is replaced by the Source Variable,
+        and we want to write to a different index of that variable
+      - Default = 0.50
+
+    $PCT_IsBlkRam_DEF
+      - Defines the percent chance that a variable will have the 'blockRam=' line  in the HTD File
+      - This is always true if the variable is a blockRam
+      - Default = 0.50
+
+    $PCT_IsBlkRam_BRAM
+      - Defines the percent chance that a variable will be a blockRam (if allowed)
+      - Default = 0.50
+
+    @ARR_VarDimSel
+      - Defines acceptable list of dimension sizes for a variable
+      - This is an array, so all entries are equally considered to be chosen at random
+      - Default = (1..5)
+
+    $PCT_VarDimSel_DIM
+      - Defines the percent chance that a variable will have a dimension
+      - Default = 0.50
+
+    $PCT_VarDimDSel_HTD
+      - Defines the percent chance that a variable's dimension for a memory access is specified in the
+        HTD File rather than the call itself
+      - Default = 0.50
+
+    @ARR_VarAddrWidth
+      - Defines acceptable list of address widths for a variable
+      - This is an array, so all entries are equally considered to be chosen at random
+      - Default = (1..5)
+
+    $PCT_VarAddrSel_ADDR
+      - Defines the percent chance that a variable will have an address
+      - Default = 0.50
+
+    $PCT_VarAddrDSel_HTD
+      - Defines the percent chance that a variable's address for a memory access is specified in the
+        HTD File rather than the call itself
+      - Default = 0.50
+
+    $PCT_GenVarIdx_ADR
+      - Defines the percent chance that a variable will index over Addr instead of Dimen (if allowed)
+      - Default = 0.50
+
+    $PCT_GenVarIdx_A1
+      - Defines the percent chance that a variable can index Addr1 (if allowed)
+      - Default = 0.50
+
+    $PCT_GenVarIdx_A2
+      - Defines the percent chance that a variable can index Addr2 (if allowed)
+      - Default = 0.50
+
+    $PCT_GenVarIdx_D1
+      - Defines the percent chance that a variable can index Dimen1 (if allowed)
+      - Default = 0.50
+
+    $PCT_GenVarIdx_D2
+      - Defines the percent chance that a variable can index Dimen2 (if allowed)
+      - Default = 0.50
+
+
+======================================
+== 4. How to Run:
+======================================
+
+  ./gen_test.pl
+  make <sysc/vsim/pers/app>
+  <run compiled app>
+
+  TO REPEAT A TEST:
+    NOTE THE SEED given after running this perl script:
+      Output:
+         gen_test.pl (1440513514)
+
+         Cleaning old tests...
+           Done
+
+         Generating random test data...
+           Generating HTI
+           ...
+
+    Here the seed would be 1440513514.
+    Open gen_test.pl and place this seed in the $seed variable (be sure to comment out $seed = time)!
+    Now each run of gen_test.pl will produce an identical HT Project
