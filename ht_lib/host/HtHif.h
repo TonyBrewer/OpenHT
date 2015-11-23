@@ -23,15 +23,6 @@ using namespace std;
 #define mckxstr(s) mckstr(s)
 #define HT_PERS mckxstr(HT_NICK)
 
-#if !defined(HT_MODEL) && !defined(HT_SYSC) && !defined(HT_LIB_HIF) && !defined(HT_LIB_SYSC)
-# ifdef CNYOS_API
-#  include <convey/usr/cny_comp.h>
-#  include <convey/sys/cnysys_arch.h>
-# else
-#  include <wdm_user.h>
-# endif
-#endif
-
 #define HT_NUMA_SET_MAX 4
 #define HT_HIF_AE_CNT_MAX 4
 
@@ -143,9 +134,7 @@ namespace Ht {
 		friend class CHtUnitBase;
 	protected:
 		CHtHifBase(CHtHifParams * pParams) {
-#			if !defined(HT_MODEL) && !defined(HT_SYSC) && !defined(CNYOS_API) && !defined(HT_LIB_HIF) && !defined(HT_LIB_SYSC)
-				m_coproc = WDM_INVALID;
-#			endif
+			m_pCoproc = 0;
 			m_pHtHifLibBase = CHtHifLibBase::NewHtHifLibBase(pParams, HT_PERS, this);
 			m_allocLock = 0;
 		}
@@ -207,9 +196,8 @@ namespace Ht {
 	protected:
 		volatile int64_t m_allocLock;
 		CHtHifLibBase * m_pHtHifLibBase;
-#		if !defined(HT_MODEL) && !defined(HT_SYSC) && !defined(CNYOS_API) && !defined(HT_LIB_HIF) && !defined(HT_LIB_SYSC)
-			wdm_coproc_t m_coproc;
-#		endif
+		void * m_pCoproc;
+		uint64_t m_sig;
 	};
 
 	class CHtUnitBase {

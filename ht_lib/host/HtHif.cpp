@@ -10,16 +10,7 @@
 #include "Ht.h"
 
 #if !defined(HT_MODEL) && !defined(HT_SYSC)
-
-# ifdef CNYOS_API
-#  include <convey/usr/cny_comp.h>
-#  include <convey/sys/cnysys_arch.h>
-# else
-#  include <wdm_user.h>
-# endif
-
-extern "C" long PersDisp();
-extern "C" void PersInfo(unsigned long *aeg2, unsigned long *aeg3);
+#include "HtPlatformIntf.h"
 #endif
 
 #if defined(HT_SYSC)
@@ -96,165 +87,25 @@ namespace Ht {
 	}
 
 #	if !defined(HT_MODEL) && !defined(HT_SYSC)
-#		ifndef CNYOS_API
-			/////////////////////////////////////////////////////////////////////////////
-			// Convey Driver API
-			/////////////////////////////////////////////////////////////////////////////
 
-			void CHtHifBase::HtCpInfo(bool *needFlush, volatile bool *busy, uint64_t *aeg2, uint64_t *aeg3) {
+		void CHtHifBase::HtCpInfo(bool *needFlush, volatile bool *busy, uint64_t *aeg2, uint64_t *aeg3) {
+			ht_cp_info(&m_pCoproc, &m_sig, needFlush, busy, aeg2, aeg3);
+		}
 
-				*needFlush = false;
+		void CHtHifBase::HtCpDispatch(uint64_t *pBase) {
+			ht_cp_dispatch(m_pCoproc, pBase);
+		}
 
-				m_coproc = wdm_reserve_sig(WDM_CPID_ANY, NULL, (char *)HT_PERS);
-				if (m_coproc == WDM_INVALID) {
-					if (g_htDebug > 1) {
-						fprintf(stderr, "HTLIB: wdm_reserve_sig(\"%s\") failed with %s\n",
-							(char *)HT_PERS, strerror(errno));
-						if (errno != EBADR) {
-							fprintf(stderr, " Please verify that the personality is installed in\n");
-							fprintf(stderr, " /opt/convey/personalities or CNY_PERSONALITY_PATH is set.\n");
-						}
-					}
-					throw CHtException(eHtBadDispatch, string("unable to reserve personality signature"));
-				}
+		void CHtHifBase::HtCpDispatchWait(uint64_t *pBase) {
+			ht_cp_dispatch_wait(m_pCoproc, m_sig, pBase);
+		}
 
-				if (wdm_attach(m_coproc, (char *)HT_PERS)) {
-					if (g_htDebug > 1) {
-						fprintf(stderr, "HTLIB: wdm_attach(\"%s\") failed with %s\n",
-							(char *)HT_PERS, strerror(errno));
-						fprintf(stderr, " Please verify that the personality is installed in\n");
-						fprintf(stderr, " /opt/convey/personalities or CNY_PERSONALITY_PATH is set.\n");
-					}
-					wdm_release(m_coproc);
-					throw CHtException(eHtBadDispatch, string("unable to attach"));
-				}
+		void CHtHifBase::HtCpRelease() {
+			ht_cp_release(m_pCoproc);
+		}
 
-				uint64_t aegs[2];
-				wdm_dispatch_t ds;
-				memset((void *)&ds, 0, sizeof(ds));
-				ds.ae[0].aeg_ptr_r = aegs;
-				ds.ae[0].aeg_cnt_r = 2;
-				ds.ae[0].aeg_base_r = 2;
-				if (wdm_aeg_write_read(m_coproc, &ds)) {
-					if (g_htDebug > 1)
-						fprintf(stderr, "HTLIB: wdm_aeg_write_read() failed with %s\n",
-							strerror(errno));
-					wdm_detach(m_coproc);
-					wdm_release(m_coproc);
-					throw CHtException(eHtBadDispatch, string("unable to read/write aeg registers"));
-				}
-
-				*aeg2 = aegs[0];
-				*aeg3 = aegs[1];
-			}
-
-			void CHtHifBase::HtCpDispatch(uint64_t *pBase) {
-
-				wdm_dispatch_t ds;
-				memset((void *)&ds, 0, sizeof(ds));
-				assert(WDM_AE_CNT <= HT_HIF_AE_CNT_MAX);
-				for (int i=0; i<WDM_AE_CNT; i++) {
-					ds.ae[i].aeg_ptr_s = &pBase[i];
-					ds.ae[i].aeg_cnt_s = 1;
-				}
-				if (wdm_dispatch(m_coproc, &ds)) {
-					if (g_htDebug > 1)
-						fprintf(stderr, "HTLIB: wdm_dispatch() failed with %s\n", strerror(errno));
-					wdm_detach(m_coproc);
-					wdm_release(m_coproc);
-					throw CHtException(eHtBadDispatch, string("unable to dispatch"));
-				}
-			}
-
-			void CHtHifBase::HtCpDispatchWait(uint64_t *pBase) {
-				int ret = 0;
-				while (!(ret = wdm_dispatch_status(m_coproc)))
-					usleep(10000);
-
-				if (ret < 0) {
-					fprintf(stderr, "HTLIB: wdm_dispatch_status() failed with %s\n",
-						strerror(errno));
-				}
-			}
-
-			void CHtHifBase::HtCpRelease() {
-				wdm_detach(m_coproc);
-				wdm_release(m_coproc);
-			}
-#		else
-			/////////////////////////////////////////////////////////////////////////////
-			// ConveyOS API
-			/////////////////////////////////////////////////////////////////////////////
-			static cny_image_t m_sig;
-
-			void CHtHifBase::HtCpInfo(bool *needFlush, volatile bool *busy, uint64_t *aeg2, uint64_t *aeg3) {
-
-				if (cny_cp_sys_get_sysiconnect() == CNY_SYSTYPE_ICONNECT_FSB) {
-					*needFlush = true;
-					if (g_htDebug > 2)
-						fprintf(stderr, "HTLIB: Enabling OBLK Flushing\n");
-				}
-
-				int srtn = 0;
-				cny_image_t sig2 = 0L;
-				cny_get_signature((char *)HT_PERS, &m_sig, &sig2, &srtn);
-
-				if (g_htDebug > 2)
-					fprintf(stderr, "HTLIB: cny_get_signature(\"%s\", ...) returned %d\n", (char *)HT_PERS, srtn);
-
-				if (srtn != 0) {
-					if (g_htDebug > 1) {
-						fprintf(stderr, "HT_LIB: Unable to get signature \"%s\" using the ConveyOS API\n",
-							(char *)HT_PERS);
-						fprintf(stderr, " Please verify that the personality is installed in\n");
-						fprintf(stderr, " /opt/convey/personalities or CNY_PERSONALITY_PATH is set.\n");
-					}
-					throw CHtException(eHtBadDispatch, string("unable to get personality signature"));
-				}
-
-				if (!cny$coprocessor_ok) {
-					long sigs_for_attach[2] = { 0L, 0L };
-					sigs_for_attach[0] = (long)m_sig;
-					cny_user_attach_coprocessor(sigs_for_attach);
-				}
-
-				if (cny$coprocessor_ok) {
-					// make sure we have binary interleave
-					if (cny_cp_interleave() == CNY_MI_3131) {
-						if (g_htDebug > 1)
-							fprintf(stderr, "interleave set to 3131, this personality requires binary\n");
-						throw CHtException(eHtBadDispatch, string("inappropriate coprocessor memory interleave"));
-					}
-
-					cny$wait_strategy = CNY_POLL_WAIT;
-					cny$wait_strategy_time = 100;
-
-					int status = 0;
-					copcall_stat_fmt(m_sig, (void (*)()) & PersInfo, &status,
-						"AA", aeg2, aeg3);
-
-					if (status) {
-						if (g_htDebug > 1)
-							fprintf(stderr, "unable to check personality status");
-						throw CHtException(eHtBadDispatch, string("unable to check personality status"));
-					}
-				} else {
-					if (g_htDebug > 1)
-						printf("Coprocessor is not OK, terminating...\n");
-					*busy = false;
-					throw CHtException(eHtBadDispatch, string("bad coprocessor status"));
-				}
-			}
-
-			void CHtHifBase::HtCpDispatch(uint64_t *pBase) {}
-			void CHtHifBase::HtCpDispatchWait(uint64_t *pBase) {
-				l_copcall_fmt(m_sig, PersDisp, "AAAAA",
-				HT_AE_CNT, pBase[0], pBase[1], pBase[2], pBase[3]);
-			}
-			void CHtHifBase::HtCpRelease() {}
-#		endif
 #	else
-		void CHtHifBase::HtCpInfo(bool *needFlush, volatile bool *busy, uint64_t *aeg2, uint64_t *aeg3) {}
+		void CHtHifBase::HtCpInfo(bool *needFlush, volatile bool *busy, uint64_t *partNumber, uint64_t *appEngineCnt) {}
 		void CHtHifBase::HtCpDispatch(uint64_t *pBase) {}
 		void CHtHifBase::HtCpDispatchWait(uint64_t *pBase) {}
 		void CHtHifBase::HtCpRelease() {}
@@ -294,11 +145,7 @@ namespace Ht {
 
 	void * CHtHifBase::MemAlloc(size_t size) {
 #		if !defined(HT_SYSC) && !defined(HT_MODEL) && !defined(_WIN32)
-#			ifndef CNYOS_API
-				return wdm_malloc(m_coproc, size);
-#			else
-				return cny_cp_malloc(size);
-#			endif
+			return ht_cp_mem_alloc(m_pCoproc, size);
 #		else
 			void *ptr = malloc(size);
 #			ifdef HT_SYSC
@@ -309,11 +156,7 @@ namespace Ht {
 	}
 	void CHtHifBase::MemFree(void * pMem) {
 #		if !defined(HT_SYSC) && !defined(HT_MODEL) && !defined(_WIN32)
-#			ifndef CNYOS_API
-				wdm_free(m_coproc, pMem);
-#			else
-				cny_cp_free(pMem);
-#			endif
+			ht_cp_mem_free(m_pCoproc, pMem);
 #		else
 			free(pMem);
 #		endif
@@ -322,11 +165,7 @@ namespace Ht {
 		void * pMem;
 
 #		if !defined(HT_SYSC) && !defined(HT_MODEL) && !defined(_WIN32)
-#			ifndef CNYOS_API
-				int ret = wdm_posix_memalign(m_coproc, &pMem, align, size);
-#			else
-				int ret = cny_cp_posix_memalign(&pMem, align, size);
-#			endif
+			int ret = ht_cp_memalign_alloc(m_pCoproc, &pMem, size_t align, size_t size);
 #		else
 			int ret = ht_posix_memalign(&pMem, align, size);
 #			ifdef HT_SYSC
@@ -349,36 +188,21 @@ namespace Ht {
 	}
 	void * CHtHifBase::MemSet(void * pDst, int ch, size_t size) {
 #		if !defined(HT_SYSC) && !defined(HT_MODEL) && !defined(_WIN32)
-#			ifndef CNYOS_API
-				return wdm_memset(m_coproc, pDst, ch, size);
-#			else
-				return cny_cp_memset(pDst, ch, size);
-#			endif
+			return ht_cp_memset(m_pCoproc, pDst, ch, size);
 #		else
 			return memset(pDst, ch, size);
 #		endif
 	}
 	void * CHtHifBase::MemCpy(void * pDst, void * pSrc, size_t size) {
 #		if !defined(HT_SYSC) && !defined(HT_MODEL) && !defined(_WIN32)
-#			ifndef CNYOS_API
-				return wdm_memcpy(m_coproc, pDst, pSrc, size);
-#			else
-				return cny_cp_memcpy(pDst, pSrc, size);
-#			endif
+			return ht_cp_memcpy(m_pCoproc, pDst, pSrc, size);
 #		else
 			return memcpy(pDst, pSrc, size);
 #		endif
 	}
 	size_t CHtHifBase::GetMemSize(void) {
 #		if !defined(HT_SYSC) && !defined(HT_MODEL) && !defined(HT_VSIM) && !defined(_WIN32)
-#			ifndef CNYOS_API
-				wdm_attrs_t attr;
-				if (!wdm_attributes(m_coproc, &attr))
-					return attr.attr_memsize;
-				return 0;
-#			else
-				return cny_cp_mem_size();
-#			endif
+			return ht_cp_mem_size();
 #		else
 			return 2ll*1024*1024*1024;
 #		endif

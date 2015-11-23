@@ -372,18 +372,16 @@ namespace Ht {
 		m_appMode = m_pHtHifBase->GetAppMode();
 
 		if (m_appMode == eAppRun || m_appMode == eAppVsim) {
-			uint64_t aeg2 = 0;
-			uint64_t aeg3 = 0;
+			uint64_t appEngineCnt = 0;
 
-			m_pHtHifBase->HtCpInfo(&m_htNeedFlush, &m_bCoprocBusy, &aeg2, &aeg3);
+			m_pHtHifBase->HtCpInfo(&m_htNeedFlush, &m_bCoprocBusy, &m_partNumber, &appEngineCnt);
 
-			m_partNumber = aeg2;
-			m_aeCnt = (aeg3 >> 32) & 0xf;
+			m_aeCnt = (appEngineCnt >> 32) & 0xf;
 			if (!m_aeCnt || m_appMode == eAppVsim)
 				m_aeCnt = m_pHtHifBase->GetAeCnt();//HT_AE_CNT
-			m_unitMhz = (aeg3 >> 16) & 0xffff;
-			m_abi = (aeg3 >> 8) & 0xff;
-			m_auCnt = (aeg3 >> 0) & 0xff;
+			m_unitMhz = (appEngineCnt >> 16) & 0xffff;
+			m_abi = (appEngineCnt >> 8) & 0xff;
+			m_auCnt = (appEngineCnt >> 0) & 0xff;
 
 			assert(m_auCnt > 0);
 		} else {
