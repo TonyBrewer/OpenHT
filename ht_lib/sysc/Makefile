@@ -13,7 +13,8 @@ SDIR	= $(PWD)/src
 STDIR	= $(PWD)/src_pers
 
 SRCS	+= $(wildcard $(SDIR)/*.cpp $(SDIR)/*.cc $(SDIR)/*.c)
-SRCS	+= $(wildcard $(STDIR)/*.cpp $(STDIR)/*.cc $(STDIR)/*.c)
+SRCS	+= $(filter-out $(wildcard $(STDIR)/Pers*_src.cpp), \
+	      $(wildcard $(STDIR)/*.cpp $(STDIR)/*.cc $(STDIR)/*.c))
 SRCS	+= $(wildcard $(HT_LIB)/host/*.cpp $(HT_LIB)/sysc/*.cpp)
 SRCS	+= $(wildcard $(PWD)/ht/sysc/*.cpp)
 
