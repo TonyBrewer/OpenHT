@@ -288,6 +288,9 @@ void CDsnInfo::InitPrivateAsGlobal()
 
 		if (!mod.m_bIsUsed) continue;
 
+		if (mod.m_ngvList.size() > 0 && mod.m_instSet.GetInstCnt() > 1)
+			ParseMsg(Fatal, mod.m_ngvList[0]->m_lineInfo, "Module with multiple instances and global variable is not supported");
+
 		// Move private variables with depth to global
 		for (size_t prIdx = 0; prIdx < mod.m_threads.m_htPriv.m_fieldList.size(); prIdx += 1) {
 			CField * pPriv = mod.m_threads.m_htPriv.m_fieldList[prIdx];

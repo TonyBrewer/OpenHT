@@ -17,9 +17,6 @@ void CDsnInfo::InitOptNgv()
 
 		if (!pMod->m_bIsUsed || pMod->m_ngvList.size() == 0) continue;
 
-		if (pMod->m_instSet.GetInstCnt() > 1)
-			ParseMsg(Fatal, pMod->m_ngvList[0]->m_lineInfo, "Module with multiple instances and global variable is not supported");
-
 		// create unique list of global variables for entire unit
 		for (size_t mgvIdx = 0; mgvIdx < pMod->m_ngvList.size(); mgvIdx += 1) {
 			CRam * pMgv = pMod->m_ngvList[mgvIdx];

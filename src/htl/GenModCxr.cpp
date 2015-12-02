@@ -1328,7 +1328,6 @@ void CDsnInfo::InitCxrIntfInfo()
 				///////////////////////////////////////////////////////////
 				// generate Return_func routine
 
-				bool bSingleReplId = true;
 				int singleReplId = -1;
 				for (size_t rtnIdx = 0; rtnIdx < pMod->m_cxrReturnList.size(); rtnIdx += 1) {
 

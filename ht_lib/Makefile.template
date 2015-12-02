@@ -8,6 +8,7 @@
 # See the LICENSE file for the complete license text.
 
 HT_LIB = $(HT_DIR)/ht_lib
+PLAT_DIR = $(HT_LIB)/platform
 SC_DIR = $(HT_DIR)/local_systemc
 
 ifeq ($(shell uname), Darwin)
@@ -67,8 +68,11 @@ vsim libvsim vfiles:	CFLAGS += $(CNY_HT_CFLAGS_VSIM)
 vsim libvsim vfiles:	CFLAGS += -DHT_VSIM
 vsim libvsim vfiles:	CFLAGS += -I$(CNY_PATH)/include
 vsim libvsim vfiles:	CFLAGS += -I$(PWD)/ht/vsim
-ifneq (,$(PLAT_WX_OR_MA))
+ifeq (true,$(PLAT_WX_OR_MA))
+vsim libvsim vfiles:	CFLAGS += -I$(PLAT_DIR)/convey/wx-690/host
 vsim libvsim vfiles:	CFLAGS += -DHT_AE_CNT=$(HT_AE_CNT)
+else
+vsim libvsim vfiles:	CFLAGS += -I$(PLAT_DIR)/convey/hc-2ex/host
 endif
 
 app libapp:	CFLAGS += $(CNY_HT_DEFINES)
@@ -77,6 +81,11 @@ app libapp:	CFLAGS += -DHT_APP
 app libapp:	CFLAGS += -I$(CNY_PATH)/include
 app libapp:	CFLAGS += -I$(PWD)/ht/app
 app libapp:	CFLAGS += -DHT_AE_CNT=$(HT_AE_CNT)
+ifeq (true,$(PLAT_WX_OR_MA))
+app libapp:	CFLAGS += -I$(PLAT_DIR)/convey/wx-690/host
+else
+app libapp:	CFLAGS += -I$(PLAT_DIR)/convey/hc-2ex/host
+endif
 
 HtHif.o HtHif.po: CFLAGS += -DHT_NICK=$(CNY_HT_NICK)
 

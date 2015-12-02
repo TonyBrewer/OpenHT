@@ -17,7 +17,7 @@ CDsnInfo::GenerateModuleFiles(CModule &mod)
 		CInstance * pInst = mod.m_instSet.GetInst(modInstIdx);
 
 		if (mod.m_instSet.GetInstCnt() > 1)
-			pInst->m_fileName = mod.m_modName == pInst->m_instName ? mod.m_modName.AsStr() + "_" : pInst->m_instName;
+			pInst->m_fileName = mod.m_modName == pInst->m_instName ? mod.m_modName.AsStr() + "_" : pInst->m_instName.AsStr();
 		else
 			pInst->m_fileName = mod.m_modName;
 

@@ -733,11 +733,11 @@ void HtdFile::ParseModuleMethods()
 	if (m_pLex->GetTkString() == "AddInstParam") {
 
 		string name;
-		string default;
+		string default_;
 
 		CParamList params[] = {
 			{ "name", &name, true, ePrmParamStr, 0, 0 },
-			{ "default", &default, false, ePrmParamStr, 0, 0 },
+			{ "default", &default_, false, ePrmParamStr, 0, 0 },
 			{ 0, 0, 0, ePrmUnknown, 0, 0 }
 		};
 
@@ -748,7 +748,7 @@ void HtdFile::ParseModuleMethods()
 			CPreProcess::ParseMsg(Error, "duplicate instParam name '%s'", name.c_str());
 		else {
 			m_pDsn->m_modInstParamList.insert(name);
-			m_pDsnInfo->AddModInstParam(m_pOpenMod->m_pModule, name, default);
+			m_pDsnInfo->AddModInstParam(m_pOpenMod->m_pModule, name, default_);
 		}
 
 		m_pLex->GetNextTk();

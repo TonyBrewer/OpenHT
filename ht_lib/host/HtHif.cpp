@@ -165,7 +165,7 @@ namespace Ht {
 		void * pMem;
 
 #		if !defined(HT_SYSC) && !defined(HT_MODEL) && !defined(_WIN32)
-			int ret = ht_cp_memalign_alloc(m_pCoproc, &pMem, size_t align, size_t size);
+			int ret = ht_cp_memalign_alloc(m_pCoproc, &pMem, align, size);
 #		else
 			int ret = ht_posix_memalign(&pMem, align, size);
 #			ifdef HT_SYSC

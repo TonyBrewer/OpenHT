@@ -98,10 +98,10 @@ CModule * CDsnInfo::AddModule(string name, EClkRate clkRate)
 	return pModule;
 }
 
-void CDsnInfo::AddModInstParam(CModule *pModule, string const &name, string const &default)
+void CDsnInfo::AddModInstParam(CModule *pModule, string const &name, string const &default_)
 {
 	// check for duplicate
-	pModule->AddInstParam(name, default);
+	pModule->AddInstParam(name, default_);
 }
 
 CMifRd * CDsnInfo::AddReadMem(CModule * pModule, string queueW, string rspGrpId, string rspGrpW,

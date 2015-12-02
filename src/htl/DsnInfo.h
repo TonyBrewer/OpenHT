@@ -767,11 +767,6 @@ struct CModIdx {
 	CCxrReturn * GetCxrReturn();
 
 	CInstance *	m_pModInst;
-	union {
-		size_t		m_callIdx;
-		size_t		m_entryIdx;
-		size_t		m_returnIdx;
-	};
 private:
 	union {
 		CCxrCall * m_pCxrCall;
@@ -779,6 +774,12 @@ private:
 		CCxrReturn * m_pCxrReturn;
 	};
 public:
+	union {
+		size_t		m_callIdx;
+		size_t		m_entryIdx;
+		size_t		m_returnIdx;
+	};
+
 	bool		m_bIsUsed;
 	int			m_replCnt;
 	string		m_modPath;
@@ -1715,8 +1716,8 @@ struct CModule {
 		return &m_threads.m_htPriv;
 	}
 
-	void AddInstParam(string const &name, string const &default) {
-		m_instParamList.push_back(InstParam_t(name, default));
+	void AddInstParam(string const &name, string const &default_) {
+		m_instParamList.push_back(InstParam_t(name, default_));
 	}
 
 public:
@@ -2027,7 +2028,7 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 	CModule * AddModule(string name, EClkRate clkRate);
 	CRecord * AddStruct(string name, bool bCStyle, bool bUnion, EScope scope, bool bInclude = false, string modName = "");
 
-	void AddModInstParam(CModule *pModule, string const &name, string const &default);
+	void AddModInstParam(CModule *pModule, string const &name, string const &default_);
 	CMifRd * AddReadMem(CModule * pModule, string queueW, string rspGrpId, string rspGrpW, string rspCntW, bool maxBw, bool bPause, bool bPoll, bool bMultiRd = false);
 	CMifWr * AddWriteMem(CModule * pModule, string queueW, string rspGrpId, string rspGrpW, string rspCntW, bool maxBw, bool bPause, bool bPoll, bool bReqPause, bool bMultiWr = false);
 	CCxrCall * AddCall(void * pModule, string const &modEntry, string const &xferName, string const &modInst,
