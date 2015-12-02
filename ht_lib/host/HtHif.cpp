@@ -202,7 +202,7 @@ namespace Ht {
 	}
 	size_t CHtHifBase::GetMemSize(void) {
 #		if !defined(HT_SYSC) && !defined(HT_MODEL) && !defined(HT_VSIM) && !defined(_WIN32)
-			return ht_cp_mem_size();
+			return ht_cp_mem_size(m_pCoproc);
 #		else
 			return 2ll*1024*1024*1024;
 #		endif
