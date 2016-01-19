@@ -114,6 +114,12 @@ void CPersInc::PersInc()
 			//		HtAssert(0, 0);
 			//}
 
+			{
+				ht_uint49 a = (ht_uint49)1 << 48;
+				if (a != 0x1000000000000ULL)
+					HtAssert(0, 0);
+			}
+
 			{ // test for bug 2049
 				int a[4];
 				//if (true)

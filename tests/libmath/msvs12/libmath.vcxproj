@@ -119,8 +119,7 @@
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
-      <ForcedIncludeFiles>
-      </ForcedIncludeFiles>
+      <ForcedIncludeFiles>../../msvs12/Linux/gettimeofday.h</ForcedIncludeFiles>
       <DisableSpecificWarnings>4244;4996</DisableSpecificWarnings>
       <AdditionalOptions>/bigobj</AdditionalOptions>
     </ClCompile>
@@ -274,6 +273,9 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\ht\sysc\PersIdiv.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\src\Main.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\src_pers\PersIdiv_src.cpp">

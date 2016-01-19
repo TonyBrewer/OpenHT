@@ -4409,7 +4409,7 @@ void CDsnInfo::GenModMifStatements(CInstance * pModInst)
 
 		mifPostInstr.NewLine();
 
-		mifPostInstr.Append("\t\t\tc_t%d_%sToMif_req.m_addr = r_t%d_%sToMif_req.m_addr + ((ht_uint4)1 << r_t%d_%sToMif_req.m_size);\n",
+		mifPostInstr.Append("\t\t\tc_t%d_%sToMif_req.m_addr = r_t%d_%sToMif_req.m_addr + (ht_uint4)(1 << r_t%d_%sToMif_req.m_size);\n",
 			pMod->m_execStg, pMod->m_modName.Lc().c_str(),
 			pMod->m_execStg + 1, pMod->m_modName.Lc().c_str(),
 			pMod->m_execStg + 1, pMod->m_modName.Lc().c_str());

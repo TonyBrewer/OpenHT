@@ -304,84 +304,98 @@
     </ClCompile>
     <ClCompile Include="..\src_pers\PersCtl_src.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\ht\sysc\PersTest00.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\src_pers\PersTest00_src.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\ht\sysc\PersTest01.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\src_pers\PersTest01_src.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\ht\sysc\PersTest02.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\src_pers\PersTest02_src.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\ht\sysc\PersTest03.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\src_pers\PersTest03_src.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\ht\sysc\PersTest04.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\src_pers\PersTest04_src.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\ht\sysc\PersTest05.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\src_pers\PersTest05_src.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\ht\sysc\PersTest06.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\src_pers\PersTest06_src.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\ht\sysc\PersTest07.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\src_pers\PersTest07_src.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\ht\sysc\PersTest08.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\src_pers\PersTest08_src.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\ht\sysc\PersTest09.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\src_pers\PersTest09_src.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\ht\sysc\PersTest10.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\src_pers\PersTest10_src.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\ht\sysc\PersTest11.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\src_pers\PersTest11_src.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\ht\sysc\PersTest12.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\src_pers\PersTest12_src.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\ht\sysc\PersGblTest09_0_src_u0_data.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>

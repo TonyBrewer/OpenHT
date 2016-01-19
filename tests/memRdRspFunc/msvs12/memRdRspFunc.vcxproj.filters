@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="ht_lib">
@@ -259,6 +259,9 @@
     </ClCompile>
     <ClCompile Include="$(HtToolsPath)\ht_lib\sysc\SyscMonLib.cpp">
       <Filter>ht_lib\sysc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Main.cpp">
+      <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

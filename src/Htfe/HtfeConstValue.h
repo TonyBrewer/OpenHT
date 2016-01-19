@@ -195,20 +195,26 @@ struct CConstValue {
 				case UINT32:	value = GetUint32(); break;
 				default: Assert(0);
 			}
-			value = (value << (64-width)) >> (64-width);
-			if (width == 32)
-				rslt.SetSint32() = (int32_t)value;
-			else
+			value = (value << (64 - width)) >> (64 - width);
+			if (width > 32)
 				rslt.SetSint64() = value;
+			else
+				rslt.SetSint32() = (int32_t)value;
 		} else {
-			uint64_t mask = width == 64 ? ~0ull : ((1ull << width)-1);
+			unsigned long long value = 0;
 			switch (GetConstType()) {
-				case SINT64:	rslt.SetUint64() = GetSint64() & mask; break;
-				case SINT32:	rslt.SetUint32() = GetSint32() & mask; break;
-				case UINT64:	rslt.SetUint64() = GetUint64() & mask; break;
-				case UINT32:	rslt.SetUint32() = GetUint32() & mask; break;
-				default: Assert(0);
+			case SINT64:	value = GetSint64(); break;
+			case SINT32:	value = GetSint32(); break;
+			case UINT64:	value = GetUint64(); break;
+			case UINT32:	value = GetUint32(); break;
+			default: Assert(0);
 			}
+			uint64_t mask = width == 64 ? ~0ull : ((1ull << width) - 1);
+			value &= mask;
+			if (width > 32)
+				rslt.SetUint64() = value;
+			else
+				rslt.SetUint32() = (uint32_t)value;
 		}
 		return rslt;
 	}

@@ -272,6 +272,12 @@
     <ClCompile Include="..\ht\sysc\PersAdd.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\src\Main.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\src_pers\PersAdd_prim.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Htl_Htv|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\src_pers\PersAdd_src.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>

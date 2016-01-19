@@ -4666,7 +4666,7 @@ CHtfeOperand * CHtfeDesign::ParseExpression(CHtfeIdent *pHier,
 	operatorStack.push_back(tk_exprBegin);
 
 #ifdef WIN32
-	if (GetLineInfo().m_lineNum == 37)
+	if (GetLineInfo().m_lineNum == 534)
 		bool stop = true;
 #endif
 
