@@ -12,7 +12,7 @@
 
 vector<CHtString> const g_nullHtStringVec; // used as default argument for GenModDecl
 
-bool CDsnInfo::FindVariableWidth(CLineInfo const &lineInfo, CModule &mod, string varName, bool &bHtId, bool &bPrivate, bool &bShared, bool &bStage, int &varW)
+bool CDsnInfo::FindVariableWidth(CLineInfo const &lineInfo, CModule &mod, string varName, bool &bHtId, bool &bPrivate, bool &bShared, bool &bStage, int &varW, CField const * &pRtnField)
 {
 	if (bHtId && varName == "htId") {
 		varW = mod.m_threads.m_htIdW.AsInt();
@@ -20,17 +20,17 @@ bool CDsnInfo::FindVariableWidth(CLineInfo const &lineInfo, CModule &mod, string
 		return true;
 	}
 
-	if (bPrivate && mod.m_bHasThreads && FindFieldRefWidth(lineInfo, varName, mod.m_threads.m_htPriv.m_fieldList, varW)) {
+	if (bPrivate && mod.m_bHasThreads && FindFieldRefWidth(lineInfo, varName, mod.m_threads.m_htPriv.m_fieldList, varW, pRtnField)) {
 		bHtId = bShared = bStage = false;
 		return true;
 	}
 
-	if (bShared && FindFieldRefWidth(lineInfo, varName, mod.m_shared.m_fieldList, varW)) {
+	if (bShared && FindFieldRefWidth(lineInfo, varName, mod.m_shared.m_fieldList, varW, pRtnField)) {
 		bHtId = bPrivate = bStage = false;
 		return true;
 	}
 
-	if (bStage && FindFieldRefWidth(lineInfo, varName, mod.m_stage.m_fieldList, varW)) {
+	if (bStage && FindFieldRefWidth(lineInfo, varName, mod.m_stage.m_fieldList, varW, pRtnField)) {
 		bHtId = bPrivate = bShared = false;
 		return true;
 	}
@@ -38,7 +38,7 @@ bool CDsnInfo::FindVariableWidth(CLineInfo const &lineInfo, CModule &mod, string
 	return false;
 }
 
-bool CDsnInfo::FindFieldRefWidth(CLineInfo const &lineInfo, string const &fieldRef, vector<CField *> const &fieldList, int &fieldW)
+bool CDsnInfo::FindFieldRefWidth(CLineInfo const &lineInfo, string const &fieldRef, vector<CField *> const &fieldList, int &fieldW, CField const * &pRtnField)
 {
 	// find field in fieldlist that matches fieldRef, return width of field
 	//  need to parse fieldRef into individual identifiers
@@ -60,15 +60,17 @@ bool CDsnInfo::FindFieldRefWidth(CLineInfo const &lineInfo, string const &fieldR
 
 	for (size_t fldIdx = 0; fldIdx < fieldList.size(); fldIdx += 1) {
 		CField const * pField = fieldList[fldIdx];
+		pRtnField = pField;
 
+		CField const * pTemp;
 		if (pField->m_name.size() == 0) {
-			if (FindFieldRefWidth(lineInfo, fieldRef, pField->m_pType->AsRecord()->m_fieldList, fieldW))
+			if (FindFieldRefWidth(lineInfo, fieldRef, pField->m_pType->AsRecord()->m_fieldList, fieldW, pTemp))
 				return true;
 		} 
 		else if (pField->m_name == name) {
 			// found field, check if native type or record
 			if (pField->m_pType->IsRecord()) {
-				return FindFieldRefWidth(lineInfo, postName, pField->m_pType->AsRecord()->m_fieldList, fieldW);
+				return FindFieldRefWidth(lineInfo, postName, pField->m_pType->AsRecord()->m_fieldList, fieldW, pTemp);
 			}
 			else if (postName.size() > 0) {
 				ParseMsg(Error, lineInfo, "address variable can not be a struct or union type");
@@ -85,6 +87,7 @@ bool CDsnInfo::FindFieldRefWidth(CLineInfo const &lineInfo, string const &fieldR
 		}
 	}
 
+	pRtnField = 0;
 	return false;
 }
 

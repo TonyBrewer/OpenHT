@@ -2136,8 +2136,8 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 	int FindHostTypeWidth(CField const * pField);
 	int FindHostTypeWidth(string const &varName, string const &typeName, CHtString const &bitWidth, CLineInfo const &lineInfo);
 	void ValidateHostType(CType * pType, CLineInfo const & lineInfo);
-	bool FindVariableWidth(CLineInfo const &lineInfo, CModule &mod, string name, bool &bHtId, bool &bPrivate, bool &bShared, bool &bStage, int &addr1W);
-	bool FindFieldRefWidth(CLineInfo const &lineInfo, string const &fieldRef, vector<CField *> const &fieldList, int &varW);
+	bool FindVariableWidth(CLineInfo const &lineInfo, CModule &mod, string name, bool &bHtId, bool &bPrivate, bool &bShared, bool &bStage, int &addr1W, CField const * &pRtnField);
+	bool FindFieldRefWidth(CLineInfo const &lineInfo, string const &fieldRef, vector<CField *> const &fieldList, int &varW, CField const * &pRtnField);
 	float FindSlicePerBramRatio(int depth, int width);
 	int FindSliceCnt(int depth, int width);
 	int FindBramCnt(int depth, int width);

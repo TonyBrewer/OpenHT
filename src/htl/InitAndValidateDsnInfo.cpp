@@ -204,9 +204,10 @@ void CDsnInfo::InitAddrWFromAddrName()
 				pNgv->m_addr1IsPrivate = true;
 				pNgv->m_addr1IsStage = true;
 				bool bShared = false;
+				CField const * pRtnField;
 
 				if (FindVariableWidth(pNgv->m_lineInfo, mod, pNgv->m_addr1Name, pNgv->m_addr1IsHtId,
-					pNgv->m_addr1IsPrivate, bShared, pNgv->m_addr1IsStage, addr1W)) 
+					pNgv->m_addr1IsPrivate, bShared, pNgv->m_addr1IsStage, addr1W, pRtnField))
 				{
 					if (pNgv->m_addr1W.size() == 0) {
 						pNgv->m_addr1W = CHtString(VA("%d", addr1W));
@@ -215,6 +216,9 @@ void CDsnInfo::InitAddrWFromAddrName()
 					} else if (pNgv->m_addr1W.AsInt() != addr1W)
 						ParseMsg(Error, pNgv->m_lineInfo, "addr1Name (%d) and addr1W (%d) have inconsistent widths",
 						addr1W, pNgv->m_addr1W.AsInt());
+
+					if (pNgv->m_addr1IsStage && (pNgv->m_rdStg.AsInt() - 2 < pRtnField->m_rngLow.AsInt() || pNgv->m_rdStg.AsInt() - 2 > pRtnField->m_rngHigh.AsInt()))
+						ParseMsg(Error, pNgv->m_lineInfo, "Global varaible rdStg (%d) requires staging variable to be valid two stages earlier", pNgv->m_rdStg.AsInt());
 				} else
 					ParseMsg(Error, pNgv->m_lineInfo, "%s was not found as a private or stage variable", pNgv->m_addr1Name.c_str());
 			}
@@ -225,9 +229,10 @@ void CDsnInfo::InitAddrWFromAddrName()
 				pNgv->m_addr2IsPrivate = true;
 				pNgv->m_addr2IsStage = true;
 				bool bShared = false;
+				CField const * pRtnField;
 
 				if (FindVariableWidth(pNgv->m_lineInfo, mod, pNgv->m_addr2Name, pNgv->m_addr2IsHtId,
-					pNgv->m_addr2IsPrivate, bShared, pNgv->m_addr2IsStage, addr2W))
+					pNgv->m_addr2IsPrivate, bShared, pNgv->m_addr2IsStage, addr2W, pRtnField))
 				{
 					if (pNgv->m_addr2W.size() == 0) {
 						pNgv->m_addr2W = CHtString(VA("%d", addr2W));
@@ -237,6 +242,9 @@ void CDsnInfo::InitAddrWFromAddrName()
 						ParseMsg(Error, pNgv->m_lineInfo, "addr2Name (%d) and addr2W (%d) have inconsistent widths",
 							addr2W, pNgv->m_addr2W.AsInt());
 					}
+
+					if (pNgv->m_addr2IsStage && (pNgv->m_rdStg.AsInt() - 2 < pRtnField->m_rngLow.AsInt() || pNgv->m_rdStg.AsInt() - 2 > pRtnField->m_rngHigh.AsInt()))
+						ParseMsg(Error, pNgv->m_lineInfo, "Global varaible rdStg (%d) requires staging variable to be valid two stages earlier", pNgv->m_rdStg.AsInt());
 				} else
 					ParseMsg(Error, pNgv->m_lineInfo, "%s was not found as a private or stage variable", pNgv->m_addr2Name.c_str());
 			}
@@ -252,9 +260,10 @@ void CDsnInfo::InitAddrWFromAddrName()
 				pPriv->m_addr1IsPrivate = true;
 				pPriv->m_addr1IsStage = true;
 				bool bShared = false;
+				CField const * pRtnField;
 
 				if (FindVariableWidth(pPriv->m_lineInfo, mod, pPriv->m_addr1Name, pPriv->m_addr1IsHtId,
-					pPriv->m_addr1IsPrivate, bShared, pPriv->m_addr1IsStage, addr1W))
+					pPriv->m_addr1IsPrivate, bShared, pPriv->m_addr1IsStage, addr1W, pRtnField))
 				{
 					pPriv->m_addr1W = CHtString(VA("%d", addr1W));
 					pPriv->m_addr1W.SetValue(addr1W);
@@ -268,9 +277,10 @@ void CDsnInfo::InitAddrWFromAddrName()
 				pPriv->m_addr2IsPrivate = true;
 				pPriv->m_addr2IsStage = true;
 				bool bShared = false;
+				CField const * pRtnField;
 
 				if (FindVariableWidth(pPriv->m_lineInfo, mod, pPriv->m_addr2Name, pPriv->m_addr2IsHtId,
-					pPriv->m_addr2IsPrivate, bShared, pPriv->m_addr2IsStage, addr2W))
+					pPriv->m_addr2IsPrivate, bShared, pPriv->m_addr2IsStage, addr2W, pRtnField))
 				{
 					pPriv->m_addr2W = CHtString(VA("%d", addr2W));
 					pPriv->m_addr2W.SetValue(addr2W);
