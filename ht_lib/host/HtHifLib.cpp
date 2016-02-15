@@ -149,7 +149,16 @@ namespace Ht {
 		delete[] ppMemRegion;
 
 		size_t memAlign = 4*1024*1024;
-		if (!(m_pHtHifMem = (uint8_t *)CHtHif::HostMemAllocAlign(memAlign, m_htHifMemSize, false))) {
+		if (pHtHifBase->m_htHifParams.m_hostMemHugePageBase) {
+			if (m_htHifMemSize > HugePageSize)
+				throw CHtException(eHtBadHostAlloc, string("HostMemAllocHuge is currently limited to a single 1GB page"));
+			m_pHtHifMem = (uint8_t *)CHtHif::HostMemAllocHuge(pHtHifBase->m_htHifParams.m_hostMemHugePageBase);
+			m_pHtHifMemHuge = true;
+		} else {
+			m_pHtHifMem = (uint8_t *)CHtHif::HostMemAllocAlign(memAlign, m_htHifMemSize, false);
+			m_pHtHifMemHuge = false;
+		}
+		if (!m_pHtHifMem) {
 			if (m_pMemRegionList) {
 				delete[] m_pMemRegionList;
 				m_pMemRegionList = 0;
@@ -358,11 +367,11 @@ namespace Ht {
 		UnlockInBlk();
 	}
 
-	CHtHifLibBase * CHtHifLibBase::NewHtHifLibBase(CHtHifParams * pHtHifParams, char const * pHtPers, CHtHifBase * pHtHifBase) {
-		return new CHtHifLib(pHtHifParams, pHtPers, pHtHifBase);
+	CHtHifLibBase * CHtHifLibBase::NewHtHifLibBase(CHtHifParams * pHtHifParams, char const * pHtPers, CHtHifBase * pHtHifBase, bool pHtHifHuge) {
+		return new CHtHifLib(pHtHifParams, pHtPers, pHtHifBase, pHtHifHuge);
 	}
 
-	CHtHifLib::CHtHifLib(CHtHifParams * pHtHifParams, char const * pHtPers, CHtHifBase * pHtHifBase)
+	CHtHifLib::CHtHifLib(CHtHifParams * pHtHifParams, char const * pHtPers, CHtHifBase * pHtHifBase, bool pHtHifHuge)
 	{
 		m_pHtHifBase = pHtHifBase;
 		m_ppHtUnits = 0;

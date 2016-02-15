@@ -11,6 +11,8 @@
 
 using namespace std;
 
+#include <sys/mman.h>
+
 #ifdef HT_SYSC
 #include "../sysc/HtMemTrace.h"
 #endif
@@ -53,6 +55,7 @@ namespace Ht {
 			m_numaSetCnt = 0;
 			m_pHtPers = 0;
 			memset(m_numaSetUnitCnt, 0, sizeof(uint8_t) * HT_NUMA_SET_MAX);
+			m_hostMemHugePageBase = 0;
 		};
 
 		uint32_t m_ctlTimerUSec;
@@ -63,6 +66,7 @@ namespace Ht {
 		int32_t m_numaSetCnt;
 		char const * m_pHtPers;
 		uint8_t m_numaSetUnitCnt[HT_NUMA_SET_MAX];
+  	        void* m_hostMemHugePageBase;
 	};
 
 	enum EHtErrorCode { eHtBadHostAlloc, eHtBadCoprocAlloc, eHtBadHtHifParam, eHtBadDispatch };
@@ -102,7 +106,7 @@ namespace Ht {
 		friend class CHtModelUnitLib;
 		friend class CHtModelHifLib;
 	protected:
-		static CHtHifLibBase * NewHtHifLibBase(CHtHifParams * pHtHifParams, char const * pHtPers, CHtHifBase * pHtHifBase);
+		static CHtHifLibBase * NewHtHifLibBase(CHtHifParams * pHtHifParams, char const * pHtPers, CHtHifBase * pHtHifBase, bool pHtHifHuge);
 		virtual ~CHtHifLibBase() {}
 		virtual int GetUnitCnt() = 0;
 		virtual void FreeAllUnits() = 0;
@@ -146,7 +150,7 @@ namespace Ht {
 #			if !defined(HT_MODEL) && !defined(HT_SYSC) && !defined(CNYOS_API) && !defined(HT_LIB_HIF) && !defined(HT_LIB_SYSC)
 				m_coproc = WDM_INVALID;
 #			endif
-			m_pHtHifLibBase = CHtHifLibBase::NewHtHifLibBase(pParams, HT_PERS, this);
+			m_pHtHifLibBase = CHtHifLibBase::NewHtHifLibBase(pParams, HT_PERS, this, false);
 			m_allocLock = 0;
 		}
 		~CHtHifBase() {
@@ -192,6 +196,8 @@ namespace Ht {
 		static void HostMemFree(void * pMem);
 		static void * HostMemAllocAlign(size_t align, size_t size, bool bEnableSystemcAddressValidation=true);
 		static void HostMemFreeAlign(void * pMem);
+		static void * HostMemAllocHuge(void* baseAddr);
+		static void HostMemFreeHuge(void * pMem);
 
 		void * MemAlloc(size_t cnt);
 		void MemFree(void * pMem);

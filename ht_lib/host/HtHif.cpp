@@ -291,6 +291,24 @@ namespace Ht {
 			free(pMem);
 #		endif
 	}
+        void * CHtHifBase::HostMemAllocHuge(void* hostBaseAddr)
+	{
+	    int flags = MAP_PRIVATE;
+	    flags |= (MAP_ANONYMOUS | MAP_POPULATE | MAP_HUGETLB | MAP_FIXED);
+            size_t const HugePageSize = 1*1024*1024*1024;
+	    void * pMem = mmap(hostBaseAddr, HugePageSize, PROT_READ|PROT_WRITE, flags, -1, 0);
+	    if (pMem == nullptr)
+		fprintf(stderr, "HTLIB: Host huge page alloc failed (0x%llx, 0x%llx)\n",
+			(long long)HugePageSize, (long long)hostBaseAddr);
+	    return pMem;
+	}
+	void CHtHifBase::HostMemFreeHuge(void * pMem) {
+            size_t const HugePageSize = 1*1024*1024*1024;
+	    munlock(pMem, HugePageSize);
+	    if (munmap(pMem, HugePageSize) != 0)
+		fprintf(stderr, "HTLIB: Host huge free failed (0x%llx)\n",
+			(long long)pMem);
+	}
 
 	void * CHtHifBase::MemAlloc(size_t size) {
 #		if !defined(HT_SYSC) && !defined(HT_MODEL) && !defined(_WIN32)

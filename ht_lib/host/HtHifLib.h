@@ -32,10 +32,16 @@ namespace Ht {
 			m_pHtHifBase = 0;
 			m_pMemRegionList = 0;
 			m_pHtHifMem = 0;
+			m_pHtHifMemHuge = false;
 		}
 		~CHtHifMem() {
 			if (m_pHtHifMem) {
-				ht_free_memalign(m_pHtHifMem);
+				if (m_pHtHifMemHuge) {
+					munlock(m_pHtHifMem, HugePageSize);
+					if (munmap(m_pHtHifMem, HugePageSize) != 0)
+						fprintf(stderr, "HTLIB: Host huge page free failed (0x%llx)\n",(long long)m_pHtHifMem);
+				} else
+					ht_free_memalign(m_pHtHifMem);
 				m_pHtHifMem = 0;
 			}
 			if (m_pMemRegionList) {
@@ -111,6 +117,8 @@ namespace Ht {
 			 char const * m_pName;
 			 static CHtHifLib * m_pHtHifBase;
 			 static uint8_t * m_pHtHifMemBase;
+
+			 size_t const HugePageSize = 1*1024*1024*1024;
 		 };
 
 	private:
@@ -122,6 +130,7 @@ namespace Ht {
 
 		size_t m_htHifMemSize;
 		uint8_t * m_pHtHifMem;
+		bool m_pHtHifMemHuge;
 
 		uint32_t m_ctlQueMemSize;
 		uint32_t m_ctlInQueMemSize;
@@ -399,7 +408,7 @@ namespace Ht {
 		}
 
 	public:
-		CHtHifLib(CHtHifParams * pParams, char const * pHtPers, CHtHifBase * pHtHifBase);
+		CHtHifLib(CHtHifParams * pParams, char const * pHtPers, CHtHifBase * pHtHifBase, bool pHtHifHuge);
 		~CHtHifLib();
 
 		int GetUnitCnt() { return m_aeCnt * m_auCnt; }
