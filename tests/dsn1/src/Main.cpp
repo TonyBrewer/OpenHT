@@ -9,9 +9,12 @@ int main(int argc, char **argv)
 	for (int i = 0; i < CNT; i++)
 		arr[i] = i;
 
+	CHtHifParams htHifParams;
+	htHifParams.m_bHtHifHugePage = true;
+
 	CHtHif *pHtHif;
 	try {
-		pHtHif = new CHtHif();
+		pHtHif = new CHtHif(&htHifParams);
 	}
 	catch (CHtException &htException) {
 		printf("new CHtHif threw an exception: '%s'\n", htException.GetMsg().c_str());

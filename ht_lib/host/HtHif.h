@@ -32,6 +32,11 @@ using namespace std;
 # endif
 #endif
 
+#define HUGE_PAGE_SIZE (1 * 1024 * 1024 * 1024)
+#if !defined(WIN32) && !defined(CNYOS_API)
+#  include <sys/mman.h>
+#endif
+
 #define HT_NUMA_SET_MAX 4
 #define HT_HIF_AE_CNT_MAX 4
 
@@ -52,6 +57,8 @@ namespace Ht {
 			m_appUnitMemSize = 0;
 			m_numaSetCnt = 0;
 			m_pHtPers = 0;
+			m_bHtHifHugePage = false;
+			m_pHtHifHugePageBase = 0;
 			memset(m_numaSetUnitCnt, 0, sizeof(uint8_t) * HT_NUMA_SET_MAX);
 		};
 
@@ -62,6 +69,8 @@ namespace Ht {
 		uint64_t m_appUnitMemSize;
 		int32_t m_numaSetCnt;
 		char const * m_pHtPers;
+		bool m_bHtHifHugePage;
+		void * m_pHtHifHugePageBase;
 		uint8_t m_numaSetUnitCnt[HT_NUMA_SET_MAX];
 	};
 
@@ -192,6 +201,8 @@ namespace Ht {
 		static void HostMemFree(void * pMem);
 		static void * HostMemAllocAlign(size_t align, size_t size, bool bEnableSystemcAddressValidation=true);
 		static void HostMemFreeAlign(void * pMem);
+		static void * HostMemAllocHuge(void * pBaseAddr);
+		static void HostMemFreeHuge(void * pMem);
 
 		void * MemAlloc(size_t cnt);
 		void MemFree(void * pMem);

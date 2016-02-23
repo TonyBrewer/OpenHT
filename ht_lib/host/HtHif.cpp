@@ -291,7 +291,30 @@ namespace Ht {
 			free(pMem);
 #		endif
 	}
+	void * CHtHifBase::HostMemAllocHuge(void * pHostBaseAddr) {
+		void * pMem;
 
+#		if !defined(_WIN32) && !defined(CNYOS_API)
+			int flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_POPULATE | MAP_HUGETLB;
+			if (pHostBaseAddr != 0) flags |= MAP_FIXED;
+			pMem = mmap(pHostBaseAddr, HUGE_PAGE_SIZE, PROT_READ | PROT_WRITE, flags, -1, 0);
+			if (pMem == 0)
+				fprintf(stderr, "HTLIB: Host huge page alloc failed (0x%llx, 0x%llx)\n",
+				(long long)HUGE_PAGE_SIZE, (long long)pHostBaseAddr);
+#		else
+			pMem = HostMemAllocAlign(HUGE_PAGE_SIZE, HUGE_PAGE_SIZE);
+#		endif
+		return pMem;
+	}
+	void CHtHifBase::HostMemFreeHuge(void * pMem) {
+#		if !defined(_WIN32) && !defined(CNYOS_API)
+			munlock(pMem, HUGE_PAGE_SIZE);
+			if (munmap(pMem, HUGE_PAGE_SIZE) != 0)
+				fprintf(stderr, "HTLIB: Host huge free failed (0x%llx)\n", (long long)pMem);
+#		else
+			HostMemFreeAlign(pMem);
+#		endif
+	}
 	void * CHtHifBase::MemAlloc(size_t size) {
 #		if !defined(HT_SYSC) && !defined(HT_MODEL) && !defined(_WIN32)
 #			ifndef CNYOS_API

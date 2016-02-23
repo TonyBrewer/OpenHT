@@ -98,6 +98,7 @@ private:
 	void Usage();
 	void ReadVcdFilterFile();
 	bool Glob(const char * pName, const char * pFilter);
+	void EnvVarExpansion(string & path);
 
 private:
 	int				m_argc;

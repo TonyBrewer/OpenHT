@@ -441,7 +441,11 @@ CAppArgs::Parse(int argc, char const **argv) {
 					exit(1);
 				}
 				argPos += 1;
-				if (SetCurrentDirectory((char *)argv[argPos]) == 0) {
+
+				string wdPath = argv[argPos];
+				EnvVarExpansion(wdPath);
+
+				if (SetCurrentDirectory((char *)wdPath.c_str()) == 0) {
 					printf("Unable to set working directory (Error=%d)\n", GetLastError());
 					exit(1);
 				}
@@ -712,4 +716,33 @@ bool CAppArgs::Glob(const char * pName, const char * pFilter)
 	}
 	
 	return pFilter[0] == pName[0];
+}
+
+void CAppArgs::EnvVarExpansion(string & path)
+{
+	// search path for $( ), replace with environment variable value
+
+	for (int i = 0;; i += 1) {
+		if (path[i] == '\0') break;
+		if (path[i] != '$' || path[i + 1] != '(') continue;
+
+		int j;
+		for (j = i + 2; path[j] != '\0' && path[j] != ')'; j += 1);
+
+		if (path[i] == '\0') break;
+
+		// found macro to expand
+
+		string envName = string(path.c_str() + i + 2, j - i - 2);
+
+		char * pValue = getenv(envName.c_str());
+
+		if (pValue == 0) break;
+
+		string value = pValue;
+
+		path.replace(i, j - i + 1, value);
+
+		i += value.size() - 1;
+	}
 }

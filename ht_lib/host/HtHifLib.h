@@ -35,7 +35,14 @@ namespace Ht {
 		}
 		~CHtHifMem() {
 			if (m_pHtHifMem) {
-				ht_free_memalign(m_pHtHifMem);
+#if !defined(CNYOS_API) && !defined(WIN32)
+				if (m_bHtHifMemHuge) {
+					munlock(m_pHtHifMem, HUGE_PAGE_SIZE);
+					if (munmap(m_pHtHifMem, HUGE_PAGE_SIZE) != 0)
+						 fprintf(stderr, "HTLIB: Host huge page free failed (0x%llx)\n", (long long)m_pHtHifMem);
+				} else
+#endif
+					ht_free_memalign(m_pHtHifMem);
 				m_pHtHifMem = 0;
 			}
 			if (m_pMemRegionList) {
@@ -122,6 +129,7 @@ namespace Ht {
 
 		size_t m_htHifMemSize;
 		uint8_t * m_pHtHifMem;
+		bool m_bHtHifMemHuge;
 
 		uint32_t m_ctlQueMemSize;
 		uint32_t m_ctlInQueMemSize;

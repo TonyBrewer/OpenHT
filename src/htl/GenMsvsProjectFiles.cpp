@@ -19,7 +19,11 @@
 #define CR32	2
 #define CR64	3
 
-bool PathCmp(string &strA, string &strB) {
+#define HT_TOOLS_PATH "HtToolsPath_v1x"
+#define HT_TOOLS_PATH_MACRO "$(HtToolsPath_v1x)"
+
+bool PathCmp(string &strA, string &strB) 
+{
 	const char * pStrA = strA.c_str();
 	const char * pStrB = strB.c_str();
 
@@ -123,29 +127,29 @@ void CDsnInfo::GenMsvsProjectFiles()
 		msvs.AddFile(Include, string("..\\ht\\sysc\\SyscTop.h"), "ht\\sysc");
     }
 
-	msvs.AddFile(Include, string("C:\\ht\\ht_lib\\host\\HtCtrlMsg.h"), "ht_lib\\host");
-	msvs.AddFile(Include, string("C:\\ht\\ht_lib\\Ht.h"), "ht_lib");
-	msvs.AddFile(Include, string("C:\\ht\\ht_lib\\host\\HtHif.h"), "ht_lib\\host");
-	msvs.AddFile(Include, string("C:\\ht\\ht_lib\\host\\HtHifLib.h"), "ht_lib\\host");
-	msvs.AddFile(Include, string("C:\\ht\\ht_lib\\host\\HtModel.h"), "ht_lib\\host");
-	msvs.AddFile(Include, string("C:\\ht\\ht_lib\\host\\HtModelLib.h"), "ht_lib\\host");
-	msvs.AddFile(Include, string("C:\\ht\\ht_lib\\host\\HtPlatform.h"), "ht_lib\\host");
+	msvs.AddFile(Include, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\host\\HtCtrlMsg.h"), "ht_lib\\host");
+	msvs.AddFile(Include, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\Ht.h"), "ht_lib");
+	msvs.AddFile(Include, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\host\\HtHif.h"), "ht_lib\\host");
+	msvs.AddFile(Include, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\host\\HtHifLib.h"), "ht_lib\\host");
+	msvs.AddFile(Include, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\host\\HtModel.h"), "ht_lib\\host");
+	msvs.AddFile(Include, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\host\\HtModelLib.h"), "ht_lib\\host");
+	msvs.AddFile(Include, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\host\\HtPlatform.h"), "ht_lib\\host");
 
-	msvs.AddFile(Include, string("C:\\ht\\ht_lib\\sysc\\mtrand.h"), "ht_lib\\sysc");
+	msvs.AddFile(Include, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\sysc\\mtrand.h"), "ht_lib\\sysc");
     if (!g_appArgs.IsModelOnly()) {
-	    msvs.AddFile(Include, string("C:\\ht\\ht_lib\\sysc\\MemRdWrIntf.h"), "ht_lib\\sysc");
-	    msvs.AddFile(Include, string("C:\\ht\\ht_lib\\sysc\\Params.h"), "ht_lib\\sysc");
-	    msvs.AddFile(Include, string("C:\\ht\\ht_lib\\sysc\\PersUnitCnt.h"), "ht_lib\\sysc");
-	    msvs.AddFile(Include, string("C:\\ht\\ht_lib\\sysc\\PersXbarStub.h"), "ht_lib\\sysc");
-	    msvs.AddFile(Include, string("C:\\ht\\ht_lib\\sysc\\PersMiStub.h"), "ht_lib\\sysc");
-	    msvs.AddFile(Include, string("C:\\ht\\ht_lib\\sysc\\PersMoStub.h"), "ht_lib\\sysc");
-	    msvs.AddFile(Include, string("C:\\ht\\ht_lib\\sysc\\HtMemTypes.h"), "ht_lib\\sysc");
-	    msvs.AddFile(Include, string("C:\\ht\\ht_lib\\sysc\\SyscClock.h"), "ht_lib\\sysc");
-	    msvs.AddFile(Include, string("C:\\ht\\ht_lib\\sysc\\SyscDisp.h"), "ht_lib\\sysc");
-	    msvs.AddFile(Include, string("C:\\ht\\ht_lib\\sysc\\SyscMemLib.h"), "ht_lib\\sysc");
-	    msvs.AddFile(Include, string("C:\\ht\\ht_lib\\sysc\\SyscMem.h"), "ht_lib\\sysc");
-	    msvs.AddFile(Include, string("C:\\ht\\ht_lib\\sysc\\SyscMonLib.h"), "ht_lib\\sysc");
-		msvs.AddFile(Include, string("C:\\ht\\ht_lib\\sysc\\SyscMon.h"), "ht_lib\\sysc");
+	    msvs.AddFile(Include, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\sysc\\MemRdWrIntf.h"), "ht_lib\\sysc");
+	    msvs.AddFile(Include, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\sysc\\Params.h"), "ht_lib\\sysc");
+	    msvs.AddFile(Include, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\sysc\\PersUnitCnt.h"), "ht_lib\\sysc");
+	    msvs.AddFile(Include, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\sysc\\PersXbarStub.h"), "ht_lib\\sysc");
+	    msvs.AddFile(Include, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\sysc\\PersMiStub.h"), "ht_lib\\sysc");
+	    msvs.AddFile(Include, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\sysc\\PersMoStub.h"), "ht_lib\\sysc");
+	    msvs.AddFile(Include, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\sysc\\HtMemTypes.h"), "ht_lib\\sysc");
+	    msvs.AddFile(Include, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\sysc\\SyscClock.h"), "ht_lib\\sysc");
+	    msvs.AddFile(Include, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\sysc\\SyscDisp.h"), "ht_lib\\sysc");
+	    msvs.AddFile(Include, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\sysc\\SyscMemLib.h"), "ht_lib\\sysc");
+	    msvs.AddFile(Include, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\sysc\\SyscMem.h"), "ht_lib\\sysc");
+	    msvs.AddFile(Include, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\sysc\\SyscMonLib.h"), "ht_lib\\sysc");
+		msvs.AddFile(Include, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\sysc\\SyscMon.h"), "ht_lib\\sysc");
     }
 
 	// Compile files
@@ -205,21 +209,21 @@ void CDsnInfo::GenMsvsProjectFiles()
 		}
     }
 
-	msvs.AddFile(Compile, string("C:\\ht\\ht_lib\\host\\HtHif.cpp"), "ht_lib\\host");
-	msvs.AddFile(Compile, string("C:\\ht\\ht_lib\\host\\HtHifLib.cpp"), "ht_lib\\host");
-	msvs.AddFile(Compile, string("C:\\ht\\ht_lib\\host\\HtModelLib.cpp"), "ht_lib\\host");
-	msvs.AddFile(Compile, string("C:\\ht\\ht_lib\\host\\HtPlatform.cpp"), "ht_lib\\host");
-	msvs.AddFile(Compile, string("C:\\ht\\ht_lib\\sysc\\mtrand.cpp"), "ht_lib\\sysc");
+	msvs.AddFile(Compile, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\host\\HtHif.cpp"), "ht_lib\\host");
+	msvs.AddFile(Compile, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\host\\HtHifLib.cpp"), "ht_lib\\host");
+	msvs.AddFile(Compile, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\host\\HtModelLib.cpp"), "ht_lib\\host");
+	msvs.AddFile(Compile, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\host\\HtPlatform.cpp"), "ht_lib\\host");
+	msvs.AddFile(Compile, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\sysc\\mtrand.cpp"), "ht_lib\\sysc");
 
     if (!g_appArgs.IsModelOnly()) {
-	    msvs.AddFile(Compile, string("C:\\ht\\ht_lib\\sysc\\PersUnitCnt.cpp"), "ht_lib\\sysc");
-	    msvs.AddFile(Compile, string("C:\\ht\\ht_lib\\sysc\\PersXbarStub.cpp"), "ht_lib\\sysc");
-	    msvs.AddFile(Compile, string("C:\\ht\\ht_lib\\sysc\\PersMiStub.cpp"), "ht_lib\\sysc");
-	    msvs.AddFile(Compile, string("C:\\ht\\ht_lib\\sysc\\PersMoStub.cpp"), "ht_lib\\sysc");
-	    msvs.AddFile(Compile, string("C:\\ht\\ht_lib\\sysc\\SyscClockLib.cpp"), "ht_lib\\sysc");
-	    msvs.AddFile(Compile, string("C:\\ht\\ht_lib\\sysc\\SyscDispLib.cpp"), "ht_lib\\sysc");
-	    msvs.AddFile(Compile, string("C:\\ht\\ht_lib\\sysc\\SyscMemLib.cpp"), "ht_lib\\sysc");
-	    msvs.AddFile(Compile, string("C:\\ht\\ht_lib\\sysc\\SyscMonLib.cpp"), "ht_lib\\sysc");
+	    msvs.AddFile(Compile, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\sysc\\PersUnitCnt.cpp"), "ht_lib\\sysc");
+	    msvs.AddFile(Compile, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\sysc\\PersXbarStub.cpp"), "ht_lib\\sysc");
+	    msvs.AddFile(Compile, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\sysc\\PersMiStub.cpp"), "ht_lib\\sysc");
+	    msvs.AddFile(Compile, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\sysc\\PersMoStub.cpp"), "ht_lib\\sysc");
+	    msvs.AddFile(Compile, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\sysc\\SyscClockLib.cpp"), "ht_lib\\sysc");
+	    msvs.AddFile(Compile, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\sysc\\SyscDispLib.cpp"), "ht_lib\\sysc");
+	    msvs.AddFile(Compile, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\sysc\\SyscMemLib.cpp"), "ht_lib\\sysc");
+	    msvs.AddFile(Compile, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\sysc\\SyscMonLib.cpp"), "ht_lib\\sysc");
     }
 
 	// Non-Build files
@@ -237,8 +241,8 @@ void CDsnInfo::GenMsvsProjectFiles()
 	    msvs.AddFile(Custom, string("..\\src_pers\\" + g_appArgs.GetHtlName()), "src_pers");
 	    msvs.AddFile(Custom, string("..\\ht\\sysc\\Pers" + m_unitName.Uc() + "Top.sc"), "ht\\sysc");
 	    msvs.AddFile(Custom, string("..\\ht\\sysc\\PersAeTop.sc"), "ht\\sysc", string("..\\ht\\sysc\\Pers" + m_unitName.Uc() + "Top.h"));
-	    msvs.AddFile(CustomHtLib, string("C:\\ht\\ht_lib\\sysc\\SyscAeTop.sc"), "ht_lib\\sysc", "..\\ht\\sysc\\PersAeTop.h");
-	    msvs.AddFile(CustomHtLib, string("C:\\ht\\ht_lib\\sysc\\SyscTop.sc"), "ht_lib\\sysc", "..\\ht\\sysc\\SyscAeTop.h");
+	    msvs.AddFile(CustomHtLib, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\sysc\\SyscAeTop.sc"), "ht_lib\\sysc", "..\\ht\\sysc\\PersAeTop.h");
+	    msvs.AddFile(CustomHtLib, string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\sysc\\SyscTop.sc"), "ht_lib\\sysc", "..\\ht\\sysc\\SyscAeTop.h");
 
 	    msvs.AddFile(Custom, string("..\\ht\\verilog\\PersHif.v_"), "ht\\verilog");
 	    msvs.AddFile(Custom, string("..\\ht\\verilog\\Pers" + m_unitName.Uc() + "Hti.v_"), "ht\\verilog");
@@ -310,10 +314,10 @@ bool CMsvsProject::CheckIfProjFileOkay()
 	additionalIncDirList.push_back("../ht/sysc");
 	additionalIncDirList.push_back("../src");
 	additionalIncDirList.push_back("../src_pers");
-	additionalIncDirList.push_back("C:/ht/ht_lib");
-	additionalIncDirList.push_back("C:/ht/ht_lib/sysc");
-	additionalIncDirList.push_back("C:/Ht/systemc-2.3.1/src");
-	additionalIncDirList.push_back("C:/ht/pthread-win32-2.9.0");
+	additionalIncDirList.push_back(string(HT_TOOLS_PATH_MACRO) + string("/ht_lib"));
+	additionalIncDirList.push_back(string(HT_TOOLS_PATH_MACRO) + string("/ht_lib/sysc"));
+	additionalIncDirList.push_back(string(HT_TOOLS_PATH_MACRO) + string("/systemc-2.3.1/src"));
+	additionalIncDirList.push_back(string(HT_TOOLS_PATH_MACRO) + string("/pthread-win32-2.9.0"));
 
 	char line[4096];
 	m_pLine = "";
@@ -1067,9 +1071,6 @@ void CMsvsProject::ReadConfigurationType(int condIdx)
 	ParsePropertyValueStr(valueStr, valueList);
 
 	for (size_t i = 0; i < valueList.size(); i += 1) {
-		// skip required strings
-		//if (PathCmp(valueList[i], "C:\\ht\\pthread-win32-2.9.0")) continue;
-
 		// found extra string
 		AddStringToList(m_idg[condIdx].m_configurationType, valueList[i]);
 	}
@@ -1118,8 +1119,6 @@ void CMsvsProject::ReadForcedIncludeFiles(int condIdx)
 	ParsePropertyValueStr(valueStr, valueList);
 
 	for (size_t i = 0; i < valueList.size(); i += 1) {
-		// skip required strings
-		//if (PathCmp(valueList[i], "C:\\ht\\pthread-win32-2.9.0")) continue;
 
 		if (valueList[i] == "../../msvs10/linux/linux.h")
 			valueList[i] = "../../msvs12/linux/linux.h";
@@ -1140,8 +1139,6 @@ void CMsvsProject::ReadDisableSpecificWarnings(int condIdx)
 	ParsePropertyValueStr(valueStr, valueList);
 
 	for (size_t i = 0; i < valueList.size(); i += 1) {
-		// skip required strings
-		//if (PathCmp(valueList[i], "C:\\ht\\pthread-win32-2.9.0")) continue;
 
 		// found extra string
 		AddStringToList(m_idg[condIdx].m_disableSpecificWarnings, valueList[i]);
@@ -1211,11 +1208,21 @@ void CMsvsProject::ReadAdditionalIncludeDirectories(int condIdx)
 		if (PathCmp(valueList[i], "..\\src")) continue;
 		if (PathCmp(valueList[i], "..\\src_pers")) continue;
 		if (PathCmp(valueList[i], "..\\src_model")) continue;
-		if (PathCmp(valueList[i], "C:\\ht\\ht_lib")) continue;
-		if (PathCmp(valueList[i], "C:\\ht\\ht_lib\\sysc")) continue;
-		if (PathCmp(valueList[i], "C:\\Ht\\systemc-2.3.0\\src")) continue;
-		if (PathCmp(valueList[i], "C:\\Ht\\systemc-2.3.1\\src")) continue;
-		if (PathCmp(valueList[i], "C:\\ht\\pthread-win32-2.9.0")) continue;
+		if (PathCmp(valueList[i], string("C:\\ht\\ht_lib"))) continue;
+		if (PathCmp(valueList[i], string("C:\\ht\\ht_lib\\sysc"))) continue;
+		if (PathCmp(valueList[i], string("C:\\ht\\systemc-2.3.0\\src"))) continue;
+		if (PathCmp(valueList[i], string("C:\\ht\\systemc-2.3.1\\src"))) continue;
+		if (PathCmp(valueList[i], string("C:\\ht\\pthread-win32-2.9.0"))) continue;
+		if (PathCmp(valueList[i], string("$(HtToolsPath)\\ht_lib"))) continue;
+		if (PathCmp(valueList[i], string("$(HtToolsPath)\\ht_lib\\sysc"))) continue;
+		if (PathCmp(valueList[i], string("$(HtToolsPath)\\systemc-2.3.0\\src"))) continue;
+		if (PathCmp(valueList[i], string("$(HtToolsPath)\\systemc-2.3.1\\src"))) continue;
+		if (PathCmp(valueList[i], string("$(HtToolsPath)\\pthread-win32-2.9.0"))) continue;
+		if (PathCmp(valueList[i], string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib"))) continue;
+		if (PathCmp(valueList[i], string(HT_TOOLS_PATH_MACRO) + string("\\ht_lib\\sysc"))) continue;
+		if (PathCmp(valueList[i], string(HT_TOOLS_PATH_MACRO) + string("\\systemc-2.3.0\\src"))) continue;
+		if (PathCmp(valueList[i], string(HT_TOOLS_PATH_MACRO) + string("\\systemc-2.3.1\\src"))) continue;
+		if (PathCmp(valueList[i], string(HT_TOOLS_PATH_MACRO) + string("\\pthread-win32-2.9.0"))) continue;
 
 		// check for illegal format include path
 		char const * pStr = valueList[i].c_str();
@@ -1246,20 +1253,20 @@ void CMsvsProject::ReadAdditionalLibraryDirectories(int condIdx)
 	ParsePropertyValueStr(valueStr, valueList);
 
 	for (size_t i = 0; i < valueList.size(); i += 1) {
-		if (PathCmp(valueList[i], "C:\\Ht\\systemc-2.3.0\\win_x86_32\\Debug")) continue;
-		if (PathCmp(valueList[i], "C:\\Ht\\systemc-2.3.0\\win_x86_32\\Release")) continue;
-		if (PathCmp(valueList[i], "C:\\Ht\\systemc-2.3.0\\win_x86_64\\Debug")) continue;
-		if (PathCmp(valueList[i], "C:\\Ht\\systemc-2.3.0\\win_x86_64\\Release")) continue;
+		if (PathCmp(valueList[i], string(HT_TOOLS_PATH_MACRO) + string("\\systemc-2.3.0\\win_x86_32\\Debug"))) continue;
+		if (PathCmp(valueList[i], string(HT_TOOLS_PATH_MACRO) + string("\\systemc-2.3.0\\win_x86_32\\Release"))) continue;
+		if (PathCmp(valueList[i], string(HT_TOOLS_PATH_MACRO) + string("\\systemc-2.3.0\\win_x86_64\\Debug"))) continue;
+		if (PathCmp(valueList[i], string(HT_TOOLS_PATH_MACRO) + string("\\systemc-2.3.0\\win_x86_64\\Release"))) continue;
 
-		if (PathCmp(valueList[i], "C:\\Ht\\systemc-2.3.1\\win_x86_32\\Debug")) continue;
-		if (PathCmp(valueList[i], "C:\\Ht\\systemc-2.3.1\\win_x86_32\\Release")) continue;
-		if (PathCmp(valueList[i], "C:\\Ht\\systemc-2.3.1\\win_x86_64\\Debug")) continue;
-		if (PathCmp(valueList[i], "C:\\Ht\\systemc-2.3.1\\win_x86_64\\Release")) continue;
+		if (PathCmp(valueList[i], string(HT_TOOLS_PATH_MACRO) + string("\\systemc-2.3.1\\win_x86_32\\Debug"))) continue;
+		if (PathCmp(valueList[i], string(HT_TOOLS_PATH_MACRO) + string("\\systemc-2.3.1\\win_x86_32\\Release"))) continue;
+		if (PathCmp(valueList[i], string(HT_TOOLS_PATH_MACRO) + string("\\systemc-2.3.1\\win_x86_64\\Debug"))) continue;
+		if (PathCmp(valueList[i], string(HT_TOOLS_PATH_MACRO) + string("\\systemc-2.3.1\\win_x86_64\\Release"))) continue;
 
-		if (PathCmp(valueList[i], "C:\\ht\\pthread-win32-2.9.0\\win_x86_32\\Debug")) continue;
-		if (PathCmp(valueList[i], "C:\\ht\\pthread-win32-2.9.0\\win_x86_32\\Release")) continue;
-		if (PathCmp(valueList[i], "C:\\ht\\pthread-win32-2.9.0\\win_x86_64\\Debug")) continue;
-		if (PathCmp(valueList[i], "C:\\ht\\pthread-win32-2.9.0\\win_x86_64\\Release")) continue;
+		if (PathCmp(valueList[i], string(HT_TOOLS_PATH_MACRO) + string("\\pthread-win32-2.9.0\\win_x86_32\\Debug"))) continue;
+		if (PathCmp(valueList[i], string(HT_TOOLS_PATH_MACRO) + string("\\pthread-win32-2.9.0\\win_x86_32\\Release"))) continue;
+		if (PathCmp(valueList[i], string(HT_TOOLS_PATH_MACRO) + string("\\pthread-win32-2.9.0\\win_x86_64\\Debug"))) continue;
+		if (PathCmp(valueList[i], string(HT_TOOLS_PATH_MACRO) + string("\\pthread-win32-2.9.0\\win_x86_64\\Release"))) continue;
 
 		// found extra string
 		AddStringToList(m_idg[condIdx].m_additionalLibraryDirectories, valueList[i]);
@@ -1488,7 +1495,8 @@ void CMsvsProject::GenMsvsProjectHeader(FILE *fp)
 	fprintf(fp, "      <AdditionalIncludeDirectories>");
 	for (size_t i = 0; i < m_idg[0].m_additionalIncludeDirectories.size(); i += 1)
 		fprintf(fp, "%s;", m_idg[0].m_additionalIncludeDirectories[i].c_str());
-	fprintf(fp, "..\\ht\\sysc;..\\src;..\\src_pers;C:\\ht\\ht_lib;C:\\ht\\ht_lib\\sysc;C:/Ht/systemc-2.3.1\\src;C:/ht/pthread-win32-2.9.0</AdditionalIncludeDirectories>\n");
+	fprintf(fp, "../ht/sysc;../src;../src_pers;$(%s)/ht_lib;$(%s)/ht_lib/sysc;$(%s)/systemc-2.3.1/src;$(%s)/pthread-win32-2.9.0</AdditionalIncludeDirectories>\n", 
+		HT_TOOLS_PATH, HT_TOOLS_PATH, HT_TOOLS_PATH, HT_TOOLS_PATH);
 
 	fprintf(fp, "      <MultiProcessorCompilation>true</MultiProcessorCompilation>\n");
 	fprintf(fp, "      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>\n");
@@ -1514,7 +1522,8 @@ void CMsvsProject::GenMsvsProjectHeader(FILE *fp)
 	fprintf(fp, "      <AdditionalLibraryDirectories>");
 	for (size_t i = 0; i < m_idg[0].m_additionalLibraryDirectories.size(); i += 1)
 		fprintf(fp, "%s;", m_idg[0].m_additionalLibraryDirectories[i].c_str());
-	fprintf(fp, "C:/Ht/tests/msvs12/win32/Debug;C:/Ht/systemc-2.3.1/win_x86_32/Debug;C:/ht/pthread-win32-2.9.0/win_x86_32/Debug</AdditionalLibraryDirectories>\n");
+	fprintf(fp, "$(%s)/tests/msvs12/win32/Debug;$(%s)/systemc-2.3.1/win_x86_32/Debug;$(%s)/pthread-win32-2.9.0/win_x86_32/Debug</AdditionalLibraryDirectories>\n",
+		HT_TOOLS_PATH, HT_TOOLS_PATH, HT_TOOLS_PATH);
 
 	fprintf(fp, "      <AdditionalDependencies>");
 	for (size_t i = 0; i < m_idg[0].m_additionalDependencies.size(); i += 1)
@@ -1538,7 +1547,8 @@ void CMsvsProject::GenMsvsProjectHeader(FILE *fp)
 	fprintf(fp, "      <AdditionalIncludeDirectories>");
 	for (size_t i = 0; i < m_idg[1].m_additionalIncludeDirectories.size(); i += 1)
 		fprintf(fp, "%s;", m_idg[1].m_additionalIncludeDirectories[i].c_str());
-	fprintf(fp, "..\\ht\\sysc;..\\src;..\\src_pers;C:\\ht\\ht_lib;C:\\ht\\ht_lib\\sysc;C:/Ht/systemc-2.3.1\\src;C:/ht/pthread-win32-2.9.0</AdditionalIncludeDirectories>\n");
+	fprintf(fp, "..\\ht\\sysc;..\\src;..\\src_pers;$(%s)\\ht_lib;$(%s)\\ht_lib\\sysc;$(%s)/systemc-2.3.1\\src;$(%s)/pthread-win32-2.9.0</AdditionalIncludeDirectories>\n", 
+		HT_TOOLS_PATH, HT_TOOLS_PATH, HT_TOOLS_PATH, HT_TOOLS_PATH);
 
 	fprintf(fp, "      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>\n");
 	fprintf(fp, "      <MultiProcessorCompilation>true</MultiProcessorCompilation>\n");
@@ -1564,7 +1574,8 @@ void CMsvsProject::GenMsvsProjectHeader(FILE *fp)
 	fprintf(fp, "      <AdditionalLibraryDirectories>");
 	for (size_t i = 0; i < m_idg[1].m_additionalLibraryDirectories.size(); i += 1)
 		fprintf(fp, "%s;", m_idg[1].m_additionalLibraryDirectories[i].c_str());
-	fprintf(fp, "C:/Ht/tests/msvs12/x64/Debug;C:/Ht/systemc-2.3.1/win_x86_64/Debug;C:/ht/pthread-win32-2.9.0/win_x86_64/Debug</AdditionalLibraryDirectories>\n");
+	fprintf(fp, "$(%s)/tests/msvs12/x64/Debug;$(%s)/systemc-2.3.1/win_x86_64/Debug;$(%s)/pthread-win32-2.9.0/win_x86_64/Debug</AdditionalLibraryDirectories>\n",
+		HT_TOOLS_PATH, HT_TOOLS_PATH, HT_TOOLS_PATH);
 
 	fprintf(fp, "      <AdditionalDependencies>");
 	for (size_t i = 0; i < m_idg[1].m_additionalDependencies.size(); i += 1)
@@ -1590,7 +1601,8 @@ void CMsvsProject::GenMsvsProjectHeader(FILE *fp)
 	fprintf(fp, "      <AdditionalIncludeDirectories>");
 	for (size_t i = 0; i < m_idg[2].m_additionalIncludeDirectories.size(); i += 1)
 		fprintf(fp, "%s;", m_idg[2].m_additionalIncludeDirectories[i].c_str());
-	fprintf(fp, "..\\ht\\sysc;..\\src;..\\src_pers;C:\\ht\\ht_lib;C:\\ht\\ht_lib\\sysc;C:\\Ht\\systemc-2.3.1\\src;C:\\ht\\pthread-win32-2.9.0</AdditionalIncludeDirectories>\n");
+	fprintf(fp, "..\\ht\\sysc;..\\src;..\\src_pers;$(%s)\\ht_lib;$(%s)\\ht_lib\\sysc;$(%s)\\systemc-2.3.1\\src;$(%s)\\pthread-win32-2.9.0</AdditionalIncludeDirectories>\n",
+		HT_TOOLS_PATH, HT_TOOLS_PATH, HT_TOOLS_PATH, HT_TOOLS_PATH);
 
 	fprintf(fp, "      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>\n");
 	fprintf(fp, "      <MultiProcessorCompilation>true</MultiProcessorCompilation>\n");
@@ -1618,7 +1630,8 @@ void CMsvsProject::GenMsvsProjectHeader(FILE *fp)
 	fprintf(fp, "      <AdditionalLibraryDirectories>");
 	for (size_t i = 0; i < m_idg[2].m_additionalLibraryDirectories.size(); i += 1)
 		fprintf(fp, "%s;", m_idg[2].m_additionalLibraryDirectories[i].c_str());
-	fprintf(fp, "C:/Ht/tests/msvs12/win32/Release;C:/Ht/systemc-2.3.1/win_x86_32/Release;C:/ht/pthread-win32-2.9.0/win_x86_32/Release</AdditionalLibraryDirectories>\n");
+	fprintf(fp, "$(%s)/tests/msvs12/win32/Release;$(%s)/systemc-2.3.1/win_x86_32/Release;$(%s)/pthread-win32-2.9.0/win_x86_32/Release</AdditionalLibraryDirectories>\n", 
+		HT_TOOLS_PATH, HT_TOOLS_PATH, HT_TOOLS_PATH);
 
 	fprintf(fp, "      <AdditionalDependencies>");
 	for (size_t i = 0; i < m_idg[2].m_additionalDependencies.size(); i += 1)
@@ -1644,7 +1657,8 @@ void CMsvsProject::GenMsvsProjectHeader(FILE *fp)
 	fprintf(fp, "      <AdditionalIncludeDirectories>");
 	for (size_t i = 0; i < m_idg[3].m_additionalIncludeDirectories.size(); i += 1)
 		fprintf(fp, "%s;", m_idg[3].m_additionalIncludeDirectories[i].c_str());
-	fprintf(fp, "..\\ht\\sysc;..\\src;..\\src_pers;C:\\ht\\ht_lib;C:\\ht\\ht_lib\\sysc;C:/Ht/systemc-2.3.1\\src;C:/ht/pthread-win32-2.9.0</AdditionalIncludeDirectories>\n");
+	fprintf(fp, "..\\ht\\sysc;..\\src;..\\src_pers;$(%s)\\ht_lib;$(%s)\\ht_lib\\sysc;$(%s)/systemc-2.3.1\\src;$(%s)/pthread-win32-2.9.0</AdditionalIncludeDirectories>\n", 
+		HT_TOOLS_PATH, HT_TOOLS_PATH, HT_TOOLS_PATH, HT_TOOLS_PATH);
 
 	fprintf(fp, "      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>\n");
 	fprintf(fp, "      <MultiProcessorCompilation>true</MultiProcessorCompilation>\n");
@@ -1672,7 +1686,8 @@ void CMsvsProject::GenMsvsProjectHeader(FILE *fp)
 	fprintf(fp, "      <AdditionalLibraryDirectories>");
 	for (size_t i = 0; i < m_idg[3].m_additionalLibraryDirectories.size(); i += 1)
 		fprintf(fp, "%s;", m_idg[3].m_additionalLibraryDirectories[i].c_str());
-	fprintf(fp, "C:/Ht/tests/msvs12/x64/Release;C:/Ht/systemc-2.3.1/win_x86_64/Release;C:/ht/pthread-win32-2.9.0/win_x86_64/Release</AdditionalLibraryDirectories>\n");
+	fprintf(fp, "$(%s)/tests/msvs12/x64/Release;$(%s)/systemc-2.3.1/win_x86_64/Release;$(%s)/pthread-win32-2.9.0/win_x86_64/Release</AdditionalLibraryDirectories>\n", 
+		HT_TOOLS_PATH, HT_TOOLS_PATH, HT_TOOLS_PATH);
 
 	fprintf(fp, "      <AdditionalDependencies>");
 	for (size_t i = 0; i < m_idg[3].m_additionalDependencies.size(); i += 1)
@@ -1711,25 +1726,25 @@ void CMsvsProject::GenMsvsProjectFiles(FILE *fp, EMsvsFile eFileType)
 
 			fprintf(fp, "      <FileType>Document</FileType>\n");
 
-			char const * pDir = eFileType == CustomHtLib ? "C:\\ht\\ht_lib" : "..\\ht";
+			char const * pDir = eFileType == CustomHtLib ? HT_TOOLS_PATH_MACRO "\\ht_lib" : "..\\ht";
 
 			if (file.m_pathName.substr(file.m_pathName.size()-3) == ".sc") {
-				fprintf(fp, "      <Command Condition=\"'$(Configuration)|$(Platform)'=='Debug|Win32'\">C:\\ht\\bin\\htv -method"
-					" -I ..\\src -I ..\\src_pers -I ..\\ht\\sysc -I C:\\ht\\ht_lib -I C:\\ht\\ht_lib\\sysc -DHT_SYSC %s\\sysc\\%%(Filename).sc"
+				fprintf(fp, "      <Command Condition=\"'$(Configuration)|$(Platform)'=='Debug|Win32'\">$(%s)\\bin\\htv -method"
+					" -I ..\\src -I ..\\src_pers -I ..\\ht\\sysc -I $(%s)\\ht_lib -I $(%s)\\ht_lib\\sysc -DHT_SYSC %s\\sysc\\%%(Filename).sc"
 					" ..\\ht\\sysc\\%%(Filename).h ..\\ht\\verilog\\%%(Filename).v</Command>\n",
-					pDir);
-				fprintf(fp, "      <Command Condition=\"'$(Configuration)|$(Platform)'=='Debug|x64'\">C:\\ht\\bin\\htv -method"
-					" -I ..\\src -I ..\\src_pers -I ..\\ht\\sysc -I C:\\ht\\ht_lib -I C:\\ht\\ht_lib\\sysc -DHT_SYSC %s\\sysc\\%%(Filename).sc"
+					HT_TOOLS_PATH, HT_TOOLS_PATH, HT_TOOLS_PATH, pDir);
+				fprintf(fp, "      <Command Condition=\"'$(Configuration)|$(Platform)'=='Debug|x64'\">$(%s)\\bin\\htv -method"
+					" -I ..\\src -I ..\\src_pers -I ..\\ht\\sysc -I $(%s)\\ht_lib -I $(%s)\\ht_lib\\sysc -DHT_SYSC %s\\sysc\\%%(Filename).sc"
 					" ..\\ht\\sysc\\%%(Filename).h ..\\ht\\verilog\\%%(Filename).v</Command>\n",
-					pDir);
-				fprintf(fp, "      <Command Condition=\"'$(Configuration)|$(Platform)'=='Release|Win32'\">C:\\ht\\bin\\htv -method"
-					" -I ..\\src -I ..\\src_pers -I ..\\ht\\sysc -I C:\\ht\\ht_lib -I C:\\ht\\ht_lib\\sysc -DHT_SYSC %s\\sysc\\%%(Filename).sc"
+					HT_TOOLS_PATH, HT_TOOLS_PATH, HT_TOOLS_PATH, pDir);
+				fprintf(fp, "      <Command Condition=\"'$(Configuration)|$(Platform)'=='Release|Win32'\">$(%s)\\bin\\htv -method"
+					" -I ..\\src -I ..\\src_pers -I ..\\ht\\sysc -I $(%s)\\ht_lib -I $(%s)\\ht_lib\\sysc -DHT_SYSC %s\\sysc\\%%(Filename).sc"
 					" ..\\ht\\sysc\\%%(Filename).h ..\\ht\\verilog\\%%(Filename).v</Command>\n",
-					pDir);
-				fprintf(fp, "      <Command Condition=\"'$(Configuration)|$(Platform)'=='Release|x64'\">C:\\ht\\bin\\htv -method"
-					" -I ..\\src -I ..\\src_pers -I ..\\ht\\sysc -I C:\\ht\\ht_lib -I C:\\ht\\ht_lib\\sysc -DHT_SYSC %s\\sysc\\%%(Filename).sc"
+					HT_TOOLS_PATH, HT_TOOLS_PATH, HT_TOOLS_PATH, pDir);
+				fprintf(fp, "      <Command Condition=\"'$(Configuration)|$(Platform)'=='Release|x64'\">$(%s)\\bin\\htv -method"
+					" -I ..\\src -I ..\\src_pers -I ..\\ht\\sysc -I $(%s)\\ht_lib -I $(%s)\\ht_lib\\sysc -DHT_SYSC %s\\sysc\\%%(Filename).sc"
 					" ..\\ht\\sysc\\%%(Filename).h ..\\ht\\verilog\\%%(Filename).v</Command>\n",
-					pDir);
+					HT_TOOLS_PATH, HT_TOOLS_PATH, HT_TOOLS_PATH, pDir);
 
 				fprintf(fp, "      <Message Condition=\"'$(Configuration)|$(Platform)'=='Debug|Win32'\">htv %%(Filename) ...</Message>\n");
 				fprintf(fp, "      <Message Condition=\"'$(Configuration)|$(Platform)'=='Debug|x64'\">htv %%(Filename) ...</Message>\n");
@@ -1761,10 +1776,10 @@ void CMsvsProject::GenMsvsProjectFiles(FILE *fp, EMsvsFile eFileType)
 						fprintf(fp, "      <ExcludedFromBuild Condition=\"'$(Configuration)|$(Platform)'=='%s'\">true</ExcludedFromBuild>\n", condName.c_str());
 				}
 
-				fprintf(fp, "      <Command Condition=\"'$(Configuration)|$(Platform)'=='Debug|Win32'\">C:\\ht\\bin\\htl -cl %s</Command>\n", file.m_pathName.c_str());
-				fprintf(fp, "      <Command Condition=\"'$(Configuration)|$(Platform)'=='Debug|x64'\">C:\\ht\\bin\\htl -cl %s</Command>\n", file.m_pathName.c_str());
-				fprintf(fp, "      <Command Condition=\"'$(Configuration)|$(Platform)'=='Release|Win32'\">C:\\ht\\bin\\htl -cl %s</Command>\n", file.m_pathName.c_str());
-				fprintf(fp, "      <Command Condition=\"'$(Configuration)|$(Platform)'=='Release|x64'\">C:\\ht\\bin\\htl -cl %s</Command>\n", file.m_pathName.c_str());
+				fprintf(fp, "      <Command Condition=\"'$(Configuration)|$(Platform)'=='Debug|Win32'\">$(%s)\\bin\\htl -cl %s</Command>\n", HT_TOOLS_PATH, file.m_pathName.c_str());
+				fprintf(fp, "      <Command Condition=\"'$(Configuration)|$(Platform)'=='Debug|x64'\">$(%s)\\bin\\htl -cl %s</Command>\n", HT_TOOLS_PATH, file.m_pathName.c_str());
+				fprintf(fp, "      <Command Condition=\"'$(Configuration)|$(Platform)'=='Release|Win32'\">$(%s)\\bin\\htl -cl %s</Command>\n", HT_TOOLS_PATH, file.m_pathName.c_str());
+				fprintf(fp, "      <Command Condition=\"'$(Configuration)|$(Platform)'=='Release|x64'\">$(%s)\\bin\\htl -cl %s</Command>\n", HT_TOOLS_PATH, file.m_pathName.c_str());
 
 				fprintf(fp, "      <Message Condition=\"'$(Configuration)|$(Platform)'=='Debug|Win32'\">htl %%(Filename) ...</Message>\n");
 				fprintf(fp, "      <Message Condition=\"'$(Configuration)|$(Platform)'=='Debug|x64'\">htl %%(Filename) ...</Message>\n");
@@ -1794,26 +1809,26 @@ void CMsvsProject::GenMsvsProjectFiles(FILE *fp, EMsvsFile eFileType)
 
 				char const *pFx = file.m_bGenFx ? "-fx " : "";
 
-				fprintf(fp, "      <Command Condition=\"'$(Configuration)|$(Platform)'=='Debug|Win32'\">C:\\ht\\bin\\htv -method");
+				fprintf(fp, "      <Command Condition=\"'$(Configuration)|$(Platform)'=='Debug|Win32'\">$(%s)\\bin\\htv -method", HT_TOOLS_PATH);
 				for (size_t i = 0; i < file.m_extraDefines[0].size(); i += 1)
 					fprintf(fp, " %s", file.m_extraDefines[0][i].c_str());
-				fprintf(fp, " %s-DHT_SYSC -I ..\\src -I ..\\src_pers -I ..\\ht\\sysc -I C:\\ht\\ht_lib -I C:\\ht\\ht_lib\\sysc %s\\sysc\\%%(Filename).cpp"
-					" ..\\ht\\verilog\\%%(Filename).v</Command>\n", pFx, pDir);
-				fprintf(fp, "      <Command Condition=\"'$(Configuration)|$(Platform)'=='Debug|x64'\">C:\\ht\\bin\\htv -method");
+				fprintf(fp, " %s-DHT_SYSC -I ..\\src -I ..\\src_pers -I ..\\ht\\sysc -I $(%s)\\ht_lib -I $(%s)\\ht_lib\\sysc %s\\sysc\\%%(Filename).cpp"
+					" ..\\ht\\verilog\\%%(Filename).v</Command>\n", pFx, HT_TOOLS_PATH, HT_TOOLS_PATH, pDir);
+				fprintf(fp, "      <Command Condition=\"'$(Configuration)|$(Platform)'=='Debug|x64'\">$(%s)\\bin\\htv -method", HT_TOOLS_PATH);
 				for (size_t i = 0; i < file.m_extraDefines[1].size(); i += 1)
 					fprintf(fp, " %s", file.m_extraDefines[1][i].c_str());
-				fprintf(fp, " %s-DHT_SYSC -I ..\\src -I ..\\src_pers -I ..\\ht\\sysc -I C:\\ht\\ht_lib -I C:\\ht\\ht_lib\\sysc %s\\sysc\\%%(Filename).cpp"
-					" ..\\ht\\verilog\\%%(Filename).v</Command>\n", pFx, pDir);
-				fprintf(fp, "      <Command Condition=\"'$(Configuration)|$(Platform)'=='Release|Win32'\">C:\\ht\\bin\\htv -method");
+				fprintf(fp, " %s-DHT_SYSC -I ..\\src -I ..\\src_pers -I ..\\ht\\sysc -I $(%s)\\ht_lib -I $(%s)\\ht_lib\\sysc %s\\sysc\\%%(Filename).cpp"
+					" ..\\ht\\verilog\\%%(Filename).v</Command>\n", pFx, HT_TOOLS_PATH, HT_TOOLS_PATH, pDir);
+				fprintf(fp, "      <Command Condition=\"'$(Configuration)|$(Platform)'=='Release|Win32'\">$(%s)\\bin\\htv -method", HT_TOOLS_PATH);
 				for (size_t i = 0; i < file.m_extraDefines[2].size(); i += 1)
 					fprintf(fp, " %s", file.m_extraDefines[2][i].c_str());
-				fprintf(fp, " %s-DHT_SYSC -I ..\\src -I ..\\src_pers -I ..\\ht\\sysc -I C:\\ht\\ht_lib -I C:\\ht\\ht_lib\\sysc %s\\sysc\\%%(Filename).cpp"
-					" ..\\ht\\verilog\\%%(Filename).v</Command>\n", pFx, pDir);
-				fprintf(fp, "      <Command Condition=\"'$(Configuration)|$(Platform)'=='Release|x64'\">C:\\ht\\bin\\htv -method");
+				fprintf(fp, " %s-DHT_SYSC -I ..\\src -I ..\\src_pers -I ..\\ht\\sysc -I $(%s)\\ht_lib -I $(%s)\\ht_lib\\sysc %s\\sysc\\%%(Filename).cpp"
+					" ..\\ht\\verilog\\%%(Filename).v</Command>\n", pFx, HT_TOOLS_PATH, HT_TOOLS_PATH, pDir);
+				fprintf(fp, "      <Command Condition=\"'$(Configuration)|$(Platform)'=='Release|x64'\">$(%s)\\bin\\htv -method", HT_TOOLS_PATH);
 				for (size_t i = 0; i < file.m_extraDefines[3].size(); i += 1)
 					fprintf(fp, " %s", file.m_extraDefines[3][i].c_str());
-				fprintf(fp, " %s-DHT_SYSC -I ..\\src -I ..\\src_pers -I ..\\ht\\sysc -I C:\\ht\\ht_lib -I C:\\ht\\ht_lib\\sysc %s\\sysc\\%%(Filename).cpp"
-					" ..\\ht\\verilog\\%%(Filename).v</Command>\n", pFx, pDir);
+				fprintf(fp, " %s-DHT_SYSC -I ..\\src -I ..\\src_pers -I ..\\ht\\sysc -I $(%s)\\ht_lib -I $(%s)\\ht_lib\\sysc %s\\sysc\\%%(Filename).cpp"
+					" ..\\ht\\verilog\\%%(Filename).v</Command>\n", pFx, HT_TOOLS_PATH, HT_TOOLS_PATH, pDir);
 
 				fprintf(fp, "      <Message Condition=\"'$(Configuration)|$(Platform)'=='Debug|Win32'\">htv %%(Filename) ...</Message>\n");
 				fprintf(fp, "      <Message Condition=\"'$(Configuration)|$(Platform)'=='Debug|x64'\">htv %%(Filename) ...</Message>\n");
