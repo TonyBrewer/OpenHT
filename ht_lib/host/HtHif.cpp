@@ -291,7 +291,7 @@ namespace Ht {
 			free(pMem);
 #		endif
 	}
-	void * CHtHifBase::HostMemAllocHuge(void * pHostBaseAddr) {
+	void * CHtHifBase::HostMemAllocHuge(void * pHostBaseAddr, bool bEnableSystemcAddressValidation) {
 		void * pMem;
 
 #		if !defined(_WIN32) && !defined(CNYOS_API)
@@ -302,7 +302,7 @@ namespace Ht {
 				fprintf(stderr, "HTLIB: Host huge page alloc failed (0x%llx, 0x%llx)\n",
 				(long long)HUGE_PAGE_SIZE, (long long)pHostBaseAddr);
 #		else
-			pMem = HostMemAllocAlign(HUGE_PAGE_SIZE, HUGE_PAGE_SIZE);
+			pMem = HostMemAllocAlign(HUGE_PAGE_SIZE, HUGE_PAGE_SIZE, bEnableSystemcAddressValidation);
 #		endif
 		return pMem;
 	}
