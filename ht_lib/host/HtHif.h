@@ -201,7 +201,7 @@ namespace Ht {
 		static void HostMemFree(void * pMem);
 		static void * HostMemAllocAlign(size_t align, size_t size, bool bEnableSystemcAddressValidation=true);
 		static void HostMemFreeAlign(void * pMem);
-		static void * HostMemAllocHuge(void * pBaseAddr);
+		static void * HostMemAllocHuge(void * pBaseAddr, bool bEnableSystemcAddressValidation = true);
 		static void HostMemFreeHuge(void * pMem);
 
 		void * MemAlloc(size_t cnt);

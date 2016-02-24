@@ -152,7 +152,7 @@ namespace Ht {
 		if (pHtHifBase->m_htHifParams.m_bHtHifHugePage) {
 			if (m_htHifMemSize > HUGE_PAGE_SIZE)
 				 throw CHtException(eHtBadHostAlloc, string("HostMemAllocHuge is currently limited to a single 1GB page"));
-			m_pHtHifMem = (uint8_t *)CHtHif::HostMemAllocHuge(pHtHifBase->m_htHifParams.m_pHtHifHugePageBase);
+			m_pHtHifMem = (uint8_t *)CHtHif::HostMemAllocHuge(pHtHifBase->m_htHifParams.m_pHtHifHugePageBase, false);
 			m_bHtHifMemHuge = true;
 		} else {
 			m_pHtHifMem = (uint8_t *)CHtHif::HostMemAllocAlign(memAlign, m_htHifMemSize, false);
