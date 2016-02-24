@@ -11,9 +11,12 @@ int main(int argc, char **argv)
 		arr[i * 2 + 1] = 0xdeadbeefdeadbeefLL;
 	}
 
+	CHtHifParams htHifParams;
+	htHifParams.m_bHtHifHugePage = true;
+
 	CHtHif *pHtHif;
 	try {
-		pHtHif = new CHtHif();
+		pHtHif = new CHtHif(&htHifParams);
 	}
 	catch (CHtException &htException) {
 		printf("new CHtHif threw an exception: '%s'\n", htException.GetMsg().c_str());
