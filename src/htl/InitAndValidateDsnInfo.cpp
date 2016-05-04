@@ -136,12 +136,16 @@ void CDsnInfo::ValidateDesignInfo()
 			}
 		}
 
+		CCoprocInfo const & coprocInfo = g_appArgs.GetCoprocInfo();
+
 		// MIF values
 		if (mod.m_mif.m_bMifWr) {
 			CMifWr & mifWr = mod.m_mif.m_mifWr;
 			mifWr.m_queueW.InitValue(mifWr.m_lineInfo);
 
-			int defValue = max(6, 9 - mod.m_threads.m_htIdW.AsInt());
+			int defValue = FindLg2(512 / coprocInfo.GetMaxCoprocQwWriteCnt(), true, true);
+
+			//int defValue = max(6, 9 - mod.m_threads.m_htIdW.AsInt());
 			mifWr.m_rspCntW.InitValue(mifWr.m_lineInfo, false, defValue);
 
 			if (mifWr.m_rspCntW.AsInt() < 2 || mifWr.m_rspCntW.AsInt() > 9)
@@ -153,7 +157,9 @@ void CDsnInfo::ValidateDesignInfo()
 			CMifRd & mifRd = mod.m_mif.m_mifRd;
 			mifRd.m_queueW.InitValue(mifRd.m_lineInfo);
 
-			int defValue = max(6, 9 - mod.m_threads.m_htIdW.AsInt());
+			int defValue = FindLg2(512 / coprocInfo.GetMaxCoprocQwReadCnt(), true, true);
+
+			//int defValue = max(6, 9 - mod.m_threads.m_htIdW.AsInt());
 			mifRd.m_rspCntW.InitValue(mifRd.m_lineInfo, false, defValue);
 
 			if (mifRd.m_rspCntW.AsInt() < 2 || mifRd.m_rspCntW.AsInt() > 9)
