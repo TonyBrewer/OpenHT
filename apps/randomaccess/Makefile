@@ -18,7 +18,7 @@ app:
 	cd import > /dev/null && $(MAKE)
 	cd $(LIB_DIR) > /dev/null && $(MAKE) pdk_config
 	cd $(LIB_DIR) > /dev/null && $(MAKE) libapp
-	$(MAKE) -C $(DIR_HPCC) LIB_HT=../../$(LIB_DIR)/libhtapp.a arch=OpenHt
+	$(MAKE) -C $(DIR_HPCC) LIB_HT=../../$(LIB_DIR)/libhtapp.a arch=OpenHT
 	cp -p $(EXE_HPCC) app
 
 sysc:

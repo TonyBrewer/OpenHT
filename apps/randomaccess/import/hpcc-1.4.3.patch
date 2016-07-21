@@ -274,7 +274,7 @@ diff -ru hpcc-1.4.3/src/hpcc.c hpcc/src/hpcc.c
  
 --- /dev/null	2015-04-10 13:37:23.833760144 -0500
 +++ hpcc-1.4.3/hpl/Make.OpenHT	2015-02-25 13:48:20.123049000 -0600
-@@ -0,0 +1,189 @@
+@@ -0,0 +1,190 @@
 +#  
 +#  -- High Performance Computing Linpack Benchmark (HPL)                
 +#     HPL - 2.0 - September 10, 2008                          
@@ -425,6 +425,7 @@ diff -ru hpcc-1.4.3/src/hpcc.c hpcc/src/hpcc.c
 +#
 +HPL_INCLUDES = -I$(INCdir) -I$(INCdir)/$(ARCH) $(LAinc) $(MPinc)
 +HPL_LIBS     = $(HPLlib) $(LAlib) $(MPlib) $(CNY_LIB_HT) $(CNY_LIBS) -lm -lpthread
++HPL_LIBS     += /opt/convey/lib/cny_initruntime.o -lcny_utils -lPersSupport -ldl -lpthread -L/opt/convey/lib
 +#
 +# - Compile time options -----------------------------------------------
 +#
