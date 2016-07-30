@@ -1082,15 +1082,13 @@ void CDsnInfo::InitCxrIntfInfo()
 					bool bFoundLinkInfo = false;
 					for (int srcReplIdx = 0; srcReplIdx < pSrcMod->m_instSet.GetReplCnt(srcInstIdx); srcReplIdx += 1) {
 						CInstance * pSrcModInst = pSrcMod->m_instSet.GetInst(srcInstIdx, srcReplIdx);
-
-						if (pSrcModInst->m_instName != pDstCxrCall->m_instName) continue;
+						//if (pSrcModInst->m_instName != pDstCxrCall->m_instName) continue;
 
 						int instIdx = 0;
 						for (int dstReplIdx = 0; dstReplIdx < pDstMod->m_instSet.GetReplCnt(dstInstIdx); dstReplIdx += 1) {
 							CInstance * pDstModInst = pDstMod->m_instSet.GetInst(dstInstIdx, dstReplIdx);
 
 							// check if instance file had information for this link
-							//if (pDstModInst->m_instName != pDstCxrCall->m_instName) continue;
 							if (!IsCallDest(pDstModInst, pSrcModInst)) continue;
 
 							// found link info
