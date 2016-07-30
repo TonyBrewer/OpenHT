@@ -928,7 +928,9 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 		}
 	}
 
-	if (pGv->m_bWriteForMifRead) {
+	if (pGv->m_bWriteForMifRead && (pMod->m_threads.m_htIdW.AsInt() > 0 || pGv->m_addrW > 0 
+		|| !pGv->m_bReadForInstrRead && !pGv->m_bReadForMifWrite))
+	{
 		int rdRspStg = pMod->m_mif.m_mifRd.m_rdRspStg;
 
 		string typeName;
@@ -1570,7 +1572,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 		}
 	}
 
-	if (pGv->m_bWriteForMifRead) {
+	if (pGv->m_bWriteForMifRead && (pMod->m_threads.m_htIdW.AsInt() > 0 || pGv->m_addrW > 0)) {
 		int rdRspStg = pMod->m_mif.m_mifRd.m_rdRspStg;
 
 		if (pGv->m_addrW == 0) {

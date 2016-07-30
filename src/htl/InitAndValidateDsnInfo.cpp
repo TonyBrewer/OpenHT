@@ -370,7 +370,8 @@ void CDsnInfo::InitPrivateAsGlobal()
 
 				if (rdDstVar == pPriv->m_name) {
 
-					//if (pPriv->m_addr1W.AsInt() == 0 && mod.m_threads.m_htIdW.AsInt() == 0) continue;
+					if (pPriv->m_bCxrParam)
+						ParseMsg(Error, pPriv->m_lineInfo, "Call parameter that is also memory read destination is not supported");
 
 					// create a global variable
 					string rdStg = "1";
