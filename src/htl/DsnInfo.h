@@ -305,6 +305,7 @@ private:
 
 		m_bIfDefHtv = false;
 		m_bIhmReadOnly = false;
+		m_bCxrParam = false;
 
 		m_addr1IsHtId = false;
 		m_addr1IsPrivate = false;
@@ -339,6 +340,7 @@ public:
 	bool		m_bMifRead;
 	bool		m_bMifWrite;
 	bool		m_bIsUsed;
+	bool		m_bCxrParam;
 	HtdFile::ERamType	m_ramType;
 	int			m_atomicMask;
 	int			m_cLangFieldPos;

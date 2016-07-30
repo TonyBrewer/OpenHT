@@ -104,7 +104,8 @@ public:
 		m_pClockList = 0;	// used by fixture generation
 		m_pHtAttribList = 0;
 		m_constValue = 0;
-		m_width = 0;        // width of bit field types
+	
+		// width of bit field types
         m_opWidth = 0;
 		m_structPos = 0;	// starting position of member within structure
         m_declStatementLevel = 0;

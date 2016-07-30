@@ -54,6 +54,7 @@ void CDsnInfo::InitAndValidateModCxr()
 						if (pField->m_pType->m_typeName != pParam->m_pType->m_typeName)
 							ParseMsg(Error, pParam->m_lineInfo, "parameter and private variable have different types");
 						bFound = true;
+						pField->m_bCxrParam = true;
 					}
 				}
 				if (!bFound)

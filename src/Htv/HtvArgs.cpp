@@ -90,11 +90,11 @@ void CHtvArgs::Parse(int argc, char *argv[])
 
 		argv2[0] = argv[0];
 
-		SetCurrentDirectory("C:/OpenHT/tests/dsn1/msvs12/");
+		SetCurrentDirectory("C:/OpenHT_v2.x/tests/dsn1/msvs12/");
 		argv2[argc++] = "-I";
-		argv2[argc++] = "C:/OpenHT/ht_lib";
+		argv2[argc++] = "C:/OpenHT_v2.x/ht_lib";
 		argv2[argc++] = "-I";
-		argv2[argc++] = "C:/OpenHT/ht_lib/sysc";
+		argv2[argc++] = "C:/OpenHT_v2.x/ht_lib/sysc";
 		argv2[argc++] = "-I";
 		argv2[argc++] = "../src";
 		argv2[argc++] = "-I";
