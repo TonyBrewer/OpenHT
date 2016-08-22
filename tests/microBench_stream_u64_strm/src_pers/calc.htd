@@ -1,0 +1,64 @@
+////////////////////////////////////////////////////
+// Streaming implementation of calc
+
+typedef ht_uint48 MemAddr_t;
+
+dsnInfo.AddModule(name=calc, htIdW=0, pause=true);
+
+calc.AddInstr(name=CALC_ENTER);
+calc.AddInstr(name=CALC_OPN1);
+calc.AddInstr(name=CALC_OPN2);
+calc.AddInstr(name=CALC_OPN3);
+calc.AddInstr(name=CALC_OPN4);
+calc.AddInstr(name=CALC_RETURN);
+
+calc.AddHostMsg(dir=in, name=OP1_ADDR)
+	.AddDst(var=op1Addr)
+	;
+calc.AddHostMsg(dir=in, name=OP2_ADDR)
+	.AddDst(var=op2Addr)
+	;
+calc.AddHostMsg(dir=in, name=OP3_ADDR)
+	.AddDst(var=op3Addr)
+	;
+calc.AddHostMsg(dir=in, name=SCALAR)
+	.AddDst(var=scalar)
+	;
+
+calc.AddPrivate()
+	.AddVar(type=uint32_t, name=operation)
+	.AddVar(type=uint32_t, name=offset)
+	.AddVar(type=uint32_t, name=vecLen)
+	;
+
+calc.AddShared()
+	.AddVar(type=MemAddr_t, name=op1Addr)
+	.AddVar(type=MemAddr_t, name=op2Addr)
+	.AddVar(type=MemAddr_t, name=op3Addr)
+	.AddVar(type=uint64_t, name=scalar)
+	.AddVar(type=ht_uint1, name=opnVld)
+	.AddVar(type=ht_uint2, name=opn)
+	.AddVar(type=uint64_t, name=res, queueW=9)
+	.AddVar(type=ht_uint9, name=resCnt)
+	;
+
+calc.AddStage()
+	;
+
+calc.AddEntry(func=htmain, instr=CALC_ENTER, host=true)
+	.AddParam(type=uint32_t, name=operation)
+	.AddParam(type=uint32_t, name=offset)
+	.AddParam(type=uint32_t, name=vecLen)
+	;
+
+calc.AddReturn(func=htmain)
+	;
+
+calc.AddReadStream(name=RdA, type=uint64_t, memPort=0);
+calc.AddReadStream(name=RdB, type=uint64_t, memPort=1);
+calc.AddReadStream(name=RdC, type=uint64_t, memPort=0);
+calc.AddWriteStream(name=WrA, type=uint64_t, memPort=1);
+calc.AddWriteStream(name=WrB, type=uint64_t, memPort=1);
+calc.AddWriteStream(name=WrC, type=uint64_t, memPort=1);
+
+calc.AddPrimState(type=mult_prm_state, name=mult_prm_state1, include="PersMult_prim.h");

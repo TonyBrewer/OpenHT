@@ -1,0 +1,20 @@
+////////////////////////////////////////////////////
+// Top-level
+
+dsnInfo.AddModule(name=add, htIdW=0);
+
+add.AddInstr(name=ADD);
+
+add.AddPrivate()
+	.AddVar(type=uint64_t, name=op1)
+	.AddVar(type=uint64_t, name=op2)
+	;
+
+add.AddEntry(func=htmain, instr=ADD, host=true)
+	.AddParam(type=uint64_t, name=op1)
+	.AddParam(type=uint64_t, name=op2)
+	;
+
+add.AddReturn(func=htmain)
+	.AddParam(type=uint64_t, name=res)
+	;

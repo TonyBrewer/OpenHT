@@ -1,0 +1,254 @@
+////////////////////////////////////////////////////
+// Top-level
+
+dsnInfo.AddModule(name=ctl, htIdW=0);
+
+ctl.AddInstr(name=CTL_ENTRY);
+ctl.AddInstr(name=CTL_CALC1);
+ctl.AddInstr(name=CTL_CALC2);
+ctl.AddInstr(name=CTL_CALC3);
+ctl.AddInstr(name=CTL_CALC4);
+ctl.AddInstr(name=CTL_JOIN1);
+ctl.AddInstr(name=CTL_JOIN2);
+ctl.AddInstr(name=CTL_JOIN3);
+ctl.AddInstr(name=CTL_JOIN4);
+ctl.AddInstr(name=CTL_RTN);
+
+ctl.AddHostMsg(dir=in, name=VEC_LEN)
+	.AddDst(var=vecLen)
+	;
+
+ctl.AddShared()
+	.AddVar(type=uint64_t, name=vecLen)
+	;
+
+ctl.AddPrivate()
+	.AddVar(type=uint32_t, name=operation)
+	.AddVar(type=uint32_t, name=vecIdx)
+	.AddVar(type=uint32_t, name=vecStride)
+	;
+
+ctl.AddEntry(func=htmain, instr=CTL_ENTRY, host=true)
+	.AddParam(type=uint32_t, name=operation)
+	.AddParam(type=uint32_t, name=vecIdx)
+	.AddParam(type=uint32_t, name=vecStride)
+	;
+
+ctl.AddReturn(func=htmain)
+	;
+
+ctl.AddCall(func=calc1, fork=true);
+ctl.AddCall(func=calc2, fork=true);
+ctl.AddCall(func=calc3, fork=true);
+ctl.AddCall(func=calc4, fork=true);
+
+
+////////////////////////////////////////////////////
+// Loads vector elements from op arrays, performs calculation, stores results
+#define CALC1_HTID_W 9
+typedef ht_uint48 MemAddr_t;
+
+dsnInfo.AddModule(name=calc1, htIdW=CALC1_HTID_W);
+
+calc1.AddInstr(name=CALC1_LDA);
+calc1.AddInstr(name=CALC1_STC);
+calc1.AddInstr(name=CALC1_RTN);
+
+calc1.AddHostMsg(dir=in, name=OP1_ADDR)
+	.AddDst(var=op1Addr)
+	;
+calc1.AddHostMsg(dir=in, name=OP3_ADDR)
+	.AddDst(var=op3Addr)
+	;
+
+calc1.AddPrivate()
+	.AddVar(type=uint32_t, name=vecIdx)
+	.AddVar(type=uint64_t, name=op1)
+	;
+
+calc1.AddShared()
+	.AddVar(type=MemAddr_t, name=op1Addr)
+	.AddVar(type=MemAddr_t, name=op3Addr)
+	;
+
+calc1.AddEntry(func=calc1, instr=CALC1_LDA)
+	.AddParam(type=uint32_t, name=vecIdx)
+	;
+
+calc1.AddReturn(func=calc1)
+	;
+
+calc1.AddReadMem()
+	.AddDst(var=op1)
+	;
+
+calc1.AddWriteMem();
+
+
+////////////////////////////////////////////////////
+// Loads vector elements from op arrays, performs calculation, stores results
+#define CALC2_HTID_W 9
+typedef ht_uint48 MemAddr_t;
+
+dsnInfo.AddModule(name=calc2, htIdW=CALC2_HTID_W, pause=true);
+
+calc2.AddInstr(name=CALC2_LDC);
+calc2.AddInstr(name=CALC2_ISSUE);
+calc2.AddInstr(name=CALC2_STB);
+calc2.AddInstr(name=CALC2_RTN);
+
+calc2.AddHostMsg(dir=in, name=OP2_ADDR)
+	.AddDst(var=op2Addr)
+	;
+calc2.AddHostMsg(dir=in, name=OP3_ADDR)
+	.AddDst(var=op3Addr)
+	;
+calc2.AddHostMsg(dir=in, name=SCALAR)
+	.AddDst(var=scalar)
+	;
+
+calc2.AddPrivate()
+	.AddVar(type=uint32_t, name=vecIdx)
+	.AddVar(type=uint64_t, name=op3Mem)
+	.AddVar(type=ht_uint9, name=i_htId)
+	.AddVar(type=bool, name=i_vld)
+	;
+
+calc2.AddShared()
+	.AddVar(type=MemAddr_t, name=op2Addr)
+	.AddVar(type=MemAddr_t, name=op3Addr)
+	.AddVar(type=uint64_t, name=scalar)
+	.AddVar(type=uint64_t, name=op2, addr1W=CALC2_HTID_W)
+	.AddVar(type=uint64_t, name=op3, addr1W=CALC2_HTID_W)
+	;
+
+calc2.AddStage()
+	;
+
+calc2.AddEntry(func=calc2, instr=CALC2_LDC)
+	.AddParam(type=uint32_t, name=vecIdx)
+	;
+
+calc2.AddReturn(func=calc2)
+	;
+
+calc2.AddReadMem()
+	.AddDst(var=op3(#))
+	;
+
+calc2.AddWriteMem();
+
+calc2.AddPrimState(type=mult_prm_state, name=mult_prm_state1, include="PersMult_prim.h");
+
+
+////////////////////////////////////////////////////
+// Loads vector elements from op arrays, performs calculation, stores results
+#define CALC3_HTID_W 9
+typedef ht_uint48 MemAddr_t;
+
+dsnInfo.AddModule(name=calc3, htIdW=CALC3_HTID_W);
+
+calc3.AddInstr(name=CALC3_LDA);
+calc3.AddInstr(name=CALC3_LDB);
+calc3.AddInstr(name=CALC3_STC);
+calc3.AddInstr(name=CALC3_RTN);
+
+calc3.AddHostMsg(dir=in, name=OP1_ADDR)
+	.AddDst(var=op1Addr)
+	;
+calc3.AddHostMsg(dir=in, name=OP2_ADDR)
+	.AddDst(var=op2Addr)
+	;
+calc3.AddHostMsg(dir=in, name=OP3_ADDR)
+	.AddDst(var=op3Addr)
+	;
+
+calc3.AddPrivate()
+	.AddVar(type=uint32_t, name=vecIdx)
+	.AddVar(type=uint64_t, name=op1)
+	.AddVar(type=uint64_t, name=op2)
+	;
+
+calc3.AddShared()
+	.AddVar(type=MemAddr_t, name=op1Addr)
+	.AddVar(type=MemAddr_t, name=op2Addr)
+	.AddVar(type=MemAddr_t, name=op3Addr)
+	;
+
+calc3.AddEntry(func=calc3, instr=CALC3_LDA)
+	.AddParam(type=uint32_t, name=vecIdx)
+	;
+
+calc3.AddReturn(func=calc3)
+	;
+
+calc3.AddReadMem()
+	.AddDst(var=op1)
+	.AddDst(var=op2)
+	;
+
+calc3.AddWriteMem();
+
+
+////////////////////////////////////////////////////
+// Loads vector elements from op arrays, performs calculation, stores results
+#define CALC4_HTID_W 9
+typedef ht_uint48 MemAddr_t;
+
+dsnInfo.AddModule(name=calc4, htIdW=CALC4_HTID_W, pause=true);
+
+calc4.AddInstr(name=CALC4_LDB);
+calc4.AddInstr(name=CALC4_LDC);
+calc4.AddInstr(name=CALC4_ISSUE);
+calc4.AddInstr(name=CALC4_STA);
+calc4.AddInstr(name=CALC4_RTN);
+
+calc4.AddHostMsg(dir=in, name=OP1_ADDR)
+	.AddDst(var=op1Addr)
+	;
+calc4.AddHostMsg(dir=in, name=OP2_ADDR)
+	.AddDst(var=op2Addr)
+	;
+calc4.AddHostMsg(dir=in, name=OP3_ADDR)
+	.AddDst(var=op3Addr)
+	;
+calc4.AddHostMsg(dir=in, name=SCALAR)
+	.AddDst(var=scalar)
+	;
+
+calc4.AddPrivate()
+	.AddVar(type=uint32_t, name=vecIdx)
+	.AddVar(type=ht_uint9, name=i_htId)
+	.AddVar(type=uint64_t, name=op3Mem)
+	.AddVar(type=bool, name=i_vld)
+	;
+
+calc4.AddShared()
+	.AddVar(type=MemAddr_t, name=op1Addr)
+	.AddVar(type=MemAddr_t, name=op2Addr)
+	.AddVar(type=MemAddr_t, name=op3Addr)
+	.AddVar(type=uint64_t, name=scalar)
+	.AddVar(type=uint64_t, name=op2, addr1W=CALC4_HTID_W)
+	.AddVar(type=uint64_t, name=op3, addr1W=CALC4_HTID_W)
+	.AddVar(type=uint64_t, name=op3X, addr1W=CALC4_HTID_W)
+	;
+
+calc4.AddStage()
+	;
+
+calc4.AddEntry(func=calc4, instr=CALC4_LDB)
+	.AddParam(type=uint32_t, name=vecIdx)
+	;
+
+calc4.AddReturn(func=calc4)
+	;
+
+calc4.AddReadMem()
+	.AddDst(var=op2(#))
+	.AddDst(var=op3(#))
+	;
+
+calc4.AddWriteMem();
+
+calc4.AddPrimState(type=mult_prm_state, name=mult_prm_state1, include="PersMult_prim.h");
+

@@ -1,0 +1,42 @@
+////////////////////////////////////////////////////
+// Top-level
+
+dsnInfo.AddModule(name=add, htIdW=0);
+
+add.AddInstr(name=ENTRY);
+add.AddInstr(name=LD1);
+add.AddInstr(name=LD2);
+add.AddInstr(name=ADD);
+add.AddInstr(name=WR);
+add.AddInstr(name=RTN);
+
+add.AddPrivate()
+	.AddVar(type=ht_uint48, name=op1)
+	.AddVar(type=ht_uint48, name=op2)
+	.AddVar(type=ht_uint48, name=op3)
+	.AddVar(type=ht_uint3, name=idx)
+	;
+
+add.AddShared()
+	.AddVar(type=uint64_t, name=op1Mem, dimen1=8)
+	.AddVar(type=uint64_t, name=op2Mem, dimen1=8)
+	.AddVar(type=uint64_t, name=res, dimen1=8)
+	;
+
+add.AddEntry(func=htmain, instr=ENTRY, host=true)
+	.AddParam(hostType=uint64_t, type=ht_uint48, name=op1)
+	.AddParam(hostType=uint64_t, type=ht_uint48, name=op2)
+	.AddParam(hostType=uint64_t, type=ht_uint48, name=op3)
+	;
+
+add.AddReturn(func=htmain)
+	;
+
+add.AddReadMem()
+        .AddDst(var=op1Mem[#])
+        .AddDst(var=op2Mem[#])
+        ;
+
+add.AddWriteMem()
+        .AddSrc(var=res[#])
+        ;

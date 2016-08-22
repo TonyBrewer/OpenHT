@@ -1,0 +1,23 @@
+////////////////////////////////////////////////////
+// Top-level
+
+dsnInfo.AddModule(name=ctl, htIdW=0);
+
+ctl.AddInstr(name=CTL_ENTRY);
+
+ctl.AddHostMsg(dir=out, name=TO_HOST_MSG)
+	;
+ctl.AddHostMsg(dir=in, name=TO_CP_MSG)
+	.AddDst(var=msgData)
+	;
+
+ctl.AddShared()
+	.AddVar(type=uint64_t, name=msgData, queueW=1)
+	;
+
+ctl.AddEntry(func=htmain, instr=CTL_ENTRY, host=true)
+	;
+
+ctl.AddReturn(func=htmain)
+	;
+

@@ -1,0 +1,152 @@
+--------------------------------------------------------------------------------
+Guided tour of the Progressive Add (1) example design
+--------------------------------------------------------------------------------
+The Progressive Add (1) design is a simple example that illustrates some of the 
+capabilities of the HT toolset.  This design implements the following function 
+using HT instructions running on the Convey coprocessor:
+
+    uint64_t add(uint64_t a, uint64_t b)
+    {
+	return a + b;
+    }
+
+This guided tour provides an overview of this design and is divided into the 
+following sections:
+
+Section 1 - Source files
+Section 2 - Build steps
+Section 3 - Generated files
+Section 4 - Reports
+
+--------------------------------------------------------------------------------
+Section 1 - Source files
+--------------------------------------------------------------------------------
+
+The following are source files for the vadd project:
+
+vadd
+|-- Makefile
+|-- src 		- Host source code
+|   `-- Main.cpp
+|-- src_model 		- Personality functional model source code
+|   |-- Model.cpp
+|   `-- model.htd
+`-- src_pers 		- Personality source code
+    |-- PersAdd_src.cpp
+    `-- add.htd
+
+The host source src/Main.cpp does the following:
+  - allocates variables and fills operands
+  - constructions the HtHif (HT Host Interface) class and allocates a unit
+  - sends calls to the unit to compute the add
+  - waits for return from the unit
+  - checks results
+
+The coprocessor source is in src_pers and is made up of the following files:
+  - add.htd - this is the HT description file in which the personality modules/
+    functions are defined, including variables (private/shared/global), 
+    interfaces needed (host message, call/return, memory, etc.)
+  - PersAdd_src.cpp - this is the top-level entry point into the personality.  
+    For this single add, it simply returns the sum of the two entry parameters.
+
+--------------------------------------------------------------------------------
+Section 2 - Build Steps
+--------------------------------------------------------------------------------
+
+The build flow uses the Makefile at the top level of the project:
+the HT makefile:
+
+Makefile - type "make" to see a list of targets:
+  model	Builds functional model application (app_model)
+  sysc	Builds SystemC simulation application (app_sysc)
+  vsim	Builds Verilog simulation application (app_vsim)
+  app	Builds coprocessor application (app)
+  pers	Implements coprocessor FPGA bitfile
+
+Design and Build steps:
+
+1.  Compile the application to use the functional model.  The functional model 
+is a purely behavioral model of the personality implemented in C++.  It allows 
+the programmer to develop the host application, including the runtime interfaces 
+to the coprocessor, before developing the HT code for the coprocessor.  To build 
+the app to use the model, run
+
+	make model
+
+This compiles the host source (in src/) and the model source (in src_model/) 
+into an executable called "app_model."  
+
+2.  Compile the application using the SystemC model.  
+
+	make sysc
+
+This compiles the host source (in src/) and the personality source (in src_pers/) 
+into an executable called "app_sysc."  Running this application runs a 
+cycle-accurate SystemC simulation of the design.  Most of the development and 
+debug time is spent running SystemC simulation, which is significantly faster 
+than Verilog simulation, as well as easier to debug.
+
+3.  Compile the application for Verilog simulation:
+
+	make vsim
+
+This step generates Verilog files from the personality source (in src_pers/), 
+then build an application called "app_vsim" to run a Verilog simulation of the 
+generated code.  Running this application runs a Verilog simulation of the design 
+using either Mentor ModelSim or Synopsys VCS (based on the CNY_PDK_HDLSIM 
+environment variable (options are "Mentor" and "Synopsys").
+
+4.  Compile the application for the Convey system:
+
+	make app
+
+This application should be run on the Convey system after the personality is 
+generated.
+
+5.  Build the personality:
+
+	make pers
+
+This step builds the personality (FPGA) from the generated Verilog files using 
+the Xilinx development tools.  The FPGA build can take several hours and is 
+typically done infrequently after the design has been fully debugged in SystemC 
+simulation.
+
+--------------------------------------------------------------------------------
+Section 3 - Generated files
+--------------------------------------------------------------------------------
+
+The following files are generated during the build of the HT project:
+
+vadd
+|-- HtDsnRpt.html 	- Design report generated during build
+|-- app 		- application to run on the Convey system
+|-- app_model 		- application that uses the functional model
+|-- app_sysc 		- application for SystemC simulation
+|-- app_vsim 		- script to run Verilog simulation
+|-- app_vsim.exe 	- application for Verilog simulation
+|-- ht			- generated HT project directory
+|   |-- HtPrivRpt.txt
+|   |-- phys		- physical (Xilinx) build directory
+|   |-- sim		- Verilog simulation directory
+|   |-- sysc		- Generated files for SystemC simulation
+|   |-- verilog		- Generated Verilog files
+|   `-- vsim		- Generated files for Verilog simulation
+`-- personalities	- Generated personality directory (FPGA image)
+
+--------------------------------------------------------------------------------
+Section 4 - Reports
+--------------------------------------------------------------------------------
+HtDsnRpt.html - The design report is generated when the design is compiled and 
+contains information about the design including 
+ - generated APIs
+ - call graph (requires graphviz)
+ - generated RAMs
+
+To view the report, run
+
+	firefox HtDsnRpt.html
+
+HtMonRpt.txt - The performance monitor report is generated when the systemC
+simulation is run (./app_sysc).  This report contains information including 
+total cycle count, memory request counts and thread activity.

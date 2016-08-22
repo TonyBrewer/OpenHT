@@ -1,0 +1,95 @@
+////////////////////////////////////////////////////
+// Top-level
+
+dsnInfo.AddModule(name=ctl, htIdW=0);
+
+ctl.AddInstr(name=CTL_ENTRY);
+ctl.AddInstr(name=CTL_MULADD);
+ctl.AddInstr(name=CTL_JOIN);
+ctl.AddInstr(name=CTL_RTN);
+
+ctl.AddHostMsg(dir=in, name=VEC_LEN)
+	.AddDst(var=vecLen)
+	;
+
+
+ctl.AddShared()
+	.AddVar(type=uint64_t, name=vecLen)
+	;
+
+ctl.AddPrivate()
+	.AddVar(type=uint32_t, name=vecIdx)
+	.AddVar(type=uint32_t, name=vecStride)
+	.AddVar(type=uint64_t, name=t)
+	;
+
+ctl.AddEntry(func=htmain, instr=CTL_ENTRY, host=true)
+	.AddParam(type=uint32_t, name=vecIdx)
+	.AddParam(type=uint32_t, name=vecStride)
+	.AddParam(type=uint64_t, name=t)
+	;
+
+ctl.AddReturn(func=htmain)
+	;
+
+ctl.AddCall(func=muladd, fork=true);
+
+
+////////////////////////////////////////////////////
+// Loads vector elements from op arrays, muladds, stores results
+#define MULADD_HTID_W 7
+typedef ht_uint48 MemAddr_t;
+
+dsnInfo.AddModule(name=muladd, htIdW=MULADD_HTID_W, pause=true);
+
+muladd.AddInstr(name=MULADD_LD1);
+muladd.AddInstr(name=MULADD_LD2);
+muladd.AddInstr(name=MULADD_CALC);
+muladd.AddInstr(name=MULADD_ST);
+muladd.AddInstr(name=MULADD_RTN);
+
+muladd.AddHostMsg(dir=in, name=OPX_ADDR)
+	.AddDst(var=opXAddr)
+	;
+muladd.AddHostMsg(dir=in, name=OPY_ADDR)
+	.AddDst(var=opYAddr)
+	;
+
+
+muladd.AddPrivate()
+	.AddVar(type=uint32_t, name=vecIdx)
+	.AddVar(type=uint64_t, name=x)
+	.AddVar(type=uint64_t, name=y)
+	.AddVar(type=uint64_t, name=t)
+	.AddVar(type=bool, name=i_vld)
+	.AddVar(type=uint64_t, name=res)
+	;
+
+muladd.AddShared()
+	.AddVar(type=MemAddr_t, name=opXAddr)
+	.AddVar(type=MemAddr_t, name=opYAddr)
+	.AddVar(type=uint64_t, name=opXMem, addr1W=MULADD_HTID_W)
+	.AddVar(type=uint64_t, name=opYMem, addr1W=MULADD_HTID_W)
+	.AddVar(type=uint64_t, name=resMem, addr1W=MULADD_HTID_W)
+	.AddVar(type=bool, name=primRdy)
+	;
+
+muladd.AddStage()
+	;
+
+muladd.AddEntry(func=muladd, instr=MULADD_LD1)
+	.AddParam(type=uint32_t, name=vecIdx)
+	.AddParam(type=uint64_t, name=t)
+	;
+
+muladd.AddReturn(func=muladd)
+	;
+
+muladd.AddReadMem()
+	.AddDst(var=opXMem(#))
+	.AddDst(var=opYMem(#))
+	;
+
+muladd.AddWriteMem();
+
+muladd.AddPrimState(type=muladd_prm_state, name=muladd_prm_state1, include="PersMuladd_prim.h");

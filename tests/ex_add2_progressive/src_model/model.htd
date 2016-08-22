@@ -1,0 +1,21 @@
+////////////////////////////////////////////////////
+// Top-level
+
+dsnInfo.AddModule(name=model, htIdW=0);
+
+model.AddInstr(name=MODEL);
+
+model.AddPrivate()
+	.AddVar(type=uint64_t, name=op1)
+	.AddVar(type=uint64_t, name=op2)
+	.AddVar(type=uint64_t, name=op3)
+	;
+
+model.AddEntry(func=htmain, instr=MODEL, host=true)
+	.AddParam(type=uint64_t, name=op1)
+	.AddParam(type=uint64_t, name=op2)
+	.AddParam(type=uint64_t, name=op3)
+	;
+
+model.AddReturn(func=htmain)
+	;

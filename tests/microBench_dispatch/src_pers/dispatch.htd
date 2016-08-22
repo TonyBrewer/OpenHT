@@ -1,0 +1,12 @@
+// Module capabilities
+
+dsnInfo.AddModule(name=dispatch, htIdW=0);
+
+dispatch.AddInstr(name=DISPATCH_ENTRY);
+
+
+dispatch.AddEntry(func=htmain, instr=DISPATCH_ENTRY, host=true)
+	;
+
+dispatch.AddReturn(func=htmain)
+	;

@@ -1,0 +1,4 @@
+//AddModInstParams(unit=Au, modPath="ctl/calc1", replCnt=2);
+//AddModInstParams(unit=Au, modPath="ctl/calc2", replCnt=2);
+//AddModInstParams(unit=Au, modPath="ctl/calc3", replCnt=2);
+//AddModInstParams(unit=Au, modPath="ctl/calc4", replCnt=2);

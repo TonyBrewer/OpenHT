@@ -1,0 +1,31 @@
+////////////////////////////////////////////////////
+// Top-level
+
+typedef ht_uint48 MemAddr_t;
+
+dsnInfo.AddModule(name=ctl, htIdW=0);
+
+ctl.AddInstr(name=CTL_ENTRY);
+ctl.AddInstr(name=CTL_LD);
+ctl.AddInstr(name=CTL_RETURN);
+
+
+ctl.AddPrivate()
+	.AddVar(type=MemAddr_t, name=dPtr)
+	.AddVar(type=MemAddr_t, name=addr)
+	.AddVar(type=uint64_t, name=curIdx)
+	.AddVar(type=uint64_t, name=totIdx)
+	;
+
+
+ctl.AddEntry(func=htmain, instr=CTL_ENTRY, host=true)
+	.AddParam(type=MemAddr_t, hostType=uint64_t, name=dPtr)
+	.AddParam(type=uint64_t, name=totIdx)
+	;
+
+ctl.AddReturn(func=htmain)
+	;
+
+ctl.AddReadMem()
+	.AddDst(var=addr, rdType=uint64_t)
+	;

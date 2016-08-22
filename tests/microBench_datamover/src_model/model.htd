@@ -1,0 +1,33 @@
+dsnInfo.AddModule(name=model, htIdW=0);
+
+model.AddInstr(name=MODEL);
+
+model.AddHostMsg(dir=in, name=OP1_ADDR)
+	;
+model.AddHostMsg(dir=in, name=OP2_ADDR)
+	;
+model.AddHostMsg(dir=in, name=RES_ADDR)
+	;
+model.AddHostMsg(dir=in, name=VEC_LEN)
+	;
+
+model.AddShared()
+	.AddVar(type=uint64_t, name=vecLen)
+	.AddVar(type=ht_uint48, name=op1Addr)
+	.AddVar(type=ht_uint48, name=op2Addr)
+	.AddVar(type=ht_uint48, name=resAddr)
+	;
+
+model.AddPrivate()
+	.AddVar(type=uint32_t, name=vecIdx)
+	.AddVar(type=uint32_t, name=vecStride)
+	;
+
+model.AddEntry(func=htmain, instr=MODEL, host=true)
+	.AddParam(type=uint32_t, name=vecIdx)
+	.AddParam(type=uint32_t, name=vecStride)
+	;
+
+model.AddReturn(func=htmain)
+	.AddParam(type=uint64_t, name=sum)
+	;
