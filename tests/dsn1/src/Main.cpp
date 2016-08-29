@@ -24,7 +24,7 @@ int main(int argc, char **argv)
 	if (sysHas1GBPages()) {
 		htHifParams.m_bHtHifHugePage = true;
 	} else {
-		printf("\nWARNING: System doesn't appear to have 1GB pages...bypassing HT Huge Page flag!\n\n");
+		printf("\nNOTE: System doesn't appear to have 1GB pages...bypassing HT Huge Page flag!\n\n");
 	}
 #endif
 
