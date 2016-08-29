@@ -158,7 +158,7 @@ namespace Ht {
 			m_pHtHifMem = (uint8_t *)CHtHif::HostMemAllocAlign(memAlign, m_htHifMemSize, false);
 			m_bHtHifMemHuge = false;
 		}
-		if (!m_pHtHifMem) {
+		if (!m_pHtHifMem || m_pHtHifMem == MAP_FAILED) {
 			if (m_pMemRegionList) {
 				delete[] m_pMemRegionList;
 				m_pMemRegionList = 0;

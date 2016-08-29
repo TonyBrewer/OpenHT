@@ -1,8 +1,13 @@
 #include "Ht.h"
 using namespace Ht;
 
+#include <stdexcept>
+
 #define CNT 16
 uint64_t arr[CNT * 2];
+
+bool sysHas1GBPages();
+std::string execCmd(const char* cmd);
 
 int main(int argc, char **argv)
 {
@@ -12,7 +17,16 @@ int main(int argc, char **argv)
 	}
 
 	CHtHifParams htHifParams;
+#ifdef WIN32
+	// This will be caught in HT source and not actually use Huge Pages in Windows...
 	htHifParams.m_bHtHifHugePage = true;
+#else
+	if (sysHas1GBPages()) {
+		htHifParams.m_bHtHifHugePage = true;
+	} else {
+		printf("\nWARNING: System doesn't appear to have 1GB pages...bypassing HT Huge Page flag!\n\n");
+	}
+#endif
 
 	CHtHif *pHtHif;
 	try {
@@ -59,4 +73,31 @@ int main(int argc, char **argv)
 		printf("PASSED\n");
 
 	return err_cnt;
+}
+
+bool sysHas1GBPages() {
+	std::string grepRslt = execCmd("grep \"Hugepagesize:\" /proc/meminfo");
+	if (grepRslt.find("1048576 kB") != std::string::npos) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+std::string execCmd(const char* cmd) {
+	char buffer[128];
+	std::string result = "";
+	FILE* pipe = popen(cmd, "r");
+	if (!pipe) throw std::runtime_error("popen() failed!");
+	try {
+		while (!feof(pipe)) {
+			if (fgets(buffer, 128, pipe) != NULL)
+				result += buffer;
+		}
+	} catch (...) {
+		pclose(pipe);
+		throw;
+	}
+	pclose(pipe);
+	return result;
 }

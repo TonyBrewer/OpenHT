@@ -19,6 +19,7 @@
 #include <queue>
 #include <list>
 #include <map>
+#include <errno.h>
 
 #ifdef WIN32
 #include <crtdbg.h>

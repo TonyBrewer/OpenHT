@@ -149,9 +149,9 @@ namespace Ht {
 			int flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_POPULATE | MAP_HUGETLB;
 			if (pHostBaseAddr != 0) flags |= MAP_FIXED;
 			pMem = mmap(pHostBaseAddr, HUGE_PAGE_SIZE, PROT_READ | PROT_WRITE, flags, -1, 0);
-			if (pMem == 0)
-				fprintf(stderr, "HTLIB: Host huge page alloc failed (0x%llx, 0x%llx)\n",
-				(long long)HUGE_PAGE_SIZE, (long long)pHostBaseAddr);
+			if (pMem == MAP_FAILED)
+				fprintf(stderr, "HTLIB: Host huge page alloc failed (0x%llx, 0x%llx): %s\n",
+					(long long)HUGE_PAGE_SIZE, (long long)pHostBaseAddr, strerror(errno));
 #		else
 			pMem = HostMemAllocAlign(HUGE_PAGE_SIZE, HUGE_PAGE_SIZE, bEnableSystemcAddressValidation);
 #		endif
