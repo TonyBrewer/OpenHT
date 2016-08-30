@@ -1,0 +1,36 @@
+////////////////////////////////////////////////////
+// Top-level
+
+dsnInfo.AddModule(name=ctl, htIdW=5);
+
+ctl.AddInstr(name=LD);
+ctl.AddInstr(name=ASSIGN);
+ctl.AddInstr(name=RTN);
+
+ctl.AddHostMsg(dir=in, name=VAR_ADDR)
+        .AddDst(var=varAddr);
+
+ctl.AddPrivate()
+	.AddVar(type=uint64_t, name=mem)
+	.AddVar(type=uint64_t, name=res3)
+	.AddVar(type=uint64_t, name=res4)
+	;
+
+ctl.AddShared()
+	.AddVar(type=ht_uint48, name=varAddr)
+	;
+
+ctl.AddEntry(func=htmain, instr=LD, host=true)
+	;
+
+ctl.AddReturn(func=htmain)
+	.AddParam(type=uint64_t, name=res1)
+	.AddParam(type=uint64_t, name=res2)
+	.AddParam(type=uint64_t, name=res3)
+	.AddParam(type=uint64_t, name=res4)
+	;
+
+ctl.AddReadMem()
+        .AddDst(var=mem)
+        ;
+
