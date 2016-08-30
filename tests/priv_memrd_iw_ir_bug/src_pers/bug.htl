@@ -1,0 +1,11 @@
+// -cl $(HtToolsPath)\tests\priv_memrd_iw_ir_bug\src_pers\bug.htl
+-wd $(HtToolsPath)\tests\priv_memrd_iw_ir_bug\msvs12\
+
+-cp wx-690
+-ac 1
+-uc 1
+-it
+-ml 0.1
+-pn priv_memrd_iw_ir_bug
+..\src_pers\bug.htd
+../ht/sysc

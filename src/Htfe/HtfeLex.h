@@ -99,6 +99,7 @@ public:
 		return (tokenStr.empty()) ? m_stringBuf : tokenStr;
 	}
 	static bool IsEqualOperator(EToken token) {
+		if (token == tk_typeCast) return false;
 		string tkStr = GetTokenString(token);
 		char last = tkStr[tkStr.length()-1];
 		return (last == '=') && token != tk_lessEqual && token != tk_greaterEqual &&
