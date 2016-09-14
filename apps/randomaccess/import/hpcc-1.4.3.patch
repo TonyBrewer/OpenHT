@@ -425,7 +425,7 @@ diff -ru hpcc-1.4.3/src/hpcc.c hpcc/src/hpcc.c
 +#
 +HPL_INCLUDES = -I$(INCdir) -I$(INCdir)/$(ARCH) $(LAinc) $(MPinc)
 +HPL_LIBS     = $(HPLlib) $(LAlib) $(MPlib) $(CNY_LIB_HT) $(CNY_LIBS) -lm -lpthread
-+HPL_LIBS     += /opt/convey/lib/cny_initruntime.o -lcny_utils -lPersSupport -ldl -lpthread -L/opt/convey/lib
++#HPL_LIBS     += /opt/convey/lib/cny_initruntime.o -lcny_utils -lPersSupport -ldl -lpthread -L/opt/convey/lib
 +#
 +# - Compile time options -----------------------------------------------
 +#

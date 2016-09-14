@@ -8,9 +8,24 @@ LIB_DIR  = lib_pers
 DIR_HPCC = import/hpcc
 EXE_HPCC = $(DIR_HPCC)/hpcc
 
-export AE_LIM = 1
+# ----------------------------------------------------------------------
+# - Convey Library Declaration -----------------------------------------
+# ----------------------------------------------------------------------
+#
+export CNY_LIBS += -lpthread
 ifneq ($(findstring hc,$(CNY_PDK_PLATFORM)),)
-app:export AE_LIM = 4
+export CNY_LIBS += -L/opt/convey/lib
+export CNY_LIBS += /opt/convey/lib/cny_initruntime.o
+export CNY_LIBS += -lcny_utils -lPersSupport -ldl
+export AE_LIM = 4  # can force to 1 for comparison 
+else
+ifneq ($(findstring vsim,$(LIB_HT)),)
+export CNY_LIBS += -L /opt/convey/lib -lwx_sim_runtime
+export AE_LIM = 1
+else
+export CNY_LIBS += -L /opt/convey/lib -lwx_runtime
+export AE_LIM = 1
+endif
 endif
 
 .PHONY: app
