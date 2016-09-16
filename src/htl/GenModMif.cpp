@@ -2949,8 +2949,8 @@ void CDsnInfo::GenModMifStatements(CInstance * pModInst)
 				}
 			}
 
-			if (maxElemQwCnt > 1) {
-				int elemQwIdxW = FindLg2(maxElemQwCnt - 1);
+			if (maxRdElemQwCnt > 1) {
+				int elemQwIdxW = FindLg2(maxRdElemQwCnt - 1);
 				unnamed1.AddStructField(pUint, "m_elemQwIdx", VA("%d", elemQwIdxW));
 				baseW += elemQwIdxW;
 				//if (bNeedCntM1) {
@@ -4488,15 +4488,10 @@ void CDsnInfo::GenModMifStatements(CInstance * pModInst)
 				}
 			}
 
-			if (maxElemQwCnt > 1) {
+			if (maxRdElemQwCnt > 1) {
 				mifPostInstr.Append("\t\t\tc_t%d_rdRspInfo.m_elemQwIdx = r_t%d_memReq.m_elemQwIdx;\n",
 					pMod->m_execStg + 1,
 					pMod->m_execStg + 1);
-				//if (bNeedCntM1) {
-				//	mifPostInstr.Append("\t\t\tc_t%d_rdRspInfo.m_elemQwCntM1 = r_t%d_memReq.m_elemQwCntM1;\n",
-				//		pMod->m_execStg + 1,
-				//		pMod->m_execStg + 1);
-				//}
 			}
 		}
 
@@ -5408,85 +5403,6 @@ void CDsnInfo::GenModMifStatements(CInstance * pModInst)
 
 		mifPostInstr.Append("\t// write read response to ram\n");
 		mifPostInstr.Append("\tif (r_m%d_rdRspRdy) {\n", rdRspStg);
-
-/*		if (mif.m_mifRd.m_bMultiQwRdRsp) {
-
-			string tabs;
-			if (bMultiQwMif) {
-				mifPostInstr.Append("\t\tif (r_m%d_rdRspInfo.m_multiQwReq) {\n", rdRspStg);
-				if (!bNeedRdRspInfoRam) {
-					mifPostInstr.Append("\t\t\tc_m0_rdRspQwIdx += 1u;\n");
-					mifPostInstr.NewLine();
-				}
-				mifPostInstr.Append("\t\t\tif (r_m%d_rdRspQwIdx >= r_m%d_rdRspInfo.m_qwFst) {\n", rdRspStg, rdRspStg);
-				tabs += "\t";
-			}
-
-			bool bNeedElemQwIdx = maxElemQwCnt > 1;
-			bool bNeedVIdx1 = mif.m_mifRd.m_rdRspIdxWList.size() > 0 && mif.m_mifRd.m_rdRspIdxWList[0] > 0;
-			bool bNeedVIdx2 = mif.m_mifRd.m_rdRspIdxWList.size() > 1 && mif.m_mifRd.m_rdRspIdxWList[1] > 0;
-			bool bNeedElemQwCntM1 = bNeedElemQwIdx && (bNeedVIdx1 || bNeedVIdx2);
-			bool bNeedVIdx2CntM1 = bNeedVIdx2 && bNeedVIdx1;
-
-			bool bNeedElse = false;
-			if (bNeedElemQwIdx) {
-				if (bNeedElemQwCntM1) {
-					mifPostInstr.Append("%s\t\t\tif (r_m%d_rdRspInfo.m_elemQwIdx < r_m%d_rdRspInfo.m_elemQwCntM1) {\n", 
-						tabs.c_str(), rdRspStg, rdRspStg);
-					tabs += "\t";
-					bNeedElse = true;
-				}
-				mifPostInstr.Append("%s\t\t\tc_m%d_rdRspInfo.m_elemQwIdx = r_m%d_rdRspInfo.m_elemQwIdx + 1u;\n",
-					tabs.c_str(), rdRspStg - 1, rdRspStg);
-			}
-
-			if (bNeedVIdx2) {
-				if (bNeedVIdx2CntM1) {
-					if (bNeedElse) tabs.erase(0, 1);
-					mifPostInstr.Append("%s\t\t\t%sif (r_m%d_rdRspInfo.m_vIdx2 < r_m%d_rdRspInfo.m_vIdx2CntM1) {\n", tabs.c_str(), bNeedElse ? "} else " : "", rdRspStg, rdRspStg);
-					bNeedElse = false;
-					tabs += "\t";
-					bNeedElse = true;
-				} else if (bNeedElemQwIdx) {
-					if (bNeedElse) { mifPostInstr.Append("%s\t\t} else {\n", tabs.c_str()); bNeedElse = false; }
-					mifPostInstr.Append("%s\t\t\tc_m%d_rdRspInfo.m_elemQwIdx = 0;\n", tabs.c_str(), rdRspStg - 1);
-					bNeedElse = true;
-				} else if (bNeedElse) {
-					mifPostInstr.Append("%s\t\t} else {\n", tabs.c_str());
-					bNeedElse = false;
-				}
-				mifPostInstr.Append("%s\t\t\tc_m%d_rdRspInfo.m_vIdx2 = r_m%d_rdRspInfo.m_vIdx2 + 1u;\n", tabs.c_str(), rdRspStg - 1, rdRspStg);
-			}
-
-			if (bNeedVIdx1) {
-				if (bNeedElse) { mifPostInstr.Append("%s\t\t} else {\n", tabs.c_str()); bNeedElse = false; }
-
-				if (bNeedElemQwIdx) {
-					mifPostInstr.Append("%s\t\t\tc_m%d_rdRspInfo.m_elemQwIdx = 0;\n", tabs.c_str(), rdRspStg - 1);
-				}
-
-				if (bNeedVIdx2) {
-					mifPostInstr.Append("%s\t\t\tc_m%d_rdRspInfo.m_vIdx2 = 0;\n", tabs.c_str(), rdRspStg - 1);
-				}
-
-				mifPostInstr.Append("%s\t\t\tc_m%d_rdRspInfo.m_vIdx1 = r_m%d_rdRspInfo.m_vIdx1 + 1u;\n", tabs.c_str(), rdRspStg - 1, rdRspStg);
-
-				if (bNeedElemQwCntM1 || bNeedVIdx2CntM1) {
-					tabs.erase(0, 1);
-					mifPostInstr.Append("%s\t\t\t}\n", tabs.c_str());
-				}
-			}
-
-			if (bNeedElse) {
-				tabs.erase(0, 1);
-				mifPostInstr.Append("%s\t\t\t}\n", tabs.c_str());
-			}
-			if (bMultiQwMif)
-				mifPostInstr.Append("\t\t\t}\n");
-
-			mifPostInstr.Append("\t\t}\n");
-			mifPostInstr.NewLine();
-		} */
 
 		mifPostInstr.Append("\t\tht_uint64 c_m%d_rdRspData = r_m%d_rdRsp.m_data;\n",
 			rdRspStg, rdRspStg);

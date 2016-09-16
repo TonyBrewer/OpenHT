@@ -1,0 +1,34 @@
+union storeNgram_t {
+  uint8_t ch[16];
+  uint64_t data[2];
+};
+
+struct tnode {
+  storeNgram_t ngrm;  //16B (Max of 10, 8B boundaries)
+  uint64_t leftAddr;  //8B
+  uint64_t rightAddr; //8B
+  uint64_t count;     //8B
+};
+
+// Module capabilities
+dsnInfo.AddModule(name=bug, htIdW=0);
+
+bug.AddInstr(name=BUG_RTN);
+
+bug.AddEntry(func=htmain, instr=BUG_RTN, host=true)
+	;
+
+bug.AddReturn(func=htmain)
+	;
+
+bug.AddPrivate()
+	.AddVar(type=uint64_t, name=someRdData)
+	;
+
+bug.AddReadMem()
+	.AddDst(var=someRdData)
+	;
+
+bug.AddWriteMem()
+	.AddSrc(type=tnode)
+	;
