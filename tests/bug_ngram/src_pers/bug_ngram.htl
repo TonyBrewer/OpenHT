@@ -1,0 +1,10 @@
+// -cl $(HtToolsPath)/tests/bug_ngram/src_pers/bug_ngram.htl
+-wd $(HtToolsPath)/tests/bug_ngram/msvs12/
+
+-cp hc-2
+-uc 1
+-un Au
+-df 150
+-pn bug_ngram
+../src_pers/bug_ngram.htd
+../ht/sysc
