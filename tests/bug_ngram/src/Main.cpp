@@ -17,5 +17,8 @@ int main(int argc, char **argv)
 	delete pAuUnit;
 	delete pHtHif;
 
+	// This bug causes sysc/verilog to be unbuildable.  If the test builds/runs, the bug will have been tested
+	printf("PASSED\n");
+
 	return 0;
 }
