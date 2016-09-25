@@ -3,11 +3,15 @@ union storeNgram_t {
   uint64_t data[2];
 };
 
-struct tnode {
+struct subnode {
   storeNgram_t ngrm;  //16B (Max of 10, 8B boundaries)
   uint64_t leftAddr;  //8B
   uint64_t rightAddr; //8B
-  uint64_t count;     //8B
+};
+
+struct tnode {
+  struct subnode subNode; //32B
+  uint64_t count;         //8B
 };
 
 // Module capabilities
@@ -21,12 +25,19 @@ bug.AddEntry(func=htmain, instr=BUG_RTN, host=true)
 bug.AddReturn(func=htmain)
 	;
 
+bug.AddGlobal()
+	.AddVar(type=subnode, name=curSubnode, addr1=htId, instrRead=true, instrWrite=false, spanningWrite=true)
+	;
+
 bug.AddPrivate()
-	.AddVar(type=uint64_t, name=someRdData)
+	.AddVar(type=uint64_t, name=rrdFldData, dimen1=2)
+	.AddVar(type=uint64_t, name=lockData)
 	;
 
 bug.AddReadMem()
-	.AddDst(var=someRdData)
+	.AddDst(var=curSubnode())
+	.AddDst(var=rrdFldData[#])
+	.AddDst(var=lockData, atomic=setBit63)
 	;
 
 bug.AddWriteMem()

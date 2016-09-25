@@ -4489,9 +4489,16 @@ void CDsnInfo::GenModMifStatements(CInstance * pModInst)
 			}
 
 			if (maxRdElemQwCnt > 1) {
-				mifPostInstr.Append("\t\t\tc_t%d_rdRspInfo.m_elemQwIdx = r_t%d_memReq.m_elemQwIdx;\n",
-					pMod->m_execStg + 1,
-					pMod->m_execStg + 1);
+				if (maxRdElemQwCnt == maxElemQwCnt) {
+					mifPostInstr.Append("\t\t\tc_t%d_rdRspInfo.m_elemQwIdx = r_t%d_memReq.m_elemQwIdx;\n",
+						pMod->m_execStg + 1,
+						pMod->m_execStg + 1);
+				} else {
+					int maxRdElemQwIdxW = FindLg2(maxRdElemQwCnt - 1);
+					mifPostInstr.Append("\t\t\tc_t%d_rdRspInfo.m_elemQwIdx = (ht_uint%d)r_t%d_memReq.m_elemQwIdx;\n",
+						pMod->m_execStg + 1,
+						maxRdElemQwIdxW, pMod->m_execStg + 1);
+				}
 			}
 		}
 
