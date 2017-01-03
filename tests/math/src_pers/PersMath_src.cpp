@@ -271,7 +271,11 @@ void CPersMath::PersMath()
 				ht_int32 v1 = 1+64;
 				ht_int32 r = (ht_int32) (v0 >> v1);
 
+#if defined(__GNUC__) && (__GNUC__ >= 5) && !defined(HT_VERILOG)
+				if (r != 0) {
+#else
 				if (r != 0x3fffffff) {
+#endif
 					HtAssert(0, 0);
 					P_errMask = 0x200000;
 				}

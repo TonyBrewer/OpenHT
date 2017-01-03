@@ -104,6 +104,7 @@ public:
 		m_pClockList = 0;	// used by fixture generation
 		m_pHtAttribList = 0;
 		m_constValue = 0;
+		m_width = 0;
 	
 		// width of bit field types
         m_opWidth = 0;

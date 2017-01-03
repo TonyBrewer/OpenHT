@@ -306,8 +306,7 @@ public:
 		if (pOp->IsErrOp())
 			return;
 
-		::delete(pOp);
-		//free(pOp);
+		::operator delete(pVoid);
 	}
 
 private:
