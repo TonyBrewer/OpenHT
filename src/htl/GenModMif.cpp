@@ -1507,6 +1507,12 @@ void CDsnInfo::GenModMifStatements(CInstance * pModInst)
 
 			m_mifMacros.Append("\tassert_msg(c_t%d_bReadMemAvail, \"Runtime check failed in CPers%s::%sMem%s(...) - ReadMemBusy was not called\\n\");\n",
 				pMod->m_execStg, pMod->m_modName.Uc().c_str(), pMemOpName, dstName);
+			m_mifMacros.Append("\tassert_msg(c_t%d_memReq.m_rdReq == false, \"Runtime check failed in CPers%s::%sMem%s(...) - Memory read request already pending\\n\");\n",
+				pMod->m_execStg, pMod->m_modName.Uc().c_str(), pMemOpName, dstName);
+			if ((int)mif.m_mifWr.m_wrSrcList.size() > 0) {
+				m_mifMacros.Append("\tassert_msg(c_t%d_memReq.m_wrReq == false, \"Runtime check failed in CPers%s::%sMem%s(...) - Memory write request already pending\\n\");\n",
+					pMod->m_execStg, pMod->m_modName.Uc().c_str(), pMemOpName, dstName);
+			}
 
 			for (size_t fldIdx = 0; fldIdx < rdDst.m_fieldRefList.size(); fldIdx += 1) {
 				string fldName = fldIdx == 0 ? "var" : VA("fld%d", (int)fldIdx);
@@ -2262,6 +2268,15 @@ void CDsnInfo::GenModMifStatements(CInstance * pModInst)
 
 			m_mifMacros.Append("\tassert_msg(c_t%d_bWriteMemAvail, \"Runtime check failed in CPers%s::%s()"
 				" - expected WriteMemBusy() to have been called and not busy\");\n",
+				pMod->m_execStg, pMod->m_modName.Uc().c_str(), routineName.c_str());
+
+			if ((int)mif.m_mifRd.m_rdDstList.size() > 0) {
+				m_mifMacros.Append("\tassert_msg(c_t%d_memReq.m_rdReq == false, \"Runtime check failed in CPers%s::%s()"
+					" - Memory read request already pending in instruction\");\n",
+					pMod->m_execStg, pMod->m_modName.Uc().c_str(), routineName.c_str());
+			}
+			m_mifMacros.Append("\tassert_msg(c_t%d_memReq.m_wrReq == false, \"Runtime check failed in CPers%s::%s()"
+				" - Memory write request already pending in instruction\");\n",
 				pMod->m_execStg, pMod->m_modName.Uc().c_str(), routineName.c_str());
 
 			//if (wrRspGrpIdW == 0) {
