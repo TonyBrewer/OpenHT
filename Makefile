@@ -104,10 +104,14 @@ endif
 	chmod 755 $(PREFIX)/bin/* $(PREFIX)/local_systemc/lib*/*.a
 
 REL_RPM  = convey-ht-tools-$(VERSION)-$(VCSREV).x86_64.rpm
-REL_PATH = /usr/local/ht_releases/$(REL_DIR)
+REL_BASE = /usr/local/ht_releases
+REL_PATH = $(REL_BASE)/$(REL_DIR)
 
 release: prefix
 	find $(PREFIX) -type d | xargs chmod 775
+	if [ ! -d "$(REL_BASE)" ]; then     \
+		mkdir -p $(REL_BASE);       \
+	fi
 	rsync -av --delete rpm/prefix/ $(REL_PATH)
 	cd $(dir $(REL_PATH)); rm -f latest; ln -s $(REL_DIR) latest
 ifeq ($(shell uname), Linux)
