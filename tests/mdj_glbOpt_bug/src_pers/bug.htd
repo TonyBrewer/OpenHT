@@ -1,0 +1,53 @@
+////////////////////////////////////////////////////
+// Top-level
+
+dsnInfo.AddModule(name=bug, htIdW=0);
+
+bug.AddInstr(name=BUG_WRITE);
+bug.AddInstr(name=BUG_CALL);
+bug.AddInstr(name=BUG_RTN);
+
+bug.AddStage(execStg=2)
+	;
+
+bug.AddGlobal()
+	.AddVar(type=uint64_t, name=gvar, addr1W=1, instrWrite=true)
+	;
+
+bug.AddEntry(func=htmain, instr=BUG_WRITE, host=true)
+	;
+
+bug.AddReturn(func=htmain)
+	;
+
+bug.AddCall(func=bug2)
+	;
+
+
+//BUG2
+dsnInfo.AddModule(name=bug2, htIdW=0);
+
+bug2.AddInstr(name=BUG2_WRITE);
+bug2.AddInstr(name=BUG2_RTN);
+
+bug2.AddHostMsg(dir=in, name=ADDR)
+	.AddDst(var=addr)
+	;
+
+bug2.AddShared()
+	.AddVar(type=ht_uint48, name=addr)
+	;
+
+bug2.AddGlobal()
+	.AddVar(type=uint64_t, name=gvar, addr1W=1)
+	;
+
+bug2.AddWriteMem()
+	.AddSrc(var=gvar())
+	;
+
+bug2.AddEntry(func=bug2, instr=BUG2_WRITE)
+	;
+
+bug2.AddReturn(func=bug2)
+	;

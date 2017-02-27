@@ -723,7 +723,13 @@ void CDsnInfo::FindMemoryReadSpanningFields(CNgvInfo * pNgvInfo)
 {
 	// verify that fields that are the destination of a memory read are marked as spanning fields
 	CModule * pMod = pNgvInfo->m_pRdMod;
-	CRam * pNgv = pNgvInfo->m_modInfoList[0].m_pNgv;
+	CRam * pNgv = NULL;
+	for (size_t modIdx = 0; modIdx < pNgvInfo->m_modInfoList.size(); modIdx += 1) {
+		if (pNgvInfo->m_modInfoList[modIdx].m_pMod == pMod) {
+			pNgv = pNgvInfo->m_modInfoList[modIdx].m_pNgv;
+		}
+	}
+	HtlAssert(pNgv != NULL);
 
 	if (pNgv->m_addrW == 0) return;
 
