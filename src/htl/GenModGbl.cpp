@@ -1001,10 +1001,12 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 
 				if (fld1.m_bSpanning) continue;
 
-				gblPostInstr.Append("%sassert_msg(!c_t%d_%sIwData%s%s.GetWrEn(), \"Runtime check failed in CPers%s::Pers%s_%dx() - instruction write to non-spanning field %s%s\");\n", tabs.c_str(),
-					pMod->m_tsStg, pGv->m_gblName.c_str(), dimIdx.c_str(), fld1.m_heirName.c_str(),
-					pMod->m_modName.Uc().c_str(), pMod->m_modName.Uc().c_str(), pMod->m_clkRate == eClk1x ? 1 : 2,
-					pGv->m_gblName.c_str(), fld1.m_heirName.c_str());
+				for (int curStg = pMod->m_tsStg; curStg < pMod->m_tsStg + pGv->m_wrStg.AsInt(); curStg += 1) {
+					gblPostInstr.Append("%sassert_msg(!c_t%d_%sIwData%s%s.GetWrEn(), \"Runtime check failed in CPers%s::Pers%s_%dx() - instruction write to non-spanning field %s%s\");\n", tabs.c_str(),
+						curStg, pGv->m_gblName.c_str(), dimIdx.c_str(), fld1.m_heirName.c_str(),
+						pMod->m_modName.Uc().c_str(), pMod->m_modName.Uc().c_str(), pMod->m_clkRate == eClk1x ? 1 : 2,
+						pGv->m_gblName.c_str(), fld1.m_heirName.c_str());
+				}
 			}
 		} while (loopInfo.Iter());
 	}
