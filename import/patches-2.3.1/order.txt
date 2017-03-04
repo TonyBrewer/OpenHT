@@ -1,3 +1,4 @@
+header.patch
 sc_vcd_trace.patch
 convey_vcd.patch
 convey_msvs.patch

@@ -1,0 +1,10 @@
+--- src/systemc.h	2014-04-17 11:32:26.000000000 -0500
++++ src/systemc.h	2017-03-03 14:41:07.212776380 -0600
+@@ -115,7 +115,6 @@
+     using std::fputs;
+     using std::getc;
+     using std::getchar;
+-    using std::gets;
+     using std::putc;
+     using std::putchar;
+     using std::puts;
