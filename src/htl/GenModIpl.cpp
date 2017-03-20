@@ -3468,12 +3468,12 @@ void CDsnInfo::GenModIplStatements(CInstance * pModInst)
 
 		if (pMod->m_threads.m_resetInstr.size() > 0) {
 
-			iplPostInstr.Append("\tif (r_t%d_htTerm)\n", pMod->m_execStg + 1);
+			iplPostInstr.Append("\tif (r_t%d_htTerm)\n", pMod->m_wrStg);
 
 			if (pMod->m_threads.m_htIdW.AsInt() == 0)
 				iplPostInstr.Append("\t\tc_htBusy = false;\n");
 			else
-				iplPostInstr.Append("\t\tm_htIdPool.push(r_t%d_htId);\n", pMod->m_execStg + 1);
+				iplPostInstr.Append("\t\tm_htIdPool.push(r_t%d_htId);\n", pMod->m_wrStg);
 
 			iplPostInstr.Append("\n");
 		}

@@ -1,0 +1,16 @@
+////////////////////////////////////////////////////
+// Top-level
+
+dsnInfo.AddModule(name=bug, htIdW=0, reset=BUG_RESET);
+
+bug.AddInstr(name=BUG_RESET);
+bug.AddInstr(name=BUG_RETURN);
+
+bug.AddStage(execStg=1,privWrStg=2);
+
+
+bug.AddEntry(func=htmain, instr=BUG_RETURN, host=true)
+	;
+
+bug.AddReturn(func=htmain)
+	;
