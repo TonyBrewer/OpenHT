@@ -2883,7 +2883,7 @@ sub genVarIdx {
 	$self->setIsIdxDim2(0);
       }
       if (($self->getDim1Size != 0) && ($self->getIsIdxDim2 != 0)) {
-	$self->setIsIdxAddr1(&genChance($PCT_GenVarIdx_D1, 1, 0));
+	$self->setIsIdxDim1(&genChance($PCT_GenVarIdx_D1, 1, 0));
       } else {
 	$self->setIsIdxDim1(0);
       }

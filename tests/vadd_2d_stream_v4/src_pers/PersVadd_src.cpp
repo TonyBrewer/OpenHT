@@ -32,7 +32,7 @@ CPersVadd::PersVadd()
 			S_addrB += PR_yAddrOff;
 			S_addrC += PR_yAddrOff;
 
-			WriteStreamPause_C(VADD_OPEN);
+			HtContinue(VADD_OPEN);
 
 			break;
 		case VADD_OPEN:

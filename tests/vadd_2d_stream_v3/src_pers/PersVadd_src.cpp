@@ -32,7 +32,7 @@ CPersVadd::PersVadd()
 			S_addrB += (uint32_t)(PR_yDimOff * PR_xDimLen * TYPE_SIZE);
 			S_addrC += (uint32_t)(PR_yDimOff * PR_xDimLen * TYPE_SIZE);
 
-			WriteStreamPause_C(VADD_OPEN);
+			HtContinue(VADD_OPEN);
 
 			break;
 		case VADD_OPEN:
