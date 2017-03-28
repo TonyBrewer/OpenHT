@@ -4,8 +4,8 @@ BLD_BASE = /tmp
 endif
 
 SYSTEMC_BUILD = $(BLD_BASE)/systemc
-SYSTEMC_VER   = 2.3.1
-SYSTEMC_TAR   = systemc-$(SYSTEMC_VER).tgz
+SYSTEMC_VER   = 2.3.1a
+SYSTEMC_TAR   = systemc-$(SYSTEMC_VER).tar.gz
 
 update_systemc: $(SYSTEMC_TAR)
 	rm -rf $(SYSTEMC_BUILD); mkdir -p $(SYSTEMC_BUILD)
