@@ -423,8 +423,8 @@ void CHtfeDesign::HtQueueVarDecl(CHtfeIdent *pHier, CHtfeIdent *pIdent)
 
 	CHtfeIdent *pCnt = pHier->FindIdent(cQueName + "_Cnt");
 
-    if (g_pHtfeArgs->IsHtQueCntSynKeepEnabled())
-        pCnt->AddHtAttrib("syn_keep", pCnt->GetName(), -1, -1, "1", GetLineInfo());
+	if (g_pHtfeArgs->IsHtQueCntSynKeepEnabled())
+        	pCnt->AddHtAttrib("syn_keep", pCnt->GetName(), -1, -1, "1", GetLineInfo());
 
 	pCnt->SetIsWriteOnly();
 	pCnt->SetIsIgnoreSignalCheck();

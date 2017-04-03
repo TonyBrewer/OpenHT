@@ -454,9 +454,9 @@ void CHtvDesign::SynHtDistRamModule(bool bQueue)
 	//   Originally written by Mike Ruff (tpmem.v)
 	
 	if (g_htvArgs.IsKeepHierarchyEnabled())
-        m_vFile.Print("\n(* keep_hierarchy = \"true\" *)\n");
-    else
-        m_vFile.Print("\n");
+        	m_vFile.Print("\n(* keep_hierarchy = \"true\" *)\n");
+	else
+        	m_vFile.Print("\n");
 
 	m_vFile.Print("module %s_Ht%sRam #(parameter\n", inputFileName.c_str(), bQueue ? "Queue" : "Dist");
 	m_vFile.IncIndentLevel();

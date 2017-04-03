@@ -63,7 +63,6 @@ CGenHtmlRpt::CGenHtmlRpt(string htlPath, string fileName, int argc, char const *
 
 void CGenHtmlRpt::AddLevel(const char *pFormat, ...)
 {
-	HtlAssert(this);
 	if (m_fp == 0)
 		return;
 
@@ -121,7 +120,6 @@ void CGenHtmlRpt::AddLevel(const char *pFormat, ...)
 
 void CGenHtmlRpt::AddItem(const char *pFormat, ...)
 {
-	HtlAssert(this);
 	if (m_fp == 0)
 		return;
 
@@ -166,7 +164,6 @@ void CGenHtmlRpt::AddItem(const char *pFormat, ...)
 
 void CGenHtmlRpt::AddText(const char *pFormat, ...)
 {
-	HtlAssert(this);
 	if (m_fp == 0)
 		return;
 
@@ -202,7 +199,6 @@ void CGenHtmlRpt::AddText(const char *pFormat, ...)
 
 void CGenHtmlRpt::EndLevel()
 {
-	HtlAssert(this);
 	if (m_fp == 0)
 		return;
 

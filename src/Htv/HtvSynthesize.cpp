@@ -1224,7 +1224,7 @@ bool CHtvDesign::IsAssignToHtPrimOutput(CHtvStatement * pStatement)
     if (!pOp1 || !pOp1->IsLeaf() || pOp1->GetMember() == 0 || pOp1->GetMember()->GetId() != CHtvIdent::id_variable)
         return false;
 
-	int elemIdx = pOp1->GetMember()->GetDimenElemIdx(pOp1);
+    int elemIdx = pOp1->GetMember()->GetDimenElemIdx(pOp1);
     return pOp1->GetMember()->IsHtPrimOutput(elemIdx);
 }
 
@@ -2012,8 +2012,8 @@ void CHtvDesign::SynReturnStatement(CHtvIdent *pFunc, CHtvObject * pObj, CHtvObj
 	Assert(pFunc->IsFunction());
 
 	CHtvOperand * pExpr = PrependObjExpr(pObj, pStatement->GetExpr());
-    if (pExpr == 0)
-        return;
+	if (pExpr == 0)
+        	return;
 
 	if (pFunc->IsReturnRef()) {
 		Assert(pRtnObj && !pRtnObj->m_pOp);
@@ -2137,7 +2137,7 @@ void CHtvDesign::SynIfStatement(CHtvIdent *pHier, CHtvObject * pObj, CHtvObject 
     if (*ppIfList == 0 && pStatement->GetCompound2() == 0)
         return; // remove if statement
 
-	CHtvOperand *pExpr = PrependObjExpr(pObj, pStatement->GetExpr());
+    CHtvOperand *pExpr = PrependObjExpr(pObj, pStatement->GetExpr());
 
     bool bFoundSubExpr;
     bool bWriteIndex;
@@ -2182,7 +2182,7 @@ void CHtvDesign::SynSwitchStatement(CHtvIdent *pHier, CHtvObject * pObj, CHtvObj
     if (SynXilinxRom(pHier, pSwitch))
         return;
 
-	CHtvOperand *pSwitchOperand = PrependObjExpr(pObj, pSwitch->GetExpr());
+    CHtvOperand *pSwitchOperand = PrependObjExpr(pObj, pSwitch->GetExpr());
 
 
     bool bForceTemp = !pSwitchOperand->IsLeaf();
@@ -4481,8 +4481,8 @@ void CHtvDesign::PrintArrayIndex(CHtvObject * pObj, CHtvObject * pRtnObj, CHtvOp
     if (caseCnt < (1 << idxBits) && !bLeftOfEqual)
         m_vFile.Print("default: %s = %d'h0;\n", pOperand->GetExprTempVar().c_str(), pIdent->GetWidth());
 
-	if (pRtnObj)
-		pRtnObj->m_pOp = 0;
+    if (pRtnObj)
+        pRtnObj->m_pOp = 0;
 
     m_vFile.DecIndentLevel();
     m_vFile.Print("endcase\n");

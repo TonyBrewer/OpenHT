@@ -1460,7 +1460,7 @@ void HtdFile::ParseModuleMethods()
 
 		if (!ParseParameters(params))
 			CPreProcess::ParseMsg(Error, "expected <module>.AddFunction( type, name )");
-		else
+		else {
 			if (m_pOpenMod->m_functionList.isInList(name))
 				CPreProcess::ParseMsg(Error, "duplicate function name '%s'", name.c_str());
 			else {
@@ -1471,6 +1471,7 @@ void HtdFile::ParseModuleMethods()
 			}
 
 			m_pLex->GetNextTk();
+		}
 
 	} else if (m_pLex->GetTkString() == "AddScPrim") {
 
