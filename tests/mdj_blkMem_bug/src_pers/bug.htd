@@ -1,0 +1,63 @@
+////////////////////////////////////////////////////
+// Top-level
+
+#define ADDR1 11
+#define ADDR1_MAX 2047
+
+dsnInfo.AddModule(name=bug, htIdW=0);
+
+bug.AddInstr(name=BUG_WRITE);
+bug.AddInstr(name=BUG_CALL);
+bug.AddInstr(name=BUG_RTN);
+
+bug.AddPrivate()
+	.AddVar(type=sc_uint<ADDR1>, name=cnt1)
+	.AddVar(type=sc_uint<3>, name=cnt2)
+	.AddVar(type=uint64_t, name=val)
+	;
+
+bug.AddGlobal()
+	.AddVar(type=uint64_t, name=gvar, addr1W=ADDR1, addr2W=3, instrWrite=true)
+	;
+
+bug.AddEntry(func=htmain, instr=BUG_WRITE, host=true)
+	;
+
+bug.AddReturn(func=htmain)
+	;
+
+bug.AddCall(func=bug2)
+	;
+
+
+//BUG2
+dsnInfo.AddModule(name=bug2, htIdW=0);
+
+bug2.AddInstr(name=BUG2_WRITE);
+bug2.AddInstr(name=BUG2_RTN);
+
+bug2.AddHostMsg(dir=in, name=ADDR)
+	.AddDst(var=addr)
+	;
+
+bug2.AddPrivate()
+	.AddVar(type=sc_uint<ADDR1>, name=cnt1)
+	;
+
+bug2.AddShared()
+	.AddVar(type=ht_uint48, name=addr)
+	;
+
+bug2.AddGlobal()
+	.AddVar(type=uint64_t, name=gvar, addr1W=ADDR1, addr2W=3)
+	;
+
+bug2.AddWriteMem(maxBw=true)
+	.AddSrc(var=gvar(,#), memDst=host)
+	;
+
+bug2.AddEntry(func=bug2, instr=BUG2_WRITE)
+	;
+
+bug2.AddReturn(func=bug2)
+	;

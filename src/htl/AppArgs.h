@@ -119,6 +119,7 @@ public:
 	bool IsModuleUnitNamesEnabled() { return m_bModuleUnitNames; }
 	bool IsGlobalWriteHtidEnabled() { return m_bGlobalWriteHtid; }
 	bool IsGlobalReadParanEnabled() { return m_bGlobalReadParan; }
+	bool IsRandMemHoldEnabled() { return m_bRandMemHold; }
 	bool IsVcdUserEnabled() { return m_bVcdUser; }
 	bool IsVcdAllEnabled() { return m_bVcdAll; }
 	bool IsOgv() { return m_bOgv; }
@@ -202,6 +203,7 @@ private:
 	bool			m_bForkPrivWr;
 	bool			m_bDsnRpt;
 	CGenHtmlRpt *	m_pDsnRpt;
+	bool			m_bRandMemHold;
 	bool			m_bVcdUser;
 	bool			m_bVcdAll;
 	int				m_vcdStartCycle;

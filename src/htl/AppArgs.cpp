@@ -206,6 +206,7 @@ CAppArgs::Parse(int argc, char const **argv)
 	m_bGlobalReadParan = true;
 	m_bDsnRpt = true;
 	m_pDsnRpt = 0;
+	m_bRandMemHold = false;
 	m_bVcdUser = false;
 	m_bVcdAll = false;
 	m_vcdStartCycle = 0;
@@ -255,6 +256,28 @@ CAppArgs::Parse(int argc, char const **argv)
 				m_bRndRetry = true;
 			} else if ((strncmp(argv[argPos], "-rt", 3) == 0)) {
 				m_bRndTest = true;
+			} else if ((strcmp(argv[argPos], "-rmh") == 0)) {
+				m_bRandMemHold = true;
+
+				int seed = -1;
+				FILE *fp = fopen("HtFailSeed.txt", "r");
+				if (fp) {
+					if (fscanf(fp, "%d", &seed) == 1)
+						printf("Previous failed seed found (%d)\n", seed);
+					fclose(fp);
+				}
+
+				if (seed == -1) {
+					struct timeval st;
+					gettimeofday(&st, NULL);
+					seed = st.tv_usec;
+					FILE *fp = fopen("HtRndSeed.txt", "w");
+					fprintf(fp, "%d\n", seed);
+					fclose(fp);
+					printf("New random seed (%d)\n", seed);
+				}
+
+				m_mtRand.seed(seed);
 			} else if ((strcmp(argv[argPos], "-vcd") == 0)) {
 				m_bVcdUser = true;
 			} else if ((strcmp(argv[argPos], "-vcd_all") == 0)) {
