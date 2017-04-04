@@ -247,6 +247,45 @@ void CDsnInfo::InitAndValidateModNgv()
 		bool bNeedRamWrReg = bNgvDist && bNgvAtomicSlow && (ngvPortCnt >= 2 || !pNgvInfo->m_bAllWrPortClk1x) && pNgvInfo->m_bNgvMaxSel ||
 			bNgvBlock && (bNgvAtomic || pNgvInfo->m_ngvFieldCnt > 1) && pNgvInfo->m_bNgvMaxSel;
 
+
+
+		// determine if ngv has multiple nonInstrWrite flags set
+		int ngvNonInstrWriteCnt = 0;
+		for (size_t wrPortIdx = 0; wrPortIdx < pNgvInfo->m_wrPortList.size(); wrPortIdx += 1) {
+			if (pNgvInfo->m_wrPortList[wrPortIdx].second == 0) {
+				if (pNgvInfo->m_modInfoList[pNgvInfo->m_wrPortList[wrPortIdx].first].m_pNgv->m_bWriteForNonInstrWrite) {
+					ngvNonInstrWriteCnt += 1;
+					if (ngvNonInstrWriteCnt > 2) {
+						// error
+						ParseMsg(Error, pNgvInfo->m_modInfoList[pNgvInfo->m_wrPortList[wrPortIdx].first].m_pNgv->m_lineInfo, "nonInstrWrite flag only supported on a max of two modules for global variable \"%s\"\n", pNgvInfo->m_modInfoList[pNgvInfo->m_wrPortList[wrPortIdx].first].m_pNgv->m_gblName.c_str());
+						HtlAssert(0);
+
+					}
+				}
+			}
+		}
+
+		// determine if ngv is written by instruction from multiple modules and if allowable
+		if (ngvNonInstrWriteCnt > 0 && pNgvInfo->m_wrPortList.size() > 2) {
+			// error
+			ParseMsg(Error, pNgvInfo->m_modInfoList[pNgvInfo->m_wrPortList[2].first].m_pNgv->m_lineInfo, "More than two write ports on nonInstrWrite Global Variable.\n  While nonInstrWrite flag is set on global variable \"%s\", HT has strict rules for the types of global variables that can be written to when htValid is low:\n    - The variable must have no more than 2 write ports, but can have any combination of category of write ports. The categories of ports are:\n      - Instruction (GW#_<var>) writes from a module (inside/outside htValid does not count twice)\n      - Memory Read Responses into a global variable in a module\n    - If the variable type is a plain type (no struct/union), it is allowable.\n    - If the variable type is a struct:\n      - The variable cannot be implemented as a blockRam unless it has only one field.\n    - If the variable type is a union:\n      - The variable cannot be implemented as a blockRam unless only one field is writable (see Spanning Write in the HTReference documentation).\n", pNgvInfo->m_modInfoList[pNgvInfo->m_wrPortList[2].first].m_pNgv->m_gblName.c_str());
+			HtlAssert(0);
+		} else if (ngvNonInstrWriteCnt > 0 && bNgvBlock && (bNgvAtomic || pNgvInfo->m_ngvFieldCnt > 1)) {
+			int spanningCnt = 0;
+			for (size_t idx = 0; idx < pNgvInfo->m_spanningFieldList.size(); idx += 1) {
+				if (pNgvInfo->m_spanningFieldList[idx].m_bSpanning) {
+					spanningCnt += 1;
+				}
+			}
+			if (spanningCnt > 1 || !pNgvInfo->m_bUserSpanningWrite) {
+				ParseMsg(Error, pNgvInfo->m_modInfoList[pNgvInfo->m_wrPortList[0].first].m_pNgv->m_lineInfo, "Struct/Union cannot be used as a nonInstrWrite Global Variable while implemented as a blockRam if more than one field is writable.\n  While nonInstrWrite flag is set on global variable \"%s\", HT has strict rules for the types of global variables that can be written to when htValid is low:\n    - The variable must have no more than 2 write ports, but can have any combination of category of write ports. The categories of ports are:\n      - Instruction (GW#_<var>) writes from a module (inside/outside htValid does not count twice)\n      - Memory Read Responses into a global variable in a module\n    - If the variable type is a plain type (no struct/union), it is allowable.\n    - If the variable type is a struct:\n      - The variable cannot be implemented as a blockRam unless it has only one field.\n    - If the variable type is a union:\n      - The variable cannot be implemented as a blockRam unless only one field is writable (see Spanning Write in the HTReference documentation).\n", pNgvInfo->m_modInfoList[pNgvInfo->m_wrPortList[0].first].m_pNgv->m_gblName.c_str());
+				HtlAssert(0);
+			}
+		} else if (ngvNonInstrWriteCnt > 0 && (bRrSel2x || bRrSel1x || bRrSelAB || (bRrSelEO && ngvPortCnt > 1) || pNgvInfo->m_bNeedQue)) {
+			ParseMsg(Error, pNgvInfo->m_modInfoList[pNgvInfo->m_wrPortList[0].first].m_pNgv->m_lineInfo, "Write Complete path is incompatible with nonInstrWrite Global Variables.\n  While nonInstrWrite flag is set on global variable \"%s\", HT has strict rules for the types of global variables that can be written to when htValid is low:\n    - The variable must have no more than 2 write ports, but can have any combination of category of write ports. The categories of ports are:\n      - Instruction (GW#_<var>) writes from a module (inside/outside htValid does not count twice)\n      - Memory Read Responses into a global variable in a module\n    - If the variable type is a plain type (no struct/union), it is allowable.\n    - If the variable type is a struct:\n      - The variable cannot be implemented as a blockRam unless it has only one field.\n    - If the variable type is a union:\n      - The variable cannot be implemented as a blockRam unless only one field is writable (see Spanning Write in the HTReference documentation).\n", pNgvInfo->m_modInfoList[pNgvInfo->m_wrPortList[0].first].m_pNgv->m_gblName.c_str());
+			HtlAssert(0);
+		}
+
 		int stgIdx = 0;
 		pNgvInfo->m_wrCompStg = -1;
 		if (bRrSel1x) {
@@ -1822,6 +1861,7 @@ void CDsnInfo::GenModNgvStatements(CInstance * pModInst)
 			CRam * pGv = pMod->m_ngvList[gvIdx];
 			CNgvInfo * pNgvInfo = pGv->m_pNgvInfo;
 			if (pNgvInfo->m_bOgv) continue;
+			if (!pNgvInfo->m_bNeedQue) continue;
 
 			if (pGv->m_bWriteForInstrWrite)
 				htComp.AddStructField(&g_bool, VA("m_%sIwComp", pGv->m_gblName.c_str()), "", "", pGv->m_dimenList);
@@ -1863,10 +1903,13 @@ void CDsnInfo::GenModNgvStatements(CInstance * pModInst)
 		string gblRegWrDataReset = pNgvInfo->m_bNgvWrDataClk2x ? "c_reset2x" : "r_reset1x";
 		string gblRegWrCompReset = pNgvInfo->m_bNgvWrCompClk2x ? "c_reset2x" : "r_reset1x";
 
+		bool bNgvAtomicSlow = pNgvInfo->m_bNgvAtomicSlow;
+		bool bNgvAtomic = pNgvInfo->m_bNgvAtomicFast || bNgvAtomicSlow;
+
 		// global variable module I/O
 		if (pGv->m_bWriteForInstrWrite) { // Instruction read
 			int gvWrStg = pMod->m_tsStg + pGv->m_wrStg.AsInt();
-			if (pMod->m_threads.m_htIdW.AsInt() > 0) {
+			if (pMod->m_threads.m_htIdW.AsInt() > 0 && (pNgvInfo->m_bNeedQue || bNgvAtomic)) {
 				m_gblIoDecl.Append("\tsc_out<sc_uint<%s_HTID_W> > o_%sTo%s_iwHtId%s;\n",
 					pMod->m_modName.Upper().c_str(),
 					pMod->m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), pGv->m_dimenDecl.c_str());
@@ -1883,7 +1926,7 @@ void CDsnInfo::GenModNgvStatements(CInstance * pModInst)
 				} while (loopInfo.Iter());
 			}
 
-			{
+			if (pNgvInfo->m_bNeedQue) {
 				m_gblIoDecl.Append("\tsc_out<bool> o_%sTo%s_iwComp%s;\n",
 					pMod->m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), pGv->m_dimenDecl.c_str());
 
@@ -1944,7 +1987,7 @@ void CDsnInfo::GenModNgvStatements(CInstance * pModInst)
 				pGv->m_gblName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_dimenDecl.c_str());
 		}
 
-		if (pGv->m_bWriteForInstrWrite) {
+		if (pGv->m_bWriteForInstrWrite && pNgvInfo->m_bNeedQue) {
 			m_gblIoDecl.Append("\tsc_in<bool> i_%sTo%s_iwCompRdy%s;\n",
 				pGv->m_gblName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_dimenDecl.c_str());
 			if (pMod->m_threads.m_htIdW.AsInt() > 0) {
@@ -2191,7 +2234,7 @@ void CDsnInfo::GenModNgvStatements(CInstance * pModInst)
 			}
 		}
 
-		if (pGv->m_bWriteForInstrWrite) {
+		if (pGv->m_bWriteForInstrWrite && pNgvInfo->m_bNeedQue) {
 			if (pMod->m_threads.m_htIdW.AsInt() == 0) {
 
 				if ((pMod->m_clkRate == eClk2x) != pGv->m_pNgvInfo->m_bNgvWrCompClk2x) {
@@ -2468,7 +2511,7 @@ void CDsnInfo::GenModNgvStatements(CInstance * pModInst)
 		}
 
 		string compReset = pNgvInfo->m_bNgvWrCompClk2x ? "c_reset2x" : "r_reset1x";
-		if (pGv->m_bWriteForInstrWrite) {
+		if (pGv->m_bWriteForInstrWrite && pNgvInfo->m_bNeedQue) {
 			if (pMod->m_threads.m_htIdW.AsInt() > 0) {
 				m_gblRegDecl.Append("\tbool c_%sTo%s_iwCompRdy%s;\n",
 					pGv->m_gblName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_dimenDecl.c_str());
@@ -2495,7 +2538,7 @@ void CDsnInfo::GenModNgvStatements(CInstance * pModInst)
 			} while (loopInfo.Iter());
 		}
 
-		if (pGv->m_bWriteForInstrWrite && pMod->m_threads.m_htIdW.AsInt() > 0) {
+		if (pGv->m_bWriteForInstrWrite && pMod->m_threads.m_htIdW.AsInt() > 0 && pNgvInfo->m_bNeedQue) {
 			m_gblRegDecl.Append("\tht_uint%d c_%sTo%s_iwCompHtId%s;\n",
 				pMod->m_threads.m_htIdW.AsInt(),
 				pGv->m_gblName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_dimenDecl.c_str());
@@ -2517,7 +2560,7 @@ void CDsnInfo::GenModNgvStatements(CInstance * pModInst)
 			} while (loopInfo.Iter());
 		}
 
-		if (pGv->m_bWriteForInstrWrite) {
+		if (pGv->m_bWriteForInstrWrite && pNgvInfo->m_bNeedQue) {
 			if (pMod->m_threads.m_htIdW.AsInt() > 0) {
 				m_gblRegDecl.Append("\tbool c_%sTo%s_iwCompData%s;\n",
 					pGv->m_gblName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_dimenDecl.c_str());
@@ -2545,7 +2588,7 @@ void CDsnInfo::GenModNgvStatements(CInstance * pModInst)
 			} while (loopInfo.Iter());
 		}
 
-		if (pGv->m_bWriteForInstrWrite && pMod->m_threads.m_htIdW.AsInt() > 0) {
+		if (pGv->m_bWriteForInstrWrite && pMod->m_threads.m_htIdW.AsInt() > 0 && pNgvInfo->m_bNeedQue) {
 			m_gblRegDecl.Append("\tbool c_%sTo%s_iwCompInit%s;\n",
 				pGv->m_gblName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_dimenDecl.c_str());
 
@@ -2565,7 +2608,7 @@ void CDsnInfo::GenModNgvStatements(CInstance * pModInst)
 			} while (loopInfo.Iter());
 		}
 
-		if (pGv->m_bWriteForInstrWrite) {
+		if (pGv->m_bWriteForInstrWrite && pNgvInfo->m_bNeedQue) {
 
 			int gvWrStg = pMod->m_tsStg + pGv->m_wrStg.AsInt();
 
@@ -2927,7 +2970,7 @@ void CDsnInfo::GenModNgvStatements(CInstance * pModInst)
 			}
 		}
 
-		if (pGv->m_bWriteForInstrWrite) {
+		if (pGv->m_bWriteForInstrWrite && pNgvInfo->m_bNeedQue) {
 			string typeStr;
 			if (pMod->m_threads.m_htIdW.AsInt() == 0) {
 				if (pGv->m_dimenList.size() == 0)
@@ -3022,51 +3065,89 @@ void CDsnInfo::GenModNgvStatements(CInstance * pModInst)
 			string typeStr;
 			if (pGv->m_dimenList.size() == 0)
 				typeStr = "bool ";
-			else {
-				gblPostInstr.Append("\tbool c_t%d_%sTo%s_iwWrEn%s;\n", 
-					gvWrStg, pMod->m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), pGv->m_dimenDecl.c_str());
-			}
 
 			string tabs = "\t";
-			CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, 1);
-			do {
-				string dimIdx = loopInfo.IndexStr();
-
-				gblPostInstr.Append("%s%sc_t%d_%sTo%s_iwWrEn%s = ", tabs.c_str(),
-					typeStr.c_str(),
-					gvWrStg, pMod->m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), dimIdx.c_str());
-
-				string separator;
-				for (CStructElemIter iter(this, pGv->m_pType); !iter.end(); iter++) {
-					if (iter.IsStructOrUnion()) continue;
-
-					gblPostInstr.Append("%sr_t%d_%sIwData%s%s.GetWrEn()",
-						separator.c_str(), gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
-						iter.GetHeirFieldName().c_str());
-
-					separator = VA(" ||\n%s\t", tabs.c_str());
-
-					if (pGv->m_pType->m_eType != eRecord) continue;
-
-					if (iter->m_atomicMask & ATOMIC_INC) {
-						gblPostInstr.Append(" || r_t%d_%sIwData%s%s.GetIncEn()",
-							gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
-							iter.GetHeirFieldName().c_str());
-					}
-					if (iter->m_atomicMask & ATOMIC_SET) {
-						gblPostInstr.Append(" || r_t%d_%sIwData%s%s.GetSetEn()",
-							gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
-							iter.GetHeirFieldName().c_str());
-					}
-					if (iter->m_atomicMask & ATOMIC_ADD) {
-						gblPostInstr.Append(" || r_t%d_%sIwData%s%s.GetAddEn()",
-							gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
-							iter.GetHeirFieldName().c_str());
-					}
+			if (pNgvInfo->m_bNeedQue || (pGv->m_addr1W.size() > 0 && pGv->m_addr1Name != "htId" || pGv->m_addr2W.size() > 0 && pGv->m_addr2Name != "htId")) {
+				if (!pNgvInfo->m_bNeedQue) {
+					gblPostInstr.Append("#if !defined(_HTV) || defined(HT_ASSERT)\n");
+				}
+				if (pGv->m_dimenList.size() != 0) {
+					gblPostInstr.Append("\tbool c_t%d_%sTo%s_iwWrEn%s;\n", 
+						gvWrStg, pMod->m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), pGv->m_dimenDecl.c_str());
 				}
 
-				gblPostInstr.Append(";\n");
-			} while (loopInfo.Iter());
+				CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, 1);
+				do {
+					string dimIdx = loopInfo.IndexStr();
+
+					gblPostInstr.Append("%s%sc_t%d_%sTo%s_iwWrEn%s = ", tabs.c_str(),
+						typeStr.c_str(),
+						gvWrStg, pMod->m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), dimIdx.c_str());
+
+					string separator;
+					for (CStructElemIter iter(this, pGv->m_pType); !iter.end(); iter++) {
+						if (iter.IsStructOrUnion()) continue;
+
+						gblPostInstr.Append("%sr_t%d_%sIwData%s%s.GetWrEn()",
+							separator.c_str(), gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
+							iter.GetHeirFieldName().c_str());
+
+						separator = VA(" ||\n%s\t", tabs.c_str());
+
+						if (pGv->m_pType->m_eType != eRecord) continue;
+
+						if (iter->m_atomicMask & ATOMIC_INC) {
+							gblPostInstr.Append(" || r_t%d_%sIwData%s%s.GetIncEn()",
+								gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
+								iter.GetHeirFieldName().c_str());
+						}
+						if (iter->m_atomicMask & ATOMIC_SET) {
+							gblPostInstr.Append(" || r_t%d_%sIwData%s%s.GetSetEn()",
+								gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
+								iter.GetHeirFieldName().c_str());
+						}
+						if (iter->m_atomicMask & ATOMIC_ADD) {
+							gblPostInstr.Append(" || r_t%d_%sIwData%s%s.GetAddEn()",
+								gvWrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
+								iter.GetHeirFieldName().c_str());
+						}
+					}
+
+					gblPostInstr.Append(";\n");
+				} while (loopInfo.Iter());
+				if (!pNgvInfo->m_bNeedQue) {
+					gblPostInstrWrComp.Append("#endif\n");
+				}
+			}
+
+			// determine if writing outside of an instruction
+			{
+				CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, 3);
+				do {
+					string dimIdx = loopInfo.IndexStr();
+
+					for (CStructElemIter iter(this, pGv->m_pType); !iter.end(); iter++) {
+						if (iter.IsStructOrUnion()) continue;
+
+						for (int wrStg = pMod->m_tsStg + 1; wrStg <= gvWrStg; wrStg++) {
+							if (pGv->m_bWriteForNonInstrWrite == false) {
+								gblPostInstr.Append("%sif(r_t%d_%sIwData%s%s.GetWrEn() && !r_reset1x) {\n", tabs.c_str(),
+									wrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
+									iter.GetHeirFieldName().c_str());
+								gblPostInstr.Append("%s\tassert_msg((r_t%d_htValid),\n%s\t\"ERROR: Global variable \\\"%s\\\" was written outside of an instruction (htValid was low) from module \\\"%s\\\", but nonInstrWrite=true was not set.\\n  HT has strict rules for the types of global variables that can be written to when htValid is low:\\n    - The variable must have no more than 2 write ports, but can have any combination of category of write ports. The categories of ports are:\\n      - Instruction (GW#_<var>) writes from a module (inside/outside htValid does not count twice)\\n      - Memory Read Responses into a global variable in a module\\n    - If the variable type is a plain type (no struct/union), it is allowable.\\n    - If the variable type is a struct:\\n      - The variable cannot be implemented as a blockRam unless it has only one field.\\n    - If the variable type is a union:\\n      - The variable cannot be implemented as a blockRam unless only one field is writable (see Spanning Write in the HTReference documentation).\\n\\n  Please move the global variable writes into an instruction or set nonInstrWrite=true in your htd file while following the above guidelines.\\n\");\n", tabs.c_str(),
+									wrStg, tabs.c_str(), pGv->m_gblName.c_str(),
+									pMod->m_modName.Lc().c_str());
+								gblPostInstr.Append("%s}\n", tabs.c_str());
+
+
+																      
+							}
+						}
+					}
+
+				} while (loopInfo.Iter());
+			}
+			
 
 			if (pGv->m_addr1W.size() > 0 && pGv->m_addr1Name != "htId" || pGv->m_addr2W.size() > 0 && pGv->m_addr2Name != "htId") {
 				string tabs = "\t";
@@ -3151,6 +3232,7 @@ void CDsnInfo::GenModNgvStatements(CInstance * pModInst)
 				CRam * pGv = pMod->m_ngvList[gvIdx];
 				CNgvInfo * pNgvInfo = pGv->m_pNgvInfo;
 				if (pNgvInfo->m_bOgv) continue;
+				if (!pNgvInfo->m_bNeedQue) continue;
 
 				if (!pGv->m_bWriteForInstrWrite) continue;
 
@@ -3219,6 +3301,7 @@ void CDsnInfo::GenModNgvStatements(CInstance * pModInst)
 			CRam * pGv = pMod->m_ngvList[gvIdx];
 			CNgvInfo * pNgvInfo = pGv->m_pNgvInfo;
 			if (pNgvInfo->m_bOgv) continue;
+			if (!pNgvInfo->m_bNeedQue) continue;
 
 			if (pGv->m_bWriteForInstrWrite) {
 
@@ -3276,6 +3359,7 @@ void CDsnInfo::GenModNgvStatements(CInstance * pModInst)
 			CRam * pGv = pMod->m_ngvList[gvIdx];
 			CNgvInfo * pNgvInfo = pGv->m_pNgvInfo;
 			if (pNgvInfo->m_bOgv) continue;
+			if (!pNgvInfo->m_bNeedQue) continue;
 
 			if (pGv->m_bWriteForInstrWrite) {
 				if (pMod->m_threads.m_htIdW.AsInt() > 0) {
@@ -3305,6 +3389,7 @@ void CDsnInfo::GenModNgvStatements(CInstance * pModInst)
 			CRam * pGv = pMod->m_ngvList[gvIdx];
 			CNgvInfo * pNgvInfo = pGv->m_pNgvInfo;
 			if (pNgvInfo->m_bOgv) continue;
+			if (!pNgvInfo->m_bNeedQue) continue;
 
 			if (pGv->m_bWriteForInstrWrite) {
 				vector<int> refList(pGv->m_dimenList.size());
@@ -3565,12 +3650,14 @@ void CDsnInfo::GenerateNgvFiles()
 			CRam * pModNgv = ngvModInfoList[modIdx].m_pNgv;
 
 			if (pModNgv->m_bWriteForInstrWrite) {
-				if (pMod->m_threads.m_htIdW.AsInt() > 0) {
+				if (pMod->m_threads.m_htIdW.AsInt() > 0 && (bNeedQue || bNgvAtomic)) {
 					ngvIo.Append("\tsc_in<sc_uint<%s_HTID_W> > i_%sTo%s_iwHtId%s;\n",
 						pMod->m_modName.Upper().c_str(), pMod->m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), pGv->m_dimenDecl.c_str());
 				}
-				ngvIo.Append("\tsc_in<bool> i_%sTo%s_iwComp%s;\n",
-					pMod->m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), pGv->m_dimenDecl.c_str());
+				if (bNeedQue) {
+					ngvIo.Append("\tsc_in<bool> i_%sTo%s_iwComp%s;\n",
+						pMod->m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), pGv->m_dimenDecl.c_str());
+				}
 				ngvIo.Append("\tsc_in<CGW_%s> i_%sTo%s_iwData%s;\n",
 					pGv->m_pNgvInfo->m_ngvWrType.c_str(), pMod->m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), pGv->m_dimenDecl.c_str());
 				ngvIo.Append("\n");
@@ -3599,7 +3686,7 @@ void CDsnInfo::GenerateNgvFiles()
 					pGv->m_type.c_str(), pGv->m_gblName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_dimenDecl.c_str());
 			}
 
-			if (pModNgv->m_bWriteForInstrWrite) {
+			if (pModNgv->m_bWriteForInstrWrite && bNeedQue) {
 				ngvIo.Append("\tsc_out<bool> o_%sTo%s_iwCompRdy%s;\n",
 					pGv->m_gblName.Lc().c_str(), pMod->m_modName.Uc().c_str(), pGv->m_dimenDecl.c_str());
 				if (pMod->m_threads.m_htIdW.AsInt() > 0) {
@@ -4144,11 +4231,11 @@ void CDsnInfo::GenerateNgvFiles()
 					string idStr = imIdx == 0 ? "Ht" : "Grp";
 					int idW = imIdx == 0 ? pMod->m_threads.m_htIdW.AsInt() : pMod->m_mif.m_mifRd.m_rspGrpW.AsInt();
 
-					if (idW > 0) {
+					if (idW > 0 && (imIdx == 1 || bNgvAtomic)) {
 						ngvRegDecl.Append("\tht_uint%d c_%s_%cw%sId%s%s;\n",
 							idW, pMod->m_modName.Lc().c_str(), imCh, idStr.c_str(), ngvClkModIn.c_str(), pGv->m_dimenDecl.c_str());
 
-						if (bNeedQueRegHtIdNonSig) {
+						if (bNeedQueRegHtIdNonSig && !bNeedQueRegHtIdSig) {
 							GenVcdDecl(ngvSosCode, eVcdAll, ngvRegDecl, vcdModName, VA("ht_uint%d", idW),
 								VA("r_%s_%cw%sId%s", pMod->m_modName.Lc().c_str(), imCh, idStr.c_str(), ngvClkWrComp.c_str()), pGv->m_dimenList);
 						}
@@ -4158,12 +4245,12 @@ void CDsnInfo::GenerateNgvFiles()
 						}
 					}
 
-					if (imIdx == 0) {
+					/*if (imIdx == 0) {
 						ngvRegDecl.Append("\tbool c_%s_%cwComp%s%s;\n",
 							pMod->m_modName.Lc().c_str(), imCh, ngvClkModIn.c_str(), pGv->m_dimenDecl.c_str());
 						GenVcdDecl(ngvSosCode, eVcdAll, ngvRegDecl, vcdModName, "bool",
 							VA("r_%s_%cwComp%s", pMod->m_modName.Lc().c_str(), imCh, ngvClkWrComp.c_str()), pGv->m_dimenList);
-					}
+					}*/
 
 					ngvRegDecl.Append("\tCGW_%s c_%s_%cwData%s%s;\n",
 						pGv->m_pNgvInfo->m_ngvWrType.c_str(),
@@ -4178,7 +4265,7 @@ void CDsnInfo::GenerateNgvFiles()
 					ngvRegDecl.Append("\tbool c_%s_%cwWrEn%s%s;\n",
 						pMod->m_modName.Lc().c_str(), imCh, ngvClkModIn.c_str(), pGv->m_dimenDecl.c_str());
 
-					if (bNeedQueRegWrEnNonSig) {
+					if (bNeedQueRegWrEnNonSig && (!bNeedQueRegWrEnSig || imIdx == 1)) {
 						GenVcdDecl(ngvSosCode, eVcdAll, ngvRegDecl, vcdModName, "bool",
 							VA("r_%s_%cwWrEn%s", pMod->m_modName.Lc().c_str(), imCh, ngvClkWrComp.c_str()), pGv->m_dimenList);
 					}
@@ -4194,16 +4281,16 @@ void CDsnInfo::GenerateNgvFiles()
 						CLoopInfo loopInfo(ngvPreRegModIn, tabs, pGv->m_dimenList, 4);
 						do {
 							string dimIdx = loopInfo.IndexStr();
-							if (idW > 0) {
+							if (idW > 0 && (imIdx == 1 || bNgvAtomic)) {
 								ngvPreRegModIn.Append("%sc_%s_%cw%sId%s%s = i_%sTo%s_%cw%sId%s;\n", tabs.c_str(),
 									pMod->m_modName.Lc().c_str(), imCh, idStr.c_str(), ngvClkModIn.c_str(), dimIdx.c_str(),
 									pMod->m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), imCh, idStr.c_str(), dimIdx.c_str());
 							}
-							if (imIdx == 0) {
+							/*if (imIdx == 0) {
 								ngvPreRegModIn.Append("%sc_%s_%cwComp%s%s = i_%sTo%s_%cwComp%s;\n", tabs.c_str(),
 									pMod->m_modName.Lc().c_str(), imCh, ngvClkModIn.c_str(), dimIdx.c_str(),
 									pMod->m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), imCh, dimIdx.c_str());
-							}
+							}*/
 							ngvPreRegModIn.Append("%sc_%s_%cwData%s%s = i_%sTo%s_%cwData%s;\n", tabs.c_str(),
 								pMod->m_modName.Lc().c_str(), imCh, ngvClkModIn.c_str(), dimIdx.c_str(),
 								pMod->m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), imCh, dimIdx.c_str());
@@ -4249,8 +4336,8 @@ void CDsnInfo::GenerateNgvFiles()
 						CLoopInfo loopInfo(ngvRegSelGw, tabs, pGv->m_dimenList, 4);
 						do {
 							string dimIdx = loopInfo.IndexStr();
-							if (idW > 0) {
-								if (bNeedQueRegHtIdNonSig) {
+							if (idW > 0 && (imIdx == 1 || bNgvAtomic)) {
+								if (bNeedQueRegHtIdNonSig && !bNeedQueRegHtIdSig) {
 									ngvRegSelGw.Append("%sr_%s_%cw%sId%s%s = c_%s_%cw%sId%s%s;\n", tabs.c_str(),
 										pMod->m_modName.Lc().c_str(), imCh, idStr.c_str(), ngvWrCompClk.c_str(), dimIdx.c_str(),
 										pMod->m_modName.Lc().c_str(), imCh, idStr.c_str(), ngvWrCompClk.c_str(), dimIdx.c_str());
@@ -4261,16 +4348,16 @@ void CDsnInfo::GenerateNgvFiles()
 										pMod->m_modName.Lc().c_str(), imCh, idStr.c_str(), ngvWrCompClk.c_str(), dimIdx.c_str());
 								}
 							}
-							if (imIdx == 0) {
+							/*if (imIdx == 0) {
 								ngvRegSelGw.Append("%sr_%s_%cwComp%s%s = c_%s_%cwComp%s%s;\n", tabs.c_str(),
 									pMod->m_modName.Lc().c_str(), imCh, ngvWrCompClk.c_str(), dimIdx.c_str(),
 									pMod->m_modName.Lc().c_str(), imCh, ngvWrCompClk.c_str(), dimIdx.c_str());
-							}
+							}*/
 							ngvRegSelGw.Append("%sr_%s_%cwData%s%s%s = c_%s_%cwData%s%s;\n", tabs.c_str(),
 								pMod->m_modName.Lc().c_str(), imCh, ngvWrCompClk.c_str(), queRegDataSig.c_str(), dimIdx.c_str(),
 								pMod->m_modName.Lc().c_str(), imCh, ngvWrCompClk.c_str(), dimIdx.c_str());
 
-							if (bNeedQueRegWrEnNonSig) {
+							if (bNeedQueRegWrEnNonSig && (!bNeedQueRegWrEnSig || imIdx == 1)) {
 								ngvRegSelGw.Append("%sr_%s_%cwWrEn%s%s = c_%s_%cwWrEn%s%s;\n", tabs.c_str(),
 									pMod->m_modName.Lc().c_str(), imCh, ngvWrCompClk.c_str(), dimIdx.c_str(),
 									pMod->m_modName.Lc().c_str(), imCh, ngvWrCompClk.c_str(), dimIdx.c_str());
@@ -4559,6 +4646,11 @@ void CDsnInfo::GenerateNgvFiles()
 									ngvPreRegModIn.Append("%sif (%c_%sTo%s_%cwWrEn%s%s%s) {\n", tabs.c_str(),
 										rcCh, pMod->m_modName.Lc().c_str(), pGv->m_gblName.Uc().c_str(), imCh, eoStr.c_str(), ngvClkModIn.c_str(), dimIdx.c_str());
 								}
+								ngvPreRegModIn.Append("#ifndef _HTV\n");
+								ngvPreRegModIn.Append("%s\tassert_msg(!m_%s_%cwDataQue%s%s.full(),\"Runtime check failed - Push to Global %s Data Queue (from %s module) will overflow!\");\n", tabs.c_str(),
+									pMod->m_modName.Lc().c_str(), imCh, eoStr.c_str(), dimIdx.c_str(),
+									(imCh == 'm') ? "Memory" : "Instruction", pMod->m_modName.Lc().c_str());
+								ngvPreRegModIn.Append("#endif\n");
 								if (idW > 0) {
 									ngvPreRegModIn.Append("%s\tm_%s_%cw%sIdQue%s%s.push(r_%sTo%s_%cw%sId%s%s);\n", tabs.c_str(),
 										pMod->m_modName.Lc().c_str(), imCh, idStr.c_str(), eoStr.c_str(), dimIdx.c_str(),
@@ -5034,13 +5126,12 @@ void CDsnInfo::GenerateNgvFiles()
 					pGv->m_dimenDecl.c_str());
 				ngvRegDecl.NewLine();
 			}
-
+	
 			stgIdx += 1;
 			wrCompStg = "t1_";
 
 		} else if (bRrSel2x) {
 			// 2x RR select
-
 			ngvRegDecl.Append("\tbool c_t%d_gwWrEn%s%s;\n",
 				stgIdx, ngvWrDataClk.c_str(), pGv->m_dimenDecl.c_str());
 			if (!bNgvReg && (ngvFieldCnt > 1 || bNgvAtomic)) {
@@ -5228,6 +5319,7 @@ void CDsnInfo::GenerateNgvFiles()
 			wrCompStg = "t1_";
 
 		} else if (bRrSelAB) {
+
 			string ngvClkRrSel = "";
 			CHtCode & ngvPreRegRrSel = ngvPreReg_1x;
 			CHtCode & ngvRegRrSel = ngvReg_1x;
@@ -6241,8 +6333,8 @@ void CDsnInfo::GenerateNgvFiles()
 
 		bool bNeedIfStg = bNgvBlock && (ngvPortCnt == 1 && ngvFieldCnt > 1 && !bNgvAtomic && !bNgvMaxSel
 			|| bNgvAtomic);
-		bool bNeedCompStg = bNgvBlock && (ngvPortCnt == 1 && ngvFieldCnt > 1 && !bNgvAtomic && !bNgvMaxSel
-			|| ngvPortCnt == 1 && bNgvAtomic && !bNgvMaxSel);
+		bool bNeedCompStg = bNeedQue && (bNgvBlock && (ngvPortCnt == 1 && ngvFieldCnt > 1 && !bNgvAtomic && !bNgvMaxSel
+			|| ngvPortCnt == 1 && bNgvAtomic && !bNgvMaxSel));
 
 		if (ngvFieldCnt > 1 || bNgvAtomic) {
 
@@ -6472,15 +6564,17 @@ void CDsnInfo::GenerateNgvFiles()
 				do {
 					string dimIdx = loopInfo.IndexStr();
 
-					ngvWrCompOut.Append("%so_%sTo%s_%cwCompRdy%s = r_%s%s_%cwWrEn%s%s;\n", tabs.c_str(),
-						pGv->m_gblName.Lc().c_str(), pMod->m_modName.Uc().c_str(), imCh, dimIdx.c_str(),
-						wrCompStg.c_str(), pMod->m_modName.Lc().c_str(), imCh, ngvSelClk.c_str(), dimIdx.c_str());
-					if (idW > 0) {
+					if (imIdx == 1 || bNeedQue) {
+						ngvWrCompOut.Append("%so_%sTo%s_%cwCompRdy%s = r_%s%s_%cwWrEn%s%s;\n", tabs.c_str(),
+							pGv->m_gblName.Lc().c_str(), pMod->m_modName.Uc().c_str(), imCh, dimIdx.c_str(),
+							wrCompStg.c_str(), pMod->m_modName.Lc().c_str(), imCh, ngvSelClk.c_str(), dimIdx.c_str());
+					}
+					if (idW > 0 && (imIdx == 1 || bNeedQue)) {
 						ngvWrCompOut.Append("%so_%sTo%s_%cwComp%sId%s = r_%s%s_%cw%sId%s%s;\n", tabs.c_str(),
 							pGv->m_gblName.Lc().c_str(), pMod->m_modName.Uc().c_str(), imCh, idStr.c_str(), dimIdx.c_str(),
 							wrCompStg.c_str(), pMod->m_modName.Lc().c_str(), imCh, idStr.c_str(), ngvSelClk.c_str(), dimIdx.c_str());
 					}
-					if (imIdx == 0) {
+					if (imIdx == 0 && bNeedQue) {
 						ngvWrCompOut.Append("%so_%sTo%s_%cwCompData%s = r_%s%s_%cwComp%s%s;\n", tabs.c_str(),
 							pGv->m_gblName.Lc().c_str(), pMod->m_modName.Uc().c_str(), imCh, dimIdx.c_str(),
 							wrCompStg.c_str(), pMod->m_modName.Lc().c_str(), imCh, ngvSelClk.c_str(), dimIdx.c_str());

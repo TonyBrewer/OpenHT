@@ -477,6 +477,7 @@ struct CRecord : CType {
 public:
 	bool				m_bReadForInstrRead;
 	bool				m_bWriteForInstrWrite;
+	bool				m_bWriteForNonInstrWrite;
 	bool				m_bReadForMifWrite;
 	bool				m_bWriteForMifRead;
 	bool				m_bCStyle;
@@ -539,7 +540,7 @@ struct CRam : CRecord, CDimenList {
 
 	CRam(CType * pType, string &name, string &dimen1, string &dimen2, string &addr1, string &addr2,
 		string &addr1W, string &addr2W, string &rdStg, string &wrStg, bool bMaxIw, bool bMaxMw,
-		HtdFile::ERamType ramType, bool bRead, bool bWrite, bool bSpanningWrite)
+		HtdFile::ERamType ramType, bool bRead, bool bWrite, bool bNonInstrWrite, bool bSpanningWrite)
 	{
 		Init();
 		m_pType = pType;
@@ -561,6 +562,9 @@ struct CRam : CRecord, CDimenList {
 		m_ramType = ramType;
 		m_bReadForInstrRead = bRead;
 		m_bWriteForInstrWrite = bWrite;
+		if (bNonInstrWrite)
+			m_bWriteForInstrWrite = bNonInstrWrite;
+		m_bWriteForNonInstrWrite = bNonInstrWrite;
 		m_bSpanningWrite = bSpanningWrite;
 	}
 
@@ -598,6 +602,7 @@ struct CRam : CRecord, CDimenList {
 		m_addr2IsPrivate = false;
 		m_addr2IsStage = false;
 		m_bSpanningWrite = false;
+		m_bWriteForNonInstrWrite = false;
 	}
 
 public:
@@ -2056,7 +2061,7 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 	void AddHostData(void * pModule, HtdFile::EHostMsgDir msgDir, bool bMaxBw);
 	void AddGlobalVar(vector<CRam *> * pGlobalList, CType * pType, string name, string dimen1, string dimen2,
 		string addr1W, string addr2W, string addr1, string addr2, string rdStg, string wrStg,
-		bool bMaxIw, bool bMaxMw, ERamType ramType, bool bRead, bool bWrite, bool bSpanningWrite);
+		bool bMaxIw, bool bMaxMw, ERamType ramType, bool bRead, bool bWrite, bool bNonInstrWrite, bool bSpanningWrite);
 	void AddBarrier(void * pModule, string name, string barIdW);
 	void AddStream(void * pStruct, bool bRead, string &name, CType * pType, string &strmBw, string &elemCntW, string &strmCnt,
 		string &memSrc, vector<int> &memPort, string &access, string &reserve, bool paired, bool bClose, CType * pTag, string &rspGrpW);

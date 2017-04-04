@@ -1704,6 +1704,7 @@ void HtdFile::ParseGlobalMethods()
 		string blockRam;
 		bool bRead = false;
 		bool bWrite = false;
+		bool bNonInstrWrite = false;
 		bool bSpanningWrite = false;
 
 		CParamList params[] =
@@ -1723,6 +1724,7 @@ void HtdFile::ParseGlobalMethods()
 			{ "blockRam", &blockRam, false, ePrmIdent, 0, 0 },
 			{ "instrRead", &bRead, false, ePrmBoolean, 0, 0 },
 			{ "instrWrite", &bWrite, false, ePrmBoolean, 0, 0 },
+			{ "nonInstrWrite", &bNonInstrWrite, false, ePrmBoolean, 0, 0 },
 			{ "spanningWrite", &bSpanningWrite, false, ePrmBoolean, 0, 0 },
 			{ 0, 0, 0, ePrmUnknown, 0, 0 }
 		};
@@ -1730,7 +1732,8 @@ void HtdFile::ParseGlobalMethods()
 		if (!ParseParameters(params)) {
 			CPreProcess::ParseMsg(Error, "expected .AddVar( type, name {, dimen1=0 {, dimen2=0 }} {, addr1W=0 {, addr2W=0 }} ");
 			CPreProcess::ParseMsg(Info, "      {, addr1=\"\" {, addr2=\"\" }} {, rdStg=1 } {, wrStg=1 } {, maxIw=false} {, maxMw=false}");
-			CPreProcess::ParseMsg(Info, "      {, blockRam=\"\" } {, instrRead=false } {, instrWrite=false } {, spanningWrite=false } )");
+			CPreProcess::ParseMsg(Info, "      {, blockRam=\"\" } {, instrRead=false } {, instrWrite=false } {, nonInstrWrite=false } )");
+			CPreProcess::ParseMsg(Info, "      {, spanningWrite=false } )");
 		}
 
 		ERamType ramType = eAutoRam;
@@ -1757,7 +1760,7 @@ void HtdFile::ParseGlobalMethods()
 			CPreProcess::ParseMsg(Error, "addr2W is specified but a shared or private variable for addr2 was not specified");
 
 		m_pDsnInfo->AddGlobalVar(m_pOpenGlobal, pType, name, dimen1, dimen2, addr1W, addr2W,
-			addr1, addr2, rdStg, wrStg, bMaxIw, bMaxMw, ramType, bRead, bWrite, bSpanningWrite);
+			addr1, addr2, rdStg, wrStg, bMaxIw, bMaxMw, ramType, bRead, bWrite, bNonInstrWrite, bSpanningWrite);
 
 		m_pLex->GetNextTk();
 

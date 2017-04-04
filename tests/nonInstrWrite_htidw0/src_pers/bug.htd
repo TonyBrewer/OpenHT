@@ -1,0 +1,321 @@
+struct struct_a_t {
+  uint16_t v0[2];
+  uint32_t v1;
+};
+struct struct_b_t {
+  uint32_t v1;
+};
+
+union union_t {
+  uint16_t v0[4];
+  uint32_t v1[2];
+#pragma htl spanning_field
+  uint64_t v2;
+};
+
+
+////////////////////////////////////////////////////
+// Top-level
+// Entry
+dsnInfo.AddModule(name=entry, htIdW=0);
+
+entry.AddInstr(name=ENTRY_CALL_WR1);
+entry.AddInstr(name=ENTRY_CALL_WR2);
+entry.AddInstr(name=ENTRY_CALL_WR3);
+entry.AddInstr(name=ENTRY_WAIT_WR1);
+entry.AddInstr(name=ENTRY_WAIT_WR2);
+entry.AddInstr(name=ENTRY_WAIT_WR3);
+entry.AddInstr(name=ENTRY_JOIN_WR1);
+entry.AddInstr(name=ENTRY_JOIN_WR2);
+entry.AddInstr(name=ENTRY_JOIN_WR3);
+entry.AddInstr(name=ENTRY_RTN);
+
+entry.AddEntry(func=htmain, instr=ENTRY_CALL_WR1, host=true)
+	;
+
+entry.AddReturn(func=htmain)
+	;
+
+entry.AddCall(func=wr1, fork=true);
+entry.AddCall(func=wr2, fork=true);
+entry.AddCall(func=wr3, fork=true);
+
+
+// Fake Modules
+
+#define COUNT 50
+
+dsnInfo.AddModule(name=wr1, htIdW=0);
+wr1.AddInstr(name=WR1_ENTRY);
+wr1.AddInstr(name=WR1_RTN);
+wr1.AddPrivate()
+	.AddVar(type=ht_uint3, name=gv_2w_1r_var_dst_a1)
+	.AddVar(type=ht_uint3, name=gv_2w_2r_var_dst_a1)
+	.AddVar(type=ht_uint3, name=gv_3w_1r_var_dst_a1)
+	.AddVar(type=ht_uint3, name=gv_3w_2r_var_dst_a1)
+	.AddVar(type=ht_uint7, name=gv_2w_1r_var_blk_a1)
+	.AddVar(type=ht_uint7, name=gv_2w_2r_var_blk_a1)
+	.AddVar(type=ht_uint7, name=gv_3w_1r_var_blk_a1)
+	.AddVar(type=ht_uint7, name=gv_3w_2r_var_blk_a1)
+
+	.AddVar(type=ht_uint3, name=gv_2w_1r_str_a_dst_a1)
+	.AddVar(type=ht_uint3, name=gv_2w_2r_str_a_dst_a1)
+	.AddVar(type=ht_uint3, name=gv_3w_1r_str_a_dst_a1)
+	.AddVar(type=ht_uint3, name=gv_3w_2r_str_a_dst_a1)
+	.AddVar(type=ht_uint7, name=gv_2w_1r_str_a_blk_a1)
+	.AddVar(type=ht_uint7, name=gv_2w_2r_str_a_blk_a1)
+	.AddVar(type=ht_uint7, name=gv_3w_1r_str_a_blk_a1)
+	.AddVar(type=ht_uint7, name=gv_3w_2r_str_a_blk_a1)
+
+	.AddVar(type=ht_uint3, name=gv_2w_1r_str_b_dst_a1)
+	.AddVar(type=ht_uint3, name=gv_2w_2r_str_b_dst_a1)
+	.AddVar(type=ht_uint3, name=gv_3w_1r_str_b_dst_a1)
+	.AddVar(type=ht_uint3, name=gv_3w_2r_str_b_dst_a1)
+	.AddVar(type=ht_uint7, name=gv_2w_1r_str_b_blk_a1)
+	.AddVar(type=ht_uint7, name=gv_2w_2r_str_b_blk_a1)
+	.AddVar(type=ht_uint7, name=gv_3w_1r_str_b_blk_a1)
+	.AddVar(type=ht_uint7, name=gv_3w_2r_str_b_blk_a1)
+
+	.AddVar(type=ht_uint3, name=gv_2w_1r_unn_a_dst_a1)
+	.AddVar(type=ht_uint3, name=gv_2w_2r_unn_a_dst_a1)
+	.AddVar(type=ht_uint3, name=gv_3w_1r_unn_a_dst_a1)
+	.AddVar(type=ht_uint3, name=gv_3w_2r_unn_a_dst_a1)
+	.AddVar(type=ht_uint7, name=gv_2w_1r_unn_a_blk_a1)
+	.AddVar(type=ht_uint7, name=gv_2w_2r_unn_a_blk_a1)
+	.AddVar(type=ht_uint7, name=gv_3w_1r_unn_a_blk_a1)
+	.AddVar(type=ht_uint7, name=gv_3w_2r_unn_a_blk_a1)
+
+	.AddVar(type=ht_uint3, name=gv_2w_1r_unn_b_dst_a1)
+	.AddVar(type=ht_uint3, name=gv_2w_2r_unn_b_dst_a1)
+	.AddVar(type=ht_uint3, name=gv_3w_1r_unn_b_dst_a1)
+	.AddVar(type=ht_uint3, name=gv_3w_2r_unn_b_dst_a1)
+	.AddVar(type=ht_uint7, name=gv_2w_1r_unn_b_blk_a1)
+	.AddVar(type=ht_uint7, name=gv_2w_2r_unn_b_blk_a1)
+	.AddVar(type=ht_uint7, name=gv_3w_1r_unn_b_blk_a1)
+	.AddVar(type=ht_uint7, name=gv_3w_2r_unn_b_blk_a1)
+	;
+wr1.AddShared()
+	.AddVar(type=uint64_t, name=counter, reset=true)
+	;
+wr1.AddGlobal()
+	.AddVar(type=uint64_t, name=gv_2w_1r_var_reg, instrWrite=true, instrRead=true, nonInstrWrite=true)
+	.AddVar(type=uint64_t, name=gv_2w_2r_var_reg, instrWrite=true, instrRead=true, nonInstrWrite=true)
+	.AddVar(type=uint64_t, name=gv_3w_1r_var_reg, instrWrite=true, instrRead=true)
+	.AddVar(type=uint64_t, name=gv_3w_2r_var_reg, instrWrite=true, instrRead=true)
+	.AddVar(type=uint64_t, name=gv_2w_1r_var_dst, addr1=gv_2w_1r_var_dst_a1, instrWrite=true, instrRead=true, nonInstrWrite=true)
+	.AddVar(type=uint64_t, name=gv_2w_2r_var_dst, addr1=gv_2w_2r_var_dst_a1, instrWrite=true, instrRead=true, nonInstrWrite=true)
+	.AddVar(type=uint64_t, name=gv_3w_1r_var_dst, addr1=gv_3w_1r_var_dst_a1, instrWrite=true, instrRead=true)
+	.AddVar(type=uint64_t, name=gv_3w_2r_var_dst, addr1=gv_3w_2r_var_dst_a1, instrWrite=true, instrRead=true)
+	.AddVar(type=uint64_t, name=gv_2w_1r_var_blk, addr1=gv_2w_1r_var_blk_a1, instrWrite=true, instrRead=true, nonInstrWrite=true)
+	.AddVar(type=uint64_t, name=gv_2w_2r_var_blk, addr1=gv_2w_2r_var_blk_a1, instrWrite=true, instrRead=true, nonInstrWrite=true)
+	.AddVar(type=uint64_t, name=gv_3w_1r_var_blk, addr1=gv_3w_1r_var_blk_a1, instrWrite=true, instrRead=true)
+	.AddVar(type=uint64_t, name=gv_3w_2r_var_blk, addr1=gv_3w_2r_var_blk_a1, instrWrite=true, instrRead=true)
+
+	.AddVar(type=struct_a_t, name=gv_2w_1r_str_a_reg, instrWrite=true, instrRead=true, nonInstrWrite=true)
+	.AddVar(type=struct_a_t, name=gv_2w_2r_str_a_reg, instrWrite=true, instrRead=true, nonInstrWrite=true)
+	.AddVar(type=struct_a_t, name=gv_3w_1r_str_a_reg, instrWrite=true, instrRead=true)
+	.AddVar(type=struct_a_t, name=gv_3w_2r_str_a_reg, instrWrite=true, instrRead=true)
+	.AddVar(type=struct_a_t, name=gv_2w_1r_str_a_dst, addr1=gv_2w_1r_str_a_dst_a1, instrWrite=true, instrRead=true, nonInstrWrite=true)
+	.AddVar(type=struct_a_t, name=gv_2w_2r_str_a_dst, addr1=gv_2w_2r_str_a_dst_a1, instrWrite=true, instrRead=true, nonInstrWrite=true)
+	.AddVar(type=struct_a_t, name=gv_3w_1r_str_a_dst, addr1=gv_3w_1r_str_a_dst_a1, instrWrite=true, instrRead=true)
+	.AddVar(type=struct_a_t, name=gv_3w_2r_str_a_dst, addr1=gv_3w_2r_str_a_dst_a1, instrWrite=true, instrRead=true)
+	.AddVar(type=struct_a_t, name=gv_2w_1r_str_a_blk, addr1=gv_2w_1r_str_a_blk_a1, instrWrite=true, instrRead=true)
+	.AddVar(type=struct_a_t, name=gv_2w_2r_str_a_blk, addr1=gv_2w_2r_str_a_blk_a1, instrWrite=true, instrRead=true)
+	.AddVar(type=struct_a_t, name=gv_3w_1r_str_a_blk, addr1=gv_3w_1r_str_a_blk_a1, instrWrite=true, instrRead=true)
+	.AddVar(type=struct_a_t, name=gv_3w_2r_str_a_blk, addr1=gv_3w_2r_str_a_blk_a1, instrWrite=true, instrRead=true)
+
+	.AddVar(type=struct_b_t, name=gv_2w_1r_str_b_reg, instrWrite=true, instrRead=true, nonInstrWrite=true)
+	.AddVar(type=struct_b_t, name=gv_2w_2r_str_b_reg, instrWrite=true, instrRead=true, nonInstrWrite=true)
+	.AddVar(type=struct_b_t, name=gv_3w_1r_str_b_reg, instrWrite=true, instrRead=true)
+	.AddVar(type=struct_b_t, name=gv_3w_2r_str_b_reg, instrWrite=true, instrRead=true)
+	.AddVar(type=struct_b_t, name=gv_2w_1r_str_b_dst, addr1=gv_2w_1r_str_b_dst_a1, instrWrite=true, instrRead=true, nonInstrWrite=true)
+	.AddVar(type=struct_b_t, name=gv_2w_2r_str_b_dst, addr1=gv_2w_2r_str_b_dst_a1, instrWrite=true, instrRead=true, nonInstrWrite=true)
+	.AddVar(type=struct_b_t, name=gv_3w_1r_str_b_dst, addr1=gv_3w_1r_str_b_dst_a1, instrWrite=true, instrRead=true)
+	.AddVar(type=struct_b_t, name=gv_3w_2r_str_b_dst, addr1=gv_3w_2r_str_b_dst_a1, instrWrite=true, instrRead=true)
+	.AddVar(type=struct_b_t, name=gv_2w_1r_str_b_blk, addr1=gv_2w_1r_str_b_blk_a1, instrWrite=true, instrRead=true, nonInstrWrite=true)
+	.AddVar(type=struct_b_t, name=gv_2w_2r_str_b_blk, addr1=gv_2w_2r_str_b_blk_a1, instrWrite=true, instrRead=true, nonInstrWrite=true)
+	.AddVar(type=struct_b_t, name=gv_3w_1r_str_b_blk, addr1=gv_3w_1r_str_b_blk_a1, instrWrite=true, instrRead=true)
+	.AddVar(type=struct_b_t, name=gv_3w_2r_str_b_blk, addr1=gv_3w_2r_str_b_blk_a1, instrWrite=true, instrRead=true)
+
+	.AddVar(type=union_t, name=gv_2w_1r_unn_a_reg, instrWrite=true, instrRead=true, nonInstrWrite=true)
+	.AddVar(type=union_t, name=gv_2w_2r_unn_a_reg, instrWrite=true, instrRead=true, nonInstrWrite=true)
+	.AddVar(type=union_t, name=gv_3w_1r_unn_a_reg, instrWrite=true, instrRead=true)
+	.AddVar(type=union_t, name=gv_3w_2r_unn_a_reg, instrWrite=true, instrRead=true)
+	.AddVar(type=union_t, name=gv_2w_1r_unn_a_dst, addr1=gv_2w_1r_unn_a_dst_a1, instrWrite=true, instrRead=true, nonInstrWrite=true)
+	.AddVar(type=union_t, name=gv_2w_2r_unn_a_dst, addr1=gv_2w_2r_unn_a_dst_a1, instrWrite=true, instrRead=true, nonInstrWrite=true)
+	.AddVar(type=union_t, name=gv_3w_1r_unn_a_dst, addr1=gv_3w_1r_unn_a_dst_a1, instrWrite=true, instrRead=true)
+	.AddVar(type=union_t, name=gv_3w_2r_unn_a_dst, addr1=gv_3w_2r_unn_a_dst_a1, instrWrite=true, instrRead=true)
+	.AddVar(type=union_t, name=gv_2w_1r_unn_a_blk, addr1=gv_2w_1r_unn_a_blk_a1, instrWrite=true, instrRead=true)
+	.AddVar(type=union_t, name=gv_2w_2r_unn_a_blk, addr1=gv_2w_2r_unn_a_blk_a1, instrWrite=true, instrRead=true)
+	.AddVar(type=union_t, name=gv_3w_1r_unn_a_blk, addr1=gv_3w_1r_unn_a_blk_a1, instrWrite=true, instrRead=true)
+	.AddVar(type=union_t, name=gv_3w_2r_unn_a_blk, addr1=gv_3w_2r_unn_a_blk_a1, instrWrite=true, instrRead=true)
+
+	.AddVar(type=union_t, name=gv_2w_1r_unn_b_reg, instrWrite=true, instrRead=true, nonInstrWrite=true, spanningWrite=true)
+	.AddVar(type=union_t, name=gv_2w_2r_unn_b_reg, instrWrite=true, instrRead=true, nonInstrWrite=true, spanningWrite=true)
+	.AddVar(type=union_t, name=gv_3w_1r_unn_b_reg, instrWrite=true, instrRead=true,                     spanningWrite=true)
+	.AddVar(type=union_t, name=gv_3w_2r_unn_b_reg, instrWrite=true, instrRead=true,                     spanningWrite=true)
+	.AddVar(type=union_t, name=gv_2w_1r_unn_b_dst, addr1=gv_2w_1r_unn_b_dst_a1, instrWrite=true, instrRead=true, nonInstrWrite=true, spanningWrite=true)
+	.AddVar(type=union_t, name=gv_2w_2r_unn_b_dst, addr1=gv_2w_2r_unn_b_dst_a1, instrWrite=true, instrRead=true, nonInstrWrite=true, spanningWrite=true)
+	.AddVar(type=union_t, name=gv_3w_1r_unn_b_dst, addr1=gv_3w_1r_unn_b_dst_a1, instrWrite=true, instrRead=true,                     spanningWrite=true)
+	.AddVar(type=union_t, name=gv_3w_2r_unn_b_dst, addr1=gv_3w_2r_unn_b_dst_a1, instrWrite=true, instrRead=true,                     spanningWrite=true)
+	.AddVar(type=union_t, name=gv_2w_1r_unn_b_blk, addr1=gv_2w_1r_unn_b_blk_a1, instrWrite=true, instrRead=true, nonInstrWrite=true, spanningWrite=true)
+	.AddVar(type=union_t, name=gv_2w_2r_unn_b_blk, addr1=gv_2w_2r_unn_b_blk_a1, instrWrite=true, instrRead=true, nonInstrWrite=true, spanningWrite=true)
+	.AddVar(type=union_t, name=gv_3w_1r_unn_b_blk, addr1=gv_3w_1r_unn_b_blk_a1, instrWrite=true, instrRead=true,                     spanningWrite=true)
+	.AddVar(type=union_t, name=gv_3w_2r_unn_b_blk, addr1=gv_3w_2r_unn_b_blk_a1, instrWrite=true, instrRead=true,                     spanningWrite=true)
+	;
+wr1.AddEntry(func=wr1, instr=WR1_ENTRY)
+	;
+wr1.AddReturn(func=wr1)
+	;
+
+
+dsnInfo.AddModule(name=wr2, htIdW=0);
+wr2.AddInstr(name=WR2_ENTRY);
+wr2.AddInstr(name=WR2_RTN);
+wr2.AddPrivate()
+	.AddVar(type=ht_uint3, name=gv_2w_2r_var_dst_a1)
+	.AddVar(type=ht_uint3, name=gv_3w_2r_var_dst_a1)
+	.AddVar(type=ht_uint7, name=gv_2w_2r_var_blk_a1)
+	.AddVar(type=ht_uint7, name=gv_3w_2r_var_blk_a1)
+
+	.AddVar(type=ht_uint3, name=gv_2w_2r_str_a_dst_a1)
+	.AddVar(type=ht_uint3, name=gv_3w_2r_str_a_dst_a1)
+	.AddVar(type=ht_uint7, name=gv_2w_2r_str_a_blk_a1)
+	.AddVar(type=ht_uint7, name=gv_3w_2r_str_a_blk_a1)
+
+	.AddVar(type=ht_uint3, name=gv_2w_2r_str_b_dst_a1)
+	.AddVar(type=ht_uint3, name=gv_3w_2r_str_b_dst_a1)
+	.AddVar(type=ht_uint7, name=gv_2w_2r_str_b_blk_a1)
+	.AddVar(type=ht_uint7, name=gv_3w_2r_str_b_blk_a1)
+
+	.AddVar(type=ht_uint3, name=gv_2w_2r_unn_a_dst_a1)
+	.AddVar(type=ht_uint3, name=gv_3w_2r_unn_a_dst_a1)
+	.AddVar(type=ht_uint7, name=gv_2w_2r_unn_a_blk_a1)
+	.AddVar(type=ht_uint7, name=gv_3w_2r_unn_a_blk_a1)
+
+	.AddVar(type=ht_uint3, name=gv_2w_2r_unn_b_dst_a1)
+	.AddVar(type=ht_uint3, name=gv_3w_2r_unn_b_dst_a1)
+	.AddVar(type=ht_uint7, name=gv_2w_2r_unn_b_blk_a1)
+	.AddVar(type=ht_uint7, name=gv_3w_2r_unn_b_blk_a1)
+	;
+wr2.AddShared()
+	.AddVar(type=uint64_t, name=counter, reset=true)
+	;
+wr2.AddGlobal()
+	.AddVar(type=uint64_t, name=gv_2w_1r_var_reg, instrWrite=true,                 nonInstrWrite=true)
+	.AddVar(type=uint64_t, name=gv_2w_2r_var_reg, instrWrite=true, instrRead=true, nonInstrWrite=true)
+	.AddVar(type=uint64_t, name=gv_3w_1r_var_reg, instrWrite=true)
+	.AddVar(type=uint64_t, name=gv_3w_2r_var_reg, instrWrite=true, instrRead=true)
+	.AddVar(type=uint64_t, name=gv_2w_1r_var_dst, addr1W=3,                  instrWrite=true,                 nonInstrWrite=true)
+	.AddVar(type=uint64_t, name=gv_2w_2r_var_dst, addr1=gv_2w_2r_var_dst_a1, instrWrite=true, instrRead=true, nonInstrWrite=true)
+	.AddVar(type=uint64_t, name=gv_3w_1r_var_dst, addr1W=3,                  instrWrite=true)
+	.AddVar(type=uint64_t, name=gv_3w_2r_var_dst, addr1=gv_3w_2r_var_dst_a1, instrWrite=true, instrRead=true)
+	.AddVar(type=uint64_t, name=gv_2w_1r_var_blk, addr1W=7,                  instrWrite=true,                 nonInstrWrite=true)
+	.AddVar(type=uint64_t, name=gv_2w_2r_var_blk, addr1=gv_2w_2r_var_blk_a1, instrWrite=true, instrRead=true, nonInstrWrite=true)
+	.AddVar(type=uint64_t, name=gv_3w_1r_var_blk, addr1W=7,                  instrWrite=true)
+	.AddVar(type=uint64_t, name=gv_3w_2r_var_blk, addr1=gv_3w_2r_var_blk_a1, instrWrite=true, instrRead=true)
+
+	.AddVar(type=struct_a_t, name=gv_2w_1r_str_a_reg, instrWrite=true,                 nonInstrWrite=true)
+	.AddVar(type=struct_a_t, name=gv_2w_2r_str_a_reg, instrWrite=true, instrRead=true, nonInstrWrite=true)
+	.AddVar(type=struct_a_t, name=gv_3w_1r_str_a_reg, instrWrite=true)
+	.AddVar(type=struct_a_t, name=gv_3w_2r_str_a_reg, instrWrite=true, instrRead=true)
+	.AddVar(type=struct_a_t, name=gv_2w_1r_str_a_dst, addr1W=3,                    instrWrite=true,                 nonInstrWrite=true)
+	.AddVar(type=struct_a_t, name=gv_2w_2r_str_a_dst, addr1=gv_2w_2r_str_a_dst_a1, instrWrite=true, instrRead=true, nonInstrWrite=true)
+	.AddVar(type=struct_a_t, name=gv_3w_1r_str_a_dst, addr1W=3,                    instrWrite=true)
+	.AddVar(type=struct_a_t, name=gv_3w_2r_str_a_dst, addr1=gv_3w_2r_str_a_dst_a1, instrWrite=true, instrRead=true)
+	.AddVar(type=struct_a_t, name=gv_2w_1r_str_a_blk, addr1W=7,                    instrWrite=true)
+	.AddVar(type=struct_a_t, name=gv_2w_2r_str_a_blk, addr1=gv_2w_2r_str_a_blk_a1, instrWrite=true, instrRead=true)
+	.AddVar(type=struct_a_t, name=gv_3w_1r_str_a_blk, addr1W=7,                    instrWrite=true)
+	.AddVar(type=struct_a_t, name=gv_3w_2r_str_a_blk, addr1=gv_3w_2r_str_a_blk_a1, instrWrite=true, instrRead=true)
+
+	.AddVar(type=struct_b_t, name=gv_2w_1r_str_b_reg, instrWrite=true,                 nonInstrWrite=true)
+	.AddVar(type=struct_b_t, name=gv_2w_2r_str_b_reg, instrWrite=true, instrRead=true, nonInstrWrite=true)
+	.AddVar(type=struct_b_t, name=gv_3w_1r_str_b_reg, instrWrite=true)
+	.AddVar(type=struct_b_t, name=gv_3w_2r_str_b_reg, instrWrite=true, instrRead=true)
+	.AddVar(type=struct_b_t, name=gv_2w_1r_str_b_dst, addr1W=3,                    instrWrite=true,                 nonInstrWrite=true)
+	.AddVar(type=struct_b_t, name=gv_2w_2r_str_b_dst, addr1=gv_2w_2r_str_b_dst_a1, instrWrite=true, instrRead=true, nonInstrWrite=true)
+	.AddVar(type=struct_b_t, name=gv_3w_1r_str_b_dst, addr1W=3,                    instrWrite=true)
+	.AddVar(type=struct_b_t, name=gv_3w_2r_str_b_dst, addr1=gv_3w_2r_str_b_dst_a1, instrWrite=true, instrRead=true)
+	.AddVar(type=struct_b_t, name=gv_2w_1r_str_b_blk, addr1W=7,                    instrWrite=true,                 nonInstrWrite=true)
+	.AddVar(type=struct_b_t, name=gv_2w_2r_str_b_blk, addr1=gv_2w_2r_str_b_blk_a1, instrWrite=true, instrRead=true, nonInstrWrite=true)
+	.AddVar(type=struct_b_t, name=gv_3w_1r_str_b_blk, addr1W=7,                    instrWrite=true)
+	.AddVar(type=struct_b_t, name=gv_3w_2r_str_b_blk, addr1=gv_3w_2r_str_b_blk_a1, instrWrite=true, instrRead=true)
+
+	.AddVar(type=union_t, name=gv_2w_1r_unn_a_reg, instrWrite=true,                 nonInstrWrite=true)
+	.AddVar(type=union_t, name=gv_2w_2r_unn_a_reg, instrWrite=true, instrRead=true, nonInstrWrite=true)
+	.AddVar(type=union_t, name=gv_3w_1r_unn_a_reg, instrWrite=true)
+	.AddVar(type=union_t, name=gv_3w_2r_unn_a_reg, instrWrite=true, instrRead=true)
+	.AddVar(type=union_t, name=gv_2w_1r_unn_a_dst, addr1W=3,                    instrWrite=true,                 nonInstrWrite=true)
+	.AddVar(type=union_t, name=gv_2w_2r_unn_a_dst, addr1=gv_2w_2r_unn_a_dst_a1, instrWrite=true, instrRead=true, nonInstrWrite=true)
+	.AddVar(type=union_t, name=gv_3w_1r_unn_a_dst, addr1W=3,                    instrWrite=true)
+	.AddVar(type=union_t, name=gv_3w_2r_unn_a_dst, addr1=gv_3w_2r_unn_a_dst_a1, instrWrite=true, instrRead=true)
+	.AddVar(type=union_t, name=gv_2w_1r_unn_a_blk, addr1W=7,                    instrWrite=true)
+	.AddVar(type=union_t, name=gv_2w_2r_unn_a_blk, addr1=gv_2w_2r_unn_a_blk_a1, instrWrite=true, instrRead=true)
+	.AddVar(type=union_t, name=gv_3w_1r_unn_a_blk, addr1W=7,                    instrWrite=true)
+	.AddVar(type=union_t, name=gv_3w_2r_unn_a_blk, addr1=gv_3w_2r_unn_a_blk_a1, instrWrite=true, instrRead=true)
+
+	.AddVar(type=union_t, name=gv_2w_1r_unn_b_reg, instrWrite=true,                 nonInstrWrite=true, spanningWrite=true)
+	.AddVar(type=union_t, name=gv_2w_2r_unn_b_reg, instrWrite=true, instrRead=true, nonInstrWrite=true, spanningWrite=true)
+	.AddVar(type=union_t, name=gv_3w_1r_unn_b_reg, instrWrite=true,                                     spanningWrite=true)
+	.AddVar(type=union_t, name=gv_3w_2r_unn_b_reg, instrWrite=true, instrRead=true,                     spanningWrite=true)
+	.AddVar(type=union_t, name=gv_2w_1r_unn_b_dst, addr1W=3,                    instrWrite=true,                 nonInstrWrite=true, spanningWrite=true)
+	.AddVar(type=union_t, name=gv_2w_2r_unn_b_dst, addr1=gv_2w_2r_unn_b_dst_a1, instrWrite=true, instrRead=true, nonInstrWrite=true, spanningWrite=true)
+	.AddVar(type=union_t, name=gv_3w_1r_unn_b_dst, addr1W=3,                    instrWrite=true,                                     spanningWrite=true)
+	.AddVar(type=union_t, name=gv_3w_2r_unn_b_dst, addr1=gv_3w_2r_unn_b_dst_a1, instrWrite=true, instrRead=true,                     spanningWrite=true)
+	.AddVar(type=union_t, name=gv_2w_1r_unn_b_blk, addr1W=7,                    instrWrite=true,                 nonInstrWrite=true, spanningWrite=true)
+	.AddVar(type=union_t, name=gv_2w_2r_unn_b_blk, addr1=gv_2w_2r_unn_b_blk_a1, instrWrite=true, instrRead=true, nonInstrWrite=true, spanningWrite=true)
+	.AddVar(type=union_t, name=gv_3w_1r_unn_b_blk, addr1W=7,                    instrWrite=true,                                     spanningWrite=true)
+	.AddVar(type=union_t, name=gv_3w_2r_unn_b_blk, addr1=gv_3w_2r_unn_b_blk_a1, instrWrite=true, instrRead=true,                     spanningWrite=true)
+	;
+wr2.AddEntry(func=wr2, instr=WR2_ENTRY)
+	;
+wr2.AddReturn(func=wr2)
+	;
+
+
+dsnInfo.AddModule(name=wr3, htIdW=0);
+wr3.AddInstr(name=WR3_ENTRY);
+wr3.AddInstr(name=WR3_RTN);
+wr3.AddShared()
+	.AddVar(type=uint64_t, name=counter, reset=true)
+	;
+wr3.AddGlobal()
+	.AddVar(type=uint64_t, name=gv_3w_1r_var_reg, instrWrite=true)
+	.AddVar(type=uint64_t, name=gv_3w_2r_var_reg, instrWrite=true)
+	.AddVar(type=uint64_t, name=gv_3w_1r_var_dst, addr1W=3, instrWrite=true)
+	.AddVar(type=uint64_t, name=gv_3w_2r_var_dst, addr1W=3, instrWrite=true)
+	.AddVar(type=uint64_t, name=gv_3w_1r_var_blk, addr1W=7, instrWrite=true)
+	.AddVar(type=uint64_t, name=gv_3w_2r_var_blk, addr1W=7, instrWrite=true)
+
+	.AddVar(type=struct_a_t, name=gv_3w_1r_str_a_reg, instrWrite=true)
+	.AddVar(type=struct_a_t, name=gv_3w_2r_str_a_reg, instrWrite=true)
+	.AddVar(type=struct_a_t, name=gv_3w_1r_str_a_dst, addr1W=3, instrWrite=true)
+	.AddVar(type=struct_a_t, name=gv_3w_2r_str_a_dst, addr1W=3, instrWrite=true)
+	.AddVar(type=struct_a_t, name=gv_3w_1r_str_a_blk, addr1W=7, instrWrite=true)
+	.AddVar(type=struct_a_t, name=gv_3w_2r_str_a_blk, addr1W=7, instrWrite=true)
+
+	.AddVar(type=struct_b_t, name=gv_3w_1r_str_b_reg, instrWrite=true)
+	.AddVar(type=struct_b_t, name=gv_3w_2r_str_b_reg, instrWrite=true)
+	.AddVar(type=struct_b_t, name=gv_3w_1r_str_b_dst, addr1W=3, instrWrite=true)
+	.AddVar(type=struct_b_t, name=gv_3w_2r_str_b_dst, addr1W=3, instrWrite=true)
+	.AddVar(type=struct_b_t, name=gv_3w_1r_str_b_blk, addr1W=7, instrWrite=true)
+	.AddVar(type=struct_b_t, name=gv_3w_2r_str_b_blk, addr1W=7, instrWrite=true)
+
+	.AddVar(type=union_t, name=gv_3w_1r_unn_a_reg, instrWrite=true)
+	.AddVar(type=union_t, name=gv_3w_2r_unn_a_reg, instrWrite=true)
+	.AddVar(type=union_t, name=gv_3w_1r_unn_a_dst, addr1W=3, instrWrite=true)
+	.AddVar(type=union_t, name=gv_3w_2r_unn_a_dst, addr1W=3, instrWrite=true)
+	.AddVar(type=union_t, name=gv_3w_1r_unn_a_blk, addr1W=7, instrWrite=true)
+	.AddVar(type=union_t, name=gv_3w_2r_unn_a_blk, addr1W=7, instrWrite=true)
+
+	.AddVar(type=union_t, name=gv_3w_1r_unn_b_reg, instrWrite=true, spanningWrite=true)
+	.AddVar(type=union_t, name=gv_3w_2r_unn_b_reg, instrWrite=true, spanningWrite=true)
+	.AddVar(type=union_t, name=gv_3w_1r_unn_b_dst, addr1W=3, instrWrite=true, spanningWrite=true)
+	.AddVar(type=union_t, name=gv_3w_2r_unn_b_dst, addr1W=3, instrWrite=true, spanningWrite=true)
+	.AddVar(type=union_t, name=gv_3w_1r_unn_b_blk, addr1W=7, instrWrite=true, spanningWrite=true)
+	.AddVar(type=union_t, name=gv_3w_2r_unn_b_blk, addr1W=7, instrWrite=true, spanningWrite=true)
+	;
+wr3.AddEntry(func=wr3, instr=WR3_ENTRY)
+	;
+wr3.AddReturn(func=wr3)
+	;

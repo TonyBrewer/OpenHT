@@ -5852,7 +5852,7 @@ void CDsnInfo::GenModMifStatements(CInstance * pModInst)
 
 		} else if (rdRspGrpIdW <= 2) {
 
-			mifPostInstr.Append("\tfor (int grpId = 0; grpId < (1 << %s_RD_GRP_ID_W); grpId += 1) {\n",
+			mifPostInstr.Append("\tfor (uint32_t grpId = 0; grpId < (1 << %s_RD_GRP_ID_W); grpId += 1) {\n",
 				pModInst->m_instName.Upper().c_str());
 			mifPostInstr.Append("\t\tif ((%s && r_t%d_rdRspInfo.m_grpId == grpId) != (%s && %s == grpId))\n",
 				rdReqRdy.c_str(),
@@ -6731,7 +6731,7 @@ void CDsnInfo::GenModMifStatements(CInstance * pModInst)
 
 		} else if (wrRspGrpIdW <= 2) {
 
-			mifPostInstr.Append("\tfor (int grpId = 0; grpId < (1 << %s_WR_GRP_ID_W); grpId += 1) {\n",
+			mifPostInstr.Append("\tfor (uint32_t grpId = 0; grpId < (1 << %s_WR_GRP_ID_W); grpId += 1) {\n",
 				pModInst->m_instName.Upper().c_str());
 			mifPostInstr.Append("\t\tif ((%s && r_t%d_memReq.m_wrGrpId == grpId) != (%s && %s == grpId))\n",
 				wrReqRdy.c_str(),
