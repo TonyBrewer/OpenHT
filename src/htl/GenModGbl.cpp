@@ -1844,6 +1844,115 @@ void CDsnInfo::GenModNgvStatements(CInstance * pModInst)
 		}
 	}
 
+	// Insert NGVs into DsnRpt
+	int stgLast = pMod->m_stage.m_privWrStg.AsInt();
+	bool anyGblRdWr = false;
+	for (size_t gvIdx = 0; gvIdx < pMod->m_ngvList.size(); gvIdx += 1) {
+		CRam * pGv = pMod->m_ngvList[gvIdx];
+		stgLast = max(pGv->m_wrStg.AsInt(), stgLast);
+		if (!pGv->m_bPrivGbl && pGv->m_bReadForInstrRead)
+			anyGblRdWr = true;
+		if (!pGv->m_bPrivGbl && pGv->m_bWriteForInstrWrite)
+			anyGblRdWr = true;
+	}
+
+	if (anyGblRdWr) {
+		for (int stgIdx = 1; stgIdx <= stgLast; stgIdx += 1) {
+
+			string varStg;
+			if (pMod->m_stage.m_bStageNums) {
+				g_appArgs.GetDsnRpt().AddLevel("Global Variables - Stage %d\n", stgIdx);
+				varStg = VA("%d", stgIdx);
+			} else {
+				g_appArgs.GetDsnRpt().AddLevel("Global Variables\n");
+			}
+
+			bool gfVarExists = false;
+			bool grVarExists = false;
+			bool gwVarExists = false;
+			for (size_t gvIdx = 0; gvIdx < pMod->m_ngvList.size(); gvIdx += 1) {
+				CRam * pGv = pMod->m_ngvList[gvIdx];
+				CNgvInfo * pNgvInfo = pGv->m_pNgvInfo;
+				if (stgIdx >= pGv->m_rdStg.AsInt()) {
+					if (!pGv->m_bPrivGbl && pGv->m_bReadForInstrRead) {
+						if (pNgvInfo->m_atomicMask != 0) {
+							gfVarExists = true;
+						}
+
+						grVarExists = true;
+					}
+				}
+
+				if (stgIdx <= pGv->m_wrStg.AsInt()) {
+					if (!pGv->m_bPrivGbl && pGv->m_bWriteForInstrWrite) {
+						gwVarExists = true;
+					}
+				}
+			}
+
+			if (gfVarExists) {
+				g_appArgs.GetDsnRpt().AddLevel("Read Only (GF_)\n");
+
+				for (size_t gvIdx = 0; gvIdx < pMod->m_ngvList.size(); gvIdx += 1) {
+					CRam * pGv = pMod->m_ngvList[gvIdx];
+					CNgvInfo * pNgvInfo = pGv->m_pNgvInfo;
+					if (stgIdx >= pGv->m_rdStg.AsInt()) {
+						if (!pGv->m_bPrivGbl && pGv->m_bReadForInstrRead) {
+							if (pNgvInfo->m_atomicMask != 0) {
+								g_appArgs.GetDsnRpt().AddItem("%s GF%s_%s\n", pGv->m_type.c_str(), varStg.c_str(), pGv->m_gblName.c_str());
+							}
+						}
+					}
+				}
+
+				g_appArgs.GetDsnRpt().EndLevel();
+			}
+
+			if (grVarExists) {
+				g_appArgs.GetDsnRpt().AddLevel("Read Only (GR_)\n");
+
+				for (size_t gvIdx = 0; gvIdx < pMod->m_ngvList.size(); gvIdx += 1) {
+					CRam * pGv = pMod->m_ngvList[gvIdx];
+					if (stgIdx >= pGv->m_rdStg.AsInt()) {
+						if (!pGv->m_bPrivGbl && pGv->m_bReadForInstrRead) {
+							g_appArgs.GetDsnRpt().AddItem("%s GR%s_%s\n", pGv->m_type.c_str(), varStg.c_str(), pGv->m_gblName.c_str());
+						}
+					}
+				}
+
+				g_appArgs.GetDsnRpt().EndLevel();
+			}
+
+			if (gwVarExists) {
+				g_appArgs.GetDsnRpt().AddLevel("Write Only (GW_)\n");
+
+				for (size_t gvIdx = 0; gvIdx < pMod->m_ngvList.size(); gvIdx += 1) {
+					CRam * pGv = pMod->m_ngvList[gvIdx];
+					if (stgIdx <= pGv->m_wrStg.AsInt()) {
+						if (!pGv->m_bPrivGbl && pGv->m_bWriteForInstrWrite) {
+
+							bool bAddr1EqHtId = pGv->m_addr1Name == "htId";
+							bool bAddr2EqHtId = pGv->m_addr2Name == "htId";
+							if (pGv->m_addr1W.size() > 0 && !bAddr1EqHtId || pGv->m_addr2W.size() > 0 && !bAddr2EqHtId) {
+								g_appArgs.GetDsnRpt().AddItem("void GW%s_%s.write_addr(%s%s%s)\n",
+									varStg.c_str(), pGv->m_gblName.c_str(),
+									VA((pGv->m_addr1W.size() > 0 && !bAddr1EqHtId) ? "ht_uint%d addr1" : "", pGv->m_addr1W.AsInt()).c_str(),
+									VA((pGv->m_addr1W.size() > 0 && !bAddr1EqHtId && pGv->m_addr2W.size() > 0 && !bAddr2EqHtId) ? ", " : "").c_str(), 
+									VA((pGv->m_addr2W.size() > 0 && !bAddr2EqHtId) ? "ht_uint%d addr2" : "", pGv->m_addr1W.AsInt()).c_str());
+							}
+
+							g_appArgs.GetDsnRpt().AddItem("%s GW%s_%s\n", pGv->m_type.c_str(), varStg.c_str(), pGv->m_gblName.c_str());
+						}
+					}
+				}
+
+				g_appArgs.GetDsnRpt().EndLevel();
+			}
+
+			g_appArgs.GetDsnRpt().EndLevel();
+		}
+	}
+
 	//CInstance * pModInst = pMod->m_instSet.GetInst(0);
 
 	if (bInstrWrite) {
