@@ -249,13 +249,19 @@ void HtdFile::ParseFieldList()
 			if (bAtomicInc || bAtomicSet)
 				CPreProcess::ParseMsg(Error, "unexpected pragma on struct / union");
 
-			// anonamous struct/union
+			// anonymous struct/union
 
 			m_pLex->GetNextTk();
 
 			CRecord * pSavedOpenRecord = m_pOpenRecord;
 
 			CField * pField = m_pOpenRecord->AddStructField(new CRecord("", bUnion), "");
+
+			// Ensure spanning field can't be used on anonymous struct/union
+			if (bSpanningFieldForced) {
+				CPreProcess::ParseMsg(Error, "spanning_field pragma is invalid on anonymous struct/union members");
+			}
+
 			m_pOpenRecord = pField->m_pType->AsRecord();
 
 			ParseFieldList();
@@ -313,7 +319,17 @@ void HtdFile::ParseFieldList()
 				else {
 					m_pDsn->m_structFieldList.insert(name);
 					string base;
-					m_pOpenRecord->AddStructField(m_pDsnInfo->FindType(type), name, bitWidth, base, dimenList,
+					CType * foundType = m_pDsnInfo->FindType(type);
+					if (foundType->IsRecord() && (foundType->AsRecord()->m_bUnion && bSpanningFieldForced)) {
+						CPreProcess::ParseMsg(Error, "spanning_field pragma is invalid on unions themselves");
+					}
+					// NOTE! Found an issue where this is not supported (although it's technically possible)
+					//   We're not using it now, so I'm catching this as an error, though it could be implemented in the future
+					//   CB 4/11/17
+					if (foundType->IsRecord() && (!foundType->AsRecord()->m_bUnion && bSpanningFieldForced)) {
+						CPreProcess::ParseMsg(Error, "spanning_field pragma is invalid on structs themselves");
+					}
+					m_pOpenRecord->AddStructField(foundType, name, bitWidth, base, dimenList,
 						true, true, false, false, HtdFile::eDistRam, atomicMask, bSpanningFieldForced);
 				}
 

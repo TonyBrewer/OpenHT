@@ -2355,6 +2355,8 @@ public:
 	void GenModNgvStatements(CInstance * pModInst);
 	void GenModOptNgvStatements(CModule * mod, CRam * pGv);
 
+	bool FindBadUnionNonInstrWrite(bool userSpanningWrite, CRecord * pRecord);
+
 	void FindSpanningWriteFields(CNgvInfo * pNgvInfo);
 	void FindMemoryReadSpanningFields(CNgvInfo * pNgvInfo);
 

@@ -268,21 +268,20 @@ void CDsnInfo::InitAndValidateModNgv()
 		// determine if ngv is written by instruction from multiple modules and if allowable
 		if (ngvNonInstrWriteCnt > 0 && pNgvInfo->m_wrPortList.size() > 2) {
 			// error
-			ParseMsg(Error, pNgvInfo->m_modInfoList[pNgvInfo->m_wrPortList[2].first].m_pNgv->m_lineInfo, "More than two write ports on nonInstrWrite Global Variable.\n  While nonInstrWrite flag is set on global variable \"%s\", HT has strict rules for the types of global variables that can be written to when htValid is low:\n    - The variable must have no more than 2 write ports, but can have any combination of category of write ports. The categories of ports are:\n      - Instruction (GW#_<var>) writes from a module (inside/outside htValid does not count twice)\n      - Memory Read Responses into a global variable in a module\n    - If the variable type is a plain type (no struct/union), it is allowable.\n    - If the variable type is a struct:\n      - The variable cannot be implemented as a blockRam unless it has only one field.\n    - If the variable type is a union:\n      - The variable cannot be implemented as a blockRam unless only one field is writable (see Spanning Write in the HTReference documentation).\n", pNgvInfo->m_modInfoList[pNgvInfo->m_wrPortList[2].first].m_pNgv->m_gblName.c_str());
+			ParseMsg(Error, pNgvInfo->m_modInfoList[pNgvInfo->m_wrPortList[2].first].m_pNgv->m_lineInfo, "More than two write ports on a nonInstrWrite Global Variable.\n  While nonInstrWrite flag is set on global variable \"%s\", HT has strict rules for the types of global variables that can be written to when htValid is low:\n    - The variable must have no more than 2 write ports, but can have any combination of category of write ports. The categories of ports are:\n      - Instruction (GW#_<var>) writes from a module (inside/outside htValid does not count twice)\n      - Memory Read Responses into a global variable in a module\n    - If the variable type is not a union, it is allowable.\n    - If the variable type is a union:\n      - The variable cannot be implemented as a blockRam unless only one field is writable (see Spanning Write in the HTReference documentation).\n", pNgvInfo->m_modInfoList[pNgvInfo->m_wrPortList[2].first].m_pNgv->m_gblName.c_str());
 			HtlAssert(0);
 		} else if (ngvNonInstrWriteCnt > 0 && bNgvBlock && (bNgvAtomic || pNgvInfo->m_ngvFieldCnt > 1)) {
-			int spanningCnt = 0;
-			for (size_t idx = 0; idx < pNgvInfo->m_spanningFieldList.size(); idx += 1) {
-				if (pNgvInfo->m_spanningFieldList[idx].m_bSpanning) {
-					spanningCnt += 1;
-				}
+			CRecord *typeRecord = FindRecord(pGv0->m_pType->m_typeName);
+			bool bDisallowUnn = false;
+			if (typeRecord) {
+				bDisallowUnn = FindBadUnionNonInstrWrite(pNgvInfo->m_bUserSpanningWrite, typeRecord);
 			}
-			if (spanningCnt > 1 || !pNgvInfo->m_bUserSpanningWrite) {
-				ParseMsg(Error, pNgvInfo->m_modInfoList[pNgvInfo->m_wrPortList[0].first].m_pNgv->m_lineInfo, "Struct/Union cannot be used as a nonInstrWrite Global Variable while implemented as a blockRam if more than one field is writable.\n  While nonInstrWrite flag is set on global variable \"%s\", HT has strict rules for the types of global variables that can be written to when htValid is low:\n    - The variable must have no more than 2 write ports, but can have any combination of category of write ports. The categories of ports are:\n      - Instruction (GW#_<var>) writes from a module (inside/outside htValid does not count twice)\n      - Memory Read Responses into a global variable in a module\n    - If the variable type is a plain type (no struct/union), it is allowable.\n    - If the variable type is a struct:\n      - The variable cannot be implemented as a blockRam unless it has only one field.\n    - If the variable type is a union:\n      - The variable cannot be implemented as a blockRam unless only one field is writable (see Spanning Write in the HTReference documentation).\n", pNgvInfo->m_modInfoList[pNgvInfo->m_wrPortList[0].first].m_pNgv->m_gblName.c_str());
+			if (bDisallowUnn) {
+				ParseMsg(Error, pNgvInfo->m_modInfoList[pNgvInfo->m_wrPortList[0].first].m_pNgv->m_lineInfo, "Union cannot be used as a nonInstrWrite Global Variable while implemented as a blockRam if more than one field is writable.\n  While nonInstrWrite flag is set on global variable \"%s\", HT has strict rules for the types of global variables that can be written to when htValid is low:\n    - The variable must have no more than 2 write ports, but can have any combination of category of write ports. The categories of ports are:\n      - Instruction (GW#_<var>) writes from a module (inside/outside htValid does not count twice)\n      - Memory Read Responses into a global variable in a module\n    - If the variable type is not a union, it is allowable.\n    - If the variable type is a union:\n      - The variable cannot be implemented as a blockRam unless only one field is writable (see Spanning Write in the HTReference documentation).\n", pNgvInfo->m_modInfoList[pNgvInfo->m_wrPortList[0].first].m_pNgv->m_gblName.c_str());
 				HtlAssert(0);
 			}
 		} else if (ngvNonInstrWriteCnt > 0 && (bRrSel2x || bRrSel1x || bRrSelAB || (bRrSelEO && ngvPortCnt > 1) || pNgvInfo->m_bNeedQue)) {
-			ParseMsg(Error, pNgvInfo->m_modInfoList[pNgvInfo->m_wrPortList[0].first].m_pNgv->m_lineInfo, "Write Complete path is incompatible with nonInstrWrite Global Variables.\n  While nonInstrWrite flag is set on global variable \"%s\", HT has strict rules for the types of global variables that can be written to when htValid is low:\n    - The variable must have no more than 2 write ports, but can have any combination of category of write ports. The categories of ports are:\n      - Instruction (GW#_<var>) writes from a module (inside/outside htValid does not count twice)\n      - Memory Read Responses into a global variable in a module\n    - If the variable type is a plain type (no struct/union), it is allowable.\n    - If the variable type is a struct:\n      - The variable cannot be implemented as a blockRam unless it has only one field.\n    - If the variable type is a union:\n      - The variable cannot be implemented as a blockRam unless only one field is writable (see Spanning Write in the HTReference documentation).\n", pNgvInfo->m_modInfoList[pNgvInfo->m_wrPortList[0].first].m_pNgv->m_gblName.c_str());
+			ParseMsg(Error, pNgvInfo->m_modInfoList[pNgvInfo->m_wrPortList[0].first].m_pNgv->m_lineInfo, "Write Complete path is incompatible with nonInstrWrite Global Variables.\n  While nonInstrWrite flag is set on global variable \"%s\", HT has strict rules for the types of global variables that can be written to when htValid is low:\n    - The variable must have no more than 2 write ports, but can have any combination of category of write ports. The categories of ports are:\n      - Instruction (GW#_<var>) writes from a module (inside/outside htValid does not count twice)\n      - Memory Read Responses into a global variable in a module\n    - If the variable type is not a union, it is allowable.\n    - If the variable type is a union:\n      - The variable cannot be implemented as a blockRam unless only one field is writable (see Spanning Write in the HTReference documentation).\n", pNgvInfo->m_modInfoList[pNgvInfo->m_wrPortList[0].first].m_pNgv->m_gblName.c_str());
 			HtlAssert(0);
 		}
 
@@ -399,6 +398,57 @@ void CDsnInfo::InitAndValidateModNgv()
 			pMod->m_gvIwCompStg = max(pMod->m_gvIwCompStg, lastStg);
 		}
 	}
+}
+
+
+bool CDsnInfo::FindBadUnionNonInstrWrite(bool userSpanningWrite, CRecord * pRecord) {
+
+	// Recursively search type to find any unions that may violate nonInstrWrite rules
+	bool bDisallowWr = false;
+
+	// If union, check fields
+	int totNumFields = 0;
+	int countedFields = 0;
+	if (pRecord->m_bUnion) {
+		for (size_t idx = 0; idx < pRecord->m_fieldList.size(); idx++) {
+			bool alreadyChecked = false;
+			if (userSpanningWrite) {
+				CRecord * pChildRecord = pRecord->m_fieldList[idx]->m_pType->AsRecord();
+				if (pRecord->m_fieldList[idx]->m_bSpanningFieldForced) {
+					countedFields += 1;
+				}
+				else if (pChildRecord != NULL && pChildRecord->IsRecord()) {
+					alreadyChecked = true;
+					bool checkInlineUnn = FindBadUnionNonInstrWrite(userSpanningWrite, pChildRecord);
+					if (!checkInlineUnn) {
+						countedFields += 1;
+					}
+				}
+			} else {
+				countedFields += 1;
+			}
+			totNumFields += 1;
+
+
+			CRecord * pChildRecord = pRecord->m_fieldList[idx]->m_pType->AsRecord();
+			if (pChildRecord != NULL && pChildRecord->IsRecord() && !alreadyChecked) {
+				bDisallowWr |= FindBadUnionNonInstrWrite(userSpanningWrite, pChildRecord);
+			}
+		}
+
+		// Check
+		if (userSpanningWrite) {
+			if (countedFields > 1 || (countedFields == 0 && totNumFields > 1)) {
+				bDisallowWr = true;
+			}
+		} else {
+			if (countedFields > 1) {
+				bDisallowWr = true;
+			}
+		}
+	}
+
+	return bDisallowWr;
 }
 
 struct CRange { int m_start, m_end; };
@@ -3229,35 +3279,6 @@ void CDsnInfo::GenModNgvStatements(CInstance * pModInst)
 				}
 			}
 
-			// determine if writing outside of an instruction
-			{
-				CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, 3);
-				do {
-					string dimIdx = loopInfo.IndexStr();
-
-					for (CStructElemIter iter(this, pGv->m_pType); !iter.end(); iter++) {
-						if (iter.IsStructOrUnion()) continue;
-
-						for (int wrStg = pMod->m_tsStg + 1; wrStg <= gvWrStg; wrStg++) {
-							if (pGv->m_bWriteForNonInstrWrite == false) {
-								gblPostInstr.Append("%sif(r_t%d_%sIwData%s%s.GetWrEn() && !r_reset1x) {\n", tabs.c_str(),
-									wrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
-									iter.GetHeirFieldName().c_str());
-								gblPostInstr.Append("%s\tassert_msg((r_t%d_htValid),\n%s\t\"ERROR: Global variable \\\"%s\\\" was written outside of an instruction (htValid was low) from module \\\"%s\\\", but nonInstrWrite=true was not set.\\n  HT has strict rules for the types of global variables that can be written to when htValid is low:\\n    - The variable must have no more than 2 write ports, but can have any combination of category of write ports. The categories of ports are:\\n      - Instruction (GW#_<var>) writes from a module (inside/outside htValid does not count twice)\\n      - Memory Read Responses into a global variable in a module\\n    - If the variable type is a plain type (no struct/union), it is allowable.\\n    - If the variable type is a struct:\\n      - The variable cannot be implemented as a blockRam unless it has only one field.\\n    - If the variable type is a union:\\n      - The variable cannot be implemented as a blockRam unless only one field is writable (see Spanning Write in the HTReference documentation).\\n\\n  Please move the global variable writes into an instruction or set nonInstrWrite=true in your htd file while following the above guidelines.\\n\");\n", tabs.c_str(),
-									wrStg, tabs.c_str(), pGv->m_gblName.c_str(),
-									pMod->m_modName.Lc().c_str());
-								gblPostInstr.Append("%s}\n", tabs.c_str());
-
-
-																      
-							}
-						}
-					}
-
-				} while (loopInfo.Iter());
-			}
-			
-
 			if (pGv->m_addr1W.size() > 0 && pGv->m_addr1Name != "htId" || pGv->m_addr2W.size() > 0 && pGv->m_addr2Name != "htId") {
 				string tabs = "\t";
 				CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, 1);
@@ -3307,6 +3328,39 @@ void CDsnInfo::GenModNgvStatements(CInstance * pModInst)
 				}
 			}
 			gblPostInstr.NewLine();
+		}
+	}
+
+	for (size_t gvIdx = 0; gvIdx < pMod->m_ngvList.size(); gvIdx += 1) {
+		CRam * pGv = pMod->m_ngvList[gvIdx];
+		int gvWrStg = pMod->m_tsStg + pGv->m_wrStg.AsInt();
+		if (pGv->m_bWriteForInstrWrite) {
+
+			string tabs = "\t";
+
+			// determine if writing outside of an instruction
+			{
+				CLoopInfo loopInfo(gblPostInstr, tabs, pGv->m_dimenList, 3);
+				do {
+					string dimIdx = loopInfo.IndexStr();
+
+					for (CStructElemIter iter(this, pGv->m_pType); !iter.end(); iter++) {
+						if (iter.IsStructOrUnion()) continue;
+
+						for (int wrStg = pMod->m_tsStg; wrStg < gvWrStg; wrStg++) {
+							if (pGv->m_bWriteForNonInstrWrite == false) {
+								gblPostInstr.Append("%sif(c_t%d_%sIwData%s%s.GetWrEn() && !r_reset1x) {\n", tabs.c_str(),
+									wrStg, pGv->m_gblName.c_str(), dimIdx.c_str(),
+									iter.GetHeirFieldName().c_str());
+								gblPostInstr.Append("%s\tassert_msg((r_t%d_htValid),\n%s\t\"ERROR: Global variable \\\"%s\\\" was written outside of an instruction (htValid was low) from module \\\"%s\\\", but nonInstrWrite=true was not set.\\n  HT has strict rules for the types of global variables that can be written to when htValid is low:\\n    - The variable must have no more than 2 write ports, but can have any combination of category of write ports. The categories of ports are:\\n      - Instruction (GW#_<var>) writes from a module (inside/outside htValid does not count twice)\\n      - Memory Read Responses into a global variable in a module\\n    - If the variable type is not a union, it is allowable.\\n    - If the variable type is a union:\\n      - The variable cannot be implemented as a blockRam unless only one field is writable (see Spanning Write in the HTReference documentation).\\n\\n  Please move the global variable writes into an instruction or set nonInstrWrite=true in your htd file while following the above guidelines.\\n\");\n", tabs.c_str(),
+									wrStg, tabs.c_str(), pGv->m_gblName.c_str(),
+									pMod->m_modName.Lc().c_str());
+								gblPostInstr.Append("%s}\n", tabs.c_str());	      
+							}
+						}
+					}
+				} while (loopInfo.Iter());
+			}
 		}
 	}
 
