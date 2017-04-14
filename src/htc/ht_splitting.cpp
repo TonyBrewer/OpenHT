@@ -146,7 +146,7 @@ void getUnique( Rose_STL_Container< SgNode* > & list )
 }
 /* the end of getUnique name */
 
- /* gather varaible references from remaining expressions */
+ /* gather variable references from remaining expressions */
 
 
 void gatherReferences( const Rose_STL_Container< SgNode* >& expr, Rose_STL_Container< SgNode* >& vars)

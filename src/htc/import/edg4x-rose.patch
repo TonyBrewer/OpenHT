@@ -2873,7 +2873,7 @@ diff /dev/null b/src/midend/programTransformation/ompLowering/ht_omp_lowering.cp
 +}
 +/* the end of getUnique name */
 +
-+ /* gather varaible references from remaining expressions */
++ /* gather variable references from remaining expressions */
 +
 +
 +void gatherReferences( const Rose_STL_Container< SgNode* >& expr, Rose_STL_Container< SgNode* >& vars)

@@ -99,7 +99,7 @@ Test00.AddPrivate()
 	;
 
 Test00.AddGlobal()
-	.AddVar(type=CAccelWord, name=test00_0_src_u0_data, addr1=rdAddr, instrWrite=true, instrRead=true, rdStg=1, wrStg=3, spanningWrite=true)
+	.AddVar(type=CAccelWord, name=test00_0_src_u0_data, addr1=rdAddr, instrWrite=true, instrRead=true, rdStg=1, wrStg=1, spanningWrite=true)
 	;
 
 
