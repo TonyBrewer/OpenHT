@@ -161,12 +161,12 @@ module cae_pers #(
     /*
      * Hybrid-Threading Top
      */
-    wire [31:0]  i_xbarToMif_wrRspTid[15:0];
-    wire [15:0]  i_xbarToMif_rdRspRdy, i_xbarToMif_wrRspRdy,
+    wire [31:0]  i_xbarToMif_wrRspTid[31:0];
+    wire [31:0]  i_xbarToMif_rdRspRdy, i_xbarToMif_wrRspRdy,
 		 i_xbarToMif_reqFull, o_mifToXbar_reqRdy,
 		 o_mifToXbar_rdRspFull, o_mifToXbar_wrRspFull;
-    wire [95:0]	 i_xbarToMif_rdRsp[15:0];
-    wire [148:0] o_mifToXbar_req[15:0];
+    wire [95:0]	 i_xbarToMif_rdRsp[31:0];
+    wire [148:0] o_mifToXbar_req[31:0];
 
 `ifndef AE_AE_IF
     wire	nxtae_rx_stall, nxtae_rx_vld, nxtae_tx_stall, nxtae_tx_vld,
@@ -387,6 +387,198 @@ module cae_pers #(
 	.o_mifToXbar_req$15(o_mifToXbar_req[15]),
 	.o_mifToXbar_reqRdy$15(o_mifToXbar_reqRdy[15]),
 	.o_mifToXbar_wrRspFull$15(o_mifToXbar_wrRspFull[15]),
+	// {TID_W'tid, 64'data}
+	.i_xbarToMif_rdRsp$16(i_xbarToMif_rdRsp[16]),
+	.i_xbarToMif_rdRspRdy$16(i_xbarToMif_rdRspRdy[16]),
+	.i_xbarToMif_reqFull$16(i_xbarToMif_reqFull[16]),
+	.i_xbarToMif_wrRspRdy$16(i_xbarToMif_wrRspRdy[16]),
+	.i_xbarToMif_wrRspTid$16(i_xbarToMif_wrRspTid[16]),
+
+	.o_mifToXbar_rdRspFull$16(o_mifToXbar_rdRspFull[16]),
+	// {2'size, 1'host, 2'cmd, TID_W'tid, 48'addr, 64'data}
+	.o_mifToXbar_req$16(o_mifToXbar_req[16]),
+	.o_mifToXbar_reqRdy$16(o_mifToXbar_reqRdy[16]),
+	.o_mifToXbar_wrRspFull$16(o_mifToXbar_wrRspFull[16]),
+	// {TID_W'tid, 64'data}
+	.i_xbarToMif_rdRsp$17(i_xbarToMif_rdRsp[17]),
+	.i_xbarToMif_rdRspRdy$17(i_xbarToMif_rdRspRdy[17]),
+	.i_xbarToMif_reqFull$17(i_xbarToMif_reqFull[17]),
+	.i_xbarToMif_wrRspRdy$17(i_xbarToMif_wrRspRdy[17]),
+	.i_xbarToMif_wrRspTid$17(i_xbarToMif_wrRspTid[17]),
+
+	.o_mifToXbar_rdRspFull$17(o_mifToXbar_rdRspFull[17]),
+	// {2'size, 1'host, 2'cmd, TID_W'tid, 48'addr, 64'data}
+	.o_mifToXbar_req$17(o_mifToXbar_req[17]),
+	.o_mifToXbar_reqRdy$17(o_mifToXbar_reqRdy[17]),
+	.o_mifToXbar_wrRspFull$17(o_mifToXbar_wrRspFull[17]),
+	// {TID_W'tid, 64'data}
+	.i_xbarToMif_rdRsp$18(i_xbarToMif_rdRsp[18]),
+	.i_xbarToMif_rdRspRdy$18(i_xbarToMif_rdRspRdy[18]),
+	.i_xbarToMif_reqFull$18(i_xbarToMif_reqFull[18]),
+	.i_xbarToMif_wrRspRdy$18(i_xbarToMif_wrRspRdy[18]),
+	.i_xbarToMif_wrRspTid$18(i_xbarToMif_wrRspTid[18]),
+
+	.o_mifToXbar_rdRspFull$18(o_mifToXbar_rdRspFull[18]),
+	// {2'size, 1'host, 2'cmd, TID_W'tid, 48'addr, 64'data}
+	.o_mifToXbar_req$18(o_mifToXbar_req[18]),
+	.o_mifToXbar_reqRdy$18(o_mifToXbar_reqRdy[18]),
+	.o_mifToXbar_wrRspFull$18(o_mifToXbar_wrRspFull[18]),
+	// {TID_W'tid, 64'data}
+	.i_xbarToMif_rdRsp$19(i_xbarToMif_rdRsp[19]),
+	.i_xbarToMif_rdRspRdy$19(i_xbarToMif_rdRspRdy[19]),
+	.i_xbarToMif_reqFull$19(i_xbarToMif_reqFull[19]),
+	.i_xbarToMif_wrRspRdy$19(i_xbarToMif_wrRspRdy[19]),
+	.i_xbarToMif_wrRspTid$19(i_xbarToMif_wrRspTid[19]),
+
+	.o_mifToXbar_rdRspFull$19(o_mifToXbar_rdRspFull[19]),
+	// {2'size, 1'host, 2'cmd, TID_W'tid, 48'addr, 64'data}
+	.o_mifToXbar_req$19(o_mifToXbar_req[19]),
+	.o_mifToXbar_reqRdy$19(o_mifToXbar_reqRdy[19]),
+	.o_mifToXbar_wrRspFull$19(o_mifToXbar_wrRspFull[19]),
+	// {TID_W'tid, 64'data}
+	.i_xbarToMif_rdRsp$20(i_xbarToMif_rdRsp[20]),
+	.i_xbarToMif_rdRspRdy$20(i_xbarToMif_rdRspRdy[20]),
+	.i_xbarToMif_reqFull$20(i_xbarToMif_reqFull[20]),
+	.i_xbarToMif_wrRspRdy$20(i_xbarToMif_wrRspRdy[20]),
+	.i_xbarToMif_wrRspTid$20(i_xbarToMif_wrRspTid[20]),
+
+	.o_mifToXbar_rdRspFull$20(o_mifToXbar_rdRspFull[20]),
+	// {2'size, 1'host, 2'cmd, TID_W'tid, 48'addr, 64'data}
+	.o_mifToXbar_req$20(o_mifToXbar_req[20]),
+	.o_mifToXbar_reqRdy$20(o_mifToXbar_reqRdy[20]),
+	.o_mifToXbar_wrRspFull$20(o_mifToXbar_wrRspFull[20]),
+	// {TID_W'tid, 64'data}
+	.i_xbarToMif_rdRsp$21(i_xbarToMif_rdRsp[21]),
+	.i_xbarToMif_rdRspRdy$21(i_xbarToMif_rdRspRdy[21]),
+	.i_xbarToMif_reqFull$21(i_xbarToMif_reqFull[21]),
+	.i_xbarToMif_wrRspRdy$21(i_xbarToMif_wrRspRdy[21]),
+	.i_xbarToMif_wrRspTid$21(i_xbarToMif_wrRspTid[21]),
+
+	.o_mifToXbar_rdRspFull$21(o_mifToXbar_rdRspFull[21]),
+	// {2'size, 1'host, 2'cmd, TID_W'tid, 48'addr, 64'data}
+	.o_mifToXbar_req$21(o_mifToXbar_req[21]),
+	.o_mifToXbar_reqRdy$21(o_mifToXbar_reqRdy[21]),
+	.o_mifToXbar_wrRspFull$21(o_mifToXbar_wrRspFull[21]),
+	// {TID_W'tid, 64'data}
+	.i_xbarToMif_rdRsp$22(i_xbarToMif_rdRsp[22]),
+	.i_xbarToMif_rdRspRdy$22(i_xbarToMif_rdRspRdy[22]),
+	.i_xbarToMif_reqFull$22(i_xbarToMif_reqFull[22]),
+	.i_xbarToMif_wrRspRdy$22(i_xbarToMif_wrRspRdy[22]),
+	.i_xbarToMif_wrRspTid$22(i_xbarToMif_wrRspTid[22]),
+
+	.o_mifToXbar_rdRspFull$22(o_mifToXbar_rdRspFull[22]),
+	// {2'size, 1'host, 2'cmd, TID_W'tid, 48'addr, 64'data}
+	.o_mifToXbar_req$22(o_mifToXbar_req[22]),
+	.o_mifToXbar_reqRdy$22(o_mifToXbar_reqRdy[22]),
+	.o_mifToXbar_wrRspFull$22(o_mifToXbar_wrRspFull[22]),
+	// {TID_W'tid, 64'data}
+	.i_xbarToMif_rdRsp$23(i_xbarToMif_rdRsp[23]),
+	.i_xbarToMif_rdRspRdy$23(i_xbarToMif_rdRspRdy[23]),
+	.i_xbarToMif_reqFull$23(i_xbarToMif_reqFull[23]),
+	.i_xbarToMif_wrRspRdy$23(i_xbarToMif_wrRspRdy[23]),
+	.i_xbarToMif_wrRspTid$23(i_xbarToMif_wrRspTid[23]),
+
+	.o_mifToXbar_rdRspFull$23(o_mifToXbar_rdRspFull[23]),
+	// {2'size, 1'host, 2'cmd, TID_W'tid, 48'addr, 64'data}
+	.o_mifToXbar_req$23(o_mifToXbar_req[23]),
+	.o_mifToXbar_reqRdy$23(o_mifToXbar_reqRdy[23]),
+	.o_mifToXbar_wrRspFull$23(o_mifToXbar_wrRspFull[23]),
+	// {TID_W'tid, 64'data}
+	.i_xbarToMif_rdRsp$24(i_xbarToMif_rdRsp[24]),
+	.i_xbarToMif_rdRspRdy$24(i_xbarToMif_rdRspRdy[24]),
+	.i_xbarToMif_reqFull$24(i_xbarToMif_reqFull[24]),
+	.i_xbarToMif_wrRspRdy$24(i_xbarToMif_wrRspRdy[24]),
+	.i_xbarToMif_wrRspTid$24(i_xbarToMif_wrRspTid[24]),
+
+	.o_mifToXbar_rdRspFull$24(o_mifToXbar_rdRspFull[24]),
+	// {2'size, 1'host, 2'cmd, TID_W'tid, 48'addr, 64'data}
+	.o_mifToXbar_req$24(o_mifToXbar_req[24]),
+	.o_mifToXbar_reqRdy$24(o_mifToXbar_reqRdy[24]),
+	.o_mifToXbar_wrRspFull$24(o_mifToXbar_wrRspFull[24]),
+	// {TID_W'tid, 64'data}
+	.i_xbarToMif_rdRsp$25(i_xbarToMif_rdRsp[25]),
+	.i_xbarToMif_rdRspRdy$25(i_xbarToMif_rdRspRdy[25]),
+	.i_xbarToMif_reqFull$25(i_xbarToMif_reqFull[25]),
+	.i_xbarToMif_wrRspRdy$25(i_xbarToMif_wrRspRdy[25]),
+	.i_xbarToMif_wrRspTid$25(i_xbarToMif_wrRspTid[25]),
+
+	.o_mifToXbar_rdRspFull$25(o_mifToXbar_rdRspFull[25]),
+	// {2'size, 1'host, 2'cmd, TID_W'tid, 48'addr, 64'data}
+	.o_mifToXbar_req$25(o_mifToXbar_req[25]),
+	.o_mifToXbar_reqRdy$25(o_mifToXbar_reqRdy[25]),
+	.o_mifToXbar_wrRspFull$25(o_mifToXbar_wrRspFull[25]),
+	// {TID_W'tid, 64'data}
+	.i_xbarToMif_rdRsp$26(i_xbarToMif_rdRsp[26]),
+	.i_xbarToMif_rdRspRdy$26(i_xbarToMif_rdRspRdy[26]),
+	.i_xbarToMif_reqFull$26(i_xbarToMif_reqFull[26]),
+	.i_xbarToMif_wrRspRdy$26(i_xbarToMif_wrRspRdy[26]),
+	.i_xbarToMif_wrRspTid$26(i_xbarToMif_wrRspTid[26]),
+
+	.o_mifToXbar_rdRspFull$26(o_mifToXbar_rdRspFull[26]),
+	// {2'size, 1'host, 2'cmd, TID_W'tid, 48'addr, 64'data}
+	.o_mifToXbar_req$26(o_mifToXbar_req[26]),
+	.o_mifToXbar_reqRdy$26(o_mifToXbar_reqRdy[26]),
+	.o_mifToXbar_wrRspFull$26(o_mifToXbar_wrRspFull[26]),
+	// {TID_W'tid, 64'data}
+	.i_xbarToMif_rdRsp$27(i_xbarToMif_rdRsp[27]),
+	.i_xbarToMif_rdRspRdy$27(i_xbarToMif_rdRspRdy[27]),
+	.i_xbarToMif_reqFull$27(i_xbarToMif_reqFull[27]),
+	.i_xbarToMif_wrRspRdy$27(i_xbarToMif_wrRspRdy[27]),
+	.i_xbarToMif_wrRspTid$27(i_xbarToMif_wrRspTid[27]),
+
+	.o_mifToXbar_rdRspFull$27(o_mifToXbar_rdRspFull[27]),
+	// {2'size, 1'host, 2'cmd, TID_W'tid, 48'addr, 64'data}
+	.o_mifToXbar_req$27(o_mifToXbar_req[27]),
+	.o_mifToXbar_reqRdy$27(o_mifToXbar_reqRdy[27]),
+	.o_mifToXbar_wrRspFull$27(o_mifToXbar_wrRspFull[27]),
+	// {TID_W'tid, 64'data}
+	.i_xbarToMif_rdRsp$28(i_xbarToMif_rdRsp[28]),
+	.i_xbarToMif_rdRspRdy$28(i_xbarToMif_rdRspRdy[28]),
+	.i_xbarToMif_reqFull$28(i_xbarToMif_reqFull[28]),
+	.i_xbarToMif_wrRspRdy$28(i_xbarToMif_wrRspRdy[28]),
+	.i_xbarToMif_wrRspTid$28(i_xbarToMif_wrRspTid[28]),
+
+	.o_mifToXbar_rdRspFull$28(o_mifToXbar_rdRspFull[28]),
+	// {2'size, 1'host, 2'cmd, TID_W'tid, 48'addr, 64'data}
+	.o_mifToXbar_req$28(o_mifToXbar_req[28]),
+	.o_mifToXbar_reqRdy$28(o_mifToXbar_reqRdy[28]),
+	.o_mifToXbar_wrRspFull$28(o_mifToXbar_wrRspFull[28]),
+	// {TID_W'tid, 64'data}
+	.i_xbarToMif_rdRsp$29(i_xbarToMif_rdRsp[29]),
+	.i_xbarToMif_rdRspRdy$29(i_xbarToMif_rdRspRdy[29]),
+	.i_xbarToMif_reqFull$29(i_xbarToMif_reqFull[29]),
+	.i_xbarToMif_wrRspRdy$29(i_xbarToMif_wrRspRdy[29]),
+	.i_xbarToMif_wrRspTid$29(i_xbarToMif_wrRspTid[29]),
+
+	.o_mifToXbar_rdRspFull$29(o_mifToXbar_rdRspFull[29]),
+	// {2'size, 1'host, 2'cmd, TID_W'tid, 48'addr, 64'data}
+	.o_mifToXbar_req$29(o_mifToXbar_req[29]),
+	.o_mifToXbar_reqRdy$29(o_mifToXbar_reqRdy[29]),
+	.o_mifToXbar_wrRspFull$29(o_mifToXbar_wrRspFull[29]),
+	// {TID_W'tid, 64'data}
+	.i_xbarToMif_rdRsp$30(i_xbarToMif_rdRsp[30]),
+	.i_xbarToMif_rdRspRdy$30(i_xbarToMif_rdRspRdy[30]),
+	.i_xbarToMif_reqFull$30(i_xbarToMif_reqFull[30]),
+	.i_xbarToMif_wrRspRdy$30(i_xbarToMif_wrRspRdy[30]),
+	.i_xbarToMif_wrRspTid$30(i_xbarToMif_wrRspTid[30]),
+
+	.o_mifToXbar_rdRspFull$30(o_mifToXbar_rdRspFull[30]),
+	// {2'size, 1'host, 2'cmd, TID_W'tid, 48'addr, 64'data}
+	.o_mifToXbar_req$30(o_mifToXbar_req[30]),
+	.o_mifToXbar_reqRdy$30(o_mifToXbar_reqRdy[30]),
+	.o_mifToXbar_wrRspFull$30(o_mifToXbar_wrRspFull[30]),
+	// {TID_W'tid, 64'data}
+	.i_xbarToMif_rdRsp$31(i_xbarToMif_rdRsp[31]),
+	.i_xbarToMif_rdRspRdy$31(i_xbarToMif_rdRspRdy[31]),
+	.i_xbarToMif_reqFull$31(i_xbarToMif_reqFull[31]),
+	.i_xbarToMif_wrRspRdy$31(i_xbarToMif_wrRspRdy[31]),
+	.i_xbarToMif_wrRspTid$31(i_xbarToMif_wrRspTid[31]),
+
+	.o_mifToXbar_rdRspFull$31(o_mifToXbar_rdRspFull[31]),
+	// {2'size, 1'host, 2'cmd, TID_W'tid, 48'addr, 64'data}
+	.o_mifToXbar_req$31(o_mifToXbar_req[31]),
+	.o_mifToXbar_reqRdy$31(o_mifToXbar_reqRdy[31]),
+	.o_mifToXbar_wrRspFull$31(o_mifToXbar_wrRspFull[31]),
 	.o_min_stall(nxtae_rx_stall),
 	.i_min_data(nxtae_rx_data),
 	.i_min_valid(nxtae_rx_vld),
@@ -459,7 +651,7 @@ module cae_pers #(
     end
 
     // unused
-    for (n=NUM_MC_PORTS; n<16; n=n+1) begin : g1
+    for (n=NUM_MC_PORTS; n<32; n=n+1) begin : g1
 	assign i_xbarToMif_rdRsp[n] = 0;
 	assign i_xbarToMif_rdRspRdy[n] = 0;
 	assign i_xbarToMif_reqFull[n] = 0;

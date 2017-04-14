@@ -797,9 +797,12 @@ void CDsnInfo::InitAndValidateModMif()
 		}
 	}
 
-	if (m_mifInstList.size() * g_appArgs.GetAeUnitCnt() > 16) {
-		ParseMsg(Error, "required memory interface ports (%d) for AE is greater then number available (16)",
-			(int)(m_mifInstList.size() * g_appArgs.GetAeUnitCnt()));
+	bool bIsWx690  = g_appArgs.GetCoprocInfo().GetCoproc() == wx690;
+	bool bIsWx2000 = g_appArgs.GetCoprocInfo().GetCoproc() == wx2k;
+	uint memPortLimPerAE = (bIsWx690 ? 32 : (bIsWx2000 ? 8 : 16));
+	if (m_mifInstList.size() * g_appArgs.GetAeUnitCnt() > memPortLimPerAE) {
+		ParseMsg(Error, "required memory interface ports (%d) for AE is greater then number available (%d)",
+			 (int)(m_mifInstList.size() * g_appArgs.GetAeUnitCnt()), memPortLimPerAE);
 		ParseMsg(Info, "   required memory interface ports is product of Unit count (%d) and memory ports per Unit (%d)",
 			(int)g_appArgs.GetAeUnitCnt(), (int)m_mifInstList.size());
 	}

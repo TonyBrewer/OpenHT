@@ -161,12 +161,12 @@ ADD_ENDIF
     /*
      * Hybrid-Threading Top
      */
-    wire [31:0]  i_xbarToMif_wrRspTid[15:0];
-    wire [15:0]  i_xbarToMif_rdRspRdy, i_xbarToMif_wrRspRdy,
+    wire [31:0]  i_xbarToMif_wrRspTid[31:0];
+    wire [31:0]  i_xbarToMif_rdRspRdy, i_xbarToMif_wrRspRdy,
 		 i_xbarToMif_reqFull, o_mifToXbar_reqRdy,
 		 o_mifToXbar_rdRspFull, o_mifToXbar_wrRspFull;
-    wire [95:0]	 i_xbarToMif_rdRsp[15:0];
-    wire [148:0] o_mifToXbar_req[15:0];
+    wire [95:0]	 i_xbarToMif_rdRsp[31:0];
+    wire [148:0] o_mifToXbar_req[31:0];
 
 ADD_IFNDEF AE_AE_IF
     wire	nxtae_rx_stall, nxtae_rx_vld, nxtae_tx_stall, nxtae_tx_vld,
@@ -195,7 +195,7 @@ ADD_ENDIF
 	.i_dispToHif_ctlQueBase(dis_ctlQueBase),
 	.i_dispToHif_dispStart(dis_start),
 	.i_reset(g_reset_top),
-`for (n=0;n<16;n++)
+`for (n=0;n<32;n++)
 	// {TID_W'tid, 64'data}
 	.i_xbarToMif_rdRsp$`n(i_xbarToMif_rdRsp[`n]),
 	.i_xbarToMif_rdRspRdy$`n(i_xbarToMif_rdRspRdy[`n]),
@@ -281,7 +281,7 @@ ADD_ENDIF
     end
 
     // unused
-    for (n=NUM_MC_PORTS; n<16; n=n+1) begin : g1
+    for (n=NUM_MC_PORTS; n<32; n=n+1) begin : g1
 	assign i_xbarToMif_rdRsp[n] = 0;
 	assign i_xbarToMif_rdRspRdy[n] = 0;
 	assign i_xbarToMif_reqFull[n] = 0;

@@ -9,6 +9,6 @@
  */
 
 #if !defined(SYSC_AE_MEM_CNT)
-#define SYSC_AE_MEM_CNT	16
+#define SYSC_AE_MEM_CNT	32
 #endif
 
