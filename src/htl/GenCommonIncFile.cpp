@@ -106,42 +106,6 @@ void CDsnInfo::GenerateCommonIncludeFile()
 	}
 	fprintf(incFile, "\n");
 
-	fprintf(incFile, "//////////////////////////////////\n");
-	fprintf(incFile, "// Common structs and unions\n");
-	fprintf(incFile, "\n");
-
-	for (size_t recordIdx = 0; recordIdx < m_recordList.size(); recordIdx += 1) {
-
-		if (m_recordList[recordIdx]->m_scope != eUnit && !m_recordList[recordIdx]->m_bInclude) continue;
-		//if (!m_recordList[recordIdx]->m_bNeedIntf) continue;
-
-		if (m_recordList[recordIdx]->m_bCStyle)
-			GenIntfStruct(incFile, m_recordList[recordIdx]->m_typeName, m_recordList[recordIdx]->m_fieldList,
-			m_recordList[recordIdx]->m_bCStyle, m_recordList[recordIdx]->m_bInclude,
-			false, m_recordList[recordIdx]->m_bUnion);
-		else
-			GenUserStructs(incFile, m_recordList[recordIdx]);
-
-		CHtCode htFile(incFile);
-		GenUserStructBadData(htFile, true, m_recordList[recordIdx]->m_typeName,
-			m_recordList[recordIdx]->m_fieldList, m_recordList[recordIdx]->m_bCStyle, "");
-	}
-	fprintf(incFile, "\n");
-
-	if (m_ngvList.size() > 0) {
-		fprintf(incFile, "//////////////////////////////////\n");
-		fprintf(incFile, "// Global variable write structs\n");
-		fprintf(incFile, "\n");
-
-		vector<string> gvTypeList;
-
-		for (size_t gvIdx = 0; gvIdx < m_ngvList.size(); gvIdx += 1) {
-			CNgvInfo * pNgvInfo = m_ngvList[gvIdx];
-			CRam * pNgv = pNgvInfo->m_modInfoList[0].m_pNgv;
-			GenGlobalVarWriteTypes(incFile, pNgv->m_pType, pNgvInfo->m_atomicMask, gvTypeList, pNgv);
-		}
-	}
-
 	fprintf(incFile, "#ifdef _HTV\n");
 	fprintf(incFile, "#define INT(a) a\n");
 	fprintf(incFile, "#else\n");
@@ -200,6 +164,42 @@ void CDsnInfo::GenerateCommonIncludeFile()
 	fprintf(incFile, "}\n");
 	fprintf(incFile, "#endif\n");
 	fprintf(incFile, "\n");
+
+	fprintf(incFile, "//////////////////////////////////\n");
+	fprintf(incFile, "// Common structs and unions\n");
+	fprintf(incFile, "\n");
+
+	for (size_t recordIdx = 0; recordIdx < m_recordList.size(); recordIdx += 1) {
+
+		if (m_recordList[recordIdx]->m_scope != eUnit && !m_recordList[recordIdx]->m_bInclude) continue;
+		//if (!m_recordList[recordIdx]->m_bNeedIntf) continue;
+
+		if (m_recordList[recordIdx]->m_bCStyle)
+			GenIntfStruct(incFile, m_recordList[recordIdx]->m_typeName, m_recordList[recordIdx]->m_fieldList,
+			m_recordList[recordIdx]->m_bCStyle, m_recordList[recordIdx]->m_bInclude,
+			false, m_recordList[recordIdx]->m_bUnion);
+		else
+			GenUserStructs(incFile, m_recordList[recordIdx]);
+
+		CHtCode htFile(incFile);
+		GenUserStructBadData(htFile, true, m_recordList[recordIdx]->m_typeName,
+			m_recordList[recordIdx]->m_fieldList, m_recordList[recordIdx]->m_bCStyle, "");
+	}
+	fprintf(incFile, "\n");
+
+	if (m_ngvList.size() > 0) {
+		fprintf(incFile, "//////////////////////////////////\n");
+		fprintf(incFile, "// Global variable write structs\n");
+		fprintf(incFile, "\n");
+
+		vector<string> gvTypeList;
+
+		for (size_t gvIdx = 0; gvIdx < m_ngvList.size(); gvIdx += 1) {
+			CNgvInfo * pNgvInfo = m_ngvList[gvIdx];
+			CRam * pNgv = pNgvInfo->m_modInfoList[0].m_pNgv;
+			GenGlobalVarWriteTypes(incFile, pNgv->m_pType, pNgvInfo->m_atomicMask, gvTypeList, pNgv);
+		}
+	}
 
 	fprintf(incFile, "//////////////////////////////////\n");
 	fprintf(incFile, "// Host Control interfaces\n");
@@ -626,8 +626,12 @@ void CDsnInfo::GenGlobalVarWriteTypes(CHtFile & htFile, CType * pType, int &atom
 				if (pGv->m_addr2W.size() > 0 && bAddr2WEq0)
 					fprintf(htFile, "\t\tht_assert(addr2 == 0); // addr2 bounds check\n");
 
-				if (pGv->m_addrW > 0)
+				if (pGv->m_addrW > 0) {
+					fprintf(htFile, "#ifndef _HTV\n");
+					fprintf(htFile, "\t\tif (!assert_msg_(!m_bAddr, \"Runtime check failed in %s.write_addr() method - write_addr() was already called on this variable\\n\")) assert(0);\n", pGv->m_gblName.c_str());
+					fprintf(htFile, "#endif\n");
 					fprintf(htFile, "\t\tm_bAddr = true;\n");
+				}
 
 				string bitRange = pGv->m_addr0W.AsInt() > 0 ? VA("(%d, 0)", pGv->m_addr1W.AsInt() + pGv->m_addr2W.AsInt() - 1) : "";
 				if (pGv->m_addr1W.AsInt() > 0 && !bAddr1EqHtId)
@@ -827,6 +831,9 @@ void CDsnInfo::GenGlobalVarWriteTypes(CHtFile & htFile, CType * pType, int &atom
 			fprintf(htFile, "\tvoid write_addr(ht_uint%d addr1%s) {\n", pGv->m_addr1W.AsInt(),
 				VA(pGv->m_addr2W.AsInt() == 0 ? "" : ", ht_uint%d addr2", pGv->m_addr2W.AsInt()).c_str());
 
+			fprintf(htFile, "#ifndef _HTV\n");
+			fprintf(htFile, "\t\tif (!assert_msg_(!m_bAddr, \"Runtime check failed in %s.write_addr() method - write_addr() was already called on this variable\\n\")) assert(0);\n", pGv->m_gblName.c_str());
+			fprintf(htFile, "#endif\n");
 			fprintf(htFile, "\t\tm_bAddr = true;\n");
 
 			string bitRange = pGv->m_addr0W.AsInt() > 0 ? VA("(%d, 0)", pGv->m_addr1W.AsInt() + pGv->m_addr2W.AsInt() - 1) : "";
