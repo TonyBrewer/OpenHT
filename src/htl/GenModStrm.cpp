@@ -853,9 +853,9 @@ void CDsnInfo::GenModStrmStatements(CInstance * pModInst)
 					m_strmFuncDef.Append("\treturn r_wrStrm%s_bOpenBufWr[strmId] && !r_wrStrm%s_bBufFull[strmId];\n", strmName.c_str(), strmName.c_str());
 			} else {
 				if (pStrm->m_strmCnt.size() == 0)
-					m_strmFuncDef.Append("\treturn !r_wrStrm%s_bPipeQueFull;\n", strmName.c_str());
+					m_strmFuncDef.Append("\treturn r_wrStrm%s_bOpenBufWr && !r_wrStrm%s_bPipeQueFull;\n", strmName.c_str(), strmName.c_str());
 				else
-					m_strmFuncDef.Append("\treturn !r_wrStrm%s_bPipeQueFull[strmId];\n", strmName.c_str());
+					m_strmFuncDef.Append("\treturn r_wrStrm%s_bOpenBufWr[strmId] && !r_wrStrm%s_bPipeQueFull[strmId];\n", strmName.c_str(), strmName.c_str());
 			}
 
 			m_strmFuncDef.Append("}\n");
@@ -917,8 +917,8 @@ void CDsnInfo::GenModStrmStatements(CInstance * pModInst)
 				} else {
 					string preLine = "\treturn ";
 					for (int i = 0; i < pStrm->m_strmCnt.AsInt(); i += 1) {
-						m_strmFuncDef.Append("%s(!strmMask[%d] || !r_wrStrm%s_bPipeQueFull[%d])",
-							preLine.c_str(), i, strmName.c_str(), i);
+						m_strmFuncDef.Append("%s(!strmMask[%d] || r_wrStrm%s_bOpenBufWr[%d] && !r_wrStrm%s_bPipeQueFull[%d])",
+							preLine.c_str(), i, strmName.c_str(), i, strmName.c_str(), i);
 						preLine = " &&\n\t\t";
 					}
 					m_strmFuncDef.Append(";\n");

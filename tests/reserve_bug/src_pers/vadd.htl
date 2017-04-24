@@ -1,0 +1,17 @@
+// -cl $(HtToolsPath)/tests/vadd_2d_stream_GV/src_pers/vadd.htl
+-wd $(HtToolsPath)/tests/vadd_2d_stream_GV/msvs12
+
+//-cp wx-690
+-cp hc-1
+-uc 1
+-un Au
+-df 150
+-pn vadd_2d_stream_GV
+-it
+-mt
+//-vcd_all
+-D_WIN32
+-I ../src
+-if ../src_pers/vadd.hti
+../src_pers/vadd.htd
+../ht/sysc
