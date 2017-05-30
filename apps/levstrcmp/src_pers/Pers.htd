@@ -70,9 +70,10 @@ union CStrPair {
 };
 	
 union CStrUnion {
-#pragma htl spanning_field
 	struct {
+#pragma htl spanning_field
 		uint64_t m_data0;
+#pragma htl spanning_field
 		uint16_t m_data1;
 	};
 	uint8_t m_byte[10];
