@@ -628,7 +628,8 @@ void CDsnInfo::GenGlobalVarWriteTypes(CHtFile & htFile, CType * pType, int &atom
 
 				if (pGv->m_addrW > 0) {
 					fprintf(htFile, "#ifndef _HTV\n");
-					fprintf(htFile, "\t\tif (!assert_msg_(!m_bAddr, \"Runtime check failed in %s.write_addr() method - write_addr() was already called on this variable\\n\")) assert(0);\n", pGv->m_gblName.c_str());
+					fprintf(htFile, "\t\tsc_time t_cur = sc_time_stamp();\n");
+					fprintf(htFile, "\t\tif (!assert_msg_(!(m_bAddr && (t_cur.value() != 0)), \"Runtime check failed in %s.write_addr() method - write_addr() was already called on this variable\\n\")) assert(0);\n", pGv->m_gblName.c_str());
 					fprintf(htFile, "#endif\n");
 					fprintf(htFile, "\t\tm_bAddr = true;\n");
 				}
@@ -832,7 +833,8 @@ void CDsnInfo::GenGlobalVarWriteTypes(CHtFile & htFile, CType * pType, int &atom
 				VA(pGv->m_addr2W.AsInt() == 0 ? "" : ", ht_uint%d addr2", pGv->m_addr2W.AsInt()).c_str());
 
 			fprintf(htFile, "#ifndef _HTV\n");
-			fprintf(htFile, "\t\tif (!assert_msg_(!m_bAddr, \"Runtime check failed in %s.write_addr() method - write_addr() was already called on this variable\\n\")) assert(0);\n", pGv->m_gblName.c_str());
+			fprintf(htFile, "\t\tsc_time t_cur = sc_time_stamp();\n");
+			fprintf(htFile, "\t\tif (!assert_msg_(!(m_bAddr && (t_cur.value() != 0)), \"Runtime check failed in %s.write_addr() method - write_addr() was already called on this variable\\n\")) assert(0);\n", pGv->m_gblName.c_str());
 			fprintf(htFile, "#endif\n");
 			fprintf(htFile, "\t\tm_bAddr = true;\n");
 
