@@ -1896,6 +1896,7 @@ void HtdFile::ParseSharedMethods()
 		string addr2W;
 		string queueW;
 		string blockRam;
+		string forceKeep;
 		string reset;
 
 		CParamList params[] = {
@@ -1909,12 +1910,13 @@ void HtdFile::ParseSharedMethods()
 				{ "addr2W", &addr2W, false, ePrmInteger, 0, 0 },
 				{ "queueW", &queueW, false, ePrmInteger, 0, 0 },
 				{ "blockRam", &blockRam, false, ePrmIdent, 0, 0 },
+				{ "forceKeep", &forceKeep, false, ePrmIdent, 0, 0 },
 				{ "reset", &reset, false, ePrmIdent, 0, 0 },
 				{ 0, 0, 0, ePrmUnknown, 0, 0 }
 		};
 
 		if (!ParseParameters(params))
-			CPreProcess::ParseMsg(Error, "expected AddVar( type, name {, dimen1 {, dimen2 }} {, rdSelW}{, wrSelW}{, addr1W {, addr2W }} {, queueW } {, blockRam=false } {, reset=true } )");
+			CPreProcess::ParseMsg(Error, "expected AddVar( type, name {, dimen1 {, dimen2 }} {, rdSelW}{, wrSelW}{, addr1W {, addr2W }} {, queueW } {, blockRam=false } {, forceReset=false } {, reset=true } )");
 
 		bool bBlockRam = false;
 		if (blockRam == "true")
@@ -1944,6 +1946,12 @@ void HtdFile::ParseSharedMethods()
 		if (dimen2.size() > 0 && dimen1.size() == 0)
 			CPreProcess::ParseMsg(Error, "unsupported parameter conbination, dimen2 is specified but dimen1 is not");
 
+		if (forceKeep.size() > 0 && forceKeep != "true" && forceKeep != "false")
+			CPreProcess::ParseMsg(Error, "expected forceKeep value to be true or false");
+
+		if (forceKeep.size() > 0 && forceKeep != "true" && (addr1W.size() > 0 || queueW.size() > 0 || bBlockRam))
+			CPreProcess::ParseMsg(Error, "unsupported parameter conbination, forceKeep cannot be used with addressing/queueW/blockRam");
+
 		if (reset.size() > 0 && reset != "true" && reset != "false")
 			CPreProcess::ParseMsg(Error, "expected reset value to be true or false");
 
@@ -1953,7 +1961,7 @@ void HtdFile::ParseSharedMethods()
 			CPreProcess::ParseMsg(Error, "duplicate shared variable name '%s'", name.c_str());
 		else {
 			m_pOpenMod->m_sharedList.insert(name);
-			m_pOpenRecord->AddSharedField(pType, name, dimen1, dimen2, rdSelW, wrSelW, addr1W, addr2W, queueW, ramType, reset);
+			m_pOpenRecord->AddSharedField(pType, name, dimen1, dimen2, rdSelW, wrSelW, addr1W, addr2W, queueW, ramType, forceKeep, reset);
 		}
 
 		m_pLex->GetNextTk();

@@ -230,7 +230,8 @@ struct CField : CDimenList {
 	}
 
 	CField(CType * pType, string name, string dimen1, string dimen2, string rdSelW, string wrSelW,
-		string addr1W, string addr2W, string queueW, HtdFile::ERamType ramType, string reset)
+		string addr1W, string addr2W, string queueW, HtdFile::ERamType ramType, string forceKeep,
+		string reset)
 	{
 		Init();
 
@@ -246,6 +247,7 @@ struct CField : CDimenList {
 		m_addr2W = addr2W;
 		m_queueW = queueW;
 		m_ramType = ramType;
+		m_forceKeep = forceKeep;
 		m_reset = reset;
 	}
 
@@ -342,6 +344,7 @@ public:
 	bool		m_bIsUsed;
 	bool		m_bCxrParam;
 	HtdFile::ERamType	m_ramType;
+	CHtString		m_forceKeep;
 	int			m_atomicMask;
 	int			m_cLangFieldPos;
 
@@ -429,10 +432,10 @@ struct CRecord : CType {
 	}
 
 	void AddSharedField(CType * pType, string name, string dimen1, string dimen2, string rdSelW, string wrSelW,
-		string addr1W, string addr2W, string queueW, HtdFile::ERamType ramType, string reset)
+		string addr1W, string addr2W, string queueW, HtdFile::ERamType ramType, string forceKeep, string reset)
 	{
 
-		m_fieldList.push_back(new CField(pType, name, dimen1, dimen2, rdSelW, wrSelW, addr1W, addr2W, queueW, ramType, reset));
+		m_fieldList.push_back(new CField(pType, name, dimen1, dimen2, rdSelW, wrSelW, addr1W, addr2W, queueW, ramType, forceKeep, reset));
 	}
 
 	void AddPrivateField(CType * pType, string name, string dimen1, string dimen2,

@@ -2566,6 +2566,9 @@ void CDsnInfo::GenModIplStatements(CInstance * pModInst)
 				m_iplRegDecl.Append("\t%s r__SHR__%s%s;\n", pField->m_pType->m_typeName.c_str(), pField->m_name.c_str(), pField->m_dimenDecl.c_str());
 
 				GenRamIndexLoops(iplReg, "", *pField);
+				if (pField->m_forceKeep == "true") {
+					iplReg.Append("\tht_attrib(keep, r__SHR__%s%s, \"true\");\n", pField->m_name.c_str(), pField->m_dimenIndex.c_str());
+				}
 				iplReg.Append("\tr__SHR__%s%s = c__SHR__%s%s;\n", pField->m_name.c_str(), pField->m_dimenIndex.c_str(), pField->m_name.c_str(), pField->m_dimenIndex.c_str());
 			}
 		}
