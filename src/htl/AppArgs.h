@@ -133,6 +133,7 @@ public:
 	int GetArgMemLatency(int i) { return m_avgMemLatency[i]; }
 	vector<string> &GetIncludeDirs() { return m_includeDirs; }
 	int GetVcdStartCycle() { return m_vcdStartCycle; }
+	vector<string> &GetVcdModList() { return m_vcdModList; }
 
 	CGenHtmlRpt & GetDsnRpt() { return *m_pDsnRpt; }
 
@@ -214,6 +215,8 @@ private:
 	FILE *			m_pVarRptFp;
 
 	MTRand_int32	m_mtRand;
+	string			m_vcdModString;
+	vector<string>	m_vcdModList;
 };
 
 extern CAppArgs g_appArgs;

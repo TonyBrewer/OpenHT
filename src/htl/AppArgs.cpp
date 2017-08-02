@@ -288,6 +288,18 @@ CAppArgs::Parse(int argc, char const **argv)
 			} else if ((strcmp(argv[argPos], "-vcd_filter") == 0)) {
 				argPos += 1;
 				m_vcdFilterFile = argv[argPos];
+			} else if ((strcmp(argv[argPos], "-vcd_list") == 0)) {
+				argPos += 1;
+				m_vcdModString = argv[argPos];
+
+				size_t pos = 0;
+				string token;
+				while ((pos = m_vcdModString.find(",")) != string::npos) {
+					token = m_vcdModString.substr(0, pos);
+					m_vcdModList.push_back(token);
+					m_vcdModString.erase(0, pos+1);
+				}
+				m_vcdModList.push_back(m_vcdModString);
 			} else if ((strncmp(argv[argPos], "-vr", 3) == 0)) {
 				m_bVariableReport = true;
 				m_pVarRptFp = fopen("HtPrivRpt.txt", "w");
@@ -509,6 +521,11 @@ CAppArgs::Parse(int argc, char const **argv)
 		int pos = m_htlName.find_last_of(".");
 		if (pos >= 0)
 			m_projName = m_projName.substr(0, pos);
+	}
+
+	if (m_vcdModList.size() != 0 && !m_bVcdUser) {
+		// Set vcd_all if user gives vcd_list but neither vcd or vcd_all
+		m_bVcdAll = true;
 	}
 
 #ifdef _WIN32

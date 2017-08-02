@@ -949,6 +949,30 @@ void CDsnInfo::GenModTrace(EVcdType vcdType, string &modName, VA name, VA val)
 {
 	if (vcdType == eVcdNone) return;
 
+	string modName_lc = modName;
+	modName_lc.erase(0, 4);
+	for (size_t j = 0; j < modName_lc.size(); j++) {
+		modName_lc[j] = tolower(modName_lc[j]);
+	}
+
+
+	bool skipmod = true;
+	for (size_t i = 0; i < g_appArgs.GetVcdModList().size(); i += 1) {
+		string vcdmod = g_appArgs.GetVcdModList()[i];
+		for (size_t j = 0; j < vcdmod.size(); j++) {
+			vcdmod[j] = tolower(vcdmod[j]);
+		}
+
+		if (vcdmod.compare(modName_lc) == 0) {
+			skipmod = false;
+			break;
+		}
+	}
+	if (g_appArgs.GetVcdModList().size() == 0) {
+		skipmod = false;
+	}
+	if (skipmod) return;
+
 	if (g_appArgs.IsVcdUserEnabled() && vcdType == eVcdUser || g_appArgs.IsVcdAllEnabled()) {
 		string vcdName = VA("%s.%s", modName.c_str(), name.c_str());
 		if (g_appArgs.IsVcdFilterMatch(vcdName))
@@ -960,6 +984,29 @@ void CDsnInfo::GenModTrace(EVcdType vcdType, string &modName, VA name, VA val)
 void CDsnInfo::GenVcdTrace(CHtCode &sosCode, EVcdType vcdType, string &modName, VA name, VA val)
 {
 	if (vcdType == eVcdNone) return;
+
+	string modName_lc = modName;
+	modName_lc.erase(0, 4);
+	for (size_t j = 0; j < modName_lc.size(); j++) {
+		modName_lc[j] = tolower(modName_lc[j]);
+	}
+
+	bool skipmod = true;
+	for (size_t i = 0; i < g_appArgs.GetVcdModList().size(); i += 1) {
+		string vcdmod = g_appArgs.GetVcdModList()[i];
+		for (size_t j = 0; j < vcdmod.size(); j++) {
+			vcdmod[j] = tolower(vcdmod[j]);
+		}
+
+		if (vcdmod.compare(modName_lc) == 0) {
+			skipmod = false;
+			break;
+		}
+	}
+	if (g_appArgs.GetVcdModList().size() == 0) {
+		skipmod = false;
+	}
+	if (skipmod) return;
 
 	if (g_appArgs.IsVcdUserEnabled() && vcdType == eVcdUser || g_appArgs.IsVcdAllEnabled()) {
 		string vcdName = VA("%s.%s", modName.c_str(), name.c_str());
