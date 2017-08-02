@@ -556,6 +556,8 @@ void CDsnInfo::InitBramUsage()
 		for (size_t ngvIdx = 0; ngvIdx < mod.m_ngvList.size(); ngvIdx += 1) {
 			CRam * pRam = mod.m_ngvList[ngvIdx];
 
+			if (!pRam->m_bReadForInstrRead && !pRam->m_bReadForMifWrite) continue;
+
 			CBramTarget target;
 			if (pRam->m_pNgvInfo->m_bOgv && pRam->m_addrW > 0) {
 				target.m_name = pRam->m_gblName;
