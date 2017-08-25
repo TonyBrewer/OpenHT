@@ -315,7 +315,7 @@ void CDsnInfo::CheckRequiredEntryNames(vector<CModIdx> &callStk)
 
 			m_maxReplCnt = max(m_maxReplCnt, instParams.m_replCnt);
 
-			if (instParams.m_replCnt > 1) {
+			if (instParams.m_replCnt >= 1) {
 				// Push replCnt on modInstList
 				for (int replIdx = 0; replIdx < instParams.m_replCnt; replIdx += 1) {
 					// check for replicated instance parameters
@@ -1785,7 +1785,7 @@ void CDsnInfo::GenModCxrStatements(CInstance * pModInst)
 		int replCntW = FindLg2(replCnt - 1);
 
 		string vcdModName = VA("Pers%s", pModInst->m_instName.Uc().c_str());
-		if (bDestAuto) {
+		if (bDestAuto || replCnt == 1) {
 			m_cxrRegDecl.Append("\tbool ht_noload c_Send%sBusy_%s;\n", callType.c_str(), callName.c_str());
 			m_cxrRegDecl.Append("\tbool ht_noload c_Send%sAvail_%s;\n", callType.c_str(), callName.c_str());
 
@@ -1809,7 +1809,7 @@ void CDsnInfo::GenModCxrStatements(CInstance * pModInst)
 		cxrPostReg.Append("#\tifdef _HTV\n");
 
 		for (int replIdx = 0; replIdx < replCnt; replIdx += 1) {
-			string indexStr = bDestAuto ? "" : VA("[%d]", replIdx);
+			string indexStr = (bDestAuto || replCnt == 1) ? "" : VA("[%d]", replIdx);
 
 			cxrPostReg.Append("\tc_Send%sBusy_%s%s = ", callType.c_str(), callName.c_str(), indexStr.c_str());
 
@@ -1850,7 +1850,7 @@ void CDsnInfo::GenModCxrStatements(CInstance * pModInst)
 		cxrPostReg.Append("#\telse\n");
 
 		for (int replIdx = 0; replIdx < replCnt; replIdx += 1) {
-			string indexStr = bDestAuto ? "" : VA("[%d]", replIdx);
+			string indexStr = (bDestAuto || replCnt == 1) ? "" : VA("[%d]", replIdx);
 
 			cxrPostReg.Append("\tc_Send%sBusy_%s%s = ", callType.c_str(), callName.c_str(), indexStr.c_str());
 
@@ -1895,7 +1895,7 @@ void CDsnInfo::GenModCxrStatements(CInstance * pModInst)
 
 		// generate Busy routine
 		string paramStr = bDestAuto ? "" : VA("ht_uint%d%s destId", replCntW == 0 ? 1 : replCntW, replCntW == 0 ? " ht_noload" : "");
-		string indexStr = bDestAuto ? "" : "[destId]";
+		string indexStr = (bDestAuto || replCnt == 1) ? "" : "[destId]";
 
 		g_appArgs.GetDsnRpt().AddLevel("bool Send%sBusy_%s(%s)\n",
 			pCxrCall->m_bXfer ? "Transfer" : "Call", callName.c_str(), paramStr.c_str());
@@ -2243,9 +2243,9 @@ void CDsnInfo::GenModCxrStatements(CInstance * pModInst)
 
 		bool bDestAuto = pCxrCall->m_dest == "auto";
 
-		string declStr = bDestAuto ? "" : VA("[%d]", replCnt);
+		string declStr = (bDestAuto || replCnt == 1) ? "" : VA("[%d]", replCnt);
 		vector<CHtString> replDim;
-		if (!bDestAuto) {
+		if (!(bDestAuto || replCnt == 1)) {
 			char buf[16];
 			sprintf(buf, "%d", replCnt);
 			CHtString str = (string)buf;
@@ -2287,7 +2287,7 @@ void CDsnInfo::GenModCxrStatements(CInstance * pModInst)
 		}
 
 		for (int replIdx = 0; replIdx < replCnt; replIdx += 1) {
-			string replStr = bDestAuto ? "" : VA("[%d]", replIdx);
+			string replStr = (bDestAuto || replCnt == 1) ? "" : VA("[%d]", replIdx);
 
 			if (htIdW == 0) {
 
@@ -2357,14 +2357,14 @@ void CDsnInfo::GenModCxrStatements(CInstance * pModInst)
 				m_cxrRegDecl.Append("\n");
 			}
 
-			if (bDestAuto)
+			if ((bDestAuto || replCnt == 1))
 				break;
 		}
 
 		// Generate Async Call Busy Function
 
 		string vcdModName = VA("Pers%s", pModInst->m_instName.Uc().c_str());
-		if (bDestAuto) {
+		if (bDestAuto || replCnt == 1) {
 			m_cxrRegDecl.Append("\tbool ht_noload c_SendCallBusy_%s;\n", callName.c_str());
 			m_cxrRegDecl.Append("\tbool ht_noload c_SendCallAvail_%s;\n", callName.c_str());
 
@@ -2387,7 +2387,7 @@ void CDsnInfo::GenModCxrStatements(CInstance * pModInst)
 		cxrPostReg.Append("#\tifdef _HTV\n");
 
 		for (int replIdx = 0; replIdx < replCnt; replIdx += 1) {
-			string indexStr = bDestAuto ? "" : VA("[%d]", replIdx);
+			string indexStr = (bDestAuto || replCnt == 1) ? "" : VA("[%d]", replIdx);
 
 			if (htIdW == 0) {
 				cxrPostReg.Append("\t\tc_SendCallBusy_%s%s = r_asyncCall%s_rtnCntFull%s",
@@ -2432,7 +2432,7 @@ void CDsnInfo::GenModCxrStatements(CInstance * pModInst)
 		cxrPostReg.Append("#\telse\n");
 
 		for (int replIdx = 0; replIdx < replCnt; replIdx += 1) {
-			string indexStr = bDestAuto ? "" : VA("[%d]", replIdx);
+			string indexStr = (bDestAuto || replCnt == 1) ? "" : VA("[%d]", replIdx);
 
 			if (htIdW == 0) {
 				cxrPostReg.Append("\t\tc_SendCallBusy_%s%s = r_asyncCall%s_rtnCntFull%s",
@@ -2474,7 +2474,7 @@ void CDsnInfo::GenModCxrStatements(CInstance * pModInst)
 		cxrPostReg.Append("#\tendif\n");
 
 		string paramStr = bDestAuto ? "" : VA("ht_uint%d%s destId", replCntW == 0 ? 1 : replCntW, replCntW == 0 ? " ht_noload" : "");
-		string indexStr = bDestAuto ? "" : "[destId]";
+		string indexStr = (bDestAuto || replCnt == 1) ? "" : "[destId]";
 
 		g_appArgs.GetDsnRpt().AddLevel("bool SendCallBusy_%s(%s)\n",
 			pCxrCall->m_modEntry.c_str(), paramStr.c_str());
@@ -2606,7 +2606,7 @@ void CDsnInfo::GenModCxrStatements(CInstance * pModInst)
 			m_cxrMacros.Append("\n");
 		}
 
-		indexStr = bDestAuto ? "" : "[destId]";
+		indexStr = (bDestAuto || replCnt == 1) ? "" : "[destId]";
 		if (htIdW == 0) {
 			m_cxrMacros.Append("\t// Should not happen - verify generated code properly limits outstanding calls\n");
 			m_cxrMacros.Append("\tassert(c_asyncCall%s_rtnCnt%s < 0x%x);\n",
@@ -2701,7 +2701,7 @@ void CDsnInfo::GenModCxrStatements(CInstance * pModInst)
 		// Generate AsyncCallPause function
 
 		paramStr = bDestAuto ? "" : VA(", ht_uint%d%s destId", replCntW == 0 ? 1 : replCntW, replCntW == 0 ? " ht_noload" : "");
-		indexStr = bDestAuto ? "" : "[destId]";
+		indexStr = (bDestAuto || replCnt == 1) ? "" : "[destId]";
 
 		g_appArgs.GetDsnRpt().AddLevel("void RecvReturnPause_%s(ht_uint%d rsmInstr%s)\n",
 			pCxrCall->m_modEntry.c_str(), pMod->m_instrW, paramStr.c_str());
@@ -2796,7 +2796,7 @@ void CDsnInfo::GenModCxrStatements(CInstance * pModInst)
 		// Generate AsyncCallJoin function
 
 		paramStr = bDestAuto ? "" : VA("ht_uint%d%s destId", replCntW == 0 ? 1 : replCntW, replCntW == 0 ? " ht_noload" : "");
-		indexStr = bDestAuto ? "" : "[destId]";
+		indexStr = (bDestAuto || replCnt == 1) ? "" : "[destId]";
 
 		g_appArgs.GetDsnRpt().AddLevel("void RecvReturnJoin_%s(%s)\n",
 			pCxrCall->m_modEntry.c_str(), paramStr.c_str());
