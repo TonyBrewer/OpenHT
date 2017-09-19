@@ -305,6 +305,29 @@ void CDsnInfo::GenModStrmStatements(CInstance * pModInst)
 		m_strmRegDecl.Append("\n");
 	}
 
+	// check that if prewr was asserted, the write actually happened
+	for (size_t streamIdx = 0; streamIdx < pMod->m_streamList.size(); streamIdx += 1) {
+		CStream * pStrm = pMod->m_streamList[streamIdx];
+
+		string strmName = pStrm->m_name.size() == 0 ? "" : "_" + pStrm->m_name.AsStr();
+
+		for (int i = 0; i < pStrm->m_strmCnt.AsInt(); i += 1) {
+			string strmIdxStr = pStrm->m_strmCnt.size() == 0 ? "" : VA("[%d]", i);
+
+			if (!pStrm->m_bRead && pStrm->m_reserve.AsInt() != 0 && !pStrm->m_bClose) {
+				strmPostInstr.Append("\tassert_msg((!r_s%d_wrStrm%s_preWr%s || c_wrStrm%s_strmWrEn%s), \"Runtime check failed in CPers%s::Pers%s() - WriteStream%s was not called %d cycles after WriteStreamPreWr%s was called\");\n",
+					pStrm->m_reserve.AsInt(), strmName.c_str(), strmIdxStr.c_str(), 
+					strmName.c_str(), strmIdxStr.c_str(),
+					pMod->m_modName.Uc().c_str(), pMod->m_modName.Uc().c_str(),
+					strmName.c_str(),
+					pStrm->m_reserve.AsInt(),
+					strmName.c_str());
+			}
+		}
+	}
+	strmPostInstr.Append("\n");
+
+
 	strmPostInstr.Append("\t// Stream Request Arbitration\n");
 	for (size_t streamIdx = 0; streamIdx < pMod->m_streamList.size(); streamIdx += 1) {
 		CStream * pStrm = pMod->m_streamList[streamIdx];
@@ -618,6 +641,9 @@ void CDsnInfo::GenModStrmStatements(CInstance * pModInst)
 			}
 			if (!pStrm->m_bClose) {
 				m_strmFuncDef.Append("\t}\n");
+				if (pStrm->m_reserve.AsInt() > 0) {
+					m_strmFuncDef.Append("\tc_wrStrm%s_preWrRem%s = elemCnt;\n", strmName.c_str(), strmIdStr.c_str());
+				}
 				m_strmFuncDef.Append("\tc_wrStrm%s_bufWrRem%s = elemCnt;\n", strmName.c_str(), strmIdStr.c_str());
 			}
 			m_strmFuncDef.Append("\n");
@@ -852,10 +878,22 @@ void CDsnInfo::GenModStrmStatements(CInstance * pModInst)
 				else
 					m_strmFuncDef.Append("\treturn r_wrStrm%s_bOpenBufWr[strmId] && !r_wrStrm%s_bBufFull[strmId];\n", strmName.c_str(), strmName.c_str());
 			} else {
-				if (pStrm->m_strmCnt.size() == 0)
-					m_strmFuncDef.Append("\treturn r_wrStrm%s_bOpenBufWr && !r_wrStrm%s_bPipeQueFull;\n", strmName.c_str(), strmName.c_str());
-				else
-					m_strmFuncDef.Append("\treturn r_wrStrm%s_bOpenBufWr[strmId] && !r_wrStrm%s_bPipeQueFull[strmId];\n", strmName.c_str(), strmName.c_str());
+				if (!pStrm->m_bClose) {
+					if (pStrm->m_strmCnt.size() == 0) {
+						m_strmFuncDef.Append("\tc_wrStrm%s_bReadyAvail = (r_wrStrm%s_bOpenBufWr && !r_wrStrm%s_bPipeQueFull && r_wrStrm%s_preWrRem != 0);\n", strmName.c_str(), strmName.c_str(), strmName.c_str(), strmName.c_str());
+						m_strmFuncDef.Append("\treturn r_wrStrm%s_bOpenBufWr && !r_wrStrm%s_bPipeQueFull && r_wrStrm%s_preWrRem != 0;\n", strmName.c_str(), strmName.c_str(), strmName.c_str());
+					} else {
+						m_strmFuncDef.Append("\tc_wrStrm%s_bReadyAvail[strmId] = (r_wrStrm%s_bOpenBufWr[strmId] && !r_wrStrm%s_bPipeQueFull[strmId] && r_wrStrm%s_preWrRem[strmId] != 0);\n", strmName.c_str(), strmName.c_str(), strmName.c_str(), strmName.c_str());
+						m_strmFuncDef.Append("\treturn r_wrStrm%s_bOpenBufWr[strmId] && !r_wrStrm%s_bPipeQueFull[strmId] && r_wrStrm%s_preWrRem[strmId] != 0;\n", strmName.c_str(), strmName.c_str(), strmName.c_str());
+					}
+				} else {
+					if (pStrm->m_strmCnt.size() == 0) {
+						m_strmFuncDef.Append("\treturn r_wrStrm%s_bOpenBufWr && !r_wrStrm%s_bPipeQueFull;\n", strmName.c_str(), strmName.c_str());
+					} else {
+						m_strmFuncDef.Append("\treturn r_wrStrm%s_bOpenBufWr[strmId] && !r_wrStrm%s_bPipeQueFull[strmId];\n", strmName.c_str(), strmName.c_str());
+					}
+
+				}
 			}
 
 			m_strmFuncDef.Append("}\n");
@@ -915,13 +953,26 @@ void CDsnInfo::GenModStrmStatements(CInstance * pModInst)
 					}
 					m_strmFuncDef.Append(";\n");
 				} else {
-					string preLine = "\treturn ";
-					for (int i = 0; i < pStrm->m_strmCnt.AsInt(); i += 1) {
-						m_strmFuncDef.Append("%s(!strmMask[%d] || r_wrStrm%s_bOpenBufWr[%d] && !r_wrStrm%s_bPipeQueFull[%d])",
-							preLine.c_str(), i, strmName.c_str(), i, strmName.c_str(), i);
-						preLine = " &&\n\t\t";
+					if (!pStrm->m_bClose) {
+						for (int i = 0; i < pStrm->m_strmCnt.AsInt(); i += 1) {
+							m_strmFuncDef.Append("\tc_wrStrm%s_bReadyAvail[%d] = strmMask[%d] && (r_wrStrm%s_bOpenBufWr[%d] && !r_wrStrm%s_bPipeQueFull[%d] && r_wrStrm%s_preWrRem[%d] != 0);\n", strmName.c_str(), i, i, strmName.c_str(), i, strmName.c_str(), i, strmName.c_str(), i);
+						}
+						string preLine = "\treturn ";
+						for (int i = 0; i < pStrm->m_strmCnt.AsInt(); i += 1) {
+							m_strmFuncDef.Append("%s(!strmMask[%d] || r_wrStrm%s_bOpenBufWr[%d] && !r_wrStrm%s_bPipeQueFull[%d] && r_wrStrm%s_preWrRem[%d] != 0)",
+								preLine.c_str(), i, strmName.c_str(), i, strmName.c_str(), i, strmName.c_str(), i);
+							preLine = " &&\n\t\t";
+						}
+						m_strmFuncDef.Append(";\n");
+					} else {
+						string preLine = "\treturn ";
+						for (int i = 0; i < pStrm->m_strmCnt.AsInt(); i += 1) {
+							m_strmFuncDef.Append("%s(!strmMask[%d] || r_wrStrm%s_bOpenBufWr[%d] && !r_wrStrm%s_bPipeQueFull[%d])",
+								preLine.c_str(), i, strmName.c_str(), i, strmName.c_str(), i);
+							preLine = " &&\n\t\t";
+						}
+						m_strmFuncDef.Append(";\n");
 					}
-					m_strmFuncDef.Append(";\n");
 				}
 
 				m_strmFuncDef.Append("}\n");
@@ -1187,6 +1238,40 @@ void CDsnInfo::GenModStrmStatements(CInstance * pModInst)
 			m_strmFuncDef.Append("\n");
 		}
 
+		if (!pStrm->m_bRead && pStrm->m_reserve.AsInt() != 0 && !pStrm->m_bClose) {
+			g_appArgs.GetDsnRpt().AddItem("void WriteStreamPreWr%s(", strmName.c_str());
+			m_strmFuncDecl.Append("\tvoid WriteStreamPreWr%s(", strmName.c_str());
+			m_strmFuncDef.Append("void CPers%s::WriteStreamPreWr%s(",
+				pMod->m_modName.Uc().c_str(), strmName.c_str());
+
+			if (pStrm->m_strmCnt.size() > 0) {
+				g_appArgs.GetDsnRpt().AddText("ht_uint%d strmId", pStrm->m_strmCntW);
+				m_strmFuncDecl.Append("ht_uint%d strmId", pStrm->m_strmCntW);
+				m_strmFuncDef.Append("ht_uint%d strmId", pStrm->m_strmCntW);
+			}
+
+			g_appArgs.GetDsnRpt().AddText(")\n");
+			m_strmFuncDecl.Append(");\n");
+			m_strmFuncDef.Append(")\n");
+
+			m_strmFuncDef.Append("{\n");
+
+			m_strmFuncDef.Append("\tassert_msg(c_wrStrm%s_bReadyAvail%s, \"Runtime check failed in CPersBug::WriteStreamPreWr%s() - expected WriteStreamReady%s() to have been called and been ready\");\n", strmName.c_str(), strmIdStr.c_str(), strmName.c_str(), strmName.c_str());
+
+			if (pStrm->m_strmCnt.size() > 0)
+				m_strmFuncDef.Append("\tassert_msg(strmId < %d, \"Runtime check failed in CPers%s::WriteStream%s()"
+				" - strmId out of range\");\n",
+				strmCnt,
+				pMod->m_modName.Uc().c_str(), strmName.c_str());
+
+
+			m_strmFuncDef.Append("\tc_s0_wrStrm%s_preWr%s = true;\n", strmName.c_str(), strmIdStr.c_str());
+			m_strmFuncDef.Append("\tc_wrStrm%s_preWrRem%s = r_wrStrm%s_preWrRem%s - 1;\n", strmName.c_str(), strmIdStr.c_str(), strmName.c_str(), strmIdStr.c_str());
+
+			m_strmFuncDef.Append("}\n");
+			m_strmFuncDef.Append("\n");
+		}
+
 		if (!pStrm->m_bRead) {
 			g_appArgs.GetDsnRpt().AddItem("void WriteStream%s(", strmName.c_str());
 			m_strmFuncDecl.Append("\tvoid WriteStream%s(", strmName.c_str());
@@ -1211,8 +1296,12 @@ void CDsnInfo::GenModStrmStatements(CInstance * pModInst)
 				strmCnt,
 				pMod->m_modName.Uc().c_str(), strmName.c_str());
 
+			if (pStrm->m_reserve.AsInt() != 0 && !pStrm->m_bClose)
+				m_strmFuncDef.Append("\tassert_msg(r_s%d_wrStrm%s_preWr%s, \"Runtime check failed in CPersBug::WriteStream%s() - expected WriteStreamPreWr%s() to have been called after the WriteStreamReady%s() check\");\n", pStrm->m_reserve.AsInt(), strmName.c_str(), strmIdStr.c_str(), strmName.c_str(), strmName.c_str(), strmName.c_str());
+
 			if (pStrm->m_reserve.AsInt() == 0)
 				m_strmFuncDef.Append("\tassert(r_wrStrm%s_bOpenBufWr%s);\n", strmName.c_str(), strmIdStr.c_str());
+
 
 			if (pStrm->m_bClose && pStrm->m_reserve.AsInt() > 0) {
 
@@ -2225,6 +2314,15 @@ void CDsnInfo::GenModStrmStatements(CInstance * pModInst)
 				strmReg.Append("\tr_wrStrm%s_bOpenBusy[%d] = !r_reset1x && c_wrStrm%s_bOpenBusy[%d];\n", strmName.c_str(), i, strmName.c_str(), i);
 			}
 
+			if (pStrm->m_reserve.AsInt() != 0 && !pStrm->m_bClose) {
+				m_strmRegDecl.Append("\tbool ht_noload c_wrStrm%s_bReadyAvail%s;\n", strmName.c_str(), strmIdDecl.c_str());
+				if (pStrm->m_strmCnt.size() == 0) {
+					strmPreInstr.Append("\tc_wrStrm%s_bReadyAvail = false;\n", strmName.c_str());
+				} else for (int i = 0; i < pStrm->m_strmCnt.AsInt(); i += 1) {
+					strmPreInstr.Append("\tc_wrStrm%s_bReadyAvail[%d] = false;\n", strmName.c_str(), i);
+				}
+			}
+
 			m_strmRegDecl.Append("\tbool ht_noload c_wrStrm%s_bOpenAvail%s;\n", strmName.c_str(), strmIdDecl.c_str());
 			if (pStrm->m_strmCnt.size() == 0) {
 				strmPreInstr.Append("\tc_wrStrm%s_bOpenAvail = false;\n", strmName.c_str());
@@ -2350,6 +2448,18 @@ void CDsnInfo::GenModStrmStatements(CInstance * pModInst)
 				}
 			}
 
+			if (pStrm->m_reserve.AsInt() != 0 && !pStrm->m_bClose) {
+				GenModDecl(eVcdAll, m_strmRegDecl, vcdModName, VA("ht_uint%d", elemCntW), VA("r_wrStrm%s_preWrRem", strmName.c_str()), strmIdVec);
+				m_strmRegDecl.Append("\tht_uint%d c_wrStrm%s_preWrRem%s;\n", elemCntW, strmName.c_str(), strmIdDecl.c_str());
+				if (pStrm->m_strmCnt.size() == 0) {
+					strmPreInstr.Append("\tc_wrStrm%s_preWrRem = r_wrStrm%s_preWrRem;\n", strmName.c_str(), strmName.c_str());
+					strmReg.Append("\tr_wrStrm%s_preWrRem = c_wrStrm%s_preWrRem;\n", strmName.c_str(), strmName.c_str());
+				} else for (int i = 0; i < pStrm->m_strmCnt.AsInt(); i += 1) {
+					strmPreInstr.Append("\tc_wrStrm%s_preWrRem[%d] = r_wrStrm%s_preWrRem[%d];\n", strmName.c_str(), i, strmName.c_str(), i);
+					strmReg.Append("\tr_wrStrm%s_preWrRem[%d] = c_wrStrm%s_preWrRem[%d];\n", strmName.c_str(), i, strmName.c_str(), i);
+				}
+			}
+
 			if (!pStrm->m_bClose) {
 				GenModDecl(eVcdAll, m_strmRegDecl, vcdModName, VA("ht_uint%d", elemCntW), VA("r_wrStrm%s_bufWrRem", strmName.c_str()), strmIdVec);
 				m_strmRegDecl.Append("\tht_uint%d c_wrStrm%s_bufWrRem%s;\n", elemCntW, strmName.c_str(), strmIdDecl.c_str());
@@ -2467,6 +2577,23 @@ void CDsnInfo::GenModStrmStatements(CInstance * pModInst)
 			} else for (int i = 0; i < pStrm->m_strmCnt.AsInt(); i += 1) {
 				strmPreInstr.Append("\tc_wrStrm%s_bufRdPtr[%d] = r_wrStrm%s_bufRdPtr[%d];\n", strmName.c_str(), i, strmName.c_str(), i);
 				strmReg.Append("\tr_wrStrm%s_bufRdPtr[%d] = r_reset1x ? (ht_uint%d)0 : c_wrStrm%s_bufRdPtr[%d];\n", strmName.c_str(), i, bufPtrW, strmName.c_str(), i);
+			}
+
+			if (pStrm->m_reserve.AsInt() != 0 && !pStrm->m_bClose) {
+				m_strmRegDecl.Append("\tbool c_s0_wrStrm%s_preWr%s;\n", strmName.c_str(), strmIdDecl.c_str());
+				if (pStrm->m_strmCnt.size() == 0) {
+					strmPreInstr.Append("\tc_s0_wrStrm%s_preWr = false;\n", strmName.c_str());
+				} else for (int j = 0; j < pStrm->m_strmCnt.AsInt(); j += 1) {
+					strmPreInstr.Append("\tc_s0_wrStrm%s_preWr[%d] = false;\n", strmName.c_str(), j);
+				}
+				for (int i = pStrm->m_reserve.AsInt(); i >= 1; i--) {
+					GenModDecl(eVcdAll, m_strmRegDecl, vcdModName, "bool", VA("r_s%d_wrStrm%s_preWr", i, strmName.c_str()), strmIdVec);
+					if (pStrm->m_strmCnt.size() == 0) {
+						strmReg.Append("\tr_s%d_wrStrm%s_preWr = %c_s%d_wrStrm%s_preWr;\n", i, strmName.c_str(), (i-1==0) ? 'c' : 'r', i-1, strmName.c_str());
+					} else for (int j = 0; j < pStrm->m_strmCnt.AsInt(); j += 1) {
+						strmReg.Append("\tr_s%d_wrStrm%s_preWr[%d] = %c_s%d_wrStrm%s_preWr[%d];\n", i, strmName.c_str(), j, (i-1==0) ? 'c' : 'r', i-1, strmName.c_str(), j);
+					}
+				}
 			}
 
 			GenModDecl(eVcdAll, m_strmRegDecl, vcdModName, "bool", VA("r_wrStrm%s_bBufFull", strmName.c_str()), strmIdVec);
