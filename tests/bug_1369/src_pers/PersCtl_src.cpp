@@ -8,10 +8,10 @@ CPersCtl::PersCtl()
 #ifndef _HTV
 		static const char *instructions[] = { "CTL_ENTRY", "CTL_RUN", "CTL_RTN" };
 		if (0 || (PR_htInst == CTL_ENTRY))
-			fprintf(stderr, "CTL: cmd=%s PR_cmd=%s S_rqAddr=%llx @ %lld\n",
+			fprintf(stderr, "CTL: cmd=%s PR_cmd=%s SR_rqAddr=%llx @ %lld\n",
 				instructions[(int)PR_htInst],
 				(PR_cmd == CMD_LD) ? "LD" : "ST",
-				(long long)S_rqAddr,
+				(long long)SR_rqAddr,
 				HT_CYCLE());
 #endif
 
@@ -24,22 +24,22 @@ CPersCtl::PersCtl()
 		}
 		break;
 		case CTL_RUN: {
-			if (MemReadBusy() || MemWriteBusy()) {
+			if (ReadMemBusy() || WriteMemBusy()) {
 				HtRetry();
 				break;
 			}
 
 			// Memory request
-			MemAddr_t memAddr = S_rqAddr + (P_rqIdx << 3);
+			MemAddr_t memAddr = SR_rqAddr + (P_rqIdx << 3);
 
 			if (PR_cmd == CMD_LD)
-				MemRead_memRsp(memAddr);
+				ReadMem_memRsp(memAddr);
 			else
-				MemWrite(memAddr, 0x600dbeef);
+				WriteMem(memAddr, 0x600dbeef);
 
 			P_rqCnt = P_rqCnt + 1;
 
-			if ((P_rqIdx + 1) >= S_arrayLen)
+			if ((P_rqIdx + 1) >= SR_arrayLen)
 				P_rqIdx = 0;
 			else
 				P_rqIdx = P_rqIdx + 1;
@@ -51,12 +51,12 @@ CPersCtl::PersCtl()
 		}
 		break;
 		case CTL_RTN: {
-			if (ReturnBusy_htmain()) {
+			if (SendReturnBusy_htmain()) {
 				HtRetry();
 				break;
 			}
 
-			Return_htmain(P_rqCnt);
+			SendReturn_htmain(P_rqCnt);
 		}
 		break;
 		default:
