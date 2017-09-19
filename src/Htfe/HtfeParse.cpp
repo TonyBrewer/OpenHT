@@ -1798,20 +1798,30 @@ void CHtfeDesign::ParseScAttrib(CHtfeIdent *pHier)
 		}
 	}
 
-	if (GetToken() != tk_comma || GetNextToken() != tk_string && GetToken() != tk_num_string) {
-		ParseMsg(PARSE_ERROR, "Expected attribute value string");
-		SkipTo(tk_semicolon);
-		GetNextToken();
-		return;
+	EToken tok = GetToken();
+	EToken tok2 = GetNextToken();
+	string value;
+	if (tok == tk_comma && tok2 == tk_num_int) {
+		value = GetString();
+		value = "INT_ONLY_" + value;
 	}
 
-	string value = GetString();
+	else {
+		if (tok != tk_comma || tok2 != tk_string && tok != tk_num_string) {
+			ParseMsg(PARSE_ERROR, "Expected attribute value string");
+			SkipTo(tk_semicolon);
+			GetNextToken();
+			return;
+		}
 
-	if (value.c_str()[0] == '"') {
-		char buf[128];
-		strcpy(buf, value.c_str());
-		buf[strlen(buf)-1] = '\0';
-		value = buf+1;
+		value = GetString();
+
+		if (value.c_str()[0] == '"') {
+			char buf[128];
+			strcpy(buf, value.c_str());
+			buf[strlen(buf)-1] = '\0';
+			value = buf+1;
+		}
 	}
 
 	if (GetNextToken() != tk_rparen || GetNextToken() != tk_semicolon) {

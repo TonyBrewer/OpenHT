@@ -3665,8 +3665,15 @@ void CHtvDesign::GenHtAttributes(CHtvIdent * pIdent, string instName)
 				name = "noprune";
 		}
 
-        if ((instName.size() == 0 || instName == htAttrib.m_inst) && !skip)
-			m_vFile.Print("(* %s = \"%s\" *)\n", name.c_str(), value.c_str());
+		if ((instName.size() == 0 || instName == htAttrib.m_inst) && !skip) {
+			size_t found = value.find("INT_ONLY_");
+			if (found != string::npos) {
+				value.erase(0,9);
+				m_vFile.Print("(* %s = %s *)\n", name.c_str(), value.c_str());
+			} else {
+				m_vFile.Print("(* %s = \"%s\" *)\n", name.c_str(), value.c_str());
+			}
+		}
     }
 }
 
