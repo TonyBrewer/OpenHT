@@ -1648,30 +1648,31 @@ void CDsnInfo::DrawModuleCmdRelationships()
 			for (size_t intfIdx = 0; intfIdx < pModInst->m_cxrIntfList.size(); intfIdx += 1) {
 				CCxrIntf * pCxrIntf = pModInst->m_cxrIntfList[intfIdx];
 
+				int destUnitCnt = (int)pCxrIntf->m_pDstModInst->m_replCnt;
+
 				string key = pCxrIntf->GetIntfName();
+				if (destUnitCnt > modInstCnt) {
+					char replStr[10];
+					sprintf(replStr, "%d", (int)pCxrIntf->m_pDstModInst->m_replId);
+					key += replStr;
+				}
+
 				if (cxr_seen.find(key) != cxr_seen.end()) continue;
 				cxr_seen.insert(pair<string, bool>(key, true));
 
-				int destUnitCnt = (int)pCxrIntf->m_pDstModInst->m_replCnt;
-				int numArcs = 1;
-				if (destUnitCnt > modInstCnt) {
-					numArcs = destUnitCnt - modInstCnt + 1;
-				}
-				for (int arc = 0; arc < numArcs; arc++) {
 
-					string destName = pCxrIntf->m_pDstModInst->m_replInstName.Uc();
+				string destName = pCxrIntf->m_pDstModInst->m_replInstName.Uc();
 
-					string label = " [label=\"";
-					label += pCxrIntf->m_modEntry.c_str();
-					label += "\"";
-					label += pCxrIntf->IsCall() ? " color=red" :
-						pCxrIntf->IsXfer() ? " color=deeppink" : " color=green";
-					label += "]";
+				string label = " [label=\"";
+				label += pCxrIntf->m_modEntry.c_str();
+				label += "\"";
+				label += pCxrIntf->IsCall() ? " color=red" :
+					pCxrIntf->IsXfer() ? " color=deeppink" : " color=green";
+				label += "]";
 
-					if (pCxrIntf->m_cxrDir == CxrOut) {
-						fs << "n" << modName << " -> n" << destName;
-						fs << label << ";\n";
-					}
+				if (pCxrIntf->m_cxrDir == CxrOut) {
+					fs << "n" << modName << " -> n" << destName;
+					fs << label << ";\n";
 				}
 			}
 
