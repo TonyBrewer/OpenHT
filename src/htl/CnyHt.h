@@ -41,6 +41,8 @@
 #define _mkdir(a) mkdir(a, 0777)
 #endif
 
+#include "dirent.h"
+
 using namespace std;
 
 #ifdef _WIN32

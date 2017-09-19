@@ -13,6 +13,7 @@
 void CDsnInfo::GenPersFiles()
 {
 	CreateDirectoryStructure();
+	CleanDirectoryStructure();
 
 	// Generate common include file
 	if (!g_appArgs.IsModelOnly()) {
@@ -68,4 +69,28 @@ void CDsnInfo::CreateDirectoryStructure()
 			exit(1);
 		}
 	} while (!bDone);
+}
+
+void CDsnInfo::CleanDirectoryStructure()
+{
+	// Get output directory
+	string dirPath = g_appArgs.GetOutputFolder();
+
+	DIR *dir;
+	struct dirent *ent;
+	if ((dir = opendir (dirPath.c_str())) != NULL) {
+		while ((ent = readdir (dir)) != NULL) {
+			string filename = ent->d_name;
+			if (filename.find(".c") != std::string::npos ||
+			    (filename.find(".h") != std::string::npos &&
+			     filename.find(".html") == std::string::npos)
+			    ) {
+				remove(filename.c_str());
+			}
+		}
+		closedir (dir);
+	} else {
+		fprintf(stderr, "Could not open directory %s\n", dirPath.c_str());
+		exit(1);
+	}
 }

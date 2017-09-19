@@ -2177,6 +2177,7 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 	void CheckRequiredEntryNames(vector<CModIdx> &callStk);
 	bool CheckTransferReturn(vector<CModIdx> &callStk);
 	void CreateDirectoryStructure();
+	void CleanDirectoryStructure();
 	void GenerateCommonIncludeFile();
 	void GenGlobalVarWriteTypes(CHtFile & htFile, CType * pType, int &atomicMask, vector<string> &gvTypeList, CRam * pGv = 0);
 	void GenerateUnitTopFile();
