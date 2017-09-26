@@ -88,6 +88,7 @@ CPersVadd::PersVadd()
     {
 	T1_wrEn = 1;
 	T1_bufRdAddr = TR2_bufRdAddr + 1;
+	WriteStreamPreWr_C();
     }
     
     if (TR6_wrEn)

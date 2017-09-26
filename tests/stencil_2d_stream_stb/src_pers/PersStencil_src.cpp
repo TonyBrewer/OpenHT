@@ -68,21 +68,29 @@ CPersStencil::PersStencil()
 	}
 
 	CStencilBufferIn_5x5r2 stIn;
-	stIn.m_bValid = ReadStreamReady() && WriteStreamReady();
+	stIn.m_bValid = ReadStreamReady() && !S_stOut.full(3);
 	stIn.m_data = stIn.m_bValid ? ReadStream() : 0;
 
 	CStencilBufferOut_5x5r2 stOut;
 
 	StencilBuffer_5x5r2(stIn, stOut);
+	if (stOut.m_bValid)
+		S_stOut.push(stOut);
 
 	//
 	// compute stencil
 	//
-	T1_bValid = stOut.m_bValid;
+	CStencilBufferOut_5x5r2 queStOut;
+	if (!S_stOut.empty() && WriteStreamReady()) {
+		T1_bValid = true;
+		queStOut = S_stOut.front();
+		S_stOut.pop();
+		WriteStreamPreWr();
+	}
 
 	for (uint32_t x = 0; x < X_SIZE; x += 1)
 		for (uint32_t y = 0; y < Y_SIZE; y += 1)
-			T1_mult[y][x] = (StType_t)(stOut.m_data[y][x] * SR_coef.m_coef[y][x]);
+			T1_mult[y][x] = (StType_t)(queStOut.m_data[y][x] * SR_coef.m_coef[y][x]);
 
 	for (uint32_t x = 0; x < X_SIZE; x += 1) {
 		T2_ysum[x] = 0;

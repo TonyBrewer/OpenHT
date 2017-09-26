@@ -59,13 +59,6 @@ typedef ht_uint64 PersType_t;
 #pragma message "  PLATFORM = " __PLATFORM__
 #endif
 
-#if ((TEST>>17)&1) == 0
-#define PIPE_LEN 0
-#else
-#define PIPE_LEN ((TEST>>18)&0x1f)
-#endif
-#pragma message "  PIPE_LEN = " PIPE_LEN
-
 #define XDIM_LEN ((((TEST>>23)&0x3f)%63)+1)
 #pragma message "  XDIM_LEN = " XDIM_LEN
 
@@ -133,7 +126,7 @@ vadd.AddReadStream(name=A, type=PersType_t, strmCnt=VADD_HTID_CNT, strmBw=STRM_B
 vadd.AddReadStream(name=B, type=PersType_t, strmCnt=VADD_HTID_CNT, strmBw=STRM_BW_B, memPort=1, elemCntW=32);
 
 #if VADD_STRM_RSP_GRP_HTID
-vadd.AddWriteStream(name=C, type=PersType_t, strmCnt=VADD_HTID_CNT, memPort=2, elemCntW=6, close=true, reserve=PIPE_LEN);
+vadd.AddWriteStream(name=C, type=PersType_t, strmCnt=VADD_HTID_CNT, memPort=2, elemCntW=6, close=true, reserve=0);
 #else
-vadd.AddWriteStream(name=C, type=PersType_t, strmCnt=VADD_HTID_CNT, memPort=2, elemCntW=6, close=true, reserve=PIPE_LEN, rspGrpW=VADD_RSP_GRP_W);
+vadd.AddWriteStream(name=C, type=PersType_t, strmCnt=VADD_HTID_CNT, memPort=2, elemCntW=6, close=true, reserve=0, rspGrpW=VADD_RSP_GRP_W);
 #endif

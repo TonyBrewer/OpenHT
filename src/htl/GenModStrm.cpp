@@ -315,6 +315,8 @@ void CDsnInfo::GenModStrmStatements(CInstance * pModInst)
 			string strmIdxStr = pStrm->m_strmCnt.size() == 0 ? "" : VA("[%d]", i);
 
 			if (!pStrm->m_bRead && pStrm->m_reserve.AsInt() != 0 && !pStrm->m_bClose) {
+
+				strmPostInstr.Append("#\tif !defined(_HTV) || defined(HT_ASSERT)\n");
 				strmPostInstr.Append("\tassert_msg((!r_s%d_wrStrm%s_preWr%s || c_wrStrm%s_strmWrEn%s), \"Runtime check failed in CPers%s::Pers%s() - WriteStream%s was not called %d cycles after WriteStreamPreWr%s was called\");\n",
 					pStrm->m_reserve.AsInt(), strmName.c_str(), strmIdxStr.c_str(), 
 					strmName.c_str(), strmIdxStr.c_str(),
@@ -322,6 +324,7 @@ void CDsnInfo::GenModStrmStatements(CInstance * pModInst)
 					strmName.c_str(),
 					pStrm->m_reserve.AsInt(),
 					strmName.c_str());
+				strmPostInstr.Append("#\tendif\n");
 			}
 		}
 	}
@@ -776,6 +779,14 @@ void CDsnInfo::GenModStrmStatements(CInstance * pModInst)
 
 			m_strmFuncDef.Append("\tassert_msg(c_t%d_htCtrl == HT_INVALID, \"Runtime check failed in CPers%s::WriteStreamPause%s()"
 				" - an Ht control routine was already called\");\n", pMod->m_execStg, pMod->m_modName.Uc().c_str(), strmName.c_str());
+			if (pMod->m_wrStg-1 > pMod->m_execStg) {
+				for (int i = pMod->m_execStg + 1; i < pMod->m_wrStg-1; i++) {
+					m_strmFuncDef.Append("\tassert_msg(!r_t%d_wrStrm%s_bPaused%s, \"Runtime check failed in CPers%s::WriteStreamPause%s()"
+						" - pause already active\");\n",
+						i, strmName.c_str(), rspGrpIdx.c_str(),
+						pMod->m_modName.Uc().c_str(), strmName.c_str());
+				}
+			}
 			m_strmFuncDef.Append("\tassert_msg(!r_wrStrm%s_bPaused%s, \"Runtime check failed in CPers%s::WriteStreamPause%s()"
 				" - pause already active\");\n",
 				strmName.c_str(), rspGrpIdx.c_str(),
@@ -810,7 +821,11 @@ void CDsnInfo::GenModStrmStatements(CInstance * pModInst)
 				m_strmFuncDef.Append("#\tendif\n");
 			}
 
-			m_strmFuncDef.Append("\tc_wrStrm%s_bPaused%s = true;\n", strmName.c_str(), rspGrpIdx.c_str());
+			if (pMod->m_wrStg-1 > pMod->m_execStg) {
+				m_strmFuncDef.Append("\tc_t%d_wrStrm%s_bPaused%s = true;\n", pMod->m_execStg, strmName.c_str(), rspGrpIdx.c_str());
+			} else {
+				m_strmFuncDef.Append("\tc_wrStrm%s_bPaused%s = true;\n", strmName.c_str(), rspGrpIdx.c_str());
+			}
 
 			m_strmFuncDef.Append("}\n");
 			m_strmFuncDef.Append("\n");
@@ -1256,7 +1271,7 @@ void CDsnInfo::GenModStrmStatements(CInstance * pModInst)
 
 			m_strmFuncDef.Append("{\n");
 
-			m_strmFuncDef.Append("\tassert_msg(c_wrStrm%s_bReadyAvail%s, \"Runtime check failed in CPersBug::WriteStreamPreWr%s() - expected WriteStreamReady%s() to have been called and been ready\");\n", strmName.c_str(), strmIdStr.c_str(), strmName.c_str(), strmName.c_str());
+			m_strmFuncDef.Append("\tassert_msg(c_wrStrm%s_bReadyAvail%s, \"Runtime check failed in CPers%s::WriteStreamPreWr%s() - expected WriteStreamReady%s() to have been called and been ready\");\n", strmName.c_str(), strmIdStr.c_str(), pMod->m_modName.Uc().c_str(), strmName.c_str(), strmName.c_str());
 
 			if (pStrm->m_strmCnt.size() > 0)
 				m_strmFuncDef.Append("\tassert_msg(strmId < %d, \"Runtime check failed in CPers%s::WriteStream%s()"
@@ -1265,7 +1280,9 @@ void CDsnInfo::GenModStrmStatements(CInstance * pModInst)
 				pMod->m_modName.Uc().c_str(), strmName.c_str());
 
 
+			m_strmFuncDef.Append("#\tif !defined(_HTV) || defined(HT_ASSERT)\n");
 			m_strmFuncDef.Append("\tc_s0_wrStrm%s_preWr%s = true;\n", strmName.c_str(), strmIdStr.c_str());
+			m_strmFuncDef.Append("#\tendif\n");
 			m_strmFuncDef.Append("\tc_wrStrm%s_preWrRem%s = r_wrStrm%s_preWrRem%s - 1;\n", strmName.c_str(), strmIdStr.c_str(), strmName.c_str(), strmIdStr.c_str());
 
 			m_strmFuncDef.Append("}\n");
@@ -1296,8 +1313,11 @@ void CDsnInfo::GenModStrmStatements(CInstance * pModInst)
 				strmCnt,
 				pMod->m_modName.Uc().c_str(), strmName.c_str());
 
-			if (pStrm->m_reserve.AsInt() != 0 && !pStrm->m_bClose)
-				m_strmFuncDef.Append("\tassert_msg(r_s%d_wrStrm%s_preWr%s, \"Runtime check failed in CPersBug::WriteStream%s() - expected WriteStreamPreWr%s() to have been called after the WriteStreamReady%s() check\");\n", pStrm->m_reserve.AsInt(), strmName.c_str(), strmIdStr.c_str(), strmName.c_str(), strmName.c_str(), strmName.c_str());
+			if (pStrm->m_reserve.AsInt() != 0 && !pStrm->m_bClose) {
+				m_strmFuncDef.Append("#\tif !defined(_HTV) || defined(HT_ASSERT)\n");
+				m_strmFuncDef.Append("\tassert_msg(r_s%d_wrStrm%s_preWr%s, \"Runtime check failed in CPers%s::WriteStream%s() - expected WriteStreamPreWr%s() to have been called after the WriteStreamReady%s() check\");\n", pStrm->m_reserve.AsInt(), strmName.c_str(), strmIdStr.c_str(), pMod->m_modName.Uc().c_str(), strmName.c_str(), strmName.c_str(), strmName.c_str());
+				m_strmFuncDef.Append("#\tendif\n");
+			}
 
 			if (pStrm->m_reserve.AsInt() == 0)
 				m_strmFuncDef.Append("\tassert(r_wrStrm%s_bOpenBufWr%s);\n", strmName.c_str(), strmIdStr.c_str());
@@ -2360,14 +2380,49 @@ void CDsnInfo::GenModStrmStatements(CInstance * pModInst)
 				strmReg.Append("\tr_wrStrm%s_bBufRd[%d] = !r_reset1x && c_wrStrm%s_bBufRd[%d];\n", strmName.c_str(), i, strmName.c_str(), i);
 			}
 
+			if (pMod->m_wrStg-1 > pMod->m_execStg) {
+				for (int i = pMod->m_execStg + 1; i < pMod->m_wrStg-1; i++) {
+					GenModDecl(eVcdAll, m_strmRegDecl, vcdModName, "bool", VA("r_t%d_wrStrm%s_bPaused", i, strmName.c_str()), strmRspGrpVec);
+				}
+			}
 			GenModDecl(eVcdAll, m_strmRegDecl, vcdModName, "bool", VA("r_wrStrm%s_bPaused", strmName.c_str()), strmRspGrpVec);
+			if (pMod->m_wrStg-1 > pMod->m_execStg) {
+				for (int i = pMod->m_execStg; i < pMod->m_wrStg-2; i++) {
+					m_strmRegDecl.Append("\tbool c_t%d_wrStrm%s_bPaused%s;\n", i, strmName.c_str(), strmRspGrpDecl.c_str());
+				}
+			}
 			m_strmRegDecl.Append("\tbool c_wrStrm%s_bPaused%s;\n", strmName.c_str(), strmRspGrpDecl.c_str());
-			if (pStrm->m_rspGrpW.AsInt() == 0) {
-				strmPreInstr.Append("\tc_wrStrm%s_bPaused = r_wrStrm%s_bPaused;\n", strmName.c_str(), strmName.c_str());
-				strmReg.Append("\tr_wrStrm%s_bPaused = !r_reset1x && c_wrStrm%s_bPaused;\n", strmName.c_str(), strmName.c_str());
-			} else for (int i = 0; i < strmRspGrpCnt; i += 1) {
-				strmPreInstr.Append("\tc_wrStrm%s_bPaused[%d] = r_wrStrm%s_bPaused[%d];\n", strmName.c_str(), i, strmName.c_str(), i);
-				strmReg.Append("\tr_wrStrm%s_bPaused[%d] = !r_reset1x && c_wrStrm%s_bPaused[%d];\n", strmName.c_str(), i, strmName.c_str(), i);
+			if (pMod->m_wrStg-1 > pMod->m_execStg) {
+				if (pStrm->m_rspGrpW.AsInt() == 0) {
+					strmPreInstr.Append("\tc_t%d_wrStrm%s_bPaused = false;\n", pMod->m_execStg, strmName.c_str());
+					for (int i = pMod->m_execStg+1; i < pMod->m_wrStg-2; i++) {
+						strmPreInstr.Append("\tc_t%d_wrStrm%s_bPaused = r_t%d_wrStrm%s_bPaused;\n", i, strmName.c_str(), i, strmName.c_str());
+					}
+					strmPreInstr.Append("\tc_wrStrm%s_bPaused = r_t%d_wrStrm%s_bPaused || r_wrStrm%s_bPaused;\n", strmName.c_str(), pMod->m_wrStg-2, strmName.c_str(), strmName.c_str());
+					for (int i = pMod->m_execStg; i < pMod->m_wrStg-2; i++) {
+						strmReg.Append("\tr_t%d_wrStrm%s_bPaused = !r_reset1x && c_t%d_wrStrm%s_bPaused;\n", i+1, strmName.c_str(), i, strmName.c_str());
+					}
+					strmReg.Append("\tr_wrStrm%s_bPaused = !r_reset1x && c_wrStrm%s_bPaused;\n", strmName.c_str(), strmName.c_str());
+
+				} else for (int i = 0; i < strmRspGrpCnt; i += 1) {
+					strmPreInstr.Append("\tc_t%d_wrStrm%s_bPaused[%d] = false;\n", pMod->m_execStg, strmName.c_str(), i);
+					for (int j = pMod->m_execStg+1; j < pMod->m_wrStg-2; j++) {
+						strmPreInstr.Append("\tc_t%d_wrStrm%s_bPaused[%d] = r_t%d_wrStrm%s_bPaused[%d];\n", j, strmName.c_str(), i, j, strmName.c_str(), i);
+					}
+					strmPreInstr.Append("\tc_wrStrm%s_bPaused[%d] = r_t%d_wrStrm%s_bPaused[%d] || r_wrStrm%s_bPaused[%d];\n", strmName.c_str(), i, pMod->m_wrStg-2, strmName.c_str(), i, strmName.c_str(), i);
+					for (int j = pMod->m_execStg; j < pMod->m_wrStg-2; j++) {
+						strmReg.Append("\tr_t%d_wrStrm%s_bPaused[%d] = !r_reset1x && c_t%d_wrStrm%s_bPaused[%d];\n", j+1, strmName.c_str(), i, j, strmName.c_str(), i);
+					}
+					strmReg.Append("\tr_wrStrm%s_bPaused[%d] = !r_reset1x && c_wrStrm%s_bPaused[%d];\n", strmName.c_str(), i, strmName.c_str(), i);
+				}
+			} else {
+				if (pStrm->m_rspGrpW.AsInt() == 0) {
+					strmPreInstr.Append("\tc_wrStrm%s_bPaused = r_wrStrm%s_bPaused;\n", strmName.c_str(), strmName.c_str());
+					strmReg.Append("\tr_wrStrm%s_bPaused = !r_reset1x && c_wrStrm%s_bPaused;\n", strmName.c_str(), strmName.c_str());
+				} else for (int i = 0; i < strmRspGrpCnt; i += 1) {
+					strmPreInstr.Append("\tc_wrStrm%s_bPaused[%d] = r_wrStrm%s_bPaused[%d];\n", strmName.c_str(), i, strmName.c_str(), i);
+					strmReg.Append("\tr_wrStrm%s_bPaused[%d] = !r_reset1x && c_wrStrm%s_bPaused[%d];\n", strmName.c_str(), i, strmName.c_str(), i);
+				}
 			}
 
 			if (pMod->m_threads.m_htIdW.AsInt() > 0 && pStrm->m_rspGrpW.size() > 0) {
@@ -2580,12 +2635,16 @@ void CDsnInfo::GenModStrmStatements(CInstance * pModInst)
 			}
 
 			if (pStrm->m_reserve.AsInt() != 0 && !pStrm->m_bClose) {
+				m_strmRegDecl.Append("#\tif !defined(_HTV) || defined(HT_ASSERT)\n");
 				m_strmRegDecl.Append("\tbool c_s0_wrStrm%s_preWr%s;\n", strmName.c_str(), strmIdDecl.c_str());
+				strmPreInstr.Append("#\tif !defined(_HTV) || defined(HT_ASSERT)\n");
 				if (pStrm->m_strmCnt.size() == 0) {
 					strmPreInstr.Append("\tc_s0_wrStrm%s_preWr = false;\n", strmName.c_str());
 				} else for (int j = 0; j < pStrm->m_strmCnt.AsInt(); j += 1) {
 					strmPreInstr.Append("\tc_s0_wrStrm%s_preWr[%d] = false;\n", strmName.c_str(), j);
 				}
+				strmPreInstr.Append("#\tendif\n");
+				strmReg.Append("#\tif !defined(_HTV) || defined(HT_ASSERT)\n");
 				for (int i = pStrm->m_reserve.AsInt(); i >= 1; i--) {
 					GenModDecl(eVcdAll, m_strmRegDecl, vcdModName, "bool", VA("r_s%d_wrStrm%s_preWr", i, strmName.c_str()), strmIdVec);
 					if (pStrm->m_strmCnt.size() == 0) {
@@ -2594,6 +2653,8 @@ void CDsnInfo::GenModStrmStatements(CInstance * pModInst)
 						strmReg.Append("\tr_s%d_wrStrm%s_preWr[%d] = %c_s%d_wrStrm%s_preWr[%d];\n", i, strmName.c_str(), j, (i-1==0) ? 'c' : 'r', i-1, strmName.c_str(), j);
 					}
 				}
+				strmReg.Append("#\tendif\n");
+				m_strmRegDecl.Append("#\tendif\n");
 			}
 
 			GenModDecl(eVcdAll, m_strmRegDecl, vcdModName, "bool", VA("r_wrStrm%s_bBufFull", strmName.c_str()), strmIdVec);

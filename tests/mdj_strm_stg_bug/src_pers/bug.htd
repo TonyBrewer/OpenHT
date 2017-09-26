@@ -1,0 +1,22 @@
+typedef ht_uint48 MemAddr_t;
+
+dsnInfo.AddModule(name=bug, htIdW=0, pause=true);
+
+bug.AddInstr(name=BUG_ENTER);
+bug.AddInstr(name=BUG_RETURN);
+
+bug.AddPrivate()
+	.AddVar(type=bool, name=testVar)
+	;
+
+bug.AddStage(execStg=4, privWrStg=12)
+	;
+
+bug.AddEntry(func=htmain, instr=BUG_ENTER, host=true)
+	;
+
+bug.AddReturn(func=htmain)
+	.AddParam(type=bool, name=testVar)
+	;
+
+bug.AddWriteStream(strmCnt=2, type=uint64_t, elemCntW=4, memDst=host);

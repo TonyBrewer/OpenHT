@@ -71,7 +71,7 @@ stencil.AddReturn(func=htmain)
 #define STENCIL_WRITE_MEM_PORT 1
 
 stencil.AddReadStream(type=uint32_t, memPort=STENCIL_READ_MEM_PORT);
-stencil.AddWriteStream(type=uint32_t, memPort=STENCIL_WRITE_MEM_PORT, reserve=3);
+stencil.AddWriteStream(type=uint32_t, memPort=STENCIL_WRITE_MEM_PORT, reserve=2);
 
 stencil.AddFunction(type=void, name=StencilBufferInit_5x5r2)
 	.AddParam(dir=input, type=uint32_t, name=ySize)

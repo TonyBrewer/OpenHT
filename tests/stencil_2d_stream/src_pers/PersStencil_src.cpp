@@ -142,6 +142,8 @@ void CPersStencil::StencilBuffer_5x5r2(CStencilBufferIn_5x5r2 const & stIn, CSte
 
 		T1_stOut = S_stOut;
 		T1_stOut.m_bValid = stValid;
+		if (stValid)
+			WriteStreamPreWr();
 	}
 
 	stOut = TR3_stOut; 
