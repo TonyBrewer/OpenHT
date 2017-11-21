@@ -1422,6 +1422,95 @@ struct CMsgIntf {
 	CLineInfo m_lineInfo;
 };
 
+struct CUioIntf {
+	CUioIntf(string name, string dir, CType * pType, string dimen, string queueW, string reserve)
+		: m_name(name), m_pType(pType), m_pTypeIntf(pType), m_dimen(dimen), m_queueW(queueW), m_reserve(reserve)
+	{
+		m_lineInfo = CPreProcess::m_lineInfo;
+		m_instCnt = 1;
+		m_bInbound = dir == "in";
+	}
+
+	void InitConnIntfList()
+	{
+		// Inst
+		for (int j = 0; j < m_instCnt; j++) {
+			vector< vector <HtiFile::CUioIntfConn*> > vec0;
+			// Repl
+			for (int k = 0; k < m_replCntList.at(j); k++) {
+				vector <HtiFile::CUioIntfConn*> vec1;
+				// Dimen
+				int dimenCnt = (m_dimen == "0") ? 1 : m_dimen.AsInt();
+				for (int l = 0; l < dimenCnt; l++) {
+					vec1.push_back(NULL);
+				}
+				vec0.push_back(vec1);
+			}
+			m_pConnIntfList.push_back(vec0);
+		}
+	}
+
+	HtiFile::CUioIntfConn* GetConnIntf(uint instId, uint replId, uint dimen)
+	{
+		if (instId > m_pConnIntfList.size()-1) {
+			CPreProcess::ParseMsg(Error, "inst offset out of bounds in GetConnIntf");
+			return NULL;
+		}
+		if (replId > m_pConnIntfList.at(instId).size()-1) {
+			CPreProcess::ParseMsg(Error, "repl offset out of bounds in GetConnIntf");
+			return NULL;
+		}
+		if (dimen > m_pConnIntfList.at(instId).at(replId).size()-1) {
+			CPreProcess::ParseMsg(Error, "dimen offset out of bounds in GetConnIntf");
+			return NULL;
+		}
+		return m_pConnIntfList.at(instId).at(replId).at(dimen);
+	}
+
+	void SetConnIntf(uint instId, uint replId, uint dimen, HtiFile::CUioIntfConn* pConnIntf)
+	{
+		if (instId > m_pConnIntfList.size()-1) {
+			CPreProcess::ParseMsg(Error, "inst offset out of bounds in GetConnIntf");
+			return;
+		}
+		if (replId > m_pConnIntfList.at(instId).size()-1) {
+			CPreProcess::ParseMsg(Error, "repl offset out of bounds in GetConnIntf");
+			return;
+		}
+		if (dimen > m_pConnIntfList.at(instId).at(replId).size()-1) {
+			CPreProcess::ParseMsg(Error, "dimen offset out of bounds in GetConnIntf");
+			return;
+		}
+		m_pConnIntfList.at(instId).at(replId).at(dimen) = pConnIntf;
+		return;
+	}
+
+	string	m_name;
+	bool m_bInbound;
+	CType * m_pType;
+	CType * m_pTypeIntf;
+	CHtString m_dimen;
+	CHtString m_queueW;
+	CHtString m_reserve;
+	int m_instCnt;
+	vector<int> m_replCntList;
+
+	HtdFile::EClkRate	m_clkRate;
+
+	vector <vector <vector <HtiFile::CUioIntfConn*> > >  m_pConnIntfList; // Vector to keep track of hti-connection structs
+
+	CLineInfo m_lineInfo;
+};
+
+struct CUioCsrIntf {
+	CUioCsrIntf()
+	{
+		m_lineInfo = CPreProcess::m_lineInfo;
+	}
+
+	CLineInfo m_lineInfo;
+};
+
 struct CHostMsg {
 	CHostMsg(HtdFile::EHostMsgDir msgDir, string msgName) : m_msgDir(msgDir), m_msgName(msgName) {}
 
@@ -1532,17 +1621,20 @@ struct CModMemPort {
 struct CInstanceParams {
 	CInstanceParams(string const &modInstName, vector<int> &memPortList, int freq) : m_modInstName(modInstName), m_memPortList(memPortList)
 	{
+		m_bExplicitRepl = false;
 		m_lineInfo = CPreProcess::m_lineInfo;
 	}
 
 	CInstanceParams()
 	{
+		m_bExplicitRepl = false;
 		m_replCnt = -1;
 	}
 
 	string m_modInstName;
 	vector<int> m_memPortList;
 	int m_replCnt;
+	bool m_bExplicitRepl;
 	vector<InstParam_t> m_paramPairList;
 
 	CLineInfo m_lineInfo;
@@ -1787,6 +1879,9 @@ public:
 	vector<string>		m_traceList;
 	vector<CHostMsg>	m_hostMsgList;
 	vector<CMsgIntf *>	m_msgIntfList;
+	vector<CUioIntf *>	m_uioIntfList;
+	vector<CUioIntf *>	m_uioSimIntfList;
+	vector<CUioCsrIntf *>	m_uioCsrIntfList;
 	vector<CBarrier *>	m_barrierList;
 	vector<CFunction>	m_funcList;
 	vector<CStream *>	m_streamList;
@@ -2057,6 +2152,9 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 	void AddInstr(void * pModule, string name);
 	void AddMsgIntf(void * pModule, string name, string dir, CType * pType, string dimen,
 		string replCnt, string queueW, string reserve, bool autoConn);
+	void AddUserIO(void * pModule, string name, string dir, CType * pType, string dimen, string queueW, string reserve);
+	void AddUserIOSim(void * pModule, string name, string dir, CType * pType, string dimen, string queueW, string reserve);
+	void AddUserIOSimCsrIntf(void * pModule);
 	void AddTrace(void * pModule, string name);
 	void AddScPrim(void * pModule, string scPrimDecl, string scPrimCall);
 	void AddPrimstate(void * pModule, string type, string name, string include);
@@ -2129,6 +2227,7 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 	void InitAndValidateModOhm();
 	void InitAndValidateModIhd();
 	void InitAndValidateModMsg();
+	void InitAndValidateModUio();
 	void InitAndValidateModBar();
 	void InitAndValidateModStrm();
 	void InitAndValidateModStBuf();
@@ -2188,6 +2287,7 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 	void GenerateMifFiles(int mifId);
 	void GenerateNgvFiles();
 	void GenerateModuleFiles(CModule &modInfo);
+	void GenerateUioStubFiles();
 	void GenModInstInc(CModule &mod);
 	void GenStruct(FILE *incFp, string intfName, CRecord &ram, EGenStructMode mode = eGenStruct, bool bEmptyContructor = false);
 	void GenPersBanner(CHtFile &htFile, const char *unitName, const char *dsnName, bool is_h, const char *incName=0);
@@ -2345,6 +2445,9 @@ public:
 	void GenPrimStateStatements(CModule &mod);
 	void GenModTDSUStatements(CModule &mod); // typedef/define/struct/union
 	void GenModMsgStatements(CInstance * pInst);
+	void GenModUioStatements(CInstance * pInst);
+	void GenModUioSimStatements(CInstance * pInst);
+	void GenModUioSimCsrStatements(CInstance * pInst);
 	void GenModBarStatements(CInstance * pModInst);
 	void GenModIplStatements(CInstance * pModInst);
 	void GenModIhmStatements(CModule &mod);
@@ -2457,6 +2560,22 @@ private:
 	CHtCode m_msgReg2x;
 	CHtCode m_msgPostReg2x;
 	CHtCode m_msgOut2x;
+
+	// Sections of code for user io interface (UIO)
+	CHtCode	m_uioFuncDecl;
+	CHtCode	m_uioFuncDef;
+	CHtCode m_uioIoDecl;
+	CHtCode	m_uioRegDecl;
+	CHtCode m_uioPreInstr1x;
+	CHtCode m_uioPostInstr1x;
+	CHtCode m_uioReg1x;
+	CHtCode m_uioPostReg1x;
+	CHtCode m_uioOut1x;
+	CHtCode m_uioPreInstr2x;
+	CHtCode m_uioPostInstr2x;
+	CHtCode m_uioReg2x;
+	CHtCode m_uioPostReg2x;
+	CHtCode m_uioOut2x;
 
 	// Sections of code for instruction pipeline (IPL)
 	CHtCode m_iplCtorInit;

@@ -20,6 +20,7 @@ CCoprocInfo g_coprocInfo[] = {
 	CCoprocInfo(wx2k, "wx2k", "wx-2000", 8, 8, 8, 8, true, 2584/4),
 	CCoprocInfo(ma100, "ma100", "ma-100", 8, 8, 8, 8, true, 2500 /*FIXME*/),
 	CCoprocInfo(ma400, "ma400", "ma-400", 8, 8, 8, 8, true, 2500 /*FIXME*/),
+	CCoprocInfo(wx2vu7p, "wx2vu7p", "wx2-vu7p", 8, 8, 8, 8, true, 2880 /*FIXME ULTRARAM & BRAM COUNT*/),
 	CCoprocInfo()
 };
 
@@ -211,6 +212,9 @@ CAppArgs::Parse(int argc, char const **argv)
 	m_bVcdAll = false;
 	m_vcdStartCycle = 0;
 	m_bOgv = false;
+	m_uioPortCnt = 0;
+	m_uioPortsWidth = 1;
+	m_uioGblType = NULL;
 
 	int argPos;
 	bool bClFlag = false;
@@ -300,6 +304,12 @@ CAppArgs::Parse(int argc, char const **argv)
 					m_vcdModString.erase(0, pos+1);
 				}
 				m_vcdModList.push_back(m_vcdModString);
+			} else if ((strcmp(argv[argPos], "-iopc") == 0)) {
+				argPos += 1;
+				m_uioPortCnt = atoi(argv[argPos]);
+			} else if ((strcmp(argv[argPos], "-iopw") == 0)) {
+				argPos += 1;
+				m_uioPortsWidth = atoi(argv[argPos]);
 			} else if ((strncmp(argv[argPos], "-vr", 3) == 0)) {
 				m_bVariableReport = true;
 				m_pVarRptFp = fopen("HtPrivRpt.txt", "w");
@@ -605,6 +615,26 @@ CAppArgs::Parse(int argc, char const **argv)
 		printf("Error - Value for -uc outside supported range (1-16)\n");
 		bError = true;
 	}
+
+	// check user io
+	if (m_uioPortCnt < 0 || m_uioPortCnt > GetUioPortCntMax()) {
+		printf("Error - Value for -iopc (User IO Port Count) outside supported range (0-%d)\n", GetUioPortCntMax());
+		bError = true;
+	} 
+	if ((m_uioPortCnt > 0) && (m_uioPortsWidth < 1 || m_uioPortsWidth > GetUioPortsWidthMax())) {
+		printf("Error - Value for -iopw (User IO Ports Width) outside supported range (1-1024)\n");
+		bError = true;
+	} 
+	if (m_uioPortCnt > 0) {
+		if (strcasestr(GetCoprocName(), "wx") == NULL) {
+			printf("Error - External User IO Ports are only supported on WX platforms\n");
+			bError = true;
+		}
+		if (m_aeUnitCnt > 1) {
+			printf("Error - External User IO Ports are only supported on single unit designs\n");
+			bError = true;
+		}
+	} 
 
 	// check HT_UNIT_CNT define
 	bool bFoundUnitCnt = false;

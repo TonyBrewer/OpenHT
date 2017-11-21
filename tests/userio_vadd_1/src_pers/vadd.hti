@@ -1,0 +1,9 @@
+AddUserIOSimConn(portId=0, outPath=ctl/addLd/ldOutA[0]);
+AddUserIOSimConn(portId=1, outPath=ctl/addLd/ldOutB[0]);
+AddUserIOSimConn(portId=2, outPath=ctl/addLd/ldOutA[1]);
+AddUserIOSimConn(portId=3, outPath=ctl/addLd/ldOutB[1]);
+
+AddUserIOConn(portId=0, inPath=ctl/addSt/stInA[0]);
+AddUserIOConn(portId=1, inPath=ctl/addSt/stInB[0]);
+AddUserIOConn(portId=2, inPath=ctl/addSt/stInA[1]);
+AddUserIOConn(portId=3, inPath=ctl/addSt/stInB[1]);

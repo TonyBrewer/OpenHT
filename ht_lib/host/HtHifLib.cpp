@@ -376,6 +376,8 @@ namespace Ht {
 		m_pHtHifBase = pHtHifBase;
 		m_ppHtUnits = 0;
 		m_pSyscTop = 0;
+		g_bCsrFuncSet = false;
+		g_pCsrMod = 0;
 
 		m_htNeedFlush = false;
 		m_appMode = m_pHtHifBase->GetAppMode();
@@ -473,7 +475,7 @@ namespace Ht {
 			for (int aeIdx = 0; aeIdx < m_aeCnt; aeIdx += 1)
 				g_pCtrlIntfQues[aeIdx] = (CHtCtrlMsg *)GetCtlQueMemBase(aeIdx);
 
-			m_pHtHifBase->NewSyscTop();
+			m_pSyscTop = m_pHtHifBase->NewSyscTop();
 		}
 		else if (m_appMode != eAppModel) {
 

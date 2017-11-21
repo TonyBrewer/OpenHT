@@ -3380,13 +3380,10 @@ void CDsnInfo::GenModIplStatements(CInstance * pModInst)
 		iplPostInstr.Append("\n");
 
 		if (pMod->m_bCallFork) {
+			iplPostInstr.Append("\tassert_msg(%s || !r_t%d_htValid || !r_t%d_rtnJoin || ", reset.c_str(), pMod->m_wrStg - 1, pMod->m_wrStg - 1);
 
-			iplPostInstr.Append("\tassert_msg(%s || !r_t%d_htValid || ", reset.c_str(), pMod->m_wrStg - 1);
-
-			if (pMod->m_bCallFork)
-				iplPostInstr.Append("!r_t%d_rtnJoin || ", pMod->m_wrStg - 1);
 			iplPostInstr.Append("c_t%d_htCtrl == HT_JOIN || c_t%d_htCtrl == HT_JOIN_AND_CONT,\n\t\t\"Runtime check failed in CPers%s::Pers%s_%s()"
-				" - expected return from a forked call to performan HtJoin on the entry instruction\");\n",
+				" - expected return from a forked call to perform an HtJoin on the entry instruction\");\n",
 				pMod->m_wrStg - 1, pMod->m_wrStg - 1,
 				pModInst->m_instName.Uc().c_str(), pMod->m_modName.Uc().c_str(), pMod->m_clkRate == eClk1x ? "1x" : "2x");
 

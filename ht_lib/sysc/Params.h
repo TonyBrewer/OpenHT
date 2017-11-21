@@ -11,4 +11,7 @@
 #if !defined(SYSC_AE_MEM_CNT)
 #define SYSC_AE_MEM_CNT	32
 #endif
+#if !defined(SYSC_AE_UIO_CNT)
+#define SYSC_AE_UIO_CNT	32
+#endif
 

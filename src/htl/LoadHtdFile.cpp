@@ -257,6 +257,24 @@ void CDsnInfo::AddMsgIntf(void * pHandle, string name, string dir, CType * pType
 	pModule->m_msgIntfList.push_back(new CMsgIntf(name, dir, pType, dimen, replCnt, queueW, reserve, autoConn));
 }
 
+void CDsnInfo::AddUserIO(void * pHandle, string name, string dir, CType * pType, string dimen, string queueW, string reserve)
+{
+	CModule * pModule = (CModule *)pHandle;
+	pModule->m_uioIntfList.push_back(new CUioIntf(name, dir, pType, dimen, queueW, reserve));
+}
+
+void CDsnInfo::AddUserIOSim(void * pHandle, string name, string dir, CType * pType, string dimen, string queueW, string reserve)
+{
+	CModule * pModule = (CModule *)pHandle;
+	pModule->m_uioSimIntfList.push_back(new CUioIntf(name, dir, pType, dimen, queueW, reserve));
+}
+
+void CDsnInfo::AddUserIOSimCsrIntf(void * pHandle)
+{
+	CModule * pModule = (CModule *)pHandle;
+	pModule->m_uioCsrIntfList.push_back(new CUioCsrIntf());
+}
+
 void CDsnInfo::AddTrace(void * pHandle, string name)
 {
 	CModule * pModule = (CModule *)pHandle;

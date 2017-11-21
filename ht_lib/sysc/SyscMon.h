@@ -12,7 +12,7 @@
 namespace Ht {
 	typedef long long Int64;
 
-	enum EHtCoproc { hc1, hc1ex, hc2, hc2ex, wx690, wx2k, ma100, ma400 };
+	enum EHtCoproc { hc1, hc1ex, hc2, hc2ex, wx690, wx2k, ma100, ma400, wx2vu7p};
 
 	class CSyscMonLib;
 

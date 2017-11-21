@@ -1296,6 +1296,190 @@ void HtdFile::ParseModuleMethods()
 
 		m_pLex->GetNextTk();
 
+	} else if (m_pLex->GetTkString() == "AddUserIO") {
+
+		string dir;
+		string name;
+		CType * pType;
+		string dimen = "0";
+		string queueW = "0";
+		string reserve;
+
+		CParamList params[] = {
+				{ "dir", &dir, true, ePrmIdent, 0, 0 },
+				{ "name", &name, true, ePrmIdent, 0, 0 },
+				{ "type", &pType, true, ePrmType, 0, 0 },
+				{ "dimen", &dimen, false, ePrmInteger, 0, 0 },
+				{ "queueW", &queueW, false, ePrmInteger, 0, 0 },
+				{ "reserve", &reserve, false, ePrmInteger, 0, 0 },
+				{ 0, 0, 0, ePrmUnknown, 0, 0 }
+		};
+
+		if (!ParseParameters(params))
+			CPreProcess::ParseMsg(Error, "expected <module>.AddUserIO( name=<name>, dir=<in|out>, type=<type> {, dimen=<int>}{, queueW=<int>}{, reserve=<int>})");
+
+		if (dir != "in" && dir != "out")
+			CPreProcess::ParseMsg(Error, "expected dir parameter to have value 'in' or 'out'");
+
+		if (dir == "in" && reserve.size() != 0)
+			CPreProcess::ParseMsg(Error, "expected reserve parameter to be used with dir=out");
+
+		if (queueW == "0" && reserve.size() != 0)
+			CPreProcess::ParseMsg(Error, "expected reserve parameter to be used with queueW");
+
+		if (queueW != "0" && atoi(queueW.c_str()) < 4)
+			CPreProcess::ParseMsg(Error, "queueW must be >= 4 when used on a userIO port");
+
+		int portWidthMax = g_appArgs.GetUioPortsWidth();
+		int portWidth = pType->GetPackedBitWidth();
+		if (portWidth != portWidthMax) {
+			CPreProcess::ParseMsg(Error, CPreProcess::m_lineInfo, "user io interface %s has a port width (%d) that does not match the user io port width specified (%d)",
+				 name.c_str(), portWidth, portWidthMax);
+		}
+
+		if (g_appArgs.GetUioGblType() == NULL) {
+			// Set type
+			g_appArgs.SetUioGblType(pType);
+		} else if (g_appArgs.GetUioGblType()->m_typeName != pType->m_typeName){
+			CPreProcess::ParseMsg(Error, "all user io ports must use the same type (found both %s and %s)", g_appArgs.GetUioGblType()->m_typeName.c_str(), pType->m_typeName.c_str());
+		}
+
+
+		string listName = name + "$" + dir;
+
+		if (m_pOpenMod->m_uioIntfList.isInList(listName))
+			CPreProcess::ParseMsg(Error, "duplicate user io interface name '%s'", name.c_str());
+		else {
+			m_pOpenMod->m_uioIntfList.insert(listName);
+			m_pDsnInfo->AddUserIO(m_pOpenMod->m_pModule, name, dir, pType, dimen, queueW, reserve);
+		}
+
+		m_pLex->GetNextTk();
+
+	} else if (m_pLex->GetTkString() == "AddUserIOSim") {
+
+		string dir;
+		string name;
+		CType * pType;
+		string dimen = "0";
+		string queueW = "5";
+		string reserve;
+
+		CParamList params[] = {
+				{ "dir", &dir, true, ePrmIdent, 0, 0 },
+				{ "name", &name, true, ePrmIdent, 0, 0 },
+				{ "type", &pType, true, ePrmType, 0, 0 },
+				{ "dimen", &dimen, false, ePrmInteger, 0, 0 },
+				{ "queueW", &queueW, true, ePrmInteger, 0, 0 },
+				{ "reserve", &reserve, false, ePrmInteger, 0, 0 },
+				{ 0, 0, 0, ePrmUnknown, 0, 0 }
+		};
+
+		bool isSyscSim = false;
+		for (int i = 0; i < g_appArgs.GetPreDefinedNameCnt(); i++) {
+			if (g_appArgs.GetPreDefinedName(i) == "HT_SYSC") {
+				isSyscSim = true;
+				break;
+			}
+		}
+		bool isWx = false;
+		if (strcasestr(g_appArgs.GetCoprocName(), "wx") != NULL) {
+			isWx = true;
+		}
+
+		if (!ParseParameters(params))
+			CPreProcess::ParseMsg(Error, "expected <module>.AddUserIOSim( name=<name>, dir=<in|out>, type=<type>, queueW=<int> {, dimen=<int>}{, reserve=<int>})");
+
+		if (dir != "in" && dir != "out")
+			CPreProcess::ParseMsg(Error, "expected dir parameter to have value 'in' or 'out'");
+
+		if (dir == "in" && reserve.size() != 0)
+			CPreProcess::ParseMsg(Error, "expected reserve parameter to be used with dir=out");
+
+		if (queueW == "0" && reserve.size() != 0)
+			CPreProcess::ParseMsg(Error, "expected reserve parameter to be used with queueW");
+
+		if (queueW == "0")
+			CPreProcess::ParseMsg(Error, "queue is a required parameter for UserIO sim interfaces");
+
+		if (queueW != "0" && atoi(queueW.c_str()) < 4)
+			CPreProcess::ParseMsg(Error, "queueW must be >= 4 when used on a userIO port");
+
+		if (!isSyscSim) {
+			CPreProcess::ParseMsg(Error, "AddUserIOSim is only supported in a SystemC simulation");
+		} 
+
+		if (!isWx) {
+			CPreProcess::ParseMsg(Error, "AddUserIOSim is only supported on the WX platform");
+		} 
+
+
+		int portWidthMax = g_appArgs.GetUioPortsWidth();
+		int portWidth = pType->GetPackedBitWidth();
+		if (portWidth != portWidthMax) {
+			CPreProcess::ParseMsg(Error, CPreProcess::m_lineInfo, "user io sim interface %s has a port width (%d) that does not match the user io port width specified (%d)",
+				 name.c_str(), portWidth, portWidthMax);
+		}
+
+		if (g_appArgs.GetUioGblType() == NULL) {
+			// Set type
+			g_appArgs.SetUioGblType(pType);
+		} else if (g_appArgs.GetUioGblType()->m_typeName != pType->m_typeName){
+			CPreProcess::ParseMsg(Error, "all user io ports must use the same type (found both %s and %s)", g_appArgs.GetUioGblType()->m_typeName.c_str(), pType->m_typeName.c_str());
+		}
+
+
+		string listName = name + "$" + dir;
+
+		if (m_pOpenMod->m_uioSimIntfList.isInList(listName))
+			CPreProcess::ParseMsg(Error, "duplicate user io sim interface name '%s'", name.c_str());
+		else {
+			m_pOpenMod->m_uioSimIntfList.insert(listName);
+			m_pDsnInfo->AddUserIOSim(m_pOpenMod->m_pModule, name, dir, pType, dimen, queueW, reserve);
+		}
+
+		m_pLex->GetNextTk();
+
+	} else if (m_pLex->GetTkString() == "AddUserIOSimCsrIntf") {
+
+		CParamList params[] = {
+				{ 0, 0, 0, ePrmUnknown, 0, 0 }
+		};
+
+		bool isSyscSim = false;
+		for (int i = 0; i < g_appArgs.GetPreDefinedNameCnt(); i++) {
+			if (g_appArgs.GetPreDefinedName(i) == "HT_SYSC") {
+				isSyscSim = true;
+				break;
+			}
+		}
+		bool isWx2 = false;
+		if (strcasestr(g_appArgs.GetCoprocName(), "wx2") != NULL) {
+			isWx2 = true;
+		}
+
+		if (!ParseParameters(params))
+			CPreProcess::ParseMsg(Error, "expected <module>.AddUserIOSim( name=<name>, dir=<in|out>, type=<type>, queueW=<int> {, dimen=<int>}{, reserve=<int>})");
+
+		if (!isSyscSim) {
+			CPreProcess::ParseMsg(Error, "AddUserIOSimCsrIntf is only supported in a SystemC simulation");
+		} 
+
+		if (!isWx2) {
+			CPreProcess::ParseMsg(Error, "AddUserIOSimCsrIntf is only supported on the WX2 platform");
+		} 
+
+		string listName = (string)m_pOpenMod->m_pModule->m_modName + "csrIntf";
+
+		if (m_pOpenMod->m_uioCsrIntfList.isInList(listName))
+			CPreProcess::ParseMsg(Error, "duplicate user io sim csr interface in module '%s'", m_pOpenMod->m_pModule->m_modName.c_str());
+		else {
+			m_pOpenMod->m_uioCsrIntfList.insert(listName);
+			m_pDsnInfo->AddUserIOSimCsrIntf(m_pOpenMod->m_pModule);
+		}
+
+		m_pLex->GetNextTk();
+
 	} else if (m_pLex->GetTkString() == "AddHostMsg") {
 
 		string dir;

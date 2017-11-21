@@ -58,6 +58,18 @@ void ht_cp_info(void ** ppCoproc, uint64_t * pSig, bool *needFlush, volatile boo
 	*appEngineCnt = aegs[1];
 }
 
+void ht_cp_fw_attach(void *pCoproc, void **ppCoprocFw) {}
+
+int ht_csr_read(void * pCoprocFw, uint64_t offset, uint64_t * data) {
+	throw CHtException(eHtBadDispatch, string("csr access not supported on this platform"));
+	return -1;
+}
+
+int ht_csr_write(void * pCoprocFw, uint64_t offset, uint64_t data) {
+	throw CHtException(eHtBadDispatch, string("csr access not supported on this platform"));
+	return -1;
+}
+
 void ht_cp_dispatch(void * pCoproc, uint64_t *pBase) {
 
 	wdm_dispatch_t ds;
@@ -91,6 +103,8 @@ void ht_cp_release(void * pCoproc) {
 	wdm_detach((wdm_coproc_t)pCoproc);
 	wdm_release((wdm_coproc_t)pCoproc);
 }
+
+void ht_cp_fw_release(void * pCoprocFw) {}
 
 void * ht_cp_mem_alloc(void * pCoproc, size_t size) {
 	return wdm_malloc((wdm_coproc_t)pCoproc, size);

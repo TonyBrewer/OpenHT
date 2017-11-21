@@ -34,6 +34,9 @@ plat_help:
 	@echo "CNY_HT_SIM_NRI		SystemC no random initialization (default false)"
 	@echo "CNY_HT_SIM_RR		SystemC random retry (default false)"
 	@echo ""
+	@echo "CNY_NUM_IO_PORTS	Number of HT-External User IO Ports (default 0)"
+	@echo "CNY_IO_PORTS_WIDTH	Width of HT-External User IO Ports (default 0)"
+	@echo ""
 
 ##############################################################################
 
@@ -58,14 +61,15 @@ export CNY_HT_FREQ ?= SYNC_CLK
 export CNY_HT_SIG ?= 65000
 export CNY_HT_NICK ?= $(CNY_HT_SIG)
 
-PLAT_hc-1_ARCH    = 1
-PLAT_hc-2_ARCH    = 1
-PLAT_hc-1ex_ARCH  = 2
-PLAT_hc-2ex_ARCH  = 2
-PLAT_wx-2000_ARCH = 4
-PLAT_wx-690_ARCH  = 5
-PLAT_ma-100_ARCH  = 8
-PLAT_ma-400_ARCH  = 9
+PLAT_hc-1_ARCH     = 1
+PLAT_hc-2_ARCH     = 1
+PLAT_hc-1ex_ARCH   = 2
+PLAT_hc-2ex_ARCH   = 2
+PLAT_wx-2000_ARCH  = 4
+PLAT_wx-690_ARCH   = 5
+PLAT_ma-100_ARCH   = 8
+PLAT_ma-400_ARCH   = 9
+PLAT_wx2-vu7p_ARCH = 10
 PLAT_ARCH = ${PLAT_${CNY_PDK_PLATFORM}_ARCH}
 
 ifneq (,$(findstring wx,$(CNY_PDK_PLATFORM)))
@@ -77,7 +81,11 @@ endif
 
 PERS_DIR = personalities/$(CNY_HT_SIG).1.1.$(PLAT_ARCH).0
 
+ifneq (,$(findstring wx2,$(CNY_PDK_PLATFORM)))
+CNY_PDK_FPGA_PARTNUM ?= 510_4854$(PLAT_ARCH)_000
+else
 CNY_PDK_FPGA_PARTNUM ?= 510_48540$(PLAT_ARCH)_000
+endif
 
 PERFMON_MASK ?= 2
 
@@ -149,6 +157,12 @@ pdk_config: | cny_ht_dir
 	@if [ -n "$(DISABLE_CP_MEM)" ]; then \
 	    echo "WARNING - DISABLE_CP_MEM deprecated, please use CNY_HT_PDK_CFG"; \
 	    echo "$(DISABLE_CP_MEM)" >> ht/config.pdk; \
+	fi
+	@if [ -n "$(CNY_NUM_IO_PORTS)" ]; then \
+	    echo "CNY_NUM_IO_PORTS = $(CNY_NUM_IO_PORTS)" >> ht/config.pdk; \
+	fi
+	@if [ -n "$(CNY_IO_PORTS_WIDTH)" ]; then \
+	    echo "CNY_IO_PORTS_WIDTH = $(CNY_IO_PORTS_WIDTH)" >> ht/config.pdk; \
 	fi
 	@if [ -n "$(XILINX_SEED)" ]; then \
 	    echo "WARNING - XILINX_SEED deprecated, please use CNY_HT_PDK_CFG"; \

@@ -107,6 +107,9 @@ public:
 		HtdList	m_stageList;
 		HtdList	m_instrList;
 		HtdList	m_msgIntfList;
+		HtdList	m_uioIntfList;
+		HtdList	m_uioSimIntfList;
+		HtdList	m_uioCsrIntfList;
 		HtdList	m_hostMsgList;
 		HtdList	m_functionList;
 		HtdList	m_traceList;

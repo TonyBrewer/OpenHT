@@ -2,6 +2,7 @@ DIRS   = $(sort $(patsubst %/,%,$(dir $(wildcard */Makefile))))
 
 SKIP  += model
 SKIP  += $(wildcard OMP*)
+SKIP  += $(wildcard userio*)
 SKIP  += memPSGRand
 # SKIP list needs trailing <space>
 SKIP  += 
@@ -44,9 +45,9 @@ else
   RSKIP=$(VSKIP)
 endif
 
-CNY_PDK          = /work/pdk_releases
-CNY_PDK_REV      = latest
-CNY_PDK_PLATFORM = wx-690
+CNY_PDK          ?= /work/pdk_releases
+CNY_PDK_REV      ?= latest
+CNY_PDK_PLATFORM ?= wx-690
 
 REG_ARGS  = CNY_PDK=$(CNY_PDK)
 REG_ARGS += CNY_PDK_REV=$(CNY_PDK_REV)

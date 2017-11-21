@@ -797,9 +797,10 @@ void CDsnInfo::InitAndValidateModMif()
 		}
 	}
 
-	bool bIsWx690  = g_appArgs.GetCoprocInfo().GetCoproc() == wx690;
-	bool bIsWx2000 = g_appArgs.GetCoprocInfo().GetCoproc() == wx2k;
-	uint memPortLimPerAE = (bIsWx690 ? 32 : (bIsWx2000 ? 8 : 16));
+	bool bIsWx690   = g_appArgs.GetCoprocInfo().GetCoproc() == wx690;
+	bool bIsWx2000  = g_appArgs.GetCoprocInfo().GetCoproc() == wx2k;
+	bool bIsWx2VU7P = g_appArgs.GetCoprocInfo().GetCoproc() == wx2vu7p;
+	uint memPortLimPerAE = (bIsWx690||bIsWx2VU7P ? 32 : (bIsWx2000 ? 8 : 16));
 	if (m_mifInstList.size() * g_appArgs.GetAeUnitCnt() > memPortLimPerAE) {
 		ParseMsg(Error, "required memory interface ports (%d) for AE is greater then number available (%d)",
 			 (int)(m_mifInstList.size() * g_appArgs.GetAeUnitCnt()), memPortLimPerAE);

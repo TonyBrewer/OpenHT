@@ -106,6 +106,36 @@ void CDsnInfo::GenerateCommonIncludeFile()
 	}
 	fprintf(incFile, "\n");
 
+	// If csr intf exists
+	bool bSimCsrUsed = false;
+	for (size_t modIdx = 0; modIdx < m_modList.size(); modIdx += 1) {
+		CModule &mod = *m_modList[modIdx];
+
+		if (!mod.m_bIsUsed) continue;
+
+		if (mod.m_uioCsrIntfList.size() > 0) {
+			bSimCsrUsed = true;
+		}
+	}
+
+	if (bSimCsrUsed) {
+		fprintf(incFile, "//////////////////////////////////\n");
+		fprintf(incFile, "// CSR typedef's\n");
+		fprintf(incFile, "\n");
+
+		fprintf(incFile, "struct uio_csr_rq_t {\n");
+		fprintf(incFile, "\tint cmd;\n");
+		fprintf(incFile, "\tuint64_t addr;\n");
+		fprintf(incFile, "\tuint64_t data;\n");
+		fprintf(incFile, "};\n");
+		fprintf(incFile, "\n");
+
+		fprintf(incFile, "struct uio_csr_rs_t {\n");
+		fprintf(incFile, "\tuint64_t data;\n");
+		fprintf(incFile, "};\n");
+		fprintf(incFile, "\n");
+	}
+
 	fprintf(incFile, "#ifdef _HTV\n");
 	fprintf(incFile, "#define INT(a) a\n");
 	fprintf(incFile, "#else\n");

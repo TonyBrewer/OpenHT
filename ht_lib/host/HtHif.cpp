@@ -26,6 +26,10 @@ namespace Ht {
 
 #	if defined (HT_SYSC)
 	extern int32_t g_coprocAeRunningCnt;
+	extern bool g_bCsrFuncSet;
+	extern void *g_pCsrMod;
+	extern bool (*g_pCsrCmd)(void *self, int cmd, uint64_t addr, uint64_t data);
+	extern bool (*g_pCsrRdRsp)(void *self, uint64_t &data);
 #	endif
 
 	#if !defined(HT_MODEL)
@@ -90,6 +94,7 @@ namespace Ht {
 
 		void CHtHifBase::HtCpInfo(bool *needFlush, volatile bool *busy, uint64_t *aeg2, uint64_t *aeg3) {
 			ht_cp_info(&m_pCoproc, &m_sig, needFlush, busy, aeg2, aeg3);
+			ht_cp_fw_attach(m_pCoproc, &m_pCoprocFw);
 		}
 
 		void CHtHifBase::HtCpDispatch(uint64_t *pBase) {
@@ -104,11 +109,16 @@ namespace Ht {
 			ht_cp_release(m_pCoproc);
 		}
 
+		void CHtHifBase::HtCpFwRelease() {
+			ht_cp_fw_release(m_pCoprocFw);
+		}
+
 #	else
 		void CHtHifBase::HtCpInfo(bool *needFlush, volatile bool *busy, uint64_t *partNumber, uint64_t *appEngineCnt) {}
 		void CHtHifBase::HtCpDispatch(uint64_t *pBase) {}
 		void CHtHifBase::HtCpDispatchWait(uint64_t *pBase) {}
 		void CHtHifBase::HtCpRelease() {}
+		void CHtHifBase::HtCpFwRelease() {}
 #	endif
 
 	void * CHtHifBase::HostMemAlloc(size_t size, bool bEnableSystemcAddressValidation) {
@@ -227,6 +237,52 @@ namespace Ht {
 			return ht_cp_mem_size(m_pCoproc);
 #		else
 			return 2ll*1024*1024*1024;
+#		endif
+	}
+	uint64_t CHtHifBase::UserIOCsrRd(uint64_t addr) {
+#		if defined(HT_SYSC) || defined(HT_MODEL)
+			if (g_bCsrFuncSet) {
+				LockCsr();
+				uint64_t rdData = 0;
+				if (!g_pCsrCmd(g_pCsrMod, HT_CSR_RD, addr, 0)) {
+					fprintf(stderr, "HTLIB: CSR Rd Failed: FIFO was full (this should never occur)\n");
+					return -1;
+				}
+				while (!g_pCsrRdRsp(g_pCsrMod, rdData))
+					usleep(10000);
+				UnlockCsr();
+				usleep(10000);
+				return rdData;
+			} else {
+				fprintf(stderr, "HTLIB: CSR Rd Failed: No Module with AddUserIOCsrIntf available\n");
+				return -1;
+			}
+#		else
+			uint64_t rdData = 0;
+			if (ht_csr_read(m_pCoprocFw, addr, &rdData)) {
+				fprintf(stderr, "HTLIB: CSR Rd Failed\n");
+				return -1;
+			}
+			return rdData;
+#		endif
+	}
+	void CHtHifBase::UserIOCsrWr(uint64_t addr, uint64_t data) {
+#		if defined(HT_SYSC) || defined(HT_MODEL)
+			if (g_bCsrFuncSet) {
+				LockCsr();
+				if (!g_pCsrCmd(g_pCsrMod, HT_CSR_WR, addr, data)) {
+					fprintf(stderr, "HTLIB: CSR Wr Failed: FIFO was full (this should never occur)\n");
+				}
+				usleep(10000);
+				UnlockCsr();
+			} else {
+				fprintf(stderr, "HTLIB: CSR Wr Failed: No Module with AddUserIOCsrIntf available\n");
+			}
+#		else
+			if (ht_csr_write(m_pCoprocFw, addr, data)) {
+				fprintf(stderr, "HTLIB: CSR Wr Failed\n");
+			}
+			return;
 #		endif
 	}
 

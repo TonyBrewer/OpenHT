@@ -1,0 +1,13 @@
+// -cl $(HtToolsPath)/tests/ex_vadd/src_pers/vadd.htl
+-wd $(HtToolsPath)/tests/ex_vadd/msvs12/
+
+-cp hc-2
+-uc 1
+-un Au
+-df 150
+-it
+-pn ex_vadd
+-vcd_all
+-if ../src_pers/vadd.hti
+../src_pers/vadd.htd
+../ht/sysc

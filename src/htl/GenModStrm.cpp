@@ -154,7 +154,7 @@ void CDsnInfo::GenModStrmStatements(CInstance * pModInst)
 		return;
 
 	bool bIsHc2 = g_appArgs.GetCoprocInfo().GetCoproc() == hc2 || g_appArgs.GetCoprocInfo().GetCoproc() == hc2ex;
-	bool bIsWx = g_appArgs.GetCoprocInfo().GetCoproc() == wx690 || g_appArgs.GetCoprocInfo().GetCoproc() == wx2k;
+	bool bIsWx = g_appArgs.GetCoprocInfo().GetCoproc() == wx690 || g_appArgs.GetCoprocInfo().GetCoproc() == wx2k || g_appArgs.GetCoprocInfo().GetCoproc() == wx2vu7p;
 
 	CHtCode & strmPreInstr = pMod->m_clkRate == eClk2x ? m_strmPreInstr2x : m_strmPreInstr1x;
 	CHtCode & strmPostInstr = pMod->m_clkRate == eClk2x ? m_strmPostInstr2x : m_strmPostInstr1x;

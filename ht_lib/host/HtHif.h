@@ -144,8 +144,10 @@ namespace Ht {
 	protected:
 		CHtHifBase(CHtHifParams * pParams) {
 			m_pCoproc = 0;
+			m_pCoprocFw = 0;
 			m_pHtHifLibBase = CHtHifLibBase::NewHtHifLibBase(pParams, HT_PERS, this);
 			m_allocLock = 0;
+			m_csrLock = 0;
 		}
 		~CHtHifBase() {
 			if (m_pHtHifLibBase) {
@@ -154,6 +156,7 @@ namespace Ht {
 			}
 
 			HtCpRelease();
+			HtCpFwRelease();
 		}
 		CHtUnitLibBase * AllocUnit(CHtUnitBase * pHtUnitBase, int numaSet) {
 			return m_pHtHifLibBase->AllocUnit(pHtUnitBase, numaSet);
@@ -172,6 +175,8 @@ namespace Ht {
 		void SendAllHostMsg(uint8_t msgType, uint64_t msgData) {
 			m_pHtHifLibBase->SendAllHostMsg(msgType, msgData);
 		}
+		uint64_t UserIOCsrRd(uint64_t addr);
+		void UserIOCsrWr(uint64_t addr, uint64_t data);
 
 	private:
 		CSyscTop * NewSyscTop();
@@ -182,6 +187,7 @@ namespace Ht {
 		void HtCpDispatch(uint64_t *pBase);
 		void HtCpDispatchWait(uint64_t *pBase);
 		void HtCpRelease();
+		void HtCpFwRelease();
 
 	public:
 		Ht::EAppMode GetAppMode();
@@ -204,10 +210,14 @@ namespace Ht {
 	protected:
 		void LockAlloc() { while (__sync_fetch_and_or(&m_allocLock, 1) != 0); }
 		void UnlockAlloc() { m_allocLock = 0; __sync_synchronize(); }
+		void LockCsr() { while (__sync_fetch_and_or(&m_csrLock, 1) != 0); }
+		void UnlockCsr() { m_csrLock = 0; __sync_synchronize(); }
 	protected:
 		volatile int64_t m_allocLock;
+		volatile int64_t m_csrLock;
 		CHtHifLibBase * m_pHtHifLibBase;
 		void * m_pCoproc;
+		void * m_pCoprocFw;
 		uint64_t m_sig;
 	};
 

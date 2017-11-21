@@ -1,0 +1,119 @@
+typedef uint64_t tmp_t;
+
+////////////////////////////////////////////////////
+// Top-level
+
+dsnInfo.AddModule(name=ctl, htIdW=0);
+
+ctl.AddInstr(name=CTL_ENTRY);
+ctl.AddInstr(name=CTL_ST);
+ctl.AddInstr(name=CTL_ADD);
+ctl.AddInstr(name=CTL_JOIN_ST);
+ctl.AddInstr(name=CTL_JOIN_LD);
+ctl.AddInstr(name=CTL_ST_RTN);
+ctl.AddInstr(name=CTL_RTN);
+
+ctl.AddHostMsg(dir=in, name=VEC_LEN)
+	.AddDst(var=vecLen)
+	;
+
+
+ctl.AddShared()
+	.AddVar(type=uint64_t, name=vecLen)
+	;
+
+ctl.AddPrivate()
+	.AddVar(type=uint32_t, name=vecIdx)
+	.AddVar(type=uint32_t, name=vecStride)
+	;
+
+ctl.AddEntry(func=htmain, instr=CTL_ENTRY, host=true)
+	.AddParam(type=uint32_t, name=vecIdx)
+	.AddParam(type=uint32_t, name=vecStride)
+	;
+
+ctl.AddReturn(func=htmain)
+	;
+
+ctl.AddCall(func=addLd, fork=true);
+ctl.AddCall(func=addSt, fork=true);
+
+
+////////////////////////////////////////////////////
+// Loads vector elements from op arrays, adds, stores results
+#define ADD_HTID_W 9
+typedef ht_uint48 MemAddr_t;
+
+// LOADER (SIM Driver)
+dsnInfo.AddModule(name=addLd, htIdW=ADD_HTID_W);
+
+addLd.AddInstr(name=ADD_LD1);
+addLd.AddInstr(name=ADD_LD2);
+addLd.AddInstr(name=ADD_RTN);
+
+addLd.AddHostMsg(dir=in, name=OP1_ADDR)
+	.AddDst(var=op1Addr)
+	;
+addLd.AddHostMsg(dir=in, name=OP2_ADDR)
+	.AddDst(var=op2Addr)
+	;
+
+addLd.AddPrivate()
+	.AddVar(type=uint32_t, name=vecIdx)
+	.AddVar(type=tmp_t, name=op1)
+	.AddVar(type=tmp_t, name=op2)
+	;
+
+addLd.AddShared()
+	.AddVar(type=MemAddr_t, name=op1Addr)
+	.AddVar(type=MemAddr_t, name=op2Addr)
+	;
+
+addLd.AddEntry(func=addLd, instr=ADD_LD1)
+	.AddParam(type=uint32_t, name=vecIdx)
+	;
+
+addLd.AddReturn(func=addLd)
+	;
+
+addLd.AddReadMem()
+	.AddDst(var=op1)
+	.AddDst(var=op2)
+	;
+
+addLd.AddUserIOSim(dir=out, name=ldOutA, type=tmp_t, dimen=2, queueW=4);
+addLd.AddUserIOSim(dir=out, name=ldOutB, type=tmp_t, dimen=2, queueW=4);
+
+// STORER (SIM Receiver)
+dsnInfo.AddModule(name=addSt, htIdW=ADD_HTID_W);
+
+addSt.AddInstr(name=ADD_ST);
+addSt.AddInstr(name=ADD_RTN);
+
+addSt.AddHostMsg(dir=in, name=RES_ADDR)
+	.AddDst(var=resAddr)
+	;
+
+addSt.AddPrivate()
+	.AddVar(type=uint32_t, name=vecIdx)
+	.AddVar(type=uint64_t, name=vecLen)
+	.AddVar(type=tmp_t,    name=opA)
+	.AddVar(type=tmp_t,    name=opB)
+	;
+
+addSt.AddShared()
+	.AddVar(type=MemAddr_t, name=resAddr)
+	.AddVar(type=tmp_t,    name=rsltQue, queueW=6, dimen1=2)
+	;
+
+addSt.AddEntry(func=addSt, instr=ADD_ST)
+	.AddParam(type=uint64_t, name=vecLen)
+	;
+
+addSt.AddReturn(func=addSt)
+	;
+
+addSt.AddWriteMem();
+
+addSt.AddUserIO(dir=in, name=stInA, type=tmp_t, dimen=2);
+addSt.AddUserIO(dir=in, name=stInB, type=tmp_t, dimen=2);

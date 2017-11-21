@@ -41,6 +41,7 @@ PLAT_WX_OR_MA = true
 endif
 
 PLAT_wx-690_HT_AE_CNT = 1
+PLAT_wx2-vu7p_HT_AE_CNT = 1
 PLAT_ma-100_HT_AE_CNT = 1
 PLAT_ma-400_HT_AE_CNT = 1
 PLAT_${CNY_PDK_PLATFORM}_HT_AE_CNT ?= 4
@@ -68,11 +69,9 @@ vsim libvsim vfiles:	CFLAGS += $(CNY_HT_CFLAGS_VSIM)
 vsim libvsim vfiles:	CFLAGS += -DHT_VSIM
 vsim libvsim vfiles:	CFLAGS += -I$(CNY_PATH)/include
 vsim libvsim vfiles:	CFLAGS += -I$(PWD)/ht/vsim
+vsim libvsim vfiles:	CFLAGS += -I$(PLAT_DIR)/convey/$(CNY_PDK_PLATFORM)/host
 ifeq (true,$(PLAT_WX_OR_MA))
-vsim libvsim vfiles:	CFLAGS += -I$(PLAT_DIR)/convey/wx-690/host
 vsim libvsim vfiles:	CFLAGS += -DHT_AE_CNT=$(HT_AE_CNT)
-else
-vsim libvsim vfiles:	CFLAGS += -I$(PLAT_DIR)/convey/hc-2ex/host
 endif
 
 app libapp:	CFLAGS += $(CNY_HT_DEFINES)
@@ -81,11 +80,7 @@ app libapp:	CFLAGS += -DHT_APP
 app libapp:	CFLAGS += -I$(CNY_PATH)/include
 app libapp:	CFLAGS += -I$(PWD)/ht/app
 app libapp:	CFLAGS += -DHT_AE_CNT=$(HT_AE_CNT)
-ifeq (true,$(PLAT_WX_OR_MA))
-app libapp:	CFLAGS += -I$(PLAT_DIR)/convey/wx-690/host
-else
-app libapp:	CFLAGS += -I$(PLAT_DIR)/convey/hc-2ex/host
-endif
+app libapp:	CFLAGS += -I$(PLAT_DIR)/convey/$(CNY_PDK_PLATFORM)/host
 
 HtHif.o HtHif.po: CFLAGS += -DHT_NICK=$(CNY_HT_NICK)
 
@@ -107,7 +102,11 @@ app libapp  :LDLIBS += -lwx_runtime
 ifneq ($(findstring ma,$(CNY_PDK_PLATFORM)),)
 vsim libvsim:LDLIBS += -lwx_sim_runtime_sl
 else
+ifneq ($(findstring wx2,$(CNY_PDK_PLATFORM)),)
+vsim libvsim:LDLIBS += -lwx_sim_runtime_sl
+else
 vsim libvsim:LDLIBS += -lwx_sim_runtime -lcpSimLib2_wx
+endif
 endif
 else
 vsim libvsim app libapp:LDLIBS += $(CNY_PATH)/lib/cny_initruntime.o
@@ -170,6 +169,16 @@ HTL_FLAGS += -nri
 endif
 ifneq ($(origin CNY_HT_SIM_RR), undefined)
 HTL_FLAGS += -rr
+endif
+ifneq ($(origin CNY_NUM_IO_PORTS), undefined)
+ifeq ($(shell test $(CNY_NUM_IO_PORTS) -gt 0; echo $$?),0)
+HTL_FLAGS += -DHT_UIO
+HTV_FLAGS += -DHT_UIO
+HTL_FLAGS += -iopc $(CNY_NUM_IO_PORTS)
+ifneq ($(origin CNY_IO_PORTS_WIDTH), undefined)
+HTL_FLAGS += -iopw $(CNY_IO_PORTS_WIDTH)
+endif
+endif
 endif
 
 PLAT_DEF = $(shell echo $(CNY_PDK_PLATFORM) | tr a-z A-Z | sed 's/-//g')

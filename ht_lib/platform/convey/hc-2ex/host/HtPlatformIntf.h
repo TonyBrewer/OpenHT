@@ -74,6 +74,18 @@ void ht_cp_info(void ** pCoproc, uint64_t * pSig, bool *needFlush, volatile bool
 	}
 }
 
+void ht_cp_fw_attach(void *pCoproc, void **ppCoprocFw) {}
+
+int ht_csr_read(void * pCoprocFw, uint64_t offset, uint64_t * data) {
+	throw CHtException(eHtBadDispatch, string("csr access not supported on this platform"));
+	return -1;
+}
+
+int ht_csr_write(void * pCoprocFw, uint64_t offset, uint64_t data) {
+	throw CHtException(eHtBadDispatch, string("csr access not supported on this platform"));
+	return -1;
+}
+
 void ht_cp_dispatch(void * pCoproc, uint64_t *pBase) {}
 
 void ht_cp_dispatch_wait(void * pCoproc, uint64_t sig, uint64_t *pBase) {
@@ -81,6 +93,8 @@ void ht_cp_dispatch_wait(void * pCoproc, uint64_t sig, uint64_t *pBase) {
 }
 
 void ht_cp_release(void * pCoproc) {}
+
+void ht_cp_fw_release(void * pCoprocFw) {}
 
 void * ht_cp_mem_alloc(void * pCoproc, size_t size) {
 	return cny_cp_malloc(size);

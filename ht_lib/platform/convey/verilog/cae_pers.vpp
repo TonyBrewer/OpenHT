@@ -13,10 +13,14 @@ ADD_INCLUDE "pdk_fpga_defines.vh"
 
 (* keep_hierarchy = "true" *)
 module cae_pers #(
-   parameter NUM_MC_PORTS = 16,
-   parameter RTNCTL_WIDTH = 32,
-   parameter AE_AE_WIDTH  = 32
-)(
+   parameter NUM_MC_PORTS    = 16,
+   parameter RTNCTL_WIDTH    = 32,
+ADD_IFDEF USER_IO_ENABLED
+   parameter NUM_UIO_PORTS   = 32,
+   parameter UIO_PORTS_WIDTH = 32,
+ADD_ENDIF //USER_IO_ENABLED
+   parameter AE_AE_WIDTH     = 32
+) (
    //
    // Clocks and Resets
    //
@@ -66,6 +70,19 @@ module cae_pers #(
    input  [NUM_MC_PORTS*1-1 :0]	mc_rs_flush_cmplt,
 
    //
+   // User IO Interface(s)
+   //
+ADD_IFDEF USER_IO_ENABLED
+   output [NUM_UIO_PORTS*1-1 :0] uio_rq_vld,
+   output [NUM_UIO_PORTS*UIO_PORTS_WIDTH-1:0] uio_rq_data,
+   input  [NUM_UIO_PORTS*1-1 :0] uio_rq_afull,
+
+   input  [NUM_UIO_PORTS*1-1 :0] uio_rs_vld,
+   input  [NUM_UIO_PORTS*UIO_PORTS_WIDTH-1:0] uio_rs_data,
+   output [NUM_UIO_PORTS*1-1 :0] uio_rs_afull,
+ADD_ENDIF
+
+   //
    // Ae-Ae Interface
    //
 ADD_IFDEF AE_AE_IF
@@ -106,6 +123,11 @@ ADD_ENDIF
 ADD_INCLUDE "pdk_fpga_param.vh"
 ADD_INCLUDE "aemc_messages.vh"
 
+`ifdef CNY_PLATFORM_TYPE2
+   localparam            NUM_CAES = 1;
+   localparam             MC_XBAR = 1;
+`endif //CNY_PLATFORM_TYPE2
+
     // unused
     assign mc_rq_flush = 'b0;
     assign csr_rd_ack = csr_rd_vld;
@@ -114,6 +136,7 @@ ADD_INCLUDE "aemc_messages.vh"
 
     localparam IS_WX = CNY_PDK_PLATFORM == "wx-690" ||
 		       CNY_PDK_PLATFORM == "wx-2000";
+    localparam IS_WX2 = CNY_PDK_PLATFORM == "wx2-vu7p";
 
     localparam [3:0] NUM_AE = NUM_CAES;
 
@@ -123,8 +146,8 @@ ADD_INCLUDE "aemc_messages.vh"
     wire [47:0]	dis_ctlQueBase;
     wire [7:0]	unitCnt;
     dispatch # (
-	.FREQ(CLK_PERS_FREQ == "SYNC_CLK" ? (IS_WX ? 167 : 150) :
-	      CLK_PERS_FREQ == "SYNC_HALF_CLK" ? (IS_WX ? 83 : 75) :
+	.FREQ(CLK_PERS_FREQ == "SYNC_CLK" ? (IS_WX ? 167 : (IS_WX2 ? 267 : 150)) :
+	      CLK_PERS_FREQ == "SYNC_HALF_CLK" ? (IS_WX ? 83 : (IS_WX2 ? 133 : 75)) :
 	      CLK_PERS_FREQ),
 	.PART(PART_NUMBER)
     ) dis (
@@ -168,6 +191,13 @@ ADD_ENDIF
     wire [95:0]	 i_xbarToMif_rdRsp[31:0];
     wire [148:0] o_mifToXbar_req[31:0];
 
+ADD_IFDEF USER_IO_ENABLED
+    wire [31:0]  i_portToAu_uio_Rdy, o_portToAu_uio_AFull;
+    wire [UIO_PORTS_WIDTH-1:0] i_portToAu_uio_Data[31:0];
+    wire [31:0]  o_portToAu_uio_Rdy, i_portToAu_uio_AFull;
+    wire [UIO_PORTS_WIDTH-1:0] o_portToAu_uio_Data[31:0];
+ADD_ENDIF
+
 ADD_IFNDEF AE_AE_IF
     wire	nxtae_rx_stall, nxtae_rx_vld, nxtae_tx_stall, nxtae_tx_vld,
 		prvae_rx_stall, prvae_rx_vld, prvae_tx_stall, prvae_tx_vld;
@@ -208,6 +238,16 @@ ADD_ENDIF
 	.o_mifToXbar_req$`n(o_mifToXbar_req[`n]),
 	.o_mifToXbar_reqRdy$`n(o_mifToXbar_reqRdy[`n]),
 	.o_mifToXbar_wrRspFull$`n(o_mifToXbar_wrRspFull[`n]),
+
+ADD_IFDEF USER_IO_ENABLED
+	.i_portToAu_uio_Rdy$`n(i_portToAu_uio_Rdy[`n]),
+	.i_portToAu_uio_Data$`n(i_portToAu_uio_Data[`n]),
+	.o_portToAu_uio_AFull$`n(o_portToAu_uio_AFull[`n]),
+
+	.o_auToPort_uio_Rdy$`n(o_auToPort_uio_Rdy[`n]),
+	.o_auToPort_uio_Data$`n(o_auToPort_uio_Data[`n]),
+	.i_auToPort_uio_AFull$`n(i_auToPort_uio_AFull[`n]),
+ADD_ENDIF
 `endfor
 	.o_min_stall(nxtae_rx_stall),
 	.i_min_data(nxtae_rx_data),
@@ -279,15 +319,33 @@ ADD_ENDIF
 				mc_rq_cmd[n*3 +: 3] == AEMC_CMD_ATOMIC ? AEMC_SCMD_ATOM_EXCH :
 				4'b0;
     end
+ADD_IFDEF USER_IO_ENABLED
+    for (n=0; n<NUM_UIO_PORTS; n=n+1) begin : g1
+	assign i_portToAu_uio_Rdy[n]   = uio_rs_vld[n];
+	assign i_portToAu_uio_Data[n]  = uio_rs_data[n*UIO_PORTS_WIDTH +: UIO_PORTS_WIDTH];
+	assign uio_rs_afullpop[n]      = o_portToAu_uio_AFull[n];
+
+	assign uio_rq_vld[n]           = o_auToPort_uio_Rdy[n];
+	assign uio_rq_data[n*UIO_PORTS_WIDTH +: UIO_PORTS_WIDTH] = o_auToPort_uio_Data[n];
+	assign i_auToPort_uio_AFull[n] = uio_rq_afull[n];
+    end
+ADD_ENDIF
 
     // unused
-    for (n=NUM_MC_PORTS; n<32; n=n+1) begin : g1
+    for (n=NUM_MC_PORTS; n<32; n=n+1) begin : g2
 	assign i_xbarToMif_rdRsp[n] = 0;
 	assign i_xbarToMif_rdRspRdy[n] = 0;
 	assign i_xbarToMif_reqFull[n] = 0;
 	assign i_xbarToMif_wrRspRdy[n] = 0;
 	assign i_xbarToMif_wrRspTid[n] = 0;
     end
+ADD_IFDEF USER_IO_ENABLED
+    for (n=NUM_UIO_PORTS; n<32; n=n+1) begin : g3
+	assign i_portToAu_uio_Rdy[n] = 0;
+	assign i_portToAu_uio_Data[n] = 0;
+	assign i_auToPort_uio_AFull[n] = 0;
+    end
+ADD_ENDIF
     endgenerate
 
 endmodule // cae_pers

@@ -1,0 +1,143 @@
+struct packet_t {
+  uint64_t lower;
+  uint64_t upper;
+};
+
+typedef uint64_t tmp_t;
+
+////////////////////////////////////////////////////
+// Top-level
+
+dsnInfo.AddModule(name=ctl, htIdW=0);
+
+ctl.AddInstr(name=CTL_SEND);
+ctl.AddInstr(name=CTL_RECV);
+ctl.AddInstr(name=CTL_START);
+ctl.AddInstr(name=CTL_JOIN_SEND);
+ctl.AddInstr(name=CTL_JOIN_RECV);
+ctl.AddInstr(name=CTL_SEND_RTN);
+ctl.AddInstr(name=CTL_RTN);
+
+ctl.AddMsgIntf(dir=out, name=startMsg, type=bool);
+
+ctl.AddEntry(func=htmain, instr=CTL_SEND, host=true)
+	;
+
+ctl.AddReturn(func=htmain)
+	;
+
+ctl.AddCall(func=send, fork=true);
+ctl.AddCall(func=recv, fork=true);
+
+
+////////////////////////////////////////////////////
+// Driver
+dsnInfo.AddModule(name=send, htIdW=0);
+
+send.AddInstr(name=SEND_WAIT);
+send.AddInstr(name=SEND_RTN);
+
+send.AddHostMsg(dir=in, name=LEN)
+	.AddDst(var=len)
+	;
+
+send.AddMsgIntf(dir=in, name=startMsg, type=bool);
+
+send.AddShared()
+	.AddVar(type=ht_uint64, name=len)
+	.AddVar(type=bool, name=start, reset=true)
+	.AddVar(type=bool, name=start_sig, reset=true)
+	.AddVar(type=bool, name=start_len, reset=true)
+	.AddVar(type=ht_uint64, name=count, dimen1=8, reset=true)
+	.AddVar(type=bool, name=done, dimen1=8, reset=true)
+	.AddVar(type=packet_t, name=holdPacket, dimen1=8, reset=true)
+	.AddVar(type=bool, name=holdPacketVld, dimen1=8, reset=true)
+	;
+
+send.AddEntry(func=send, instr=SEND_WAIT)
+	;
+
+send.AddReturn(func=send)
+	;
+
+send.AddUserIO(dir=out, name=link, type=packet_t, dimen=8);
+
+send.AddPrimState(type=prbs_prm_state, name=prbs_prm_state0, include="PersPrbs_prim.h");
+send.AddPrimState(type=prbs_prm_state, name=prbs_prm_state1, include="PersPrbs_prim.h");
+send.AddPrimState(type=prbs_prm_state, name=prbs_prm_state2, include="PersPrbs_prim.h");
+send.AddPrimState(type=prbs_prm_state, name=prbs_prm_state3, include="PersPrbs_prim.h");
+send.AddPrimState(type=prbs_prm_state, name=prbs_prm_state4, include="PersPrbs_prim.h");
+send.AddPrimState(type=prbs_prm_state, name=prbs_prm_state5, include="PersPrbs_prim.h");
+send.AddPrimState(type=prbs_prm_state, name=prbs_prm_state6, include="PersPrbs_prim.h");
+send.AddPrimState(type=prbs_prm_state, name=prbs_prm_state7, include="PersPrbs_prim.h");
+
+
+////////////////////////////////////////////////////
+// Receiver
+dsnInfo.AddModule(name=recv, htIdW=0);
+
+recv.AddInstr(name=RECV_WAIT);
+recv.AddInstr(name=RECV_RTN);
+
+recv.AddHostMsg(dir=in, name=LEN)
+	.AddDst(var=len)
+	;
+
+recv.AddStage(execStg=2)
+	.AddVar(type=packet_t, name=inPacket, dimen1=8, range=1)
+	;
+
+recv.AddShared()
+	.AddVar(type=ht_uint64, name=len)
+	.AddVar(type=ht_uint64, name=count, dimen1=8, reset=true)
+	.AddVar(type=bool, name=done, dimen1=8, reset=true)
+	;
+
+recv.AddEntry(func=recv, instr=RECV_WAIT)
+	;
+
+recv.AddReturn(func=recv)
+	;
+
+recv.AddUserIO(dir=in, name=link, type=packet_t, dimen=8);
+
+recv.AddPrimState(type=prbs_prm_state, name=prbs_prm_state0, include="PersPrbs_prim.h");
+recv.AddPrimState(type=prbs_prm_state, name=prbs_prm_state1, include="PersPrbs_prim.h");
+recv.AddPrimState(type=prbs_prm_state, name=prbs_prm_state2, include="PersPrbs_prim.h");
+recv.AddPrimState(type=prbs_prm_state, name=prbs_prm_state3, include="PersPrbs_prim.h");
+recv.AddPrimState(type=prbs_prm_state, name=prbs_prm_state4, include="PersPrbs_prim.h");
+recv.AddPrimState(type=prbs_prm_state, name=prbs_prm_state5, include="PersPrbs_prim.h");
+recv.AddPrimState(type=prbs_prm_state, name=prbs_prm_state6, include="PersPrbs_prim.h");
+recv.AddPrimState(type=prbs_prm_state, name=prbs_prm_state7, include="PersPrbs_prim.h");
+
+
+////////////////////////////////////////////////////
+// LOOP (SIM Module)
+//
+// NOTE: This should only be instantiated during
+//   SystemC simulation!
+////////////////////////////////////////////////////
+
+#ifdef HT_SYSC
+ctl.AddCall(func=loop, fork=true);
+
+dsnInfo.AddModule(name=loop, htIdW=0);
+
+loop.AddInstr(name=LOOP_ENTRY);
+
+loop.AddUserIOSim(dir=in,  name=in,  type=packet_t, dimen=8, queueW=5);
+loop.AddUserIOSim(dir=out, name=out, type=packet_t, dimen=8, queueW=5);
+
+loop.AddUserIOSimCsrIntf();
+
+loop.AddShared()
+	.AddVar(type=uint64_t, name=reg0)
+	.AddVar(type=uint64_t, name=reg1)
+	;
+
+loop.AddEntry(func=loop, instr=LOOP_ENTRY)
+	;
+
+loop.AddReturn(func=loop)
+	;
+#endif

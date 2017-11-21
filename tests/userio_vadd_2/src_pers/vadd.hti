@@ -1,0 +1,10 @@
+AddModInstParams(unit=Au, modPath="ctl/addLd", replCnt=2);
+AddUserIOConn(portId=0, outPath=ctl/addLd[0]/ldOutA);
+AddUserIOConn(portId=1, outPath=ctl/addLd[0]/ldOutB);
+AddUserIOConn(portId=2, outPath=ctl/addLd[1]/ldOutA);
+AddUserIOConn(portId=3, outPath=ctl/addLd[1]/ldOutB);
+
+AddUserIOSimConn(portId=0, inPath=ctl/addSt/stInA[0]);
+AddUserIOSimConn(portId=1, inPath=ctl/addSt/stInB[0]);
+AddUserIOSimConn(portId=2, inPath=ctl/addSt/stInA[1]);
+AddUserIOSimConn(portId=3, inPath=ctl/addSt/stInB[1]);

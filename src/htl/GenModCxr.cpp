@@ -315,7 +315,7 @@ void CDsnInfo::CheckRequiredEntryNames(vector<CModIdx> &callStk)
 
 			m_maxReplCnt = max(m_maxReplCnt, instParams.m_replCnt);
 
-			if (instParams.m_replCnt >= 1) {
+			if (instParams.m_bExplicitRepl) {
 				// Push replCnt on modInstList
 				for (int replIdx = 0; replIdx < instParams.m_replCnt; replIdx += 1) {
 					// check for replicated instance parameters

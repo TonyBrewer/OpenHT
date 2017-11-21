@@ -37,6 +37,8 @@ void CDsnInfo::GenPersFiles()
 
 		GenHtMon();
 
+		GenerateUioStubFiles();
+
 		GenerateAeTopFile();
 		GenerateUnitTopFile();
 	}

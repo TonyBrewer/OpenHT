@@ -13,9 +13,13 @@
 
 (* keep_hierarchy = "true" *)
 module cae_pers #(
-   parameter NUM_MC_PORTS = 16,
-   parameter RTNCTL_WIDTH = 32,
-   parameter AE_AE_WIDTH  = 32
+   parameter NUM_MC_PORTS    = 16,
+   parameter RTNCTL_WIDTH    = 32,
+`ifdef USER_IO_ENABLED
+   parameter NUM_UIO_PORTS   = 32,
+   parameter UIO_PORTS_WIDTH = 32,
+`endif //USER_IO_ENABLED
+   parameter AE_AE_WIDTH     = 32
 )(
    //
    // Clocks and Resets
@@ -66,6 +70,19 @@ module cae_pers #(
    input  [NUM_MC_PORTS*1-1 :0]	mc_rs_flush_cmplt,
 
    //
+   // User IO Interface(s)
+   //
+`ifdef USER_IO_ENABLED
+   output [NUM_UIO_PORTS*1-1 :0] uio_rq_vld,
+   output [NUM_UIO_PORTS*UIO_PORTS_WIDTH-1:0] uio_rq_data,
+   input  [NUM_UIO_PORTS*1-1 :0] uio_rq_afull,
+
+   input  [NUM_UIO_PORTS*1-1 :0] uio_rs_vld,
+   input  [NUM_UIO_PORTS*UIO_PORTS_WIDTH-1:0] uio_rs_data,
+   output [NUM_UIO_PORTS*1-1 :0] uio_rs_afull,
+`endif
+
+   //
    // Ae-Ae Interface
    //
 `ifdef AE_AE_IF
@@ -106,6 +123,11 @@ module cae_pers #(
 `include "pdk_fpga_param.vh"
 `include "aemc_messages.vh"
 
+`ifdef CNY_PLATFORM_TYPE2
+   localparam            NUM_CAES = 1;
+   localparam             MC_XBAR = 1;
+`endif //CNY_PLATFORM_TYPE2
+
     // unused
     assign mc_rq_flush = 'b0;
     assign csr_rd_ack = csr_rd_vld;
@@ -114,6 +136,7 @@ module cae_pers #(
 
     localparam IS_WX = CNY_PDK_PLATFORM == "wx-690" ||
 		       CNY_PDK_PLATFORM == "wx-2000";
+    localparam IS_WX2 = CNY_PDK_PLATFORM == "wx2-vu7p";
 
     localparam [3:0] NUM_AE = NUM_CAES;
 
@@ -123,8 +146,8 @@ module cae_pers #(
     wire [47:0]	dis_ctlQueBase;
     wire [7:0]	unitCnt;
     dispatch # (
-	.FREQ(CLK_PERS_FREQ == "SYNC_CLK" ? (IS_WX ? 167 : 150) :
-	      CLK_PERS_FREQ == "SYNC_HALF_CLK" ? (IS_WX ? 83 : 75) :
+	.FREQ(CLK_PERS_FREQ == "SYNC_CLK" ? (IS_WX ? 167 : (IS_WX2 ? 267 : 150)) :
+	      CLK_PERS_FREQ == "SYNC_HALF_CLK" ? (IS_WX ? 83 : (IS_WX2 ? 133 : 75)) :
 	      CLK_PERS_FREQ),
 	.PART(PART_NUMBER)
     ) dis (
@@ -168,6 +191,13 @@ module cae_pers #(
     wire [95:0]	 i_xbarToMif_rdRsp[31:0];
     wire [148:0] o_mifToXbar_req[31:0];
 
+`ifdef USER_IO_ENABLED
+    wire [31:0]  i_portToAu_uio_Rdy, o_portToAu_uio_AFull;
+    wire [UIO_PORTS_WIDTH-1:0] i_portToAu_uio_Data[31:0];
+    wire [31:0]  o_auToPort_uio_Rdy, i_auToPort_uio_AFull;
+    wire [UIO_PORTS_WIDTH-1:0] o_auToPort_uio_Data[31:0];
+`endif
+
 `ifndef AE_AE_IF
     wire	nxtae_rx_stall, nxtae_rx_vld, nxtae_tx_stall, nxtae_tx_vld,
 		prvae_rx_stall, prvae_rx_vld, prvae_tx_stall, prvae_tx_vld;
@@ -207,6 +237,16 @@ module cae_pers #(
 	.o_mifToXbar_req$0(o_mifToXbar_req[0]),
 	.o_mifToXbar_reqRdy$0(o_mifToXbar_reqRdy[0]),
 	.o_mifToXbar_wrRspFull$0(o_mifToXbar_wrRspFull[0]),
+
+`ifdef USER_IO_ENABLED
+	.i_portToAu_uio_Rdy$0(i_portToAu_uio_Rdy[0]),
+	.i_portToAu_uio_Data$0(i_portToAu_uio_Data[0]),
+	.o_portToAu_uio_AFull$0(o_portToAu_uio_AFull[0]),
+
+	.o_auToPort_uio_Rdy$0(o_auToPort_uio_Rdy[0]),
+	.o_auToPort_uio_Data$0(o_auToPort_uio_Data[0]),
+	.i_auToPort_uio_AFull$0(i_auToPort_uio_AFull[0]),
+`endif
 	// {TID_W'tid, 64'data}
 	.i_xbarToMif_rdRsp$1(i_xbarToMif_rdRsp[1]),
 	.i_xbarToMif_rdRspRdy$1(i_xbarToMif_rdRspRdy[1]),
@@ -219,6 +259,16 @@ module cae_pers #(
 	.o_mifToXbar_req$1(o_mifToXbar_req[1]),
 	.o_mifToXbar_reqRdy$1(o_mifToXbar_reqRdy[1]),
 	.o_mifToXbar_wrRspFull$1(o_mifToXbar_wrRspFull[1]),
+
+`ifdef USER_IO_ENABLED
+	.i_portToAu_uio_Rdy$1(i_portToAu_uio_Rdy[1]),
+	.i_portToAu_uio_Data$1(i_portToAu_uio_Data[1]),
+	.o_portToAu_uio_AFull$1(o_portToAu_uio_AFull[1]),
+
+	.o_auToPort_uio_Rdy$1(o_auToPort_uio_Rdy[1]),
+	.o_auToPort_uio_Data$1(o_auToPort_uio_Data[1]),
+	.i_auToPort_uio_AFull$1(i_auToPort_uio_AFull[1]),
+`endif
 	// {TID_W'tid, 64'data}
 	.i_xbarToMif_rdRsp$2(i_xbarToMif_rdRsp[2]),
 	.i_xbarToMif_rdRspRdy$2(i_xbarToMif_rdRspRdy[2]),
@@ -231,6 +281,16 @@ module cae_pers #(
 	.o_mifToXbar_req$2(o_mifToXbar_req[2]),
 	.o_mifToXbar_reqRdy$2(o_mifToXbar_reqRdy[2]),
 	.o_mifToXbar_wrRspFull$2(o_mifToXbar_wrRspFull[2]),
+
+`ifdef USER_IO_ENABLED
+	.i_portToAu_uio_Rdy$2(i_portToAu_uio_Rdy[2]),
+	.i_portToAu_uio_Data$2(i_portToAu_uio_Data[2]),
+	.o_portToAu_uio_AFull$2(o_portToAu_uio_AFull[2]),
+
+	.o_auToPort_uio_Rdy$2(o_auToPort_uio_Rdy[2]),
+	.o_auToPort_uio_Data$2(o_auToPort_uio_Data[2]),
+	.i_auToPort_uio_AFull$2(i_auToPort_uio_AFull[2]),
+`endif
 	// {TID_W'tid, 64'data}
 	.i_xbarToMif_rdRsp$3(i_xbarToMif_rdRsp[3]),
 	.i_xbarToMif_rdRspRdy$3(i_xbarToMif_rdRspRdy[3]),
@@ -243,6 +303,16 @@ module cae_pers #(
 	.o_mifToXbar_req$3(o_mifToXbar_req[3]),
 	.o_mifToXbar_reqRdy$3(o_mifToXbar_reqRdy[3]),
 	.o_mifToXbar_wrRspFull$3(o_mifToXbar_wrRspFull[3]),
+
+`ifdef USER_IO_ENABLED
+	.i_portToAu_uio_Rdy$3(i_portToAu_uio_Rdy[3]),
+	.i_portToAu_uio_Data$3(i_portToAu_uio_Data[3]),
+	.o_portToAu_uio_AFull$3(o_portToAu_uio_AFull[3]),
+
+	.o_auToPort_uio_Rdy$3(o_auToPort_uio_Rdy[3]),
+	.o_auToPort_uio_Data$3(o_auToPort_uio_Data[3]),
+	.i_auToPort_uio_AFull$3(i_auToPort_uio_AFull[3]),
+`endif
 	// {TID_W'tid, 64'data}
 	.i_xbarToMif_rdRsp$4(i_xbarToMif_rdRsp[4]),
 	.i_xbarToMif_rdRspRdy$4(i_xbarToMif_rdRspRdy[4]),
@@ -255,6 +325,16 @@ module cae_pers #(
 	.o_mifToXbar_req$4(o_mifToXbar_req[4]),
 	.o_mifToXbar_reqRdy$4(o_mifToXbar_reqRdy[4]),
 	.o_mifToXbar_wrRspFull$4(o_mifToXbar_wrRspFull[4]),
+
+`ifdef USER_IO_ENABLED
+	.i_portToAu_uio_Rdy$4(i_portToAu_uio_Rdy[4]),
+	.i_portToAu_uio_Data$4(i_portToAu_uio_Data[4]),
+	.o_portToAu_uio_AFull$4(o_portToAu_uio_AFull[4]),
+
+	.o_auToPort_uio_Rdy$4(o_auToPort_uio_Rdy[4]),
+	.o_auToPort_uio_Data$4(o_auToPort_uio_Data[4]),
+	.i_auToPort_uio_AFull$4(i_auToPort_uio_AFull[4]),
+`endif
 	// {TID_W'tid, 64'data}
 	.i_xbarToMif_rdRsp$5(i_xbarToMif_rdRsp[5]),
 	.i_xbarToMif_rdRspRdy$5(i_xbarToMif_rdRspRdy[5]),
@@ -267,6 +347,16 @@ module cae_pers #(
 	.o_mifToXbar_req$5(o_mifToXbar_req[5]),
 	.o_mifToXbar_reqRdy$5(o_mifToXbar_reqRdy[5]),
 	.o_mifToXbar_wrRspFull$5(o_mifToXbar_wrRspFull[5]),
+
+`ifdef USER_IO_ENABLED
+	.i_portToAu_uio_Rdy$5(i_portToAu_uio_Rdy[5]),
+	.i_portToAu_uio_Data$5(i_portToAu_uio_Data[5]),
+	.o_portToAu_uio_AFull$5(o_portToAu_uio_AFull[5]),
+
+	.o_auToPort_uio_Rdy$5(o_auToPort_uio_Rdy[5]),
+	.o_auToPort_uio_Data$5(o_auToPort_uio_Data[5]),
+	.i_auToPort_uio_AFull$5(i_auToPort_uio_AFull[5]),
+`endif
 	// {TID_W'tid, 64'data}
 	.i_xbarToMif_rdRsp$6(i_xbarToMif_rdRsp[6]),
 	.i_xbarToMif_rdRspRdy$6(i_xbarToMif_rdRspRdy[6]),
@@ -279,6 +369,16 @@ module cae_pers #(
 	.o_mifToXbar_req$6(o_mifToXbar_req[6]),
 	.o_mifToXbar_reqRdy$6(o_mifToXbar_reqRdy[6]),
 	.o_mifToXbar_wrRspFull$6(o_mifToXbar_wrRspFull[6]),
+
+`ifdef USER_IO_ENABLED
+	.i_portToAu_uio_Rdy$6(i_portToAu_uio_Rdy[6]),
+	.i_portToAu_uio_Data$6(i_portToAu_uio_Data[6]),
+	.o_portToAu_uio_AFull$6(o_portToAu_uio_AFull[6]),
+
+	.o_auToPort_uio_Rdy$6(o_auToPort_uio_Rdy[6]),
+	.o_auToPort_uio_Data$6(o_auToPort_uio_Data[6]),
+	.i_auToPort_uio_AFull$6(i_auToPort_uio_AFull[6]),
+`endif
 	// {TID_W'tid, 64'data}
 	.i_xbarToMif_rdRsp$7(i_xbarToMif_rdRsp[7]),
 	.i_xbarToMif_rdRspRdy$7(i_xbarToMif_rdRspRdy[7]),
@@ -291,6 +391,16 @@ module cae_pers #(
 	.o_mifToXbar_req$7(o_mifToXbar_req[7]),
 	.o_mifToXbar_reqRdy$7(o_mifToXbar_reqRdy[7]),
 	.o_mifToXbar_wrRspFull$7(o_mifToXbar_wrRspFull[7]),
+
+`ifdef USER_IO_ENABLED
+	.i_portToAu_uio_Rdy$7(i_portToAu_uio_Rdy[7]),
+	.i_portToAu_uio_Data$7(i_portToAu_uio_Data[7]),
+	.o_portToAu_uio_AFull$7(o_portToAu_uio_AFull[7]),
+
+	.o_auToPort_uio_Rdy$7(o_auToPort_uio_Rdy[7]),
+	.o_auToPort_uio_Data$7(o_auToPort_uio_Data[7]),
+	.i_auToPort_uio_AFull$7(i_auToPort_uio_AFull[7]),
+`endif
 	// {TID_W'tid, 64'data}
 	.i_xbarToMif_rdRsp$8(i_xbarToMif_rdRsp[8]),
 	.i_xbarToMif_rdRspRdy$8(i_xbarToMif_rdRspRdy[8]),
@@ -303,6 +413,16 @@ module cae_pers #(
 	.o_mifToXbar_req$8(o_mifToXbar_req[8]),
 	.o_mifToXbar_reqRdy$8(o_mifToXbar_reqRdy[8]),
 	.o_mifToXbar_wrRspFull$8(o_mifToXbar_wrRspFull[8]),
+
+`ifdef USER_IO_ENABLED
+	.i_portToAu_uio_Rdy$8(i_portToAu_uio_Rdy[8]),
+	.i_portToAu_uio_Data$8(i_portToAu_uio_Data[8]),
+	.o_portToAu_uio_AFull$8(o_portToAu_uio_AFull[8]),
+
+	.o_auToPort_uio_Rdy$8(o_auToPort_uio_Rdy[8]),
+	.o_auToPort_uio_Data$8(o_auToPort_uio_Data[8]),
+	.i_auToPort_uio_AFull$8(i_auToPort_uio_AFull[8]),
+`endif
 	// {TID_W'tid, 64'data}
 	.i_xbarToMif_rdRsp$9(i_xbarToMif_rdRsp[9]),
 	.i_xbarToMif_rdRspRdy$9(i_xbarToMif_rdRspRdy[9]),
@@ -315,6 +435,16 @@ module cae_pers #(
 	.o_mifToXbar_req$9(o_mifToXbar_req[9]),
 	.o_mifToXbar_reqRdy$9(o_mifToXbar_reqRdy[9]),
 	.o_mifToXbar_wrRspFull$9(o_mifToXbar_wrRspFull[9]),
+
+`ifdef USER_IO_ENABLED
+	.i_portToAu_uio_Rdy$9(i_portToAu_uio_Rdy[9]),
+	.i_portToAu_uio_Data$9(i_portToAu_uio_Data[9]),
+	.o_portToAu_uio_AFull$9(o_portToAu_uio_AFull[9]),
+
+	.o_auToPort_uio_Rdy$9(o_auToPort_uio_Rdy[9]),
+	.o_auToPort_uio_Data$9(o_auToPort_uio_Data[9]),
+	.i_auToPort_uio_AFull$9(i_auToPort_uio_AFull[9]),
+`endif
 	// {TID_W'tid, 64'data}
 	.i_xbarToMif_rdRsp$10(i_xbarToMif_rdRsp[10]),
 	.i_xbarToMif_rdRspRdy$10(i_xbarToMif_rdRspRdy[10]),
@@ -327,6 +457,16 @@ module cae_pers #(
 	.o_mifToXbar_req$10(o_mifToXbar_req[10]),
 	.o_mifToXbar_reqRdy$10(o_mifToXbar_reqRdy[10]),
 	.o_mifToXbar_wrRspFull$10(o_mifToXbar_wrRspFull[10]),
+
+`ifdef USER_IO_ENABLED
+	.i_portToAu_uio_Rdy$10(i_portToAu_uio_Rdy[10]),
+	.i_portToAu_uio_Data$10(i_portToAu_uio_Data[10]),
+	.o_portToAu_uio_AFull$10(o_portToAu_uio_AFull[10]),
+
+	.o_auToPort_uio_Rdy$10(o_auToPort_uio_Rdy[10]),
+	.o_auToPort_uio_Data$10(o_auToPort_uio_Data[10]),
+	.i_auToPort_uio_AFull$10(i_auToPort_uio_AFull[10]),
+`endif
 	// {TID_W'tid, 64'data}
 	.i_xbarToMif_rdRsp$11(i_xbarToMif_rdRsp[11]),
 	.i_xbarToMif_rdRspRdy$11(i_xbarToMif_rdRspRdy[11]),
@@ -339,6 +479,16 @@ module cae_pers #(
 	.o_mifToXbar_req$11(o_mifToXbar_req[11]),
 	.o_mifToXbar_reqRdy$11(o_mifToXbar_reqRdy[11]),
 	.o_mifToXbar_wrRspFull$11(o_mifToXbar_wrRspFull[11]),
+
+`ifdef USER_IO_ENABLED
+	.i_portToAu_uio_Rdy$11(i_portToAu_uio_Rdy[11]),
+	.i_portToAu_uio_Data$11(i_portToAu_uio_Data[11]),
+	.o_portToAu_uio_AFull$11(o_portToAu_uio_AFull[11]),
+
+	.o_auToPort_uio_Rdy$11(o_auToPort_uio_Rdy[11]),
+	.o_auToPort_uio_Data$11(o_auToPort_uio_Data[11]),
+	.i_auToPort_uio_AFull$11(i_auToPort_uio_AFull[11]),
+`endif
 	// {TID_W'tid, 64'data}
 	.i_xbarToMif_rdRsp$12(i_xbarToMif_rdRsp[12]),
 	.i_xbarToMif_rdRspRdy$12(i_xbarToMif_rdRspRdy[12]),
@@ -351,6 +501,16 @@ module cae_pers #(
 	.o_mifToXbar_req$12(o_mifToXbar_req[12]),
 	.o_mifToXbar_reqRdy$12(o_mifToXbar_reqRdy[12]),
 	.o_mifToXbar_wrRspFull$12(o_mifToXbar_wrRspFull[12]),
+
+`ifdef USER_IO_ENABLED
+	.i_portToAu_uio_Rdy$12(i_portToAu_uio_Rdy[12]),
+	.i_portToAu_uio_Data$12(i_portToAu_uio_Data[12]),
+	.o_portToAu_uio_AFull$12(o_portToAu_uio_AFull[12]),
+
+	.o_auToPort_uio_Rdy$12(o_auToPort_uio_Rdy[12]),
+	.o_auToPort_uio_Data$12(o_auToPort_uio_Data[12]),
+	.i_auToPort_uio_AFull$12(i_auToPort_uio_AFull[12]),
+`endif
 	// {TID_W'tid, 64'data}
 	.i_xbarToMif_rdRsp$13(i_xbarToMif_rdRsp[13]),
 	.i_xbarToMif_rdRspRdy$13(i_xbarToMif_rdRspRdy[13]),
@@ -363,6 +523,16 @@ module cae_pers #(
 	.o_mifToXbar_req$13(o_mifToXbar_req[13]),
 	.o_mifToXbar_reqRdy$13(o_mifToXbar_reqRdy[13]),
 	.o_mifToXbar_wrRspFull$13(o_mifToXbar_wrRspFull[13]),
+
+`ifdef USER_IO_ENABLED
+	.i_portToAu_uio_Rdy$13(i_portToAu_uio_Rdy[13]),
+	.i_portToAu_uio_Data$13(i_portToAu_uio_Data[13]),
+	.o_portToAu_uio_AFull$13(o_portToAu_uio_AFull[13]),
+
+	.o_auToPort_uio_Rdy$13(o_auToPort_uio_Rdy[13]),
+	.o_auToPort_uio_Data$13(o_auToPort_uio_Data[13]),
+	.i_auToPort_uio_AFull$13(i_auToPort_uio_AFull[13]),
+`endif
 	// {TID_W'tid, 64'data}
 	.i_xbarToMif_rdRsp$14(i_xbarToMif_rdRsp[14]),
 	.i_xbarToMif_rdRspRdy$14(i_xbarToMif_rdRspRdy[14]),
@@ -375,6 +545,16 @@ module cae_pers #(
 	.o_mifToXbar_req$14(o_mifToXbar_req[14]),
 	.o_mifToXbar_reqRdy$14(o_mifToXbar_reqRdy[14]),
 	.o_mifToXbar_wrRspFull$14(o_mifToXbar_wrRspFull[14]),
+
+`ifdef USER_IO_ENABLED
+	.i_portToAu_uio_Rdy$14(i_portToAu_uio_Rdy[14]),
+	.i_portToAu_uio_Data$14(i_portToAu_uio_Data[14]),
+	.o_portToAu_uio_AFull$14(o_portToAu_uio_AFull[14]),
+
+	.o_auToPort_uio_Rdy$14(o_auToPort_uio_Rdy[14]),
+	.o_auToPort_uio_Data$14(o_auToPort_uio_Data[14]),
+	.i_auToPort_uio_AFull$14(i_auToPort_uio_AFull[14]),
+`endif
 	// {TID_W'tid, 64'data}
 	.i_xbarToMif_rdRsp$15(i_xbarToMif_rdRsp[15]),
 	.i_xbarToMif_rdRspRdy$15(i_xbarToMif_rdRspRdy[15]),
@@ -387,6 +567,16 @@ module cae_pers #(
 	.o_mifToXbar_req$15(o_mifToXbar_req[15]),
 	.o_mifToXbar_reqRdy$15(o_mifToXbar_reqRdy[15]),
 	.o_mifToXbar_wrRspFull$15(o_mifToXbar_wrRspFull[15]),
+
+`ifdef USER_IO_ENABLED
+	.i_portToAu_uio_Rdy$15(i_portToAu_uio_Rdy[15]),
+	.i_portToAu_uio_Data$15(i_portToAu_uio_Data[15]),
+	.o_portToAu_uio_AFull$15(o_portToAu_uio_AFull[15]),
+
+	.o_auToPort_uio_Rdy$15(o_auToPort_uio_Rdy[15]),
+	.o_auToPort_uio_Data$15(o_auToPort_uio_Data[15]),
+	.i_auToPort_uio_AFull$15(i_auToPort_uio_AFull[15]),
+`endif
 	// {TID_W'tid, 64'data}
 	.i_xbarToMif_rdRsp$16(i_xbarToMif_rdRsp[16]),
 	.i_xbarToMif_rdRspRdy$16(i_xbarToMif_rdRspRdy[16]),
@@ -399,6 +589,16 @@ module cae_pers #(
 	.o_mifToXbar_req$16(o_mifToXbar_req[16]),
 	.o_mifToXbar_reqRdy$16(o_mifToXbar_reqRdy[16]),
 	.o_mifToXbar_wrRspFull$16(o_mifToXbar_wrRspFull[16]),
+
+`ifdef USER_IO_ENABLED
+	.i_portToAu_uio_Rdy$16(i_portToAu_uio_Rdy[16]),
+	.i_portToAu_uio_Data$16(i_portToAu_uio_Data[16]),
+	.o_portToAu_uio_AFull$16(o_portToAu_uio_AFull[16]),
+
+	.o_auToPort_uio_Rdy$16(o_auToPort_uio_Rdy[16]),
+	.o_auToPort_uio_Data$16(o_auToPort_uio_Data[16]),
+	.i_auToPort_uio_AFull$16(i_auToPort_uio_AFull[16]),
+`endif
 	// {TID_W'tid, 64'data}
 	.i_xbarToMif_rdRsp$17(i_xbarToMif_rdRsp[17]),
 	.i_xbarToMif_rdRspRdy$17(i_xbarToMif_rdRspRdy[17]),
@@ -411,6 +611,16 @@ module cae_pers #(
 	.o_mifToXbar_req$17(o_mifToXbar_req[17]),
 	.o_mifToXbar_reqRdy$17(o_mifToXbar_reqRdy[17]),
 	.o_mifToXbar_wrRspFull$17(o_mifToXbar_wrRspFull[17]),
+
+`ifdef USER_IO_ENABLED
+	.i_portToAu_uio_Rdy$17(i_portToAu_uio_Rdy[17]),
+	.i_portToAu_uio_Data$17(i_portToAu_uio_Data[17]),
+	.o_portToAu_uio_AFull$17(o_portToAu_uio_AFull[17]),
+
+	.o_auToPort_uio_Rdy$17(o_auToPort_uio_Rdy[17]),
+	.o_auToPort_uio_Data$17(o_auToPort_uio_Data[17]),
+	.i_auToPort_uio_AFull$17(i_auToPort_uio_AFull[17]),
+`endif
 	// {TID_W'tid, 64'data}
 	.i_xbarToMif_rdRsp$18(i_xbarToMif_rdRsp[18]),
 	.i_xbarToMif_rdRspRdy$18(i_xbarToMif_rdRspRdy[18]),
@@ -423,6 +633,16 @@ module cae_pers #(
 	.o_mifToXbar_req$18(o_mifToXbar_req[18]),
 	.o_mifToXbar_reqRdy$18(o_mifToXbar_reqRdy[18]),
 	.o_mifToXbar_wrRspFull$18(o_mifToXbar_wrRspFull[18]),
+
+`ifdef USER_IO_ENABLED
+	.i_portToAu_uio_Rdy$18(i_portToAu_uio_Rdy[18]),
+	.i_portToAu_uio_Data$18(i_portToAu_uio_Data[18]),
+	.o_portToAu_uio_AFull$18(o_portToAu_uio_AFull[18]),
+
+	.o_auToPort_uio_Rdy$18(o_auToPort_uio_Rdy[18]),
+	.o_auToPort_uio_Data$18(o_auToPort_uio_Data[18]),
+	.i_auToPort_uio_AFull$18(i_auToPort_uio_AFull[18]),
+`endif
 	// {TID_W'tid, 64'data}
 	.i_xbarToMif_rdRsp$19(i_xbarToMif_rdRsp[19]),
 	.i_xbarToMif_rdRspRdy$19(i_xbarToMif_rdRspRdy[19]),
@@ -435,6 +655,16 @@ module cae_pers #(
 	.o_mifToXbar_req$19(o_mifToXbar_req[19]),
 	.o_mifToXbar_reqRdy$19(o_mifToXbar_reqRdy[19]),
 	.o_mifToXbar_wrRspFull$19(o_mifToXbar_wrRspFull[19]),
+
+`ifdef USER_IO_ENABLED
+	.i_portToAu_uio_Rdy$19(i_portToAu_uio_Rdy[19]),
+	.i_portToAu_uio_Data$19(i_portToAu_uio_Data[19]),
+	.o_portToAu_uio_AFull$19(o_portToAu_uio_AFull[19]),
+
+	.o_auToPort_uio_Rdy$19(o_auToPort_uio_Rdy[19]),
+	.o_auToPort_uio_Data$19(o_auToPort_uio_Data[19]),
+	.i_auToPort_uio_AFull$19(i_auToPort_uio_AFull[19]),
+`endif
 	// {TID_W'tid, 64'data}
 	.i_xbarToMif_rdRsp$20(i_xbarToMif_rdRsp[20]),
 	.i_xbarToMif_rdRspRdy$20(i_xbarToMif_rdRspRdy[20]),
@@ -447,6 +677,16 @@ module cae_pers #(
 	.o_mifToXbar_req$20(o_mifToXbar_req[20]),
 	.o_mifToXbar_reqRdy$20(o_mifToXbar_reqRdy[20]),
 	.o_mifToXbar_wrRspFull$20(o_mifToXbar_wrRspFull[20]),
+
+`ifdef USER_IO_ENABLED
+	.i_portToAu_uio_Rdy$20(i_portToAu_uio_Rdy[20]),
+	.i_portToAu_uio_Data$20(i_portToAu_uio_Data[20]),
+	.o_portToAu_uio_AFull$20(o_portToAu_uio_AFull[20]),
+
+	.o_auToPort_uio_Rdy$20(o_auToPort_uio_Rdy[20]),
+	.o_auToPort_uio_Data$20(o_auToPort_uio_Data[20]),
+	.i_auToPort_uio_AFull$20(i_auToPort_uio_AFull[20]),
+`endif
 	// {TID_W'tid, 64'data}
 	.i_xbarToMif_rdRsp$21(i_xbarToMif_rdRsp[21]),
 	.i_xbarToMif_rdRspRdy$21(i_xbarToMif_rdRspRdy[21]),
@@ -459,6 +699,16 @@ module cae_pers #(
 	.o_mifToXbar_req$21(o_mifToXbar_req[21]),
 	.o_mifToXbar_reqRdy$21(o_mifToXbar_reqRdy[21]),
 	.o_mifToXbar_wrRspFull$21(o_mifToXbar_wrRspFull[21]),
+
+`ifdef USER_IO_ENABLED
+	.i_portToAu_uio_Rdy$21(i_portToAu_uio_Rdy[21]),
+	.i_portToAu_uio_Data$21(i_portToAu_uio_Data[21]),
+	.o_portToAu_uio_AFull$21(o_portToAu_uio_AFull[21]),
+
+	.o_auToPort_uio_Rdy$21(o_auToPort_uio_Rdy[21]),
+	.o_auToPort_uio_Data$21(o_auToPort_uio_Data[21]),
+	.i_auToPort_uio_AFull$21(i_auToPort_uio_AFull[21]),
+`endif
 	// {TID_W'tid, 64'data}
 	.i_xbarToMif_rdRsp$22(i_xbarToMif_rdRsp[22]),
 	.i_xbarToMif_rdRspRdy$22(i_xbarToMif_rdRspRdy[22]),
@@ -471,6 +721,16 @@ module cae_pers #(
 	.o_mifToXbar_req$22(o_mifToXbar_req[22]),
 	.o_mifToXbar_reqRdy$22(o_mifToXbar_reqRdy[22]),
 	.o_mifToXbar_wrRspFull$22(o_mifToXbar_wrRspFull[22]),
+
+`ifdef USER_IO_ENABLED
+	.i_portToAu_uio_Rdy$22(i_portToAu_uio_Rdy[22]),
+	.i_portToAu_uio_Data$22(i_portToAu_uio_Data[22]),
+	.o_portToAu_uio_AFull$22(o_portToAu_uio_AFull[22]),
+
+	.o_auToPort_uio_Rdy$22(o_auToPort_uio_Rdy[22]),
+	.o_auToPort_uio_Data$22(o_auToPort_uio_Data[22]),
+	.i_auToPort_uio_AFull$22(i_auToPort_uio_AFull[22]),
+`endif
 	// {TID_W'tid, 64'data}
 	.i_xbarToMif_rdRsp$23(i_xbarToMif_rdRsp[23]),
 	.i_xbarToMif_rdRspRdy$23(i_xbarToMif_rdRspRdy[23]),
@@ -483,6 +743,16 @@ module cae_pers #(
 	.o_mifToXbar_req$23(o_mifToXbar_req[23]),
 	.o_mifToXbar_reqRdy$23(o_mifToXbar_reqRdy[23]),
 	.o_mifToXbar_wrRspFull$23(o_mifToXbar_wrRspFull[23]),
+
+`ifdef USER_IO_ENABLED
+	.i_portToAu_uio_Rdy$23(i_portToAu_uio_Rdy[23]),
+	.i_portToAu_uio_Data$23(i_portToAu_uio_Data[23]),
+	.o_portToAu_uio_AFull$23(o_portToAu_uio_AFull[23]),
+
+	.o_auToPort_uio_Rdy$23(o_auToPort_uio_Rdy[23]),
+	.o_auToPort_uio_Data$23(o_auToPort_uio_Data[23]),
+	.i_auToPort_uio_AFull$23(i_auToPort_uio_AFull[23]),
+`endif
 	// {TID_W'tid, 64'data}
 	.i_xbarToMif_rdRsp$24(i_xbarToMif_rdRsp[24]),
 	.i_xbarToMif_rdRspRdy$24(i_xbarToMif_rdRspRdy[24]),
@@ -495,6 +765,16 @@ module cae_pers #(
 	.o_mifToXbar_req$24(o_mifToXbar_req[24]),
 	.o_mifToXbar_reqRdy$24(o_mifToXbar_reqRdy[24]),
 	.o_mifToXbar_wrRspFull$24(o_mifToXbar_wrRspFull[24]),
+
+`ifdef USER_IO_ENABLED
+	.i_portToAu_uio_Rdy$24(i_portToAu_uio_Rdy[24]),
+	.i_portToAu_uio_Data$24(i_portToAu_uio_Data[24]),
+	.o_portToAu_uio_AFull$24(o_portToAu_uio_AFull[24]),
+
+	.o_auToPort_uio_Rdy$24(o_auToPort_uio_Rdy[24]),
+	.o_auToPort_uio_Data$24(o_auToPort_uio_Data[24]),
+	.i_auToPort_uio_AFull$24(i_auToPort_uio_AFull[24]),
+`endif
 	// {TID_W'tid, 64'data}
 	.i_xbarToMif_rdRsp$25(i_xbarToMif_rdRsp[25]),
 	.i_xbarToMif_rdRspRdy$25(i_xbarToMif_rdRspRdy[25]),
@@ -507,6 +787,16 @@ module cae_pers #(
 	.o_mifToXbar_req$25(o_mifToXbar_req[25]),
 	.o_mifToXbar_reqRdy$25(o_mifToXbar_reqRdy[25]),
 	.o_mifToXbar_wrRspFull$25(o_mifToXbar_wrRspFull[25]),
+
+`ifdef USER_IO_ENABLED
+	.i_portToAu_uio_Rdy$25(i_portToAu_uio_Rdy[25]),
+	.i_portToAu_uio_Data$25(i_portToAu_uio_Data[25]),
+	.o_portToAu_uio_AFull$25(o_portToAu_uio_AFull[25]),
+
+	.o_auToPort_uio_Rdy$25(o_auToPort_uio_Rdy[25]),
+	.o_auToPort_uio_Data$25(o_auToPort_uio_Data[25]),
+	.i_auToPort_uio_AFull$25(i_auToPort_uio_AFull[25]),
+`endif
 	// {TID_W'tid, 64'data}
 	.i_xbarToMif_rdRsp$26(i_xbarToMif_rdRsp[26]),
 	.i_xbarToMif_rdRspRdy$26(i_xbarToMif_rdRspRdy[26]),
@@ -519,6 +809,16 @@ module cae_pers #(
 	.o_mifToXbar_req$26(o_mifToXbar_req[26]),
 	.o_mifToXbar_reqRdy$26(o_mifToXbar_reqRdy[26]),
 	.o_mifToXbar_wrRspFull$26(o_mifToXbar_wrRspFull[26]),
+
+`ifdef USER_IO_ENABLED
+	.i_portToAu_uio_Rdy$26(i_portToAu_uio_Rdy[26]),
+	.i_portToAu_uio_Data$26(i_portToAu_uio_Data[26]),
+	.o_portToAu_uio_AFull$26(o_portToAu_uio_AFull[26]),
+
+	.o_auToPort_uio_Rdy$26(o_auToPort_uio_Rdy[26]),
+	.o_auToPort_uio_Data$26(o_auToPort_uio_Data[26]),
+	.i_auToPort_uio_AFull$26(i_auToPort_uio_AFull[26]),
+`endif
 	// {TID_W'tid, 64'data}
 	.i_xbarToMif_rdRsp$27(i_xbarToMif_rdRsp[27]),
 	.i_xbarToMif_rdRspRdy$27(i_xbarToMif_rdRspRdy[27]),
@@ -531,6 +831,16 @@ module cae_pers #(
 	.o_mifToXbar_req$27(o_mifToXbar_req[27]),
 	.o_mifToXbar_reqRdy$27(o_mifToXbar_reqRdy[27]),
 	.o_mifToXbar_wrRspFull$27(o_mifToXbar_wrRspFull[27]),
+
+`ifdef USER_IO_ENABLED
+	.i_portToAu_uio_Rdy$27(i_portToAu_uio_Rdy[27]),
+	.i_portToAu_uio_Data$27(i_portToAu_uio_Data[27]),
+	.o_portToAu_uio_AFull$27(o_portToAu_uio_AFull[27]),
+
+	.o_auToPort_uio_Rdy$27(o_auToPort_uio_Rdy[27]),
+	.o_auToPort_uio_Data$27(o_auToPort_uio_Data[27]),
+	.i_auToPort_uio_AFull$27(i_auToPort_uio_AFull[27]),
+`endif
 	// {TID_W'tid, 64'data}
 	.i_xbarToMif_rdRsp$28(i_xbarToMif_rdRsp[28]),
 	.i_xbarToMif_rdRspRdy$28(i_xbarToMif_rdRspRdy[28]),
@@ -543,6 +853,16 @@ module cae_pers #(
 	.o_mifToXbar_req$28(o_mifToXbar_req[28]),
 	.o_mifToXbar_reqRdy$28(o_mifToXbar_reqRdy[28]),
 	.o_mifToXbar_wrRspFull$28(o_mifToXbar_wrRspFull[28]),
+
+`ifdef USER_IO_ENABLED
+	.i_portToAu_uio_Rdy$28(i_portToAu_uio_Rdy[28]),
+	.i_portToAu_uio_Data$28(i_portToAu_uio_Data[28]),
+	.o_portToAu_uio_AFull$28(o_portToAu_uio_AFull[28]),
+
+	.o_auToPort_uio_Rdy$28(o_auToPort_uio_Rdy[28]),
+	.o_auToPort_uio_Data$28(o_auToPort_uio_Data[28]),
+	.i_auToPort_uio_AFull$28(i_auToPort_uio_AFull[28]),
+`endif
 	// {TID_W'tid, 64'data}
 	.i_xbarToMif_rdRsp$29(i_xbarToMif_rdRsp[29]),
 	.i_xbarToMif_rdRspRdy$29(i_xbarToMif_rdRspRdy[29]),
@@ -555,6 +875,16 @@ module cae_pers #(
 	.o_mifToXbar_req$29(o_mifToXbar_req[29]),
 	.o_mifToXbar_reqRdy$29(o_mifToXbar_reqRdy[29]),
 	.o_mifToXbar_wrRspFull$29(o_mifToXbar_wrRspFull[29]),
+
+`ifdef USER_IO_ENABLED
+	.i_portToAu_uio_Rdy$29(i_portToAu_uio_Rdy[29]),
+	.i_portToAu_uio_Data$29(i_portToAu_uio_Data[29]),
+	.o_portToAu_uio_AFull$29(o_portToAu_uio_AFull[29]),
+
+	.o_auToPort_uio_Rdy$29(o_auToPort_uio_Rdy[29]),
+	.o_auToPort_uio_Data$29(o_auToPort_uio_Data[29]),
+	.i_auToPort_uio_AFull$29(i_auToPort_uio_AFull[29]),
+`endif
 	// {TID_W'tid, 64'data}
 	.i_xbarToMif_rdRsp$30(i_xbarToMif_rdRsp[30]),
 	.i_xbarToMif_rdRspRdy$30(i_xbarToMif_rdRspRdy[30]),
@@ -567,6 +897,16 @@ module cae_pers #(
 	.o_mifToXbar_req$30(o_mifToXbar_req[30]),
 	.o_mifToXbar_reqRdy$30(o_mifToXbar_reqRdy[30]),
 	.o_mifToXbar_wrRspFull$30(o_mifToXbar_wrRspFull[30]),
+
+`ifdef USER_IO_ENABLED
+	.i_portToAu_uio_Rdy$30(i_portToAu_uio_Rdy[30]),
+	.i_portToAu_uio_Data$30(i_portToAu_uio_Data[30]),
+	.o_portToAu_uio_AFull$30(o_portToAu_uio_AFull[30]),
+
+	.o_auToPort_uio_Rdy$30(o_auToPort_uio_Rdy[30]),
+	.o_auToPort_uio_Data$30(o_auToPort_uio_Data[30]),
+	.i_auToPort_uio_AFull$30(i_auToPort_uio_AFull[30]),
+`endif
 	// {TID_W'tid, 64'data}
 	.i_xbarToMif_rdRsp$31(i_xbarToMif_rdRsp[31]),
 	.i_xbarToMif_rdRspRdy$31(i_xbarToMif_rdRspRdy[31]),
@@ -579,6 +919,16 @@ module cae_pers #(
 	.o_mifToXbar_req$31(o_mifToXbar_req[31]),
 	.o_mifToXbar_reqRdy$31(o_mifToXbar_reqRdy[31]),
 	.o_mifToXbar_wrRspFull$31(o_mifToXbar_wrRspFull[31]),
+
+`ifdef USER_IO_ENABLED
+	.i_portToAu_uio_Rdy$31(i_portToAu_uio_Rdy[31]),
+	.i_portToAu_uio_Data$31(i_portToAu_uio_Data[31]),
+	.o_portToAu_uio_AFull$31(o_portToAu_uio_AFull[31]),
+
+	.o_auToPort_uio_Rdy$31(o_auToPort_uio_Rdy[31]),
+	.o_auToPort_uio_Data$31(o_auToPort_uio_Data[31]),
+	.i_auToPort_uio_AFull$31(i_auToPort_uio_AFull[31]),
+`endif
 	.o_min_stall(nxtae_rx_stall),
 	.i_min_data(nxtae_rx_data),
 	.i_min_valid(nxtae_rx_vld),
@@ -649,15 +999,33 @@ module cae_pers #(
 				mc_rq_cmd[n*3 +: 3] == AEMC_CMD_ATOMIC ? AEMC_SCMD_ATOM_EXCH :
 				4'b0;
     end
+`ifdef USER_IO_ENABLED
+    for (n=0; n<NUM_UIO_PORTS; n=n+1) begin : g1
+	assign i_portToAu_uio_Rdy[n]   = uio_rs_vld[n];
+	assign i_portToAu_uio_Data[n]  = uio_rs_data[n*UIO_PORTS_WIDTH +: UIO_PORTS_WIDTH];
+	assign uio_rs_afull[n]         = o_portToAu_uio_AFull[n];
+
+	assign uio_rq_vld[n]           = o_auToPort_uio_Rdy[n];
+	assign uio_rq_data[n*UIO_PORTS_WIDTH +: UIO_PORTS_WIDTH] = o_auToPort_uio_Data[n];
+	assign i_auToPort_uio_AFull[n] = uio_rq_afull[n];
+    end
+`endif
 
     // unused
-    for (n=NUM_MC_PORTS; n<32; n=n+1) begin : g1
+    for (n=NUM_MC_PORTS; n<32; n=n+1) begin : g2
 	assign i_xbarToMif_rdRsp[n] = 0;
 	assign i_xbarToMif_rdRspRdy[n] = 0;
 	assign i_xbarToMif_reqFull[n] = 0;
 	assign i_xbarToMif_wrRspRdy[n] = 0;
 	assign i_xbarToMif_wrRspTid[n] = 0;
     end
+`ifdef USER_IO_ENABLED
+    for (n=NUM_UIO_PORTS; n<32; n=n+1) begin : g3
+	assign i_portToAu_uio_Rdy[n] = 0;
+	assign i_portToAu_uio_Data[n] = 0;
+	assign i_auToPort_uio_AFull[n] = 0;
+    end
+`endif
     endgenerate
 
 endmodule // cae_pers

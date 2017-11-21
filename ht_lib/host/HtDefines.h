@@ -56,6 +56,10 @@
 #define HIF_DQ_CALL 6
 #define HIF_DQ_HALT 7
 
+// CSR Operations
+#define HT_CSR_RD 0
+#define HT_CSR_WR 1
+
 #ifndef HT_HIF_LIB
 # ifndef HT_AE_CNT
 # define HT_AE_CNT	1

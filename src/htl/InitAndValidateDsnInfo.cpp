@@ -40,6 +40,7 @@ void CDsnInfo::InitializeAndValidate()
 	InitAndValidateModOhm();
 	InitAndValidateModIhd();
 	InitAndValidateModMsg();
+	InitAndValidateModUio();
 	InitAndValidateModBar();
 	InitAndValidateModStrm();
 	InitAndValidateModStBuf();

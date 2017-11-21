@@ -10,7 +10,9 @@ SILENT ?= .SILENT   # Allow Override of Silent
 
 $(SILENT):
 
-ifneq (,$(findstring wx-690, $(CNY_PDK_PLATFORM)))
+ifneq (,$(findstring wx2-vu7p, $(CNY_PDK_PLATFORM)))
+    PLACE_FILES += $(wildcard compvu7p.xdc)
+else ifneq (,$(findstring wx-690, $(CNY_PDK_PLATFORM)))
     PLACE_FILES += $(wildcard comp690.xdc)
 else ifneq (,$(findstring wx-2000, $(CNY_PDK_PLATFORM)))
     PLACE_FILES += $(wildcard comp2000.xdc)

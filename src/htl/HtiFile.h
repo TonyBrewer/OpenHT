@@ -23,10 +23,13 @@ struct CDsnInfo;
 struct CInstanceParams;
 struct CModule;
 struct CMsgIntf;
+struct CUioIntf;
 struct CType;
 
 class HtiFile {
 public:
+	struct CUioIntfConn;
+	struct CUioIntfInfo;
 	struct CMsgIntfConn;
 	struct CMsgIntfInfo;
 	struct CMsgIntfParams;
@@ -49,8 +52,14 @@ public:
 
 	size_t GetMsgIntfConnListSize() { return m_msgIntfConn.size(); }
 	CMsgIntfConn * GetMsgIntfConn(size_t i) { return m_msgIntfConn[i]; }
+	size_t GetUioIntfConnListSize() { return m_uioIntfConn.size(); }
+	CUioIntfConn * GetUioIntfConn(size_t i) { return m_uioIntfConn[i]; }
+	size_t GetUioSimIntfConnListSize() { return m_uioSimIntfConn.size(); }
+	CUioIntfConn * GetUioSimIntfConn(size_t i) { return m_uioSimIntfConn[i]; }
 
 	bool IsMsgPathMatch(CLineInfo & lineInfo, CMsgIntfInfo & info, CModule &mod, CMsgIntf * pMsgIntf, int & instIdx);
+	bool IsUioPathMatch(CLineInfo & lineInfo, CUioIntfInfo & info, CModule &mod, CUioIntf * pUioIntf, int & instIdx);
+
 
 public:
 
@@ -172,6 +181,39 @@ public:
 		CType * m_pType;
 	};
 
+	struct CUioIntfInfo : CMsgIntfPath {
+		CUioIntfInfo(string &unit, string &path, bool bInBound) :
+			CMsgIntfPath(unit, path, bInBound)
+		{
+			m_pMod = NULL;
+			m_pUioIntf = NULL;
+		}
+
+		CModule * m_pMod;
+		CUioIntf * m_pUioIntf;
+	};
+
+	struct CUioIntfConn {
+		CUioIntfConn(string &uioPort, string &unit, string &path, bool bInbound) :
+			m_uioPort(uioPort), m_path(path), m_bInbound(bInbound),
+			m_uioIntf(unit, path, bInbound), m_lineInfo(CPreProcess::m_lineInfo)
+		{
+			m_syscSimConn = NULL;
+		}
+
+		string m_uioPort;
+		string m_path;
+		bool m_bInbound;
+
+		CUioIntfInfo m_uioIntf;
+
+		CLineInfo m_lineInfo;
+
+		CUioIntfConn * m_syscSimConn;
+
+		CType * m_pType;
+	};
+
 private:
 	void ParseHtiMethods();
 	vector<int> ExpandIntSet(string intSet) { return vector<int>(); }
@@ -182,6 +224,8 @@ private:
 	void AddModInstParams(string unit, string modPath, vector<int> &memPort, string modInstName, string replCnt, vector<pair<string, string> > & paramPairList);
 	void AddMsgIntfConn(string &outUnit, string &outPath, string &inUnit, string &inPath, bool aeNext, bool aePrev);
 	void AddMsgIntfParams(string &unit, string &path, bool bInBound, string &fanCnt);
+	void AddUioIntfConn(string &uioPort, string &path, bool bInbound);
+	void AddUioSimIntfConn(string &uioPort, string &path, bool bInbound);
 
 	void SkipTo(EToken skipTk);
 
@@ -194,6 +238,8 @@ private:
 
 	vector<CModInstParams> m_modInstParamsList;
 	vector<CMsgIntfConn *> m_msgIntfConn;
+	vector<CUioIntfConn *> m_uioIntfConn;
+	vector<CUioIntfConn *> m_uioSimIntfConn;
 
 public:
 	vector<CMsgIntfParams> m_msgIntfParamsList;

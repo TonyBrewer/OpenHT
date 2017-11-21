@@ -1,0 +1,29 @@
+AddModInstParams(unit=Au, modPath="ctl/addLd", replCnt=2);
+AddUserIOConn(portId=0, outPath=ctl/addLd[0]/ldOutA);
+AddUserIOConn(portId=1, outPath=ctl/addLd[0]/ldOutB);
+AddUserIOConn(portId=2, outPath=ctl/addLd[1]/ldOutA);
+AddUserIOConn(portId=3, outPath=ctl/addLd[1]/ldOutB);
+
+AddUserIOConn(portId=0, inPath=ctl/addSt/stInA[0]);
+AddUserIOConn(portId=1, inPath=ctl/addSt/stInB[0]);
+AddUserIOConn(portId=2, inPath=ctl/addSt/stInA[1]);
+AddUserIOConn(portId=3, inPath=ctl/addSt/stInB[1]);
+
+
+
+////////////////////////////////////////////////////
+// NOTE: This should only be instantiated during
+//   SystemC simulation!
+////////////////////////////////////////////////////
+
+#ifdef HT_SYSC
+AddUserIOSimConn(portId=0, inPath=ctl/loop/inA[0]);
+AddUserIOSimConn(portId=1, inPath=ctl/loop/inB[0]);
+AddUserIOSimConn(portId=2, inPath=ctl/loop/inA[1]);
+AddUserIOSimConn(portId=3, inPath=ctl/loop/inB[1]);
+
+AddUserIOSimConn(portId=0, outPath=ctl/loop/outA[0]);
+AddUserIOSimConn(portId=1, outPath=ctl/loop/outB[0]);
+AddUserIOSimConn(portId=2, outPath=ctl/loop/outA[1]);
+AddUserIOSimConn(portId=3, outPath=ctl/loop/outB[1]);
+#endif

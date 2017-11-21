@@ -21,7 +21,9 @@
 #define VCSREV "unknown"
 #endif
 
-enum ECoproc { hcx, hc1, hc1ex, hc2, hc2ex, wx690, wx2k, ma100, ma400 };
+enum ECoproc { hcx, hc1, hc1ex, hc2, hc2ex, wx690, wx2k, ma100, ma400, wx2vu7p };
+
+struct CType;
 
 // platform capabilities
 class CCoprocInfo {
@@ -146,6 +148,12 @@ public:
 	char const * GetCoprocName() { return g_coprocInfo[m_coprocId].GetCoprocName(); }
 	char const * GetCoprocAsStr() { return g_coprocInfo[m_coprocId].GetCoprocAsStr(); }
 	int GetBramsPerAE() { return g_coprocInfo[m_coprocId].GetBramsPerAE(); }
+	int GetUioPortCntMax() { return m_uioPortCntMax; }
+	int GetUioPortCnt() { return m_uioPortCnt; }
+	int GetUioPortsWidth() { return m_uioPortsWidth; }
+	int GetUioPortsWidthMax() { return m_uioPortsWidthMax; }
+	CType * GetUioGblType() { return m_uioGblType; }
+	void SetUioGblType(CType * type) { m_uioGblType = type; }
 
 	void GetArgs(int & argc, char const ** &argv)
 	{
@@ -200,6 +208,11 @@ private:
 	string			m_fxModName;
 	int				m_avgMemLatency[2];
 	int				m_coprocId;
+	int			m_uioPortsWidth;
+	const static int	m_uioPortsWidthMax = 1024;
+	int			m_uioPortCnt;
+	const static int	m_uioPortCntMax = 32;
+	CType *			m_uioGblType;
 	bool            m_bModelOnly;
 	bool			m_bForkPrivWr;
 	bool			m_bDsnRpt;

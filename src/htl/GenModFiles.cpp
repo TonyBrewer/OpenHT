@@ -29,6 +29,9 @@ CDsnInfo::GenerateModuleFiles(CModule &mod)
 		GenModIplStatements(pInst);
 		GenModIhmStatements(mod);
 		GenModMsgStatements(pInst);
+		GenModUioStatements(pInst);
+		GenModUioSimStatements(pInst);
+		GenModUioSimCsrStatements(pInst);
 		GenModBarStatements(pInst);
 		GenModOhmStatements(pInst);
 		GenModCxrStatements(pInst);
@@ -100,7 +103,8 @@ bool CDsnInfo::NeedClk2x()
 		|| !m_cxrT0Stage2x.Empty() || !m_cxrTsStage2x.Empty() || !m_cxrPostInstr2x.Empty() || !m_cxrReg2x.Empty() || !m_cxrOut2x.Empty()
 		|| !m_iplT0Stg2x.Empty() || !m_iplT1Stg2x.Empty() || !m_iplT2Stg2x.Empty() || !m_iplTsStg2x.Empty()
 		|| !m_iplPostInstr2x.Empty() || !m_iplReg2x.Empty() || !m_iplPostReg2x.Empty() || !m_iplOut2x.Empty()
-		|| !m_msgPreInstr2x.Empty() || !m_msgReg2x.Empty() || !m_msgPostInstr2x.Empty();
+		|| !m_msgPreInstr2x.Empty() || !m_msgReg2x.Empty() || !m_msgPostInstr2x.Empty()
+		|| !m_uioPreInstr2x.Empty() || !m_uioReg2x.Empty() || !m_uioPostInstr2x.Empty();
 
 	return bNeed2xClk;
 }
@@ -144,6 +148,7 @@ CDsnInfo::WritePersCppFile(CInstance * pModInst, bool bNeedClk2x)
 	m_cxrMacros.Write(cppFile);
 	m_ohmMacros.Write(cppFile);
 	m_msgFuncDef.Write(cppFile);
+	m_uioFuncDef.Write(cppFile);
 	m_barFuncDef.Write(cppFile);
 	m_strmFuncDef.Write(cppFile);
 	m_stBufFuncDef.Write(cppFile);
@@ -171,6 +176,7 @@ CDsnInfo::WritePersCppFile(CInstance * pModInst, bool bNeedClk2x)
 	m_mifPreInstr1x.Write(cppFile);
 	m_gblPreInstr1x.Write(cppFile);
 	m_msgPreInstr1x.Write(cppFile);
+	m_uioPreInstr1x.Write(cppFile);
 	m_barPreInstr1x.Write(cppFile);
 	m_strmPreInstr1x.Write(cppFile);
 	m_stBufPreInstr1x.Write(cppFile);
@@ -185,6 +191,7 @@ CDsnInfo::WritePersCppFile(CInstance * pModInst, bool bNeedClk2x)
 	m_ohdPostInstr1x.Write(cppFile);
 	m_mifPostInstr1x.Write(cppFile);
 	m_msgPostInstr1x.Write(cppFile);
+	m_uioPostInstr1x.Write(cppFile);
 	m_barPostInstr1x.Write(cppFile);
 	m_strmPostInstr1x.Write(cppFile);
 	m_stBufPostInstr1x.Write(cppFile);
@@ -213,6 +220,7 @@ CDsnInfo::WritePersCppFile(CInstance * pModInst, bool bNeedClk2x)
 	m_mifReg1x.Write(cppFile);
 	m_cxrReg1x.Write(cppFile);
 	m_msgReg1x.Write(cppFile);
+	m_uioReg1x.Write(cppFile);
 	m_barReg1x.Write(cppFile);
 	m_strmReg1x.Write(cppFile);
 	m_stBufReg1x.Write(cppFile);
@@ -256,6 +264,7 @@ CDsnInfo::WritePersCppFile(CInstance * pModInst, bool bNeedClk2x)
 	m_iplPostReg1x.Write(cppFile);
 	m_mifPostReg1x.Write(cppFile);
 	m_msgPostReg1x.Write(cppFile);
+	m_uioPostReg1x.Write(cppFile);
 	m_ohmPostReg1x.Write(cppFile);
 	m_ihdPostReg1x.Write(cppFile);
 	m_ohdPostReg1x.Write(cppFile);
@@ -273,6 +282,7 @@ CDsnInfo::WritePersCppFile(CInstance * pModInst, bool bNeedClk2x)
 	m_mifOut1x.Write(cppFile);
 	m_cxrOut1x.Write(cppFile);
 	m_msgOut1x.Write(cppFile);
+	m_uioOut1x.Write(cppFile);
 	m_barOut1x.Write(cppFile);
 	m_strmOut1x.Write(cppFile);
 
@@ -302,6 +312,7 @@ CDsnInfo::WritePersCppFile(CInstance * pModInst, bool bNeedClk2x)
 		m_mifPreInstr2x.Write(cppFile);
 		m_gblPreInstr2x.Write(cppFile);
 		m_msgPreInstr2x.Write(cppFile);
+		m_uioPreInstr2x.Write(cppFile);
 		m_barPreInstr2x.Write(cppFile);
 		m_strmPreInstr2x.Write(cppFile);
 		m_stBufPreInstr2x.Write(cppFile);
@@ -313,6 +324,7 @@ CDsnInfo::WritePersCppFile(CInstance * pModInst, bool bNeedClk2x)
 		m_cxrPostInstr2x.Write(cppFile);
 		m_gblPostInstr2x.Write(cppFile);
 		m_msgPostInstr2x.Write(cppFile);
+		m_uioPostInstr2x.Write(cppFile);
 		m_barPostInstr2x.Write(cppFile);
 		m_strmPostInstr2x.Write(cppFile);
 		m_stBufPostInstr2x.Write(cppFile);
@@ -344,6 +356,7 @@ CDsnInfo::WritePersCppFile(CInstance * pModInst, bool bNeedClk2x)
 		m_mifReg2x.Write(cppFile);
 		m_cxrReg2x.Write(cppFile);
 		m_msgReg2x.Write(cppFile);
+		m_uioReg2x.Write(cppFile);
 		m_barReg2x.Write(cppFile);
 		m_strmReg2x.Write(cppFile);
 		m_stBufReg2x.Write(cppFile);
@@ -359,6 +372,7 @@ CDsnInfo::WritePersCppFile(CInstance * pModInst, bool bNeedClk2x)
 		m_iplPostReg2x.Write(cppFile);
 		m_mifPostReg2x.Write(cppFile);
 		m_msgPostReg2x.Write(cppFile);
+		m_uioPostReg2x.Write(cppFile);
 		m_ohmPostReg2x.Write(cppFile);
 		m_ihdPostReg2x.Write(cppFile);
 		m_ohdPostReg2x.Write(cppFile);
@@ -376,6 +390,7 @@ CDsnInfo::WritePersCppFile(CInstance * pModInst, bool bNeedClk2x)
 		m_mifOut2x.Write(cppFile);
 		m_cxrOut2x.Write(cppFile);
 		m_msgOut2x.Write(cppFile);
+		m_uioOut2x.Write(cppFile);
 		m_barOut2x.Write(cppFile);
 		m_strmOut2x.Write(cppFile);
 
@@ -450,6 +465,14 @@ CDsnInfo::WritePersIncFile(CInstance * pModInst, bool bNeedClk2x)
 	fprintf(incFile, "#ifndef _HTV\n");
 	fprintf(incFile, "extern MTRand_int32 g_rndRetry;\n");
 	fprintf(incFile, "extern MTRand_int64 g_rndInit;\n");
+	if (pMod->m_uioCsrIntfList.size() > 0) {
+		fprintf(incFile, "namespace Ht {\n");
+		fprintf(incFile, "\textern bool g_bCsrFuncSet;\n");
+		fprintf(incFile, "\textern void *g_pCsrMod;\n");
+		fprintf(incFile, "\textern bool (*g_pCsrCmd)(void *self, int cmd, uint64_t addr, uint64_t data);\n");
+		fprintf(incFile, "\textern bool (*g_pCsrRdRsp)(void *self, uint64_t &data);\n");
+		fprintf(incFile, "};\n");
+	}
 	fprintf(incFile, "#endif\n");
 	fprintf(incFile, "\n");
 
@@ -536,6 +559,7 @@ CDsnInfo::WritePersIncFile(CInstance * pModInst, bool bNeedClk2x)
 	}
 
 	m_msgIoDecl.Write(incFile);
+	m_uioIoDecl.Write(incFile);
 	m_barIoDecl.Write(incFile);
 	m_ihmIoDecl.Write(incFile);
 	m_ohmIoDecl.Write(incFile);
@@ -569,9 +593,9 @@ CDsnInfo::WritePersIncFile(CInstance * pModInst, bool bNeedClk2x)
 	m_ihmRegDecl.Write(incFile);
 	m_ohmRegDecl.Write(incFile);
 	m_msgRegDecl.Write(incFile);
+	m_uioRegDecl.Write(incFile);
 	m_cxrRegDecl.Write(incFile);
 	m_iplRegDecl.Write(incFile);
-	//m_msgRegDecl.Write(incFile);
 	m_barRegDecl.Write(incFile);
 	m_strmRegDecl.Write(incFile);
 	m_stBufRegDecl.Write(incFile);
@@ -633,6 +657,7 @@ CDsnInfo::WritePersIncFile(CInstance * pModInst, bool bNeedClk2x)
 	m_ihdFuncDecl.Write(incFile);
 	m_ohdFuncDecl.Write(incFile);
 	m_msgFuncDecl.Write(incFile);
+	m_uioFuncDecl.Write(incFile);
 	m_barFuncDecl.Write(incFile);
 	m_strmFuncDecl.Write(incFile);
 	m_stBufFuncDecl.Write(incFile);
@@ -853,6 +878,21 @@ CDsnInfo::WritePersIncFile(CInstance * pModInst, bool bNeedClk2x)
 
 		//	fprintf(incFile, "\t\tRndInit_G_%s();\n", intRam.m_gblName.c_str());
 		//}
+
+		fprintf(incFile, "#\t\tendif\n");
+	}
+
+
+	// If csr intf exists
+	if (pMod->m_uioCsrIntfList.size() > 0) {
+		fprintf(incFile, "\n");
+		fprintf(incFile, "#\t\tifndef _HTV\n");
+		fprintf(incFile, "\t\t// CSR Function initialization\n");
+
+		fprintf(incFile, "\t\tHt::g_bCsrFuncSet = true;\n");
+		fprintf(incFile, "\t\tHt::g_pCsrMod = (void*)this;\n");
+		fprintf(incFile, "\t\tHt::g_pCsrCmd = &ext_UioCsrCmd;\n");
+		fprintf(incFile, "\t\tHt::g_pCsrRdRsp = &ext_UioCsrRdRsp;\n");
 
 		fprintf(incFile, "#\t\tendif\n");
 	}

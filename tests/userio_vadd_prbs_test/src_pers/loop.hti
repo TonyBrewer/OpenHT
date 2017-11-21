@@ -1,0 +1,44 @@
+AddUserIOConn(portId=0, outPath=ctl/send/link[0]);
+AddUserIOConn(portId=1, outPath=ctl/send/link[1]);
+AddUserIOConn(portId=2, outPath=ctl/send/link[2]);
+AddUserIOConn(portId=3, outPath=ctl/send/link[3]);
+AddUserIOConn(portId=4, outPath=ctl/send/link[4]);
+AddUserIOConn(portId=5, outPath=ctl/send/link[5]);
+AddUserIOConn(portId=6, outPath=ctl/send/link[6]);
+AddUserIOConn(portId=7, outPath=ctl/send/link[7]);
+
+AddUserIOConn(portId=0, inPath=ctl/recv/link[0]);
+AddUserIOConn(portId=1, inPath=ctl/recv/link[1]);
+AddUserIOConn(portId=2, inPath=ctl/recv/link[2]);
+AddUserIOConn(portId=3, inPath=ctl/recv/link[3]);
+AddUserIOConn(portId=4, inPath=ctl/recv/link[4]);
+AddUserIOConn(portId=5, inPath=ctl/recv/link[5]);
+AddUserIOConn(portId=6, inPath=ctl/recv/link[6]);
+AddUserIOConn(portId=7, inPath=ctl/recv/link[7]);
+
+
+
+////////////////////////////////////////////////////
+// NOTE: This should only be instantiated during
+//   SystemC simulation!
+////////////////////////////////////////////////////
+
+#ifdef HT_SYSC
+AddUserIOSimConn(portId=0, inPath=ctl/loop/in[0]);
+AddUserIOSimConn(portId=1, inPath=ctl/loop/in[1]);
+AddUserIOSimConn(portId=2, inPath=ctl/loop/in[2]);
+AddUserIOSimConn(portId=3, inPath=ctl/loop/in[3]);
+AddUserIOSimConn(portId=4, inPath=ctl/loop/in[4]);
+AddUserIOSimConn(portId=5, inPath=ctl/loop/in[5]);
+AddUserIOSimConn(portId=6, inPath=ctl/loop/in[6]);
+AddUserIOSimConn(portId=7, inPath=ctl/loop/in[7]);
+
+AddUserIOSimConn(portId=0, outPath=ctl/loop/out[0]);
+AddUserIOSimConn(portId=1, outPath=ctl/loop/out[1]);
+AddUserIOSimConn(portId=2, outPath=ctl/loop/out[2]);
+AddUserIOSimConn(portId=3, outPath=ctl/loop/out[3]);
+AddUserIOSimConn(portId=4, outPath=ctl/loop/out[4]);
+AddUserIOSimConn(portId=5, outPath=ctl/loop/out[5]);
+AddUserIOSimConn(portId=6, outPath=ctl/loop/out[6]);
+AddUserIOSimConn(portId=7, outPath=ctl/loop/out[7]);
+#endif

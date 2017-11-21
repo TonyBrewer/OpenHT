@@ -114,6 +114,12 @@ void HtiFile::ParseHtiMethods()
 			CPreProcess::ParseMsg(Error, "expected AddModInstParams( unit, modPath {, memPort } {, instName } )");
 
 		else {
+
+			if (modPath.size() > 0 && modPath[0] == '"')
+				modPath.erase(0);
+			if (modPath.size() > 0 && modPath[modPath.size()-1] == '"')
+				modPath.erase(modPath.size()-1);
+
 			if (modPath.size() > 0 && modPath[0] != '/')
 				modPath = "/" + modPath;
 
@@ -143,6 +149,19 @@ void HtiFile::ParseHtiMethods()
 			CPreProcess::ParseMsg(Error, "expected AddMsgIntfConn( { outUnit, } outPath, { inUnit, } inPath {, aeNext=<false>}{, aePrev=<false>} )");
 
 		else {
+			if (outPath.size() > 0 && outPath[0] == '"')
+				outPath.erase(0);
+			if (outPath.size() > 0 && outPath[outPath.size()-1] == '"')
+				outPath.erase(outPath.size()-1);
+
+			if (inPath.size() > 0 && inPath[0] == '"')
+				inPath.erase(0);
+			if (inPath.size() > 0 && inPath[inPath.size()-1] == '"')
+				inPath.erase(inPath.size()-1);
+
+			if (inPath.size() > 0 && inPath[0] != '/')
+				inPath = "/" + inPath;
+
 			if (outPath.size() > 0 && outPath[0] != '/')
 				outPath = "/" + outPath;
 
@@ -186,10 +205,122 @@ void HtiFile::ParseHtiMethods()
 			string fanCnt = (inPath.size() > 0) ? fanin : fanout;
 			bool bInBound = inPath.size() > 0;
 
+			if (path.size() > 0 && path[0] == '"')
+				path.erase(0);
+			if (path.size() > 0 && path[path.size()-1] == '"')
+				path.erase(path.size()-1);
+
 			if (path.size() > 0 && path[0] != '/')
 				path = "/" + path;
 
 			AddMsgIntfParams(unit, path, bInBound, fanCnt);
+		}
+
+	} else if (m_pLex->GetTkString() == "AddUserIOConn") {
+
+		string portId;
+		string inPath;
+		string outPath;
+
+		CParamList params[] = {
+			{ "portId", &portId, true, ePrmParamStr, 0, 0 },
+			{ "inPath", &inPath, false, ePrmParamStr, 0, 0 },
+			{ "outPath", &outPath, false, ePrmParamStr, 0, 0 },
+			{ 0, 0, 0, ePrmUnknown, 0, 0 }
+		};
+
+		bool isWx = false;
+		if (strcasestr(g_appArgs.GetCoprocName(), "wx") != NULL) {
+			isWx = true;
+		}
+
+		if (!ParseParameters(params))
+			CPreProcess::ParseMsg(Error, "expected AddUserIOConn( portId, inPath/outPath )");
+
+		else if (portId.size() == 0) {
+			CPreProcess::ParseMsg(Error, "portId is a required argument");
+		} else if (inPath.size() && outPath.size()) {
+			CPreProcess::ParseMsg(Error, "only inPath or outPath can be specified per connection");
+		}else if (!isWx) {
+			CPreProcess::ParseMsg(Error, "AddUserIOConn is only supported on the WX/WX2 platform");
+		} else {
+			if (outPath.size() > 0 && outPath[0] == '"')
+				outPath.erase(0);
+			if (outPath.size() > 0 && outPath[outPath.size()-1] == '"')
+				outPath.erase(outPath.size()-1);
+
+			if (inPath.size() > 0 && inPath[0] == '"')
+				inPath.erase(0);
+			if (inPath.size() > 0 && inPath[inPath.size()-1] == '"')
+				inPath.erase(inPath.size()-1);
+
+			if (outPath.size() > 0 && outPath[0] != '/')
+				outPath = "/" + outPath;
+
+			if (inPath.size() > 0 && inPath[0] != '/')
+				inPath = "/" + inPath;
+
+			bool bInbound = (inPath.size() != 0) ? true : false;
+
+			AddUioIntfConn(portId, bInbound ? inPath : outPath, bInbound);
+		}
+
+	} else if (m_pLex->GetTkString() == "AddUserIOSimConn") {
+
+		string portId;
+		string inPath;
+		string outPath;
+
+		CParamList params[] = {
+			{ "portId", &portId, true, ePrmParamStr, 0, 0 },
+			{ "inPath", &inPath, false, ePrmParamStr, 0, 0 },
+			{ "outPath", &outPath, false, ePrmParamStr, 0, 0 },
+			{ 0, 0, 0, ePrmUnknown, 0, 0 }
+		};
+
+		bool isSyscSim = false;
+		for (int i = 0; i < g_appArgs.GetPreDefinedNameCnt(); i++) {
+			if (g_appArgs.GetPreDefinedName(i) == "HT_SYSC") {
+				isSyscSim = true;
+				break;
+			}
+		}
+		bool isWx = false;
+		if (strcasestr(g_appArgs.GetCoprocName(), "wx") != NULL) {
+			isWx = true;
+		}
+
+		if (!ParseParameters(params))
+			CPreProcess::ParseMsg(Error, "expected AddUserIOSimConn( portId, inPath/outPath )");
+
+		else if (portId.size() == 0) {
+			CPreProcess::ParseMsg(Error, "portId is a required argument");
+		} else if (inPath.size() && outPath.size()) {
+			CPreProcess::ParseMsg(Error, "only inPath or outPath can be specified per connection");
+		} else if (!isSyscSim) {
+			CPreProcess::ParseMsg(Error, "AddUserIOSimConn is only supported in a SystemC simulation");
+		} else if (!isWx) {
+			CPreProcess::ParseMsg(Error, "AddUserIOSimConn is only supported on the WX/WX2 platform");
+		} else {
+			if (outPath.size() > 0 && outPath[0] == '"')
+				outPath.erase(0);
+			if (outPath.size() > 0 && outPath[outPath.size()-1] == '"')
+				outPath.erase(outPath.size()-1);
+
+			if (inPath.size() > 0 && inPath[0] == '"')
+				inPath.erase(0);
+			if (inPath.size() > 0 && inPath[inPath.size()-1] == '"')
+				inPath.erase(inPath.size()-1);
+
+			if (outPath.size() > 0 && outPath[0] != '/')
+				outPath = "/" + outPath;
+
+			if (inPath.size() > 0 && inPath[0] != '/')
+				inPath = "/" + inPath;
+
+			bool bInbound = (inPath.size() != 0) ? true : false;
+
+			AddUioSimIntfConn(portId, bInbound ? inPath : outPath, bInbound);
 		}
 
 	} else
@@ -449,6 +580,18 @@ void HtiFile::AddMsgIntfParams(string &unit, string &path, bool bInBound, string
 	m_msgIntfParamsList.push_back(CMsgIntfParams(unit, path, bInBound, fanCnt));
 }
 
+void HtiFile::AddUioIntfConn(string &portId, string &path, bool bInbound)
+{
+	string unit = "Au";
+	m_uioIntfConn.push_back(new CUioIntfConn(portId, unit, path, bInbound));
+}
+
+void HtiFile::AddUioSimIntfConn(string &portId, string &path, bool bInbound)
+{
+	string unit = "Au";
+	m_uioSimIntfConn.push_back(new CUioIntfConn(portId, unit, path, bInbound));
+}
+
 HtiFile::CMsgIntfPath::CMsgIntfPath(string &msgUnit, string &msgPath, bool bInBound)
 {
 	m_lineInfo = CPreProcess::m_lineInfo;
@@ -508,7 +651,6 @@ HtiFile::CMsgIntfPath::CMsgIntfPath(string &msgUnit, string &msgPath, bool bInBo
 	pStr = pPath + strIdx + 1;
 	while (strIdx >= 0 && pPath[strIdx] != '/') strIdx -= 1;
 	m_msgIntfName = string(pPath + strIdx + 1, pStr - (pPath + strIdx + 1));
-
 	if (pPath[strIdx] != '/') {
 		CPreProcess::ParseMsg(Error, "illegal syntax for message interface name");
 		return;
@@ -613,6 +755,41 @@ bool HtiFile::IsMsgPathMatch(CLineInfo & lineInfo, CMsgIntfInfo & info, CModule 
 	return false;
 }
 
+bool HtiFile::IsUioPathMatch(CLineInfo & lineInfo, CUioIntfInfo & info, CModule &mod, CUioIntf * pUioIntf, int & instIdx)
+{
+	if (info.m_msgIntfName != pUioIntf->m_name || !pUioIntf->m_bInbound && info.m_bInBound)
+		return false;
+
+	for (instIdx = 0; instIdx < mod.m_instSet.GetInstCnt(); instIdx += 1) {
+		for (int replIdx = 0; replIdx < mod.m_instSet.GetReplCnt(instIdx); replIdx += 1) {
+			CInstance * pModInst = mod.m_instSet.GetInst(instIdx, replIdx);
+
+			for (size_t modPathIdx = 0; modPathIdx < pModInst->m_modPaths.size(); modPathIdx += 1) {
+				string &modPath = pModInst->m_modPaths[modPathIdx];
+
+				char const * pStr = modPath.c_str();
+				while (*pStr != ':' && *pStr != '\0') pStr += 1;
+				string unitName(modPath.c_str(), pStr - modPath.c_str());
+
+				if (*pStr != ':' || pStr[1] != '/') {
+					CPreProcess::ParseMsg(Error, lineInfo, "Invalid module path syntax '%s'", modPath.c_str());
+					return false;
+				}
+
+				pStr += 1;
+				string pathName = pStr;
+
+				if (info.m_unitName.size() > 0 && info.m_unitName != unitName) continue;
+				if (info.m_instPath != pathName) continue;
+
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
 void HtiFile::GetModInstParams(string modPath, CInstanceParams & modInstParams)
 {
 	// Look through list of AddModInstParams for specified modPath. May be multiple
@@ -635,9 +812,10 @@ void HtiFile::GetModInstParams(string modPath, CInstanceParams & modInstParams)
 			"Instance file specified memPort for module path '%s' multiple times",
 			modPath.c_str());
 
-		if (modInstParams.m_replCnt < 0)
+		if (modInstParams.m_replCnt < 0) {
+			modInstParams.m_bExplicitRepl = true;
 			modInstParams.m_replCnt = instParams.m_replCnt;
-		else if (instParams.m_replCnt >= 0) {
+		} else if (instParams.m_replCnt >= 0) {
 			CPreProcess::ParseMsg(Error,
 				"Instance file specified replCnt for module path '%s' multiple times",
 				modPath.c_str());
