@@ -114,8 +114,10 @@ void CDsnInfo::GenerateHtaFiles()
 
 		string replIdxStr = pModInst->m_replCnt <= 1 ? "" : VA("[%d]", pModInst->m_replId);
 
-		fprintf(cppFile, "\tif (r_%sToHta_assert%s.m_bAssert) c_htaToHif_assert.m_module |= 0x%x;\n",
-			pModInst->m_instName.Lc().c_str(), replIdxStr.c_str(), moduleIdx++);
+		fprintf(cppFile, "\tif (r_%sToHta_assert%s.m_bAssert) c_htaToHif_assert.m_module |= r_%sToHta_assert%s.m_module;\n",
+			pModInst->m_instName.Lc().c_str(), replIdxStr.c_str(), pModInst->m_instName.Lc().c_str(), replIdxStr.c_str());
+
+		moduleIdx++;
 	}
 	fprintf(cppFile, "\n");
 	int moduleCnt = moduleIdx;
