@@ -20,10 +20,29 @@ ctl.AddInstr(name=CTL_RTN);
 
 ctl.AddMsgIntf(dir=out, name=startMsg, type=bool);
 
+ctl.AddPrivate()
+	.AddVar(type=ht_uint64, name=error0)
+	.AddVar(type=ht_uint64, name=error1)
+	.AddVar(type=ht_uint64, name=error2)
+	.AddVar(type=ht_uint64, name=error3)
+	.AddVar(type=ht_uint64, name=error4)
+	.AddVar(type=ht_uint64, name=error5)
+	.AddVar(type=ht_uint64, name=error6)
+	.AddVar(type=ht_uint64, name=error7)
+	;
+
 ctl.AddEntry(func=htmain, instr=CTL_SEND, host=true)
 	;
 
 ctl.AddReturn(func=htmain)
+	.AddParam(hostType=uint64_t, type=ht_uint64, name=error0)
+	.AddParam(hostType=uint64_t, type=ht_uint64, name=error1)
+	.AddParam(hostType=uint64_t, type=ht_uint64, name=error2)
+	.AddParam(hostType=uint64_t, type=ht_uint64, name=error3)
+	.AddParam(hostType=uint64_t, type=ht_uint64, name=error4)
+	.AddParam(hostType=uint64_t, type=ht_uint64, name=error5)
+	.AddParam(hostType=uint64_t, type=ht_uint64, name=error6)
+	.AddParam(hostType=uint64_t, type=ht_uint64, name=error7)
 	;
 
 ctl.AddCall(func=send, fork=true);
@@ -90,6 +109,7 @@ recv.AddStage(execStg=2)
 recv.AddShared()
 	.AddVar(type=ht_uint64, name=len)
 	.AddVar(type=ht_uint64, name=count, dimen1=8, reset=true)
+	.AddVar(type=ht_uint64, name=error, dimen1=8, reset=true)
 	.AddVar(type=bool, name=done, dimen1=8, reset=true)
 	;
 
@@ -97,6 +117,14 @@ recv.AddEntry(func=recv, instr=RECV_WAIT)
 	;
 
 recv.AddReturn(func=recv)
+	.AddParam(type=ht_uint64, name=error0)
+	.AddParam(type=ht_uint64, name=error1)
+	.AddParam(type=ht_uint64, name=error2)
+	.AddParam(type=ht_uint64, name=error3)
+	.AddParam(type=ht_uint64, name=error4)
+	.AddParam(type=ht_uint64, name=error5)
+	.AddParam(type=ht_uint64, name=error6)
+	.AddParam(type=ht_uint64, name=error7)
 	;
 
 recv.AddUserIO(dir=in, name=link, type=packet_t, dimen=8);

@@ -29,7 +29,14 @@ CPersRecv::PersRecv()
 		case RECV_RTN: {
 			BUSY_RETRY(SendReturnBusy_recv());
 
-			SendReturn_recv();
+			SendReturn_recv(SR_error[0],
+					SR_error[1],
+					SR_error[2],
+					SR_error[3],
+					SR_error[4],
+					SR_error[5],
+					SR_error[6],
+					SR_error[7]);
 		}
 		break;
 		default:
@@ -71,6 +78,7 @@ CPersRecv::PersRecv()
 				fprintf(stderr, "  Act: 0x%016lX%016lX\n", inPacket.upper, inPacket.lower);
 				fprintf(stderr, "  Exp: 0x%016lX%016lX\n", outPacket.upper, outPacket.lower);
 				HtAssert(0, (uint32_t)SR_count[0]);
+				S_error[0] = SR_error[0] + 1;
 			}
 			S_count[0] = SR_count[0] + 1;
 		}
@@ -113,6 +121,8 @@ CPersRecv::PersRecv()
 				fprintf(stderr, "Error - Link 1 - Packet did not match expected data\n");
 				fprintf(stderr, "  Act: 0x%016lX%016lX\n", inPacket.upper, inPacket.lower);
 				fprintf(stderr, "  Exp: 0x%016lX%016lX\n", outPacket.upper, outPacket.lower);
+				HtAssert(0, (uint32_t)SR_count[1]);
+				S_error[1] = SR_error[1] + 1;
 			}
 			S_count[1] = SR_count[1] + 1;
 		}
@@ -155,6 +165,8 @@ CPersRecv::PersRecv()
 				fprintf(stderr, "Error - Link 2 - Packet did not match expected data\n");
 				fprintf(stderr, "  Act: 0x%016lX%016lX\n", inPacket.upper, inPacket.lower);
 				fprintf(stderr, "  Exp: 0x%016lX%016lX\n", outPacket.upper, outPacket.lower);
+				HtAssert(0, (uint32_t)SR_count[2]);
+				S_error[2] = SR_error[2] + 1;
 			}
 			S_count[2] = SR_count[2] + 1;
 		}
@@ -197,6 +209,8 @@ CPersRecv::PersRecv()
 				fprintf(stderr, "Error - Link 3 - Packet did not match expected data\n");
 				fprintf(stderr, "  Act: 0x%016lX%016lX\n", inPacket.upper, inPacket.lower);
 				fprintf(stderr, "  Exp: 0x%016lX%016lX\n", outPacket.upper, outPacket.lower);
+				HtAssert(0, (uint32_t)SR_count[3]);
+				S_error[3] = SR_error[3] + 1;
 			}
 			S_count[3] = SR_count[3] + 1;
 		}
@@ -239,6 +253,8 @@ CPersRecv::PersRecv()
 				fprintf(stderr, "Error - Link 4 - Packet did not match expected data\n");
 				fprintf(stderr, "  Act: 0x%016lX%016lX\n", inPacket.upper, inPacket.lower);
 				fprintf(stderr, "  Exp: 0x%016lX%016lX\n", outPacket.upper, outPacket.lower);
+				HtAssert(0, (uint32_t)SR_count[4]);
+				S_error[4] = SR_error[4] + 1;
 			}
 			S_count[4] = SR_count[4] + 1;
 		}
@@ -281,6 +297,8 @@ CPersRecv::PersRecv()
 				fprintf(stderr, "Error - Link 5 - Packet did not match expected data\n");
 				fprintf(stderr, "  Act: 0x%016lX%016lX\n", inPacket.upper, inPacket.lower);
 				fprintf(stderr, "  Exp: 0x%016lX%016lX\n", outPacket.upper, outPacket.lower);
+				HtAssert(0, (uint32_t)SR_count[5]);
+				S_error[5] = SR_error[5] + 1;
 			}
 			S_count[5] = SR_count[5] + 1;
 		}
@@ -323,6 +341,8 @@ CPersRecv::PersRecv()
 				fprintf(stderr, "Error - Link 6 - Packet did not match expected data\n");
 				fprintf(stderr, "  Act: 0x%016lX%016lX\n", inPacket.upper, inPacket.lower);
 				fprintf(stderr, "  Exp: 0x%016lX%016lX\n", outPacket.upper, outPacket.lower);
+				HtAssert(0, (uint32_t)SR_count[6]);
+				S_error[6] = SR_error[6] + 1;
 			}
 			S_count[6] = SR_count[6] + 1;
 		}
@@ -365,6 +385,8 @@ CPersRecv::PersRecv()
 				fprintf(stderr, "Error - Link 7 - Packet did not match expected data\n");
 				fprintf(stderr, "  Act: 0x%016lX%016lX\n", inPacket.upper, inPacket.lower);
 				fprintf(stderr, "  Exp: 0x%016lX%016lX\n", outPacket.upper, outPacket.lower);
+				HtAssert(0, (uint32_t)SR_count[7]);
+				S_error[7] = SR_error[7] + 1;
 			}
 			S_count[7] = SR_count[7] + 1;
 		}

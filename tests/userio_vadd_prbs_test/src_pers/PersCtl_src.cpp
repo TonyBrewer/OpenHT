@@ -44,7 +44,14 @@ CPersCtl::PersCtl()
 		case CTL_RTN: {
 			BUSY_RETRY(SendReturnBusy_htmain());
 
-			SendReturn_htmain();
+			SendReturn_htmain(PR_error0,
+					  PR_error1,
+					  PR_error2,
+					  PR_error3,
+					  PR_error4,
+					  PR_error5,
+					  PR_error6,
+					  PR_error7);
 		}
 		break;
 		default:

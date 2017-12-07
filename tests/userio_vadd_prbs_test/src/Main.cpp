@@ -48,8 +48,17 @@ int main(int argc, char **argv)
 	}
 
 	// Wait for return
-	while (!pAuUnit->RecvReturn_htmain())
+	uint64_t error[8];
+	while (!pAuUnit->RecvReturn_htmain(error[0], error[1], error[2], error[3], error[4], error[5], error[6], error[7]))
 		usleep(1000);
+
+	for (int i = 0; i < 8; i++) {
+		if (error[i] != 0) {
+			printf("ERROR: Found %ld mismatches on lane %d!\n", error[i], i);
+			errCnt += error[i];
+		}
+	}
+
 
 	if (errCnt)
 		printf("FAILED (%d issues)\n", errCnt);
