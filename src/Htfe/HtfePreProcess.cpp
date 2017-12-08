@@ -439,7 +439,7 @@ void CPreProcess::PerformMacroExpansion(string &lineBuf)
 
 		if (identifier == "__LINE__") {
 			char buf[64];
-			(void)sprintf(buf, "%d", CHtfeLex::GetLineInfo().m_lineNum);
+			(void)sprintf(buf, "%d", CPreProcess::GetFileLineInfo().m_lineNum);
 			expansion = buf;
 		}
 
@@ -1392,7 +1392,7 @@ void CPreProcess::ParseMsg(EErrorMsgType msgType, const char *msgStr, ...)
 	va_list marker;
 	va_start( marker, msgStr );
 
-	CLineInfo lineInfo = CHtfeLex::GetLineInfo();
+	CLineInfo lineInfo = CPreProcess::GetFileLineInfo();
 
 	ErrorMsg(msgType, lineInfo, msgStr, marker);
 }
