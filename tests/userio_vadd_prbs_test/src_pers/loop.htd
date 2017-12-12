@@ -81,14 +81,14 @@ send.AddReturn(func=send)
 
 send.AddUserIO(dir=out, name=link, type=packet_t, dimen=8);
 
-send.AddPrimState(type=prbs_prm_state, name=prbs_prm_state0, include="PersPrbs_prim.h");
-send.AddPrimState(type=prbs_prm_state, name=prbs_prm_state1, include="PersPrbs_prim.h");
-send.AddPrimState(type=prbs_prm_state, name=prbs_prm_state2, include="PersPrbs_prim.h");
-send.AddPrimState(type=prbs_prm_state, name=prbs_prm_state3, include="PersPrbs_prim.h");
-send.AddPrimState(type=prbs_prm_state, name=prbs_prm_state4, include="PersPrbs_prim.h");
-send.AddPrimState(type=prbs_prm_state, name=prbs_prm_state5, include="PersPrbs_prim.h");
-send.AddPrimState(type=prbs_prm_state, name=prbs_prm_state6, include="PersPrbs_prim.h");
-send.AddPrimState(type=prbs_prm_state, name=prbs_prm_state7, include="PersPrbs_prim.h");
+send.AddPrimState(type=prbs_gen_prm_state, name=prbs_gen_prm_state0, include="PersPrbsTx_prim.h");
+send.AddPrimState(type=prbs_gen_prm_state, name=prbs_gen_prm_state1, include="PersPrbsTx_prim.h");
+send.AddPrimState(type=prbs_gen_prm_state, name=prbs_gen_prm_state2, include="PersPrbsTx_prim.h");
+send.AddPrimState(type=prbs_gen_prm_state, name=prbs_gen_prm_state3, include="PersPrbsTx_prim.h");
+send.AddPrimState(type=prbs_gen_prm_state, name=prbs_gen_prm_state4, include="PersPrbsTx_prim.h");
+send.AddPrimState(type=prbs_gen_prm_state, name=prbs_gen_prm_state5, include="PersPrbsTx_prim.h");
+send.AddPrimState(type=prbs_gen_prm_state, name=prbs_gen_prm_state6, include="PersPrbsTx_prim.h");
+send.AddPrimState(type=prbs_gen_prm_state, name=prbs_gen_prm_state7, include="PersPrbsTx_prim.h");
 
 
 ////////////////////////////////////////////////////
@@ -103,7 +103,6 @@ recv.AddHostMsg(dir=in, name=LEN)
 	;
 
 recv.AddStage(execStg=2)
-	.AddVar(type=packet_t, name=inPacket, dimen1=8, range=1)
 	;
 
 recv.AddShared()
@@ -129,14 +128,14 @@ recv.AddReturn(func=recv)
 
 recv.AddUserIO(dir=in, name=link, type=packet_t, dimen=8);
 
-recv.AddPrimState(type=prbs_prm_state, name=prbs_prm_state0, include="PersPrbs_prim.h");
-recv.AddPrimState(type=prbs_prm_state, name=prbs_prm_state1, include="PersPrbs_prim.h");
-recv.AddPrimState(type=prbs_prm_state, name=prbs_prm_state2, include="PersPrbs_prim.h");
-recv.AddPrimState(type=prbs_prm_state, name=prbs_prm_state3, include="PersPrbs_prim.h");
-recv.AddPrimState(type=prbs_prm_state, name=prbs_prm_state4, include="PersPrbs_prim.h");
-recv.AddPrimState(type=prbs_prm_state, name=prbs_prm_state5, include="PersPrbs_prim.h");
-recv.AddPrimState(type=prbs_prm_state, name=prbs_prm_state6, include="PersPrbs_prim.h");
-recv.AddPrimState(type=prbs_prm_state, name=prbs_prm_state7, include="PersPrbs_prim.h");
+recv.AddPrimState(type=prbs_rcv_prm_state, name=prbs_rcv_prm_state0, include="PersPrbsRx_prim.h");
+recv.AddPrimState(type=prbs_rcv_prm_state, name=prbs_rcv_prm_state1, include="PersPrbsRx_prim.h");
+recv.AddPrimState(type=prbs_rcv_prm_state, name=prbs_rcv_prm_state2, include="PersPrbsRx_prim.h");
+recv.AddPrimState(type=prbs_rcv_prm_state, name=prbs_rcv_prm_state3, include="PersPrbsRx_prim.h");
+recv.AddPrimState(type=prbs_rcv_prm_state, name=prbs_rcv_prm_state4, include="PersPrbsRx_prim.h");
+recv.AddPrimState(type=prbs_rcv_prm_state, name=prbs_rcv_prm_state5, include="PersPrbsRx_prim.h");
+recv.AddPrimState(type=prbs_rcv_prm_state, name=prbs_rcv_prm_state6, include="PersPrbsRx_prim.h");
+recv.AddPrimState(type=prbs_rcv_prm_state, name=prbs_rcv_prm_state7, include="PersPrbsRx_prim.h");
 
 
 ////////////////////////////////////////////////////

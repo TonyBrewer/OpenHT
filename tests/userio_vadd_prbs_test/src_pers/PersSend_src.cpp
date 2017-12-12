@@ -56,16 +56,17 @@ CPersSend::PersSend()
 	{
 		// Generate data
 		bool i_reqValid = !SendUioBusy_link(0) && !SR_done[0] && SR_start;
-		bool o_prbs_vld;
+		bool o_prbs_rdy, o_prbs_vld;
 		ht_uint64 o_prbs_lower, o_prbs_upper;
 		prbs_gen(
 			 GR_htReset,
 			 i_reqValid,
 		 
+			 o_prbs_rdy,
 			 o_prbs_vld,
 			 o_prbs_lower,
 			 o_prbs_upper,
-			 prbs_prm_state0
+			 prbs_gen_prm_state0
 			 );
 
 		packet_t outPacket;
@@ -103,16 +104,17 @@ CPersSend::PersSend()
 	{
 		// Generate data
 		bool i_reqValid = !SendUioBusy_link(1) && !SR_done[1] && SR_start;
-		bool o_prbs_vld;
+		bool o_prbs_rdy, o_prbs_vld;
 		ht_uint64 o_prbs_lower, o_prbs_upper;
 		prbs_gen(
 			 GR_htReset,
 			 i_reqValid,
 		 
+			 o_prbs_rdy,
 			 o_prbs_vld,
 			 o_prbs_lower,
 			 o_prbs_upper,
-			 prbs_prm_state1
+			 prbs_gen_prm_state1
 			 );
 
 		packet_t outPacket;
@@ -150,16 +152,17 @@ CPersSend::PersSend()
 	{
 		// Generate data
 		bool i_reqValid = !SendUioBusy_link(2) && !SR_done[2] && SR_start;
-		bool o_prbs_vld;
+		bool o_prbs_rdy, o_prbs_vld;
 		ht_uint64 o_prbs_lower, o_prbs_upper;
 		prbs_gen(
 			 GR_htReset,
 			 i_reqValid,
 		 
+			 o_prbs_rdy,
 			 o_prbs_vld,
 			 o_prbs_lower,
 			 o_prbs_upper,
-			 prbs_prm_state2
+			 prbs_gen_prm_state2
 			 );
 
 		packet_t outPacket;
@@ -197,16 +200,17 @@ CPersSend::PersSend()
 	{
 		// Generate data
 		bool i_reqValid = !SendUioBusy_link(3) && !SR_done[3] && SR_start;
-		bool o_prbs_vld;
+		bool o_prbs_rdy, o_prbs_vld;
 		ht_uint64 o_prbs_lower, o_prbs_upper;
 		prbs_gen(
 			 GR_htReset,
 			 i_reqValid,
 		 
+			 o_prbs_rdy,
 			 o_prbs_vld,
 			 o_prbs_lower,
 			 o_prbs_upper,
-			 prbs_prm_state3
+			 prbs_gen_prm_state3
 			 );
 
 		packet_t outPacket;
@@ -244,16 +248,17 @@ CPersSend::PersSend()
 	{
 		// Generate data
 		bool i_reqValid = !SendUioBusy_link(4) && !SR_done[4] && SR_start;
-		bool o_prbs_vld;
+		bool o_prbs_rdy, o_prbs_vld;
 		ht_uint64 o_prbs_lower, o_prbs_upper;
 		prbs_gen(
 			 GR_htReset,
 			 i_reqValid,
 		 
+			 o_prbs_rdy,
 			 o_prbs_vld,
 			 o_prbs_lower,
 			 o_prbs_upper,
-			 prbs_prm_state4
+			 prbs_gen_prm_state4
 			 );
 
 		packet_t outPacket;
@@ -291,16 +296,17 @@ CPersSend::PersSend()
 	{
 		// Generate data
 		bool i_reqValid = !SendUioBusy_link(5) && !SR_done[5] && SR_start;
-		bool o_prbs_vld;
+		bool o_prbs_rdy, o_prbs_vld;
 		ht_uint64 o_prbs_lower, o_prbs_upper;
 		prbs_gen(
 			 GR_htReset,
 			 i_reqValid,
 		 
+			 o_prbs_rdy,
 			 o_prbs_vld,
 			 o_prbs_lower,
 			 o_prbs_upper,
-			 prbs_prm_state5
+			 prbs_gen_prm_state5
 			 );
 
 		packet_t outPacket;
@@ -338,16 +344,17 @@ CPersSend::PersSend()
 	{
 		// Generate data
 		bool i_reqValid = !SendUioBusy_link(6) && !SR_done[6] && SR_start;
-		bool o_prbs_vld;
+		bool o_prbs_rdy, o_prbs_vld;
 		ht_uint64 o_prbs_lower, o_prbs_upper;
 		prbs_gen(
 			 GR_htReset,
 			 i_reqValid,
 		 
+			 o_prbs_rdy,
 			 o_prbs_vld,
 			 o_prbs_lower,
 			 o_prbs_upper,
-			 prbs_prm_state6
+			 prbs_gen_prm_state6
 			 );
 
 		packet_t outPacket;
@@ -385,16 +392,17 @@ CPersSend::PersSend()
 	{
 		// Generate data
 		bool i_reqValid = !SendUioBusy_link(7) && !SR_done[7] && SR_start;
-		bool o_prbs_vld;
+		bool o_prbs_rdy, o_prbs_vld;
 		ht_uint64 o_prbs_lower, o_prbs_upper;
 		prbs_gen(
 			 GR_htReset,
 			 i_reqValid,
 		 
+			 o_prbs_rdy,
 			 o_prbs_vld,
 			 o_prbs_lower,
 			 o_prbs_upper,
-			 prbs_prm_state7
+			 prbs_gen_prm_state7
 			 );
 
 		packet_t outPacket;

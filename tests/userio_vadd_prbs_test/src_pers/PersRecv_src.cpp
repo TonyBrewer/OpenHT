@@ -47,36 +47,29 @@ CPersRecv::PersRecv()
 	// Link 0
 	{
 		// Get Data
+		packet_t inPacket;
 		if (RecvUioReady_link(0)) {
-			T1_inPacket[0] = RecvUioData_link(0);
+			inPacket = RecvUioData_link(0);
 		}
 
-		// Generate expected data
+		// Rcverate expected data
 		bool i_reqValid = RecvUioReady_link(0);
-		bool o_prbs_vld;
-		ht_uint64 o_prbs_lower, o_prbs_upper;
-		prbs_gen(
+		bool o_prbs_err, o_prbs_vld;
+		prbs_rcv(
 			 GR_htReset,
 			 i_reqValid,
+			 inPacket.lower,
+			 inPacket.upper,
 		 
+			 o_prbs_err,
 			 o_prbs_vld,
-			 o_prbs_lower,
-			 o_prbs_upper,
-			 prbs_prm_state0
+			 prbs_rcv_prm_state0
 			 );
-
-		packet_t outPacket;
-		outPacket.lower = o_prbs_lower;
-		outPacket.upper = o_prbs_upper;
-		
-		packet_t inPacket = TR2_inPacket[0];
 		
 		// Compare data
 		if (o_prbs_vld) {
-			if (inPacket.upper != outPacket.upper || inPacket.lower != outPacket.lower) {
+			if (o_prbs_err) {
 				fprintf(stderr, "Error - Link 0 - Packet did not match expected data\n");
-				fprintf(stderr, "  Act: 0x%016lX%016lX\n", inPacket.upper, inPacket.lower);
-				fprintf(stderr, "  Exp: 0x%016lX%016lX\n", outPacket.upper, outPacket.lower);
 				HtAssert(0, (uint32_t)SR_count[0]);
 				S_error[0] = SR_error[0] + 1;
 			}
@@ -91,36 +84,29 @@ CPersRecv::PersRecv()
 	// Link 1
 	{
 		// Get Data
+		packet_t inPacket;
 		if (RecvUioReady_link(1)) {
-			T1_inPacket[1] = RecvUioData_link(1);
+			inPacket = RecvUioData_link(1);
 		}
 
-		// Generate expected data
+		// Rcverate expected data
 		bool i_reqValid = RecvUioReady_link(1);
-		bool o_prbs_vld;
-		ht_uint64 o_prbs_lower, o_prbs_upper;
-		prbs_gen(
+		bool o_prbs_err, o_prbs_vld;
+		prbs_rcv(
 			 GR_htReset,
 			 i_reqValid,
+			 inPacket.lower,
+			 inPacket.upper,
 		 
+			 o_prbs_err,
 			 o_prbs_vld,
-			 o_prbs_lower,
-			 o_prbs_upper,
-			 prbs_prm_state1
+			 prbs_rcv_prm_state1
 			 );
-
-		packet_t outPacket;
-		outPacket.lower = o_prbs_lower;
-		outPacket.upper = o_prbs_upper;
-		
-		packet_t inPacket = TR2_inPacket[1];
 		
 		// Compare data
 		if (o_prbs_vld) {
-			if (inPacket.upper != outPacket.upper || inPacket.lower != outPacket.lower) {
+			if (o_prbs_err) {
 				fprintf(stderr, "Error - Link 1 - Packet did not match expected data\n");
-				fprintf(stderr, "  Act: 0x%016lX%016lX\n", inPacket.upper, inPacket.lower);
-				fprintf(stderr, "  Exp: 0x%016lX%016lX\n", outPacket.upper, outPacket.lower);
 				HtAssert(0, (uint32_t)SR_count[1]);
 				S_error[1] = SR_error[1] + 1;
 			}
@@ -135,36 +121,29 @@ CPersRecv::PersRecv()
 	// Link 2
 	{
 		// Get Data
+		packet_t inPacket;
 		if (RecvUioReady_link(2)) {
-			T1_inPacket[2] = RecvUioData_link(2);
+			inPacket = RecvUioData_link(2);
 		}
 
-		// Generate expected data
+		// Rcverate expected data
 		bool i_reqValid = RecvUioReady_link(2);
-		bool o_prbs_vld;
-		ht_uint64 o_prbs_lower, o_prbs_upper;
-		prbs_gen(
+		bool o_prbs_err, o_prbs_vld;
+		prbs_rcv(
 			 GR_htReset,
 			 i_reqValid,
+			 inPacket.lower,
+			 inPacket.upper,
 		 
+			 o_prbs_err,
 			 o_prbs_vld,
-			 o_prbs_lower,
-			 o_prbs_upper,
-			 prbs_prm_state2
+			 prbs_rcv_prm_state2
 			 );
-
-		packet_t outPacket;
-		outPacket.lower = o_prbs_lower;
-		outPacket.upper = o_prbs_upper;
-		
-		packet_t inPacket = TR2_inPacket[2];
 		
 		// Compare data
 		if (o_prbs_vld) {
-			if (inPacket.upper != outPacket.upper || inPacket.lower != outPacket.lower) {
+			if (o_prbs_err) {
 				fprintf(stderr, "Error - Link 2 - Packet did not match expected data\n");
-				fprintf(stderr, "  Act: 0x%016lX%016lX\n", inPacket.upper, inPacket.lower);
-				fprintf(stderr, "  Exp: 0x%016lX%016lX\n", outPacket.upper, outPacket.lower);
 				HtAssert(0, (uint32_t)SR_count[2]);
 				S_error[2] = SR_error[2] + 1;
 			}
@@ -179,36 +158,29 @@ CPersRecv::PersRecv()
 	// Link 3
 	{
 		// Get Data
+		packet_t inPacket;
 		if (RecvUioReady_link(3)) {
-			T1_inPacket[3] = RecvUioData_link(3);
+			inPacket = RecvUioData_link(3);
 		}
 
-		// Generate expected data
+		// Rcverate expected data
 		bool i_reqValid = RecvUioReady_link(3);
-		bool o_prbs_vld;
-		ht_uint64 o_prbs_lower, o_prbs_upper;
-		prbs_gen(
+		bool o_prbs_err, o_prbs_vld;
+		prbs_rcv(
 			 GR_htReset,
 			 i_reqValid,
+			 inPacket.lower,
+			 inPacket.upper,
 		 
+			 o_prbs_err,
 			 o_prbs_vld,
-			 o_prbs_lower,
-			 o_prbs_upper,
-			 prbs_prm_state3
+			 prbs_rcv_prm_state3
 			 );
-
-		packet_t outPacket;
-		outPacket.lower = o_prbs_lower;
-		outPacket.upper = o_prbs_upper;
-		
-		packet_t inPacket = TR2_inPacket[3];
 		
 		// Compare data
 		if (o_prbs_vld) {
-			if (inPacket.upper != outPacket.upper || inPacket.lower != outPacket.lower) {
+			if (o_prbs_err) {
 				fprintf(stderr, "Error - Link 3 - Packet did not match expected data\n");
-				fprintf(stderr, "  Act: 0x%016lX%016lX\n", inPacket.upper, inPacket.lower);
-				fprintf(stderr, "  Exp: 0x%016lX%016lX\n", outPacket.upper, outPacket.lower);
 				HtAssert(0, (uint32_t)SR_count[3]);
 				S_error[3] = SR_error[3] + 1;
 			}
@@ -223,36 +195,29 @@ CPersRecv::PersRecv()
 	// Link 4
 	{
 		// Get Data
+		packet_t inPacket;
 		if (RecvUioReady_link(4)) {
-			T1_inPacket[4] = RecvUioData_link(4);
+			inPacket = RecvUioData_link(4);
 		}
 
-		// Generate expected data
+		// Rcverate expected data
 		bool i_reqValid = RecvUioReady_link(4);
-		bool o_prbs_vld;
-		ht_uint64 o_prbs_lower, o_prbs_upper;
-		prbs_gen(
+		bool o_prbs_err, o_prbs_vld;
+		prbs_rcv(
 			 GR_htReset,
 			 i_reqValid,
+			 inPacket.lower,
+			 inPacket.upper,
 		 
+			 o_prbs_err,
 			 o_prbs_vld,
-			 o_prbs_lower,
-			 o_prbs_upper,
-			 prbs_prm_state4
+			 prbs_rcv_prm_state4
 			 );
-
-		packet_t outPacket;
-		outPacket.lower = o_prbs_lower;
-		outPacket.upper = o_prbs_upper;
-		
-		packet_t inPacket = TR2_inPacket[4];
 		
 		// Compare data
 		if (o_prbs_vld) {
-			if (inPacket.upper != outPacket.upper || inPacket.lower != outPacket.lower) {
+			if (o_prbs_err) {
 				fprintf(stderr, "Error - Link 4 - Packet did not match expected data\n");
-				fprintf(stderr, "  Act: 0x%016lX%016lX\n", inPacket.upper, inPacket.lower);
-				fprintf(stderr, "  Exp: 0x%016lX%016lX\n", outPacket.upper, outPacket.lower);
 				HtAssert(0, (uint32_t)SR_count[4]);
 				S_error[4] = SR_error[4] + 1;
 			}
@@ -267,36 +232,29 @@ CPersRecv::PersRecv()
 	// Link 5
 	{
 		// Get Data
+		packet_t inPacket;
 		if (RecvUioReady_link(5)) {
-			T1_inPacket[5] = RecvUioData_link(5);
+			inPacket = RecvUioData_link(5);
 		}
 
-		// Generate expected data
+		// Rcverate expected data
 		bool i_reqValid = RecvUioReady_link(5);
-		bool o_prbs_vld;
-		ht_uint64 o_prbs_lower, o_prbs_upper;
-		prbs_gen(
+		bool o_prbs_err, o_prbs_vld;
+		prbs_rcv(
 			 GR_htReset,
 			 i_reqValid,
+			 inPacket.lower,
+			 inPacket.upper,
 		 
+			 o_prbs_err,
 			 o_prbs_vld,
-			 o_prbs_lower,
-			 o_prbs_upper,
-			 prbs_prm_state5
+			 prbs_rcv_prm_state5
 			 );
-
-		packet_t outPacket;
-		outPacket.lower = o_prbs_lower;
-		outPacket.upper = o_prbs_upper;
-		
-		packet_t inPacket = TR2_inPacket[5];
 		
 		// Compare data
 		if (o_prbs_vld) {
-			if (inPacket.upper != outPacket.upper || inPacket.lower != outPacket.lower) {
+			if (o_prbs_err) {
 				fprintf(stderr, "Error - Link 5 - Packet did not match expected data\n");
-				fprintf(stderr, "  Act: 0x%016lX%016lX\n", inPacket.upper, inPacket.lower);
-				fprintf(stderr, "  Exp: 0x%016lX%016lX\n", outPacket.upper, outPacket.lower);
 				HtAssert(0, (uint32_t)SR_count[5]);
 				S_error[5] = SR_error[5] + 1;
 			}
@@ -311,36 +269,29 @@ CPersRecv::PersRecv()
 	// Link 6
 	{
 		// Get Data
+		packet_t inPacket;
 		if (RecvUioReady_link(6)) {
-			T1_inPacket[6] = RecvUioData_link(6);
+			inPacket = RecvUioData_link(6);
 		}
 
-		// Generate expected data
+		// Rcverate expected data
 		bool i_reqValid = RecvUioReady_link(6);
-		bool o_prbs_vld;
-		ht_uint64 o_prbs_lower, o_prbs_upper;
-		prbs_gen(
+		bool o_prbs_err, o_prbs_vld;
+		prbs_rcv(
 			 GR_htReset,
 			 i_reqValid,
+			 inPacket.lower,
+			 inPacket.upper,
 		 
+			 o_prbs_err,
 			 o_prbs_vld,
-			 o_prbs_lower,
-			 o_prbs_upper,
-			 prbs_prm_state6
+			 prbs_rcv_prm_state6
 			 );
-
-		packet_t outPacket;
-		outPacket.lower = o_prbs_lower;
-		outPacket.upper = o_prbs_upper;
-		
-		packet_t inPacket = TR2_inPacket[6];
 		
 		// Compare data
 		if (o_prbs_vld) {
-			if (inPacket.upper != outPacket.upper || inPacket.lower != outPacket.lower) {
+			if (o_prbs_err) {
 				fprintf(stderr, "Error - Link 6 - Packet did not match expected data\n");
-				fprintf(stderr, "  Act: 0x%016lX%016lX\n", inPacket.upper, inPacket.lower);
-				fprintf(stderr, "  Exp: 0x%016lX%016lX\n", outPacket.upper, outPacket.lower);
 				HtAssert(0, (uint32_t)SR_count[6]);
 				S_error[6] = SR_error[6] + 1;
 			}
@@ -355,36 +306,29 @@ CPersRecv::PersRecv()
 	// Link 7
 	{
 		// Get Data
+		packet_t inPacket;
 		if (RecvUioReady_link(7)) {
-			T1_inPacket[7] = RecvUioData_link(7);
+			inPacket = RecvUioData_link(7);
 		}
 
-		// Generate expected data
+		// Rcverate expected data
 		bool i_reqValid = RecvUioReady_link(7);
-		bool o_prbs_vld;
-		ht_uint64 o_prbs_lower, o_prbs_upper;
-		prbs_gen(
+		bool o_prbs_err, o_prbs_vld;
+		prbs_rcv(
 			 GR_htReset,
 			 i_reqValid,
+			 inPacket.lower,
+			 inPacket.upper,
 		 
+			 o_prbs_err,
 			 o_prbs_vld,
-			 o_prbs_lower,
-			 o_prbs_upper,
-			 prbs_prm_state7
+			 prbs_rcv_prm_state7
 			 );
-
-		packet_t outPacket;
-		outPacket.lower = o_prbs_lower;
-		outPacket.upper = o_prbs_upper;
 		
-		packet_t inPacket = TR2_inPacket[7];
-
 		// Compare data
 		if (o_prbs_vld) {
-			if (inPacket.upper != outPacket.upper || inPacket.lower != outPacket.lower) {
+			if (o_prbs_err) {
 				fprintf(stderr, "Error - Link 7 - Packet did not match expected data\n");
-				fprintf(stderr, "  Act: 0x%016lX%016lX\n", inPacket.upper, inPacket.lower);
-				fprintf(stderr, "  Exp: 0x%016lX%016lX\n", outPacket.upper, outPacket.lower);
 				HtAssert(0, (uint32_t)SR_count[7]);
 				S_error[7] = SR_error[7] + 1;
 			}

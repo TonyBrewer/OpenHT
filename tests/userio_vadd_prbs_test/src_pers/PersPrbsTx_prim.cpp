@@ -1,16 +1,21 @@
 #include "Ht.h"
-#include "PersPrbs_prim.h"
+#include "PersPrbsTx_prim.h"
 
 ht_prim ht_clk("clk") void prbs_gen (
 	bool const & rst,
 	bool const & i_req,
+	bool & o_rdy,
 	bool & o_vld,
 	ht_uint64 & o_res_lower,
 	ht_uint64 & o_res_upper,
-	prbs_prm_state &s)
+	prbs_gen_prm_state &s)
 {
 #ifndef _HTV
 
+
+	// NOTE! This does not accurately model the verilog.
+	// This cheats and does a much less strenous sequence
+	// Modeling the PRBS pattern in SystemC was deemed not critical
 
 	for (int i = 1; i > 0; i--) {
 		s.rnd_upper[i] = (rst) ? (ht_uint64)0x0123456789ABCDEFLL : s.rnd_upper[i - 1];
@@ -37,6 +42,7 @@ ht_prim ht_clk("clk") void prbs_gen (
 	// Output is valid 1 cycles later - (Stage 2)
 
 	// p is valid on Stage 2
+	o_rdy = !rst;
 	o_vld = s.vld[0];
 	o_res_lower = s.res_lower[0];
 	o_res_upper = s.res_upper[0];
