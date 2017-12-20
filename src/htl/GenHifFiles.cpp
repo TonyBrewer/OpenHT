@@ -223,6 +223,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\tsc_in<uint8_t>\t\t\ti_aeUnitId;\n");
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\t// control queue base address and dispatch status\n");
+		fprintf(incFile, "\tsc_in<sc_uint<16> >\t\ti_dispToHif_ctlQueWidth;\n");
 		fprintf(incFile, "\tsc_in<sc_uint<MEM_ADDR_W> >\t\ti_dispToHif_ctlQueBase;\n");
 		fprintf(incFile, "\tsc_in<bool>\t\t\t\ti_dispToHif_dispStart;\n");
 		fprintf(incFile, "\n");
@@ -273,6 +274,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\tbool r_hifToDisp_busy;\n");
 		fprintf(incFile, "\n");
+		fprintf(incFile, "\tsc_uint<32> r_CtlQueSize;\n");
 		fprintf(incFile, "\tsc_uint<MEM_ADDR_W> r_CtlQueBase;\n");
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\tsc_uint<HIF_TID_TYPE_W> r_mifReqSelRr;\n");
@@ -304,14 +306,14 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\tsc_uint<2> r_iCtlState;\n");
 		fprintf(incFile, "\tbool r_iCtlRdWait;\n");
 		fprintf(incFile, "\tbool r_iCtlWrPend;\n");
-		fprintf(incFile, "\tsc_uint<HIF_CTL_QUE_CNT_W> r_iCtlRdIdx;\n");
+		fprintf(incFile, "\tsc_uint<32> r_iCtlRdIdx;\n");
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\tsc_uint<HIF_ARG_CTL_TIME_W> r_oCtlTimer;\n");
 		fprintf(incFile, "\tbool r_oCtlTimerWait;\n");
 		fprintf(incFile, "\tsc_uint<2> r_oCtlState;\n");
 		fprintf(incFile, "\tbool r_oCtlRdWait;\n");
 		fprintf(incFile, "\tbool r_oCtlWrPend;\n");
-		fprintf(incFile, "\tsc_uint<HIF_CTL_QUE_CNT_W> r_oCtlWrIdx;\n");
+		fprintf(incFile, "\tsc_uint<32> r_oCtlWrIdx;\n");
 		fprintf(incFile, "\tCHostCtrlMsgIntf r_htiToHif_ctl;\n");
 		fprintf(incFile, "\tbool r_hifToHti_ctlAvl;\n");
 		fprintf(incFile, "\n");
@@ -1919,11 +1921,12 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(cppFile, "\n");
 		fprintf(cppFile, "\tbool c_mifBusy = r_hifToMif_reqAvlCnt < 2;\n");
 		fprintf(cppFile, "\n");
+		fprintf(cppFile, "\tsc_uint<32> c_CtlQueSize = (sc_uint<32>)(1 << i_dispToHif_ctlQueWidth.read());\n");
 		fprintf(cppFile, "\tsc_uint<MEM_ADDR_W> c_CtlQueBase = i_dispToHif_ctlQueBase.read()\n");
 		fprintf(cppFile, "\t\t\t\t\t+ (i_aeUnitId.read()\n");
 		fprintf(cppFile, "\t\t\t\t\t* sizeof(uint64_t)\n");
 		fprintf(cppFile, "\t\t\t\t\t* 2 // In/Out\n");
-		fprintf(cppFile, "\t\t\t\t\t* HIF_CTL_QUE_CNT);\n");
+		fprintf(cppFile, "\t\t\t\t\t* c_CtlQueSize);\n");
 		fprintf(cppFile, "\n");
 		fprintf(cppFile, "\t//\n");
 		fprintf(cppFile, "\t// Inbound control messages\n");
@@ -2004,7 +2007,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(cppFile, "\tbool c_iCtlRdWait = r_iCtlRdWait;\n");
 		fprintf(cppFile, "\tbool c_iCtlWrPend = r_iCtlWrPend;\n");
 		fprintf(cppFile, "\n");
-		fprintf(cppFile, "\tsc_uint<HIF_CTL_QUE_CNT_W> c_iCtlRdIdx = r_iCtlRdIdx;\n");
+		fprintf(cppFile, "\tsc_uint<32> c_iCtlRdIdx = r_iCtlRdIdx;\n");
 		fprintf(cppFile, "\tsc_uint<MEM_ADDR_W> c_iCtlQueAdr = r_CtlQueBase\n");
 		fprintf(cppFile, "\t\t+ (r_iCtlRdIdx * sizeof(uint64_t));\n");
 		fprintf(cppFile, "\n");
@@ -2073,7 +2076,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(cppFile, "\n");
 		fprintf(cppFile, "\t\tc_iCtlWrPend = true;\n");
 		fprintf(cppFile, "\n");
-		fprintf(cppFile, "\t\tc_iCtlRdIdx = (sc_uint<HIF_CTL_QUE_CNT_W>)(r_iCtlRdIdx + 1);\n");
+		fprintf(cppFile, "\t\tc_iCtlRdIdx = (r_iCtlRdIdx + 1 == r_CtlQueSize) ? (sc_uint<32>)0 : (sc_uint<32>)(r_iCtlRdIdx + 1);\n");
 		fprintf(cppFile, "\t\tc_iCtlState = ICM_READ;\n");
 		fprintf(cppFile, "\tbreak;\n");
 		fprintf(cppFile, "\tdefault:\n");
@@ -2103,9 +2106,9 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(cppFile, "\tbool c_oCtlWrPend = r_oCtlWrPend;\n");
 		fprintf(cppFile, "\tbool c_oCtlMsgSent = false;\n");
 		fprintf(cppFile, "\n");
-		fprintf(cppFile, "\tsc_uint<HIF_CTL_QUE_CNT_W> c_oCtlWrIdx = r_oCtlWrIdx;\n");
+		fprintf(cppFile, "\tsc_uint<32> c_oCtlWrIdx = r_oCtlWrIdx;\n");
 		fprintf(cppFile, "\tsc_uint<MEM_ADDR_W> c_oCtlQueAdr = r_CtlQueBase\n");
-		fprintf(cppFile, "\t\t\t\t\t+ (HIF_CTL_QUE_CNT * sizeof(uint64_t))\n");
+		fprintf(cppFile, "\t\t\t\t\t+ (r_CtlQueSize * sizeof(uint64_t))\n");
 		fprintf(cppFile, "\t\t\t\t\t+ (r_oCtlWrIdx * sizeof(uint64_t));\n");
 		fprintf(cppFile, "\n");
 		fprintf(cppFile, "\tswitch (r_oCtlState) {\n");
@@ -2170,7 +2173,7 @@ void CDsnInfo::GenerateHifFiles()
 			fprintf(cppFile, "#endif\n");
 		}
 		fprintf(cppFile, "\n");
-		fprintf(cppFile, "\t\tc_oCtlWrIdx = (sc_uint<HIF_CTL_QUE_CNT_W>)(r_oCtlWrIdx + 1);\n");
+		fprintf(cppFile, "\t\tc_oCtlWrIdx = (r_oCtlWrIdx + 1 == r_CtlQueSize) ? (sc_uint<32>)0 : (sc_uint<32>)(r_oCtlWrIdx + 1);\n");
 		fprintf(cppFile, "\t\tc_oCtlState = OCM_READ;\n");
 		fprintf(cppFile, "\n");
 		fprintf(cppFile, "\t\tc_oCtlWrPend = true;\n");
@@ -2780,6 +2783,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(cppFile, "\tr_hifToHti_datHalt = r_reset1x ? false : c_hifToHti_datHalt;\n");
 		fprintf(cppFile, "\tr_htiToHif_datHalt = r_reset1x ? false : c_htiToHif_datHalt;\n");
 		fprintf(cppFile, "\n");
+		fprintf(cppFile, "\tr_CtlQueSize = c_CtlQueSize;\n");
 		fprintf(cppFile, "\tr_CtlQueBase = c_CtlQueBase;\n");
 		fprintf(cppFile, "\n");
 		fprintf(cppFile, "\tr_mifReqSelRr = r_reset1x ? (sc_uint<HIF_TID_TYPE_W>)0 : c_mifReqSel;\n");
@@ -2805,7 +2809,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(cppFile, "\tr_iCtlState = r_reset1x ? (sc_uint<2>)ICM_READ : c_iCtlState;\n");
 		fprintf(cppFile, "\tr_iCtlRdWait = c_iCtlRdWait;\n");
 		fprintf(cppFile, "\tr_iCtlWrPend = r_reset1x ? false : c_iCtlWrPend;\n");
-		fprintf(cppFile, "\tr_iCtlRdIdx = r_reset1x ? (sc_uint<HIF_CTL_QUE_CNT_W>)0 : c_iCtlRdIdx;\n");
+		fprintf(cppFile, "\tr_iCtlRdIdx = r_reset1x ? (sc_uint<32>)0 : c_iCtlRdIdx;\n");
 		fprintf(cppFile, "\n");
 		fprintf(cppFile, "\tr_hifToHti_ctlRdy = r_reset1x ? false : c_hifToHti_ctlRdy;\n");
 		fprintf(cppFile, "\tr_hifToHti_ctl = c_hifToHti_ctl;\n");
@@ -2816,7 +2820,7 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(cppFile, "\tr_oCtlState = r_reset1x ? (sc_uint<2>)OCM_READ : c_oCtlState;\n");
 		fprintf(cppFile, "\tr_oCtlRdWait = c_oCtlRdWait;\n");
 		fprintf(cppFile, "\tr_oCtlWrPend = r_reset1x ? false : c_oCtlWrPend;\n");
-		fprintf(cppFile, "\tr_oCtlWrIdx = r_reset1x ? (sc_uint<HIF_CTL_QUE_CNT_W>)0 : c_oCtlWrIdx;\n");
+		fprintf(cppFile, "\tr_oCtlWrIdx = r_reset1x ? (sc_uint<32>)0 : c_oCtlWrIdx;\n");
 		fprintf(cppFile, "\tr_htiToHif_ctl = c_htiToHif_ctl;\n");
 		fprintf(cppFile, "\tr_hifToHti_ctlAvl = c_hifToHti_ctlAvl;\n");
 		fprintf(cppFile, "\n");

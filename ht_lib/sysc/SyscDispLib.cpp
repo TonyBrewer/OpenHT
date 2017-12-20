@@ -45,12 +45,15 @@ void CSyscDisp::SyscDisp()
 
 	r_dispState = i_reset.read() ? (sc_uint<4>)0 : c_dispState;
 
-	r_ctlQueBase = (uint64_t)Ht::g_pCtrlIntfQues[i_aeId.read()];
+	uint64_t ctlIntfQue = (uint64_t)Ht::g_pCtrlIntfQues[i_aeId.read()];
+	r_ctlQueWidth = ctlIntfQue >> 48;
+	r_ctlQueBase  = ctlIntfQue & 0x0000FFFFFFFFFFFFLL;
 
 	///////////////////////
 	// Update outputs
 	//
 
+	o_dispToHif_ctlQueWidth = r_ctlQueWidth;
 	o_dispToHif_ctlQueBase = r_ctlQueBase;
 	o_dispToHif_dispStart = r_dispState == 9;
 }

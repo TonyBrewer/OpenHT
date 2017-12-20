@@ -21,11 +21,13 @@ SC_MODULE(CSyscDisp) {
 
 	sc_in<bool> i_clock1x;
 	sc_in<bool> i_reset;
+	sc_out<sc_uint<16> > o_dispToHif_ctlQueWidth;
 	sc_out<sc_uint<48> > o_dispToHif_ctlQueBase;
 	sc_out<bool> o_dispToHif_dispStart;
 
 	sc_in<sc_uint<1> > i_hifToDisp_dispBusy;
 
+	sc_uint<16> r_ctlQueWidth;
 	sc_uint<48> r_ctlQueBase;
 	sc_uint<4> r_dispState;
 

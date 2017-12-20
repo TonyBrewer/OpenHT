@@ -139,8 +139,8 @@ namespace Ht {
 		uint32_t m_ctlQueMemSize;
 		uint32_t m_ctlInQueMemSize;
 		uint32_t m_ctlOutQueMemSize;
-		uint32_t m_inBlkMemSize;
-		uint32_t m_outBlkMemSize;
+		uint64_t m_inBlkMemSize;
+		uint64_t m_outBlkMemSize;
 		uint64_t m_appUnitMemSize;
 		uint32_t m_unitMemSize;
 		uint32_t m_flushLinesMemSize;
@@ -332,7 +332,7 @@ namespace Ht {
 		void QueOutMsgs();
 		void NextOutMsg();
 		void NextOutMsgQue() {
-			m_outMsgQue.Pop();
+			m_outMsgQue->Pop();
 			m_outMsgQueLoopCnt = 0;
 	#ifdef HT_AVL_TEST
 			m_bOutBlkRdySeen = false;
@@ -366,7 +366,7 @@ namespace Ht {
 		CHtCtrlMsg * m_pCtlOutQue;
 		uint32_t m_outCtlRdIdx;
 		CHtCtrlMsg * m_pOutCtlMsg;
-		CQueue<CHtCtrlMsg, 512> m_outMsgQue;
+		CQueue<CHtCtrlMsg> *m_outMsgQue;
 		uint32_t m_outMsgQueLoopCnt;
 		int m_recvRtnArgc;
 

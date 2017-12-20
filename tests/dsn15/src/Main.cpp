@@ -17,7 +17,7 @@ uint64_t recvArr[ARR_SIZE];
 int recvDataCnt = 0;
 int markerCnt = 0;
 uint16_t rtnCnt = 0;
-CQueue<int, 64> dataCntQue;
+CQueue<int> *dataCntQue;
 
 int main(int argc, char **argv)
 {
@@ -38,10 +38,12 @@ int main(int argc, char **argv)
 
 	pSuUnit->SendHostMsg(SU_ARRAY_ADDR, (uint64_t)&memArr);
 
+	dataCntQue = new CQueue<int>(64);
+
 	while (callCnt < TEST_CNT || markerCnt < TEST_CNT || rtnCnt < TEST_CNT) {
 		if (callCnt < TEST_CNT && sendDataCnt == 0 && pSuUnit->SendCall_echo(callCnt)) {
 			sendDataCnt = callCnt++ + 1;
-			dataCntQue.Push(sendDataCnt);
+			dataCntQue->Push(sendDataCnt);
 			continue;
 		}
 
@@ -59,6 +61,8 @@ int main(int argc, char **argv)
 			usleep(1000);
 	}
 
+	delete dataCntQue;
+
 	delete pHtHif;
 
 	if (err_cnt)
@@ -75,9 +79,9 @@ void CHtSuUnitEx::RecvCallback(Ht::ERecvType recvType)
 	case Ht::eRecvHostData:
 	{
 		if (recvDataCnt == 0) {
-			assert(!dataCntQue.Empty());
-			recvDataCnt = dataCntQue.Front();
-			dataCntQue.Pop();
+			assert(!dataCntQue->Empty());
+			recvDataCnt = dataCntQue->Front();
+			dataCntQue->Pop();
 			printf("eRecvHostData - recvDataCnt = %d\n", recvDataCnt);
 		}
 
@@ -88,9 +92,9 @@ void CHtSuUnitEx::RecvCallback(Ht::ERecvType recvType)
 	case Ht::eRecvHostDataMarker:
 	{
 		if (recvDataCnt == 0) {
-			assert(!dataCntQue.Empty());
-			recvDataCnt = dataCntQue.Front();
-			dataCntQue.Pop();
+			assert(!dataCntQue->Empty());
+			recvDataCnt = dataCntQue->Front();
+			dataCntQue->Pop();
 			printf("eRecvDataMarker - recvDataCnt = %d\n", recvDataCnt);
 		}
 

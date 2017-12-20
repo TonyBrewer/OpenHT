@@ -45,12 +45,14 @@ namespace Ht {
 		int aeId, auId;
 		m_pHtModelHifLib->m_pHtHifLibBase->GetUnitMap()->FindAeAu(unitId, aeId, auId);
 
+		m_inMsgQue = new CQueue<CHtCtrlMsg>(MODEL_HIF_CTL_QUE_CNT);
+
 		CHtCtrlMsg * pMsgQueBase = (CHtCtrlMsg *)pHtModelHifLib->GetHtHifLibBase()->GetCtlQueMemBase(aeId);
-		m_pInCtlQue = pMsgQueBase + auId * HIF_CTL_QUE_CNT * 2;
-		m_pOutCtlQue = pMsgQueBase + auId * HIF_CTL_QUE_CNT * 2 + HIF_CTL_QUE_CNT;
+		m_pInCtlQue = pMsgQueBase + auId * MODEL_HIF_CTL_QUE_CNT * 2;
+		m_pOutCtlQue = pMsgQueBase + auId * MODEL_HIF_CTL_QUE_CNT * 2 + MODEL_HIF_CTL_QUE_CNT;
 
 		m_bUsingCallback = false;
-		m_ctlQueMask = HIF_CTL_QUE_CNT-1;
+		m_ctlQueMask = MODEL_HIF_CTL_QUE_CNT-1;
 		m_pInCtlMsg = m_pInCtlQue;
 		m_inBlkIdx = 0;
 		m_outBlkIdx = 0;
@@ -232,8 +234,8 @@ namespace Ht {
 		if (recvType != eRecvCall)
 			return false;
 
-		uint8_t msgType = m_inMsgQue.Front().GetMsgType();
-		uint64_t msgData = m_inMsgQue.Front().GetMsgData();
+		uint8_t msgType = m_inMsgQue->Front().GetMsgType();
+		uint64_t msgData = m_inMsgQue->Front().GetMsgData();
 
 		assert(msgType == HIF_CMD_IBLK_RDY && (msgData & 0x7) == HIF_DQ_CALL);
 		int recv_argc = (int)(msgData >> 3);
@@ -246,12 +248,12 @@ namespace Ht {
 		NextInBlk(true);
 
 		if ((int)(msgData >> 3) > 0) {
-			assert(m_inMsgQue.Front().GetMsgType() == HIF_CMD_IBLK_RDY && (m_inMsgQue.Front().GetMsgData() & 0x7) == 0);
-			assert(((msgData >> 3) & 0xff) == ((m_inMsgQue.Front().GetMsgData() >> 3) & 0xff));
+			assert(m_inMsgQue->Front().GetMsgType() == HIF_CMD_IBLK_RDY && (m_inMsgQue->Front().GetMsgData() & 0x7) == 0);
+			assert(((msgData >> 3) & 0xff) == ((m_inMsgQue->Front().GetMsgData() >> 3) & 0xff));
 
 	#ifdef HT_AVL_TEST
-			assert((m_inRdyMask & (1 << ((m_inMsgQue.Front().GetMsgData() >> 48) & m_inBlkMask))) == 0);
-			m_inRdyMask |= 1 << ((m_inMsgQue.Front().GetMsgData() >> 48) & m_inBlkMask);
+			assert((m_inRdyMask & (1 << ((m_inMsgQue->Front().GetMsgData() >> 48) & m_inBlkMask))) == 0);
+			m_inRdyMask |= 1 << ((m_inMsgQue->Front().GetMsgData() >> 48) & m_inBlkMask);
 	#endif
 
 			uint64_t * pInBlk = &m_pInBlkBase[(m_inBlkIdx & m_inBlkMask) * m_inBlkSize];
@@ -276,8 +278,8 @@ namespace Ht {
 		if (recvType != eRecvHostMsg)
 			return false;
 
-		msgType = m_inMsgQue.Front().GetMsgType();
-		msgData = m_inMsgQue.Front().GetMsgData();
+		msgType = m_inMsgQue->Front().GetMsgType();
+		msgData = m_inMsgQue->Front().GetMsgData();
 
 		NextInMsgQue();
 
@@ -334,7 +336,7 @@ namespace Ht {
 		for(;;) {
 			CHtCtrlMsg ctrlMsg = *m_pInCtlMsg;
 
-			if (!ctrlMsg.IsValid() || m_inMsgQue.IsFull())
+			if (!ctrlMsg.IsValid() || m_inMsgQue->IsFull())
 				break;
 
 			uint8_t msgType = ctrlMsg.GetMsgType();
@@ -354,7 +356,7 @@ namespace Ht {
 	#endif
 				UnlockOutBlk();
 			} else
-				m_inMsgQue.Push(ctrlMsg);
+				m_inMsgQue->Push(ctrlMsg);
 
 			NextInMsg();
 		}
@@ -370,10 +372,10 @@ namespace Ht {
 		QueInMsgs();
 
 		for(;;) {
-			if (m_inMsgQue.Empty())
+			if (m_inMsgQue->Empty())
 				return eRecvIdle;
 
-			CHtCtrlMsg ctrlMsg = m_inMsgQue.Front();
+			CHtCtrlMsg ctrlMsg = m_inMsgQue->Front();
 
 			uint8_t msgType = ctrlMsg.GetMsgType();
 			uint64_t msgData = ctrlMsg.GetMsgData();
@@ -455,7 +457,7 @@ namespace Ht {
 							}
 						}
 
-						if (m_inMsgQue.Size() >= 2) {
+						if (m_inMsgQue->Size() >= 2) {
 							if (bUseCbCall && m_bUsingCallback) {
 								Callback(eRecvCall);
 								continue;

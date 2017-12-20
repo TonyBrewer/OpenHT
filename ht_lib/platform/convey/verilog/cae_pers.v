@@ -143,6 +143,7 @@ module cae_pers #(
     /*
      * Dispatch
      */
+    wire [15:0]	dis_ctlQueWidth;
     wire [47:0]	dis_ctlQueBase;
     wire [7:0]	unitCnt;
     dispatch # (
@@ -170,6 +171,7 @@ module cae_pers #(
 
 	.num_ae(NUM_AE),
 	.num_units(unitCnt),
+	.ctlQueWidth(dis_ctlQueWidth),
 	.ctlQueBase(dis_ctlQueBase),
 	.start(dis_start),
 	.busy(hifToDisp_dispBusy),
@@ -222,6 +224,7 @@ module cae_pers #(
 	.i_aeId({4'b0, i_aeid}),
 	.i_clock1x(clk),
 	.i_clock2x(clk2x),
+	.i_dispToHif_ctlQueWidth(dis_ctlQueWidth),
 	.i_dispToHif_ctlQueBase(dis_ctlQueBase),
 	.i_dispToHif_dispStart(dis_start),
 	.i_reset(g_reset_top),

@@ -52,12 +52,20 @@ namespace Ht {
 			throw CHtException(eHtBadHostAlloc, string("unable to alloc host memory"));
 		memset(m_pMemRegionList, 0, sizeof(CHtHifMemRegion) * m_memRegionCnt);
 
-		m_ctlInQueMemSize = 512 * sizeof(CHtCtrlMsg);
-		m_ctlOutQueMemSize = 512 * sizeof(CHtCtrlMsg);
+		uint32_t ctlQueSize = 1 << pHtHifBase->GetHifParams().m_ctlQueW;
+
+		m_ctlInQueMemSize = ctlQueSize * sizeof(CHtCtrlMsg);
+		m_ctlOutQueMemSize = ctlQueSize * sizeof(CHtCtrlMsg);
+
 		m_ctlQueMemSize = m_ctlInQueMemSize + m_ctlOutQueMemSize;
 
-		m_inBlkMemSize = HIF_ARG_IBLK_CNT * HIF_ARG_IBLK_SIZE;
-		m_outBlkMemSize = HIF_ARG_OBLK_CNT * HIF_ARG_OBLK_SIZE;
+		uint64_t iBlkSize = 1 << pHtHifBase->GetHifParams().m_iBlkSizeW;
+		uint64_t iBlkCnt  = 1 << pHtHifBase->GetHifParams().m_iBlkCntW;
+		uint64_t oBlkSize = 1 << pHtHifBase->GetHifParams().m_oBlkSizeW;
+		uint64_t oBlkCnt  = 1 << pHtHifBase->GetHifParams().m_oBlkCntW;
+
+		m_inBlkMemSize = iBlkSize * iBlkCnt;
+		m_outBlkMemSize = oBlkSize * oBlkCnt;
 
 		m_flushLinesMemSize = 64 * 8;
 
@@ -294,32 +302,38 @@ namespace Ht {
 	{
 		m_pHtHifLib = pHtHifLib;
 		m_unitId = unitId;
-		m_ctlQueMask = 512-1;
+		uint32_t ctlQueSize = 1 << pHtHifLib->GetHifParams().m_ctlQueW;
+		m_ctlQueMask = ctlQueSize-1;
 		m_bUsingCallback = false;
 		m_bFree = false;
 		m_inLock = 0;
 
+		uint64_t iBlkSize = 1 << pHtHifLib->GetHifParams().m_iBlkSizeW;
+		uint64_t iBlkCnt  = 1 << pHtHifLib->GetHifParams().m_iBlkCntW;
+		uint64_t oBlkSize = 1 << pHtHifLib->GetHifParams().m_oBlkSizeW;
+		uint64_t oBlkCnt  = 1 << pHtHifLib->GetHifParams().m_oBlkCntW;
+
 		// check for power of two
-		assert(((HIF_ARG_IBLK_SIZE-1) & HIF_ARG_IBLK_SIZE) == 0);
-		assert(((HIF_ARG_IBLK_CNT-1) & HIF_ARG_IBLK_CNT) == 0);
-		assert(((HIF_ARG_OBLK_SIZE-1) & HIF_ARG_OBLK_SIZE) == 0);
-		assert(((HIF_ARG_OBLK_CNT-1) & HIF_ARG_OBLK_CNT) == 0);
-		assert(HIF_ARG_OBLK_CNT > 1);
+		assert(((iBlkSize-1) & iBlkSize) == 0);
+		assert(((iBlkCnt-1)  & iBlkCnt) == 0);
+		assert(((oBlkSize-1) & oBlkSize) == 0);
+		assert(((oBlkCnt-1)  & oBlkCnt) == 0);
+		assert(oBlkCnt > 1);
 
 		m_ctlInWrIdx = 0;
 		m_outCtlRdIdx = 0;
 
-		m_inBlkAvailCnt = HIF_ARG_IBLK_CNT;
+		m_inBlkAvailCnt = iBlkCnt;
 		m_inBlkWrIdx = 0;
 		m_inBlkIdx = 0;
-		m_inBlkSize = HIF_ARG_IBLK_SIZE / sizeof(uint64_t);
-		m_inBlkMask = HIF_ARG_IBLK_CNT-1;
+		m_inBlkSize = iBlkSize / sizeof(uint64_t);
+		m_inBlkMask = iBlkCnt-1;
 
 		m_outBlkDataSize = 0;
 		m_outBlkRdIdx = 0;
 		m_outBlkIdx = 0;
-		m_outBlkSize = HIF_ARG_OBLK_SIZE / sizeof(uint64_t);
-		m_outBlkMask = HIF_ARG_OBLK_CNT-1;
+		m_outBlkSize = oBlkSize / sizeof(uint64_t);
+		m_outBlkMask = oBlkCnt-1;
 		m_recvRtnArgc = 0;
 
 		m_pInBlkBase = (uint64_t *)m_pHtHifLib->GetInBlkBase(unitId);
@@ -327,6 +341,8 @@ namespace Ht {
 
 		m_pOutBlkBase = (uint64_t *)m_pHtHifLib->GetOutBlkBase(unitId);
 		m_pOutBlk = m_pOutBlkBase;
+
+		m_outMsgQue = new CQueue<CHtCtrlMsg>(ctlQueSize);
 
 		m_pCtlInQue = (CHtCtrlMsg *)m_pHtHifLib->GetCtlInQueMemBase(unitId);
 		m_pCtlOutQue = (CHtCtrlMsg *)m_pHtHifLib->GetCtlOutQueMemBase(unitId);
@@ -350,13 +366,13 @@ namespace Ht {
 
 		SendMsgInternal(HIF_CMD_IBLK_ADR, (uint64_t)m_pInBlkBase);
 		SendMsgInternal(HIF_CMD_OBLK_ADR, (uint64_t)m_pOutBlkBase);
-		SendMsgInternal(HIF_CMD_IBLK_PARAM, HIF_ARG_IBLK_SIZE_LG2 |
-			(HIF_ARG_IBLK_CNT_LG2 << 8));
-		SendMsgInternal(HIF_CMD_OBLK_PARAM, HIF_ARG_OBLK_SIZE_LG2 |
-			(HIF_ARG_OBLK_CNT_LG2 << 8) |
+		SendMsgInternal(HIF_CMD_IBLK_PARAM, m_pHtHifLib->GetHifParams().m_iBlkSizeW |
+			(m_pHtHifLib->GetHifParams().m_iBlkCntW << 8));
+		SendMsgInternal(HIF_CMD_OBLK_PARAM, m_pHtHifLib->GetHifParams().m_oBlkSizeW |
+			(m_pHtHifLib->GetHifParams().m_oBlkCntW << 8) |
 			((uint64_t)outBlkTimerClks << 16));
 
-		for (unsigned i = 0; i < HIF_ARG_OBLK_CNT; i++)
+		for (unsigned i = 0; i < oBlkCnt; i++)
 			SendMsgInternal(HIF_CMD_OBLK_AVL, i-16);
 
 		SendMsgInternal(HIF_CMD_CTL_PARAM, ctlTimerClks);
@@ -418,6 +434,21 @@ namespace Ht {
 		if (numaSetCnt != 1 && numaSetCnt != 2 && numaSetCnt != 4)
 			throw CHtException(eHtBadHtHifParam, string("bad HtHifParam parameter, m_numaSetCnt only supports 1, 2 or 4"));
 
+		if (m_htHifParams.m_ctlQueW < 9 || m_htHifParams.m_ctlQueW > 25)
+			throw CHtException(eHtBadHtHifParam, string("bad HtHifParam parameter, m_ctlQueW cannot support values less than 9 or greater than 25"));
+
+		if (m_htHifParams.m_iBlkSizeW < 16 || m_htHifParams.m_iBlkSizeW > 25)
+			throw CHtException(eHtBadHtHifParam, string("bad HtHifParam parameter, m_iBlkSizeW cannot support values less than 16 or greater than 25"));
+
+		if (m_htHifParams.m_iBlkCntW < 4 || m_htHifParams.m_iBlkCntW > 6)
+			throw CHtException(eHtBadHtHifParam, string("bad HtHifParam parameter, m_iBlkCntW cannot support values less than 4 or greater than 6"));
+
+		if (m_htHifParams.m_oBlkSizeW < 16 || m_htHifParams.m_oBlkSizeW > 25)
+			throw CHtException(eHtBadHtHifParam, string("bad HtHifParam parameter, m_oBlkSizeW cannot support values less than 16 or greater than 25"));
+
+		if (m_htHifParams.m_oBlkCntW < 4 || m_htHifParams.m_oBlkCntW > 6)
+			throw CHtException(eHtBadHtHifParam, string("bad HtHifParam parameter, m_oBlkCntW cannot support values less than 4 or greater than 6"));
+
 		// Initialize unitMap
 		int unitId = 0;
 		for (int auId = 0; auId < m_auCnt; auId += 1) {
@@ -465,15 +496,18 @@ namespace Ht {
 		InitHifMemory();
 		UnlockAlloc();
 
-		for (int aeIdx = 0; aeIdx < m_aeCnt; aeIdx += 1)
-			m_args[aeIdx] = (uint64_t)GetCtlQueMemBase(aeIdx);
+		for (int aeIdx = 0; aeIdx < m_aeCnt; aeIdx += 1) {
+			uint64_t arg = (uint64_t)GetCtlQueMemBase(aeIdx) & 0xFFFFFFFFFFFFLL;
+			arg |= (uint64_t)((uint64_t)GetHifParams().m_ctlQueW << 48) & 0xFFFF000000000000LL;
+			m_args[aeIdx] = arg;
+		}
 
 		if (m_appMode == eAppSysc) {
 
 			g_coprocAeRunningCnt = m_aeCnt;
 
 			for (int aeIdx = 0; aeIdx < m_aeCnt; aeIdx += 1)
-				g_pCtrlIntfQues[aeIdx] = (CHtCtrlMsg *)GetCtlQueMemBase(aeIdx);
+				g_pCtrlIntfQues[aeIdx] = (CHtCtrlMsg *)((uint64_t)GetCtlQueMemBase(aeIdx) | (uint64_t)GetHifParams().m_ctlQueW << 48);
 
 			m_pSyscTop = m_pHtHifBase->NewSyscTop();
 		}
@@ -947,8 +981,8 @@ namespace Ht {
 			return false;
 
 		if (m_recvRtnArgc == 0) {
-			uint8_t msgType = m_outMsgQue.Front().GetMsgType();
-			uint64_t msgData = m_outMsgQue.Front().GetMsgData();
+			uint8_t msgType = m_outMsgQue->Front().GetMsgType();
+			uint64_t msgData = m_outMsgQue->Front().GetMsgData();
 
 			assert(msgType == HIF_CMD_OBLK_RDY && (msgData & 0x7) == HIF_DQ_CALL);
 			m_recvRtnArgc = (int)(msgData >> 3);
@@ -967,8 +1001,8 @@ namespace Ht {
 		}
 
 		if (m_recvRtnArgc > 0) {
-			uint8_t msgType = m_outMsgQue.Front().GetMsgType();
-			uint64_t msgData = m_outMsgQue.Front().GetMsgData();
+			uint8_t msgType = m_outMsgQue->Front().GetMsgType();
+			uint64_t msgData = m_outMsgQue->Front().GetMsgData();
 
 			if (msgType != HIF_CMD_OBLK_RDY)
 				return false;
@@ -977,8 +1011,8 @@ namespace Ht {
 			assert((m_recvRtnArgc & 0xff) == ((msgData >> 3) & 0xff));
 
 	#ifdef HT_AVL_TEST
-			assert((m_outRdyMask & (1 << ((m_outMsgQue.Front().GetMsgData() >> 48) & m_outBlkMask))) == 0);
-			m_outRdyMask |= 1 << ((m_outMsgQue.Front().GetMsgData() >> 48) & m_outBlkMask);
+			assert((m_outRdyMask & (1 << ((m_outMsgQue->Front().GetMsgData() >> 48) & m_outBlkMask))) == 0);
+			m_outRdyMask |= 1 << ((m_outMsgQue->Front().GetMsgData() >> 48) & m_outBlkMask);
 	#endif
 
 			uint64_t * pOutBlk = &m_pOutBlkBase[(m_outBlkIdx & m_outBlkMask) * m_outBlkSize];
@@ -1008,8 +1042,8 @@ namespace Ht {
 		if (recvType != eRecvHostMsg)
 			return false;
 
-		msgType = m_outMsgQue.Front().GetMsgType();
-		msgData = m_outMsgQue.Front().GetMsgData();
+		msgType = m_outMsgQue->Front().GetMsgType();
+		msgData = m_outMsgQue->Front().GetMsgData();
 
 		NextOutMsgQue();
 
@@ -1101,7 +1135,7 @@ namespace Ht {
 		for(;;) {
 			CHtCtrlMsg ctrlMsg = *m_pOutCtlMsg;
 
-			if (!ctrlMsg.IsValid() || m_outMsgQue.IsFull())
+			if (!ctrlMsg.IsValid() || m_outMsgQue->IsFull())
 				break;
 
 			uint8_t msgType = ctrlMsg.GetMsgType();
@@ -1116,7 +1150,7 @@ namespace Ht {
 	#endif
 				UnlockInBlk();
 			} else
-				m_outMsgQue.Push(ctrlMsg);
+				m_outMsgQue->Push(ctrlMsg);
 
 			NextOutMsg();
 		}
@@ -1129,10 +1163,10 @@ namespace Ht {
 		QueOutMsgs();
 
 		for(;;) {
-			if (m_outMsgQue.Empty())
+			if (m_outMsgQue->Empty())
 				return eRecvIdle;
 
-			CHtCtrlMsg ctrlMsg = m_outMsgQue.Front();
+			CHtCtrlMsg ctrlMsg = m_outMsgQue->Front();
 
 			uint8_t msgType = ctrlMsg.GetMsgType();
 			uint64_t msgData = ctrlMsg.GetMsgData();
@@ -1190,7 +1224,7 @@ namespace Ht {
 							}
 						}
 
-						if (m_outMsgQue.Size() >= 2) {
+						if (m_outMsgQue->Size() >= 2) {
 							if (bUseCb && m_bUsingCallback) {
 								Callback(eRecvReturn);
 								continue;

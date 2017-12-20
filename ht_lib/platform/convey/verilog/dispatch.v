@@ -32,6 +32,7 @@ output		disp_stall,
 // personality control
 input	[3:0]	num_ae,
 input	[7:0]	num_units,
+output [15:0]	ctlQueWidth,
 output [47:0]	ctlQueBase,
 
 output		start,
@@ -107,7 +108,8 @@ input		busy
     assign disp_exception    = {14'b0, r_err_aegidx, r_err_unimpl};
 
     // Dispatch information
-    assign ctlQueBase = w_aeg[0][0 +: 48];
+    assign ctlQueWidth = w_aeg[0][48 +: 16];
+    assign ctlQueBase  = w_aeg[0][0  +: 48];
 
 
     //

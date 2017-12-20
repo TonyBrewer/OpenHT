@@ -69,7 +69,7 @@ namespace Ht {
 		void NextInBlk(bool bLock=false);
 		void NextOutBlk();
 		void NextInMsgQue() {
-			m_inMsgQue.Pop();
+			m_inMsgQue->Pop();
 			m_inMsgQueLoopCnt = 0;
 	#ifdef HT_AVL_TEST
 			m_bInBlkRdySeen = false;
@@ -95,7 +95,7 @@ namespace Ht {
 
 		CHtCtrlMsg * m_pInCtlQue;
 		CHtCtrlMsg * m_pInCtlMsg;
-		CQueue<CHtCtrlMsg, 512> m_inMsgQue;
+		CQueue<CHtCtrlMsg> *m_inMsgQue;
 		uint32_t m_inMsgQueLoopCnt;
 
 		CHtCtrlMsg * m_pOutCtlQue;

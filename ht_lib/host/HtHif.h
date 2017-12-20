@@ -44,6 +44,11 @@ namespace Ht {
 			m_ctlTimerUSec = 10;
 			m_iBlkTimerUSec = 1000;
 			m_oBlkTimerUSec = 1000;
+			m_ctlQueW = 9;
+			m_iBlkSizeW = 16;
+			m_iBlkCntW = 4;
+			m_oBlkSizeW = 16;
+			m_oBlkCntW = 4;
 			m_appPersMemSize = 0;
 			m_appUnitMemSize = 0;
 			m_numaSetCnt = 0;
@@ -56,6 +61,11 @@ namespace Ht {
 		uint32_t m_ctlTimerUSec;
 		uint32_t m_iBlkTimerUSec;
 		uint32_t m_oBlkTimerUSec;
+		uint16_t m_ctlQueW;
+		uint8_t m_iBlkSizeW;
+		uint8_t m_iBlkCntW;
+		uint8_t m_oBlkSizeW;
+		uint8_t m_oBlkCntW;
 		uint64_t m_appPersMemSize;
 		uint64_t m_appUnitMemSize;
 		int32_t m_numaSetCnt;

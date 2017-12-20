@@ -80,16 +80,23 @@ static inline uint64_t ht_usec()
 #define MIN(a, b) ((a) <= (b) ? (a) : (b))
 
 // Thread safe queue - fixed size
-template <class T, int S> class CQueue {
+template <class T> class CQueue {
 public:
 
-	CQueue()
+	CQueue(int size)
 	{
+		S = size;
 		Init();
+	}
+
+	~CQueue()
+	{
+		delete [] m_que;
 	}
 
 	void Init()
 	{
+		m_que = new T[S];
 		m_Cnt = 0;
 		m_wrIdx = 0;
 		m_rdIdx = 0;
@@ -220,7 +227,8 @@ public:
 #endif
 
 private:
-	T m_que[S];
+	T *m_que;
+	int S;
 	unsigned int m_Cnt ALIGN8;
 	volatile uint32_t m_wrIdx ALIGN8;
 	volatile uint32_t m_rdIdx ALIGN8;
