@@ -378,11 +378,19 @@ void CDsnInfo::GenModStrmStatements(CInstance * pModInst)
 				string strmRspGrpIdStr = pStrm->m_rspGrpW.AsInt() == 0 ? "" : VA("[r_wrStrm%s_rspGrpId%s]", strmName.c_str(), strmIdxStr.c_str());
 
 				if (pMod->m_clkRate == eClk1x)
-					strmPostInstr.Append("\t\tc_wrStrm%s_bReqRdy%s = r_wrStrm%s_bBufRd%s && !r_wrStrm%s_bCollision%s && !r_wrStrm%s_bRspGrpCntFull%s%s &&\n",
-					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmRspGrpIdStr.c_str(), selName.c_str());
+					strmPostInstr.Append("\t\tc_wrStrm%s_bReqRdy%s = r_wrStrm%s_bBufRd%s && !r_wrStrm%s_bCollision%s && (!r_wrStrm%s_bRspGrpCntFull%s%s || r_t3_wrStrm%s_reqQwRem%s > 0) &&\n",
+					strmName.c_str(), strmIdxStr.c_str(),
+					strmName.c_str(), strmIdxStr.c_str(),
+					strmName.c_str(), strmIdxStr.c_str(),
+					strmName.c_str(), strmRspGrpIdStr.c_str(), selName.c_str(),
+					strmName.c_str(), strmIdxStr.c_str());
 				else
-					strmPostInstr.Append("\t\tc_wrStrm%s_bReqRdy%s = r_wrStrm%s_bBufRd%s && !r_%sP%dToMif_bReqSel && !r_wrStrm%s_bRspGrpCntFull%s &&\n",
-					strmName.c_str(), strmIdxStr.c_str(), strmName.c_str(), strmIdxStr.c_str(), pMod->m_modName.Lc().c_str(), pStrm->m_memPort[i], strmName.c_str(), strmRspGrpIdStr.c_str());
+					strmPostInstr.Append("\t\tc_wrStrm%s_bReqRdy%s = r_wrStrm%s_bBufRd%s && !r_%sP%dToMif_bReqSel && (!r_wrStrm%s_bRspGrpCntFull%s || r_t3_wrStrm%s_reqQwRem%s > 0) &&\n",
+					strmName.c_str(), strmIdxStr.c_str(),
+					strmName.c_str(), strmIdxStr.c_str(),
+					pMod->m_modName.Lc().c_str(), pStrm->m_memPort[i],
+					strmName.c_str(), strmRspGrpIdStr.c_str(),
+					strmName.c_str(), strmIdxStr.c_str());
 
 				if (pStrm->m_bClose)
 					strmPostInstr.Append("\t\t\t(r_t3_wrStrm%s_reqQwRem%s > 0 || r_wrStrm%s_bufRdElemCnt%s >= %d || r_wrStrm%s_bClosingBufRd%s);\n",
@@ -3096,7 +3104,7 @@ void CDsnInfo::GenModStrmStatements(CInstance * pModInst)
 				strmPostInstr.Append("\tbool c_wrStrm%s_bRspGrpRsm = r_wrStrm%s_bPaused && r_wrStrm%s_rspGrpCnt == 0;\n",
 					strmName.c_str(), strmName.c_str(), strmName.c_str());
 				strmPostInstr.Append("\tc_wrStrm%s_bRspGrpCntFull = r_wrStrm%s_rspGrpCnt > %d;\n",
-					strmName.c_str(), strmName.c_str(), ((bIsHc2 || bIsWx) ? 128 : 1024) - (1 << pStrm->m_rspGrpW.AsInt()) - 1);
+					strmName.c_str(), strmName.c_str(), ((bIsHc2 || bIsWx) ? 128 : 1024) - (1 << pStrm->m_rspGrpW.AsInt()) - pStrm->m_strmCnt.AsInt());
 			}
 			strmPostInstr.Append("\n");
 
