@@ -1,1 +1,1 @@
-VERILOG_SIM_OPTIONS+=+activity_count_threshold=40000
+VERILOG_SIM_OPTIONS+=+activity_count_threshold=200000

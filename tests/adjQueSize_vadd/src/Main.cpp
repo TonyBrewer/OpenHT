@@ -39,10 +39,10 @@ int main(int argc, char **argv)
 
 	CHtHifParams htHifParams;
 	htHifParams.m_ctlQueW = 15;
-	htHifParams.m_iBlkSizeW = 25;
-	htHifParams.m_iBlkCntW = 6;
-	htHifParams.m_oBlkSizeW = 25;
-	htHifParams.m_oBlkCntW = 6;
+	htHifParams.m_iBlkSizeW = 20;
+	htHifParams.m_iBlkCntW = 5;
+	htHifParams.m_oBlkSizeW = 20;
+	htHifParams.m_oBlkCntW = 5;
 
 	CHtHif *pHtHif;
 	try {
