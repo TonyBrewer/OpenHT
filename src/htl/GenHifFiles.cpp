@@ -1926,11 +1926,10 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(cppFile, "\tbool c_mifBusy = r_hifToMif_reqAvlCnt < 2;\n");
 		fprintf(cppFile, "\n");
 		fprintf(cppFile, "\tsc_uint<32> c_CtlQueSize = (sc_uint<32>)(1 << i_dispToHif_ctlQueWidth.read());\n");
-		fprintf(cppFile, "\tsc_uint<MEM_ADDR_W> c_CtlQueBase = i_dispToHif_ctlQueBase.read()\n");
-		fprintf(cppFile, "\t\t\t\t\t+ (i_aeUnitId.read()\n");
+		fprintf(cppFile, "\tsc_uint<MEM_ADDR_W> c_CtlQueBase = (sc_uint<MEM_ADDR_W>)(i_dispToHif_ctlQueBase.read()\n");
+		fprintf(cppFile, "\t\t\t\t\t+ ((i_aeUnitId.read()\n");
 		fprintf(cppFile, "\t\t\t\t\t* sizeof(uint64_t)\n");
-		fprintf(cppFile, "\t\t\t\t\t* 2 // In/Out\n");
-		fprintf(cppFile, "\t\t\t\t\t* c_CtlQueSize);\n");
+		fprintf(cppFile, "\t\t\t\t\t* 2) << i_dispToHif_ctlQueWidth.read()));\n");
 		fprintf(cppFile, "\n");
 		fprintf(cppFile, "\t//\n");
 		fprintf(cppFile, "\t// Inbound control messages\n");
