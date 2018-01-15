@@ -16,6 +16,8 @@ AddUserIOConn(portId=5, inPath=ctl/recv/link[5]);
 AddUserIOConn(portId=6, inPath=ctl/recv/link[6]);
 AddUserIOConn(portId=7, inPath=ctl/recv/link[7]);
 
+AddUserIOConn(portId=8, inPath=ctl/status);
+
 
 
 ////////////////////////////////////////////////////
@@ -41,4 +43,6 @@ AddUserIOSimConn(portId=4, outPath=ctl/loop/out[4]);
 AddUserIOSimConn(portId=5, outPath=ctl/loop/out[5]);
 AddUserIOSimConn(portId=6, outPath=ctl/loop/out[6]);
 AddUserIOSimConn(portId=7, outPath=ctl/loop/out[7]);
+
+AddUserIOSimConn(portId=8, outPath=ctl/loop/status);
 #endif

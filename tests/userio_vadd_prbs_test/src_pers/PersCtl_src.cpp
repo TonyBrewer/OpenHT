@@ -58,4 +58,26 @@ CPersCtl::PersCtl()
 			assert(0);
 		}
 	}
+
+	// Status Link (Link 8)
+	{
+		// Get Data
+		packet_t inPacket;
+		if (RecvUioReady_status()) {
+			inPacket = RecvUioData_status();
+
+			// Only send to host every X cycles
+			if (SR_statusCnt == 10000) {
+				if (!SendHostMsgBusy()) {
+					SendHostMsg(STATUS, (ht_uint56)inPacket.data.lower);
+					S_statusCnt = 0;
+				}
+			}
+
+
+			else {
+				S_statusCnt = SR_statusCnt + 1;
+			}
+		}
+	}
 }

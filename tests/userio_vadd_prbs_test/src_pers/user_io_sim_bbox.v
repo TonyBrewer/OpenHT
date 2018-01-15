@@ -625,6 +625,24 @@ module user_io_sim_bbox #
 	       .cnt(),
 	       .rcnt()
 	       );
+
+   
+   // Status Link (back to personality)
+   //   This link is unique in that it doesn't use the flow control
+   //   pieces of the link, and is intended to be a continuous flow
+   //   of information back to the personality.  For this reason,
+   //   we're just using a few registers to capture the status
+   //   (which should be stable for many clocks)
+
+   sync2 #(.WIDTH(8*4))
+   status_rs_p9 (
+		 .clk(clk_per),
+		 //.d({qsfp_fatal_alarm, qsfp_corr_alarm, stat_chan_up, stat_lane_up}),
+		 .d({8'b0, 8'b0, 8'hFF, 8'hFF}),
+		 .q(uio_rs_data[1055:1024])
+		 );
+
+   assign uio_rs_vld[8] = ~reset_per;
    
 
    // CSR Logic   

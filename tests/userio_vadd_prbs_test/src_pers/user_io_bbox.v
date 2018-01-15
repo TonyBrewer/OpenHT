@@ -80,7 +80,7 @@ module user_io_bbox #
 
    // User Port to AXI Wrapper
    user_io_axi_wrapper #(.NUM_AUR_LINKS(NUM_AUR_LINKS),
-			 .NUM_UIO_PORTS(NUM_UIO_PORTS),
+			 .NUM_UIO_PORTS(8),
 			 .UIO_PORTS_WIDTH(UIO_PORTS_WIDTH))
    user_io_axi_wrapper (/*AUTOINST*/
 			// Outputs
@@ -88,9 +88,9 @@ module user_io_bbox #
 			.o_s_axi_tx_tdata(s_axi_tx_tdata[NUM_AUR_LINKS*64-1:0]), // Templated
 			.o_s_axi_tx_tlast(s_axi_tx_tlast[NUM_AUR_LINKS*1-1:0]), // Templated
 			.o_s_axi_tx_tvalid(s_axi_tx_tvalid[NUM_AUR_LINKS*1-1:0]), // Templated
-			.uio_rq_afull	(uio_rq_afull[NUM_UIO_PORTS*1-1:0]),
-			.uio_rs_vld	(uio_rs_vld[NUM_UIO_PORTS*1-1:0]),
-			.uio_rs_data	(uio_rs_data[NUM_UIO_PORTS*UIO_PORTS_WIDTH-1:0]),
+			.uio_rq_afull	(uio_rq_afull[8*1-1:0]),
+			.uio_rs_vld	(uio_rs_vld[8*1-1:0]),
+			.uio_rs_data	(uio_rs_data[8*UIO_PORTS_WIDTH-1:0]),
 			// Inputs
 			.clk		(user_clk[NUM_AUR_LINKS*1-1:0]), // Templated
 			.clk_per	(clk_per),
@@ -102,9 +102,9 @@ module user_io_bbox #
 			.i_m_axi_rx_tlast(m_axi_rx_tlast[NUM_AUR_LINKS*1-1:0]), // Templated
 			.i_m_axi_rx_tvalid(m_axi_rx_tvalid[NUM_AUR_LINKS*1-1:0]), // Templated
 			.stat_chan_up	(stat_chan_up[NUM_AUR_LINKS*1-1:0]),
-			.uio_rq_vld	(uio_rq_vld[NUM_UIO_PORTS*1-1:0]),
-			.uio_rq_data	(uio_rq_data[NUM_UIO_PORTS*UIO_PORTS_WIDTH-1:0]),
-			.uio_rs_afull	(uio_rs_afull[NUM_UIO_PORTS*1-1:0]));
+			.uio_rq_vld	(uio_rq_vld[8*1-1:0]),
+			.uio_rq_data	(uio_rq_data[8*UIO_PORTS_WIDTH-1:0]),
+			.uio_rs_afull	(uio_rs_afull[8*1-1:0]));
 
    
    // Mapped as follows:
@@ -221,6 +221,24 @@ module user_io_bbox #
    assign o_csr_rd_ack = r_rd_ack;
    assign o_csr_data   = r_rd_data;
 
+   
+   // Status Link (back to personality)
+   //   This link is unique in that it doesn't use the flow control
+   //   pieces of the link, and is intended to be a continuous flow
+   //   of information back to the personality.  For this reason,
+   //   we're just using a few registers to capture the status
+   //   (which should be stable for many clocks)
+
+   sync2 #(.WIDTH(8*4))
+   status_rs_p9 (
+		 .clk(clk_per),
+		 .d({qsfp_fatal_alarm, qsfp_corr_alarm, stat_chan_up, stat_lane_up}),
+		 .q(uio_rs_data[1055:1024])
+		 );
+
+   assign uio_rs_vld[8] = ~reset_per;
+   
+
    // Tie off unused QSFP I2C ports to pull up I2C nets
    wire [1:0] _qsfp0_nc0_;
    IOBUF qsfp0sdatieoff (
@@ -248,6 +266,7 @@ module user_io_bbox #
       .T(1'b0),
       .O(_qsfp1_nc0_[1])
    );
+
 
 /* user_io_xcvr_wrapper AUTO_TEMPLATE (
 			 // Outputs

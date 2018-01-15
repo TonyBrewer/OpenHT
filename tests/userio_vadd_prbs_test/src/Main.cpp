@@ -1,6 +1,19 @@
 #include "Ht.h"
 using namespace Ht;
 
+struct status_t {
+  uint8_t lane_up;
+  uint8_t chan_up;
+  uint8_t corr_alm;
+  uint8_t fatal_alm;
+  uint32_t unused_0;
+};
+
+union msg_t {
+  status_t status;
+  uint64_t data;
+};
+
 void usage(char *);
 
 int main(int argc, char **argv)
@@ -49,8 +62,22 @@ int main(int argc, char **argv)
 
 	// Wait for return
 	uint64_t error[8];
-	while (!pAuUnit->RecvReturn_htmain(error[0], error[1], error[2], error[3], error[4], error[5], error[6], error[7]))
+	while (!pAuUnit->RecvReturn_htmain(error[0], error[1], error[2], error[3], error[4], error[5], error[6], error[7])) {
+
+		uint8_t msgType;
+		msg_t msgData;
+		if (pAuUnit->RecvHostMsg(msgType, msgData.data)) {
+			printf("\33[2K\r");
+			printf("Status: Fatal Alarm: 0x%02X, Corr Alarm: 0x%02X, Channel Up: 0x%02X, Lane Up: 0x%02X",
+				msgData.status.fatal_alm,
+				msgData.status.corr_alm,
+				msgData.status.chan_up,
+				msgData.status.lane_up);
+			fflush(stdout);
+		}
+
 		usleep(1000);
+	}
 
 	for (int i = 0; i < 8; i++) {
 		if (error[i] != 0) {
@@ -59,6 +86,8 @@ int main(int argc, char **argv)
 		}
 	}
 
+	printf("\n");
+	fflush(stdout);
 
 	if (errCnt)
 		printf("FAILED (%d issues)\n", errCnt);

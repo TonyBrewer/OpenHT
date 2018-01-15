@@ -52,14 +52,14 @@ CPersRecv::PersRecv()
 			inPacket = RecvUioData_link(0);
 		}
 
-		// Rcverate expected data
+		// Generate expected data
 		bool i_reqValid = RecvUioReady_link(0);
 		bool o_prbs_err, o_prbs_vld;
 		prbs_rcv(
 			 GR_htReset,
 			 i_reqValid,
-			 inPacket.lower,
-			 inPacket.upper,
+			 inPacket.data.lower,
+			 inPacket.data.upper,
 		 
 			 o_prbs_err,
 			 o_prbs_vld,
@@ -89,14 +89,14 @@ CPersRecv::PersRecv()
 			inPacket = RecvUioData_link(1);
 		}
 
-		// Rcverate expected data
+		// Generate expected data
 		bool i_reqValid = RecvUioReady_link(1);
 		bool o_prbs_err, o_prbs_vld;
 		prbs_rcv(
 			 GR_htReset,
 			 i_reqValid,
-			 inPacket.lower,
-			 inPacket.upper,
+			 inPacket.data.lower,
+			 inPacket.data.upper,
 		 
 			 o_prbs_err,
 			 o_prbs_vld,
@@ -126,14 +126,14 @@ CPersRecv::PersRecv()
 			inPacket = RecvUioData_link(2);
 		}
 
-		// Rcverate expected data
+		// Generate expected data
 		bool i_reqValid = RecvUioReady_link(2);
 		bool o_prbs_err, o_prbs_vld;
 		prbs_rcv(
 			 GR_htReset,
 			 i_reqValid,
-			 inPacket.lower,
-			 inPacket.upper,
+			 inPacket.data.lower,
+			 inPacket.data.upper,
 		 
 			 o_prbs_err,
 			 o_prbs_vld,
@@ -163,14 +163,14 @@ CPersRecv::PersRecv()
 			inPacket = RecvUioData_link(3);
 		}
 
-		// Rcverate expected data
+		// Generate expected data
 		bool i_reqValid = RecvUioReady_link(3);
 		bool o_prbs_err, o_prbs_vld;
 		prbs_rcv(
 			 GR_htReset,
 			 i_reqValid,
-			 inPacket.lower,
-			 inPacket.upper,
+			 inPacket.data.lower,
+			 inPacket.data.upper,
 		 
 			 o_prbs_err,
 			 o_prbs_vld,
@@ -200,14 +200,14 @@ CPersRecv::PersRecv()
 			inPacket = RecvUioData_link(4);
 		}
 
-		// Rcverate expected data
+		// Generate expected data
 		bool i_reqValid = RecvUioReady_link(4);
 		bool o_prbs_err, o_prbs_vld;
 		prbs_rcv(
 			 GR_htReset,
 			 i_reqValid,
-			 inPacket.lower,
-			 inPacket.upper,
+			 inPacket.data.lower,
+			 inPacket.data.upper,
 		 
 			 o_prbs_err,
 			 o_prbs_vld,
@@ -237,14 +237,14 @@ CPersRecv::PersRecv()
 			inPacket = RecvUioData_link(5);
 		}
 
-		// Rcverate expected data
+		// Generate expected data
 		bool i_reqValid = RecvUioReady_link(5);
 		bool o_prbs_err, o_prbs_vld;
 		prbs_rcv(
 			 GR_htReset,
 			 i_reqValid,
-			 inPacket.lower,
-			 inPacket.upper,
+			 inPacket.data.lower,
+			 inPacket.data.upper,
 		 
 			 o_prbs_err,
 			 o_prbs_vld,
@@ -274,14 +274,14 @@ CPersRecv::PersRecv()
 			inPacket = RecvUioData_link(6);
 		}
 
-		// Rcverate expected data
+		// Generate expected data
 		bool i_reqValid = RecvUioReady_link(6);
 		bool o_prbs_err, o_prbs_vld;
 		prbs_rcv(
 			 GR_htReset,
 			 i_reqValid,
-			 inPacket.lower,
-			 inPacket.upper,
+			 inPacket.data.lower,
+			 inPacket.data.upper,
 		 
 			 o_prbs_err,
 			 o_prbs_vld,
@@ -311,14 +311,14 @@ CPersRecv::PersRecv()
 			inPacket = RecvUioData_link(7);
 		}
 
-		// Rcverate expected data
+		// Generate expected data
 		bool i_reqValid = RecvUioReady_link(7);
 		bool o_prbs_err, o_prbs_vld;
 		prbs_rcv(
 			 GR_htReset,
 			 i_reqValid,
-			 inPacket.lower,
-			 inPacket.upper,
+			 inPacket.data.lower,
+			 inPacket.data.upper,
 		 
 			 o_prbs_err,
 			 o_prbs_vld,

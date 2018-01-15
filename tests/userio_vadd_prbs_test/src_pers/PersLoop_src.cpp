@@ -12,6 +12,14 @@ CPersLoop::PersLoop()
 			SendUioData_out(i, pkt);
 		}
 	}
+	if (!SendUioBusy_status()) {
+		packet_t pkt;
+		pkt.status.fatal_alm = 0;
+		pkt.status.corr_alm = 0;
+		pkt.status.chan_up = 0xFF;
+		pkt.status.lane_up = 0xFF;
+		SendUioData_status(pkt);
+	}
 
 	// CSR Logic
 	if (RecvUioCsrCmdReady()) {

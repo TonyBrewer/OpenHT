@@ -55,7 +55,7 @@ CPersSend::PersSend()
 	// Link 0
 	{
 		// Generate data
-		bool i_reqValid = !SendUioBusy_link(0) && !SR_done[0] && SR_start;
+		bool i_reqValid = !SendUioBusy_link(0) && !SR_done[0] && SR_start && SR_prbsRdy[0];
 		bool o_prbs_rdy, o_prbs_vld;
 		ht_uint64 o_prbs_lower, o_prbs_upper;
 		prbs_gen(
@@ -70,8 +70,10 @@ CPersSend::PersSend()
 			 );
 
 		packet_t outPacket;
-		outPacket.lower = o_prbs_lower;
-		outPacket.upper = o_prbs_upper;
+		outPacket.data.lower = o_prbs_lower;
+		outPacket.data.upper = o_prbs_upper;
+
+		S_prbsRdy[0] = o_prbs_rdy;
 
 		// If a valid request is coming out
 		if (o_prbs_vld && !SR_done[0]) {
@@ -103,7 +105,7 @@ CPersSend::PersSend()
 	// Link 1
 	{
 		// Generate data
-		bool i_reqValid = !SendUioBusy_link(1) && !SR_done[1] && SR_start;
+		bool i_reqValid = !SendUioBusy_link(1) && !SR_done[1] && SR_start && SR_prbsRdy[1];
 		bool o_prbs_rdy, o_prbs_vld;
 		ht_uint64 o_prbs_lower, o_prbs_upper;
 		prbs_gen(
@@ -118,8 +120,10 @@ CPersSend::PersSend()
 			 );
 
 		packet_t outPacket;
-		outPacket.lower = o_prbs_lower;
-		outPacket.upper = o_prbs_upper;
+		outPacket.data.lower = o_prbs_lower;
+		outPacket.data.upper = o_prbs_upper;
+
+		S_prbsRdy[1] = o_prbs_rdy;
 
 		// If a valid request is coming out
 		if (o_prbs_vld && !SR_done[1]) {
@@ -151,7 +155,7 @@ CPersSend::PersSend()
 	// Link 2
 	{
 		// Generate data
-		bool i_reqValid = !SendUioBusy_link(2) && !SR_done[2] && SR_start;
+		bool i_reqValid = !SendUioBusy_link(2) && !SR_done[2] && SR_start && SR_prbsRdy[2];
 		bool o_prbs_rdy, o_prbs_vld;
 		ht_uint64 o_prbs_lower, o_prbs_upper;
 		prbs_gen(
@@ -166,8 +170,10 @@ CPersSend::PersSend()
 			 );
 
 		packet_t outPacket;
-		outPacket.lower = o_prbs_lower;
-		outPacket.upper = o_prbs_upper;
+		outPacket.data.lower = o_prbs_lower;
+		outPacket.data.upper = o_prbs_upper;
+
+		S_prbsRdy[2] = o_prbs_rdy;
 
 		// If a valid request is coming out
 		if (o_prbs_vld && !SR_done[2]) {
@@ -199,7 +205,7 @@ CPersSend::PersSend()
 	// Link 3
 	{
 		// Generate data
-		bool i_reqValid = !SendUioBusy_link(3) && !SR_done[3] && SR_start;
+		bool i_reqValid = !SendUioBusy_link(3) && !SR_done[3] && SR_start && SR_prbsRdy[3];
 		bool o_prbs_rdy, o_prbs_vld;
 		ht_uint64 o_prbs_lower, o_prbs_upper;
 		prbs_gen(
@@ -214,8 +220,10 @@ CPersSend::PersSend()
 			 );
 
 		packet_t outPacket;
-		outPacket.lower = o_prbs_lower;
-		outPacket.upper = o_prbs_upper;
+		outPacket.data.lower = o_prbs_lower;
+		outPacket.data.upper = o_prbs_upper;
+
+		S_prbsRdy[3] = o_prbs_rdy;
 
 		// If a valid request is coming out
 		if (o_prbs_vld && !SR_done[3]) {
@@ -247,7 +255,7 @@ CPersSend::PersSend()
 	// Link 4
 	{
 		// Generate data
-		bool i_reqValid = !SendUioBusy_link(4) && !SR_done[4] && SR_start;
+		bool i_reqValid = !SendUioBusy_link(4) && !SR_done[4] && SR_start && SR_prbsRdy[4];
 		bool o_prbs_rdy, o_prbs_vld;
 		ht_uint64 o_prbs_lower, o_prbs_upper;
 		prbs_gen(
@@ -262,8 +270,10 @@ CPersSend::PersSend()
 			 );
 
 		packet_t outPacket;
-		outPacket.lower = o_prbs_lower;
-		outPacket.upper = o_prbs_upper;
+		outPacket.data.lower = o_prbs_lower;
+		outPacket.data.upper = o_prbs_upper;
+
+		S_prbsRdy[4] = o_prbs_rdy;
 
 		// If a valid request is coming out
 		if (o_prbs_vld && !SR_done[4]) {
@@ -295,7 +305,7 @@ CPersSend::PersSend()
 	// Link 5
 	{
 		// Generate data
-		bool i_reqValid = !SendUioBusy_link(5) && !SR_done[5] && SR_start;
+		bool i_reqValid = !SendUioBusy_link(5) && !SR_done[5] && SR_start && SR_prbsRdy[5];
 		bool o_prbs_rdy, o_prbs_vld;
 		ht_uint64 o_prbs_lower, o_prbs_upper;
 		prbs_gen(
@@ -310,8 +320,10 @@ CPersSend::PersSend()
 			 );
 
 		packet_t outPacket;
-		outPacket.lower = o_prbs_lower;
-		outPacket.upper = o_prbs_upper;
+		outPacket.data.lower = o_prbs_lower;
+		outPacket.data.upper = o_prbs_upper;
+
+		S_prbsRdy[5] = o_prbs_rdy;
 
 		// If a valid request is coming out
 		if (o_prbs_vld && !SR_done[5]) {
@@ -343,7 +355,7 @@ CPersSend::PersSend()
 	// Link 6
 	{
 		// Generate data
-		bool i_reqValid = !SendUioBusy_link(6) && !SR_done[6] && SR_start;
+		bool i_reqValid = !SendUioBusy_link(6) && !SR_done[6] && SR_start && SR_prbsRdy[6];
 		bool o_prbs_rdy, o_prbs_vld;
 		ht_uint64 o_prbs_lower, o_prbs_upper;
 		prbs_gen(
@@ -358,8 +370,10 @@ CPersSend::PersSend()
 			 );
 
 		packet_t outPacket;
-		outPacket.lower = o_prbs_lower;
-		outPacket.upper = o_prbs_upper;
+		outPacket.data.lower = o_prbs_lower;
+		outPacket.data.upper = o_prbs_upper;
+
+		S_prbsRdy[6] = o_prbs_rdy;
 
 		// If a valid request is coming out
 		if (o_prbs_vld && !SR_done[6]) {
@@ -391,7 +405,7 @@ CPersSend::PersSend()
 	// Link 7
 	{
 		// Generate data
-		bool i_reqValid = !SendUioBusy_link(7) && !SR_done[7] && SR_start;
+		bool i_reqValid = !SendUioBusy_link(7) && !SR_done[7] && SR_start && SR_prbsRdy[7];
 		bool o_prbs_rdy, o_prbs_vld;
 		ht_uint64 o_prbs_lower, o_prbs_upper;
 		prbs_gen(
@@ -406,8 +420,10 @@ CPersSend::PersSend()
 			 );
 
 		packet_t outPacket;
-		outPacket.lower = o_prbs_lower;
-		outPacket.upper = o_prbs_upper;
+		outPacket.data.lower = o_prbs_lower;
+		outPacket.data.upper = o_prbs_upper;
+
+		S_prbsRdy[7] = o_prbs_rdy;
 
 		// If a valid request is coming out
 		if (o_prbs_vld && !SR_done[7]) {
