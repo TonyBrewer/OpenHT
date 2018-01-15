@@ -76,6 +76,10 @@ CDsnInfo::GenerateHtiFiles()
 	fprintf(incFile, "\t// Ports\n");
 	fprintf(incFile, "\t//\n");
 	fprintf(incFile, "\tsc_in<bool> i_clock1x;\n");
+	bool bIsCnyPdkType2 = g_appArgs.GetCoprocInfo().GetCoproc() == wx2vu7p;
+	if (bIsCnyPdkType2) {
+		fprintf(incFile, "\tsc_in<bool>\t\t\t\ti_clockhx;\n");
+	}
 
 	if (bCallClk2x || bRtnClk2x)
 		fprintf(incFile, "\tsc_in<bool> i_clock2x;\n");
@@ -1035,7 +1039,11 @@ CDsnInfo::GenerateHtiFiles()
 	if (ohmSelCnt > 1)
 		fprintf(cppFile, "\tr_htSelRr = r_reset1x ? (ht_uint%d)1 : c_htSelRr;\n", ohmSelCnt);
 
-	fprintf(cppFile, "\tHtResetFlop(r_reset1x, i_reset.read());\n");
+	if (bIsCnyPdkType2) {
+		fprintf(cppFile, "\tHtResetFlop1x(r_reset1x, i_reset.read());\n");
+	} else {
+		fprintf(cppFile, "\tHtResetFlop(r_reset1x, i_reset.read());\n");
+	}
 	if (bCallClk2x || bRtnClk2x)
 		fprintf(cppFile, "\tc_reset2x = r_reset1x;\n");
 	fprintf(cppFile, "\n");

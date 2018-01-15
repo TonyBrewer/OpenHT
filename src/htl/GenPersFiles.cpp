@@ -39,6 +39,8 @@ void CDsnInfo::GenPersFiles()
 
 		GenerateUioStubFiles();
 
+		GenerateClockStubFiles();
+
 		GenerateAeTopFile();
 		GenerateUnitTopFile();
 	}

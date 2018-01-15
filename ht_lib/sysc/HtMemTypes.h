@@ -31,6 +31,10 @@
 #endif
 
 ht_prim ht_clk("clk") inline void HtResetFlop (bool &r_reset, const bool &i_reset) { r_reset = i_reset; }
+ht_prim ht_clk("clkhx", "clk1x") inline void HtResetFlop1x (bool &r_reset, const bool &i_reset) { r_reset = i_reset; }
+ht_prim ht_clk("clkhx", "clk2x") inline void HtResetFlop2x (bool &r_reset, const bool &i_reset) { r_reset = i_reset; }
+ht_prim ht_clk("clkhx", "clk1x", "clk2x") inline void HtResetFlop1x2x (bool &r_reset1x, bool&r_reset2x, const bool &i_reset) { r_reset1x = i_reset; r_reset2x = i_reset; }
+
 
 #ifndef _HTV
 

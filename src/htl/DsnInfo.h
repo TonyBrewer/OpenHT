@@ -2288,6 +2288,7 @@ struct CDsnInfo : HtiFile, HtdFile, CLex {
 	void GenerateNgvFiles();
 	void GenerateModuleFiles(CModule &modInfo);
 	void GenerateUioStubFiles();
+	void GenerateClockStubFiles();
 	void GenModInstInc(CModule &mod);
 	void GenStruct(FILE *incFp, string intfName, CRecord &ram, EGenStructMode mode = eGenStruct, bool bEmptyContructor = false);
 	void GenPersBanner(CHtFile &htFile, const char *unitName, const char *dsnName, bool is_h, const char *incName=0);

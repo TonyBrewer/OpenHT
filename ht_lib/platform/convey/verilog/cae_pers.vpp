@@ -153,6 +153,9 @@ ADD_INCLUDE "aemc_messages.vh"
 	.PART(PART_NUMBER)
     ) dis (
 	.clk(clk),
+`ifdef CNY_PLATFORM_TYPE2
+	.clkhx(clkhx),
+`endif
 	.reset(i_reset),
 
 	.disp_inst_vld(disp_inst_vld),
@@ -222,6 +225,9 @@ ADD_ENDIF
 
     CPersAeTop top (
 	.i_aeId({4'b0, i_aeid}),
+`ifdef CNY_PLATFORM_TYPE2
+	.i_clockhx(clkhx),
+`endif
 	.i_clock1x(clk),
 	.i_clock2x(clk2x),
 	.i_dispToHif_ctlQueWidth(dis_ctlQueWidth),

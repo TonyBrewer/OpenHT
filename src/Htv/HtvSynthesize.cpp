@@ -1466,7 +1466,11 @@ void CHtvDesign::SynScPrim(CHtvIdent *pHier, CHtvObject * pObj, CHtvStatement *p
 				primClkName == "clk1x" || primClkName == "clk2x" || primClkName == "clk4x";
 
 
-			if (!bHtlClk) {
+			if (primClkName.substr(0, 5) == "clkhx") {
+
+				m_vFile.Print(".%s(i_clockhx),\n", primClkName.c_str());
+
+			} else if (!bHtlClk) {
 
 				m_vFile.Print(".%s(%s),\n", primClkName.c_str(), pCaller->GetClockIdent()->GetName().c_str());
 

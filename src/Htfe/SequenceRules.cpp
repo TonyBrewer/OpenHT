@@ -280,7 +280,8 @@ void CHtfeDesign::CheckSequenceRules(CHtfeIdent *pHier, CHtfeOperand * pObj, CHt
                                 
                                 } else if (bIsScClockedPrim) {
                                     if (m_seqStateStack.back() == ss_PostClk)
-                                        ParseMsg(PARSE_ERROR, pExpr->GetLineInfo(), "%s, post clock input to clocked primative", pReadIdent->GetName().c_str());
+				        if (pReadIdent->GetName() != "r_i_reset_hx")
+					    ParseMsg(PARSE_ERROR, pExpr->GetLineInfo(), "%s, post clock input to clocked primative", pReadIdent->GetName().c_str());
                                 } else {
                                     if (seqState == ss_Unknown || seqState == ss_Continuous)
                                         seqState = m_seqStateStack.back();

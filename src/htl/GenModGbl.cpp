@@ -7481,6 +7481,10 @@ void CDsnInfo::GenerateNgvFiles()
 		fprintf(incFile, "\tsc_in<bool> i_clock1x;\n");
 		if (bNeed2x)
 			fprintf(incFile, "\tsc_in<bool> i_clock2x;\n");
+		bool bIsCnyPdkType2 = g_appArgs.GetCoprocInfo().GetCoproc() == wx2vu7p;
+		if (bIsCnyPdkType2) {
+			fprintf(incFile, "\tsc_in<bool> i_clockhx;\n");
+		}
 		fprintf(incFile, "\tsc_in<bool> i_reset;\n");
 		fprintf(incFile, "\n");
 
@@ -7554,15 +7558,38 @@ void CDsnInfo::GenerateNgvFiles()
 		ngvPreReg_1x.Write(cppFile);
 		ngvReg_1x.Write(cppFile);
 
-		fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset1x, \"no\");\n");
-		fprintf(cppFile, "\tHtResetFlop(r_reset1x, i_reset.read());\n");
-		fprintf(cppFile, "\n");
+		if (bIsCnyPdkType2) {
+			if (bNeed2x) {
+				fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset1x, \"no\");\n");
+				fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset2x, \"no\");\n");
+				fprintf(cppFile, "\tHtResetFlop1x2x(r_reset1x, r_reset2x, i_reset.read());\n");
 
-		if (bNeed2x) {
-			fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset2x, \"no\");\n");
-			fprintf(cppFile, "\tHtResetFlop(r_reset2x, i_reset.read());\n");
-			fprintf(cppFile, "\tc_reset2x = r_reset1x;\n");
+				fprintf(cppFile, "\n");
+
+				fprintf(cppFile, "\tc_reset2x = r_reset2x;\n");
+				fprintf(cppFile, "\n");
+
+			} else {
+				fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset1x, \"no\");\n");
+				fprintf(cppFile, "\tHtResetFlop1x(r_reset1x, i_reset.read());\n");
+
+				fprintf(cppFile, "\n");
+			}
+		}
+
+		else {
+			fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset1x, \"no\");\n");
+			fprintf(cppFile, "\tHtResetFlop(r_reset1x, i_reset.read());\n");
+
 			fprintf(cppFile, "\n");
+
+			if (bNeed2x) {
+				fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset2x, \"no\");\n");
+				fprintf(cppFile, "\tHtResetFlop(r_reset2x, i_reset.read());\n");
+
+				fprintf(cppFile, "\tc_reset2x = r_reset2x;\n");
+				fprintf(cppFile, "\n");
+			}
 		}
 
 		ngvOut_1x.Write(cppFile);

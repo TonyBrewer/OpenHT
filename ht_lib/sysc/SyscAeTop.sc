@@ -10,12 +10,14 @@
 
 #include "Ht.h"
 #include "PersAeTop.h"
+#include "SyscClockHxStub.h"
 #if defined(HT_UIO) && defined (HT_VERILOG)
 #include "SyscUio.h"
 #endif
 
 SC_MODULE(CSyscAeTop) {
 	CSyscClock * pSyscClock;
+        CSyscClockHxStub * pSyscClockHxStub;
 	CSyscDisp * pSyscDisp;
 	CPersAeTop * pPersAeTop;
 	CSyscMem * pSyscMem[SYSC_AE_MEM_CNT];
@@ -26,6 +28,8 @@ SC_MODULE(CSyscAeTop) {
 	SC_CTOR(CSyscAeTop) {
 
 		pSyscClock = new CSyscClock("SyscClock");
+
+		pSyscClockHxStub = new CSyscClockHxStub("SyscClockHxStub");
 
 		pSyscDisp = new CSyscDisp("SyscDisp");
 

@@ -12,6 +12,9 @@ module dispatch #(parameter
     PART = 0
 )(
 input		clk,
+`ifdef CNY_PLATFORM_TYPE2
+input		clkhx,
+`endif
 input		reset,
 
 input		disp_inst_vld,
@@ -45,6 +48,22 @@ input		busy
     //
     localparam NA = 5;
     localparam AB = f_enc_bits(NA);
+
+    wire r_reset;
+`ifdef CNY_PLATFORM_TYPE2
+    HtResetFlop1x r_reset_ (
+			   .clkhx(clkhx),
+			   .clk1x(clk),
+			   .r_reset(r_reset),
+			   .i_reset(reset)
+			   );
+`else
+    HtResetFlop r_reset_ (
+			 .clk(clk),
+			 .r_reset(r_reset),
+			 .i_reset(reset)
+			 );
+`endif
 
     assign disp_aeg_cnt = NA;
 
@@ -170,7 +189,7 @@ input		busy
     assign c_st_idle = c_state == IDLE;
 
     always @(posedge clk) begin
-	if (reset) begin
+	if (r_reset) begin
 	    r_state  <= IDLE;
 	end else begin
 	    r_state  <= c_state;
@@ -185,7 +204,15 @@ input		busy
     assign disp_idle  = r_st_idle;
     assign disp_stall = !r_caep1 && (!r_st_idle || c_kickit);
     assign start = r_start;
+`ifdef CNY_PLATFORM_TYPE2
+    reg		r_st_idle_hx;
+    always @(posedge clkhx) begin
+	r_st_idle_hx <= r_st_idle;
+    end
+    assign reset_top = r_st_idle_hx;
+`else
     assign reset_top = r_st_idle;
+`endif
 
     `include "functions.vh"
 endmodule

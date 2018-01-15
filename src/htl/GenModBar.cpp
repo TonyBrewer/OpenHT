@@ -583,6 +583,10 @@ void CDsnInfo::GenModBarStatements(CInstance * pModInst)
 	fprintf(incFile, "\tht_attrib(keep_hierarchy, CPers%sBarCtl, \"true\");\n", pModInst->m_instName.Uc().c_str());
 	fprintf(incFile, "\n");
 	fprintf(incFile, "\tsc_in<bool> i_clock1x;\n");
+	bool bIsCnyPdkType2 = g_appArgs.GetCoprocInfo().GetCoproc() == wx2vu7p;
+	if (bIsCnyPdkType2) {
+		fprintf(incFile, "\tsc_in<bool> i_clockhx;\n");
+	}
 
 	if (pMod->m_clkRate == eClk2x)
 		fprintf(incFile, "\tsc_in<bool> i_clock2x;\n");
@@ -732,8 +736,14 @@ void CDsnInfo::GenModBarStatements(CInstance * pModInst)
 			pModInst->m_instName.Uc().c_str(), pMod->m_modName.Uc().c_str());
 		fprintf(cppFile, "{\n");
 
-		fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset2x, \"no\");\n");
-		fprintf(cppFile, "\tHtResetFlop(r_reset2x, i_reset.read());\n");
+		bool bIsCnyPdkType2 = g_appArgs.GetCoprocInfo().GetCoproc() == wx2vu7p;
+		if (bIsCnyPdkType2) {
+			fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset2x, \"no\");\n");
+			fprintf(cppFile, "\tHtResetFlop2x(r_reset2x, i_reset.read());\n");
+		} else {
+			fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset2x, \"no\");\n");
+			fprintf(cppFile, "\tHtResetFlop(r_reset2x, i_reset.read());\n");
+		}
 		fprintf(cppFile, "\tc_reset2x = r_reset2x;\n");
 		fprintf(cppFile, "}\n");
 		fprintf(cppFile, "\n");
@@ -921,8 +931,14 @@ void CDsnInfo::GenModBarStatements(CInstance * pModInst)
 		fprintf(cppFile, "\n");
 
 		if (pMod->m_clkRate == eClk1x && barIdx == pMod->m_barrierList.size() - 1) {
-			fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset1x, \"no\");\n");
-			fprintf(cppFile, "\tHtResetFlop(r_reset1x, i_reset.read());\n");
+			bool bIsCnyPdkType2 = g_appArgs.GetCoprocInfo().GetCoproc() == wx2vu7p;
+			if (bIsCnyPdkType2) {
+				fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset1x, \"no\");\n");
+				fprintf(cppFile, "\tHtResetFlop1x(r_reset1x, i_reset.read());\n");
+			} else {
+				fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset1x, \"no\");\n");
+				fprintf(cppFile, "\tHtResetFlop(r_reset1x, i_reset.read());\n");
+			}
 			fprintf(cppFile, "\n");
 		}
 

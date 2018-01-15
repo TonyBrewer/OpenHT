@@ -1455,6 +1455,10 @@ void CDsnInfo::GenAeNextMsgIntf(HtiFile::CMsgIntfConn * pMicAeNext)
 		fprintf(incFile, "\n");
 
 		fprintf(incFile, "\tsc_in<bool> i_clock1x;\n");
+		bool bIsCnyPdkType2 = g_appArgs.GetCoprocInfo().GetCoproc() == wx2vu7p;
+		if (bIsCnyPdkType2) {
+			fprintf(incFile, "\tsc_in<bool> i_clockhx;\n");
+		}
 		fprintf(incFile, "\tsc_in<bool> i_reset;\n");
 		fprintf(incFile, "\n");
 
@@ -1577,8 +1581,14 @@ void CDsnInfo::GenAeNextMsgIntf(HtiFile::CMsgIntfConn * pMicAeNext)
 			fprintf(cppFile, "\tm_msg.clock(r_reset1x);\n");
 			fprintf(cppFile, "\n");
 
-			fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset1x, \"no\");\n");
-			fprintf(cppFile, "\tHtResetFlop(r_reset1x, i_reset.read());\n");
+			bool bIsCnyPdkType2 = g_appArgs.GetCoprocInfo().GetCoproc() == wx2vu7p;
+			if (bIsCnyPdkType2) {
+				fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset1x, \"no\");\n");
+				fprintf(cppFile, "\tHtResetFlop1x(r_reset1x, i_reset.read());\n");
+			} else {
+				fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset1x, \"no\");\n");
+				fprintf(cppFile, "\tHtResetFlop(r_reset1x, i_reset.read());\n");
+			}
 			fprintf(cppFile, "\n");
 		}
 
@@ -1715,8 +1725,14 @@ void CDsnInfo::GenAeNextMsgIntf(HtiFile::CMsgIntfConn * pMicAeNext)
 			fprintf(cppFile, "\tr_msgIdx = r_reset1x ? (ht_uint%d)0 : c_msgIdx;\n", msgDwCntW);
 			fprintf(cppFile, "\n");
 
-			fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset1x, \"no\");\n");
-			fprintf(cppFile, "\tHtResetFlop(r_reset1x, i_reset.read());\n");
+			bool bIsCnyPdkType2 = g_appArgs.GetCoprocInfo().GetCoproc() == wx2vu7p;
+			if (bIsCnyPdkType2) {
+				fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset1x, \"no\");\n");
+				fprintf(cppFile, "\tHtResetFlop1x(r_reset1x, i_reset.read());\n");
+			} else {
+				fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset1x, \"no\");\n");
+				fprintf(cppFile, "\tHtResetFlop(r_reset1x, i_reset.read());\n");
+			}
 		}
 		fprintf(cppFile, "\n");
 
@@ -1874,8 +1890,14 @@ void CDsnInfo::GenAePrevMsgIntf(HtiFile::CMsgIntfConn * pMicAePrev)
 			fprintf(cppFile, "\tm_msg.clock(r_reset1x);\n");
 			fprintf(cppFile, "\n");
 
-			fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset1x, \"no\");\n");
-			fprintf(cppFile, "\tHtResetFlop(r_reset1x, i_reset.read());\n");
+			bool bIsCnyPdkType2 = g_appArgs.GetCoprocInfo().GetCoproc() == wx2vu7p;
+			if (bIsCnyPdkType2) {
+				fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset1x, \"no\");\n");
+				fprintf(cppFile, "\tHtResetFlop1x(r_reset1x, i_reset.read());\n");
+			} else {
+				fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset1x, \"no\");\n");
+				fprintf(cppFile, "\tHtResetFlop(r_reset1x, i_reset.read());\n");
+			}
 			fprintf(cppFile, "\n");
 		}
 
@@ -2012,8 +2034,14 @@ void CDsnInfo::GenAePrevMsgIntf(HtiFile::CMsgIntfConn * pMicAePrev)
 			fprintf(cppFile, "\tr_msgIdx = r_reset1x ? (ht_uint%d)0 : c_msgIdx;\n", msgDwCntW);
 			fprintf(cppFile, "\n");
 
-			fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset1x, \"no\");\n");
-			fprintf(cppFile, "\tHtResetFlop(r_reset1x, i_reset.read());\n");
+			bool bIsCnyPdkType2 = g_appArgs.GetCoprocInfo().GetCoproc() == wx2vu7p;
+			if (bIsCnyPdkType2) {
+				fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset1x, \"no\");\n");
+				fprintf(cppFile, "\tHtResetFlop1x(r_reset1x, i_reset.read());\n");
+			} else {
+				fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset1x, \"no\");\n");
+				fprintf(cppFile, "\tHtResetFlop(r_reset1x, i_reset.read());\n");
+			}
 		}
 		fprintf(cppFile, "\n");
 

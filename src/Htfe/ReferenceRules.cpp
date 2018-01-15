@@ -397,7 +397,7 @@ void CHtfeDesign::CheckRefCnts(bool bLocal, CHtfeIdent *pFunc)
 
 			switch (identIter->GetPortDir()) {
 			case port_in:
-				if (!identIter->IsReadRef(elemIdx) && !identIter->IsNoLoad())
+				if (!identIter->IsReadRef(elemIdx) && !identIter->IsNoLoad() && name != "i_clockhx")
 					ParseMsg(PARSE_WARNING, identIter->GetLineInfo(), "port '%s' was not read", name.c_str());
 				break;
 			case port_out:

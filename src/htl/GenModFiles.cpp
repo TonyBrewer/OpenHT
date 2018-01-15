@@ -228,15 +228,39 @@ CDsnInfo::WritePersCppFile(CInstance * pModInst, bool bNeedClk2x)
 	if (pMod->m_bHasThreads && pMod->m_clkRate == eClk1x)
 		fprintf(cppFile, "\tr_userReset = r_reset1x;\n\n");
 
-	fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset1x, \"no\");\n");
-	fprintf(cppFile, "\tHtResetFlop(r_reset1x, i_reset.read());\n");
-	fprintf(cppFile, "\n");
+	bool bIsCnyPdkType2 = g_appArgs.GetCoprocInfo().GetCoproc() == wx2vu7p;
+	if (bIsCnyPdkType2) {
+		if (bNeedClk2x) {
+			fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset1x, \"no\");\n");
+			fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset2x, \"no\");\n");
+			fprintf(cppFile, "\tHtResetFlop1x2x(r_reset1x, r_reset2x, i_reset.read());\n");
 
-	if (bNeedClk2x) {
-		fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset2x, \"no\");\n");
-		fprintf(cppFile, "\tHtResetFlop(r_reset2x, i_reset.read());\n");
-		fprintf(cppFile, "\tc_reset2x = r_reset2x;\n");
+			fprintf(cppFile, "\n");
+
+			fprintf(cppFile, "\tc_reset2x = r_reset2x;\n");
+			fprintf(cppFile, "\n");
+
+		} else {
+			fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset1x, \"no\");\n");
+			fprintf(cppFile, "\tHtResetFlop1x(r_reset1x, i_reset.read());\n");
+
+			fprintf(cppFile, "\n");
+		}
+	}
+
+	else {
+		fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset1x, \"no\");\n");
+		fprintf(cppFile, "\tHtResetFlop(r_reset1x, i_reset.read());\n");
+
 		fprintf(cppFile, "\n");
+
+		if (bNeedClk2x) {
+			fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_reset2x, \"no\");\n");
+			fprintf(cppFile, "\tHtResetFlop(r_reset2x, i_reset.read());\n");
+
+			fprintf(cppFile, "\tc_reset2x = r_reset2x;\n");
+			fprintf(cppFile, "\n");
+		}
 	}
 
 	int phaseCnt = CountPhaseResetFanout(pModInst);
@@ -255,8 +279,13 @@ CDsnInfo::WritePersCppFile(CInstance * pModInst, bool bNeedClk2x)
 				phaseStr[1] += 1;
 		}
 
-		fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_phaseReset%s, \"no\");\n", phaseStr);
-		fprintf(cppFile, "\tHtResetFlop(r_phaseReset%s, i_reset.read());\n", phaseStr);
+		if (bIsCnyPdkType2) {
+			fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_phaseReset%s, \"no\");\n", phaseStr);
+			fprintf(cppFile, "\tHtResetFlop1x(r_phaseReset%s, i_reset.read());\n", phaseStr);
+		} else {
+			fprintf(cppFile, "\tht_attrib(equivalent_register_removal, r_phaseReset%s, \"no\");\n", phaseStr);
+			fprintf(cppFile, "\tHtResetFlop(r_phaseReset%s, i_reset.read());\n", phaseStr);
+		}
 		fprintf(cppFile, "\n");
 	}
 
@@ -542,6 +571,10 @@ CDsnInfo::WritePersIncFile(CInstance * pModInst, bool bNeedClk2x)
 
 	GenModDecl(eVcdUser, incCode, vcdModName, "sc_in<bool>", "i_clock1x");
 	GenModDecl(eVcdUser, incCode, vcdModName, "sc_in<bool> ht_noload", "i_clock2x");
+	bool bIsCnyPdkType2 = g_appArgs.GetCoprocInfo().GetCoproc() == wx2vu7p;
+	if (bIsCnyPdkType2) {
+		GenModDecl(eVcdUser, incCode, vcdModName, "sc_in<bool>", "i_clockhx");
+	}
 
 	if (bStateMachine || NeedClk2x())
 		fprintf(incFile, "\tsc_in<bool> i_reset;\n");

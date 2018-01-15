@@ -218,6 +218,10 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\t// Ports\n");
 		fprintf(incFile, "\t//\n");
 		fprintf(incFile, "\tsc_in<bool>\t\t\t\ti_clock1x;\n");
+		bool bIsCnyPdkType2 = g_appArgs.GetCoprocInfo().GetCoproc() == wx2vu7p;
+		if (bIsCnyPdkType2) {
+			fprintf(incFile, "\tsc_in<bool>\t\t\t\ti_clockhx;\n");
+		}
 		fprintf(incFile, "\tsc_in<bool>\t\t\t\ti_reset;\n");
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\tsc_in<uint8_t>\t\t\ti_aeUnitId;\n");
@@ -2870,7 +2874,12 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(cppFile, "\tr_htaToHif_assert = c_htaToHif_assert;\n");
 		fprintf(cppFile, "\n");
 		fprintf(cppFile, "\tr_reset1x = r_i_reset ? true : c_reset;\n");
-		fprintf(cppFile, "\tHtResetFlop(r_i_reset, i_reset.read());\n");
+		bool bIsCnyPdkType2 = g_appArgs.GetCoprocInfo().GetCoproc() == wx2vu7p;
+		if (bIsCnyPdkType2) {
+			fprintf(cppFile, "\tHtResetFlop1x(r_i_reset, i_reset.read());\n");
+		} else {
+			fprintf(cppFile, "\tHtResetFlop(r_i_reset, i_reset.read());\n");
+		}
 		fprintf(cppFile, "\n");
 		fprintf(cppFile, "\t// register properties\n");
 		fprintf(cppFile, "\tht_attrib(keep, r_iCtlState, \"true\");\n");

@@ -20,11 +20,13 @@
 SC_MODULE(CSyscClock) {
 	sc_out<bool> o_clock2x;
 	sc_out<bool> o_clock1x;
+	sc_out<bool> o_clockhx;
 	sc_out<bool> o_reset;
 
 #	ifndef _HTV
 	sc_clock *m_pClock;
-	sc_uint<1> r_phase;
+	sc_uint<1> r_phase1;
+	sc_uint<2> r_phase2;
 	sc_uint<3> r_reset;
 #	endif
 
@@ -34,7 +36,8 @@ SC_MODULE(CSyscClock) {
 	// Constructor
 	SC_CTOR(CSyscClock) {
 #		ifndef _HTV
-		r_phase = 0;
+		r_phase1 = 0;
+		r_phase2 = 0;
 		r_reset = 1;
 
 		m_pClock = new sc_clock("clock", sc_time(5.0, SC_NS), 0.5, SC_ZERO_TIME, true);

@@ -3286,10 +3286,10 @@ bool CHtfeDesign::ParseHtPrimClkList(CHtfeTypeAttrib & typeAttrib)
 			}
 
 			bool bHtlClk = GetString() == "intfClk1x" || GetString() == "intfClk2x" || GetString() == "intfClk4x" ||
-				GetString() == "clk1x" || GetString() == "clk2x" || GetString() == "clk4x";
+				GetString() == "clkhx" || GetString() == "clk1x" || GetString() == "clk2x" || GetString() == "clk4x";
 
 			if (bNonHtlClk || !bHtlClk && typeAttrib.m_htPrimClkList.size() > 0) {
-				ParseMsg(PARSE_ERROR, "multiple clocks within the set of intfClk1x, intfClk2x, intfClk4x, clk1x, clk2x, clk4x");
+				ParseMsg(PARSE_ERROR, "multiple clocks within the set of intfClk1x, intfClk2x, intfClk4x, clkhx, clk1x, clk2x, clk4x");
 				ParseMsg(PARSE_INFO, "or a single clock not in the set can be specified");
 
 				SkipTo(tk_rparen);

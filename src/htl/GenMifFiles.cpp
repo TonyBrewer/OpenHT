@@ -83,6 +83,10 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 	fprintf(incFile, "\tht_attrib(keep_hierarchy, CPers%sMif%d, \"true\");\n", m_unitName.Uc().c_str(), mifId);
 	fprintf(incFile, "\n");
 	GenModDecl(eVcdAll, incCode, vcdModName, "sc_in<bool>", VA("i_clock1x"));
+	bool bIsCnyPdkType2 = g_appArgs.GetCoprocInfo().GetCoproc() == wx2vu7p;
+	if (bIsCnyPdkType2) {
+		GenModDecl(eVcdAll, incCode, vcdModName, "sc_in<bool>", VA("i_clockhx"));
+	}
 
 	if (bClk2x) {
 		GenModDecl(eVcdAll, incCode, vcdModName, "sc_in<bool>", VA("i_clock2x"));
@@ -829,7 +833,11 @@ void CDsnInfo::GenerateMifFiles(int mifId)
 		}
 	}
 
-	fprintf(cppFile, "\tHtResetFlop(r_reset1x, i_reset.read());\n");
+	if (bIsCnyPdkType2) {
+		fprintf(cppFile, "\tHtResetFlop1x(r_reset1x, i_reset.read());\n");
+	} else {
+		fprintf(cppFile, "\tHtResetFlop(r_reset1x, i_reset.read());\n");
+	}
 	if (bClk2x)
 		fprintf(cppFile, "\tc_reset2x = r_reset1x;\n");
 
