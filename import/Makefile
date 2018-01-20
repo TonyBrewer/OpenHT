@@ -5,15 +5,15 @@ endif
 
 SYSTEMC_BUILD = $(BLD_BASE)/systemc
 
-ifeq ($(wildcard systemc-2.3.1a.tar.gz),)
-	SYSTEMC_VER = 2.3.1
-	SYSTEMC_TAR = systemc-$(SYSTEMC_VER).tgz
-else ifeq ($(wildcard systemc-2.3.1a.tar.gz),)
+ifneq ($(wildcard systemc-2.3.2.tar.gz),)
+	SYSTEMC_VER = 2.3.2
+	SYSTEMC_TAR = systemc-$(SYSTEMC_VER).tar.gz
+else ifneq ($(wildcard systemc-2.3.1a.tar.gz),)
 	SYSTEMC_VER = 2.3.1a
 	SYSTEMC_TAR = systemc-$(SYSTEMC_VER).tar.gz
 else
-	SYSTEMC_VER = 2.3.2
-	SYSTEMC_TAR = systemc-$(SYSTEMC_VER).tar.gz
+	SYSTEMC_VER = 2.3.1
+	SYSTEMC_TAR = systemc-$(SYSTEMC_VER).tgz
 endif
 
 update_systemc: $(SYSTEMC_TAR)
