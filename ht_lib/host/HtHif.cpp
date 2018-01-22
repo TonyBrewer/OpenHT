@@ -155,7 +155,7 @@ namespace Ht {
 	void * CHtHifBase::HostMemAllocHuge(void * pHostBaseAddr, bool bEnableSystemcAddressValidation) {
 		void * pMem;
 
-#		if !defined(_WIN32) && !defined(CNYOS_API)
+#		if defined(__linux)
 			int flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_POPULATE | MAP_HUGETLB;
 			if (pHostBaseAddr != 0) flags |= MAP_FIXED;
 			pMem = mmap(pHostBaseAddr, HUGE_PAGE_SIZE, PROT_READ | PROT_WRITE, flags, -1, 0);
