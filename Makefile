@@ -15,7 +15,7 @@ VEX_SRC = $(wildcard $(VEX)/*.cpp)
 VEX_OBJ = $(VEX_SRC:.cpp=.o)
 vex: DEPS = $(VEX_SRC:.cpp=.d)
 
-HTLIB_SRC = $(wildcard ht_lib/*/*Lib.cpp)
+HTLIB_SRC = $(sort $(wildcard ht_lib/*/*Lib.cpp))
 HTLIB_OBJ = $(HTLIB_SRC:.cpp=.o)
 HTLIB_POBJ = $(HTLIB_SRC:.cpp=.po)
 $(HTLIB_OBJ) $(HTLIB_POBJ): CXXFLAGS += -Iht_lib -I/opt/convey/include
@@ -27,7 +27,7 @@ ifneq (,$(wildcard .svn))
 else ifneq (,$(wildcard .git))
  VCSREV = $(shell head -1 .git/refs/heads/master | cut -c 1-7)
 endif
-VERSION = 2.1.12
+VERSION = 2.1.13
 REL_DIR = $(VERSION)-$(VCSREV)
 
 export OPT_LVL = -g -O2
