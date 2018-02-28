@@ -60,7 +60,8 @@ void ht_cp_info(void ** ppCoproc, uint64_t * pSig, bool *needFlush, volatile boo
 }
 
 void ht_cp_fw_attach(void *pCoproc, void **ppCoprocFw) {
-	assert(WDM_INVALID == 0);
+	// FIXME - Temporarily disable CSR Access
+	/*assert(WDM_INVALID == 0);
 
 	wdm_attrs_t attr;
 	if (wdm_attributes((wdm_coproc_t)pCoproc, &attr) != 0) {
@@ -77,29 +78,35 @@ void ht_cp_fw_attach(void *pCoproc, void **ppCoprocFw) {
 		}
 		wdm_detach_fw((wdm_admin_t)*ppCoprocFw);
 		throw CHtException(eHtBadDispatch, string("unable to attach fw"));
-	}
+	}*/
 }
 
 int ht_csr_read(void * pCoprocFw, uint64_t offset, uint64_t * data) {
-	if ((wdm_admin_t)pCoprocFw == WDM_ADM_INVALID) {
+	// FIXME - Temporarily disable CSR Access
+	throw CHtException(eHtBadDispatch, string("csr access not supported on this platform"));
+	return -1;
+	/*if ((wdm_admin_t)pCoprocFw == WDM_ADM_INVALID) {
 		if (g_htDebug > 1) {
 			fprintf(stderr, "HTLIB: fw was not attached\n");
 		}
 		throw CHtException(eHtBadDispatch, string("unable to access csr"));
 		return -1;
 	}
-	return wdm_fpga_read_csr((wdm_admin_t)pCoprocFw, WDM_AEMC0, offset, data);
+	return wdm_fpga_read_csr((wdm_admin_t)pCoprocFw, WDM_AEMC0, offset, data);*/
 }
 
 int ht_csr_write(void * pCoprocFw, uint64_t offset, uint64_t data) {
-	if ((wdm_admin_t)pCoprocFw == WDM_ADM_INVALID) {
+	// FIXME - Temporarily disable CSR Access
+	throw CHtException(eHtBadDispatch, string("csr access not supported on this platform"));
+	return -1;
+	/*if ((wdm_admin_t)pCoprocFw == WDM_ADM_INVALID) {
 		if (g_htDebug > 1) {
 			fprintf(stderr, "HTLIB: fw was not attached\n");
 		}
 		throw CHtException(eHtBadDispatch, string("unable to access csr"));
 		return -1;
 	}
-	return wdm_fpga_write_csr((wdm_admin_t)pCoprocFw, WDM_AEMC0, offset, data);
+	return wdm_fpga_write_csr((wdm_admin_t)pCoprocFw, WDM_AEMC0, offset, data);*/
 }
 
 void ht_cp_dispatch(void * pCoproc, uint64_t *pBase) {
@@ -137,7 +144,8 @@ void ht_cp_release(void * pCoproc) {
 }
 
 void ht_cp_fw_release(void * pCoprocFw) {
-	wdm_detach_fw((wdm_admin_t)pCoprocFw);
+	// FIXME - Temporarily disable CSR Access
+	//wdm_detach_fw((wdm_admin_t)pCoprocFw);
 }
 
 void * ht_cp_mem_alloc(void * pCoproc, size_t size) {

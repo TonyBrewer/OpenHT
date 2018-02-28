@@ -53,7 +53,11 @@ endif
 ifeq ($(origin CNY_PATH), undefined)
  export CNY_PATH = $(abspath $(CNY_PDK)/..)
  ifeq ($(findstring convey,$(CNY_PATH)),)
-  export CNY_PATH = /opt/convey
+  ifneq (,$(wildcard /opt/micron/include/wdm_user.h))
+   export CNY_PATH = /opt/micron
+  else
+   export CNY_PATH = /opt/convey
+  endif 
  endif
 endif
 
@@ -69,8 +73,14 @@ PLAT_wx-2000_ARCH  = 4
 PLAT_wx-690_ARCH   = 5
 PLAT_ma-100_ARCH   = 8
 PLAT_ma-400_ARCH   = 9
-PLAT_wx2-vu7p_ARCH = 10
+PLAT_wx2-vu7p_ARCH = 16
 PLAT_ARCH = ${PLAT_${CNY_PDK_PLATFORM}_ARCH}
+
+ifneq (,$(findstring wx2,$(CNY_PDK_PLATFORM)))
+PLAT_ARCH_HEX = 10
+else
+PLAT_ARCH_HEX = PLAT_ARCH
+endif
 
 ifneq (,$(findstring wx,$(CNY_PDK_PLATFORM)))
 PLAT_WX_OR_MA = true
@@ -82,9 +92,9 @@ endif
 PERS_DIR = personalities/$(CNY_HT_SIG).1.1.$(PLAT_ARCH).0
 
 ifneq (,$(findstring wx2,$(CNY_PDK_PLATFORM)))
-CNY_PDK_FPGA_PARTNUM ?= 510_4854$(PLAT_ARCH)_000
+CNY_PDK_FPGA_PARTNUM ?= 510_4854$(PLAT_ARCH_HEX)_000
 else
-CNY_PDK_FPGA_PARTNUM ?= 510_48540$(PLAT_ARCH)_000
+CNY_PDK_FPGA_PARTNUM ?= 510_48540$(PLAT_ARCH_HEX)_000
 endif
 
 PERFMON_MASK ?= 2
