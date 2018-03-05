@@ -79,7 +79,7 @@ PLAT_ARCH = ${PLAT_${CNY_PDK_PLATFORM}_ARCH}
 ifneq (,$(findstring wx2,$(CNY_PDK_PLATFORM)))
 PLAT_ARCH_HEX = 10
 else
-PLAT_ARCH_HEX = PLAT_ARCH
+PLAT_ARCH_HEX = $(PLAT_ARCH)
 endif
 
 ifneq (,$(findstring wx,$(CNY_PDK_PLATFORM)))

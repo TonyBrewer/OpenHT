@@ -27,7 +27,7 @@ ifneq (,$(wildcard .svn))
 else ifneq (,$(wildcard .git))
  VCSREV = $(shell head -1 .git/refs/heads/master | cut -c 1-7)
 endif
-VERSION = 2.1.14
+VERSION = 2.1.15
 REL_DIR = $(VERSION)-$(VCSREV)
 
 export OPT_LVL = -g -O2
