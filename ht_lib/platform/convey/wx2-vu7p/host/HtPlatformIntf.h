@@ -3,7 +3,8 @@
 #include "Ht.h"
 
 #include <wdm_user.h>
-#include "../../../../host/wdm_admin.h"
+// FIXME - Temporarily disable CSR Access
+//#include "<wdm_admin.h>
 #include <assert.h>
 
 namespace Ht {
@@ -131,6 +132,9 @@ void ht_cp_dispatch_wait(void * pCoproc, uint64_t sig, uint64_t *pBase) {
 	int ret = 0;
 	while (!(ret = wdm_dispatch_status((wdm_coproc_t)pCoproc)))
 		usleep(10000);
+
+	if (g_htDebug > 2)
+		fprintf(stderr, "HTLIB: wdm_dispatch_status() returned %d\n", ret);
 
 	if (ret < 0) {
 		fprintf(stderr, "HTLIB: wdm_dispatch_status() failed with %s\n",
