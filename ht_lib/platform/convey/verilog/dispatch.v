@@ -127,7 +127,8 @@ input		busy
     assign disp_exception    = {14'b0, r_err_aegidx, r_err_unimpl};
 
     // Dispatch information
-    assign ctlQueWidth = w_aeg[0][48 +: 16];
+    wire [15:0]	c_ctlQueWidth = w_aeg[0][48 +: 16];
+    assign ctlQueWidth = (c_ctlQueWidth < 16'd9 || c_ctlQueWidth < 16'd25) ? 16'd9 : c_ctlQueWidth;
     assign ctlQueBase  = w_aeg[0][0  +: 48];
 
 
@@ -143,6 +144,9 @@ input		busy
     reg		c_start, r_start, c_caep1, r_caep1;
     reg [1:0]	c_state, r_state,
 		c_cnt, r_cnt;
+`ifdef CNY_PLATFORM_TYPE2
+    reg		c_delay_start, r_delay_start;
+`endif
 
     wire c_kickit = c_is_caep0 || c_is_caep1;
 
@@ -152,20 +156,37 @@ input		busy
 	c_cnt  = ~|r_cnt ? r_cnt : r_cnt - 'b1;
 	c_start = 'b0;
 	c_caep1 = r_caep1;
+`ifdef CNY_PLATFORM_TYPE2
+       c_delay_start = r_delay_start;
+`endif
 
 	case (r_state)
 	    IDLE: begin
 		if (c_kickit) begin
 		    c_state = RESET;
 		    c_cnt = 'd3;
+`ifdef CNY_PLATFORM_TYPE2
+		    c_delay_start = 'b0;
+`endif
 		end
 		c_caep1 = c_is_caep1;
 	    end
 	    RESET: begin
 		if (r_cnt_eq0) begin
+`ifdef CNY_PLATFORM_TYPE2
+		    if (r_delay_start) begin
+		        c_state = START;
+		        c_cnt = 'd3;
+		        c_start = 'b1;
+		    end else begin
+		        c_delay_start = 'b1;
+		        c_cnt = 'd3;
+		    end
+`else
 		    c_state = START;
 		    c_cnt = 'd3;
 		    c_start = 'b1;
+`endif
 		end
 	    end
 	    START: begin
@@ -197,6 +218,9 @@ input		busy
 	r_st_idle <= c_st_idle;
 	r_start   <= c_start;
 	r_caep1   <= c_caep1;
+`ifdef CNY_PLATFORM_TYPE2
+	r_delay_start <= c_delay_start;
+`endif
 
 	r_cnt_eq0 <= c_cnt == 'd0;
 	r_cnt     <= c_cnt;
