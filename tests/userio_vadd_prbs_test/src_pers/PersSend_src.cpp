@@ -6,24 +6,46 @@
 void
 CPersSend::PersSend()
 {
-	if (RecvMsgReady_startMsg()) {
-		RecvMsg_startMsg();
+	if (RecvMsgReady_initMsg()) {
+		// Start message received
+		RecvMsg_initMsg();
+		S_init_seen = true;
+		S_rst_prbs = true;
 
-		S_start_sig = true;
+		// Initialize vars and prepare to send ack
+		S_recv_seen = false;
+		S_run = false;
+		for (int i = 0; i < 8; i++) {
+			S_count[i] = 0;
+			S_done[i] = false;
+			S_holdPacketVld[i] = false;
+		}
 	}
 
-	if (SR_len != 0) {
-		S_start_len = true;
+	if (SR_rst_prbs) {
+		S_rst_prbs = false;
 	}
 
-	if (SR_start_sig && SR_start_len) {
-		S_start = true;
+	if (RecvMsgReady_recvRdy()) {
+		// Recv message received
+		RecvMsg_recvRdy();
+		S_recv_seen = true;
+	}
+
+	if (SR_init_seen && SR_recv_seen && SR_len != 0 && !SR_run) {
+		S_run = true;
 	}
 
 
 	if (PR_htValid) {
 		switch (PR_htInst) {
-		case SEND_WAIT: {
+		case SEND_ENTRY: {
+			BUSY_RETRY(SR_init_seen == false);
+
+			HtContinue(SEND_RUN);
+		}
+		break;
+		case SEND_RUN: {
 			bool done = (
 				     SR_done[0] &
 				     SR_done[1] &
@@ -35,9 +57,12 @@ CPersSend::PersSend()
 				     SR_done[7]
 				     );
 			if (done) {
+				S_init_seen = false;
+				S_recv_seen = false;
+				S_run = false;
 				HtContinue(SEND_RTN);
 			} else {
-				HtContinue(SEND_WAIT);
+				HtContinue(SEND_RUN);
 			}
 		}
 		break;
@@ -52,14 +77,16 @@ CPersSend::PersSend()
 		}
 	}
 
+	bool prbs_rst = GR_htReset | SR_rst_prbs;
+
 	// Link 0
 	{
 		// Generate data
-		bool i_reqValid = !SendUioBusy_link(0) && !SR_done[0] && SR_start && SR_prbsRdy[0];
+		bool i_reqValid = !SendUioBusy_link(0) && !SR_done[0] && SR_run && SR_prbsRdy[0];
 		bool o_prbs_rdy, o_prbs_vld;
 		ht_uint64 o_prbs_lower, o_prbs_upper;
 		prbs_gen(
-			 GR_htReset,
+			 prbs_rst,
 			 i_reqValid,
 		 
 			 o_prbs_rdy,
@@ -87,6 +114,7 @@ CPersSend::PersSend()
 			// Otherwise, just send data out
 			else {
 				SendUioData_link(0, outPacket);
+				S_holdPacketVld[0] = false;
 				S_count[0] = SR_count[0] + 1;
 			}
 		}
@@ -94,10 +122,11 @@ CPersSend::PersSend()
 		// If a packet is held and the link opens, drain the hold
 		if (SR_holdPacketVld[0] && !SendUioBusy_link(0) && !SR_done[0]) {
 			SendUioData_link(0, SR_holdPacket[0]);
+			S_holdPacketVld[0] = false;
 			S_count[0] = SR_count[0] + 1;
 		}
 
-		if (S_count[0] == SR_len && SR_start) {
+		if (S_count[0] == SR_len && SR_run) {
 			S_done[0] = true;
 		}
 	}
@@ -105,11 +134,11 @@ CPersSend::PersSend()
 	// Link 1
 	{
 		// Generate data
-		bool i_reqValid = !SendUioBusy_link(1) && !SR_done[1] && SR_start && SR_prbsRdy[1];
+		bool i_reqValid = !SendUioBusy_link(1) && !SR_done[1] && SR_run && SR_prbsRdy[1];
 		bool o_prbs_rdy, o_prbs_vld;
 		ht_uint64 o_prbs_lower, o_prbs_upper;
 		prbs_gen(
-			 GR_htReset,
+			 prbs_rst,
 			 i_reqValid,
 		 
 			 o_prbs_rdy,
@@ -137,6 +166,7 @@ CPersSend::PersSend()
 			// Otherwise, just send data out
 			else {
 				SendUioData_link(1, outPacket);
+				S_holdPacketVld[1] = false;
 				S_count[1] = SR_count[1] + 1;
 			}
 		}
@@ -144,10 +174,11 @@ CPersSend::PersSend()
 		// If a packet is held and the link opens, drain the hold
 		if (SR_holdPacketVld[1] && !SendUioBusy_link(1) && !SR_done[1]) {
 			SendUioData_link(1, SR_holdPacket[1]);
+			S_holdPacketVld[1] = false;
 			S_count[1] = SR_count[1] + 1;
 		}
 
-		if (S_count[1] == SR_len && SR_start) {
+		if (S_count[1] == SR_len && SR_run) {
 			S_done[1] = true;
 		}
 	}
@@ -155,11 +186,11 @@ CPersSend::PersSend()
 	// Link 2
 	{
 		// Generate data
-		bool i_reqValid = !SendUioBusy_link(2) && !SR_done[2] && SR_start && SR_prbsRdy[2];
+		bool i_reqValid = !SendUioBusy_link(2) && !SR_done[2] && SR_run && SR_prbsRdy[2];
 		bool o_prbs_rdy, o_prbs_vld;
 		ht_uint64 o_prbs_lower, o_prbs_upper;
 		prbs_gen(
-			 GR_htReset,
+			 prbs_rst,
 			 i_reqValid,
 		 
 			 o_prbs_rdy,
@@ -187,6 +218,7 @@ CPersSend::PersSend()
 			// Otherwise, just send data out
 			else {
 				SendUioData_link(2, outPacket);
+				S_holdPacketVld[2] = false;
 				S_count[2] = SR_count[2] + 1;
 			}
 		}
@@ -194,10 +226,11 @@ CPersSend::PersSend()
 		// If a packet is held and the link opens, drain the hold
 		if (SR_holdPacketVld[2] && !SendUioBusy_link(2) && !SR_done[2]) {
 			SendUioData_link(2, SR_holdPacket[2]);
+			S_holdPacketVld[2] = false;
 			S_count[2] = SR_count[2] + 1;
 		}
 
-		if (S_count[2] == SR_len && SR_start) {
+		if (S_count[2] == SR_len && SR_run) {
 			S_done[2] = true;
 		}
 	}
@@ -205,11 +238,11 @@ CPersSend::PersSend()
 	// Link 3
 	{
 		// Generate data
-		bool i_reqValid = !SendUioBusy_link(3) && !SR_done[3] && SR_start && SR_prbsRdy[3];
+		bool i_reqValid = !SendUioBusy_link(3) && !SR_done[3] && SR_run && SR_prbsRdy[3];
 		bool o_prbs_rdy, o_prbs_vld;
 		ht_uint64 o_prbs_lower, o_prbs_upper;
 		prbs_gen(
-			 GR_htReset,
+			 prbs_rst,
 			 i_reqValid,
 		 
 			 o_prbs_rdy,
@@ -237,6 +270,7 @@ CPersSend::PersSend()
 			// Otherwise, just send data out
 			else {
 				SendUioData_link(3, outPacket);
+				S_holdPacketVld[3] = false;
 				S_count[3] = SR_count[3] + 1;
 			}
 		}
@@ -244,10 +278,11 @@ CPersSend::PersSend()
 		// If a packet is held and the link opens, drain the hold
 		if (SR_holdPacketVld[3] && !SendUioBusy_link(3) && !SR_done[3]) {
 			SendUioData_link(3, SR_holdPacket[3]);
+			S_holdPacketVld[3] = false;
 			S_count[3] = SR_count[3] + 1;
 		}
 
-		if (S_count[3] == SR_len && SR_start) {
+		if (S_count[3] == SR_len && SR_run) {
 			S_done[3] = true;
 		}
 	}
@@ -255,11 +290,11 @@ CPersSend::PersSend()
 	// Link 4
 	{
 		// Generate data
-		bool i_reqValid = !SendUioBusy_link(4) && !SR_done[4] && SR_start && SR_prbsRdy[4];
+		bool i_reqValid = !SendUioBusy_link(4) && !SR_done[4] && SR_run && SR_prbsRdy[4];
 		bool o_prbs_rdy, o_prbs_vld;
 		ht_uint64 o_prbs_lower, o_prbs_upper;
 		prbs_gen(
-			 GR_htReset,
+			 prbs_rst,
 			 i_reqValid,
 		 
 			 o_prbs_rdy,
@@ -287,6 +322,7 @@ CPersSend::PersSend()
 			// Otherwise, just send data out
 			else {
 				SendUioData_link(4, outPacket);
+				S_holdPacketVld[4] = false;
 				S_count[4] = SR_count[4] + 1;
 			}
 		}
@@ -294,10 +330,11 @@ CPersSend::PersSend()
 		// If a packet is held and the link opens, drain the hold
 		if (SR_holdPacketVld[4] && !SendUioBusy_link(4) && !SR_done[4]) {
 			SendUioData_link(4, SR_holdPacket[4]);
+			S_holdPacketVld[4] = false;
 			S_count[4] = SR_count[4] + 1;
 		}
 
-		if (S_count[4] == SR_len && SR_start) {
+		if (S_count[4] == SR_len && SR_run) {
 			S_done[4] = true;
 		}
 	}
@@ -305,11 +342,11 @@ CPersSend::PersSend()
 	// Link 5
 	{
 		// Generate data
-		bool i_reqValid = !SendUioBusy_link(5) && !SR_done[5] && SR_start && SR_prbsRdy[5];
+		bool i_reqValid = !SendUioBusy_link(5) && !SR_done[5] && SR_run && SR_prbsRdy[5];
 		bool o_prbs_rdy, o_prbs_vld;
 		ht_uint64 o_prbs_lower, o_prbs_upper;
 		prbs_gen(
-			 GR_htReset,
+			 prbs_rst,
 			 i_reqValid,
 		 
 			 o_prbs_rdy,
@@ -337,6 +374,7 @@ CPersSend::PersSend()
 			// Otherwise, just send data out
 			else {
 				SendUioData_link(5, outPacket);
+				S_holdPacketVld[5] = false;
 				S_count[5] = SR_count[5] + 1;
 			}
 		}
@@ -344,10 +382,11 @@ CPersSend::PersSend()
 		// If a packet is held and the link opens, drain the hold
 		if (SR_holdPacketVld[5] && !SendUioBusy_link(5) && !SR_done[5]) {
 			SendUioData_link(5, SR_holdPacket[5]);
+			S_holdPacketVld[5] = false;
 			S_count[5] = SR_count[5] + 1;
 		}
 
-		if (S_count[5] == SR_len && SR_start) {
+		if (S_count[5] == SR_len && SR_run) {
 			S_done[5] = true;
 		}
 	}
@@ -355,11 +394,11 @@ CPersSend::PersSend()
 	// Link 6
 	{
 		// Generate data
-		bool i_reqValid = !SendUioBusy_link(6) && !SR_done[6] && SR_start && SR_prbsRdy[6];
+		bool i_reqValid = !SendUioBusy_link(6) && !SR_done[6] && SR_run && SR_prbsRdy[6];
 		bool o_prbs_rdy, o_prbs_vld;
 		ht_uint64 o_prbs_lower, o_prbs_upper;
 		prbs_gen(
-			 GR_htReset,
+			 prbs_rst,
 			 i_reqValid,
 		 
 			 o_prbs_rdy,
@@ -387,6 +426,7 @@ CPersSend::PersSend()
 			// Otherwise, just send data out
 			else {
 				SendUioData_link(6, outPacket);
+				S_holdPacketVld[6] = false;
 				S_count[6] = SR_count[6] + 1;
 			}
 		}
@@ -394,10 +434,11 @@ CPersSend::PersSend()
 		// If a packet is held and the link opens, drain the hold
 		if (SR_holdPacketVld[6] && !SendUioBusy_link(6) && !SR_done[6]) {
 			SendUioData_link(6, SR_holdPacket[6]);
+			S_holdPacketVld[6] = false;
 			S_count[6] = SR_count[6] + 1;
 		}
 
-		if (S_count[6] == SR_len && SR_start) {
+		if (S_count[6] == SR_len && SR_run) {
 			S_done[6] = true;
 		}
 	}
@@ -405,11 +446,11 @@ CPersSend::PersSend()
 	// Link 7
 	{
 		// Generate data
-		bool i_reqValid = !SendUioBusy_link(7) && !SR_done[7] && SR_start && SR_prbsRdy[7];
+		bool i_reqValid = !SendUioBusy_link(7) && !SR_done[7] && SR_run && SR_prbsRdy[7];
 		bool o_prbs_rdy, o_prbs_vld;
 		ht_uint64 o_prbs_lower, o_prbs_upper;
 		prbs_gen(
-			 GR_htReset,
+			 prbs_rst,
 			 i_reqValid,
 		 
 			 o_prbs_rdy,
@@ -437,6 +478,7 @@ CPersSend::PersSend()
 			// Otherwise, just send data out
 			else {
 				SendUioData_link(7, outPacket);
+				S_holdPacketVld[7] = false;
 				S_count[7] = SR_count[7] + 1;
 			}
 		}
@@ -444,10 +486,11 @@ CPersSend::PersSend()
 		// If a packet is held and the link opens, drain the hold
 		if (SR_holdPacketVld[7] && !SendUioBusy_link(7) && !SR_done[7]) {
 			SendUioData_link(7, SR_holdPacket[7]);
+			S_holdPacketVld[7] = false;
 			S_count[7] = SR_count[7] + 1;
 		}
 
-		if (S_count[7] == SR_len && SR_start) {
+		if (S_count[7] == SR_len && SR_run) {
 			S_done[7] = true;
 		}
 	}

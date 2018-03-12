@@ -50,70 +50,70 @@ module user_io_xcvr_wrapper #
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire			p0_s_axi_arready_uc;	// From aurora_userio_p0 of aurora_64b66b_25p78G.v
-   wire			p0_s_axi_awready_uc;	// From aurora_userio_p0 of aurora_64b66b_25p78G.v
-   wire [1:0]		p0_s_axi_bresp_uc;	// From aurora_userio_p0 of aurora_64b66b_25p78G.v
-   wire			p0_s_axi_bvalid_uc;	// From aurora_userio_p0 of aurora_64b66b_25p78G.v
-   wire [31:0]		p0_s_axi_rdata_uc;	// From aurora_userio_p0 of aurora_64b66b_25p78G.v
-   wire [1:0]		p0_s_axi_rresp_uc;	// From aurora_userio_p0 of aurora_64b66b_25p78G.v
-   wire			p0_s_axi_rvalid_uc;	// From aurora_userio_p0 of aurora_64b66b_25p78G.v
-   wire			p0_s_axi_wready_uc;	// From aurora_userio_p0 of aurora_64b66b_25p78G.v
-   wire			p1_s_axi_arready_uc;	// From aurora_userio_p1 of aurora_64b66b_25p78G.v
-   wire			p1_s_axi_awready_uc;	// From aurora_userio_p1 of aurora_64b66b_25p78G.v
-   wire [1:0]		p1_s_axi_bresp_uc;	// From aurora_userio_p1 of aurora_64b66b_25p78G.v
-   wire			p1_s_axi_bvalid_uc;	// From aurora_userio_p1 of aurora_64b66b_25p78G.v
-   wire [31:0]		p1_s_axi_rdata_uc;	// From aurora_userio_p1 of aurora_64b66b_25p78G.v
-   wire [1:0]		p1_s_axi_rresp_uc;	// From aurora_userio_p1 of aurora_64b66b_25p78G.v
-   wire			p1_s_axi_rvalid_uc;	// From aurora_userio_p1 of aurora_64b66b_25p78G.v
-   wire			p1_s_axi_wready_uc;	// From aurora_userio_p1 of aurora_64b66b_25p78G.v
-   wire			p2_s_axi_arready_uc;	// From aurora_userio_p2 of aurora_64b66b_25p78G.v
-   wire			p2_s_axi_awready_uc;	// From aurora_userio_p2 of aurora_64b66b_25p78G.v
-   wire [1:0]		p2_s_axi_bresp_uc;	// From aurora_userio_p2 of aurora_64b66b_25p78G.v
-   wire			p2_s_axi_bvalid_uc;	// From aurora_userio_p2 of aurora_64b66b_25p78G.v
-   wire [31:0]		p2_s_axi_rdata_uc;	// From aurora_userio_p2 of aurora_64b66b_25p78G.v
-   wire [1:0]		p2_s_axi_rresp_uc;	// From aurora_userio_p2 of aurora_64b66b_25p78G.v
-   wire			p2_s_axi_rvalid_uc;	// From aurora_userio_p2 of aurora_64b66b_25p78G.v
-   wire			p2_s_axi_wready_uc;	// From aurora_userio_p2 of aurora_64b66b_25p78G.v
-   wire			p3_s_axi_arready_uc;	// From aurora_userio_p3 of aurora_64b66b_25p78G.v
-   wire			p3_s_axi_awready_uc;	// From aurora_userio_p3 of aurora_64b66b_25p78G.v
-   wire [1:0]		p3_s_axi_bresp_uc;	// From aurora_userio_p3 of aurora_64b66b_25p78G.v
-   wire			p3_s_axi_bvalid_uc;	// From aurora_userio_p3 of aurora_64b66b_25p78G.v
-   wire [31:0]		p3_s_axi_rdata_uc;	// From aurora_userio_p3 of aurora_64b66b_25p78G.v
-   wire [1:0]		p3_s_axi_rresp_uc;	// From aurora_userio_p3 of aurora_64b66b_25p78G.v
-   wire			p3_s_axi_rvalid_uc;	// From aurora_userio_p3 of aurora_64b66b_25p78G.v
-   wire			p3_s_axi_wready_uc;	// From aurora_userio_p3 of aurora_64b66b_25p78G.v
-   wire			p4_s_axi_arready_uc;	// From aurora_userio_p4 of aurora_64b66b_25p78G.v
-   wire			p4_s_axi_awready_uc;	// From aurora_userio_p4 of aurora_64b66b_25p78G.v
-   wire [1:0]		p4_s_axi_bresp_uc;	// From aurora_userio_p4 of aurora_64b66b_25p78G.v
-   wire			p4_s_axi_bvalid_uc;	// From aurora_userio_p4 of aurora_64b66b_25p78G.v
-   wire [31:0]		p4_s_axi_rdata_uc;	// From aurora_userio_p4 of aurora_64b66b_25p78G.v
-   wire [1:0]		p4_s_axi_rresp_uc;	// From aurora_userio_p4 of aurora_64b66b_25p78G.v
-   wire			p4_s_axi_rvalid_uc;	// From aurora_userio_p4 of aurora_64b66b_25p78G.v
-   wire			p4_s_axi_wready_uc;	// From aurora_userio_p4 of aurora_64b66b_25p78G.v
-   wire			p5_s_axi_arready_uc;	// From aurora_userio_p5 of aurora_64b66b_25p78G.v
-   wire			p5_s_axi_awready_uc;	// From aurora_userio_p5 of aurora_64b66b_25p78G.v
-   wire [1:0]		p5_s_axi_bresp_uc;	// From aurora_userio_p5 of aurora_64b66b_25p78G.v
-   wire			p5_s_axi_bvalid_uc;	// From aurora_userio_p5 of aurora_64b66b_25p78G.v
-   wire [31:0]		p5_s_axi_rdata_uc;	// From aurora_userio_p5 of aurora_64b66b_25p78G.v
-   wire [1:0]		p5_s_axi_rresp_uc;	// From aurora_userio_p5 of aurora_64b66b_25p78G.v
-   wire			p5_s_axi_rvalid_uc;	// From aurora_userio_p5 of aurora_64b66b_25p78G.v
-   wire			p5_s_axi_wready_uc;	// From aurora_userio_p5 of aurora_64b66b_25p78G.v
-   wire			p6_s_axi_arready_uc;	// From aurora_userio_p6 of aurora_64b66b_25p78G.v
-   wire			p6_s_axi_awready_uc;	// From aurora_userio_p6 of aurora_64b66b_25p78G.v
-   wire [1:0]		p6_s_axi_bresp_uc;	// From aurora_userio_p6 of aurora_64b66b_25p78G.v
-   wire			p6_s_axi_bvalid_uc;	// From aurora_userio_p6 of aurora_64b66b_25p78G.v
-   wire [31:0]		p6_s_axi_rdata_uc;	// From aurora_userio_p6 of aurora_64b66b_25p78G.v
-   wire [1:0]		p6_s_axi_rresp_uc;	// From aurora_userio_p6 of aurora_64b66b_25p78G.v
-   wire			p6_s_axi_rvalid_uc;	// From aurora_userio_p6 of aurora_64b66b_25p78G.v
-   wire			p6_s_axi_wready_uc;	// From aurora_userio_p6 of aurora_64b66b_25p78G.v
-   wire			p7_s_axi_arready_uc;	// From aurora_userio_p7 of aurora_64b66b_25p78G.v
-   wire			p7_s_axi_awready_uc;	// From aurora_userio_p7 of aurora_64b66b_25p78G.v
-   wire [1:0]		p7_s_axi_bresp_uc;	// From aurora_userio_p7 of aurora_64b66b_25p78G.v
-   wire			p7_s_axi_bvalid_uc;	// From aurora_userio_p7 of aurora_64b66b_25p78G.v
-   wire [31:0]		p7_s_axi_rdata_uc;	// From aurora_userio_p7 of aurora_64b66b_25p78G.v
-   wire [1:0]		p7_s_axi_rresp_uc;	// From aurora_userio_p7 of aurora_64b66b_25p78G.v
-   wire			p7_s_axi_rvalid_uc;	// From aurora_userio_p7 of aurora_64b66b_25p78G.v
-   wire			p7_s_axi_wready_uc;	// From aurora_userio_p7 of aurora_64b66b_25p78G.v
+   wire			p0_s_axi_arready_uc;	// From aurora_userio_p0 of aurora_64b66b_25p4G.v
+   wire			p0_s_axi_awready_uc;	// From aurora_userio_p0 of aurora_64b66b_25p4G.v
+   wire [1:0]		p0_s_axi_bresp_uc;	// From aurora_userio_p0 of aurora_64b66b_25p4G.v
+   wire			p0_s_axi_bvalid_uc;	// From aurora_userio_p0 of aurora_64b66b_25p4G.v
+   wire [31:0]		p0_s_axi_rdata_uc;	// From aurora_userio_p0 of aurora_64b66b_25p4G.v
+   wire [1:0]		p0_s_axi_rresp_uc;	// From aurora_userio_p0 of aurora_64b66b_25p4G.v
+   wire			p0_s_axi_rvalid_uc;	// From aurora_userio_p0 of aurora_64b66b_25p4G.v
+   wire			p0_s_axi_wready_uc;	// From aurora_userio_p0 of aurora_64b66b_25p4G.v
+   wire			p1_s_axi_arready_uc;	// From aurora_userio_p1 of aurora_64b66b_25p4G.v
+   wire			p1_s_axi_awready_uc;	// From aurora_userio_p1 of aurora_64b66b_25p4G.v
+   wire [1:0]		p1_s_axi_bresp_uc;	// From aurora_userio_p1 of aurora_64b66b_25p4G.v
+   wire			p1_s_axi_bvalid_uc;	// From aurora_userio_p1 of aurora_64b66b_25p4G.v
+   wire [31:0]		p1_s_axi_rdata_uc;	// From aurora_userio_p1 of aurora_64b66b_25p4G.v
+   wire [1:0]		p1_s_axi_rresp_uc;	// From aurora_userio_p1 of aurora_64b66b_25p4G.v
+   wire			p1_s_axi_rvalid_uc;	// From aurora_userio_p1 of aurora_64b66b_25p4G.v
+   wire			p1_s_axi_wready_uc;	// From aurora_userio_p1 of aurora_64b66b_25p4G.v
+   wire			p2_s_axi_arready_uc;	// From aurora_userio_p2 of aurora_64b66b_25p4G.v
+   wire			p2_s_axi_awready_uc;	// From aurora_userio_p2 of aurora_64b66b_25p4G.v
+   wire [1:0]		p2_s_axi_bresp_uc;	// From aurora_userio_p2 of aurora_64b66b_25p4G.v
+   wire			p2_s_axi_bvalid_uc;	// From aurora_userio_p2 of aurora_64b66b_25p4G.v
+   wire [31:0]		p2_s_axi_rdata_uc;	// From aurora_userio_p2 of aurora_64b66b_25p4G.v
+   wire [1:0]		p2_s_axi_rresp_uc;	// From aurora_userio_p2 of aurora_64b66b_25p4G.v
+   wire			p2_s_axi_rvalid_uc;	// From aurora_userio_p2 of aurora_64b66b_25p4G.v
+   wire			p2_s_axi_wready_uc;	// From aurora_userio_p2 of aurora_64b66b_25p4G.v
+   wire			p3_s_axi_arready_uc;	// From aurora_userio_p3 of aurora_64b66b_25p4G.v
+   wire			p3_s_axi_awready_uc;	// From aurora_userio_p3 of aurora_64b66b_25p4G.v
+   wire [1:0]		p3_s_axi_bresp_uc;	// From aurora_userio_p3 of aurora_64b66b_25p4G.v
+   wire			p3_s_axi_bvalid_uc;	// From aurora_userio_p3 of aurora_64b66b_25p4G.v
+   wire [31:0]		p3_s_axi_rdata_uc;	// From aurora_userio_p3 of aurora_64b66b_25p4G.v
+   wire [1:0]		p3_s_axi_rresp_uc;	// From aurora_userio_p3 of aurora_64b66b_25p4G.v
+   wire			p3_s_axi_rvalid_uc;	// From aurora_userio_p3 of aurora_64b66b_25p4G.v
+   wire			p3_s_axi_wready_uc;	// From aurora_userio_p3 of aurora_64b66b_25p4G.v
+   wire			p4_s_axi_arready_uc;	// From aurora_userio_p4 of aurora_64b66b_25p4G.v
+   wire			p4_s_axi_awready_uc;	// From aurora_userio_p4 of aurora_64b66b_25p4G.v
+   wire [1:0]		p4_s_axi_bresp_uc;	// From aurora_userio_p4 of aurora_64b66b_25p4G.v
+   wire			p4_s_axi_bvalid_uc;	// From aurora_userio_p4 of aurora_64b66b_25p4G.v
+   wire [31:0]		p4_s_axi_rdata_uc;	// From aurora_userio_p4 of aurora_64b66b_25p4G.v
+   wire [1:0]		p4_s_axi_rresp_uc;	// From aurora_userio_p4 of aurora_64b66b_25p4G.v
+   wire			p4_s_axi_rvalid_uc;	// From aurora_userio_p4 of aurora_64b66b_25p4G.v
+   wire			p4_s_axi_wready_uc;	// From aurora_userio_p4 of aurora_64b66b_25p4G.v
+   wire			p5_s_axi_arready_uc;	// From aurora_userio_p5 of aurora_64b66b_25p4G.v
+   wire			p5_s_axi_awready_uc;	// From aurora_userio_p5 of aurora_64b66b_25p4G.v
+   wire [1:0]		p5_s_axi_bresp_uc;	// From aurora_userio_p5 of aurora_64b66b_25p4G.v
+   wire			p5_s_axi_bvalid_uc;	// From aurora_userio_p5 of aurora_64b66b_25p4G.v
+   wire [31:0]		p5_s_axi_rdata_uc;	// From aurora_userio_p5 of aurora_64b66b_25p4G.v
+   wire [1:0]		p5_s_axi_rresp_uc;	// From aurora_userio_p5 of aurora_64b66b_25p4G.v
+   wire			p5_s_axi_rvalid_uc;	// From aurora_userio_p5 of aurora_64b66b_25p4G.v
+   wire			p5_s_axi_wready_uc;	// From aurora_userio_p5 of aurora_64b66b_25p4G.v
+   wire			p6_s_axi_arready_uc;	// From aurora_userio_p6 of aurora_64b66b_25p4G.v
+   wire			p6_s_axi_awready_uc;	// From aurora_userio_p6 of aurora_64b66b_25p4G.v
+   wire [1:0]		p6_s_axi_bresp_uc;	// From aurora_userio_p6 of aurora_64b66b_25p4G.v
+   wire			p6_s_axi_bvalid_uc;	// From aurora_userio_p6 of aurora_64b66b_25p4G.v
+   wire [31:0]		p6_s_axi_rdata_uc;	// From aurora_userio_p6 of aurora_64b66b_25p4G.v
+   wire [1:0]		p6_s_axi_rresp_uc;	// From aurora_userio_p6 of aurora_64b66b_25p4G.v
+   wire			p6_s_axi_rvalid_uc;	// From aurora_userio_p6 of aurora_64b66b_25p4G.v
+   wire			p6_s_axi_wready_uc;	// From aurora_userio_p6 of aurora_64b66b_25p4G.v
+   wire			p7_s_axi_arready_uc;	// From aurora_userio_p7 of aurora_64b66b_25p4G.v
+   wire			p7_s_axi_awready_uc;	// From aurora_userio_p7 of aurora_64b66b_25p4G.v
+   wire [1:0]		p7_s_axi_bresp_uc;	// From aurora_userio_p7 of aurora_64b66b_25p4G.v
+   wire			p7_s_axi_bvalid_uc;	// From aurora_userio_p7 of aurora_64b66b_25p4G.v
+   wire [31:0]		p7_s_axi_rdata_uc;	// From aurora_userio_p7 of aurora_64b66b_25p4G.v
+   wire [1:0]		p7_s_axi_rresp_uc;	// From aurora_userio_p7 of aurora_64b66b_25p4G.v
+   wire			p7_s_axi_rvalid_uc;	// From aurora_userio_p7 of aurora_64b66b_25p4G.v
+   wire			p7_s_axi_wready_uc;	// From aurora_userio_p7 of aurora_64b66b_25p4G.v
    // End of automatics
 
    
@@ -150,7 +150,7 @@ module user_io_xcvr_wrapper #
    assign qpll0_reset = |qpll_reset[3:0];
 
    // Clocking
-   aurora_64b66b_25p78G_gt_common_wrapper
+   aurora_64b66b_25p4G_gt_common_wrapper
      ultrascale_gt_common_0 (/*AUTOINST*/
 			     // Outputs
 			     .qpll0_lock	(qpll0_lock),	 // Templated
@@ -161,7 +161,7 @@ module user_io_xcvr_wrapper #
 			     .qpll0_refclk	(qsfp_refclk[0]), // Templated
 			     .qpll0_reset	(qpll0_reset),	 // Templated
 			     .qpll0_lock_detclk	(i_init_clk));	 // Templated
-   aurora_64b66b_25p78G_gt_common_wrapper
+   aurora_64b66b_25p4G_gt_common_wrapper
      ultrascale_gt_common_1 (/*AUTOINST*/
 			     // Outputs
 			     .qpll0_lock	(qpll1_lock),	 // Templated
@@ -217,7 +217,7 @@ module user_io_xcvr_wrapper #
 	       userio_reset[0] <= userio_reset_logic[0] | !userio_gt_pll_lock[0] | userio_link_reset_out[0];
 	    end
 	    
-            aurora_64b66b_25p78G aurora_userio_p0
+            aurora_64b66b_25p4G aurora_userio_p0
             (/*AUTOINST*/
 	     // Outputs
 	     .s_axi_tx_tready		(o_s_axi_tx_tready[0]),	 // Templated
@@ -331,7 +331,7 @@ module user_io_xcvr_wrapper #
 	       userio_reset[1] <= userio_reset_logic[1] | !userio_gt_pll_lock[1] | userio_link_reset_out[1];
 	    end
 	    
-            aurora_64b66b_25p78G aurora_userio_p1
+            aurora_64b66b_25p4G aurora_userio_p1
             (/*AUTOINST*/
 	     // Outputs
 	     .s_axi_tx_tready		(o_s_axi_tx_tready[1]),	 // Templated
@@ -445,7 +445,7 @@ module user_io_xcvr_wrapper #
 	       userio_reset[2] <= userio_reset_logic[2] | !userio_gt_pll_lock[2] | userio_link_reset_out[2];
 	    end
 	    
-            aurora_64b66b_25p78G aurora_userio_p2
+            aurora_64b66b_25p4G aurora_userio_p2
             (/*AUTOINST*/
 	     // Outputs
 	     .s_axi_tx_tready		(o_s_axi_tx_tready[2]),	 // Templated
@@ -559,7 +559,7 @@ module user_io_xcvr_wrapper #
 	       userio_reset[3] <= userio_reset_logic[3] | !userio_gt_pll_lock[3] | userio_link_reset_out[3];
 	    end
 	    
-            aurora_64b66b_25p78G aurora_userio_p3
+            aurora_64b66b_25p4G aurora_userio_p3
             (/*AUTOINST*/
 	     // Outputs
 	     .s_axi_tx_tready		(o_s_axi_tx_tready[3]),	 // Templated
@@ -673,7 +673,7 @@ module user_io_xcvr_wrapper #
 	       userio_reset[4] <= userio_reset_logic[4] | !userio_gt_pll_lock[4] | userio_link_reset_out[4];
 	    end
 	    
-            aurora_64b66b_25p78G aurora_userio_p4
+            aurora_64b66b_25p4G aurora_userio_p4
             (/*AUTOINST*/
 	     // Outputs
 	     .s_axi_tx_tready		(o_s_axi_tx_tready[4]),	 // Templated
@@ -787,7 +787,7 @@ module user_io_xcvr_wrapper #
 	       userio_reset[5] <= userio_reset_logic[5] | !userio_gt_pll_lock[5] | userio_link_reset_out[5];
 	    end
 	    
-            aurora_64b66b_25p78G aurora_userio_p5
+            aurora_64b66b_25p4G aurora_userio_p5
             (/*AUTOINST*/
 	     // Outputs
 	     .s_axi_tx_tready		(o_s_axi_tx_tready[5]),	 // Templated
@@ -901,7 +901,7 @@ module user_io_xcvr_wrapper #
 	       userio_reset[6] <= userio_reset_logic[6] | !userio_gt_pll_lock[6] | userio_link_reset_out[6];
 	    end
 	    
-            aurora_64b66b_25p78G aurora_userio_p6
+            aurora_64b66b_25p4G aurora_userio_p6
             (/*AUTOINST*/
 	     // Outputs
 	     .s_axi_tx_tready		(o_s_axi_tx_tready[6]),	 // Templated
@@ -1015,7 +1015,7 @@ module user_io_xcvr_wrapper #
 	       userio_reset[7] <= userio_reset_logic[7] | !userio_gt_pll_lock[7] | userio_link_reset_out[7];
 	    end
 	    
-            aurora_64b66b_25p78G aurora_userio_p7
+            aurora_64b66b_25p4G aurora_userio_p7
             (/*AUTOINST*/
 	     // Outputs
 	     .s_axi_tx_tready		(o_s_axi_tx_tready[7]),	 // Templated
@@ -1091,7 +1091,7 @@ module user_io_xcvr_wrapper #
 
    end endgenerate
 
-/* aurora_64b66b_25p78G AUTO_TEMPLATE (
+/* aurora_64b66b_25p4G AUTO_TEMPLATE (
       // Outputs
       .s_axi_tx_tready			(o_s_axi_tx_tready[@]),
       .m_axi_rx_tdata			(o_m_axi_rx_tdata[@"(- (* (+ 1 @) 64) 1)":@"(* @ 64)"]),
@@ -1144,7 +1144,7 @@ module user_io_xcvr_wrapper #
       .init_clk				(i_init_clk),
    ); */
    
-/* aurora_64b66b_25p78G_gt_common_wrapper AUTO_TEMPLATE (
+/* aurora_64b66b_25p4G_gt_common_wrapper AUTO_TEMPLATE (
 			 // Outputs
 			 .qpll0_lock		(qpll@_lock),
 			 .qpll0_outclk		(qpll@_outclk),
@@ -1204,5 +1204,5 @@ endmodule
 // After modification you must save file, then reload with C-x C-v
 //
 // Local Variables:
-// verilog-library-directories:("." "../../coregen/vu7p/ip_user_files/ip/aurora_64b66b_25p78G") 
+// verilog-library-directories:("." "../../coregen/vu7p/ip_user_files/ip/aurora_64b66b_25p4G") 
 // End:

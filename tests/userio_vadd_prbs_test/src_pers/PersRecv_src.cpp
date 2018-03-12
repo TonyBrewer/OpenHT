@@ -6,9 +6,36 @@
 void
 CPersRecv::PersRecv()
 {
-	if (PR2_htValid) {
-		switch (PR2_htInst) {
-		case RECV_WAIT: {
+	if (RecvMsgReady_initMsg()) {
+		// Start message received
+		RecvMsg_initMsg();
+		S_init_seen = true;
+		S_rst_prbs = true;
+
+		// Initialize vars and prepare to send ack
+		for (int i = 0; i < 8; i++) {
+			S_count[i] = 0;
+			S_error[i] = 0;
+			S_done[i] = false;
+		}
+	}
+
+	if (SR_rst_prbs) {
+		S_rst_prbs = false;
+	}
+
+
+	if (PR_htValid) {
+		switch (PR_htInst) {
+		case RECV_ENTRY: {
+			BUSY_RETRY(SR_init_seen == false);
+			BUSY_RETRY(SendMsgBusy_recvRdy());
+
+			SendMsg_recvRdy(true);
+			HtContinue(RECV_RUN);
+		}
+		break;
+		case RECV_RUN: {
 			bool done = (
 				     SR_done[0] &
 				     SR_done[1] &
@@ -20,9 +47,10 @@ CPersRecv::PersRecv()
 				     SR_done[7]
 				     );
 			if (done) {
+				S_init_seen = false;
 				HtContinue(RECV_RTN);
 			} else {
-				HtContinue(RECV_WAIT);
+				HtContinue(RECV_RUN);
 			}
 		}
 		break;
@@ -44,6 +72,8 @@ CPersRecv::PersRecv()
 		}
 	}
 
+	bool prbs_rst = GR_htReset | SR_rst_prbs;
+
 	// Link 0
 	{
 		// Get Data
@@ -56,7 +86,7 @@ CPersRecv::PersRecv()
 		bool i_reqValid = RecvUioReady_link(0);
 		bool o_prbs_err, o_prbs_vld;
 		prbs_rcv(
-			 GR_htReset,
+			 prbs_rst,
 			 i_reqValid,
 			 inPacket.data.lower,
 			 inPacket.data.upper,
@@ -93,7 +123,7 @@ CPersRecv::PersRecv()
 		bool i_reqValid = RecvUioReady_link(1);
 		bool o_prbs_err, o_prbs_vld;
 		prbs_rcv(
-			 GR_htReset,
+			 prbs_rst,
 			 i_reqValid,
 			 inPacket.data.lower,
 			 inPacket.data.upper,
@@ -130,7 +160,7 @@ CPersRecv::PersRecv()
 		bool i_reqValid = RecvUioReady_link(2);
 		bool o_prbs_err, o_prbs_vld;
 		prbs_rcv(
-			 GR_htReset,
+			 prbs_rst,
 			 i_reqValid,
 			 inPacket.data.lower,
 			 inPacket.data.upper,
@@ -167,7 +197,7 @@ CPersRecv::PersRecv()
 		bool i_reqValid = RecvUioReady_link(3);
 		bool o_prbs_err, o_prbs_vld;
 		prbs_rcv(
-			 GR_htReset,
+			 prbs_rst,
 			 i_reqValid,
 			 inPacket.data.lower,
 			 inPacket.data.upper,
@@ -204,7 +234,7 @@ CPersRecv::PersRecv()
 		bool i_reqValid = RecvUioReady_link(4);
 		bool o_prbs_err, o_prbs_vld;
 		prbs_rcv(
-			 GR_htReset,
+			 prbs_rst,
 			 i_reqValid,
 			 inPacket.data.lower,
 			 inPacket.data.upper,
@@ -241,7 +271,7 @@ CPersRecv::PersRecv()
 		bool i_reqValid = RecvUioReady_link(5);
 		bool o_prbs_err, o_prbs_vld;
 		prbs_rcv(
-			 GR_htReset,
+			 prbs_rst,
 			 i_reqValid,
 			 inPacket.data.lower,
 			 inPacket.data.upper,
@@ -278,7 +308,7 @@ CPersRecv::PersRecv()
 		bool i_reqValid = RecvUioReady_link(6);
 		bool o_prbs_err, o_prbs_vld;
 		prbs_rcv(
-			 GR_htReset,
+			 prbs_rst,
 			 i_reqValid,
 			 inPacket.data.lower,
 			 inPacket.data.upper,
@@ -315,7 +345,7 @@ CPersRecv::PersRecv()
 		bool i_reqValid = RecvUioReady_link(7);
 		bool o_prbs_err, o_prbs_vld;
 		prbs_rcv(
-			 GR_htReset,
+			 prbs_rst,
 			 i_reqValid,
 			 inPacket.data.lower,
 			 inPacket.data.upper,

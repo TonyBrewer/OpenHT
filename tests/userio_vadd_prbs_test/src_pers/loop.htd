@@ -34,7 +34,7 @@ ctl.AddInstr(name=CTL_RTN);
 
 ctl.AddHostMsg(dir=out, name=STATUS);
 
-ctl.AddMsgIntf(dir=out, name=startMsg, type=bool);
+ctl.AddMsgIntf(dir=out, name=initMsg, type=bool);
 
 ctl.AddPrivate()
 	.AddVar(type=ht_uint64, name=error0)
@@ -49,6 +49,7 @@ ctl.AddPrivate()
 
 ctl.AddShared()
 	.AddVar(type=uint32_t, name=statusCnt, reset=true)
+	.AddVar(type=bool, name=active, reset=true)
 	;
 
 ctl.AddEntry(func=htmain, instr=CTL_SEND, host=true)
@@ -75,28 +76,31 @@ ctl.AddUserIO(dir=in, name=status, type=packet_t);
 // Driver
 dsnInfo.AddModule(name=send, htIdW=0);
 
-send.AddInstr(name=SEND_WAIT);
+send.AddInstr(name=SEND_ENTRY);
+send.AddInstr(name=SEND_RUN);
 send.AddInstr(name=SEND_RTN);
 
 send.AddHostMsg(dir=in, name=LEN)
 	.AddDst(var=len)
 	;
 
-send.AddMsgIntf(dir=in, name=startMsg, type=bool);
+send.AddMsgIntf(dir=in,  name=initMsg, type=bool);
+send.AddMsgIntf(dir=in,  name=recvRdy, type=bool);
 
 send.AddShared()
 	.AddVar(type=ht_uint64, name=len)
-	.AddVar(type=bool, name=start, reset=true)
-	.AddVar(type=bool, name=start_sig, reset=true)
-	.AddVar(type=bool, name=start_len, reset=true)
-	.AddVar(type=ht_uint64, name=count, dimen1=8, reset=true)
-	.AddVar(type=bool, name=done, dimen1=8, reset=true)
-	.AddVar(type=packet_t, name=holdPacket, dimen1=8, reset=true)
-	.AddVar(type=bool, name=holdPacketVld, dimen1=8, reset=true)
-	.AddVar(type=bool, name=prbsRdy, dimen1=8, reset=true)
+	.AddVar(type=bool, name=init_seen)
+	.AddVar(type=bool, name=rst_prbs)
+	.AddVar(type=bool, name=recv_seen)
+	.AddVar(type=bool, name=run)
+	.AddVar(type=ht_uint64, name=count, dimen1=8)
+	.AddVar(type=bool, name=done, dimen1=8)
+	.AddVar(type=packet_t, name=holdPacket, dimen1=8)
+	.AddVar(type=bool, name=holdPacketVld, dimen1=8)
+	.AddVar(type=bool, name=prbsRdy, dimen1=8)
 	;
 
-send.AddEntry(func=send, instr=SEND_WAIT)
+send.AddEntry(func=send, instr=SEND_ENTRY)
 	;
 
 send.AddReturn(func=send)
@@ -118,24 +122,27 @@ send.AddPrimState(type=prbs_gen_prm_state, name=prbs_gen_prm_state7, include="Pe
 // Receiver
 dsnInfo.AddModule(name=recv, htIdW=0);
 
-recv.AddInstr(name=RECV_WAIT);
+recv.AddInstr(name=RECV_ENTRY);
+recv.AddInstr(name=RECV_RUN);
 recv.AddInstr(name=RECV_RTN);
 
 recv.AddHostMsg(dir=in, name=LEN)
 	.AddDst(var=len)
 	;
 
-recv.AddStage(execStg=2)
-	;
+recv.AddMsgIntf(dir=in,  name=initMsg, type=bool);
+recv.AddMsgIntf(dir=out, name=recvRdy, type=bool);
 
 recv.AddShared()
 	.AddVar(type=ht_uint64, name=len)
-	.AddVar(type=ht_uint64, name=count, dimen1=8, reset=true)
-	.AddVar(type=ht_uint64, name=error, dimen1=8, reset=true)
-	.AddVar(type=bool, name=done, dimen1=8, reset=true)
+	.AddVar(type=bool, name=init_seen)
+	.AddVar(type=bool, name=rst_prbs)
+	.AddVar(type=ht_uint64, name=count, dimen1=8)
+	.AddVar(type=ht_uint64, name=error, dimen1=8)
+	.AddVar(type=bool, name=done, dimen1=8)
 	;
 
-recv.AddEntry(func=recv, instr=RECV_WAIT)
+recv.AddEntry(func=recv, instr=RECV_ENTRY)
 	;
 
 recv.AddReturn(func=recv)

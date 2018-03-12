@@ -3,18 +3,21 @@
 module user_io_bbox #
 (
    parameter NUM_AUR_LINKS   = 8,
-   parameter NUM_UIO_PORTS   = 8,
+   parameter NUM_UIO_PORTS   = 9,
    parameter UIO_PORTS_WIDTH = 128
 )(
    input  		clk_per,
    input 		reset_per,
    
-   input 		qsfp0_refclk,
-   input 		qsfp1_refclk,
+   input 		qsfp0_refclk_p,
+   input 		qsfp0_refclk_n,
+   input 		qsfp1_refclk_p,
+   input 		qsfp1_refclk_n,
 
+   // QSFP0 I2C signals
    inout		qsfp0_sda,
    inout		qsfp0_scl,
-   
+   // QSFP1 I2C signals
    inout		qsfp1_sda,
    inout		qsfp1_scl,
    
@@ -80,7 +83,7 @@ module user_io_bbox #
 
    // User Port to AXI Wrapper
    user_io_axi_wrapper #(.NUM_AUR_LINKS(NUM_AUR_LINKS),
-			 .NUM_UIO_PORTS(8),
+			 .NUM_UIO_PORTS(NUM_UIO_PORTS-1),
 			 .UIO_PORTS_WIDTH(UIO_PORTS_WIDTH))
    user_io_axi_wrapper (/*AUTOINST*/
 			// Outputs
@@ -88,9 +91,9 @@ module user_io_bbox #
 			.o_s_axi_tx_tdata(s_axi_tx_tdata[NUM_AUR_LINKS*64-1:0]), // Templated
 			.o_s_axi_tx_tlast(s_axi_tx_tlast[NUM_AUR_LINKS*1-1:0]), // Templated
 			.o_s_axi_tx_tvalid(s_axi_tx_tvalid[NUM_AUR_LINKS*1-1:0]), // Templated
-			.uio_rq_afull	(uio_rq_afull[8*1-1:0]),
-			.uio_rs_vld	(uio_rs_vld[8*1-1:0]),
-			.uio_rs_data	(uio_rs_data[8*UIO_PORTS_WIDTH-1:0]),
+			.uio_rq_afull	(uio_rq_afull[(NUM_UIO_PORTS-1)*1-1:0]), // Templated
+			.uio_rs_vld	(uio_rs_vld[(NUM_UIO_PORTS-1)*1-1:0]), // Templated
+			.uio_rs_data	(uio_rs_data[(NUM_UIO_PORTS-1)*UIO_PORTS_WIDTH-1:0]), // Templated
 			// Inputs
 			.clk		(user_clk[NUM_AUR_LINKS*1-1:0]), // Templated
 			.clk_per	(clk_per),
@@ -102,19 +105,47 @@ module user_io_bbox #
 			.i_m_axi_rx_tlast(m_axi_rx_tlast[NUM_AUR_LINKS*1-1:0]), // Templated
 			.i_m_axi_rx_tvalid(m_axi_rx_tvalid[NUM_AUR_LINKS*1-1:0]), // Templated
 			.stat_chan_up	(stat_chan_up[NUM_AUR_LINKS*1-1:0]),
-			.uio_rq_vld	(uio_rq_vld[8*1-1:0]),
-			.uio_rq_data	(uio_rq_data[8*UIO_PORTS_WIDTH-1:0]),
-			.uio_rs_afull	(uio_rs_afull[8*1-1:0]));
+			.uio_rq_vld	(uio_rq_vld[(NUM_UIO_PORTS-1)*1-1:0]), // Templated
+			.uio_rq_data	(uio_rq_data[(NUM_UIO_PORTS-1)*UIO_PORTS_WIDTH-1:0]), // Templated
+			.uio_rs_afull	(uio_rs_afull[(NUM_UIO_PORTS-1)*1-1:0])); // Templated
 
    
    // Mapped as follows:
    //   qsfp[7:0] = {qsfp1[4:1], qsfp0[4:1]}
 
    // Clocking
+   wire       qsfp0_refclk_gt, qsfp0_refclk;
+   IBUFDS_GTE4 qsfp0clkbuf (
+      .O(qsfp0_refclk_gt),
+      .I(qsfp0_refclk_p),
+      .IB(qsfp0_refclk_n),
+      .ODIV2(qsfp0_refclk),
+      .CEB(1'b0)
+   );
+   wire qsfp1_refclk_gt, qsfp1_refclk;
+   IBUFDS_GTE4 qsfp1clkbuf (
+      .O(qsfp1_refclk_gt),
+      .I(qsfp1_refclk_p),
+      .IB(qsfp1_refclk_n),
+      .ODIV2(qsfp1_refclk),
+      .CEB(1'b0)
+   );
+   
+   wire init_clk_bufg;
+   BUFG_GT bufg_gt_initclk (
+			    .CE (1'b1),
+			    .CEMASK (1'd0),
+			    .CLR (reset_per),
+			    .CLRMASK (1'd0),
+			    .DIV (3'd0),
+			    .I (qsfp0_refclk),
+			    .O (init_clk_bufg)
+			    );
+
    wire [7:0] 	qsfp_refclk;
 
-   assign qsfp_refclk = {qsfp1_refclk, qsfp1_refclk, qsfp1_refclk, qsfp1_refclk,
-			 qsfp0_refclk, qsfp0_refclk, qsfp0_refclk, qsfp0_refclk};
+   assign qsfp_refclk = {qsfp1_refclk_gt, qsfp1_refclk_gt, qsfp1_refclk_gt, qsfp1_refclk_gt,
+			 qsfp0_refclk_gt, qsfp0_refclk_gt, qsfp0_refclk_gt, qsfp0_refclk_gt};
 			 
    
    // Mapped as follows:
@@ -160,7 +191,7 @@ module user_io_bbox #
 			 .o_stat_lane_up	(stat_lane_up[7:0]), // Templated
 			 .o_stat_gt_pwrgd	(stat_gt_pwrgd[7:0]), // Templated
 			 // Inputs
-			 .i_init_clk		(clk_per),	 // Templated
+			 .i_init_clk		(init_clk_bufg),	 // Templated
 			 .i_reset		(reset_per),	 // Templated
 			 .i_gt_reset		(reset_per),	 // Templated
 			 .qsfp_refclk		(qsfp_refclk[7:0]), // Templated
@@ -229,15 +260,14 @@ module user_io_bbox #
    //   we're just using a few registers to capture the status
    //   (which should be stable for many clocks)
 
-   sync2 #(.WIDTH(8*4))
+   sync2 #(.WIDTH(128))
    status_rs_p9 (
 		 .clk(clk_per),
-		 .d({qsfp_fatal_alarm, qsfp_corr_alarm, stat_chan_up, stat_lane_up}),
-		 .q(uio_rs_data[1055:1024])
+		 .d({96'd0, qsfp_fatal_alarm, qsfp_corr_alarm, stat_chan_up, stat_lane_up}),
+		 .q(uio_rs_data[NUM_UIO_PORTS*UIO_PORTS_WIDTH-1:(NUM_UIO_PORTS-1)*UIO_PORTS_WIDTH])
 		 );
 
-   assign uio_rs_vld[8] = ~reset_per;
-   
+   assign uio_rs_vld[NUM_UIO_PORTS-1] = ~reset_per;
 
    // Tie off unused QSFP I2C ports to pull up I2C nets
    wire [1:0] _qsfp0_nc0_;
@@ -267,7 +297,6 @@ module user_io_bbox #
       .O(_qsfp1_nc0_[1])
    );
 
-
 /* user_io_xcvr_wrapper AUTO_TEMPLATE (
 			 // Outputs
 			 .o_sys_reset		(sys_reset[]),
@@ -293,6 +322,12 @@ module user_io_bbox #
    ); */
 
 /* user_io_axi_wrapper AUTO_TEMPLATE (
+ 			 .uio_rq_afull	(uio_rq_afull[(NUM_UIO_PORTS-1)*1-1:0]),
+ 			 .uio_rs_vld	(uio_rs_vld[(NUM_UIO_PORTS-1)*1-1:0]),
+ 			 .uio_rs_data	(uio_rs_data[(NUM_UIO_PORTS-1)*UIO_PORTS_WIDTH-1:0]),
+ 			 .uio_rq_vld	(uio_rq_vld[(NUM_UIO_PORTS-1)*1-1:0]),
+ 			 .uio_rq_data	(uio_rq_data[(NUM_UIO_PORTS-1)*UIO_PORTS_WIDTH-1:0]),
+ 			 .uio_rs_afull	(uio_rs_afull[(NUM_UIO_PORTS-1)*1-1:0]),
 			 // Outputs
 			 .o_s_axi_\(.*\)	(s_axi_\1[]),
 			 .i_s_axi_\(.*\)	(s_axi_\1[]),

@@ -24,7 +24,7 @@ int main(int argc, char **argv)
 	if (argc == 1) {
 		len = 100;  // default len
 	} else if (argc == 2) {
-		len = atoi(argv[1]);
+		len = strtoull(argv[1], 0, 0);
 		if (len <= 0) {
 			usage(argv[0]);
 			return 0;
@@ -42,23 +42,30 @@ int main(int argc, char **argv)
 
 	// Send arguments to all units using messages
 	pHtHif->SendAllHostMsg(LEN, (uint64_t)len);
+	printf("DBG - MSG SENT\n");
+	fflush(stdout);
+
+	// Artificially wait until some time has passed
+	usleep(10000);
 
 	// Send calls to unit
 	pAuUnit->SendCall_htmain();
+	printf("DBG - CALL SENT\n");
+	fflush(stdout);
 
 	// Artificially wait until some time has passed (and reset deasserts)
-	usleep(100000);
+	//usleep(100000);
 
 	int errCnt = 0;
 
-	uint64_t wrData = 0x5a5a5a5a5a;
+	/*uint64_t wrData = 0x5a5a5a5a5a;
 	pHtHif->UserIOCsrWr(8, wrData);
 	uint64_t rdData = pHtHif->UserIOCsrRd(8);
 
 	if (rdData != wrData) {
 		printf("ERROR: CSR Read data did not match Write data!\n");
 		errCnt++;
-	}
+	}*/
 
 	// Wait for return
 	uint64_t error[8];
@@ -86,13 +93,58 @@ int main(int argc, char **argv)
 		}
 	}
 
-	printf("\n");
+	/*	//NUMBER 2
+	// Send calls to unit
+	pAuUnit->SendCall_htmain();
+	printf("DBG - CALL SENT\n");
 	fflush(stdout);
 
+	// Artificially wait until some time has passed (and reset deasserts)
+	usleep(100000);
+
+	errCnt = 0;*/
+
+	/*uint64_t wrData = 0x5a5a5a5a5a;
+	pHtHif->UserIOCsrWr(8, wrData);
+	uint64_t rdData = pHtHif->UserIOCsrRd(8);
+
+	if (rdData != wrData) {
+		printf("ERROR: CSR Read data did not match Write data!\n");
+		errCnt++;
+	}*/
+
+	// Wait for return
+	/*while (!pAuUnit->RecvReturn_htmain(error[0], error[1], error[2], error[3], error[4], error[5], error[6], error[7])) {
+
+		uint8_t msgType;
+		msg_t msgData;
+		if (pAuUnit->RecvHostMsg(msgType, msgData.data)) {
+			printf("\33[2K\r");
+			printf("Status: Fatal Alarm: 0x%02X, Corr Alarm: 0x%02X, Channel Up: 0x%02X, Lane Up: 0x%02X",
+				msgData.status.fatal_alm,
+				msgData.status.corr_alm,
+				msgData.status.chan_up,
+				msgData.status.lane_up);
+			fflush(stdout);
+		}
+
+		usleep(1000);
+	}
+
+	for (int i = 0; i < 8; i++) {
+		if (error[i] != 0) {
+			printf("ERROR: Found %ld mismatches on lane %d!\n", error[i], i);
+			errCnt += error[i];
+		}
+	}
+
+	printf("\n");
+	fflush(stdout);*/
+
 	if (errCnt)
-		printf("FAILED (%d issues)\n", errCnt);
+		printf("\nFAILED (%d issues)\n", errCnt);
 	else
-		printf("PASSED\n");
+		printf("\nPASSED\n");
 
 	delete pHtHif;
 

@@ -11,6 +11,9 @@ CPersCtl::PersCtl()
 		case CTL_SEND: {
 			BUSY_RETRY(SendCallBusy_send());
 
+			S_statusCnt = 0;
+			S_active = true;
+
 			SendCallFork_send(CTL_JOIN_SEND);
 			HtContinue(CTL_RECV);
 		}
@@ -23,9 +26,9 @@ CPersCtl::PersCtl()
 		}
 		break;
 		case CTL_START: {
-			BUSY_RETRY(SendMsgBusy_startMsg());
+			BUSY_RETRY(SendMsgBusy_initMsg());
 
-			SendMsg_startMsg(true);
+			SendMsg_initMsg(true);
 			RecvReturnPause_send(CTL_SEND_RTN);
 		}
 		break;
@@ -43,6 +46,8 @@ CPersCtl::PersCtl()
 		break;
 		case CTL_RTN: {
 			BUSY_RETRY(SendReturnBusy_htmain());
+
+			S_active = false;
 
 			SendReturn_htmain(PR_error0,
 					  PR_error1,
@@ -63,11 +68,11 @@ CPersCtl::PersCtl()
 	{
 		// Get Data
 		packet_t inPacket;
-		if (RecvUioReady_status()) {
+		if (RecvUioReady_status() && SR_active) {
 			inPacket = RecvUioData_status();
 
 			// Only send to host every X cycles
-			if (SR_statusCnt == 10000) {
+			if (SR_statusCnt == 100000) {
 				if (!SendHostMsgBusy()) {
 					SendHostMsg(STATUS, (ht_uint56)inPacket.data.lower);
 					S_statusCnt = 0;
