@@ -128,7 +128,7 @@ input		busy
 
     // Dispatch information
     wire [15:0]	c_ctlQueWidth = w_aeg[0][48 +: 16];
-    assign ctlQueWidth = (c_ctlQueWidth < 16'd9 || c_ctlQueWidth < 16'd25) ? 16'd9 : c_ctlQueWidth;
+    assign ctlQueWidth = (c_ctlQueWidth < 16'd9 || c_ctlQueWidth > 16'd25) ? 16'd9 : c_ctlQueWidth;
     assign ctlQueBase  = w_aeg[0][0  +: 48];
 
 
