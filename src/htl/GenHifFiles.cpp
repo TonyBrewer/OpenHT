@@ -279,7 +279,9 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(incFile, "\tbool r_hifToDisp_busy;\n");
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\tsc_uint<32> r_CtlQueSize;\n");
+		fprintf(incFile, "\tsc_uint<16> r_CtlQueWidth_reg;\n");
 		fprintf(incFile, "\tsc_uint<MEM_ADDR_W> r_CtlQueBase;\n");
+		fprintf(incFile, "\tsc_uint<MEM_ADDR_W> r_CtlQueBase_reg;\n");
 		fprintf(incFile, "\n");
 		fprintf(incFile, "\tsc_uint<HIF_TID_TYPE_W> r_mifReqSelRr;\n");
 		fprintf(incFile, "\n");
@@ -1926,10 +1928,9 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(cppFile, "\tbool c_mifBusy = r_hifToMif_reqAvlCnt < 2;\n");
 		fprintf(cppFile, "\n");
 		fprintf(cppFile, "\tsc_uint<32> c_CtlQueSize = (sc_uint<32>)(1 << i_dispToHif_ctlQueWidth.read());\n");
-		fprintf(cppFile, "\tsc_uint<MEM_ADDR_W> c_CtlQueBase = (sc_uint<MEM_ADDR_W>)(i_dispToHif_ctlQueBase.read()\n");
-		fprintf(cppFile, "\t\t\t\t\t+ ((i_aeUnitId.read()\n");
-		fprintf(cppFile, "\t\t\t\t\t* sizeof(uint64_t)\n");
-		fprintf(cppFile, "\t\t\t\t\t* 2) << i_dispToHif_ctlQueWidth.read()));\n");
+		fprintf(cppFile, "\tsc_uint<16> c_CtlQueWidth_reg = (sc_uint<16>)(i_dispToHif_ctlQueWidth.read());\n");
+		fprintf(cppFile, "\tsc_uint<MEM_ADDR_W> c_CtlQueBase_reg = (sc_uint<MEM_ADDR_W>)(i_dispToHif_ctlQueBase.read());\n");
+		fprintf(cppFile, "\tsc_uint<MEM_ADDR_W> c_CtlQueBase = r_CtlQueBase_reg + ((i_aeUnitId.read() << 4) << r_CtlQueWidth_reg);\n");
 		fprintf(cppFile, "\n");
 		fprintf(cppFile, "\t//\n");
 		fprintf(cppFile, "\t// Inbound control messages\n");
@@ -2787,7 +2788,9 @@ void CDsnInfo::GenerateHifFiles()
 		fprintf(cppFile, "\tr_htiToHif_datHalt = r_reset1x ? false : c_htiToHif_datHalt;\n");
 		fprintf(cppFile, "\n");
 		fprintf(cppFile, "\tr_CtlQueSize = c_CtlQueSize;\n");
+		fprintf(cppFile, "\tr_CtlQueWidth_reg = c_CtlQueWidth_reg;\n");
 		fprintf(cppFile, "\tr_CtlQueBase = c_CtlQueBase;\n");
+		fprintf(cppFile, "\tr_CtlQueBase_reg = c_CtlQueBase_reg;\n");
 		fprintf(cppFile, "\n");
 		fprintf(cppFile, "\tr_mifReqSelRr = r_reset1x ? (sc_uint<HIF_TID_TYPE_W>)0 : c_mifReqSel;\n");
 		fprintf(cppFile, "\n");
