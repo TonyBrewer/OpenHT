@@ -22,7 +22,7 @@ void ht_cp_info(void ** ppCoproc, uint64_t * pSig, bool *needFlush, volatile boo
 				(char *)HT_PERS, strerror(errno));
 			if (errno != EBADR) {
 				fprintf(stderr, " Please verify that the personality is installed in\n");
-				fprintf(stderr, " /opt/convey/personalities or CNY_PERSONALITY_PATH is set.\n");
+				fprintf(stderr, " /opt/micron/personalities or CNY_PERSONALITY_PATH is set.\n");
 			}
 		}
 		throw CHtException(eHtBadDispatch, string("unable to reserve personality signature"));
@@ -33,7 +33,7 @@ void ht_cp_info(void ** ppCoproc, uint64_t * pSig, bool *needFlush, volatile boo
 			fprintf(stderr, "HTLIB: wdm_attach(\"%s\") failed with %s\n",
 				(char *)HT_PERS, strerror(errno));
 			fprintf(stderr, " Please verify that the personality is installed in\n");
-			fprintf(stderr, " /opt/convey/personalities or CNY_PERSONALITY_PATH is set.\n");
+			fprintf(stderr, " /opt/micron/personalities or CNY_PERSONALITY_PATH is set.\n");
 		}
 		wdm_release((wdm_coproc_t)*ppCoproc);
 		throw CHtException(eHtBadDispatch, string("unable to attach"));
