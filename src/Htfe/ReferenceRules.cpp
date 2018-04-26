@@ -415,50 +415,55 @@ void CHtfeDesign::CheckRefCnts(bool bLocal, CHtfeIdent *pFunc)
 				if (identIter->IsHtQueue()) {
 					if (!identIter->IsHtQueuePushSeen())
 						ParseMsg(PARSE_WARNING, identIter->GetLineInfo(), "ht_%s_que '%s' does not call method push",
-							identIter->IsHtBlockQue() ? "block" : "dist", name.c_str());
+							identIter->IsHtUltraQue() ? "ultra" : (identIter->IsHtBlockQue() ? "block" : "dist"), name.c_str());
 					if (!identIter->IsHtQueuePopSeen())
 						ParseMsg(PARSE_WARNING, identIter->GetLineInfo(), "ht_%s_que '%s' does not call method pop",
-							identIter->IsHtBlockQue() ? "block" : "dist", name.c_str());
+							identIter->IsHtUltraQue() ? "ultra" : (identIter->IsHtBlockQue() ? "block" : "dist"), name.c_str());
 					if (!identIter->IsHtQueueFrontSeen())
 						ParseMsg(PARSE_WARNING, identIter->GetLineInfo(), "ht_%s_que '%s' does not call method front",
-							identIter->IsHtBlockQue() ? "block" : "dist", name.c_str());
+							identIter->IsHtUltraQue() ? "ultra" : (identIter->IsHtBlockQue() ? "block" : "dist"), name.c_str());
 					if (!identIter->IsHtQueuePopClockSeen())
 						ParseMsg(PARSE_ERROR, identIter->GetLineInfo(), "ht_%s_que '%s' does not call methods clock or pop_clock",
-							identIter->IsHtBlockQue() ? "block" : "dist", name.c_str());
+							identIter->IsHtUltraQue() ? "ultra" : (identIter->IsHtBlockQue() ? "block" : "dist"), name.c_str());
 					if (!identIter->IsHtQueuePushClockSeen())
 						ParseMsg(PARSE_ERROR, identIter->GetLineInfo(), "ht_%s_que '%s' does not call methods clock or push_clock",
-							identIter->IsHtBlockQue() ? "block" : "dist", name.c_str());
+							identIter->IsHtUltraQue() ? "ultra" : (identIter->IsHtBlockQue() ? "block" : "dist"), name.c_str());
 
 				} else if (identIter->IsHtMemory()) {
 					char const * pRamType = "";
 					if (identIter->IsHtMrdBlockRam())
-						pRamType = "_mrd";
+						pRamType = "_mrd_block";
+					else if (identIter->IsHtMrdUltraRam())
+						pRamType = "_mrd_ultra";
 					else if (identIter->IsHtMwrBlockRam())
-						pRamType = "_mwr";
+						pRamType = "_mwr_block";
+					else if (identIter->IsHtMwrUltraRam())
+						pRamType = "_mwr_ultra";
+					else if (identIter->IsHtBlockRam())
+						pRamType = "_block";
+					else if (identIter->IsHtUltraRam())
+						pRamType = "_ultra";
+					else
+						pRamType = "_dist";
 
 					if (!identIter->IsHtMemoryReadAddrSeen())
-						ParseMsg(PARSE_WARNING, identIter->GetLineInfo(), "ht%s_%s_ram '%s' does not call method read_addr",
-							pRamType, identIter->IsHtBlockRam() ? "block" : "dist", name.c_str());
+						ParseMsg(PARSE_WARNING, identIter->GetLineInfo(), "ht%s_ram '%s' does not call method read_addr",
+							pRamType, name.c_str());
 					if (!identIter->IsHtMemoryReadMemSeen())
-						ParseMsg(PARSE_WARNING, identIter->GetLineInfo(), "ht%s_%s_ram '%s' does not call method read_mem",
-							pRamType,
-							identIter->IsHtBlockRam() ? "block" : "dist", name.c_str());
+						ParseMsg(PARSE_WARNING, identIter->GetLineInfo(), "ht%s_ram '%s' does not call method read_mem",
+							pRamType, name.c_str());
 					if (!identIter->IsHtMemoryReadClockSeen())
-						ParseMsg(PARSE_ERROR, identIter->GetLineInfo(), "ht%s_%s_ram '%s' does not call methods clock or read_clock",
-							pRamType,
-							identIter->IsHtBlockRam() ? "block" : "dist", name.c_str());
+						ParseMsg(PARSE_ERROR, identIter->GetLineInfo(), "ht%s_ram '%s' does not call methods clock or read_clock",
+							pRamType, name.c_str());
 					if (!identIter->IsHtMemoryWriteAddrSeen())
-						ParseMsg(PARSE_WARNING, identIter->GetLineInfo(), "ht%s_%s_ram '%s' does not call method write_addr",
-							pRamType,
-							identIter->IsHtBlockRam() ? "block" : "dist", name.c_str());
+						ParseMsg(PARSE_WARNING, identIter->GetLineInfo(), "ht%s_ram '%s' does not call method write_addr",
+							pRamType, name.c_str());
 					if (!identIter->IsHtMemoryWriteMemSeen())
-						ParseMsg(PARSE_WARNING, identIter->GetLineInfo(), "ht%s_%s_ram '%s' does not call method write_mem",
-							pRamType,
-							identIter->IsHtBlockRam() ? "block" : "dist", name.c_str());
+						ParseMsg(PARSE_WARNING, identIter->GetLineInfo(), "ht%s_ram '%s' does not call method write_mem",
+							pRamType, name.c_str());
 					if (!identIter->IsHtMemoryWriteClockSeen())
-						ParseMsg(PARSE_ERROR, identIter->GetLineInfo(), "ht%s_%s_ram '%s' does not call methods clock or write_clock",
-							pRamType,
-							identIter->IsHtBlockRam() ? "block" : "dist", name.c_str());
+						ParseMsg(PARSE_ERROR, identIter->GetLineInfo(), "ht%s_ram '%s' does not call methods clock or write_clock",
+							pRamType, name.c_str());
 
 				} else {
 

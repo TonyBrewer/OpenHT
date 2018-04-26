@@ -902,23 +902,25 @@ string CDsnInfo::GenFieldType(CField * pField, bool bConst)
 
 	if (pField->m_rdSelW.AsInt() > 0) {
 
-		type = VA("ht_mrd_block_ram<%s, %d, %d",
-			pField->m_pType->m_typeName.c_str(), pField->m_rdSelW.AsInt(), pField->m_addr1W.AsInt());
+		const char *pScMem = pField->m_ramType == eBlockRam ? "ht_mrd_block_ram" : "ht_mrd_ultra_ram";
+		type = VA("%s<%s, %d, %d",
+			pScMem, pField->m_pType->m_typeName.c_str(), pField->m_rdSelW.AsInt(), pField->m_addr1W.AsInt());
 		if (pField->m_addr2W.size() > 0)
 			type += VA(", %d", pField->m_addr2W.AsInt());
 		type += ">";
 
 	} else if (pField->m_wrSelW.AsInt() > 0) {
 
-		type = VA("ht_mwr_block_ram<%s, %d, %d",
-			pField->m_pType->m_typeName.c_str(), pField->m_wrSelW.AsInt(), pField->m_addr1W.AsInt());
+		const char *pScMem = pField->m_ramType == eBlockRam ? "ht_mwr_block_ram" : "ht_mwr_ultra_ram";
+		type = VA("%s<%s, %d, %d",
+			pScMem, pField->m_pType->m_typeName.c_str(), pField->m_wrSelW.AsInt(), pField->m_addr1W.AsInt());
 		if (pField->m_addr2W.size() > 0)
 			type += VA(", %d", pField->m_addr2W.AsInt());
 		type += ">";
 
 	} else if (pField->m_addr1W.size() > 0) {
 
-		const char *pScMem = pField->m_ramType == eDistRam ? "ht_dist_ram" : "ht_block_ram";
+		const char *pScMem = pField->m_ramType == eDistRam ? "ht_dist_ram" : (pField->m_ramType == eBlockRam ? "ht_block_ram" : "ht_ultra_ram");
 		if (pField->m_addr2W.size() > 0) {
 			type = VA("%s<%s, %s, %s>", pScMem, pField->m_pType->m_typeName.c_str(),
 				pField->m_addr1W.c_str(), pField->m_addr2W.c_str());
@@ -929,7 +931,7 @@ string CDsnInfo::GenFieldType(CField * pField, bool bConst)
 
 	} else if (pField->m_queueW.size() > 0) {
 
-		const char *pScMem = pField->m_ramType == eDistRam ? "ht_dist_que" : "ht_block_que";
+		const char *pScMem = pField->m_ramType == eDistRam ? "ht_dist_que" : (pField->m_ramType == eBlockRam ? "ht_block_que" : "ht_ultra_que");
 
 		type = VA("%s<%s, %s>", pScMem, pField->m_pType->m_typeName.c_str(),
 			pField->m_queueW.c_str());

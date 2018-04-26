@@ -135,9 +135,12 @@ void CHtvDesign::GenVerilog()
         // Generate memories
         SynHtDistQueRams(topHierIter());
         SynHtBlockQueRams(topHierIter());
+        SynHtUltraQueRams(topHierIter());
         SynHtDistRams(topHierIter());
         SynHtBlockRams(topHierIter());
+        SynHtUltraRams(topHierIter());
         SynHtAsymBlockRams(topHierIter());
+        SynHtAsymUltraRams(topHierIter());
 
         GenModuleTrailer();
 
@@ -146,6 +149,8 @@ void CHtvDesign::GenVerilog()
         SynHtDistRamModule(false);
         SynHtBlockRamModule();
         SynHtAsymBlockRamModule();
+        SynHtUltraRamModule();
+        SynHtAsymUltraRamModule();
 
         if (g_htvArgs.IsLedaEnabled())
             m_vFile.Print("\n`include \"leda_trailer.vh\"\n");

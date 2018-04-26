@@ -51,7 +51,7 @@ public:
 	enum EClkRate { eClk1x, eClk2x, eClkUnknown };
 	enum ECmdType { eCmdCall, eCmdAsyncCall, eCmdRtn, eCmdAsyncRtn, eCmdXfer };
 	enum ECmdDir { eCmdIn, eCmdOut };
-	enum ERamType { eBlockRam, eDistRam, eAutoRam, eUnknownRam, eRegRam };
+	enum ERamType { eBlockRam, eDistRam, eAutoRam, eUnknownRam, eRegRam, eUltraRam };
 	enum EQueType { Push, Pop };
 	enum EHostMsgDir { Inbound, Outbound, InAndOutbound };
 

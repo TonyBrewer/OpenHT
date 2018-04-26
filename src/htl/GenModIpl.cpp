@@ -82,7 +82,7 @@ void CDsnInfo::InitAndValidateModIpl()
 
 			if (pMod->m_ngvList[ngvIdx]->m_addr1W.AsInt() == 0) continue;
 
-			if (pMod->m_ngvList[ngvIdx]->m_pNgvInfo->m_ramType == eBlockRam)
+			if (pMod->m_ngvList[ngvIdx]->m_pNgvInfo->m_ramType == eBlockRam || pMod->m_ngvList[ngvIdx]->m_pNgvInfo->m_ramType == eUltraRam)
 				pMod->m_gblBlockRam = true;
 			else
 				pMod->m_gblDistRam = true;
@@ -360,6 +360,10 @@ void CDsnInfo::GenModIplStatements(CInstance * pModInst)
 		GenUserStructBadData(m_iplBadDecl, true, privStructName,
 			pMod->m_threads.m_htPriv.m_fieldList, pMod->m_threads.m_htPriv.m_bCStyle, "");
 
+		bool isWx2 = false;
+		if (strcasestr(g_appArgs.GetCoprocName(), "wx2") != NULL) {
+			isWx2 = true;
+		}
 		if (pMod->m_threads.m_htIdW.AsInt() == 0) {
 
 			m_iplRegDecl.Append("\tCHtCmd r_htCmd;\n");
@@ -371,8 +375,11 @@ void CDsnInfo::GenModIplStatements(CInstance * pModInst)
 			if (pMod->m_threads.m_ramType == eDistRam)
 				m_iplRegDecl.Append("\tht_dist_ram<CHtPriv, %s_HTID_W> m_htPriv;\n",
 				pMod->m_modName.Upper().c_str());
-			else
+			else if (pMod->m_threads.m_ramType == eBlockRam || !isWx2)
 				m_iplRegDecl.Append("\tht_block_ram<CHtPriv, %s_HTID_W> m_htPriv;\n",
+				pMod->m_modName.Upper().c_str());
+			else
+				m_iplRegDecl.Append("\tht_ultra_ram<CHtPriv, %s_HTID_W> m_htPriv;\n",
 				pMod->m_modName.Upper().c_str());
 		}
 
@@ -2566,9 +2573,6 @@ void CDsnInfo::GenModIplStatements(CInstance * pModInst)
 				m_iplRegDecl.Append("\t%s r__SHR__%s%s;\n", pField->m_pType->m_typeName.c_str(), pField->m_name.c_str(), pField->m_dimenDecl.c_str());
 
 				GenRamIndexLoops(iplReg, "", *pField);
-				if (pField->m_forceKeep == "true") {
-					iplReg.Append("\tht_attrib(keep, r__SHR__%s%s, \"true\");\n", pField->m_name.c_str(), pField->m_dimenIndex.c_str());
-				}
 				iplReg.Append("\tr__SHR__%s%s = c__SHR__%s%s;\n", pField->m_name.c_str(), pField->m_dimenIndex.c_str(), pField->m_name.c_str(), pField->m_dimenIndex.c_str());
 			}
 		}
@@ -3037,7 +3041,7 @@ void CDsnInfo::GenModIplStatements(CInstance * pModInst)
 
 				} else if (pShared->m_addr1W.size() > 0) {
 
-					const char *pScMem = pShared->m_ramType == eDistRam ? "ht_dist_ram" : "ht_block_ram";
+					const char *pScMem = pShared->m_ramType == eDistRam ? "ht_dist_ram" : (pShared->m_ramType == eBlockRam ? "ht_block_ram" : "ht_ultra_ram");
 					if (pShared->m_addr2W.size() > 0)
 						g_appArgs.GetDsnRpt().AddItem("%s<%s, %s, %s> ", pScMem, pShared->m_pType->m_typeName.c_str(),
 						pShared->m_addr1W.c_str(), pShared->m_addr2W.c_str());
@@ -3047,7 +3051,7 @@ void CDsnInfo::GenModIplStatements(CInstance * pModInst)
 
 				} else if (pShared->m_queueW.size() > 0) {
 
-					const char *pScMem = pShared->m_ramType == eDistRam ? "ht_dist_que" : "ht_block_que";
+					const char *pScMem = pShared->m_ramType == eDistRam ? "ht_dist_que" : (pShared->m_ramType == eBlockRam ? "ht_block_que" : "ht_ultra_que");
 					g_appArgs.GetDsnRpt().AddItem("%s<%s, %s> ", pScMem, pShared->m_pType->m_typeName.c_str(),
 						pShared->m_queueW.c_str());
 

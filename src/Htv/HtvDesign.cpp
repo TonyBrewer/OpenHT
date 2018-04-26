@@ -36,6 +36,12 @@ CHtvDesign::CHtvDesign()
 	m_bIs1CkDoRegHtMwrBlockRamsPresent = false;
 	m_bIs2CkDoRegHtMrdBlockRamsPresent = false;
 	m_bIs2CkDoRegHtMwrBlockRamsPresent = false;
+	m_bIs1CkHtUltraRamsPresent = false;
+	m_bIs1CkDoRegHtUltraRamsPresent = false;
+	m_bIs1CkHtMrdUltraRamsPresent = false;
+	m_bIs1CkHtMwrUltraRamsPresent = false;
+	m_bIs1CkDoRegHtMrdUltraRamsPresent = false;
+	m_bIs1CkDoRegHtMwrUltraRamsPresent = false;
 	m_bIsHtQueueRamsPresent = false;
 
 }

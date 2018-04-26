@@ -12,15 +12,15 @@
 #include "AppArgs.h"
 
 CCoprocInfo g_coprocInfo[] = {
-	CCoprocInfo(hc1, "hc1", "hc-1", 1, 1, 1, 1, false, 576),
-	CCoprocInfo(hc1ex, "hc1ex", "hc-1ex", 1, 1, 1, 1, false, 1440),
-	CCoprocInfo(hc2, "hc2", "hc-2", 8, 8, 1, 1, false, 576),
-	CCoprocInfo(hc2ex, "hc2ex", "hc-2ex", 8, 8, 1, 1, false, 1440),
-	CCoprocInfo(wx690, "wx690", "wx-690", 8, 8, 8, 8, true, 2940),
-	CCoprocInfo(wx2k, "wx2k", "wx-2000", 8, 8, 8, 8, true, 2584/4),
-	CCoprocInfo(ma100, "ma100", "ma-100", 8, 8, 8, 8, true, 2500 /*FIXME*/),
-	CCoprocInfo(ma400, "ma400", "ma-400", 8, 8, 8, 8, true, 2500 /*FIXME*/),
-	CCoprocInfo(wx2vu7p, "wx2vu7p", "wx2-vu7p", 8, 8, 8, 8, true, 2880 /*FIXME ULTRARAM & BRAM COUNT*/),
+	CCoprocInfo(hc1, "hc1", "hc-1", 1, 1, 1, 1, false, 576, 0),
+	CCoprocInfo(hc1ex, "hc1ex", "hc-1ex", 1, 1, 1, 1, false, 1440, 0),
+	CCoprocInfo(hc2, "hc2", "hc-2", 8, 8, 1, 1, false, 576, 0),
+	CCoprocInfo(hc2ex, "hc2ex", "hc-2ex", 8, 8, 1, 1, false, 1440, 0),
+	CCoprocInfo(wx690, "wx690", "wx-690", 8, 8, 8, 8, true, 2940, 0),
+	CCoprocInfo(wx2k, "wx2k", "wx-2000", 8, 8, 8, 8, true, 2584/4, 0),
+	CCoprocInfo(ma100, "ma100", "ma-100", 8, 8, 8, 8, true, 2500 /*FIXME*/, 0),
+	CCoprocInfo(ma400, "ma400", "ma-400", 8, 8, 8, 8, true, 2500 /*FIXME*/, 0),
+	CCoprocInfo(wx2vu7p, "wx2vu7p", "wx2-vu7p", 8, 8, 8, 8, true, 2880, 640),
 	CCoprocInfo()
 };
 
@@ -51,7 +51,9 @@ CAppArgs::Usage()
 	//printf("  -if <file>       Name of module instance file\n");
 	//printf("  -df <freq>       Default module instance frequency (default 150 mhz)\n");
 	printf("  -ub <cnt>        Maximum number of 18Kb block rams per Unit (default: AE BRAM count * 50%% / Units Per AE)\n");
-	printf("  -sb <ratio>      Minimum sliceToBram ratio for block rams usage (default 10)\n");
+	printf("  -uu <cnt>        Maximum number of ultra rams per Unit (default: AE URAM count * 50%% / Units Per AE)\n");
+	printf("  -sb <ratio>      Minimum sliceToBram ratio for block rams usage (default 12)\n");
+	printf("  -bu <ratio>      Minimum bramToUram ratio for ultra rams usage (default 2)\n");
 	printf("  -ml <scale>      Memory model latency scaling (default 1.0)\n");
 	printf("  -mt              Memory tracing enable\n");
 	printf("  -vr              Variable report generation enabled\n");
@@ -192,7 +194,9 @@ CAppArgs::Parse(int argc, char const **argv)
 	m_hostHtIdW = 0;
 	m_defaultFreqMhz = 150;
 	m_max18KbBramPerUnit = -1;
+	m_maxUramPerUnit = -1;
 	m_minSliceToBramRatio = 12;
+	m_minBramToUramRatio = 2;
 	m_bInstrTrace = false;
 	m_avgMemLatency[0] = 130;	// CP  : 110 min + ~20%
 	m_avgMemLatency[1] = 430;	// Host: 360 min + ~20%
@@ -379,6 +383,18 @@ CAppArgs::Parse(int argc, char const **argv)
 					Usage();
 					exit(1);
 				}
+			} else if ((strcmp(argv[argPos], "-uu") == 0)) {
+				if (argPos == argc - 1) {
+					printf("expected parameter for -uu command line flag\n");
+					Usage();
+					exit(1);
+				}
+				argPos += 1;
+				if (sscanf(argv[argPos], "%d", &m_maxUramPerUnit) != 1) {
+					printf("expected an integer parameter for -uu command line flag\n");
+					Usage();
+					exit(1);
+				}
 			} else if ((strcmp(argv[argPos], "-mt") == 0)) {
 				m_bMemTrace = true;
 			} else if ((strcmp(argv[argPos], "-ml") == 0)) {
@@ -409,6 +425,18 @@ CAppArgs::Parse(int argc, char const **argv)
 				argPos += 1;
 				if (sscanf(argv[argPos], "%d", &m_minSliceToBramRatio) != 1) {
 					printf("expected an integer parameter for -sb command line flag\n");
+					Usage();
+					exit(1);
+				}
+			} else if ((strcmp(argv[argPos], "-bu") == 0)) {
+				if (argPos == argc - 1) {
+					printf("expected parameter for -bu command line flag\n");
+					Usage();
+					exit(1);
+				}
+				argPos += 1;
+				if (sscanf(argv[argPos], "%d", &m_minBramToUramRatio) != 1) {
+					printf("expected an integer parameter for -bu command line flag\n");
 					Usage();
 					exit(1);
 				}
@@ -660,6 +688,9 @@ CAppArgs::Parse(int argc, char const **argv)
 
 	if (m_max18KbBramPerUnit == -1)
 		m_max18KbBramPerUnit = (int)(GetBramsPerAE() * 0.5 / m_aeUnitCnt);
+
+	if (m_maxUramPerUnit == -1)
+		m_maxUramPerUnit = (int)(GetUramsPerAE() * 0.5 / m_aeUnitCnt);
 
 	if (!bClFlag && m_bDsnRpt) {
 		m_pDsnRpt = new CGenHtmlRpt(argv[0], "HtDsnRpt.html", argc, argv);

@@ -178,6 +178,7 @@ public:
 		m_bIsStruct = false;
 
 		// HtQueue state
+		m_bIsHtUltraQue = false;
 		m_bIsHtBlockQue = false;
 		m_bIsHtDistQue = false;
 		m_bIsHtQueueRam = false;
@@ -932,7 +933,10 @@ public:
 	void SetIsHtBlockQue(bool bIsHtBlockQue=true);
 	bool IsHtBlockQue() { return m_bIsHtBlockQue; }
 
-	bool IsHtQueue() { return m_bIsHtDistQue || m_bIsHtBlockQue; }
+	void SetIsHtUltraQue(bool bIsHtUltraQue=true);
+	bool IsHtUltraQue() { return m_bIsHtUltraQue; }
+
+	bool IsHtQueue() { return m_bIsHtDistQue || m_bIsHtBlockQue || m_bIsHtUltraQue; }
 
 	void SetIsHtQueuePushSeen() {
 		m_bIsHtQueuePushSeen = true;
@@ -1030,7 +1034,15 @@ public:
 	bool IsHtMrdBlockRam() { return m_bIsHtMrdBlockRam; }
 	bool IsHtMwrBlockRam() { return m_bIsHtMwrBlockRam; }
 	bool IsHtBlockRamDoReg() { return m_bIsHtBlockRamDoReg; }
-	bool IsHtMemory() { return m_bIsHtDistRam || m_bIsHtBlockRam || m_bIsHtMrdBlockRam || m_bIsHtMwrBlockRam; }
+	void SetIsHtUltraRam(bool bIsHtUltraRam=true);
+	void SetIsHtMrdUltraRam(bool bIsHtMrdUltraRam=true);
+	void SetIsHtMwrUltraRam(bool bIsHtMwrUltraRam=true);
+	void SetIsHtUltraRamDoReg(bool bIsHtUltraRam=true);
+	bool IsHtUltraRam() { return m_bIsHtUltraRam; }
+	bool IsHtMrdUltraRam() { return m_bIsHtMrdUltraRam; }
+	bool IsHtMwrUltraRam() { return m_bIsHtMwrUltraRam; }
+	bool IsHtUltraRamDoReg() { return m_bIsHtUltraRamDoReg; }
+	bool IsHtMemory() { return m_bIsHtDistRam || m_bIsHtBlockRam || m_bIsHtMrdBlockRam || m_bIsHtMwrBlockRam || m_bIsHtUltraRam || m_bIsHtMrdUltraRam || m_bIsHtMwrUltraRam; }
 
 	void SetHtMemoryAddrWidth1(int addrWidth1);
 	int GetHtMemoryAddrWidth1() { return m_scMemoryAddrWidth1; }
@@ -1277,6 +1289,7 @@ private:
     };
 
 	struct {	// HtQueue state
+		bool m_bIsHtUltraQue:1;
 		bool m_bIsHtBlockQue:1;
 		bool m_bIsHtDistQue:1;
 		bool m_bIsHtQueueRam:1;
@@ -1293,6 +1306,10 @@ private:
 		bool		m_bIsHtMrdBlockRam:1;
 		bool		m_bIsHtMwrBlockRam:1;
 		bool		m_bIsHtBlockRamDoReg:1;
+		bool		m_bIsHtUltraRam:1;
+		bool		m_bIsHtMrdUltraRam:1;
+		bool		m_bIsHtMwrUltraRam:1;
+		bool		m_bIsHtUltraRamDoReg:1;
 		bool		m_bIsHtMemoryReadAddrSeen:1;
 		bool		m_bIsHtMemoryReadMemSeen:1;
 		bool		m_bIsHtMemoryReadClockSeen:1;

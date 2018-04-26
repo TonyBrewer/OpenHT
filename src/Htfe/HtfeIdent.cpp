@@ -502,6 +502,16 @@ void CHtfeIdent::SetIsHtBlockQue(bool bIsHtBlockQue) {
 	if (m_pFlatIdent) m_pFlatIdent->SetIsHtBlockQue(bIsHtBlockQue);
 }
 
+void CHtfeIdent::SetIsHtUltraQue(bool bIsHtUltraQue) {
+	m_bIsHtUltraQue = bIsHtUltraQue;
+	if (m_dimenList.size() > 0) {
+		CHtfeIdentTblIter iter(GetIdentTbl());
+		for (iter.Begin(); !iter.End(); iter++)
+			iter->SetIsHtUltraQue(bIsHtUltraQue);
+	}
+	if (m_pFlatIdent) m_pFlatIdent->SetIsHtUltraQue(bIsHtUltraQue);
+}
+
 void CHtfeIdent::SetIsIgnoreSignalCheck(bool bIsIgnoreSignalCheck) {
 	m_bIsIgnoreSignalCheck = bIsIgnoreSignalCheck;
 	if (m_dimenList.size() > 0) {
@@ -561,6 +571,47 @@ void CHtfeIdent::SetIsHtBlockRamDoReg(bool bIsHtBlockRam) {
 			iter->SetIsHtBlockRamDoReg(bIsHtBlockRam);
 	}
 	if (m_pFlatIdent) m_pFlatIdent->SetIsHtBlockRam(bIsHtBlockRam);
+}
+
+void CHtfeIdent::SetIsHtUltraRam(bool bIsHtUltraRam) {
+	m_bIsHtUltraRam = bIsHtUltraRam;
+	if (m_dimenList.size() > 0) {
+		CHtfeIdentTblIter iter(GetIdentTbl());
+		for (iter.Begin(); !iter.End(); iter++)
+			iter->SetIsHtUltraRam(bIsHtUltraRam);
+	}
+	if (m_pFlatIdent) m_pFlatIdent->SetIsHtUltraRam(bIsHtUltraRam);
+}
+
+void CHtfeIdent::SetIsHtMrdUltraRam(bool bIsHtMrdUltraRam) {
+	m_bIsHtMrdUltraRam = bIsHtMrdUltraRam;
+	if (m_dimenList.size() > 0) {
+		CHtfeIdentTblIter iter(GetIdentTbl());
+		for (iter.Begin(); !iter.End(); iter++)
+			iter->SetIsHtMrdUltraRam(bIsHtMrdUltraRam);
+	}
+	if (m_pFlatIdent) m_pFlatIdent->SetIsHtMrdUltraRam(bIsHtMrdUltraRam);
+}
+
+void CHtfeIdent::SetIsHtMwrUltraRam(bool bIsHtMwrUltraRam) {
+	m_bIsHtMwrUltraRam = bIsHtMwrUltraRam;
+	if (m_dimenList.size() > 0) {
+		CHtfeIdentTblIter iter(GetIdentTbl());
+		for (iter.Begin(); !iter.End(); iter++)
+			iter->SetIsHtMwrUltraRam(bIsHtMwrUltraRam);
+	}
+	if (m_pFlatIdent) m_pFlatIdent->SetIsHtMwrUltraRam(bIsHtMwrUltraRam);
+}
+
+void CHtfeIdent::SetIsHtUltraRamDoReg(bool bIsHtUltraRam) {
+	m_bIsHtUltraRam = bIsHtUltraRam;
+	m_bIsHtUltraRamDoReg = true;
+	if (m_dimenList.size() > 0) {
+		CHtfeIdentTblIter iter(GetIdentTbl());
+		for (iter.Begin(); !iter.End(); iter++)
+			iter->SetIsHtUltraRamDoReg(bIsHtUltraRam);
+	}
+	if (m_pFlatIdent) m_pFlatIdent->SetIsHtUltraRam(bIsHtUltraRam);
 }
 
 void CHtfeIdent::SetHtMemorySelWidth(int selWidth) {

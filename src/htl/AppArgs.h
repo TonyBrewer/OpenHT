@@ -31,7 +31,7 @@ public:
 	CCoprocInfo() : m_coproc(hcx), m_pCoprocName(0) {}
 	CCoprocInfo(ECoproc coproc, char const * pCoprocAsStr, char const * pCoprocName, int maxHostQwReadCnt,
 		int maxHostQwWriteCnt, int maxCoprocQwReadCnt, int maxCoprocQwWriteCnt, bool bVarQwReqCnt,
-		int bramsPerAe) :
+		int bramsPerAe, int uramsPerAe) :
 		m_coproc(coproc),
 		m_pCoprocAsStr(pCoprocAsStr),
 		m_pCoprocName(pCoprocName),
@@ -40,7 +40,8 @@ public:
 		m_maxCoprocQwReadCnt(maxCoprocQwReadCnt),
 		m_maxCoprocQwWriteCnt(maxCoprocQwWriteCnt),
 		m_bVarQwReqCnt(bVarQwReqCnt),
-		m_bramsPerAe(bramsPerAe)
+		m_bramsPerAe(bramsPerAe),
+		m_uramsPerAe(uramsPerAe)
 	{
 		m_bIsMultiQwSupported = m_maxHostQwReadCnt > 1 || m_maxHostQwWriteCnt > 1 ||
 			m_maxCoprocQwReadCnt > 1 || m_maxCoprocQwWriteCnt > 1;
@@ -58,6 +59,7 @@ public:
 	bool IsVarQwReqCnt() const { return m_bVarQwReqCnt; }
 
 	int GetBramsPerAE() const { return m_bramsPerAe; }
+	int GetUramsPerAE() const { return m_uramsPerAe; }
 
 	bool IsMultiQwSuppported() const { return m_bIsMultiQwSupported; }
 
@@ -74,6 +76,7 @@ private:
 	bool m_bVarQwReqCnt;		// multi QW requests can be variable in size
 
 	int m_bramsPerAe;			// number of block rams per AE
+	int m_uramsPerAe;			// number of ultra rams per AE
 
 	bool m_bIsMultiQwSupported;
 };
@@ -130,7 +133,9 @@ public:
 	int GetAeUnitCnt() { return m_aeUnitCnt; }
 	int GetHostHtIdW() { return m_hostHtIdW; }
 	int GetMax18KbBramPerUnit() { return m_max18KbBramPerUnit; }
+	int GetMaxUramPerUnit() { return m_maxUramPerUnit; }
 	int GetMinSliceToBramRatio() { return m_minSliceToBramRatio; }
+	int GetMinBramToUramRatio() { return m_minBramToUramRatio; }
 	string GetFxModName() { return m_fxModName; }
 	int GetArgMemLatency(int i) { return m_avgMemLatency[i]; }
 	vector<string> &GetIncludeDirs() { return m_includeDirs; }
@@ -148,6 +153,7 @@ public:
 	char const * GetCoprocName() { return g_coprocInfo[m_coprocId].GetCoprocName(); }
 	char const * GetCoprocAsStr() { return g_coprocInfo[m_coprocId].GetCoprocAsStr(); }
 	int GetBramsPerAE() { return g_coprocInfo[m_coprocId].GetBramsPerAE(); }
+	int GetUramsPerAE() { return g_coprocInfo[m_coprocId].GetUramsPerAE(); }
 	int GetUioPortCntMax() { return m_uioPortCntMax; }
 	int GetUioPortCnt() { return m_uioPortCnt; }
 	int GetUioPortsWidth() { return m_uioPortsWidth; }
@@ -204,7 +210,9 @@ private:
 	string			m_oqModName;
 	int				m_defaultFreqMhz;
 	int				m_max18KbBramPerUnit;
+	int				m_maxUramPerUnit;
 	int				m_minSliceToBramRatio;
+	int				m_minBramToUramRatio;
 	string			m_fxModName;
 	int				m_avgMemLatency[2];
 	int				m_coprocId;

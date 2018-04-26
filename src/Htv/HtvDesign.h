@@ -105,12 +105,17 @@ public:
     void SynIndividualStatements(CHtvIdent *pHier, CHtvObject * pObj, CHtvObject * pRtnObj);
 	void SynHtDistQueRams(CHtvIdent *pHier);
 	void SynHtBlockQueRams(CHtvIdent *pHier);
+	void SynHtUltraQueRams(CHtvIdent *pHier);
 	void SynHtDistRams(CHtvIdent *pHier);
 	void SynHtDistRamModule(bool bQueue);
 	void SynHtBlockRams(CHtvIdent *pHier);
 	void SynHtBlockRamModule();
 	void SynHtAsymBlockRams(CHtvIdent *pHier);
 	void SynHtAsymBlockRamModule();
+	void SynHtUltraRams(CHtvIdent *pHier);
+	void SynHtUltraRamModule();
+	void SynHtAsymUltraRams(CHtvIdent *pHier);
+	void SynHtAsymUltraRamModule();
 	void SynHtDistRamWe(CHtvIdent *pHier, CHtvObject * pObj, CHtvObject * pRtnObj, CHtvOperand *pExpr, bool bIsAlwaysAt);
 	void SynScPrim(CHtvIdent *pHier, CHtvObject * pObj, CHtvStatement *pStatement);
 	void SynXilinxRegisters(CHtvIdent *pHier, CHtvObject * pObj, CHtvStatement *pStatement, bool &bAlwaysAtNeeded);
@@ -321,6 +326,12 @@ private:
 	bool m_bIs1CkDoRegHtMwrBlockRamsPresent;
 	bool m_bIs2CkDoRegHtMrdBlockRamsPresent;
 	bool m_bIs2CkDoRegHtMwrBlockRamsPresent;
+	bool m_bIs1CkHtUltraRamsPresent;
+	bool m_bIs1CkDoRegHtUltraRamsPresent;
+	bool m_bIs1CkHtMrdUltraRamsPresent;
+	bool m_bIs1CkHtMwrUltraRamsPresent;
+	bool m_bIs1CkDoRegHtMrdUltraRamsPresent;
+	bool m_bIs1CkDoRegHtMwrUltraRamsPresent;
 	
 	vector<CHtDistRamType>	m_htDistRamTypes;
 };

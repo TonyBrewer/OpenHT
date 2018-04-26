@@ -211,7 +211,9 @@ private:
 	CHtfeIdent *ParseHtQueueDecl(CHtfeIdent *pHier);
 	CHtfeIdent *ParseHtDistRamDecl(CHtfeIdent *pHier);
 	CHtfeIdent *ParseHtBlockRamDecl(CHtfeIdent *pHier);
+	CHtfeIdent *ParseHtUltraRamDecl(CHtfeIdent *pHier);
 	CHtfeIdent *ParseHtAsymBlockRamDecl(CHtfeIdent *pHier, bool bMultiRead);
+	CHtfeIdent *ParseHtAsymUltraRamDecl(CHtfeIdent *pHier, bool bMultiRead);
 	void ParseTemplateDecl(CHtfeIdent *pHier);
 	int ParseStructDecl(CHtfeIdent *pHier, int startBitPos=0);
     void RecordStructMethod(CHtfeIdent *pStruct);

@@ -35,6 +35,7 @@ void CDsnInfo::InitializeAndValidate()
 	InitMifRamType();
 
 	InitAndValidateModNgv();
+	InitUramUsage();
 	InitAndValidateModIpl();
 	InitAndValidateModIhm();
 	InitAndValidateModOhm();
@@ -521,8 +522,11 @@ void CDsnInfo::InitBramUsage()
 		target.m_copies *= pRam->m_elemCnt;
 		target.m_slices = FindSliceCnt(target.m_depth, target.m_width);
 		target.m_brams = FindBramCnt(target.m_depth, target.m_width);
+		target.m_urams = FindUramCnt(target.m_depth, target.m_width);
 		target.m_slicePerBramRatio = (float)target.m_slices / (float)target.m_brams;
+		target.m_bramPerUramRatio = (float)target.m_brams / (float)target.m_urams;
 		target.m_varType = pRam->m_bPrivGbl ? "Private" : "Global";
+		target.m_pNgvInfo = pNgvInfo;
 		target.m_modName = "";
 
 		m_bramTargetList.push_back(target);
@@ -547,8 +551,11 @@ void CDsnInfo::InitBramUsage()
 			target.m_copies = mod.m_instSet.GetTotalCnt();
 			target.m_slices = FindSliceCnt(target.m_depth, target.m_width);
 			target.m_brams = FindBramCnt(target.m_depth, target.m_width);
+			target.m_urams = FindUramCnt(target.m_depth, target.m_width);
 			target.m_slicePerBramRatio = (float)target.m_slices / (float)target.m_brams;
+			target.m_bramPerUramRatio = (float)target.m_brams / (float)target.m_urams;
 			target.m_varType = "Private";
+			target.m_pNgvInfo = NULL;
 			target.m_modName = mod.m_modName.AsStr();
 
 			m_bramTargetList.push_back(target);
@@ -577,12 +584,15 @@ void CDsnInfo::InitBramUsage()
 					if (!fld1.m_bSpanning || fld1.m_bDupRange) continue;
 					target.m_slices += FindSliceCnt(target.m_depth, fld1.m_width);
 					target.m_brams += FindBramCnt(target.m_depth, fld1.m_width);
+					target.m_urams = FindUramCnt(target.m_depth, fld1.m_width);
 					fldWidths += fld1.m_width;
 				}
 				HtlAssert(fldWidths == target.m_width);
 
 				target.m_slicePerBramRatio = (float)target.m_slices / (float)target.m_brams;
+				target.m_bramPerUramRatio = (float)target.m_brams / (float)target.m_urams;
 				target.m_varType = pRam->m_bPrivGbl ? "Private" : "Global";
+				target.m_pNgvInfo = pRam->m_pNgvInfo;
 				target.m_modName = mod.m_modName.AsStr();
 			} else {
 				target.m_name = pRam->m_gblName;
@@ -594,8 +604,11 @@ void CDsnInfo::InitBramUsage()
 				target.m_copies *= (pRam->m_bReadForInstrRead ? 1 : 0) + (pRam->m_bReadForMifWrite ? 1 : 0);
 				target.m_slices = FindSliceCnt(target.m_depth, target.m_width);
 				target.m_brams = FindBramCnt(target.m_depth, target.m_width);
+				target.m_urams = FindUramCnt(target.m_depth, target.m_width);
 				target.m_slicePerBramRatio = (float)target.m_slices / (float)target.m_brams;
+				target.m_bramPerUramRatio = (float)target.m_brams / (float)target.m_urams;
 				target.m_varType = pRam->m_bPrivGbl ? "Private" : "Global";
+				target.m_pNgvInfo = pRam->m_pNgvInfo;
 				target.m_modName = mod.m_modName.AsStr();
 			}
 
@@ -622,8 +635,11 @@ void CDsnInfo::InitBramUsage()
 			target.m_copies *= pShared->m_elemCnt;
 			target.m_slices = FindSliceCnt(target.m_depth, target.m_width);
 			target.m_brams = FindBramCnt(target.m_depth, target.m_width);
+			target.m_urams = FindUramCnt(target.m_depth, target.m_width);
 			target.m_slicePerBramRatio = (float)target.m_slices / (float)target.m_brams;
+			target.m_bramPerUramRatio = (float)target.m_brams / (float)target.m_urams;
 			target.m_varType = "Shared";
+			target.m_pNgvInfo = NULL;
 			target.m_modName = mod.m_modName.AsStr();
 
 			m_bramTargetList.push_back(target);
@@ -664,6 +680,54 @@ void CDsnInfo::InitBramUsage()
 			brams18KbAvailCnt -= target.m_brams * target.m_copies;
 		} else
 			*target.m_pRamType = eDistRam;
+	}
+}
+
+void CDsnInfo::InitUramUsage()
+{
+	// determine which block rams should be implemented as ultra rams.
+	// On entry:
+	//   Required design modules have been marked
+	//   Module instance lists have been initialized
+	//   brams have been set
+
+	bool isWx2 = false;
+	if (strcasestr(g_appArgs.GetCoprocName(), "wx2") != NULL) {
+		isWx2 = true;
+	}
+
+	if (!isWx2) return;
+
+	// Now decide which rams to implement with block rams
+	int uramsAvailCnt = g_appArgs.GetMaxUramPerUnit();
+
+	// check to ensure validity of manually specified urams
+	for (size_t targetIdx = 0; targetIdx < m_bramTargetList.size(); targetIdx += 1) {
+		CBramTarget & target = m_bramTargetList[targetIdx];
+
+		if (*target.m_pRamType != eUltraRam) continue;
+		if (target.m_varType == "Shared") continue;
+
+		// Check to see if this ram requires 2 clocks..
+		if (target.m_pNgvInfo->m_bNgvWrDataClk2x) {
+			ParseMsg(Error, "Variable %s has ultraRam=true set, but this variable cannot be set to an ultraRam\n\tThis is because it requires differing read/write clocks, usually the result of multiple write sources\n\tConsider using blockRam=true instead", target.m_name.c_str());
+		}
+	}
+
+	// convert brams to urams if necessary
+	for (size_t targetIdx = 0; targetIdx < m_bramTargetList.size(); targetIdx += 1) {
+		CBramTarget & target = m_bramTargetList[targetIdx];
+
+		if (*target.m_pRamType != eBlockRam) continue;
+		if (target.m_varType == "Shared") continue;
+
+		// Check to see if this ram requires 2 clocks..
+		if (target.m_varType == "Private" || !target.m_pNgvInfo->m_bNgvWrDataClk2x) {
+			if (target.m_bramPerUramRatio >= g_appArgs.GetMinBramToUramRatio() && target.m_urams * target.m_copies <= uramsAvailCnt) {
+				*target.m_pRamType = eUltraRam;
+				uramsAvailCnt -= target.m_urams * target.m_copies;
+			}
+		}
 	}
 }
 
@@ -708,6 +772,12 @@ int CDsnInfo::FindBramCnt(int depth, int width)
 		brams = (depth + 512 - 1) / 512 * ((width + 35) / 36);
 
 	return brams;
+}
+
+int CDsnInfo::FindUramCnt(int depth, int width)
+{
+	int urams = (depth + 4096 - 1) / 4096 * ((width + 71) / 72);
+	return urams;
 }
 
 bool CDsnInfo::FindStructName(string const &structType, string &structName)
@@ -1552,6 +1622,11 @@ void CDsnInfo::ReportRamFieldUsage()
 
 	const char *ws = "        ";
 
+	bool isWx2 = false;
+	if (strcasestr(g_appArgs.GetCoprocName(), "wx2") != NULL) {
+		isWx2 = true;
+	}
+
 	fprintf(fp, "%s<h1><b>Generated RAMs</b></h1>\n", ws);
 	fprintf(fp, "%s  <dl>\n", ws);
 	fprintf(fp, "%s    <dt><b>Summary</b></dt>\n", ws);
@@ -1564,6 +1639,16 @@ void CDsnInfo::ReportRamFieldUsage()
 		ws, g_appArgs.GetMinSliceToBramRatio());
 	fprintf(fp, "%s      <dd><dl><dd><sup>1</sup> The ratio is used to determine how many FPGA slices are required\n", ws);
 	fprintf(fp, "%s      when implementing a memory as a BRAM versus a distributed ram.</dd></dl></dd>\n", ws);
+	if (isWx2) {
+		fprintf(fp, "%s      <dd>URAMs per %s AE: %d</dd>\n", ws, g_appArgs.GetCoprocName(), g_appArgs.GetUramsPerAE());
+		fprintf(fp, "%s      <dd>URAM usage limit: 50%%</dd>\n", ws);
+		fprintf(fp, "%s      <dd>Max URAMs per Unit (use -uu to override): %d (%d URAMs * 50%% / %d units)</dd>\n\n",
+			ws, g_appArgs.GetMaxUramPerUnit(), g_appArgs.GetUramsPerAE(), g_appArgs.GetAeUnitCnt());
+		fprintf(fp, "%s      <dd>Min BRAM to URAM ratio<sup>1</sup> (use -bu to override): %d</dd>\n",
+			ws, g_appArgs.GetMinBramToUramRatio());
+		fprintf(fp, "%s      <dd><dl><dd><sup>1</sup> The ratio is used to determine how many FPGA BRAMs are required\n", ws);
+		fprintf(fp, "%s      when implementing a memory as a URAM versus a BRAM.</dd></dl></dd>\n", ws);
+	}
 	fprintf(fp, "%s    <br/>\n", ws);
 	fprintf(fp, "%s    <dt><b>Arrayed Variable(s)</b></dt>\n", ws);
 	fprintf(fp, "%s    <br/>\n", ws);
@@ -1577,7 +1662,11 @@ void CDsnInfo::ReportRamFieldUsage()
 	fprintf(fp, "%s        <th rowspan=2>Copies</th>\n", ws);
 	fprintf(fp, "%s        <th colspan=2>Distributed</th>\n", ws);
 	fprintf(fp, "%s        <th colspan=2>Block</th>\n", ws);
-	fprintf(fp, "%s        <th rowspan=2>Ratio</th>\n", ws);
+	fprintf(fp, "%s        <th rowspan=2>BRatio</th>\n", ws);
+	if (isWx2) {
+		fprintf(fp, "%s        <th colspan=2>Ultra</th>\n", ws);
+		fprintf(fp, "%s        <th rowspan=2>URatio</th>\n", ws);
+	}
 	fprintf(fp, "%s        <th rowspan=2>Selected</th>\n", ws);
 	fprintf(fp, "%s      </tr>\n", ws);
 	fprintf(fp, "%s      <tr>\n", ws);
@@ -1585,6 +1674,10 @@ void CDsnInfo::ReportRamFieldUsage()
 	fprintf(fp, "%s        <th>Total</th>\n", ws);
 	fprintf(fp, "%s        <th># 18Kb</th>\n", ws);
 	fprintf(fp, "%s        <th>Total</th>\n", ws);
+	if (isWx2) {
+		fprintf(fp, "%s        <th># URAM</th>\n", ws);
+		fprintf(fp, "%s        <th>Total</th>\n", ws);
+	}
 	fprintf(fp, "%s      </tr>\n", ws);
 
 	for (size_t targetIdx = 0; targetIdx < m_bramTargetList.size(); targetIdx += 1) {
@@ -1593,13 +1686,25 @@ void CDsnInfo::ReportRamFieldUsage()
 		if (target.m_depth == 1) continue;
 
 		fprintf(fp, "%s      <tr>\n", ws);
-		fprintf(fp, "%s        <td>%-17s</td><td>%-17s</td><td>%-16s</td><td>%2d</td><td>%2d</td><td>%2d</td><td>%2d</td><td>%2d</td><td>%2d</td><td>%2d</td><td>%6.2f</td><td>%s</td>\n",
-			ws, target.m_modName.c_str(), target.m_varType.c_str(),
-			target.m_name.c_str(), target.m_depth, target.m_width,
-			target.m_copies, target.m_slices, target.m_slices * target.m_copies,
-			target.m_brams, target.m_brams * target.m_copies,
-			(double)target.m_slicePerBramRatio,
-			*target.m_pRamType == eDistRam ? "Dist" : "Block");
+		if (!isWx2) {
+			fprintf(fp, "%s        <td>%-17s</td><td>%-17s</td><td>%-16s</td><td>%2d</td><td>%2d</td><td>%2d</td><td>%2d</td><td>%2d</td><td>%2d</td><td>%2d</td><td>%6.2f</td><td>%s</td>\n",
+				ws, target.m_modName.c_str(), target.m_varType.c_str(),
+				target.m_name.c_str(), target.m_depth, target.m_width,
+				target.m_copies, target.m_slices, target.m_slices * target.m_copies,
+				target.m_brams, target.m_brams * target.m_copies,
+				(double)target.m_slicePerBramRatio,
+				*target.m_pRamType == eDistRam ? "Dist" : "Block");
+		} else {
+			fprintf(fp, "%s        <td>%-17s</td><td>%-17s</td><td>%-16s</td><td>%2d</td><td>%2d</td><td>%2d</td><td>%2d</td><td>%2d</td><td>%2d</td><td>%2d</td><td>%6.2f</td><td>%2d</td><td>%2d</td><td>%6.2f</td><td>%s</td>\n",
+				ws, target.m_modName.c_str(), target.m_varType.c_str(),
+				target.m_name.c_str(), target.m_depth, target.m_width,
+				target.m_copies, target.m_slices, target.m_slices * target.m_copies,
+				target.m_brams, target.m_brams * target.m_copies,
+				(double)target.m_slicePerBramRatio,
+				target.m_urams, target.m_urams * target.m_copies,
+				(double)target.m_bramPerUramRatio,
+				*target.m_pRamType == eDistRam ? "Dist" : (*target.m_pRamType == eBlockRam ? "Block" : "Ultra"));
+		}
 		fprintf(fp, "%s      </tr>\n", ws);
 	}
 

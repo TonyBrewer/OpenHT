@@ -136,6 +136,71 @@ void CHtvDesign::SynHtBlockQueRams(CHtvIdent *pHier)
 	}
 }
 
+void CHtvDesign::SynHtUltraQueRams(CHtvIdent *pHier)
+{
+	string inputFileName = g_htvArgs.GetInputFileName();
+
+	CHtvIdentTblIter identIter(pHier->GetFlatIdentTbl());
+	for (identIter.Begin(); !identIter.End(); identIter++) {
+		if (!identIter->IsVariable() || !identIter->IsHtUltraQue())
+			continue;
+
+		CHtvIdent *pQueueRam = identIter();
+		m_bIs1CkHtUltraRamsPresent = true;
+
+		// Ultra Ram
+		int addrWidth = pQueueRam->GetType()->GetHtMemoryAddrWidth1();
+		addrWidth += pQueueRam->GetType()->GetHtMemoryAddrWidth2();
+
+		string cQueName = pQueueRam->GetName();
+		if (cQueName.substr(0,2) == "r_" || cQueName.substr(0,2) == "m_")
+			cQueName.replace(0, 2, "c_");
+		else
+			cQueName.insert(0, "c_");
+
+		string rQueName = pQueueRam->GetName();
+		if (rQueName.substr(0,2) == "m_")
+			rQueName.replace(0, 2, "r_");
+
+		vector<int> refList(pQueueRam->GetDimenCnt(), 0);
+
+		char buf[128];
+		do {
+			string refDimStr;
+			string modDimStr;
+
+			for (size_t i = 0; i < refList.size(); i += 1) {
+				sprintf(buf, "$%d", refList[i]);
+				refDimStr += buf;
+
+				sprintf(buf, "$%d", refList[i]);
+				modDimStr += buf;
+			}
+
+			if (pQueueRam->GetType()->IsHtUltraRamDoReg())
+				m_vFile.Print("\n%s_HtUltraRam1CkDoReg #( .DATA_WIDTH(%d), .ADDR_WIDTH(%d) ) %s%s ( ",
+					inputFileName.c_str(), pQueueRam->GetWidth(), addrWidth, pQueueRam->GetName().c_str(), modDimStr.c_str());
+			else
+				m_vFile.Print("\n%s_HtUltraRam1Ck #( .DATA_WIDTH(%d), .ADDR_WIDTH(%d) ) %s%s ( ",
+					inputFileName.c_str(), pQueueRam->GetWidth(), addrWidth, pQueueRam->GetName().c_str(), modDimStr.c_str());
+
+			bool bMultiple;
+			CHtvIdent * pMethod = FindUniqueAccessMethod(&pQueueRam->GetHierIdent()->GetWriterList(), bMultiple);
+
+			if (bMultiple)
+				ParseMsg(PARSE_FATAL, pQueueRam->GetLineInfo(), "ht_queue push by muliple methods");
+
+			m_vFile.Print(".clk( %s ), ", pMethod->GetClockIdent()->GetName().c_str());
+			m_vFile.Print(".we( %s_WrEn%s ), ", cQueName.c_str(), refDimStr.c_str());
+			m_vFile.Print(".wa( %s_WrAddr%s[%d:0] ), ", rQueName.c_str(), refDimStr.c_str(), addrWidth-1);
+			m_vFile.Print(".din( %s_WrData%s ), ", cQueName.c_str(), refDimStr.c_str());
+			m_vFile.Print(".ra( %s_RdAddr%s[%d:0] ), ", cQueName.c_str(), refDimStr.c_str(), addrWidth-1);
+			m_vFile.Print(".dout( %s_RdData%s ) );\n", cQueName.c_str(), refDimStr.c_str());
+
+		} while (!pQueueRam->DimenIter(refList));
+	}
+}
+
 void CHtvDesign::SynHtDistRams(CHtvIdent *pHier)
 {
 	string inputFileName = g_htvArgs.GetInputFileName();
@@ -145,7 +210,7 @@ void CHtvDesign::SynHtDistRams(CHtvIdent *pHier)
 		if (!identIter->IsVariable() || !identIter->IsHtMemory())
 			continue;
 
-		if (identIter->IsHtBlockRam() || identIter->IsHtMrdBlockRam() || identIter->IsHtMwrBlockRam() || identIter->IsHtQueue())
+		if (identIter->IsHtBlockRam() || identIter->IsHtMrdBlockRam() || identIter->IsHtMwrBlockRam() || identIter->IsHtUltraRam() || identIter->IsHtMrdUltraRam() || identIter->IsHtMwrUltraRam() || identIter->IsHtQueue())
 			continue;
 
 		CHtvIdent *pDistRam = identIter();
@@ -319,6 +384,83 @@ void CHtvDesign::SynHtBlockRams(CHtvIdent *pHier)
 	}
 }
 
+void CHtvDesign::SynHtUltraRams(CHtvIdent *pHier)
+{
+	string inputFileName = g_htvArgs.GetInputFileName();
+
+	CHtvIdentTblIter identIter(pHier->GetFlatIdentTbl());
+	for (identIter.Begin(); !identIter.End(); identIter++) {
+		if (!identIter->IsVariable() || (!identIter->IsHtQueue() && !identIter->IsHtMemory()))
+			continue;
+
+		if (!identIter->IsHtUltraRam())
+			continue;
+
+		CHtvIdent *pUltraRam = identIter();
+
+		// Ultra Ram
+		int addrWidth = pUltraRam->GetType()->GetHtMemoryAddrWidth1();
+		addrWidth += pUltraRam->GetType()->GetHtMemoryAddrWidth2();
+
+		string cQueName = pUltraRam->GetName();
+		if (cQueName.substr(0,2) == "r_" || cQueName.substr(0,2) == "m_")
+			cQueName.replace(0, 2, "c_");
+		else
+			cQueName.insert(0, "c_");
+
+		vector<int> refList(pUltraRam->GetDimenCnt(), 0);
+
+		char buf[128];
+		do {
+			string refDimStr;
+			string modDimStr;
+
+			for (size_t i = 0; i < refList.size(); i += 1) {
+				sprintf(buf, "$%d", refList[i]);
+				refDimStr += buf;
+
+				sprintf(buf, "$%d", refList[i]);
+				modDimStr += buf;
+			}
+
+			bool bMultiple;
+			CHtvIdent * pWriteMethod = FindUniqueAccessMethod(&pUltraRam->GetHierIdent()->GetWriterList(), bMultiple);
+
+			if (bMultiple)
+				ParseMsg(PARSE_FATAL, pUltraRam->GetLineInfo(), "ht_ultra_ram write by muliple methods");
+
+			CHtvIdent * pReadMethod = FindUniqueAccessMethod(&pUltraRam->GetHierIdent()->GetReaderList(), bMultiple);
+
+			if (bMultiple)
+				ParseMsg(PARSE_FATAL, pUltraRam->GetLineInfo(), "ht_ultra_ram read by muliple methods");
+
+			if (pReadMethod->GetClockIdent()->GetName() == pWriteMethod->GetClockIdent()->GetName()) {
+
+				if (pUltraRam->GetType()->IsHtUltraRamDoReg()) {
+					m_bIs1CkDoRegHtUltraRamsPresent = true;
+					m_vFile.Print("\n%s_HtUltraRam1CkDoReg #( .DATA_WIDTH(%d), .ADDR_WIDTH(%d) ) %s%s ( ",
+						inputFileName.c_str(), pUltraRam->GetWidth(), addrWidth, pUltraRam->GetName().c_str(), modDimStr.c_str());
+				} else {
+					m_bIs1CkHtUltraRamsPresent = true;
+					m_vFile.Print("\n%s_HtUltraRam1Ck #( .DATA_WIDTH(%d), .ADDR_WIDTH(%d) ) %s%s ( ",
+						inputFileName.c_str(), pUltraRam->GetWidth(), addrWidth, pUltraRam->GetName().c_str(), modDimStr.c_str());
+				}
+
+			} else {
+				ParseMsg(PARSE_ERROR, pUltraRam->GetLineInfo(), "URAM - Ultra Ram cannot have different clocks for read/write ports");
+			}
+
+			m_vFile.Print(".clk( %s ), ", pWriteMethod->GetClockIdent()->GetName().c_str());
+			m_vFile.Print(".we( %s_WrEn%s ), ", cQueName.c_str(), refDimStr.c_str());
+			m_vFile.Print(".wa( %s_WrAddr%s ), ", cQueName.c_str(), refDimStr.c_str());
+			m_vFile.Print(".din( %s_WrData%s ), ", cQueName.c_str(), refDimStr.c_str());
+			m_vFile.Print(".ra( %s_RdAddr%s ), ", cQueName.c_str(), refDimStr.c_str());
+			m_vFile.Print(".dout( %s_RdData%s ) );\n", cQueName.c_str(), refDimStr.c_str());
+
+		} while (!pUltraRam->DimenIter(refList));
+	}
+}
+
 void CHtvDesign::SynHtAsymBlockRams(CHtvIdent *pHier)
 {
 	string inputFileName = g_htvArgs.GetInputFileName();
@@ -439,6 +581,105 @@ void CHtvDesign::SynHtAsymBlockRams(CHtvIdent *pHier)
 			m_vFile.Print(".rd( %s_RdData%s ) );\n", cQueName.c_str(), refDimStr.c_str());
 
 		} while (!pBlockRam->DimenIter(refList));
+	}
+}
+
+void CHtvDesign::SynHtAsymUltraRams(CHtvIdent *pHier)
+{
+	string inputFileName = g_htvArgs.GetInputFileName();
+
+	CHtvIdentTblIter identIter(pHier->GetFlatIdentTbl());
+	for (identIter.Begin(); !identIter.End(); identIter++) {
+		if (!identIter->IsVariable() || (!identIter->IsHtQueue() && !identIter->IsHtMemory()))
+			continue;
+
+		if (!identIter->IsHtMrdUltraRam() && !identIter->IsHtMwrUltraRam())
+			continue;
+
+		CHtvIdent *pUltraRam = identIter();
+
+		// Ultra Ram
+		int addrWidth = pUltraRam->GetType()->GetHtMemoryAddrWidth1();
+		addrWidth += pUltraRam->GetType()->GetHtMemoryAddrWidth2();
+
+		int selWidth = pUltraRam->GetType()->GetHtMemorySelWidth();
+
+		int dataWidth = pUltraRam->GetType()->GetType()->GetWidth();
+
+		string cQueName = pUltraRam->GetName();
+		if (cQueName.substr(0,2) == "r_" || cQueName.substr(0,2) == "m_")
+			cQueName.replace(0, 2, "c_");
+		else
+			cQueName.insert(0, "c_");
+
+		vector<int> refList(pUltraRam->GetDimenCnt(), 0);
+
+		char buf[128];
+		do {
+			string refDimStr;
+			string modDimStr;
+
+			for (size_t i = 0; i < refList.size(); i += 1) {
+				sprintf(buf, "$%d", refList[i]);
+				refDimStr += buf;
+
+				sprintf(buf, "$%d", refList[i]);
+				modDimStr += buf;
+			}
+
+			bool bMultiple;
+			CHtvIdent * pWriteMethod = FindUniqueAccessMethod(&pUltraRam->GetHierIdent()->GetWriterList(), bMultiple);
+
+			if (bMultiple)
+				ParseMsg(PARSE_FATAL, pUltraRam->GetLineInfo(), "ht_asym_ultra_ram write by muliple methods");
+
+			CHtvIdent * pReadMethod = FindUniqueAccessMethod(&pUltraRam->GetHierIdent()->GetReaderList(), bMultiple);
+
+			if (bMultiple)
+				ParseMsg(PARSE_FATAL, pUltraRam->GetLineInfo(), "ht_asym_ultra_ram read by muliple methods");
+
+			if (pReadMethod->GetClockIdent()->GetName() == pWriteMethod->GetClockIdent()->GetName()) {
+
+				if (pUltraRam->GetType()->IsHtUltraRamDoReg()) {
+					if (identIter->IsHtMrdUltraRam()) {
+						m_bIs1CkDoRegHtMrdUltraRamsPresent = true;
+						m_vFile.Print("\n%s_HtUltraMrdRam1CkDoReg #( .DATA_W(%d), .ADDR_W(%d), .SEL_W(%d) ) %s%s ( ",
+							inputFileName.c_str(), dataWidth, addrWidth, selWidth, pUltraRam->GetName().c_str(), modDimStr.c_str());
+					}
+					if (identIter->IsHtMwrUltraRam()) {
+						m_bIs1CkDoRegHtMwrUltraRamsPresent = true;
+						m_vFile.Print("\n%s_HtUltraMwrRam1CkDoReg #( .DATA_W(%d), .ADDR_W(%d), .SEL_W(%d) ) %s%s ( ",
+							inputFileName.c_str(), dataWidth, addrWidth, selWidth, pUltraRam->GetName().c_str(), modDimStr.c_str());
+					}
+				} else {
+					if (identIter->IsHtMrdUltraRam()) {
+						m_bIs1CkHtMrdUltraRamsPresent = true;
+						m_vFile.Print("\n%s_HtMrdUltraRam1Ck #( .DATA_W(%d), .ADDR_W(%d), .SEL_W(%d) ) %s%s ( ",
+							inputFileName.c_str(), dataWidth, addrWidth, selWidth, pUltraRam->GetName().c_str(), modDimStr.c_str());
+					}
+					if (identIter->IsHtMwrUltraRam()) {
+						m_bIs1CkHtMwrUltraRamsPresent = true;
+						m_vFile.Print("\n%s_HtMwrUltraRam1Ck #( .DATA_W(%d), .ADDR_W(%d), .SEL_W(%d) ) %s%s ( ",
+							inputFileName.c_str(), dataWidth, addrWidth, selWidth, pUltraRam->GetName().c_str(), modDimStr.c_str());
+					}
+				}
+
+				m_vFile.Print(".ck( %s ), ", pWriteMethod->GetClockIdent()->GetName().c_str());
+			} else {
+				ParseMsg(PARSE_ERROR, pUltraRam->GetLineInfo(), "Asym - Ultra Ram cannot have different clocks for read/write ports");
+			}
+
+			m_vFile.Print(".we( %s_WrEn%s ), ", cQueName.c_str(), refDimStr.c_str());
+			if (identIter->IsHtMrdUltraRam())
+				m_vFile.Print(".ws( %s_WrSel%s ), ", cQueName.c_str(), refDimStr.c_str());
+			m_vFile.Print(".wa( %s_WrAddr%s ), ", cQueName.c_str(), refDimStr.c_str());
+			m_vFile.Print(".wd( %s_WrData%s ), ", cQueName.c_str(), refDimStr.c_str());
+			if (identIter->IsHtMwrUltraRam())
+				m_vFile.Print(".rs( %s_RdSel%s ), ", cQueName.c_str(), refDimStr.c_str());
+			m_vFile.Print(".ra( %s_RdAddr%s ), ", cQueName.c_str(), refDimStr.c_str());
+			m_vFile.Print(".rd( %s_RdData%s ) );\n", cQueName.c_str(), refDimStr.c_str());
+
+		} while (!pUltraRam->DimenIter(refList));
 	}
 }
 
@@ -662,6 +903,106 @@ void CHtvDesign::SynHtBlockRamModule()
 	}
 }
 
+void CHtvDesign::SynHtUltraRamModule()
+{
+	for (int mode = 0; mode < 1; mode += 1) {
+		int clkCnt = 0;
+		bool bDoReg = false;
+
+		switch (mode) {
+		case 0:
+			if (!m_bIs1CkHtUltraRamsPresent) continue;
+			clkCnt = 1;
+			bDoReg = false;
+			break;
+		case 1:
+			if (!m_bIs1CkDoRegHtUltraRamsPresent) continue;
+			clkCnt = 1;
+			bDoReg = true;
+			break;
+		}
+
+		// The following module is used to infer ultra rams
+		//   Originally written by Mike Ruff (tpmem.v)
+	
+		string inputFileName = g_htvArgs.GetInputFileName();
+
+		if (g_htvArgs.IsKeepHierarchyEnabled())
+            m_vFile.Print("\n(* keep_hierarchy = \"true\" *)\n");
+        else
+            m_vFile.Print("\n");
+
+		m_vFile.Print("module %s_HtUltraRam%s%s #(parameter\n", inputFileName.c_str(),
+			clkCnt == 1 ? "1Ck" : "2Ck", bDoReg ? "DoReg" : "");
+		m_vFile.IncIndentLevel();
+		m_vFile.Print("DATA_WIDTH = 32,\n");
+		m_vFile.Print("ADDR_WIDTH = 9\n");
+		m_vFile.DecIndentLevel();
+		m_vFile.Print(") (\n");
+		m_vFile.IncIndentLevel();
+		m_vFile.Print("input                    clk,\n");
+		m_vFile.Print("input                    we,\n");
+		m_vFile.Print("input  [ADDR_WIDTH-1:0]  wa,\n");
+		m_vFile.Print("input  [DATA_WIDTH-1:0]  din,\n");
+		m_vFile.Print("input  [ADDR_WIDTH-1:0]  ra,\n");
+		m_vFile.Print("output [DATA_WIDTH-1:0]  dout\n");
+		m_vFile.DecIndentLevel();
+		m_vFile.Print(");\n");
+		m_vFile.IncIndentLevel();
+
+		m_vFile.Print("\n(* ram_style = \"ultra\" *)\n");
+		m_vFile.Print("reg [DATA_WIDTH-1:0] mem[2**ADDR_WIDTH-1:0];\n");
+
+		m_vFile.Print("always @(posedge clk)\n");
+		m_vFile.IncIndentLevel();
+		m_vFile.Print("begin\n");
+		m_vFile.IncIndentLevel();
+		m_vFile.Print("if (we)\n");
+		m_vFile.IncIndentLevel();
+		m_vFile.Print("mem[wa] <= din;\n");
+		m_vFile.DecIndentLevel();
+		m_vFile.DecIndentLevel();
+		m_vFile.Print("end\n");
+		m_vFile.DecIndentLevel();
+
+		m_vFile.Print("\nreg [DATA_WIDTH-1:0] ram_dout;\n");
+		m_vFile.Print("always @(posedge clk)\n");
+		m_vFile.IncIndentLevel();
+		m_vFile.Print("begin\n");
+		m_vFile.IncIndentLevel();
+		m_vFile.Print("ram_dout <=\t// synthesis translate_off\n");
+		m_vFile.Print("\t\t(we && wa == ra) ? {(DATA_WIDTH+11)/12{12'hbad}} :\n");
+		m_vFile.Print("\t\t// synthesis translate_on\n");
+		m_vFile.Print("\t\tmem[ra];\n");
+		m_vFile.DecIndentLevel();
+		m_vFile.Print("end\n");
+		m_vFile.DecIndentLevel();
+
+		if (bDoReg) {
+			m_vFile.Print("\nreg [DATA_WIDTH-1:0] r_dout;\n");
+			if (clkCnt == 2)
+				m_vFile.Print("always @(posedge rclk)\n");
+			else
+				m_vFile.Print("always @(posedge clk)\n");
+			m_vFile.IncIndentLevel();
+			m_vFile.Print("begin\n");
+			m_vFile.IncIndentLevel();
+			m_vFile.Print("r_dout <= ram_dout;\n");
+			m_vFile.DecIndentLevel();
+			m_vFile.Print("end\n");
+			m_vFile.DecIndentLevel();
+			m_vFile.Print("assign dout = r_dout;\n");
+		} else {
+			m_vFile.Print("assign dout = ram_dout;\n");
+		}
+
+		m_vFile.DecIndentLevel();
+
+		m_vFile.Print("endmodule\n");
+		m_vFile.Print(" ");
+	}
+}
+
 void CHtvDesign::SynHtAsymBlockRamModule()
 {
 	for (int mode = 0; mode < 8; mode += 1) {
@@ -816,6 +1157,177 @@ void CHtvDesign::SynHtAsymBlockRamModule()
 			m_vFile.Print("always @(posedge rck)\n");
 		else
 			m_vFile.Print("always @(posedge ck)\n");
+		m_vFile.IncIndentLevel();
+		m_vFile.Print("begin : ramread\n");
+		m_vFile.IncIndentLevel();
+
+		if (!bMwr) {
+			m_vFile.Print("integer i;\n");
+			m_vFile.Print("reg [SEL_W-1:0] rs;\n");
+			m_vFile.Print("for (i=0; i<2**SEL_W; i=i+1) begin\n");
+			m_vFile.IncIndentLevel();
+			m_vFile.Print("rs = i;\n");
+			m_vFile.Print("ram_dout[(i+1)*DATA_W-1 -: DATA_W] <=\n");
+		} else
+			m_vFile.Print("ram_dout <=\n");
+
+		m_vFile.IncIndentLevel();
+		m_vFile.Print("// synthesis translate_off\n");
+		m_vFile.Print("(we != 0 && wa == ra) ? {(DATA_W+11)/12{12'hbad}} :\n");
+		m_vFile.Print("// synthesis translate_on\n");
+		m_vFile.Print("mem[{ra,rs}];\n");
+		m_vFile.DecIndentLevel();
+
+		if (!bMwr)
+			m_vFile.Print("end\n");
+
+		m_vFile.DecIndentLevel();
+		m_vFile.Print("end\n");
+		m_vFile.DecIndentLevel();
+
+		if (bDoReg) {
+			m_vFile.Print("\nreg [DATA_W-1:0] r_rd;\n");
+			if (clkCnt == 2)
+				m_vFile.Print("always @(posedge rck)\n");
+			else
+				m_vFile.Print("always @(posedge ck)\n");
+			m_vFile.IncIndentLevel();
+			m_vFile.Print("begin\n");
+			m_vFile.IncIndentLevel();
+			m_vFile.Print("r_rd <= ram_dout;\n");
+			m_vFile.DecIndentLevel();
+			m_vFile.Print("end\n");
+			m_vFile.DecIndentLevel();
+			m_vFile.Print("assign rd = r_rd;\n");
+		} else {
+			m_vFile.Print("assign rd = ram_dout;\n");
+		}
+
+		m_vFile.DecIndentLevel();
+
+		m_vFile.Print("endmodule\n");
+		m_vFile.Print(" ");
+	}
+}
+
+void CHtvDesign::SynHtAsymUltraRamModule()
+{
+	for (int mode = 0; mode < 4; mode += 1) {
+		int clkCnt = 0;
+		bool bDoReg = false;
+		bool bMwr = false;
+
+		switch (mode) {
+		case 0:
+			if (!m_bIs1CkHtMwrUltraRamsPresent) continue;
+			clkCnt = 1;
+			bDoReg = false;
+			bMwr = true;
+			break;
+		case 1:
+			if (!m_bIs1CkDoRegHtMwrUltraRamsPresent) continue;
+			clkCnt = 1;
+			bDoReg = true;
+			bMwr = true;
+			break;
+		case 2:
+			if (!m_bIs1CkHtMrdUltraRamsPresent) continue;
+			clkCnt = 1;
+			bDoReg = false;
+			bMwr = false;
+			break;
+		case 3:
+			if (!m_bIs1CkDoRegHtMrdUltraRamsPresent) continue;
+			clkCnt = 1;
+			bDoReg = true;
+			bMwr = false;
+			break;
+		}
+
+		// The following module is used to infer ultra rams
+		//   Originally written by Mike Ruff (tpmem.v)
+	
+		string inputFileName = g_htvArgs.GetInputFileName();
+
+		if (g_htvArgs.IsKeepHierarchyEnabled())
+            m_vFile.Print("\n(* keep_hierarchy = \"true\" *)\n");
+        else
+            m_vFile.Print("\n");
+
+		m_vFile.Print("module %s_Ht%sUltraRam%s%s #(parameter\n", inputFileName.c_str(),
+			bMwr ? "Mwr" : "Mrd", clkCnt == 1 ? "1Ck" : "2Ck", bDoReg ? "DoReg" : "");
+		m_vFile.IncIndentLevel();
+		m_vFile.Print("DATA_W = 32,\n");
+		m_vFile.Print("ADDR_W = 9,\n");
+		m_vFile.Print("SEL_W = 1\n");
+		m_vFile.DecIndentLevel();
+		m_vFile.Print(") (\n");
+		m_vFile.IncIndentLevel();
+
+		m_vFile.Print("input ck,\n");
+
+		m_vFile.Print("input we,\n");
+
+		if (!bMwr)
+			m_vFile.Print("input [SEL_W-1:0] ws,\n");
+
+		m_vFile.Print("input [ADDR_W-1:0] wa,\n");
+
+		if (bMwr)
+			m_vFile.Print("input [(2**SEL_W)*DATA_W-1:0] wd,\n");
+		else
+			m_vFile.Print("input [DATA_W-1:0] wd,\n");
+
+		if (bMwr)
+			m_vFile.Print("input [SEL_W-1:0] rs,\n");
+
+		m_vFile.Print("input [ADDR_W-1:0] ra,\n");
+
+		if (!bMwr)
+			m_vFile.Print("output [(2**SEL_W)*DATA_W-1:0] rd\n");
+		else
+			m_vFile.Print("output [DATA_W-1:0] rd\n");
+
+		m_vFile.DecIndentLevel();
+		m_vFile.Print(");\n");
+		m_vFile.IncIndentLevel();
+
+		m_vFile.Print("\n(* ram_style = \"ultra\" *)\n");
+		m_vFile.Print("reg [DATA_W-1:0] mem[2**(ADDR_W+SEL_W)-1:0];\n");
+
+		m_vFile.Print("always @(posedge ck)\n");
+		m_vFile.IncIndentLevel();
+		m_vFile.Print("begin : ramwrite\n");
+		m_vFile.IncIndentLevel();
+
+		if (bMwr) {
+			m_vFile.Print("integer i;\n");
+			m_vFile.Print("reg [SEL_W-1:0] ws;\n");
+			m_vFile.Print("for (i=0; i<2**SEL_W; i=i+1) begin\n");
+			m_vFile.IncIndentLevel();
+			m_vFile.Print("ws = i;\n");
+			m_vFile.Print("if (we)\n");
+			m_vFile.IncIndentLevel();
+			m_vFile.Print("mem[{wa,ws}] <= wd[(i+1)*DATA_W-1 -: DATA_W];\n");
+			m_vFile.DecIndentLevel();
+			m_vFile.DecIndentLevel();
+			m_vFile.Print("end\n");
+		} else {
+			m_vFile.Print("if (we)\n");
+			m_vFile.IncIndentLevel();
+			m_vFile.Print("mem[{wa,ws}] <= wd;\n");
+			m_vFile.DecIndentLevel();
+		}
+		m_vFile.DecIndentLevel();
+		m_vFile.Print("end\n");
+		m_vFile.DecIndentLevel();
+
+		if (bMwr)
+			m_vFile.Print("\nreg [DATA_W-1:0] ram_dout;\n");
+		else
+			m_vFile.Print("\nreg [(2**SEL_W)*DATA_W-1:0] ram_dout;\n");
+
+		m_vFile.Print("always @(posedge ck)\n");
 		m_vFile.IncIndentLevel();
 		m_vFile.Print("begin : ramread\n");
 		m_vFile.IncIndentLevel();

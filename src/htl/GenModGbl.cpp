@@ -182,7 +182,7 @@ void CDsnInfo::InitAndValidateModNgv()
 
 		// determine type of ram
 		bool bNgvReg = pGv0->m_addrW == 0;
-		bool bNgvDist = !bNgvReg && pGv0->m_pNgvInfo->m_ramType != eBlockRam;
+		bool bNgvDist = !bNgvReg && pGv0->m_pNgvInfo->m_ramType != eBlockRam && pGv0->m_pNgvInfo->m_ramType != eUltraRam;
 		bool bNgvBlock = !bNgvReg && !bNgvDist;
 
 		int ngvPortCnt = (int)pNgvInfo->m_wrPortList.size();
@@ -742,6 +742,27 @@ void CDsnInfo::FindSpanningWriteFields(CNgvInfo * pNgvInfo)
 			for (rdModIdx = 0; pNgvInfo->m_modInfoList[rdModIdx].m_pMod != pNgvInfo->m_pRdMod; rdModIdx += 1);
 			ERamType ramType = pNgvInfo->m_modInfoList[rdModIdx].m_pNgv->m_ramType;
 
+			if (ramType == eUltraRam) {
+				// calculate number of ultra rams for both implementations (centralized and local)
+				int uramWidth = 72;
+
+				int centralizedCopies = pNgvInfo->m_rdPortCnt + 1;
+				int centralizedUramCnt = centralizedCopies * ((pNgv->m_pType->GetPackedBitWidth() + uramWidth - 1) / uramWidth);
+
+				int localUramCnt = 0;
+
+				for (size_t idx1 = 0; idx1 < pNgvInfo->m_spanningFieldList.size(); idx1 += 1) {
+					CSpanningField & fld1 = pNgvInfo->m_spanningFieldList[idx1];
+
+					if (!fld1.m_bSpanning) continue;
+
+					int localCopies = pNgvInfo->m_rdPortCnt;
+					localUramCnt += localCopies * ((fld1.m_width + uramWidth - 1) / uramWidth);
+				}
+
+				pNgvInfo->m_bAutoSpanningWrite = localUramCnt <= centralizedUramCnt;
+			}
+
 			if (ramType == eBlockRam) {
 				// calculate number of block rams for both implementations (centralized and local)
 				int bramWidth = 0;
@@ -1267,8 +1288,9 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 						typeName = VA("ht_%sint%d", fld.m_pType->AsInt()->m_eSign == eSigned ? "" : "u", fldWidth);
 				}
 
+				char const *pRamStyle = pGv->m_ramType == eUltraRam ? "ultra" : (pGv->m_ramType == eBlockRam ? "block" : "dist");
 				m_gblRegDecl.Append("\tht_%s_ram<%s, %d",
-					pGv->m_ramType == eBlockRam ? "block" : "dist",
+					pRamStyle,
 					typeName.c_str(), pGv->m_addrW);
 				m_gblRegDecl.Append("> m__GBL__%s%s%s;\n", fld.m_ramName.c_str(), pImStr, pGv->m_dimenDecl.c_str());
 			}
@@ -1594,8 +1616,8 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 				} while (loopInfo.Iter());
 			}
 		} else {
-			int rdAddrStgNum = pMod->m_tsStg + pGv->m_rdStg.AsInt() - (pGv->m_ramType == eBlockRam ? 3 : 2);
-			string rdAddrStg = (rdAddrStgNum == 1 || pGv->m_ramType == eBlockRam) ? VA("c_t%d", rdAddrStgNum) : VA("r_t%d", rdAddrStgNum);
+			int rdAddrStgNum = pMod->m_tsStg + pGv->m_rdStg.AsInt() - ((pGv->m_ramType == eBlockRam || pGv->m_ramType == eUltraRam) ? 3 : 2);
+			string rdAddrStg = (rdAddrStgNum == 1 || pGv->m_ramType == eBlockRam || pGv->m_ramType == eUltraRam) ? VA("c_t%d", rdAddrStgNum) : VA("r_t%d", rdAddrStgNum);
 
 			string addr1Name;
 			if (pGv->m_addr1IsHtId)
@@ -1630,7 +1652,7 @@ void CDsnInfo::GenModOptNgvStatements(CModule * pMod, CRam * pGv)
 			gblPostInstr.Append("%s;\n", bNeedParan ? ")" : "");
 
 			bool bNgvReg = pGv->m_addrW == 0;
-			bool bNgvDist = !bNgvReg && pGv->m_ramType != eBlockRam;
+			bool bNgvDist = !bNgvReg && pGv->m_ramType != eBlockRam && pGv->m_ramType != eUltraRam;
 
 			{
 				string tabs = "\t";
@@ -2408,8 +2430,9 @@ void CDsnInfo::GenModNgvStatements(CInstance * pModInst)
 				if (imIdx == 1 && !pGv->m_bReadForMifWrite) continue;
 				char const * pImStr = imIdx == 0 ? "Ir" : "Mr";
 
+				char const *pRamStyle = pGv->m_ramType == eUltraRam ? "ultra" : (pGv->m_ramType == eBlockRam ? "block" : "dist");
 				m_gblRegDecl.Append("\tht_%s_ram<%s, %d",
-					pGv->m_ramType == eBlockRam ? "block" : "dist",
+					pRamStyle,
 					pGv->m_type.c_str(), pGv->m_addrW);
 				m_gblRegDecl.Append("> m__GBL__%s%s%s;\n", pGv->m_gblName.c_str(), pImStr, pGv->m_dimenDecl.c_str());
 
@@ -2587,7 +2610,7 @@ void CDsnInfo::GenModNgvStatements(CInstance * pModInst)
 			} while (loopInfo.Iter());
 		}
 
-		if (pGv->m_bReadForInstrRead && pGv->m_ramType == eBlockRam) {
+		if (pGv->m_bReadForInstrRead && (pGv->m_ramType == eBlockRam || pGv->m_ramType == eUltraRam)) {
 
 			bool bSignal = (pMod->m_clkRate == eClk2x) != pNgvInfo->m_bNgvWrDataClk2x;
 			{
@@ -2639,8 +2662,8 @@ void CDsnInfo::GenModNgvStatements(CInstance * pModInst)
 			}
 		}
 
-		if (pGv->m_bReadForInstrRead && pGv->m_ramType == eBlockRam) {
-			int rdAddrStgNum = pMod->m_tsStg + pGv->m_rdStg.AsInt() - (pGv->m_ramType == eBlockRam ? 3 : 2);
+		if (pGv->m_bReadForInstrRead && (pGv->m_ramType == eBlockRam || pGv->m_ramType == eUltraRam)) {
+		  int rdAddrStgNum = pMod->m_tsStg + pGv->m_rdStg.AsInt() - ((pGv->m_ramType == eBlockRam || pGv->m_ramType == eUltraRam) ? 3 : 2);
 
 			GenModDecl(eVcdAll, m_gblRegDecl, vcdModName, VA("ht_uint%d", pGv->m_addrW),
 				VA("r_t%d_%sRdAddr", rdAddrStgNum + 1, pGv->m_gblName.Lc().c_str()));
@@ -3048,7 +3071,7 @@ void CDsnInfo::GenModNgvStatements(CInstance * pModInst)
 				} while (loopInfo.Iter());
 
 			} else {
-				int rdAddrStgNum = pGv->m_ramType == eBlockRam ? (pMod->m_tsStg - 2) : (pMod->m_tsStg - 1);
+				int rdAddrStgNum = (pGv->m_ramType == eBlockRam || pGv->m_ramType == eUltraRam) ? (pMod->m_tsStg - 2) : (pMod->m_tsStg - 1);
 				string rdAddrStg = rdAddrStgNum == 1 ? "c_t1" : VA("r_t%d", rdAddrStgNum);
 
 				string tabs = "\t";
@@ -3109,8 +3132,8 @@ void CDsnInfo::GenModNgvStatements(CInstance * pModInst)
 
 				} while (loopInfo.Iter());
 			} else {
-				int rdAddrStgNum = pMod->m_tsStg + pGv->m_rdStg.AsInt() - (pGv->m_ramType == eBlockRam ? 3 : 2);
-				string rdAddrStg = (rdAddrStgNum == 1 || pGv->m_ramType == eBlockRam) ? VA("c_t%d", rdAddrStgNum) : VA("r_t%d", rdAddrStgNum);
+				int rdAddrStgNum = pMod->m_tsStg + pGv->m_rdStg.AsInt() - ((pGv->m_ramType == eBlockRam || pGv->m_ramType == eUltraRam) ? 3 : 2);
+				string rdAddrStg = (rdAddrStgNum == 1 || pGv->m_ramType == eBlockRam || pGv->m_ramType == eUltraRam) ? VA("c_t%d", rdAddrStgNum) : VA("r_t%d", rdAddrStgNum);
 
 				string addr1Name;
 				if (pGv->m_addr1IsHtId)
@@ -3154,7 +3177,7 @@ void CDsnInfo::GenModNgvStatements(CInstance * pModInst)
 						rdAddrStgNum, pGv->m_gblName.Lc().c_str());
 
 					bool bNgvReg = pGv->m_addrW == 0;
-					bool bNgvDist = !bNgvReg && pGv->m_ramType != eBlockRam;
+					bool bNgvDist = !bNgvReg && pGv->m_ramType != eBlockRam && pGv->m_ramType != eUltraRam;
 
 					if (bNgvDist) {
 						gblPostInstr.Append("%sc_t%d_%sIrData%s = m__GBL__%sIr%s.read_mem();\n", tabs.c_str(),
@@ -3777,7 +3800,7 @@ void CDsnInfo::GenerateNgvFiles()
 
 		// determine type of ram
 		bool bNgvReg = pGv->m_addrW == 0;
-		bool bNgvDist = !bNgvReg && pNgvInfo->m_ramType != eBlockRam;
+		bool bNgvDist = !bNgvReg && pNgvInfo->m_ramType != eBlockRam && pNgvInfo->m_ramType != eUltraRam;
 		bool bNgvBlock = !bNgvReg && !bNgvDist;
 
 		bool bNgvSelGwClk2x = bNgvReg && (!pNgvInfo->m_bAllWrPortClk1x && ngvPortCnt <= 2 || ngvPortCnt == 3) ||
@@ -6822,8 +6845,9 @@ void CDsnInfo::GenerateNgvFiles()
 
 				} while (loopInfo.Iter());
 			} else {
+				char const *pRamStyle = pGv->m_pNgvInfo->m_ramType == eUltraRam ? "ultra" : (pGv->m_pNgvInfo->m_ramType == eBlockRam ? "block" : "dist");
 				ngvRegDecl.Append("\tht_%s_ram<%s, %d",
-					pGv->m_pNgvInfo->m_ramType == eBlockRam ? "block" : "dist",
+					pRamStyle,
 					pGv->m_type.c_str(), pGv->m_addrW);
 				ngvRegDecl.Append("> m_%s%s;\n", pGv->m_gblName.c_str(), pGv->m_dimenDecl.c_str());
 

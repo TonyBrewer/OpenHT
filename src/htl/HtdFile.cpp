@@ -1902,6 +1902,7 @@ void HtdFile::ParseGlobalMethods()
 		bool bMaxIw = false;
 		bool bMaxMw = false;
 		string blockRam;
+		string ultraRam;
 		bool bRead = false;
 		bool bWrite = false;
 		bool bNonInstrWrite = false;
@@ -1922,6 +1923,7 @@ void HtdFile::ParseGlobalMethods()
 			{ "maxIw", &bMaxIw, false, ePrmBoolean, 0, 0 },
 			{ "maxMw", &bMaxMw, false, ePrmBoolean, 0, 0 },
 			{ "blockRam", &blockRam, false, ePrmIdent, 0, 0 },
+			{ "ultraRam", &ultraRam, false, ePrmIdent, 0, 0 },
 			{ "instrRead", &bRead, false, ePrmBoolean, 0, 0 },
 			{ "instrWrite", &bWrite, false, ePrmBoolean, 0, 0 },
 			{ "nonInstrWrite", &bNonInstrWrite, false, ePrmBoolean, 0, 0 },
@@ -1932,17 +1934,35 @@ void HtdFile::ParseGlobalMethods()
 		if (!ParseParameters(params)) {
 			CPreProcess::ParseMsg(Error, "expected .AddVar( type, name {, dimen1=0 {, dimen2=0 }} {, addr1W=0 {, addr2W=0 }} ");
 			CPreProcess::ParseMsg(Info, "      {, addr1=\"\" {, addr2=\"\" }} {, rdStg=1 } {, wrStg=1 } {, maxIw=false} {, maxMw=false}");
-			CPreProcess::ParseMsg(Info, "      {, blockRam=\"\" } {, instrRead=false } {, instrWrite=false } {, nonInstrWrite=false } )");
-			CPreProcess::ParseMsg(Info, "      {, spanningWrite=false } )");
+			CPreProcess::ParseMsg(Info, "      {, blockRam=\"\" } {, ultraRam=\"\" } {, instrRead=false } {, instrWrite=false }");
+			CPreProcess::ParseMsg(Info, "      {, nonInstrWrite=false } {, spanningWrite=false } )");
 		}
 
+		if (blockRam.size() > 0 && ultraRam.size() == 0)
+			if (blockRam == "true" && ultraRam == "true")
+				CPreProcess::ParseMsg(Error, "unsupported parameter combination, blockRam and ultraRam cannot both be true");
+
 		ERamType ramType = eAutoRam;
-		if (blockRam == "true")
+		if (ultraRam == "true")
+			ramType = eUltraRam;
+		else if (blockRam == "true")
 			ramType = eBlockRam;
-		else if (blockRam == "false")
+		else if (ultraRam.size() == 0 && blockRam == "false")
 			ramType = eDistRam;
-		else if (blockRam.size() > 0)
+		else if (blockRam.size() == 0 && ultraRam == "false")
+			ramType = eDistRam;
+		else if (blockRam.size() > 0 && blockRam != "false")
 			CPreProcess::ParseMsg(Error, "expected blockRam value of <true or false>");
+		else if (ultraRam.size() > 0 && ultraRam != "false")
+			CPreProcess::ParseMsg(Error, "expected ultraRam value of <true or false>");
+
+		bool isWx2 = false;
+		if (strcasestr(g_appArgs.GetCoprocName(), "wx2") != NULL) {
+			isWx2 = true;
+		}
+
+		if (ramType == eUltraRam && !isWx2)
+			CPreProcess::ParseMsg(Error, "unsupported parameter, ultraRam=true is not supported on non-WX2 platforms");
 
 		if (dimen2.size() > 0 && dimen1.size() == 0)
 			CPreProcess::ParseMsg(Error, "unsupported parameter combination, dimen2 is specified but dimen1 is not");
@@ -2080,7 +2100,7 @@ void HtdFile::ParseSharedMethods()
 		string addr2W;
 		string queueW;
 		string blockRam;
-		string forceKeep;
+		string ultraRam;
 		string reset;
 
 		CParamList params[] = {
@@ -2094,32 +2114,50 @@ void HtdFile::ParseSharedMethods()
 				{ "addr2W", &addr2W, false, ePrmInteger, 0, 0 },
 				{ "queueW", &queueW, false, ePrmInteger, 0, 0 },
 				{ "blockRam", &blockRam, false, ePrmIdent, 0, 0 },
-				{ "forceKeep", &forceKeep, false, ePrmIdent, 0, 0 },
+				{ "ultraRam", &ultraRam, false, ePrmIdent, 0, 0 },
 				{ "reset", &reset, false, ePrmIdent, 0, 0 },
 				{ 0, 0, 0, ePrmUnknown, 0, 0 }
 		};
 
 		if (!ParseParameters(params))
-			CPreProcess::ParseMsg(Error, "expected AddVar( type, name {, dimen1 {, dimen2 }} {, rdSelW}{, wrSelW}{, addr1W {, addr2W }} {, queueW } {, blockRam=false } {, forceReset=false } {, reset=true } )");
+			CPreProcess::ParseMsg(Error, "expected AddVar( type, name {, dimen1 {, dimen2 }} {, rdSelW}{, wrSelW}{, addr1W {, addr2W }} {, queueW } {, blockRam=false } {, ultraRam=false } {, forceReset=false } {, reset=true } )");
+
+		if (blockRam.size() > 0 && ultraRam.size() == 0)
+			if (blockRam == "true" && ultraRam == "true")
+				CPreProcess::ParseMsg(Error, "unsupported parameter combination, blockRam and ultraRam cannot both be true");
 
 		bool bBlockRam = false;
-		if (blockRam == "true")
+		bool bUltraRam = false;
+		if (ultraRam == "true")
+			bUltraRam = true;
+		else if (blockRam == "true")
 			bBlockRam = true;
-		else if (blockRam == "false")
-			bBlockRam = false;
-		else if (blockRam.size() > 0)
+		else if (blockRam.size() > 0 && blockRam != "false")
 			CPreProcess::ParseMsg(Error, "expected blockRam value of <true or false>");
+		else if (ultraRam.size() > 0 && ultraRam != "false")
+			CPreProcess::ParseMsg(Error, "expected ultraRam value of <true or false>");
 
-		if (bBlockRam) {
+		bool isWx2 = false;
+		if (strcasestr(g_appArgs.GetCoprocName(), "wx2") != NULL) {
+			isWx2 = true;
+		}
+
+		if (bUltraRam && !isWx2)
+			CPreProcess::ParseMsg(Error, "unsupported parameter, ultraRam=true is not supported on non-WX2 platforms");
+
+		if (bBlockRam || bUltraRam) {
 			if (rdSelW.size() > 0 && wrSelW.size() > 0)
 				CPreProcess::ParseMsg(Error, "unsupported parameter combination, only one of rdSelW or wrSelW may be specified");
 		} else {
 			if (rdSelW.size() > 0 || wrSelW.size() > 0)
-				CPreProcess::ParseMsg(Error, "unsupported parameter combination, block=false and rdSelW or wrSelW specified");
+				CPreProcess::ParseMsg(Error, "unsupported parameter combination, block=false/ultra=false and rdSelW or wrSelW specified");
 		}
 
-		if (bBlockRam && addr1W.size() == 0 && queueW.size() == 0)
-			CPreProcess::ParseMsg(Error, "unsupported parameter combination, block=true and neither addr1W or queueW specified");
+		if ((rdSelW.size() > 0 || wrSelW.size() > 0) && addr1W.size() == 0)
+				CPreProcess::ParseMsg(Error, "unsupported parameter combination, addr1W==0 and rdSelW or wrSelW specified");
+
+		if ((bBlockRam || bUltraRam) && addr1W.size() == 0 && queueW.size() == 0)
+			CPreProcess::ParseMsg(Error, "unsupported parameter combination, block=true/ultra=true and neither addr1W or queueW specified");
 
 		if (queueW.size() > 0 && addr1W.size() > 0)
 			CPreProcess::ParseMsg(Error, "unsupported parameter combination, addr1W and queueW can not both be specified");
@@ -2130,22 +2168,16 @@ void HtdFile::ParseSharedMethods()
 		if (dimen2.size() > 0 && dimen1.size() == 0)
 			CPreProcess::ParseMsg(Error, "unsupported parameter conbination, dimen2 is specified but dimen1 is not");
 
-		if (forceKeep.size() > 0 && forceKeep != "true" && forceKeep != "false")
-			CPreProcess::ParseMsg(Error, "expected forceKeep value to be true or false");
-
-		if (forceKeep.size() > 0 && forceKeep != "true" && (addr1W.size() > 0 || queueW.size() > 0 || bBlockRam))
-			CPreProcess::ParseMsg(Error, "unsupported parameter conbination, forceKeep cannot be used with addressing/queueW/blockRam");
-
 		if (reset.size() > 0 && reset != "true" && reset != "false")
 			CPreProcess::ParseMsg(Error, "expected reset value to be true or false");
 
-		ERamType ramType = bBlockRam ? eBlockRam : eDistRam;
+		ERamType ramType = bBlockRam ? eBlockRam : (bUltraRam ? eUltraRam : eDistRam);
 
 		if (m_pOpenMod->m_sharedList.isInList(name))
 			CPreProcess::ParseMsg(Error, "duplicate shared variable name '%s'", name.c_str());
 		else {
 			m_pOpenMod->m_sharedList.insert(name);
-			m_pOpenRecord->AddSharedField(pType, name, dimen1, dimen2, rdSelW, wrSelW, addr1W, addr2W, queueW, ramType, forceKeep, reset);
+			m_pOpenRecord->AddSharedField(pType, name, dimen1, dimen2, rdSelW, wrSelW, addr1W, addr2W, queueW, ramType, reset);
 		}
 
 		m_pLex->GetNextTk();

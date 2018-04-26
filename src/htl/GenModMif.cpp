@@ -832,7 +832,7 @@ void CDsnInfo::InitMifRamType()
 					ramType = wrSrc.m_pSharedVar->m_ramType;
 
 				mif.m_mifWr.m_bDistRamAccessReq |= wrSrc.m_varAddr1W > 0 && ramType == eDistRam;
-				mif.m_mifWr.m_bBlockRamAccessReq |= wrSrc.m_varAddr1W > 0 && ramType == eBlockRam;
+				mif.m_mifWr.m_bBlockRamAccessReq |= wrSrc.m_varAddr1W > 0 && (ramType == eBlockRam || ramType == eUltraRam);
 			}
 		}
 
@@ -843,7 +843,7 @@ void CDsnInfo::InitMifRamType()
 
 				if (rdDst.m_pSharedVar) {
 
-					if (rdDst.m_pSharedVar->m_ramType == eBlockRam && rdDst.m_varAddr1W >= 0 &&
+					if ((rdDst.m_pSharedVar->m_ramType == eBlockRam || rdDst.m_pSharedVar->m_ramType == eUltraRam) && rdDst.m_varAddr1W >= 0 &&
 						rdDst.m_pDstType->m_clangMinAlign != 1 && rdDst.m_pDstType->m_clangBitWidth != rdDst.m_pDstType->m_clangMinAlign)
 					{
 						ParseMsg(Error, rdDst.m_pSharedVar->m_lineInfo, "memory read to shared variable that may require partial block ram writes is not supported");
@@ -851,7 +851,7 @@ void CDsnInfo::InitMifRamType()
 							rdDst.m_pDstType->m_clangBitWidth / 8, rdDst.m_pDstType->m_clangMinAlign / 8);
 					}
 
-					if (rdDst.m_pSharedVar->m_ramType == eBlockRam && rdDst.m_varAddr1W >= 0 &&
+					if ((rdDst.m_pSharedVar->m_ramType == eBlockRam || rdDst.m_pSharedVar->m_ramType == eUltraRam) && rdDst.m_varAddr1W >= 0 &&
 						rdDst.m_pDstType->m_clangBitWidth != rdDst.m_pSharedVar->m_pType->m_clangBitWidth)
 						ParseMsg(Error, rdDst.m_pSharedVar->m_lineInfo, "memory read to shared variable implemented as a block ram with read type that requires a partial write not supported");
 				}
@@ -5022,7 +5022,7 @@ void CDsnInfo::GenModMifStatements(CInstance * pModInst)
 					else if (wrSrc.m_pSharedVar)
 						ramType = wrSrc.m_pSharedVar->m_ramType;
 
-					if (ramType == eBlockRam) continue;
+					if (ramType == eBlockRam || ramType == eUltraRam) continue;
 
 					mifPostInstr.Append("%s\tcase %d:\n", tabs.c_str(), wrSrcIdx);
 					caseCnt += 1;
@@ -5111,7 +5111,7 @@ void CDsnInfo::GenModMifStatements(CInstance * pModInst)
 					addrVar = VA("_SHR__%s", wrSrc.m_pSharedVar->m_name.c_str());
 				}
 
-				if (ramType != eBlockRam) continue;
+				if (ramType != eBlockRam && ramType != eUltraRam) continue;
 
 				mifPostInstr.Append("%s\tcase %d:\n", tabs.c_str(), wrSrcIdx);
 				tabs += "\t";
@@ -5639,10 +5639,10 @@ void CDsnInfo::GenModMifStatements(CInstance * pModInst)
 						tabs += "\t";
 					}
 
-					if (pDstType->IsRecord() && bMemVar && ramType == eBlockRam) {
+					if (pDstType->IsRecord() && bMemVar && (ramType == eBlockRam || ramType == eUltraRam)) {
 						mifPostInstr.Append("%s\t\t%s recData;\n", tabs.c_str(),
 							pDstType->m_typeName.c_str());
-					} else if (rdDst.m_pSharedVar && rdDst.m_pSharedVar->m_pType->IsRecord() && bMemVar && ramType == eBlockRam) {
+					} else if (rdDst.m_pSharedVar && rdDst.m_pSharedVar->m_pType->IsRecord() && bMemVar && (ramType == eBlockRam || ramType == eUltraRam)) {
 						mifPostInstr.Append("%s\t\t%s recData;\n", tabs.c_str(),
 							rdDst.m_pSharedVar->m_pType->m_typeName.c_str());
 					}
@@ -5757,11 +5757,11 @@ void CDsnInfo::GenModMifStatements(CInstance * pModInst)
 						}
 					}
 
-					if (pDstType->IsRecord() && bMemVar && ramType == eBlockRam) {
+					if (pDstType->IsRecord() && bMemVar && (ramType == eBlockRam || ramType == eUltraRam)) {
 						mifPostInstr.Append("%s\t\t%s.write_mem(recData);\n",
 							tabs.c_str(),
 							baseVar.c_str());
-					} else if (rdDst.m_pSharedVar && rdDst.m_pSharedVar->m_pType->IsRecord() && bMemVar && ramType == eBlockRam) {
+					} else if (rdDst.m_pSharedVar && rdDst.m_pSharedVar->m_pType->IsRecord() && bMemVar && (ramType == eBlockRam || ramType == eUltraRam)) {
 						mifPostInstr.Append("%s\t\t%s.write_mem(recData);\n",
 							tabs.c_str(),
 							addrVar.c_str());

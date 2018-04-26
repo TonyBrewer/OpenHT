@@ -15,6 +15,7 @@
 CHtfeIdent * CHtfeDesign::ParseHtQueueDecl(CHtfeIdent *pHier)
 {
 	bool bBlockRam = GetString() == "sc_block_que" || GetString() == "ht_block_que";
+	bool bUltraRam = GetString() == "ht_ultra_que";
 
 	if (GetNextToken() != tk_less) {
 		ParseMsg(PARSE_ERROR, "expected ht_dist_que<type, depth>");
@@ -64,7 +65,9 @@ CHtfeIdent * CHtfeDesign::ParseHtQueueDecl(CHtfeIdent *pHier)
 		pType->SetType(pBaseType);
 		pType->SetWidth(pBaseType->GetWidth());
 
-		if (bBlockRam)
+		if (bUltraRam)
+			pType->SetIsHtUltraQue();
+		else if (bBlockRam)
 			pType->SetIsHtBlockQue();
 		else
 			pType->SetIsHtDistQue();
@@ -91,7 +94,7 @@ CHtfeIdent * CHtfeDesign::ParseHtDistRamDecl(CHtfeIdent *pHier)
 		ParseMsg(PARSE_ERROR, "static type specifier not supported");
 
 	if (pBaseType == 0) {
-		ParseMsg(PARSE_ERROR, "expected a type (ht_block_ram<type, AW1, AW2=0>)");
+		ParseMsg(PARSE_ERROR, "expected a type (ht_dist_ram<type, AW1, AW2=0>)");
 		SkipTo(tk_semicolon);
 		return 0;
 	}
@@ -237,6 +240,95 @@ CHtfeIdent * CHtfeDesign::ParseHtBlockRamDecl(CHtfeIdent *pHier)
 	return pType;
 }
 
+// Parse ht_ultra_ram declaration
+CHtfeIdent * CHtfeDesign::ParseHtUltraRamDecl(CHtfeIdent *pHier)
+{
+	if (GetNextToken() != tk_less) {
+		ParseMsg(PARSE_ERROR, "expected a < (ht_ultra_ram<type, AW1, AW2=0, bDoReg=false>)");
+		return 0;
+	}
+	GetNextToken();
+
+	CHtfeTypeAttrib typeAttrib;
+	CHtfeIdent *pBaseType = ParseTypeDecl(pHier, typeAttrib);
+
+	if (typeAttrib.m_bIsStatic)
+		ParseMsg(PARSE_ERROR, "static type specifier not supported");
+
+	if (pBaseType == 0) {
+		ParseMsg(PARSE_ERROR, "expected a type (ht_ultra_ram<type, AW1, AW2=0, bDoReg=false>)");
+		SkipTo(tk_semicolon);
+		return 0;
+	}
+
+	if (GetToken() != tk_comma) {
+		ParseMsg(PARSE_ERROR, "expected a comma (ht_ultra_ram<type, AW1, AW2=0, bDoReg=false>)");
+		return 0;
+	}
+
+	GetNextToken();
+	CConstValue addrWidth1;
+	if (!ParseConstExpr(addrWidth1)) {
+		ParseMsg(PARSE_ERROR, "expected a constant for AW1 (ht_ultra_ram<type, AW1, AW2=0, bDoReg=false>)");
+		return 0;
+	}
+
+	CConstValue addrWidth2(0);
+	if (GetToken() == tk_comma) {
+		GetNextToken();
+
+		if (!ParseConstExpr(addrWidth2)) {
+			ParseMsg(PARSE_ERROR, "expected a constant for AW2 (ht_ultra_ram<type, AW1, AW2=0, bDoReg=false>)");
+			return 0;
+		}
+	}
+
+	bool bDoReg = false;
+	if (GetToken() == tk_comma) {
+		if (GetNextToken() != tk_identifier || GetString() != "true" && GetString() != "false") {
+			ParseMsg(PARSE_ERROR, "expected a constant for AW2 (ht_ultra_ram<type, AW1, AW2=0, bDoReg=false>)");
+			return 0;
+		}
+
+		bDoReg = GetString() == "true";
+
+		GetNextToken();
+	}
+
+	if (GetToken() != tk_greater) {
+		ParseMsg(PARSE_ERROR, "expected a > (ht_ultra_ram<type, AW1, AW2=0, bDoReg=false>)");
+		return 0;
+	}
+	GetNextToken();
+
+	if (addrWidth1.GetSint64() + addrWidth2.GetSint64() > 20) {
+		ParseMsg(PARSE_ERROR, "expected ht_ultra_ram AW1 + AW2 <= 20");
+		addrWidth1 = CConstValue(5);
+		addrWidth2 = CConstValue(0);
+	}
+
+	char typeName[256];
+	sprintf(typeName, "ht_ultra_ram<%s,%d,%d,%s>", pBaseType->GetName().c_str(), (int)addrWidth1.GetSint64(), (int)addrWidth2.GetSint64(),
+		bDoReg ? "true" : "false");
+
+	// now insert unique ht_ultra_ram type
+	CHtfeIdent *pType = pHier->InsertType(typeName);
+
+	if (pType->GetId() == CHtfeIdent::id_new) {
+		pType->SetId(CHtfeIdent::id_class);
+		pType->SetType(pBaseType);
+		pType->SetWidth(pBaseType->GetWidth());
+		pType->SetIsHtUltraRam();
+		pType->SetHtMemoryAddrWidth1((int)addrWidth1.GetSint64());
+		pType->SetHtMemoryAddrWidth2((int)addrWidth2.GetSint64());
+
+		if (bDoReg)
+			pType->SetIsHtUltraRamDoReg();
+	}
+
+	return pType;
+}
+
 // Parse ht_block_ram declaration
 CHtfeIdent * CHtfeDesign::ParseHtAsymBlockRamDecl(CHtfeIdent *pHier, bool bMultiRead)
 {
@@ -351,6 +443,120 @@ CHtfeIdent * CHtfeDesign::ParseHtAsymBlockRamDecl(CHtfeIdent *pHier, bool bMulti
 	return pType;
 }
 
+// Parse ht_ultra_ram declaration
+CHtfeIdent * CHtfeDesign::ParseHtAsymUltraRamDecl(CHtfeIdent *pHier, bool bMultiRead)
+{
+	char const * pSyntax = bMultiRead ?
+		"ht_mrd_ultra_ram<type, SW, AW1, AW2=0, bDoReg=false>" : "ht_mwr_ultra_ram<type, SW, AW1, AW2=0, bDoReg=false>";
+
+	if (GetNextToken() != tk_less) {
+		ParseMsg(PARSE_ERROR, "expected a < (%s)", pSyntax);
+		return 0;
+	}
+	GetNextToken();
+
+	CHtfeTypeAttrib typeAttrib;
+	CHtfeIdent *pBaseType = ParseTypeDecl(pHier, typeAttrib);
+
+	if (typeAttrib.m_bIsStatic)
+		ParseMsg(PARSE_ERROR, "static type specifier not supported");
+
+	if (pBaseType == 0) {
+		ParseMsg(PARSE_ERROR, "expected a type (%s)", pSyntax);
+		SkipTo(tk_semicolon);
+		return 0;
+	}
+
+	if (GetToken() != tk_comma) {
+		ParseMsg(PARSE_ERROR, "expected a comma (%s)", pSyntax);
+		return 0;
+	}
+	GetNextToken();
+
+	CConstValue selWidth;
+	if (!ParseConstExpr(selWidth)) {
+		ParseMsg(PARSE_ERROR, "expected a constant for SW (%s)", pSyntax);
+		return 0;
+	}
+
+	if (GetToken() != tk_comma) {
+		ParseMsg(PARSE_ERROR, "expected a comma (%s)", pSyntax);
+		return 0;
+	}
+	GetNextToken();
+
+	CConstValue addrWidth1;
+	if (!ParseConstExpr(addrWidth1)) {
+		ParseMsg(PARSE_ERROR, "expected a constant for AW1 (%s)", pSyntax);
+		return 0;
+	}
+
+	CConstValue addrWidth2(0);
+	if (GetToken() == tk_comma) {
+		GetNextToken();
+
+		if (!ParseConstExpr(addrWidth2)) {
+			ParseMsg(PARSE_ERROR, "expected a constant for AW2 (%s)", pSyntax);
+			return 0;
+		}
+	}
+
+	bool bDoReg = false;
+	if (GetToken() == tk_comma) {
+		if (GetNextToken() != tk_identifier || GetString() != "true" && GetString() != "false") {
+			ParseMsg(PARSE_ERROR, "expected a true or false for bDoReg (%s)", pSyntax);
+			return 0;
+		}
+
+		bDoReg = GetString() == "true";
+
+		GetNextToken();
+	}
+
+	if (GetToken() != tk_greater) {
+		ParseMsg(PARSE_ERROR, "expected a > (ht_ultra_ram<type, AW1, AW2=0, bDoReg=false>)");
+		return 0;
+	}
+	GetNextToken();
+
+	if (addrWidth1.GetSint64() + addrWidth2.GetSint64() > 20) {
+		ParseMsg(PARSE_ERROR, "expected ht_%s_ultra_ram AW1 + AW2 <= 20", bMultiRead ? "mrd" : "mwr");
+		addrWidth1 = CConstValue(8);
+		addrWidth2 = CConstValue(0);
+	}
+
+	char typeName[256];
+	sprintf(typeName, "ht_%s_ultra_ram<%s,%d,%d,%s>",
+		bMultiRead ? "mrd" : "mwr",
+		pBaseType->GetName().c_str(),
+		(int)addrWidth1.GetSint64(),
+		(int)addrWidth2.GetSint64(),
+		bDoReg ? "true" : "false");
+
+	// now insert unique ht_asym_ultra_ram type
+	CHtfeIdent *pType = pHier->InsertType(typeName);
+
+	if (pType->GetId() == CHtfeIdent::id_new) {
+		pType->SetId(CHtfeIdent::id_class);
+		pType->SetType(pBaseType);
+		pType->SetWidth(pBaseType->GetWidth());
+
+		if (bMultiRead)
+			pType->SetIsHtMrdUltraRam();
+		else
+			pType->SetIsHtMwrUltraRam();
+
+		pType->SetHtMemoryAddrWidth1((int)addrWidth1.GetSint64());
+		pType->SetHtMemoryAddrWidth2((int)addrWidth2.GetSint64());
+		pType->SetHtMemorySelWidth((int)selWidth.GetSint64());
+
+		if (bDoReg)
+			pType->SetIsHtUltraRamDoReg();
+	}
+
+	return pType;
+}
+
 void CHtfeDesign::HtQueueVarDecl(CHtfeIdent *pHier, CHtfeIdent *pIdent)
 {
 	// An HtQueue was declared. Insert required registers for queue (r_rdIdx, r_wrIdx)
@@ -377,7 +583,7 @@ void CHtfeDesign::HtQueueVarDecl(CHtfeIdent *pHier, CHtfeIdent *pIdent)
 	int idxWidth = pIdent->GetType()->GetHtMemoryAddrWidth1()+pIdent->GetType()->GetHtMemoryAddrWidth2()+1;
 
 	char buf[4096];
-	if (pIdent->IsHtBlockQue())
+	if (pIdent->IsHtBlockQue() || pIdent->IsHtUltraQue())
 		sprintf(buf, "{ sc_uint<%d> %s_WrAddr%s; sc_uint<%d> ht_noload %s_WrAddr2%s; sc_uint<%d> %s_RdAddr%s; %s ht_noload %s_RdData%s; sc_uint<%d> %s_Cnt%s; %s %s_WrData%s; bool %s_WrEn%s; sc_uint<%d> %s_WrAddr%s; sc_uint<%d> %s_RdAddr%s; }",
 			idxWidth, rQueName.c_str(), dimStr.c_str(),
 			idxWidth, rQueName.c_str(), dimStr.c_str(), 
@@ -411,7 +617,7 @@ void CHtfeDesign::HtQueueVarDecl(CHtfeIdent *pHier, CHtfeIdent *pIdent)
 	CHtfeIdent *pWrIdx = pHier->FindIdent(rQueName + "_WrAddr");
 	pWrIdx->SetIsIgnoreSignalCheck();
 
-	if (pIdent->IsHtBlockQue()) {
+	if (pIdent->IsHtBlockQue() || pIdent->IsHtUltraQue()) {
 		CHtfeIdent *pWrIdx = pHier->FindIdent(rQueName + "_WrAddr2");
 		pWrIdx->SetIsIgnoreSignalCheck();
 	}
@@ -459,7 +665,7 @@ void CHtfeDesign::HtMemoryVarDecl(CHtfeIdent *pHier, CHtfeIdent *pIdent)
 	int dataWidth = pIdent->GetType()->GetType()->GetWidth();
 
 	char buf[1024];
-	if (pIdent->IsHtMrdBlockRam()) {
+	if (pIdent->IsHtMrdBlockRam() || pIdent->IsHtMrdUltraRam()) {
 		int selWidth = pIdent->GetType()->GetHtMemorySelWidth();
 		sprintf(buf, "{ sc_uint<%d> %s_RdAddr%s; sc_uint<%d> %s_WrAddr%s; ht_noload sc_uint<%d> %s_WrSel%s;"
 			" struct %s__MRD__ { %s m_mrd[%d]; }; %s__MRD__ ht_noload %s_RdData%s; %s %s_WrData%s; bool %s_WrEn%s; }",
@@ -470,7 +676,7 @@ void CHtfeDesign::HtMemoryVarDecl(CHtfeIdent *pHier, CHtfeIdent *pIdent)
 			cQueName.c_str(), cQueName.c_str(), dimStr.c_str(),
 			pIdent->GetType()->GetType()->GetName().c_str(), cQueName.c_str(), dimStr.c_str(),
 			cQueName.c_str(), dimStr.c_str() );
-	} else if (pIdent->IsHtMwrBlockRam()) {
+	} else if (pIdent->IsHtMwrBlockRam() || pIdent->IsHtMwrUltraRam()) {
 		int selWidth = pIdent->GetType()->GetHtMemorySelWidth();
 		sprintf(buf, "{ sc_uint<%d> %s_RdAddr%s; sc_uint<%d> %s_WrAddr%s; sc_uint<%d> ht_noload %s_RdSel%s; %s ht_noload %s_RdData%s;"
 			" struct %s__MWR__ { %s m_mwr[%d]; }; %s__MWR__ %s_WrData%s; bool %s_WrEn%s; }",
@@ -503,7 +709,7 @@ void CHtfeDesign::HtMemoryVarDecl(CHtfeIdent *pHier, CHtfeIdent *pIdent)
 	pRam->SetIsHtPrimOutput(0);
 	pRam->SetIsReadOnly();
 
-	if (pIdent->IsHtMwrBlockRam()) {
+	if (pIdent->IsHtMwrBlockRam() || pIdent->IsHtMwrUltraRam()) {
 		CHtfeIdent *pRdSel = pHier->FindIdent(cQueName + "_RdSel");
 		pRdSel->SetIsWriteOnly();
 	}
@@ -511,7 +717,7 @@ void CHtfeDesign::HtMemoryVarDecl(CHtfeIdent *pHier, CHtfeIdent *pIdent)
 	CHtfeIdent *pRdIdx = pHier->FindIdent(cQueName + "_RdAddr");
 	pRdIdx->SetIsWriteOnly();
 
-	if (pIdent->IsHtMrdBlockRam()) {
+	if (pIdent->IsHtMrdBlockRam() || pIdent->IsHtMrdUltraRam()) {
 		CHtfeIdent *pWrSel = pHier->FindIdent(cQueName + "_WrSel");
 		pWrSel->SetIsWriteOnly();
 	}
@@ -871,7 +1077,7 @@ void CHtfeDesign::InitHtQueuePushClockStatements(CHtfeIdent * pHier, CHtfeIdent 
 			rQueName.c_str(), initDimStr.c_str() );
 		statementStr += buf;
 
-		if (pIdent->IsHtBlockQue()) {
+		if (pIdent->IsHtBlockQue() || pIdent->IsHtUltraQue()) {
 			sprintf(buf, "%s_WrAddr2%s = %s ? (ht_uint%d)0 : %s_WrAddr%s; ",
 				rQueName.c_str(), initDimStr.c_str(),
 				resetStr.c_str(),
@@ -1042,7 +1248,7 @@ CHtfeOperand * CHtfeDesign::ParseHtQueueExpr(CHtfeIdent *pHier, CHtfeIdent *pIde
 			return 0;
 		}
 	} else if (GetString() == "empty") {
-		if (pIdent->IsHtBlockQue())
+		if (pIdent->IsHtBlockQue() || pIdent->IsHtUltraQue())
 			sprintf(buf, "(%s_WrAddr2%s == %s_RdAddr%s) )", rQueName.c_str(), refDimStr.c_str(), rQueName.c_str(), refDimStr.c_str());
 		else
 			sprintf(buf, "(%s_WrAddr%s == %s_RdAddr%s) )", rQueName.c_str(), refDimStr.c_str(), rQueName.c_str(), refDimStr.c_str());
@@ -1180,7 +1386,7 @@ CHtfeStatement * CHtfeDesign::ParseHtMemoryStatement(CHtfeIdent *pHier)
 		GetNextToken();
 
 		CHtfeOperand *pRdSelOp = 0;
-		if (pIdent->GetType()->IsHtMwrBlockRam()) {
+		if (pIdent->GetType()->IsHtMwrBlockRam() || pIdent->GetType()->IsHtMwrUltraRam()) {
 			pRdSelOp = ParseExpression(pHier, true);
 
 			if (GetToken() != tk_comma) {
@@ -1211,7 +1417,7 @@ CHtfeStatement * CHtfeDesign::ParseHtMemoryStatement(CHtfeIdent *pHier)
 		}
 
 		if (pIdent->GetType()->GetHtMemoryAddrWidth2() == 0) {
-			if (pIdent->GetType()->IsHtMwrBlockRam())
+			if (pIdent->GetType()->IsHtMwrBlockRam() || pIdent->GetType()->IsHtMwrUltraRam())
 				sprintf(buf, "{{ %s_RdSel%s = 0; %s_RdAddr%s = 0; }}",
 					cQueName.c_str(), refDimStr.c_str(),
 					cQueName.c_str(), refDimStr.c_str() );
@@ -1223,7 +1429,7 @@ CHtfeStatement * CHtfeDesign::ParseHtMemoryStatement(CHtfeIdent *pHier)
 			int lowBitIdx2 = highBitIdx1 + 1;
 			int highBitIdx2 = lowBitIdx2 + pIdent->GetType()->GetHtMemoryAddrWidth2() - 1;
 
-			if (pIdent->GetType()->IsHtMwrBlockRam())
+			if (pIdent->GetType()->IsHtMwrBlockRam() || pIdent->GetType()->IsHtMwrUltraRam())
 				sprintf(buf, "{{ %s_RdSel%s = 0; %s_RdAddr%s(%d,0) = 0; %s_RdAddr%s(%d,%d) = 0; }}",
 					cQueName.c_str(), refDimStr.c_str(),
 					cQueName.c_str(), refDimStr.c_str(), highBitIdx1,
@@ -1240,7 +1446,7 @@ CHtfeStatement * CHtfeDesign::ParseHtMemoryStatement(CHtfeIdent *pHier)
 		pStatement = ParseCompoundStatement(pHier);
 		CHtfeStatement *pSt = pStatement;
 
-		if (pIdent->GetType()->IsHtMwrBlockRam()) {
+		if (pIdent->GetType()->IsHtMwrBlockRam() || pIdent->GetType()->IsHtMwrUltraRam()) {
 			delete pSt->GetExpr()->GetOperand2();
 			pSt->GetExpr()->SetOperand2( pRdSelOp );
 			pSt = pSt->GetNext();
@@ -1269,7 +1475,7 @@ CHtfeStatement * CHtfeDesign::ParseHtMemoryStatement(CHtfeIdent *pHier)
 		GetNextToken();
 
 		CHtfeOperand *pWrSelOp = 0;
-		if (pIdent->GetType()->IsHtMrdBlockRam()) {
+		if (pIdent->GetType()->IsHtMrdBlockRam() || pIdent->GetType()->IsHtMrdUltraRam()) {
 			pWrSelOp = ParseExpression(pHier, true);
 
 			if (GetToken() != tk_comma) {
@@ -1300,7 +1506,7 @@ CHtfeStatement * CHtfeDesign::ParseHtMemoryStatement(CHtfeIdent *pHier)
 		}
 
 		if (pIdent->GetType()->GetHtMemoryAddrWidth2() == 0) {
-			if (pIdent->GetType()->IsHtMrdBlockRam())
+			if (pIdent->GetType()->IsHtMrdBlockRam() || pIdent->GetType()->IsHtMrdUltraRam())
 				sprintf(buf, "{{ %s_WrSel%s = 0; %s_WrAddr%s = 0; }}",
 					cQueName.c_str(), refDimStr.c_str(),
 					cQueName.c_str(), refDimStr.c_str() );
@@ -1313,7 +1519,7 @@ CHtfeStatement * CHtfeDesign::ParseHtMemoryStatement(CHtfeIdent *pHier)
 			int lowBitIdx2 = highBitIdx1 + 1;
 			int highBitIdx2 = lowBitIdx2 + pIdent->GetType()->GetHtMemoryAddrWidth2() - 1;
 
-			if (pIdent->GetType()->IsHtMrdBlockRam())
+			if (pIdent->GetType()->IsHtMrdBlockRam() || pIdent->GetType()->IsHtMrdUltraRam())
 				sprintf(buf, "{{ %s_WrSel%s = 0; %s_WrAddr%s(%d,0) = 0; %s_WrAddr%s(%d,%d) = 0; }}",
 					cQueName.c_str(), refDimStr.c_str(),
 					cQueName.c_str(), refDimStr.c_str(), highBitIdx1,
@@ -1330,7 +1536,7 @@ CHtfeStatement * CHtfeDesign::ParseHtMemoryStatement(CHtfeIdent *pHier)
 		pStatement = ParseCompoundStatement(pHier);
 		CHtfeStatement *pSt = pStatement;
 
-		if (pIdent->GetType()->IsHtMrdBlockRam()) {
+		if (pIdent->GetType()->IsHtMrdBlockRam() || pIdent->GetType()->IsHtMrdUltraRam()) {
 			delete pSt->GetExpr()->GetOperand2();
 			pSt->GetExpr()->SetOperand2( pWrSelOp );
 			pSt = pSt->GetNext();
@@ -1363,7 +1569,7 @@ CHtfeStatement * CHtfeDesign::ParseHtMemoryStatement(CHtfeIdent *pHier)
 		if (GetNextToken() != tk_rparen) {
 			// full width write
 
-			if (pIdent->GetType()->IsHtMwrBlockRam()) {
+			if (pIdent->GetType()->IsHtMwrBlockRam() || pIdent->GetType()->IsHtMwrUltraRam()) {
 				pWrSelOp = ParseExpression(pHier, true);
 
 				if (GetToken() != tk_comma) {
@@ -1389,7 +1595,7 @@ CHtfeStatement * CHtfeDesign::ParseHtMemoryStatement(CHtfeIdent *pHier)
 			}
 
 		} else {
-			if (pIdent->IsHtBlockRam() || pIdent->IsHtMrdBlockRam() || pIdent->IsHtMwrBlockRam()) {
+			if (pIdent->IsHtBlockRam() || pIdent->IsHtMrdBlockRam() || pIdent->IsHtMwrBlockRam() || pIdent->IsHtUltraRam() || pIdent->IsHtMrdUltraRam() || pIdent->IsHtMwrUltraRam()) {
 				ParseMsg(PARSE_ERROR, "ht_block_ram memories must use 'write_mem( expression );'");
 				SkipTo(tk_semicolon);
 				return 0;
@@ -1469,7 +1675,7 @@ CHtfeStatement * CHtfeDesign::ParseHtMemoryStatement(CHtfeIdent *pHier)
 			}
 		}
 
-		if (pIdent->GetType()->IsHtMwrBlockRam())
+		if (pIdent->GetType()->IsHtMwrBlockRam() || pIdent->GetType()->IsHtMwrUltraRam())
 			sprintf(buf, "{{ %s.m_mwr[0xdeadbeef] = 0; }}", wrDataStr.c_str() );
 		else
 			sprintf(buf, "{{ %s = 0; }}", wrDataStr.c_str() );
@@ -1481,7 +1687,7 @@ CHtfeStatement * CHtfeDesign::ParseHtMemoryStatement(CHtfeIdent *pHier)
 		if (!pStatement)
 			return 0;
 
-		if (pIdent->GetType()->IsHtMwrBlockRam()) {
+		if (pIdent->GetType()->IsHtMwrBlockRam() || pIdent->GetType()->IsHtMwrUltraRam()) {
 			CScSubField * pSubField = pStatement->GetExpr()->GetOperand1()->GetSubField();
 			while (pSubField && (!pSubField->m_indexList[0]->IsConstValue() || pSubField->m_indexList[0]->GetConstValue().GetUint32() != 0xdeadbeef))
 				pSubField = pSubField->m_pNext;
@@ -1517,7 +1723,7 @@ CHtfeStatement * CHtfeDesign::ParseHtMemoryStatement(CHtfeIdent *pHier)
 			while (lowBit <= highBit) {
 
 				int width;
-				if (pIdent->IsHtBlockRam() || pIdent->IsHtMrdBlockRam() || pIdent->IsHtMwrBlockRam() || dataWidth == 1) {
+				if (pIdent->IsHtBlockRam() || pIdent->IsHtMrdBlockRam() || pIdent->IsHtMwrBlockRam() || pIdent->IsHtUltraRam() || pIdent->IsHtMrdUltraRam() || pIdent->IsHtMwrUltraRam() || dataWidth == 1) {
 					width = highBit - lowBit + 1;
 					sprintf(buf, "{{ %s = 1; }}", wrEnStr.c_str());
 				} else {
@@ -1536,7 +1742,7 @@ CHtfeStatement * CHtfeDesign::ParseHtMemoryStatement(CHtfeIdent *pHier)
 
 				CHtfeStatement *pStatement2 = ParseCompoundStatement(pHier);
 
-				if (!pIdent->IsHtBlockRam() && !pIdent->IsHtMrdBlockRam() && !pIdent->IsHtMwrBlockRam() && dataWidth > 1) {
+				if (!pIdent->IsHtBlockRam() && !pIdent->IsHtMrdBlockRam() && !pIdent->IsHtMwrBlockRam() && !pIdent->IsHtUltraRam() && !pIdent->IsHtMrdUltraRam() && !pIdent->IsHtMwrUltraRam() && dataWidth > 1) {
 					CHtfeOperand *pWrEnOp = pStatement2->GetExpr()->GetOperand1();
 					pWrEnOp->SetDistRamWeWidth(lowBit + width - 1, lowBit);
 				}
@@ -1561,7 +1767,7 @@ CHtfeStatement * CHtfeDesign::ParseHtMemoryStatement(CHtfeIdent *pHier)
 					string lineBuf;
 
 					int width;
-					if (pIdent->IsHtBlockRam() || pIdent->IsHtMrdBlockRam() || pIdent->IsHtMwrBlockRam() || dataWidth == 1) {
+					if (pIdent->IsHtBlockRam() || pIdent->IsHtMrdBlockRam() || pIdent->IsHtMwrBlockRam() || pIdent->IsHtUltraRam() || pIdent->IsHtMrdUltraRam() || pIdent->IsHtMwrUltraRam() || dataWidth == 1) {
 						width = highBit - lowBit + 1;
 						sprintf(buf, "{{ %s = 1; }}", wrEnStr.c_str());
 					} else {
@@ -1592,7 +1798,7 @@ CHtfeStatement * CHtfeDesign::ParseHtMemoryStatement(CHtfeIdent *pHier)
 						Assert(bFound);
 					}
 
-					if (!pIdent->IsHtBlockRam() && !pIdent->IsHtMrdBlockRam() && !pIdent->IsHtMwrBlockRam() && dataWidth > 1) {
+					if (!pIdent->IsHtBlockRam() && !pIdent->IsHtMrdBlockRam() && !pIdent->IsHtMwrBlockRam() && !pIdent->IsHtUltraRam() && !pIdent->IsHtMrdUltraRam() && !pIdent->IsHtMwrUltraRam() && dataWidth > 1) {
 						CHtfeOperand *pWrEnOp = pStatement2->GetExpr()->GetOperand1();
 						pWrEnOp->SetDistRamWeWidth(lowBit + width - 1, lowBit);
 					}
@@ -1686,7 +1892,7 @@ void CHtfeDesign::HtMemoryWriteVarInit(CHtfeIdent *pHier, CHtfeIdent *pIdent, st
 
 			// initialize write variables
 			char buf[1024];
-			if (pIdent->GetType()->IsHtMrdBlockRam())
+			if (pIdent->GetType()->IsHtMrdBlockRam() || pIdent->GetType()->IsHtMrdUltraRam())
 				sprintf(buf, "{ %s_WrAddr%s = 0; %s_WrData%s = 0; %s_WrEn%s = 0; %s_WrSel%s = false; }",
 					cQueName.c_str(), initDimStr.c_str(),
 					cQueName.c_str(), initDimStr.c_str(),
@@ -1745,7 +1951,7 @@ void CHtfeDesign::HtMemoryReadVarInit(CHtfeIdent *pHier, CHtfeIdent *pIdent, str
 
 			// initialize write variables
 			char buf[1024];
-			if (pIdent->GetType()->IsHtMwrBlockRam())
+			if (pIdent->GetType()->IsHtMwrBlockRam() || pIdent->GetType()->IsHtMwrUltraRam())
 				sprintf(buf, "{{ %s_RdSel%s = 0; %s_RdAddr%s = 0; }}",
 					cQueName.c_str(), initDimStr.c_str(),
 					cQueName.c_str(), initDimStr.c_str() );
@@ -1809,7 +2015,7 @@ CHtfeOperand * CHtfeDesign::ParseHtMemoryExpr(CHtfeIdent *pHier, CHtfeIdent *pId
 
 		GetNextToken();
 
-		if (pIdent->GetType()->IsHtMrdBlockRam())
+		if (pIdent->GetType()->IsHtMrdBlockRam() || pIdent->GetType()->IsHtMrdUltraRam())
 			pRdSelOp = ParseExpression(pHier, true);
 
 		if (GetToken() != tk_rparen)
@@ -1817,7 +2023,7 @@ CHtfeOperand * CHtfeDesign::ParseHtMemoryExpr(CHtfeIdent *pHier, CHtfeIdent *pId
 
 		string rdDataStr = cQueName + "_RdData" + refDimStr;
 
-		if (pIdent->GetType()->IsHtMrdBlockRam())
+		if (pIdent->GetType()->IsHtMrdBlockRam() || pIdent->GetType()->IsHtMrdUltraRam())
 			rdDataStr += ".m_mrd[0xdeadbeef]";
 
 		GetNextToken();
@@ -1846,7 +2052,7 @@ CHtfeOperand * CHtfeDesign::ParseHtMemoryExpr(CHtfeIdent *pHier, CHtfeIdent *pId
 		pOperand = ParseExpression(pHier, false, true, false);
 		pOperand->SetIndexList(indexList);
 
-		if (pIdent->GetType()->IsHtMrdBlockRam()) {
+		if (pIdent->GetType()->IsHtMrdBlockRam() || pIdent->GetType()->IsHtMrdUltraRam()) {
 			CScSubField * pSubField = pOperand->GetSubField();
 			while (pSubField && (!pSubField->m_indexList[0]->IsConstValue() || pSubField->m_indexList[0]->GetConstValue().GetUint32() != 0xdeadbeef))
 				pSubField = pSubField->m_pNext;

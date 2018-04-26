@@ -999,6 +999,8 @@ CHtfeStatement * CHtfeDesign::ParseIdentifierStatement(CHtfeIdent *pHier, bool b
 		}
 
 		pType = ParseHtQueueDecl(pHier);
+	} else if (GetToken() == tk_identifier && (GetString() == "ht_ultra_que")) {
+		pType = ParseHtQueueDecl(pHier);
 	} else if (GetToken() == tk_identifier && (GetString() == "sc_dist_ram" || GetString() == "ht_dist_ram")) {
 		static bool bWarnDistRam = true;
 		if (bWarnDistRam && GetString() == "sc_dist_ram") {
@@ -1015,12 +1017,16 @@ CHtfeStatement * CHtfeDesign::ParseIdentifierStatement(CHtfeIdent *pHier, bool b
 		}
 
 		pType = ParseHtBlockRamDecl(pHier);
+	} else if (GetToken() == tk_identifier && (GetString() == "ht_ultra_ram")) {
+		pType = ParseHtUltraRamDecl(pHier);
 	} else if (GetToken() == tk_identifier && GetString() == "ht_mrd_block_ram") {
-
 		pType = ParseHtAsymBlockRamDecl(pHier, true);
+	} else if (GetToken() == tk_identifier && GetString() == "ht_mrd_ultra_ram") {
+		pType = ParseHtAsymUltraRamDecl(pHier, true);
 	} else if (GetToken() == tk_identifier && GetString() == "ht_mwr_block_ram") {
-
 		pType = ParseHtAsymBlockRamDecl(pHier, false);
+	} else if (GetToken() == tk_identifier && GetString() == "ht_mwr_ultra_ram") {
+		pType = ParseHtAsymUltraRamDecl(pHier, false);
 	} else if (GetToken() == tk_identifier && (GetString() == "struct" || GetString() == "class")) {
 		ParseStructDecl(pHier);
 		GetNextToken();
@@ -3723,6 +3729,10 @@ CHtfeStatement * CHtfeDesign::ParseVariableDecl(CHtfeIdent *pHier, CHtfeIdent *p
 					pIdent->SetIsHtBlockQue();
 					pIdent->SetIsRegister();
 					HtQueueVarDecl(pHier, pIdent);
+				} else if (pType->IsHtUltraQue()) {
+					pIdent->SetIsHtUltraQue();
+					pIdent->SetIsRegister();
+					HtQueueVarDecl(pHier, pIdent);
 				} else if (pType->IsHtDistRam()) {
 					pIdent->SetIsHtDistRam();
 					pIdent->SetIsRegister();
@@ -3737,6 +3747,18 @@ CHtfeStatement * CHtfeDesign::ParseVariableDecl(CHtfeIdent *pHier, CHtfeIdent *p
 					HtMemoryVarDecl(pHier, pIdent);
 				} else if (pType->IsHtMwrBlockRam()) {
 					pIdent->SetIsHtMwrBlockRam();
+					pIdent->SetIsRegister();
+					HtMemoryVarDecl(pHier, pIdent);
+				} else if (pType->IsHtUltraRam()) {
+					pIdent->SetIsHtUltraRam();
+					pIdent->SetIsRegister();
+					HtMemoryVarDecl(pHier, pIdent);
+				} else if (pType->IsHtMrdUltraRam()) {
+					pIdent->SetIsHtMrdUltraRam();
+					pIdent->SetIsRegister();
+					HtMemoryVarDecl(pHier, pIdent);
+				} else if (pType->IsHtMwrUltraRam()) {
+					pIdent->SetIsHtMwrUltraRam();
 					pIdent->SetIsRegister();
 					HtMemoryVarDecl(pHier, pIdent);
 				} else {
