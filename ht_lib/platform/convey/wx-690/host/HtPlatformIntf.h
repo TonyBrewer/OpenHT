@@ -10,16 +10,16 @@ namespace Ht {
 }
 using namespace Ht;
 
-void ht_cp_info(void ** ppCoproc, uint64_t * pSig, bool *needFlush, volatile bool *busy, uint64_t *partNumber, uint64_t *appEngineCnt) {
+void ht_cp_info(void ** ppCoproc, uint64_t * pSig, const char * pHtPers, bool *needFlush, volatile bool *busy, uint64_t *partNumber, uint64_t *appEngineCnt) {
 	assert(WDM_INVALID == 0);
 
 	*needFlush = false;
 
-	*ppCoproc = (void *)wdm_reserve_sig(WDM_CPID_ANY, NULL, (char *)HT_PERS);
+	*ppCoproc = (void *)wdm_reserve_sig(WDM_CPID_ANY, NULL, pHtPers);
 	if ((wdm_coproc_t)*ppCoproc == WDM_INVALID) {
 		if (g_htDebug > 1) {
 			fprintf(stderr, "HTLIB: wdm_reserve_sig(\"%s\") failed with %s\n",
-				(char *)HT_PERS, strerror(errno));
+				pHtPers, strerror(errno));
 			if (errno != EBADR) {
 				fprintf(stderr, " Please verify that the personality is installed in\n");
 				fprintf(stderr, " /opt/micron/personalities or CNY_PERSONALITY_PATH is set.\n");
@@ -28,10 +28,10 @@ void ht_cp_info(void ** ppCoproc, uint64_t * pSig, bool *needFlush, volatile boo
 		throw CHtException(eHtBadDispatch, string("unable to reserve personality signature"));
 	}
 
-	if (wdm_attach((wdm_coproc_t)*ppCoproc, (char *)HT_PERS)) {
+	if (wdm_attach((wdm_coproc_t)*ppCoproc, pHtPers)) {
 		if (g_htDebug > 1) {
 			fprintf(stderr, "HTLIB: wdm_attach(\"%s\") failed with %s\n",
-				(char *)HT_PERS, strerror(errno));
+				pHtPers, strerror(errno));
 			fprintf(stderr, " Please verify that the personality is installed in\n");
 			fprintf(stderr, " /opt/micron/personalities or CNY_PERSONALITY_PATH is set.\n");
 		}

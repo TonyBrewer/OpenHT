@@ -398,10 +398,17 @@ namespace Ht {
 		m_htNeedFlush = false;
 		m_appMode = m_pHtHifBase->GetAppMode();
 
+		// Initialize htHifParams
+		if (pHtHifParams)
+			m_htHifParams = *pHtHifParams;
+
+		if (m_htHifParams.m_pHtPers == 0)
+			m_htHifParams.m_pHtPers = pHtPers;
+
 		if (m_appMode == eAppRun || m_appMode == eAppVsim) {
 			uint64_t appEngineCnt = 0;
 
-			m_pHtHifBase->HtCpInfo(&m_htNeedFlush, &m_bCoprocBusy, &m_partNumber, &appEngineCnt);
+			m_pHtHifBase->HtCpInfo(&m_htNeedFlush, &m_bCoprocBusy, &m_partNumber, &appEngineCnt, m_htHifParams.m_pHtPers);
 
 			m_aeCnt = (appEngineCnt >> 32) & 0xf;
 			if (!m_aeCnt || m_appMode == eAppVsim)
@@ -422,13 +429,6 @@ namespace Ht {
 		assert(m_aeCnt <= HT_HIF_AE_CNT_MAX);
 
 		m_allocLock = 0;
-
-		// Initialize htHifParams
-		if (pHtHifParams)
-			m_htHifParams = *pHtHifParams;
-
-		if (m_htHifParams.m_pHtPers == 0)
-			m_htHifParams.m_pHtPers = pHtPers;
 
 		int numaSetCnt = max(m_htHifParams.m_numaSetCnt, 1);
 		if (numaSetCnt != 1 && numaSetCnt != 2 && numaSetCnt != 4)

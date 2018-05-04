@@ -152,10 +152,10 @@ namespace Ht {
 		friend class CHtModelHifLib;
 		friend class CHtUnitBase;
 	protected:
-		CHtHifBase(CHtHifParams * pParams) {
+		CHtHifBase(CHtHifParams * pParams, const char * pHtPers) {
 			m_pCoproc = 0;
 			m_pCoprocFw = 0;
-			m_pHtHifLibBase = CHtHifLibBase::NewHtHifLibBase(pParams, HT_PERS, this);
+			m_pHtHifLibBase = CHtHifLibBase::NewHtHifLibBase(pParams, pHtPers, this);
 			m_allocLock = 0;
 			m_csrLock = 0;
 		}
@@ -193,7 +193,7 @@ namespace Ht {
 
 		void HtCoprocSysc();
 
-		void HtCpInfo(bool *needFlush, volatile bool *busy, uint64_t *aeg2, uint64_t *aeg3);
+		void HtCpInfo(bool *needFlush, volatile bool *busy, uint64_t *aeg2, uint64_t *aeg3, const char *pHtPers);
 		void HtCpDispatch(uint64_t *pBase);
 		void HtCpDispatchWait(uint64_t *pBase);
 		void HtCpRelease();
@@ -325,7 +325,15 @@ namespace Ht {
 			}
 		}
 
-		CHtHif(CHtHifParams * pParams = 0) : CHtHifBase(pParams) {
+		CHtHif(CHtHifParams * pParams = 0) : CHtHifBase(pParams, HT_PERS) {
+			m_pthreads = 0;
+			m_ppUnits = 0;
+		}
+		CHtHif(const char * pHtPers) : CHtHifBase(0, pHtPers) {
+			m_pthreads = 0;
+			m_ppUnits = 0;
+		}
+		CHtHif(CHtHifParams * pParams, const char * pHtPers) : CHtHifBase(pParams, pHtPers) {
 			m_pthreads = 0;
 			m_ppUnits = 0;
 		}

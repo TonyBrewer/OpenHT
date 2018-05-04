@@ -92,8 +92,8 @@ namespace Ht {
 
 #	if !defined(HT_MODEL) && !defined(HT_SYSC)
 
-		void CHtHifBase::HtCpInfo(bool *needFlush, volatile bool *busy, uint64_t *aeg2, uint64_t *aeg3) {
-			ht_cp_info(&m_pCoproc, &m_sig, needFlush, busy, aeg2, aeg3);
+		void CHtHifBase::HtCpInfo(bool *needFlush, volatile bool *busy, uint64_t *aeg2, uint64_t *aeg3, const char *pHtPers) {
+			ht_cp_info(&m_pCoproc, &m_sig, pHtPers, needFlush, busy, aeg2, aeg3);
 			ht_cp_fw_attach(m_pCoproc, &m_pCoprocFw);
 		}
 
@@ -114,7 +114,7 @@ namespace Ht {
 		}
 
 #	else
-		void CHtHifBase::HtCpInfo(bool *needFlush, volatile bool *busy, uint64_t *partNumber, uint64_t *appEngineCnt) {}
+		void CHtHifBase::HtCpInfo(bool *needFlush, volatile bool *busy, uint64_t *partNumber, uint64_t *appEngineCnt, const char *pHtPers) {}
 		void CHtHifBase::HtCpDispatch(uint64_t *pBase) {}
 		void CHtHifBase::HtCpDispatchWait(uint64_t *pBase) {}
 		void CHtHifBase::HtCpRelease() {}

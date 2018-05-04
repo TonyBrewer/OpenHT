@@ -73,6 +73,7 @@ vsim libvsim vfiles:	CFLAGS += -I$(PLAT_DIR)/convey/$(CNY_PDK_PLATFORM)/host
 ifeq (true,$(PLAT_WX_OR_MA))
 vsim libvsim vfiles:	CFLAGS += -DHT_AE_CNT=$(HT_AE_CNT)
 endif
+vsim libvsim vfiles:	CFLAGS += -DHT_NICK=$(CNY_HT_NICK)
 
 app libapp:	CFLAGS += $(CNY_HT_DEFINES)
 app libapp:	CFLAGS += $(CNY_HT_CFLAGS_APP)
@@ -81,8 +82,9 @@ app libapp:	CFLAGS += -I$(CNY_PATH)/include
 app libapp:	CFLAGS += -I$(PWD)/ht/app
 app libapp:	CFLAGS += -DHT_AE_CNT=$(HT_AE_CNT)
 app libapp:	CFLAGS += -I$(PLAT_DIR)/convey/$(CNY_PDK_PLATFORM)/host
+app libapp:	CFLAGS += -DHT_NICK=$(CNY_HT_NICK)
 
-HtHif.o HtHif.po: CFLAGS += -DHT_NICK=$(CNY_HT_NICK)
+#HtHif.o HtHif.po: CFLAGS += -DHT_NICK=$(CNY_HT_NICK)
 
 ifneq ($(findstring ConveyOS,$(HT_HOST_API)),)
 CFLAGS += -DCNYOS_API

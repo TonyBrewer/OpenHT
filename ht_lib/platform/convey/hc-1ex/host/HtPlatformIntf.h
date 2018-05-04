@@ -13,7 +13,7 @@ using namespace Ht;
 extern "C" long PersDisp();
 extern "C" void PersInfo(unsigned long *partNumber, uint64_t *appEngineCnt);
 
-void ht_cp_info(void ** pCoproc, uint64_t * pSig, bool *needFlush, volatile bool *busy, uint64_t *partNumber, uint64_t *appEngineCnt) {
+void ht_cp_info(void ** pCoproc, uint64_t * pSig, const char * pHtPers, bool *needFlush, volatile bool *busy, uint64_t *partNumber, uint64_t *appEngineCnt) {
 
 	if (cny_cp_sys_get_sysiconnect() == CNY_SYSTYPE_ICONNECT_FSB) {
 		*needFlush = true;
@@ -24,11 +24,11 @@ void ht_cp_info(void ** pCoproc, uint64_t * pSig, bool *needFlush, volatile bool
 	int srtn = 0;
 	cny_image_t sig;
 	cny_image_t sig2 = 0L;
-	cny_get_signature((char *)HT_PERS, &sig, &sig2, &srtn);
+	cny_get_signature(pHtPers, &sig, &sig2, &srtn);
 	*(cny_image_t *)pSig = sig;
 
 	if (g_htDebug > 2)
-		fprintf(stderr, "HTLIB: cny_get_signature(\"%s\", ...) returned %d\n", (char *)HT_PERS, srtn);
+		fprintf(stderr, "HTLIB: cny_get_signature(\"%s\", ...) returned %d\n", pHtPers, srtn);
 
 	if (srtn != 0) {
 		if (g_htDebug > 1) {
