@@ -3,6 +3,7 @@ DIRS   = $(sort $(patsubst %/,%,$(dir $(wildcard */Makefile))))
 SKIP  += model
 SKIP  += $(wildcard OMP*)
 SKIP  += $(wildcard userio*)
+SKIP  += mdj_uram_bug
 SKIP  += memPSGRand
 # SKIP list needs trailing <space>
 SKIP  += 

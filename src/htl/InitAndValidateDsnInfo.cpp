@@ -516,6 +516,7 @@ void CDsnInfo::InitBramUsage()
 		CBramTarget target;
 		target.m_name = pRam->m_gblName;
 		target.m_pRamType = &pNgvInfo->m_ramType;
+		target.m_autoAssignedRam = false;
 		target.m_depth = 1 << pRam->m_addrW;
 		target.m_width = pRam->m_pType->m_clangBitWidth;
 		target.m_copies = pNgvInfo->m_ngvReplCnt;
@@ -543,6 +544,7 @@ void CDsnInfo::InitBramUsage()
 			CBramTarget target;
 			target.m_name = "";
 			target.m_pRamType = &mod.m_threads.m_ramType;
+			target.m_autoAssignedRam = false;
 			target.m_depth = 1 << mod.m_threads.m_htIdW.AsInt();
 			target.m_width = 0;
 			for (size_t i = 0; i < mod.m_threads.m_htPriv.m_fieldList.size(); i += 1) {
@@ -570,6 +572,7 @@ void CDsnInfo::InitBramUsage()
 			if (pRam->m_pNgvInfo->m_bOgv && pRam->m_addrW > 0) {
 				target.m_name = pRam->m_gblName;
 				target.m_pRamType = &pRam->m_ramType;
+				target.m_autoAssignedRam = false;
 				target.m_depth = 1 << pRam->m_addrW;
 				target.m_width = pRam->m_pType->GetPackedBitWidth();
 				target.m_copies = mod.m_instSet.GetTotalCnt();
@@ -621,6 +624,7 @@ void CDsnInfo::InitBramUsage()
 			CBramTarget target;
 			target.m_name = pShared->m_name;
 			target.m_pRamType = &pShared->m_ramType;
+			target.m_autoAssignedRam = false;
 
 			if (pShared->m_addr1W.AsInt() == 0)
 				target.m_depth = 0;
@@ -675,6 +679,8 @@ void CDsnInfo::InitBramUsage()
 		if (*target.m_pRamType != eAutoRam) continue;
 		if (target.m_varType == "Shared") continue;
 
+		target.m_autoAssignedRam = true;
+
 		if (target.m_slicePerBramRatio > g_appArgs.GetMinSliceToBramRatio() && target.m_brams * target.m_copies <= brams18KbAvailCnt) {
 			*target.m_pRamType = eBlockRam;
 			brams18KbAvailCnt -= target.m_brams * target.m_copies;
@@ -720,6 +726,7 @@ void CDsnInfo::InitUramUsage()
 
 		if (*target.m_pRamType != eBlockRam) continue;
 		if (target.m_varType == "Shared") continue;
+		if (target.m_autoAssignedRam == false) continue;
 
 		// Check to see if this ram requires 2 clocks..
 		if (target.m_varType == "Private" || !target.m_pNgvInfo->m_bNgvWrDataClk2x) {

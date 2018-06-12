@@ -1,0 +1,28 @@
+typedef sc_int<31> filtElem_t;
+struct rowAccum {
+  filtElem_t m_row[7];
+};
+
+////////////////////////////////////////////////////
+// Top-level
+
+dsnInfo.AddModule(name=bug, htIdW=0);
+
+bug.AddInstr(name=BUG_RETURN);
+
+bug.AddStage(execStg=4,privWrStg=4);
+
+bug.AddPrivate()
+	.AddVar(type=ht_uint6, name=addr1Var)
+	.AddVar(type=ht_uint2, name=addr2Var)
+	;
+
+bug.AddGlobal()
+	.AddVar(type=rowAccum, name=accum, addr1=addr1Var, addr2=addr2Var, dimen1=8, dimen2=3, rdStg=4, nonInstrWrite=true, instrRead=true, blockRam=true, ultraRam=false)
+	;
+
+bug.AddEntry(func=htmain, instr=BUG_RETURN, host=true)
+	;
+
+bug.AddReturn(func=htmain)
+	;
