@@ -187,8 +187,8 @@ void CDsnInfo::GenerateHtaFiles()
 			fprintf(cppFile, "\tbool c_bAssert_1_%d = r_%sToHta_assert%s.m_bAssert;\n",
 				modIdx / 2, pModInst->m_instName.Lc().c_str(), replIdxStr.c_str());
 			if (moduleCnt > 1)
-				fprintf(cppFile, "\tbool c_bCollision_1_%d = r_%sToHta_assert%s.m_bAssert;\n",
-				modIdx / 2, pModInst->m_instName.Lc().c_str(), replIdxStr.c_str());
+				fprintf(cppFile, "\tbool c_bCollision_1_%d = r_%sToHta_assert%s.m_bAssert && c_bAssert_1_%d;\n",
+				modIdx / 2, pModInst->m_instName.Lc().c_str(), replIdxStr.c_str(), (modIdx / 2) - 1);
 		}
 		modIdx += 2;
 	}

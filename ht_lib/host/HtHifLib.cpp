@@ -904,13 +904,7 @@ namespace Ht {
 			break;
 		}
 		case HIF_CMD_ASSERT_COLL: {
-			char const * pModuleName = m_pHtUnitBase->GetModuleName(byte6);
-			if (pModuleName == 0)
-				sprintf(c, "HIF_CMD_ASSERT_COLL: module=%d, lineNum=%d, info=0x%08x",
-					byte6, byte54, byte30);
-			else
-				sprintf(c, "HIF_CMD_ASSERT_COLL: module=%s, lineNum=%d, info=0x%08x",
-					pModuleName, byte54, byte30);
+			sprintf(c, "HIF_CMD_ASSERT_COLL: Assert Collision - no information available");
 			str.append(c);
 			break;
 		}
