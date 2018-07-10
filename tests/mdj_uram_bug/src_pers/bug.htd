@@ -30,6 +30,14 @@ bug.AddPrivate()
 	.AddVar(type=ht_uint6, name=addr2Var_3)
 	;
 
+bug.AddShared()
+	.AddVar(type=ht_uint48, name=svDist, addr1W=10)
+	.AddVar(type=ht_uint48, name=svBram, addr1W=13, blockRam=true)
+	.AddVar(type=ht_uint48, name=svDistQue, queueW=13)
+	.AddVar(type=ht_uint48, name=svBramQue, queueW=13, blockRam=true)
+
+	;
+
 bug.AddGlobal()
 	.AddVar(type=rowAccum, name=accum, addr1=addr1Var_0, addr2=addr2Var_0, dimen1=8, dimen2=3, rdStg=4, nonInstrWrite=true, instrRead=true, blockRam=true, ultraRam=false)
 	.AddVar(type=pixel4_t, name=refRowBuf, addr1W=5, addr2W=8, dimen1=4, dimen2=3, nonInstrWrite=true, spanningWrite=true, ultraRam=true)

@@ -516,7 +516,7 @@ void CDsnInfo::InitBramUsage()
 		CBramTarget target;
 		target.m_name = pRam->m_gblName;
 		target.m_pRamType = &pNgvInfo->m_ramType;
-		target.m_autoAssignedRam = false;
+		target.m_isSharedQueue = false;
 		target.m_depth = 1 << pRam->m_addrW;
 		target.m_width = pRam->m_pType->m_clangBitWidth;
 		target.m_copies = pNgvInfo->m_ngvReplCnt;
@@ -543,7 +543,7 @@ void CDsnInfo::InitBramUsage()
 			CBramTarget target;
 			target.m_name = "";
 			target.m_pRamType = &mod.m_threads.m_ramType;
-			target.m_autoAssignedRam = false;
+			target.m_isSharedQueue = false;
 			target.m_depth = 1 << mod.m_threads.m_htIdW.AsInt();
 			target.m_width = 0;
 			for (size_t i = 0; i < mod.m_threads.m_htPriv.m_fieldList.size(); i += 1) {
@@ -570,7 +570,7 @@ void CDsnInfo::InitBramUsage()
 			if (pRam->m_pNgvInfo->m_bOgv && pRam->m_addrW > 0) {
 				target.m_name = pRam->m_gblName;
 				target.m_pRamType = &pRam->m_ramType;
-				target.m_autoAssignedRam = false;
+				target.m_isSharedQueue = false;
 				target.m_depth = 1 << pRam->m_addrW;
 				target.m_width = pRam->m_pType->GetPackedBitWidth();
 				target.m_copies = mod.m_instSet.GetTotalCnt();
@@ -597,6 +597,7 @@ void CDsnInfo::InitBramUsage()
 			} else {
 				target.m_name = pRam->m_gblName;
 				target.m_pRamType = &pRam->m_ramType;
+				target.m_isSharedQueue = false;
 				target.m_depth = 1 << pRam->m_addrW;
 				target.m_width = pRam->m_pType->GetPackedBitWidth();
 				target.m_copies = mod.m_instSet.GetTotalCnt();
@@ -620,7 +621,10 @@ void CDsnInfo::InitBramUsage()
 			CBramTarget target;
 			target.m_name = pShared->m_name;
 			target.m_pRamType = &pShared->m_ramType;
-			target.m_autoAssignedRam = false;
+			if (pShared->m_queueW.AsInt())
+				target.m_isSharedQueue = true;
+			else
+				target.m_isSharedQueue = false;
 
 			if (pShared->m_addr1W.AsInt() == 0)
 				target.m_depth = 0;
@@ -658,7 +662,7 @@ void CDsnInfo::InitBramUsage()
 		if (target.m_depth == 1)
 			*target.m_pRamType = eRegRam;
 
-		if (target.m_varType == "Shared")
+		if (target.m_varType == "Shared" && target.m_isSharedQueue == false)
 			continue;
 
 		if (*target.m_pRamType == eUltraRam)
@@ -675,9 +679,7 @@ void CDsnInfo::InitBramUsage()
 		CBramTarget & target = m_bramTargetList[targetIdx];
 
 		if (*target.m_pRamType != eAutoRam) continue;
-		if (target.m_varType == "Shared") continue;
-
-		target.m_autoAssignedRam = true;
+		if (target.m_varType == "Shared" && target.m_isSharedQueue == false) continue;
 
 		if (target.m_slicePerBramRatio > g_appArgs.GetMinSliceToBramRatio() && target.m_brams * target.m_copies <= brams18KbAvailCnt) {
 			*target.m_pRamType = eBlockRam;

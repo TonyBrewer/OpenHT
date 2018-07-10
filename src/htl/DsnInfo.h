@@ -2047,7 +2047,7 @@ struct CBramTarget {
 	int			m_urams;
 	float		m_slicePerBramRatio;
 	HtdFile::ERamType *	m_pRamType;
-	bool		m_autoAssignedRam;
+	bool		m_isSharedQueue;
 	CNgvInfo *	m_pNgvInfo;
 	string		m_modName;
 	string		m_varType;
