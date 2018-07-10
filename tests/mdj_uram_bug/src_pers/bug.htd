@@ -3,6 +3,17 @@ struct rowAccum {
   filtElem_t m_row[7];
 };
 
+typedef int16_t pixel_t;
+
+union pixel4_t {
+    pixel_t  m_pxl[4];
+    uint16_t m_upxl[4];
+    uint32_t m_dpxl[2];
+#pragma htl spanning_field
+   uint64_t m_qpxl;
+};
+
+
 ////////////////////////////////////////////////////
 // Top-level
 
@@ -13,16 +24,55 @@ bug.AddInstr(name=BUG_RETURN);
 bug.AddStage(execStg=4,privWrStg=4);
 
 bug.AddPrivate()
-	.AddVar(type=ht_uint6, name=addr1Var)
-	.AddVar(type=ht_uint2, name=addr2Var)
+	.AddVar(type=ht_uint6, name=addr1Var_0)
+	.AddVar(type=ht_uint2, name=addr2Var_0)
+	.AddVar(type=ht_uint6, name=addr1Var_3)
+	.AddVar(type=ht_uint6, name=addr2Var_3)
 	;
 
 bug.AddGlobal()
-	.AddVar(type=rowAccum, name=accum, addr1=addr1Var, addr2=addr2Var, dimen1=8, dimen2=3, rdStg=4, nonInstrWrite=true, instrRead=true, blockRam=true, ultraRam=false)
+	.AddVar(type=rowAccum, name=accum, addr1=addr1Var_0, addr2=addr2Var_0, dimen1=8, dimen2=3, rdStg=4, nonInstrWrite=true, instrRead=true, blockRam=true, ultraRam=false)
+	.AddVar(type=pixel4_t, name=refRowBuf, addr1W=5, addr2W=8, dimen1=4, dimen2=3, nonInstrWrite=true, spanningWrite=true, ultraRam=true)
+	.AddVar(type=pixel4_t, name=refTstBuf, addr1W=5, addr2W=5, dimen1=2, nonInstrWrite=true, spanningWrite=true)
+	.AddVar(type=pixel4_t, name=outBuf, addr1=addr1Var_3, addr2=addr2Var_3, dimen1=2, dimen2=3, nonInstrWrite=true, instrRead=true, rdStg=3, spanningWrite=true, blockRam=false, ultraRam=true)
 	;
 
 bug.AddEntry(func=htmain, instr=BUG_RETURN, host=true)
 	;
 
+bug.AddCall(func=bug2)
+	;
+
 bug.AddReturn(func=htmain)
+	;
+
+
+////////////////////////////////////////////////////
+// Bug2
+
+dsnInfo.AddModule(name=bug2, htIdW=0);
+
+bug2.AddInstr(name=BUG2_RETURN);
+
+bug2.AddStage(execStg=4,privWrStg=4);
+
+bug2.AddPrivate()
+	.AddVar(type=ht_uint5, name=addr1Var_1)
+	.AddVar(type=ht_uint8, name=addr2Var_1)
+	.AddVar(type=ht_uint5, name=addr1Var_2)
+	.AddVar(type=ht_uint5, name=addr2Var_2)
+	.AddVar(type=ht_uint6, name=addr1Var_3)
+	.AddVar(type=ht_uint6, name=addr2Var_3)
+	;
+
+bug2.AddGlobal()
+	.AddVar(type=pixel4_t, name=refRowBuf, addr1=addr1Var_1, addr2=addr2Var_1, dimen1=4, dimen2=3, rdStg=3, instrRead=true, ultraRam=true)
+	.AddVar(type=pixel4_t, name=refTstBuf, addr1=addr1Var_2, addr2=addr2Var_2, dimen1=2, rdStg=3, instrRead=true)
+	.AddVar(type=pixel4_t, name=outBuf, addr1=addr1Var_3, addr2=addr2Var_3, dimen1=2, dimen2=3, nonInstrWrite=true, instrRead=true, rdStg=3, spanningWrite=true, blockRam=false, ultraRam=true)
+	;
+
+bug2.AddEntry(func=bug2, instr=BUG2_RETURN)
+	;
+
+bug2.AddReturn(func=bug2)
 	;

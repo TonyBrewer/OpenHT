@@ -83,5 +83,5 @@ Gv2.AddReturn(func=gv2)
 
 Gv2.AddGlobal()
 	.AddVar(type=CGVar, name=GvarD, dimen1=2, dimen2=4, maxIw=false, instrRead=true, instrWrite=true)
-	.AddVar(type=CGVar, name=GvarA, addr1=gvAddr1, addr2=gvAddr2, maxIw=true, instrRead=true, instrWrite=true)
+	.AddVar(type=CGVar, name=GvarA, addr1=gvAddr1, addr2=gvAddr2, maxIw=true, blockRam=true, instrRead=true, instrWrite=true)
 	;

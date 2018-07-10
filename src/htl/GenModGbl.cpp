@@ -66,6 +66,16 @@ void CDsnInfo::InitOptNgv()
 					ParseMsg(Error, pNgv->m_lineInfo, "previous declaration");
 				}
 
+				if ((pMgv->m_ramType == eBlockRam && pNgv->m_ramType != eBlockRam) || (pNgv->m_ramType == eBlockRam && pMgv->m_ramType != eBlockRam)) {
+					ParseMsg(Error, pMgv->m_lineInfo, "global variable '%s' declared with inconsistent ramstyle", pMgv->m_gblName.c_str());
+					ParseMsg(Error, pNgv->m_lineInfo, "previous declaration");
+				}
+
+				if ((pMgv->m_ramType == eUltraRam && pNgv->m_ramType != eUltraRam) || (pNgv->m_ramType == eUltraRam && pMgv->m_ramType != eUltraRam)) {
+					ParseMsg(Error, pMgv->m_lineInfo, "global variable '%s' declared with inconsistent ramstyle", pMgv->m_gblName.c_str());
+					ParseMsg(Error, pNgv->m_lineInfo, "previous declaration");
+				}
+
 				m_ngvList[gvIdx]->m_modInfoList.push_back(CNgvModInfo(pMod, pMgv));
 				pMgv->m_pNgvInfo = m_ngvList[gvIdx];
 

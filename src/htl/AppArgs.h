@@ -133,9 +133,7 @@ public:
 	int GetAeUnitCnt() { return m_aeUnitCnt; }
 	int GetHostHtIdW() { return m_hostHtIdW; }
 	int GetMax18KbBramPerUnit() { return m_max18KbBramPerUnit; }
-	int GetMaxUramPerUnit() { return m_maxUramPerUnit; }
 	int GetMinSliceToBramRatio() { return m_minSliceToBramRatio; }
-	int GetMinBramToUramRatio() { return m_minBramToUramRatio; }
 	string GetFxModName() { return m_fxModName; }
 	int GetArgMemLatency(int i) { return m_avgMemLatency[i]; }
 	vector<string> &GetIncludeDirs() { return m_includeDirs; }
@@ -210,9 +208,7 @@ private:
 	string			m_oqModName;
 	int				m_defaultFreqMhz;
 	int				m_max18KbBramPerUnit;
-	int				m_maxUramPerUnit;
 	int				m_minSliceToBramRatio;
-	int				m_minBramToUramRatio;
 	string			m_fxModName;
 	int				m_avgMemLatency[2];
 	int				m_coprocId;
