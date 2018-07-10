@@ -79,6 +79,9 @@ app libapp:	CFLAGS += $(CNY_HT_DEFINES)
 app libapp:	CFLAGS += $(CNY_HT_CFLAGS_APP)
 app libapp:	CFLAGS += -DHT_APP
 app libapp:	CFLAGS += -I$(CNY_PATH)/include
+ifneq (,$(findstring micron,$(CNY_PATH)))
+app libapp:	CFLAGS += -I$(CNY_PATH)/tests/include
+endif
 app libapp:	CFLAGS += -I$(PWD)/ht/app
 app libapp:	CFLAGS += -DHT_AE_CNT=$(HT_AE_CNT)
 app libapp:	CFLAGS += -I$(PLAT_DIR)/convey/$(CNY_PDK_PLATFORM)/host
