@@ -27,7 +27,7 @@ ifneq (,$(wildcard .svn))
 else ifneq (,$(wildcard .git))
  VCSREV = $(shell head -1 .git/refs/heads/master | cut -c 1-7)
 endif
-VERSION = 2.1.28
+VERSION = 2.1.29
 REL_DIR = $(VERSION)-$(VCSREV)
 
 export OPT_LVL = -g -O2
@@ -91,6 +91,11 @@ prefix install: all
 	  e=$${ex#*/ex_}; \
 	  cp -rp $$ex $(PREFIX)/examples/$$e; \
 	  rm -rf $(PREFIX)/examples/$$e/msvs*; \
+	  mv $(PREFIX)/examples/$$e/Makefile $(PREFIX)/examples/$$e/Makefile.tmp; \
+	  cat $(PREFIX)/examples/$$e/Makefile.tmp |\
+	  sed "s~/opt/convey~/opt/micron~g" \
+	  > $(PREFIX)/examples/$$e/Makefile; \
+	  rm -f $(PREFIX)/examples/$$e/Makefile.tmp; \
 	done)
 	find $(PREFIX)/examples -name "*.htl" -exec rm {} \;
 	cp -rp local_systemc $(PREFIX)
