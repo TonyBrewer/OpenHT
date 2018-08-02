@@ -68,6 +68,9 @@ vsim libvsim vfiles:	CFLAGS += $(CNY_HT_DEFINES)
 vsim libvsim vfiles:	CFLAGS += $(CNY_HT_CFLAGS_VSIM)
 vsim libvsim vfiles:	CFLAGS += -DHT_VSIM
 vsim libvsim vfiles:	CFLAGS += -I$(CNY_PATH)/include
+ifneq (,$(findstring micron,$(CNY_PATH)))
+vsim libvsim vfiles:	CFLAGS += -I$(CNY_PATH)/tests/include
+endif
 vsim libvsim vfiles:	CFLAGS += -I$(PWD)/ht/vsim
 vsim libvsim vfiles:	CFLAGS += -I$(PLAT_DIR)/convey/$(CNY_PDK_PLATFORM)/host
 ifeq (true,$(PLAT_WX_OR_MA))
