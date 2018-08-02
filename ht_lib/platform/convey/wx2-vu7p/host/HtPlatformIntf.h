@@ -75,7 +75,7 @@ void ht_cp_fw_attach(void *pCoproc, void **ppCoprocFw) {
 			fprintf(stderr, "HTLIB: wdm_attach_fw failed with %s\n",
 				strerror(errno));
 		}
-		wdm_detach_fw((wdm_admin_t)*ppCoprocFw);
+		wdm_detach_cp((wdm_admin_t)*ppCoprocFw);
 		throw CHtException(eHtBadDispatch, string("unable to attach fw"));
 	}
 }
