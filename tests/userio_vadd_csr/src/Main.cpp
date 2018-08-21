@@ -80,7 +80,8 @@ int main(int argc, char **argv)
 
 	uint64_t wrData = 0x5a5a5a5a5a;
 	pHtHif->UserIOCsrWr(0, wrData);
-	uint64_t rdData = pHtHif->UserIOCsrRd(0);
+	uint64_t rdData = 0;
+	pHtHif->UserIOCsrRd(0, rdData);
 
 	if (rdData != wrData) {
 		printf("ERROR: CSR Read data did not match Write data!\n");

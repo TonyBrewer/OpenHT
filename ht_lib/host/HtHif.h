@@ -185,8 +185,8 @@ namespace Ht {
 		void SendAllHostMsg(uint8_t msgType, uint64_t msgData) {
 			m_pHtHifLibBase->SendAllHostMsg(msgType, msgData);
 		}
-		uint64_t UserIOCsrRd(uint64_t addr);
-		void UserIOCsrWr(uint64_t addr, uint64_t data);
+		bool UserIOCsrRd(uint64_t addr, uint64_t &data);
+		bool UserIOCsrWr(uint64_t addr, uint64_t data);
 
 	private:
 		CSyscTop * NewSyscTop();

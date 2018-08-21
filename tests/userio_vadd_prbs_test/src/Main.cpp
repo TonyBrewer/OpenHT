@@ -60,7 +60,8 @@ int main(int argc, char **argv)
 
 	/*uint64_t wrData = 0x5a5a5a5a5a;
 	pHtHif->UserIOCsrWr(8, wrData);
-	uint64_t rdData = pHtHif->UserIOCsrRd(8);
+	uint64_t rdData = 0;
+	pHtHif->UserIOCsrRd(8, rdData);
 
 	if (rdData != wrData) {
 		printf("ERROR: CSR Read data did not match Write data!\n");
@@ -106,7 +107,8 @@ int main(int argc, char **argv)
 
 	/*uint64_t wrData = 0x5a5a5a5a5a;
 	pHtHif->UserIOCsrWr(8, wrData);
-	uint64_t rdData = pHtHif->UserIOCsrRd(8);
+	uint64_t rdData = 0;
+	pHtHif->UserIOCsrRd(8, rdData);
 
 	if (rdData != wrData) {
 		printf("ERROR: CSR Read data did not match Write data!\n");

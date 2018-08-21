@@ -239,7 +239,7 @@ namespace Ht {
 			return 2ll*1024*1024*1024;
 #		endif
 	}
-	uint64_t CHtHifBase::UserIOCsrRd(uint64_t addr) {
+	bool CHtHifBase::UserIOCsrRd(uint64_t addr, uint64_t &data) {
 #		if defined(HT_SYSC) || defined(HT_MODEL)
 			if (g_bCsrFuncSet) {
 				LockCsr();
@@ -252,21 +252,22 @@ namespace Ht {
 					usleep(10000);
 				UnlockCsr();
 				usleep(10000);
-				return rdData;
+				data = rdData;
+				return true;
 			} else {
 				fprintf(stderr, "HTLIB: CSR Rd Failed: No Module with AddUserIOCsrIntf available\n");
-				return -1;
+				return false;
 			}
 #		else
 			uint64_t rdData = 0;
 			if (ht_csr_read(m_pCoprocFw, addr, &rdData)) {
 				fprintf(stderr, "HTLIB: CSR Rd Failed\n");
-				return -1;
+				return false;
 			}
-			return rdData;
+			return false;
 #		endif
 	}
-	void CHtHifBase::UserIOCsrWr(uint64_t addr, uint64_t data) {
+	bool CHtHifBase::UserIOCsrWr(uint64_t addr, uint64_t data) {
 #		if defined(HT_SYSC) || defined(HT_MODEL)
 			if (g_bCsrFuncSet) {
 				LockCsr();
@@ -275,14 +276,17 @@ namespace Ht {
 				}
 				usleep(10000);
 				UnlockCsr();
+				return true;
 			} else {
 				fprintf(stderr, "HTLIB: CSR Wr Failed: No Module with AddUserIOCsrIntf available\n");
+				return false;
 			}
 #		else
 			if (ht_csr_write(m_pCoprocFw, addr, data)) {
 				fprintf(stderr, "HTLIB: CSR Wr Failed\n");
+				return false;
 			}
-			return;
+			return false;
 #		endif
 	}
 
