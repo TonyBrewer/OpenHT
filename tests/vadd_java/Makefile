@@ -1,6 +1,6 @@
 export CNY_PDK          ?= /opt/convey/pdk2
 export CNY_PDK_REV      ?= latest
-export CNY_PDK_PLATFORM ?= hc-2
+export CNY_PDK_PLATFORM ?= wx-690
 
 PLAT_wx-2000_AEUCNT = 8
 PLAT_${CNY_PDK_PLATFORM}_AEUCNT ?= 16
