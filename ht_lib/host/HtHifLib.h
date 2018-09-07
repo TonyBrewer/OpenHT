@@ -328,12 +328,14 @@ namespace Ht {
 		void HaltLoop();
 		ERecvType MsgLoop(bool bUseCb=false);
 
+		void ClearMsgQueLoopCnt() { m_outMsgQueLoopCnt = 0; }
+
 		void FlushInBlk(bool bLock=false, int ctl=0);
 		void QueOutMsgs();
 		void NextOutMsg();
 		void NextOutMsgQue() {
 			m_outMsgQue->Pop();
-			m_outMsgQueLoopCnt = 0;
+			ClearMsgQueLoopCnt();
 	#ifdef HT_AVL_TEST
 			m_bOutBlkRdySeen = false;
 	#endif

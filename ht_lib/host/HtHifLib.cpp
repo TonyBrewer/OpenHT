@@ -1442,7 +1442,10 @@ namespace Ht {
 			if (m_outBlkDataSize == 0) {
 				NextOutMsgQue();
 				NextOutBlk(true);
-			}
+			} else {
+				// Clear MsgQueLoopCnt since we did some work, but not all
+				ClearMsgQueLoopCnt();
+			} 
 		}
 
 		m_monitor.IncOhdBytes( rcvdCnt * sizeof(uint64_t) );
