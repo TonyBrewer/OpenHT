@@ -18,10 +18,12 @@ namespace Ht {
 	extern int g_htDebug;
 	extern struct CHtCtrlMsg *g_pCtrlIntfQues[];
 
+#if !defined(_MODEL_LIB)
 	bool g_bCsrFuncSet;
 	void *g_pCsrMod;
 	bool (*g_pCsrCmd)(void *self, int cmd, uint64_t addr, uint64_t data);
 	bool (*g_pCsrRdRsp)(void *self, uint64_t &data);
+#endif
 
 	void * AlignedMmap(uint32_t align, uint32_t size);
 

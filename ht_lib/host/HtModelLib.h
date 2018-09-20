@@ -9,6 +9,7 @@
  */
 #pragma once
 
+#define _MODEL_LIB
 #include "HtHifLib.h"
 #include "HtModel.h"
 

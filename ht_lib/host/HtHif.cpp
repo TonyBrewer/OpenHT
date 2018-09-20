@@ -240,7 +240,9 @@ namespace Ht {
 #		endif
 	}
 	bool CHtHifBase::UserIOCsrRd(uint64_t addr, uint64_t &data) {
-#		if defined(HT_SYSC) || defined(HT_MODEL)
+#		if defined(HT_MODEL)
+			return false;
+#		elif defined(HT_SYSC)
 			if (g_bCsrFuncSet) {
 				LockCsr();
 				uint64_t rdData = 0;
@@ -268,7 +270,9 @@ namespace Ht {
 #		endif
 	}
 	bool CHtHifBase::UserIOCsrWr(uint64_t addr, uint64_t data) {
-#		if defined(HT_SYSC) || defined(HT_MODEL)
+#		if defined(HT_MODEL)
+			return false;
+#		elif defined(HT_SYSC)
 			if (g_bCsrFuncSet) {
 				LockCsr();
 				if (!g_pCsrCmd(g_pCsrMod, HT_CSR_WR, addr, data)) {
