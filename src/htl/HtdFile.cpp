@@ -1947,9 +1947,7 @@ void HtdFile::ParseGlobalMethods()
 			ramType = eUltraRam;
 		else if (blockRam == "true")
 			ramType = eBlockRam;
-		else if (ultraRam.size() == 0 && blockRam == "false")
-			ramType = eDistRam;
-		else if (blockRam.size() == 0 && ultraRam == "false")
+		else if (ultraRam == "false" && blockRam == "false")
 			ramType = eDistRam;
 		else if (blockRam.size() > 0 && blockRam != "false")
 			CPreProcess::ParseMsg(Error, "expected blockRam value of <true or false>");
