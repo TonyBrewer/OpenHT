@@ -1,0 +1,148 @@
+struct data_t {
+  uint64_t lower;
+  uint64_t upper;
+};
+
+struct status_t {
+  uint8_t lane_up;
+  uint8_t chan_up;
+  uint8_t corr_alm;
+  uint8_t fatal_alm;
+  uint32_t unused_0;
+  uint64_t unused_1;
+};
+
+union packet_t {
+  data_t data;
+  status_t status;
+};
+
+typedef uint64_t tmp_t;
+
+////////////////////////////////////////////////////
+// Top-level
+
+dsnInfo.AddModule(name=ctl, htIdW=0);
+
+ctl.AddInstr(name=CTL_SEND);
+ctl.AddInstr(name=CTL_RECV);
+ctl.AddInstr(name=CTL_START);
+ctl.AddInstr(name=CTL_JOIN_SEND);
+ctl.AddInstr(name=CTL_JOIN_RECV);
+ctl.AddInstr(name=CTL_SEND_RTN);
+ctl.AddInstr(name=CTL_RTN);
+
+ctl.AddHostMsg(dir=out, name=STATUS);
+
+ctl.AddMsgIntf(dir=out, name=initMsg, type=bool);
+
+ctl.AddPrivate()
+	.AddVar(type=ht_uint64, name=error0)
+	.AddVar(type=ht_uint64, name=error1)
+	.AddVar(type=ht_uint64, name=error2)
+	.AddVar(type=ht_uint64, name=error3)
+	;
+
+ctl.AddShared()
+	.AddVar(type=uint32_t, name=statusCnt, reset=true)
+	.AddVar(type=bool, name=active, reset=true)
+	;
+
+ctl.AddEntry(func=htmain, instr=CTL_SEND, host=true)
+	;
+
+ctl.AddReturn(func=htmain)
+	.AddParam(hostType=uint64_t, type=ht_uint64, name=error0)
+	.AddParam(hostType=uint64_t, type=ht_uint64, name=error1)
+	.AddParam(hostType=uint64_t, type=ht_uint64, name=error2)
+	.AddParam(hostType=uint64_t, type=ht_uint64, name=error3)
+	;
+
+ctl.AddCall(func=send, fork=true);
+ctl.AddCall(func=recv, fork=true);
+
+ctl.AddUserIO(dir=in, name=status, type=packet_t);
+
+
+////////////////////////////////////////////////////
+// Driver
+dsnInfo.AddModule(name=send, htIdW=0);
+
+send.AddInstr(name=SEND_ENTRY);
+send.AddInstr(name=SEND_RUN);
+send.AddInstr(name=SEND_RTN);
+
+send.AddHostMsg(dir=in, name=LEN)
+	.AddDst(var=len)
+	;
+
+send.AddMsgIntf(dir=in,  name=initMsg, type=bool);
+send.AddMsgIntf(dir=in,  name=recvRdy, type=bool);
+
+send.AddShared()
+	.AddVar(type=ht_uint64, name=len)
+	.AddVar(type=bool, name=init_seen)
+	.AddVar(type=bool, name=rst_prbs)
+	.AddVar(type=bool, name=recv_seen)
+	.AddVar(type=bool, name=run)
+	.AddVar(type=ht_uint64, name=count, dimen1=4)
+	.AddVar(type=bool, name=done, dimen1=4)
+	.AddVar(type=packet_t, name=holdPacket, dimen1=4)
+	.AddVar(type=bool, name=holdPacketVld, dimen1=4)
+	.AddVar(type=bool, name=prbsRdy, dimen1=4)
+	;
+
+send.AddEntry(func=send, instr=SEND_ENTRY)
+	;
+
+send.AddReturn(func=send)
+	;
+
+send.AddUserIO(dir=out, name=link, type=packet_t, dimen=4);
+
+send.AddPrimState(type=prbs_gen_prm_state, name=prbs_gen_prm_state0, include="PersPrbsTx_prim.h");
+send.AddPrimState(type=prbs_gen_prm_state, name=prbs_gen_prm_state1, include="PersPrbsTx_prim.h");
+send.AddPrimState(type=prbs_gen_prm_state, name=prbs_gen_prm_state2, include="PersPrbsTx_prim.h");
+send.AddPrimState(type=prbs_gen_prm_state, name=prbs_gen_prm_state3, include="PersPrbsTx_prim.h");
+
+
+////////////////////////////////////////////////////
+// Receiver
+dsnInfo.AddModule(name=recv, htIdW=0);
+
+recv.AddInstr(name=RECV_ENTRY);
+recv.AddInstr(name=RECV_RUN);
+recv.AddInstr(name=RECV_RTN);
+
+recv.AddHostMsg(dir=in, name=LEN)
+	.AddDst(var=len)
+	;
+
+recv.AddMsgIntf(dir=in,  name=initMsg, type=bool);
+recv.AddMsgIntf(dir=out, name=recvRdy, type=bool);
+
+recv.AddShared()
+	.AddVar(type=ht_uint64, name=len)
+	.AddVar(type=bool, name=init_seen)
+	.AddVar(type=bool, name=rst_prbs)
+	.AddVar(type=ht_uint64, name=count, dimen1=4)
+	.AddVar(type=ht_uint64, name=error, dimen1=4)
+	.AddVar(type=bool, name=done, dimen1=4)
+	;
+
+recv.AddEntry(func=recv, instr=RECV_ENTRY)
+	;
+
+recv.AddReturn(func=recv)
+	.AddParam(type=ht_uint64, name=error0)
+	.AddParam(type=ht_uint64, name=error1)
+	.AddParam(type=ht_uint64, name=error2)
+	.AddParam(type=ht_uint64, name=error3)
+	;
+
+recv.AddUserIO(dir=in, name=link, type=packet_t, dimen=4);
+
+recv.AddPrimState(type=prbs_rcv_prm_state, name=prbs_rcv_prm_state0, include="PersPrbsRx_prim.h");
+recv.AddPrimState(type=prbs_rcv_prm_state, name=prbs_rcv_prm_state1, include="PersPrbsRx_prim.h");
+recv.AddPrimState(type=prbs_rcv_prm_state, name=prbs_rcv_prm_state2, include="PersPrbsRx_prim.h");
+recv.AddPrimState(type=prbs_rcv_prm_state, name=prbs_rcv_prm_state3, include="PersPrbsRx_prim.h");

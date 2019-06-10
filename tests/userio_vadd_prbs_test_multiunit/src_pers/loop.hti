@@ -1,0 +1,19 @@
+AddUserIOConn(portId=0, unit=Au[0], outPath=ctl/send/link[0]);
+AddUserIOConn(portId=1, unit=Au[0], outPath=ctl/send/link[1]);
+AddUserIOConn(portId=2, unit=Au[0], outPath=ctl/send/link[2]);
+AddUserIOConn(portId=3, unit=Au[0], outPath=ctl/send/link[3]);
+AddUserIOConn(portId=0, unit=Au[0], inPath=ctl/recv/link[0]);
+AddUserIOConn(portId=1, unit=Au[0], inPath=ctl/recv/link[1]);
+AddUserIOConn(portId=2, unit=Au[0], inPath=ctl/recv/link[2]);
+AddUserIOConn(portId=3, unit=Au[0], inPath=ctl/recv/link[3]);
+AddUserIOConn(portId=8, unit=Au[0], inPath=ctl/status);
+
+AddUserIOConn(portId=4, unit=Au[1], outPath=ctl/send/link[0]);
+AddUserIOConn(portId=5, unit=Au[1], outPath=ctl/send/link[1]);
+AddUserIOConn(portId=6, unit=Au[1], outPath=ctl/send/link[2]);
+AddUserIOConn(portId=7, unit=Au[1], outPath=ctl/send/link[3]);
+AddUserIOConn(portId=4, unit=Au[1], inPath=ctl/recv/link[0]);
+AddUserIOConn(portId=5, unit=Au[1], inPath=ctl/recv/link[1]);
+AddUserIOConn(portId=6, unit=Au[1], inPath=ctl/recv/link[2]);
+AddUserIOConn(portId=7, unit=Au[1], inPath=ctl/recv/link[3]);
+AddUserIOConn(portId=9, unit=Au[1], inPath=ctl/status);

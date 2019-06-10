@@ -224,7 +224,7 @@ private:
 	void AddModInstParams(string unit, string modPath, vector<int> &memPort, string modInstName, string replCnt, vector<pair<string, string> > & paramPairList);
 	void AddMsgIntfConn(string &outUnit, string &outPath, string &inUnit, string &inPath, bool aeNext, bool aePrev);
 	void AddMsgIntfParams(string &unit, string &path, bool bInBound, string &fanCnt);
-	void AddUioIntfConn(string &uioPort, string &path, bool bInbound);
+	void AddUioIntfConn(string &uioPort, string &unit, string &path, bool bInbound);
 	void AddUioSimIntfConn(string &uioPort, string &path, bool bInbound);
 
 	void SkipTo(EToken skipTk);

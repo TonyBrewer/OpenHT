@@ -329,119 +329,122 @@ void CDsnInfo::GenerateAeTopFile()
 		for (size_t uioIdx = 0; uioIdx < pMod->m_uioIntfList.size(); uioIdx += 1) {
 			CUioIntf * pUioIntf = pMod->m_uioIntfList[uioIdx];
 
-			for (int instIdx = 0; instIdx < pMod->m_instSet.GetInstCnt(); instIdx += 1) {
+			for (int unitIdx = 0; unitIdx < g_appArgs.GetAeUnitCnt(); unitIdx += 1) {
 
-				if (!pUioIntf->m_bInbound) {
+				for (int instIdx = 0; instIdx < pMod->m_instSet.GetInstCnt(); instIdx += 1) {
 
-					vector<CHtString> dimenList;
-					int dimenCntIdx = -1;
-					if (pUioIntf->m_dimen.AsInt() > 0) {
-						dimenCntIdx = 0;
-						dimenList.push_back(pUioIntf->m_dimen);
-					}
+					if (!pUioIntf->m_bInbound) {
 
-					for (int replIdx = 0; replIdx < pMod->m_instSet.GetReplCnt(instIdx); replIdx += 1) {
+						vector<CHtString> dimenList;
+						int dimenCntIdx = -1;
+						if (pUioIntf->m_dimen.AsInt() > 0) {
+							dimenCntIdx = 0;
+							dimenList.push_back(pUioIntf->m_dimen);
+						}
 
-						char instStr[10], replStr[10];
-						sprintf(&instStr[0], "I%d", instIdx);
-						sprintf(&replStr[0], "R%d", replIdx);
+						for (int replIdx = 0; replIdx < pMod->m_instSet.GetReplCnt(instIdx); replIdx += 1) {
 
-						string oPortPrefix = (isSyscSim) ? "portToSim" : "o_auToPort";
-						string iPortPrefix = (isSyscSim) ? "portToSim" : "i_auToPort";
-
-						vector<int> portRefList(dimenList.size());
-						do {
-							string portIdx = IndexStr(portRefList);
-
-							int uioDimenIdx = dimenCntIdx < 0 ? 0 : portRefList[dimenCntIdx];
-							CUioIntfConn *pConn = pUioIntf->GetConnIntf(instIdx, replIdx, uioDimenIdx);
-
-							fprintf(scFile, "\t\tpPers%sTop[%d]->o_%s%s%sToPort_%sUioRdy%s(%s_uio_Rdy[%s]);\n",
-								m_unitName.Uc().c_str(), 0,
-								pMod->m_modName.Lc().c_str(),
-								(pMod->m_instSet.GetInstCnt() > 1) ? instStr : "",
-								(pMod->m_instSet.GetReplCnt(instIdx) > 1) ? replStr : "",
-								pUioIntf->m_name.c_str(), portIdx.c_str(),
-								oPortPrefix.c_str(),
-								pConn->m_uioPort.c_str());
-
-							fprintf(scFile, "\t\tpPers%sTop[%d]->o_%s%s%sToPort_%sUioData%s(%s_uio_Data[%s]);\n",
-								m_unitName.Uc().c_str(), 0,
-								pMod->m_modName.Lc().c_str(),
-								(pMod->m_instSet.GetInstCnt() > 1) ? instStr : "",
-								(pMod->m_instSet.GetReplCnt(instIdx) > 1) ? replStr : "",
-								pUioIntf->m_name.c_str(), portIdx.c_str(),
-								oPortPrefix.c_str(),
-								pConn->m_uioPort.c_str());
-
-							fprintf(scFile, "\t\tpPers%sTop[%d]->i_%s%s%sToPort_%sUioAFull%s(%s_uio_AFull[%s]);\n",
-								m_unitName.Uc().c_str(), 0,
-								pMod->m_modName.Lc().c_str(),
-								(pMod->m_instSet.GetInstCnt() > 1) ? instStr : "",
-								(pMod->m_instSet.GetReplCnt(instIdx) > 1) ? replStr : "",
-								pUioIntf->m_name.c_str(), portIdx.c_str(),
-								iPortPrefix.c_str(),
-								pConn->m_uioPort.c_str());
-
-						} while (DimenIter(dimenList, portRefList));
-
-						fprintf(scFile, "\n");
-					}
-				} else {
-
-					vector<CHtString> dimenList;
-					int dimenCntIdx = -1;
-					if (pUioIntf->m_dimen.AsInt() > 0) {
-						dimenCntIdx = 0;
-						dimenList.push_back(pUioIntf->m_dimen);
-					}
-
-					for (int replIdx = 0; replIdx < pMod->m_instSet.GetReplCnt(instIdx); replIdx += 1) {
-
-						char instStr[10], replStr[10];
-						sprintf(&instStr[0], "I%d", instIdx);
-						sprintf(&replStr[0], "R%d", replIdx);
-
-						string oPortPrefix = (isSyscSim) ? "simToPort" : "o_portToAu";
-						string iPortPrefix = (isSyscSim) ? "simToPort" : "i_portToAu";
-
-						vector<int> portRefList(dimenList.size());
-						do {
-							string portIdx = IndexStr(portRefList);
-
-							int uioDimenIdx = dimenCntIdx < 0 ? 0 : portRefList[dimenCntIdx];
-							CUioIntfConn *pConn = pUioIntf->GetConnIntf(instIdx, replIdx, uioDimenIdx);
-
-							fprintf(scFile, "\t\tpPers%sTop[%d]->i_portTo%s%s%s_%sUioRdy%s(%s_uio_Rdy[%s]);\n",
-								m_unitName.Uc().c_str(), 0,
-								pMod->m_modName.Uc().c_str(),
-								(pMod->m_instSet.GetInstCnt() > 1) ? instStr : "",
-								(pMod->m_instSet.GetReplCnt(instIdx) > 1) ? replStr : "",
-								pUioIntf->m_name.c_str(), portIdx.c_str(),
-								iPortPrefix.c_str(),
-								pConn->m_uioPort.c_str());
-
-							fprintf(scFile, "\t\tpPers%sTop[%d]->i_portTo%s%s%s_%sUioData%s(%s_uio_Data[%s]);\n",
-								m_unitName.Uc().c_str(), 0,
-								pMod->m_modName.Uc().c_str(),
-								(pMod->m_instSet.GetInstCnt() > 1) ? instStr : "",
-								(pMod->m_instSet.GetReplCnt(instIdx) > 1) ? replStr : "",
-								pUioIntf->m_name.c_str(), portIdx.c_str(),
-								iPortPrefix.c_str(),
-								pConn->m_uioPort.c_str());
-
-							fprintf(scFile, "\t\tpPers%sTop[%d]->o_portTo%s%s%s_%sUioAFull%s(%s_uio_AFull[%s]);\n",
-								m_unitName.Uc().c_str(), 0,
-								pMod->m_modName.Uc().c_str(),
-								(pMod->m_instSet.GetInstCnt() > 1) ? instStr : "",
-								(pMod->m_instSet.GetReplCnt(instIdx) > 1) ? replStr : "",
-								pUioIntf->m_name.c_str(), portIdx.c_str(),
-								oPortPrefix.c_str(),
-								pConn->m_uioPort.c_str());
-
-						} while (DimenIter(dimenList, portRefList));
-
-						fprintf(scFile, "\n");
+							char instStr[10], replStr[10];
+							sprintf(&instStr[0], "I%d", instIdx);
+							sprintf(&replStr[0], "R%d", replIdx);
+	
+							string oPortPrefix = (isSyscSim) ? "portToSim" : "o_auToPort";
+							string iPortPrefix = (isSyscSim) ? "portToSim" : "i_auToPort";
+	
+							vector<int> portRefList(dimenList.size());
+							do {
+								string portIdx = IndexStr(portRefList);
+	
+								int uioDimenIdx = dimenCntIdx < 0 ? 0 : portRefList[dimenCntIdx];
+								CUioIntfConn *pConn = pUioIntf->GetConnIntf(unitIdx, instIdx, replIdx, uioDimenIdx);
+	
+								fprintf(scFile, "\t\tpPers%sTop[%d]->o_%s%s%sToPort_%sUioRdy%s(%s_uio_Rdy[%s]);\n",
+									m_unitName.Uc().c_str(), unitIdx,
+									pMod->m_modName.Lc().c_str(),
+									(pMod->m_instSet.GetInstCnt() > 1) ? instStr : "",
+									(pMod->m_instSet.GetReplCnt(instIdx) > 1) ? replStr : "",
+									pUioIntf->m_name.c_str(), portIdx.c_str(),
+									oPortPrefix.c_str(),
+									pConn->m_uioPort.c_str());
+	
+								fprintf(scFile, "\t\tpPers%sTop[%d]->o_%s%s%sToPort_%sUioData%s(%s_uio_Data[%s]);\n",
+									m_unitName.Uc().c_str(), unitIdx,
+									pMod->m_modName.Lc().c_str(),
+									(pMod->m_instSet.GetInstCnt() > 1) ? instStr : "",
+									(pMod->m_instSet.GetReplCnt(instIdx) > 1) ? replStr : "",
+									pUioIntf->m_name.c_str(), portIdx.c_str(),
+									oPortPrefix.c_str(),
+									pConn->m_uioPort.c_str());
+	
+								fprintf(scFile, "\t\tpPers%sTop[%d]->i_%s%s%sToPort_%sUioAFull%s(%s_uio_AFull[%s]);\n",
+									m_unitName.Uc().c_str(), unitIdx,
+									pMod->m_modName.Lc().c_str(),
+									(pMod->m_instSet.GetInstCnt() > 1) ? instStr : "",
+									(pMod->m_instSet.GetReplCnt(instIdx) > 1) ? replStr : "",
+									pUioIntf->m_name.c_str(), portIdx.c_str(),
+									iPortPrefix.c_str(),
+									pConn->m_uioPort.c_str());
+	
+							} while (DimenIter(dimenList, portRefList));
+	
+							fprintf(scFile, "\n");
+						}
+					} else {
+	
+						vector<CHtString> dimenList;
+						int dimenCntIdx = -1;
+						if (pUioIntf->m_dimen.AsInt() > 0) {
+							dimenCntIdx = 0;
+							dimenList.push_back(pUioIntf->m_dimen);
+						}
+	
+						for (int replIdx = 0; replIdx < pMod->m_instSet.GetReplCnt(instIdx); replIdx += 1) {
+	
+							char instStr[10], replStr[10];
+							sprintf(&instStr[0], "I%d", instIdx);
+							sprintf(&replStr[0], "R%d", replIdx);
+	
+							string oPortPrefix = (isSyscSim) ? "simToPort" : "o_portToAu";
+							string iPortPrefix = (isSyscSim) ? "simToPort" : "i_portToAu";
+	
+							vector<int> portRefList(dimenList.size());
+							do {
+								string portIdx = IndexStr(portRefList);
+	
+								int uioDimenIdx = dimenCntIdx < 0 ? 0 : portRefList[dimenCntIdx];
+								CUioIntfConn *pConn = pUioIntf->GetConnIntf(unitIdx, instIdx, replIdx, uioDimenIdx);
+	
+								fprintf(scFile, "\t\tpPers%sTop[%d]->i_portTo%s%s%s_%sUioRdy%s(%s_uio_Rdy[%s]);\n",
+									m_unitName.Uc().c_str(), unitIdx,
+									pMod->m_modName.Uc().c_str(),
+									(pMod->m_instSet.GetInstCnt() > 1) ? instStr : "",
+									(pMod->m_instSet.GetReplCnt(instIdx) > 1) ? replStr : "",
+									pUioIntf->m_name.c_str(), portIdx.c_str(),
+									iPortPrefix.c_str(),
+									pConn->m_uioPort.c_str());
+	
+								fprintf(scFile, "\t\tpPers%sTop[%d]->i_portTo%s%s%s_%sUioData%s(%s_uio_Data[%s]);\n",
+									m_unitName.Uc().c_str(), unitIdx,
+									pMod->m_modName.Uc().c_str(),
+									(pMod->m_instSet.GetInstCnt() > 1) ? instStr : "",
+									(pMod->m_instSet.GetReplCnt(instIdx) > 1) ? replStr : "",
+									pUioIntf->m_name.c_str(), portIdx.c_str(),
+									iPortPrefix.c_str(),
+									pConn->m_uioPort.c_str());
+	
+								fprintf(scFile, "\t\tpPers%sTop[%d]->o_portTo%s%s%s_%sUioAFull%s(%s_uio_AFull[%s]);\n",
+									m_unitName.Uc().c_str(), unitIdx,
+									pMod->m_modName.Uc().c_str(),
+									(pMod->m_instSet.GetInstCnt() > 1) ? instStr : "",
+									(pMod->m_instSet.GetReplCnt(instIdx) > 1) ? replStr : "",
+									pUioIntf->m_name.c_str(), portIdx.c_str(),
+									oPortPrefix.c_str(),
+									pConn->m_uioPort.c_str());
+	
+							} while (DimenIter(dimenList, portRefList));
+	
+							fprintf(scFile, "\n");
+						}
 					}
 				}
 			}
@@ -469,7 +472,7 @@ void CDsnInfo::GenerateAeTopFile()
 					string portIdx = IndexStr(portRefList);
 
 					int uioDimenIdx = dimenCntIdx < 0 ? 0 : portRefList[dimenCntIdx];
-					CUioIntfConn *pConn = pUioIntf->GetConnIntf(0, 0, uioDimenIdx);
+					CUioIntfConn *pConn = pUioIntf->GetConnIntf(0, 0, 0, uioDimenIdx);
 
 					fprintf(scFile, "\t\tpPers%sTop[%d]->o_%s%s%sToPort_%sUioRdy%s(simToPort_uio_Rdy[%s]);\n",
 						m_unitName.Uc().c_str(), 0,
@@ -512,7 +515,7 @@ void CDsnInfo::GenerateAeTopFile()
 					string portIdx = IndexStr(portRefList);
 
 					int uioDimenIdx = dimenCntIdx < 0 ? 0 : portRefList[dimenCntIdx];
-					CUioIntfConn *pConn = pUioIntf->GetConnIntf(0, 0, uioDimenIdx);
+					CUioIntfConn *pConn = pUioIntf->GetConnIntf(0, 0, 0, uioDimenIdx);
 
 					fprintf(scFile, "\t\tpPers%sTop[%d]->i_portTo%s%s%s_%sUioRdy%s(portToSim_uio_Rdy[%s]);\n",
 						m_unitName.Uc().c_str(), 0,

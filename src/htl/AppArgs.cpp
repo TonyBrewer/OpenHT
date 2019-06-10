@@ -625,13 +625,24 @@ CAppArgs::Parse(int argc, char const **argv)
 		printf("Error - Value for -iopw (User IO Ports Width) outside supported range (1-1024)\n");
 		bError = true;
 	} 
+	bool isSyscSim = false;
+	for (int i = 0; i < g_appArgs.GetPreDefinedNameCnt(); i++) {
+		if (g_appArgs.GetPreDefinedName(i) == "HT_SYSC") {
+			isSyscSim = true;
+			break;
+		}
+	}
 	if (m_uioPortCnt > 0) {
+		if (IsModelOnly()) {
+			printf("Error - External User IO Ports are not supported under Model simulation.\n");
+			bError = true;
+		}
 		if (strcasestr(GetCoprocName(), "wx") == NULL) {
 			printf("Error - External User IO Ports are only supported on WX platforms\n");
 			bError = true;
 		}
-		if (m_aeUnitCnt > 1) {
-			printf("Error - External User IO Ports are only supported on single unit designs\n");
+		if (isSyscSim && m_aeUnitCnt > 1) {
+			printf("Error - External User IO Ports within SystemC Simulation only support single unit designs. Use Verilog Simulation for multi-unit designs incorporating External User IO Ports.\n");
 			bError = true;
 		}
 	} 

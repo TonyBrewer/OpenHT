@@ -1431,16 +1431,21 @@ struct CUioIntf {
 
 	void InitConnIntfList()
 	{
-		// Inst
-		for (int j = 0; j < m_instCnt; j++) {
-			vector< vector <HtiFile::CUioIntfConn*> > vec0;
-			// Repl
-			for (int k = 0; k < m_replCntList.at(j); k++) {
-				vector <HtiFile::CUioIntfConn*> vec1;
-				// Dimen
-				int dimenCnt = (m_dimen == "0") ? 1 : m_dimen.AsInt();
-				for (int l = 0; l < dimenCnt; l++) {
-					vec1.push_back(NULL);
+		// Unit
+		for (int i = 0; i < g_appArgs.GetAeUnitCnt(); i++) {
+			vector< vector< vector <HtiFile::CUioIntfConn*> > > vec0;
+			// Inst
+			for (int j = 0; j < m_instCnt; j++) {
+				vector< vector <HtiFile::CUioIntfConn*> > vec1;
+				// Repl
+				for (int k = 0; k < m_replCntList.at(j); k++) {
+					vector <HtiFile::CUioIntfConn*> vec2;
+					// Dimen
+					int dimenCnt = (m_dimen == "0") ? 1 : m_dimen.AsInt();
+					for (int l = 0; l < dimenCnt; l++) {
+						vec2.push_back(NULL);
+					}
+					vec1.push_back(vec2);
 				}
 				vec0.push_back(vec1);
 			}
@@ -1448,38 +1453,46 @@ struct CUioIntf {
 		}
 	}
 
-	HtiFile::CUioIntfConn* GetConnIntf(uint instId, uint replId, uint dimen)
+	HtiFile::CUioIntfConn* GetConnIntf(uint unitId, uint instId, uint replId, uint dimen)
 	{
-		if (instId > m_pConnIntfList.size()-1) {
+		if (unitId > m_pConnIntfList.size()-1) {
+			CPreProcess::ParseMsg(Error, "unit offset out of bounds in GetConnIntf");
+			return NULL;
+		}
+		if (instId > m_pConnIntfList.at(unitId).size()-1) {
 			CPreProcess::ParseMsg(Error, "inst offset out of bounds in GetConnIntf");
 			return NULL;
 		}
-		if (replId > m_pConnIntfList.at(instId).size()-1) {
+		if (replId > m_pConnIntfList.at(unitId).at(instId).size()-1) {
 			CPreProcess::ParseMsg(Error, "repl offset out of bounds in GetConnIntf");
 			return NULL;
 		}
-		if (dimen > m_pConnIntfList.at(instId).at(replId).size()-1) {
+		if (dimen > m_pConnIntfList.at(unitId).at(instId).at(replId).size()-1) {
 			CPreProcess::ParseMsg(Error, "dimen offset out of bounds in GetConnIntf");
 			return NULL;
 		}
-		return m_pConnIntfList.at(instId).at(replId).at(dimen);
+		return m_pConnIntfList.at(unitId).at(instId).at(replId).at(dimen);
 	}
 
-	void SetConnIntf(uint instId, uint replId, uint dimen, HtiFile::CUioIntfConn* pConnIntf)
+	void SetConnIntf(uint unitId, uint instId, uint replId, uint dimen, HtiFile::CUioIntfConn* pConnIntf)
 	{
-		if (instId > m_pConnIntfList.size()-1) {
+		if (unitId > m_pConnIntfList.size()-1) {
+			CPreProcess::ParseMsg(Error, "unit offset out of bounds in GetConnIntf");
+			return;
+		}
+		if (instId > m_pConnIntfList.at(unitId).size()-1) {
 			CPreProcess::ParseMsg(Error, "inst offset out of bounds in GetConnIntf");
 			return;
 		}
-		if (replId > m_pConnIntfList.at(instId).size()-1) {
+		if (replId > m_pConnIntfList.at(unitId).at(instId).size()-1) {
 			CPreProcess::ParseMsg(Error, "repl offset out of bounds in GetConnIntf");
 			return;
 		}
-		if (dimen > m_pConnIntfList.at(instId).at(replId).size()-1) {
+		if (dimen > m_pConnIntfList.at(unitId).at(instId).at(replId).size()-1) {
 			CPreProcess::ParseMsg(Error, "dimen offset out of bounds in GetConnIntf");
 			return;
 		}
-		m_pConnIntfList.at(instId).at(replId).at(dimen) = pConnIntf;
+		m_pConnIntfList.at(unitId).at(instId).at(replId).at(dimen) = pConnIntf;
 		return;
 	}
 
@@ -1495,7 +1508,7 @@ struct CUioIntf {
 
 	HtdFile::EClkRate	m_clkRate;
 
-	vector <vector <vector <HtiFile::CUioIntfConn*> > >  m_pConnIntfList; // Vector to keep track of hti-connection structs
+	vector< vector <vector <vector <HtiFile::CUioIntfConn*> > > > m_pConnIntfList; // Vector to keep track of hti-connection structs
 
 	CLineInfo m_lineInfo;
 };

@@ -219,11 +219,13 @@ void HtiFile::ParseHtiMethods()
 	} else if (m_pLex->GetTkString() == "AddUserIOConn") {
 
 		string portId;
+		string unit = "Au[0]";
 		string inPath;
 		string outPath;
 
 		CParamList params[] = {
 			{ "portId", &portId, true, ePrmParamStr, 0, 0 },
+			{ "unit", &unit, false, ePrmParamStr, 0, 0 },
 			{ "inPath", &inPath, false, ePrmParamStr, 0, 0 },
 			{ "outPath", &outPath, false, ePrmParamStr, 0, 0 },
 			{ 0, 0, 0, ePrmUnknown, 0, 0 }
@@ -234,14 +236,14 @@ void HtiFile::ParseHtiMethods()
 			isWx = true;
 		}
 
+
 		if (!ParseParameters(params))
 			CPreProcess::ParseMsg(Error, "expected AddUserIOConn( portId, inPath/outPath )");
-
 		else if (portId.size() == 0) {
 			CPreProcess::ParseMsg(Error, "portId is a required argument");
 		} else if (inPath.size() && outPath.size()) {
 			CPreProcess::ParseMsg(Error, "only inPath or outPath can be specified per connection");
-		}else if (!isWx) {
+		} else if (!isWx) {
 			CPreProcess::ParseMsg(Error, "AddUserIOConn is only supported on the WX/WX2 platform");
 		} else {
 			if (outPath.size() > 0 && outPath[0] == '"')
@@ -262,7 +264,7 @@ void HtiFile::ParseHtiMethods()
 
 			bool bInbound = (inPath.size() != 0) ? true : false;
 
-			AddUioIntfConn(portId, bInbound ? inPath : outPath, bInbound);
+			AddUioIntfConn(portId, unit, bInbound ? inPath : outPath, bInbound);
 		}
 
 	} else if (m_pLex->GetTkString() == "AddUserIOSimConn") {
@@ -580,15 +582,14 @@ void HtiFile::AddMsgIntfParams(string &unit, string &path, bool bInBound, string
 	m_msgIntfParamsList.push_back(CMsgIntfParams(unit, path, bInBound, fanCnt));
 }
 
-void HtiFile::AddUioIntfConn(string &portId, string &path, bool bInbound)
+void HtiFile::AddUioIntfConn(string &portId, string &unit, string &path, bool bInbound)
 {
-	string unit = "Au";
 	m_uioIntfConn.push_back(new CUioIntfConn(portId, unit, path, bInbound));
 }
 
 void HtiFile::AddUioSimIntfConn(string &portId, string &path, bool bInbound)
 {
-	string unit = "Au";
+	string unit = "Au[0]";
 	m_uioSimIntfConn.push_back(new CUioIntfConn(portId, unit, path, bInbound));
 }
 

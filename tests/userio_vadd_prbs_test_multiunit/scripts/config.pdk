@@ -1,0 +1,9 @@
+# Define verilog module names for user io black box (sim and phys)
+UIO_BB_NAME = user_io_bbox
+UIO_BB_SIM_NAME = user_io_sim_bbox
+
+# Add QSFP pin placement constraints (file must exist in this dir)
+USER_PLACE_XDC += ../../scripts/qsfp.xdc
+
+# Add Vivado tcl to include user-generated Vivado IP (.xci files and their generated directory)
+USER_SYNTH_SOURCES = ../../scripts/user_synth_sources.xdc

@@ -35,6 +35,7 @@ void CDsnInfo::InitAndValidateModUio()
 			pUioIntf->InitConnIntfList();
 
 			int instMax  = pUioIntf->m_instCnt;
+			int unitMax  = g_appArgs.GetAeUnitCnt();
 			int dimenMax = (pUioIntf-> m_dimen.AsInt() != 0) ? pUioIntf->m_dimen.AsInt() : 1;
 
 			// Try to find HTI match to HTD decl
@@ -42,27 +43,29 @@ void CDsnInfo::InitAndValidateModUio()
 			for (size_t connIdx = 0; connIdx < GetUioIntfConnListSize(); connIdx += 1) {
 				HtiFile::CUioIntfConn * pUioIntfConn = GetUioIntfConn(connIdx);
 
-				int instIdx;
-				if (HtiFile::IsUioPathMatch(pUioIntfConn->m_lineInfo, pUioIntfConn->m_uioIntf, mod, pUioIntf, instIdx)) {
-					int replMax = mod.m_instSet.GetReplCnt(instIdx);
+				for (size_t unitIdx = 0; unitIdx < GetUioIntfConnListSize(); unitIdx += 1) {
+					int instIdx;
+					if (HtiFile::IsUioPathMatch(pUioIntfConn->m_lineInfo, pUioIntfConn->m_uioIntf, mod, pUioIntf, instIdx) && pUioIntfConn->m_uioIntf.m_unitIdx == unitIdx) {
+						int replMax = mod.m_instSet.GetReplCnt(instIdx);
 
-					int replIdx = pUioIntfConn->m_uioIntf.m_replIdx;
-					int dimenIdx = pUioIntfConn->m_uioIntf.m_msgIntfIdx.size() ? pUioIntfConn->m_uioIntf.m_msgIntfIdx.at(0) : 0;
+						int replIdx = pUioIntfConn->m_uioIntf.m_replIdx;
+						int dimenIdx = pUioIntfConn->m_uioIntf.m_msgIntfIdx.size() ? pUioIntfConn->m_uioIntf.m_msgIntfIdx.at(0) : 0;
 
-					// Check dimen/repl
-					if (replIdx > replMax-1)
-						ParseMsg(Error, pUioIntfConn->m_lineInfo, "Replication Specifer (%d) was greater than the maximum replication index specified (%d)", replIdx, replMax-1);
-					if (dimenIdx > dimenMax-1)
-						ParseMsg(Error, pUioIntfConn->m_lineInfo, "Dimen Specifer (%d) was greater than the maximum dimension index specified (%d)", dimenIdx, dimenMax-1);
+						// Check dimen/repl
+						if (replIdx > replMax-1)
+							ParseMsg(Error, pUioIntfConn->m_lineInfo, "Replication Specifer (%d) was greater than the maximum replication index specified (%d)", replIdx, replMax-1);
+						if (dimenIdx > dimenMax-1)
+							ParseMsg(Error, pUioIntfConn->m_lineInfo, "Dimen Specifer (%d) was greater than the maximum dimension index specified (%d)", dimenIdx, dimenMax-1);
 
-					pUioIntf->SetConnIntf(instIdx, replIdx, dimenIdx, pUioIntfConn);
+						pUioIntf->SetConnIntf(unitIdx, instIdx, replIdx, dimenIdx, pUioIntfConn);
 
-					pUioIntfConn->m_uioIntf.m_pUioIntf = pUioIntf;
-					pUioIntfConn->m_uioIntf.m_pMod = &mod;
+						pUioIntfConn->m_uioIntf.m_pUioIntf = pUioIntf;
+						pUioIntfConn->m_uioIntf.m_pMod = &mod;
 
-					pUioIntfConn->m_pType = pUioIntf->m_pType;
+						pUioIntfConn->m_pType = pUioIntf->m_pType;
 
-					bMatch = true;
+						bMatch = true;
+					}
 				}
 			}
 
@@ -71,19 +74,22 @@ void CDsnInfo::InitAndValidateModUio()
 			}
 
 			// Look for missing HTD->HTI conns
-			for (int instIdx = 0; instIdx < instMax; instIdx++) {
-				int replMax = mod.m_instSet.GetReplCnt(instIdx);
-				CInstance *pInst = mod.m_instSet.GetInst(instIdx);
-				for (int replIdx = 0; replIdx < replMax; replIdx++) {
-					for (int dimenIdx = 0; dimenIdx < dimenMax; dimenIdx++) {
-					  if (pUioIntf->GetConnIntf(instIdx, replIdx, dimenIdx) == NULL) {
-							ParseMsg(Error, pUioIntf->m_lineInfo, "Missing hti AddUserIOConn declaration for user io port %s", pUioIntf->m_name.c_str());
-							if (instMax > 1)
-								ParseMsg(Info, pUioIntf->m_lineInfo, "  InstId %d", instIdx);
-							if (pInst->m_instParams.m_bExplicitRepl)
-								ParseMsg(Info, pUioIntf->m_lineInfo, "  ReplId %d", replIdx);
-							if (pUioIntf->m_dimen.AsInt() != 0)
-								ParseMsg(Info, pUioIntf->m_lineInfo, "  Dimen %d", dimenIdx);
+			for (int unitIdx = 0; unitIdx < unitMax; unitIdx++) {
+				for (int instIdx = 0; instIdx < instMax; instIdx++) {
+					int replMax = mod.m_instSet.GetReplCnt(instIdx);
+					CInstance *pInst = mod.m_instSet.GetInst(instIdx);
+					for (int replIdx = 0; replIdx < replMax; replIdx++) {
+						for (int dimenIdx = 0; dimenIdx < dimenMax; dimenIdx++) {
+						  if (pUioIntf->GetConnIntf(unitIdx, instIdx, replIdx, dimenIdx) == NULL) {
+								ParseMsg(Error, pUioIntf->m_lineInfo, "Missing hti AddUserIOConn declaration for user io port %s", pUioIntf->m_name.c_str());
+								ParseMsg(Info, pUioIntf->m_lineInfo, "  UnitId %d", unitIdx);
+								if (instMax > 1)
+									ParseMsg(Info, pUioIntf->m_lineInfo, "  InstId %d", instIdx);
+								if (pInst->m_instParams.m_bExplicitRepl)
+									ParseMsg(Info, pUioIntf->m_lineInfo, "  ReplId %d", replIdx);
+								if (pUioIntf->m_dimen.AsInt() != 0)
+									ParseMsg(Info, pUioIntf->m_lineInfo, "  Dimen %d", dimenIdx);
+							}
 						}
 					}
 				}
@@ -149,7 +155,7 @@ void CDsnInfo::InitAndValidateModUio()
 					if (dimenIdx > dimenMax-1)
 						ParseMsg(Error, pUioIntfConn->m_lineInfo, "Dimen Specifer (%d) was greater than the maximum dimension index specified (%d)", dimenIdx, dimenMax-1);
 
-					pUioIntf->SetConnIntf(0, 0, dimenIdx, pUioIntfConn);
+					pUioIntf->SetConnIntf(0, 0, 0, dimenIdx, pUioIntfConn);
 
 					pUioIntfConn->m_uioIntf.m_pUioIntf = pUioIntf;
 					pUioIntfConn->m_uioIntf.m_pMod = &mod;
@@ -166,7 +172,7 @@ void CDsnInfo::InitAndValidateModUio()
 
 			// Look for missing HTD->HTI conns
 			for (int dimenIdx = 0; dimenIdx < dimenMax; dimenIdx++) {
-				if (pUioIntf->GetConnIntf(0, 0, dimenIdx) == NULL) {
+				if (pUioIntf->GetConnIntf(0, 0, 0, dimenIdx) == NULL) {
 					ParseMsg(Error, pUioIntf->m_lineInfo, "Missing hti AddUserIOSimConn declaration for user io simport %s", pUioIntf->m_name.c_str());
 					if (pUioIntf->m_dimen.AsInt() != 0)
 						ParseMsg(Info, pUioIntf->m_lineInfo, "  Dimen %d", dimenIdx);
