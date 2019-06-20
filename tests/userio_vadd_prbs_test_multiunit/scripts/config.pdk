@@ -1,6 +1,6 @@
 # Define verilog module names for user io black box (sim and phys)
 UIO_BB_NAME = user_io_bbox
-UIO_BB_SIM_NAME = user_io_sim_bbox
+#UIO_BB_SIM_NAME = user_io_sim_bbox - UNUSED IN MULTIUNIT
 
 # Add QSFP pin placement constraints (file must exist in this dir)
 USER_PLACE_XDC += ../../scripts/qsfp.xdc

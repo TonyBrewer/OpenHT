@@ -45,7 +45,7 @@ void CDsnInfo::InitAndValidateModUio()
 
 				for (size_t unitIdx = 0; unitIdx < GetUioIntfConnListSize(); unitIdx += 1) {
 					int instIdx;
-					if (HtiFile::IsUioPathMatch(pUioIntfConn->m_lineInfo, pUioIntfConn->m_uioIntf, mod, pUioIntf, instIdx) && pUioIntfConn->m_uioIntf.m_unitIdx == unitIdx) {
+					if (HtiFile::IsUioPathMatch(pUioIntfConn->m_lineInfo, pUioIntfConn->m_uioIntf, mod, pUioIntf, instIdx) && pUioIntfConn->m_uioIntf.m_unitIdx == (int)unitIdx) {
 						int replMax = mod.m_instSet.GetReplCnt(instIdx);
 
 						int replIdx = pUioIntfConn->m_uioIntf.m_replIdx;

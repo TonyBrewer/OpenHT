@@ -1,2 +1,2 @@
-AddModInstParams(unit=Au, modPath="ctl/add", replCnt=1);
-AddModInstParams(unit=Au, modPath="ctl/add[0]", memPort=0);
+AddModInstParams(modPath="ctl/add", replCnt=1);
+AddModInstParams(modPath="ctl/add[0]", memPort=0);

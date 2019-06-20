@@ -1,1 +1,1 @@
-AddModInstParams(unit=Au, modPath="ctl/add", replCnt=2);
+AddModInstParams(modPath="ctl/add", replCnt=2);

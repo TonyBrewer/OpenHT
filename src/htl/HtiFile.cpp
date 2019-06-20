@@ -93,7 +93,7 @@ void HtiFile::ParseHtiMethods()
 
 	} else if (m_pLex->GetTkString() == "AddModInstParams") {
 
-		string unit;
+		string unit = "Au";
 		string modPath;
 		vector<int> memPort;
 		string instName;
@@ -101,7 +101,7 @@ void HtiFile::ParseHtiMethods()
 		vector<pair<string, string> > paramPairList;
 
 		CParamList params[] = {
-				{ "unit", &unit, true, ePrmIdent, 0, 0 },
+				{ "unit", &unit, false, ePrmIdent, 0, 0 },
 				{ "modPath", &modPath, true, ePrmIdent, 0, 0 },
 				{ "memPort", &memPort, false, ePrmIntList, 0, 0 },
 				{ "replCnt", &replCnt, false, ePrmInteger, 0, 0 },
