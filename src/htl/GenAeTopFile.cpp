@@ -65,8 +65,7 @@ void CDsnInfo::GenerateAeTopFile()
 	fprintf(scFile, "#define AE_XBAR_STUB_START (HT_UNIT_CNT * %s_MIF_CNT)\n", m_unitName.Upper().c_str());
 	fprintf(scFile, "#define AE_XBAR_STUB_CNT (SYSC_AE_MEM_CNT - AE_XBAR_STUB_START)\n");
 	fprintf(scFile, "\n");
-	fprintf(scFile, "#define %s_UIO_CNT %d\n", m_unitName.Upper().c_str(), g_appArgs.GetUioPortCnt());
-	fprintf(scFile, "#define AE_UIO_STUB_START (HT_UNIT_CNT * %s_UIO_CNT)\n", m_unitName.Upper().c_str());
+	fprintf(scFile, "#define AE_UIO_STUB_START %d\n", g_appArgs.GetUioPortCnt());
 	fprintf(scFile, "#define AE_UIO_STUB_CNT (SYSC_AE_UIO_CNT - AE_UIO_STUB_START)\n");
 	fprintf(scFile, "\n");
 	if (!isSyscSim && isWx && g_appArgs.GetUioPortCnt() > 0) {
