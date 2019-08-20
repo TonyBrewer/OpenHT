@@ -249,5 +249,5 @@ void CGenHtmlRpt::GenApiEnd()
 void CGenHtmlRpt::GenCallGraph()
 {
 	fprintf(m_fp, "        <h1><b>Generated Call Graph</b></h1>\n");
-	fprintf(m_fp, "        <object type=\"image/png\" data=\"ht/HtCallGraph.png\"></object>\n");
+	fprintf(m_fp, "        <object type=\"image/png\" data=\"ht%s/HtCallGraph.png\"></object>\n", getenv("HT_PROJ_SFX"));
 }

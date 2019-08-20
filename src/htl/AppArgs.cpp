@@ -673,7 +673,12 @@ CAppArgs::Parse(int argc, char const **argv)
 		m_max18KbBramPerUnit = (int)(GetBramsPerAE() * 0.5 / m_aeUnitCnt);
 
 	if (!bClFlag && m_bDsnRpt) {
-		m_pDsnRpt = new CGenHtmlRpt(argv[0], "HtDsnRpt.html", argc, argv);
+		string reportName = "HtDsnRpt";
+		char *projSfx = getenv("HT_PROJ_SFX");
+		if (projSfx != NULL)
+		  reportName.append(projSfx);
+		reportName.append(".html");
+		m_pDsnRpt = new CGenHtmlRpt(argv[0], reportName.c_str(), argc, argv);
 		m_pDsnRpt->GenApiHdr();
 	}
 

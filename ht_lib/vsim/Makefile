@@ -8,12 +8,13 @@
 # See the LICENSE file for the complete license text.
 
 HT_LIB	= $(HT_DIR)/ht_lib
+HT_PROJ_SFX ?= 
 
 SDIR	= $(PWD)/src
 STDIR	= $(PWD)/src_pers
 
 SRCS	+= $(wildcard $(SDIR)/*.cpp $(SDIR)/*.cc $(SDIR)/*.c)
-SRCS	+= $(PWD)/ht/vsim/UnitIntf.cpp
+SRCS	+= $(PWD)/ht$(HT_PROJ_SFX)/vsim/UnitIntf.cpp
 SRCS	+= $(wildcard $(HT_LIB)/host/*.cpp)
 
 OBJS	=  $(addsuffix .o, $(basename $(notdir $(SRCS))))
@@ -29,14 +30,14 @@ HT_HTDS	= $(wildcard $(STDIR)/*.htd)
 
 HFILES   = $(filter-out PersAeTop.h, \
 	   $(addsuffix .h, $(basename $(notdir \
-	       $(wildcard $(PWD)/ht/vsim/*.sc)))))
+	       $(wildcard $(PWD)/ht$(HT_PROJ_SFX)/vsim/*.sc)))))
 
 VFILES = $(addprefix ../verilog/, $(addsuffix .v, $(basename $(notdir \
 	 $(wildcard $(HT_LIB)/sysc/Per*.cpp \
-	 	    $(PWD)/ht/vsim/Per*.cpp \
-		    $(PWD)/ht/vsim/Pers*.sc)))))
+	 	    $(PWD)/ht$(HT_PROJ_SFX)/vsim/Per*.cpp \
+		    $(PWD)/ht$(HT_PROJ_SFX)/vsim/Pers*.sc)))))
 
-vpath %.sc $(PWD)/ht/vsim
+vpath %.sc $(PWD)/ht$(HT_PROJ_SFX)/vsim
 
 genfiles: HostIntf.h
 genhfiles: hfiles
@@ -52,39 +53,39 @@ vfiles: $(VFILES)
 $(VFILES): | hfiles
 
 .PHONY: vsim
-vsim: ../../app_vsim
+vsim: ../../app_vsim$(HT_PROJ_SFX)
 
-../../app_vsim: ../../app_vsim.exe $(VFILES)
+../../app_vsim$(HT_PROJ_SFX): ../../app_vsim$(HT_PROJ_SFX).exe $(VFILES)
 	@echo "#!/bin/sh" > $@
-	@echo ". ht/config.sh" >> $@
+	@echo ". ht$(HT_PROJ_SFX)/config.sh" >> $@
 	@echo "export LD_LIBRARY_PATH=\$$LD_LIBRARY_PATH:$(CNY_PATH)/lib" >> $@
 	@echo "export CNY_PERSONALITY_PATH=$(PWD)/personalities" >> $@
 	@echo -n "$(CNY_PDK)/$(CNY_PDK_REV)/bin/runpdksim" >> $@
 	@echo -n " -ae=0 -deadman=10000000 -mc_read_short_percent=99" >> $@
-	@echo -n " -run_dir=ht/sim -log=ht/sim/runpdksim.log" >> $@
-	@echo    " ./app_vsim.exe \$$@" >> $@
+	@echo -n " -run_dir=ht$(HT_PROJ_SFX)/sim -log=ht$(HT_PROJ_SFX)/sim/runpdksim.log" >> $@
+	@echo    " ./app_vsim$(HT_PROJ_SFX).exe \$$@" >> $@
 	@chmod 755 $@
 
-../../app_vsim.exe: $(OBJS)
+../../app_vsim$(HT_PROJ_SFX).exe: $(OBJS)
 	$(CXX) -o $@ $(LDFLAGS) $(OBJS) $(PLAT_OBJS) $(LDLIBS)
 
 
 .PHONY: libvsim
 ifdef HT_LIB_PIC
-libvsim: ../../libhtvsim.a ../../libhtvsim.pa
+libvsim: ../../libhtvsim$(HT_PROJ_SFX).a ../../libhtvsim$(HT_PROJ_SFX).pa
 else
-libvsim: ../../libhtvsim.a
+libvsim: ../../libhtvsim$(HT_PROJ_SFX).a
 endif
 
-../../libhtvsim.a: $(LOBJS) $(HT_LIB)/libht.a
+../../libhtvsim$(HT_PROJ_SFX).a: $(LOBJS) $(HT_LIB)/libht.a
 	cp $(HT_LIB)/libht.a $@
 	ar rcs $@ $(LOBJS) $(PLAT_OBJS)
 	@chmod 644 $@
 
-../../libhtvsim.pa: $(POBJS) $(HT_LIB)/libht.pa
+../../libhtvsim$(HT_PROJ_SFX).pa: $(POBJS) $(HT_LIB)/libht.pa
 	cp $(HT_LIB)/libht.pa $@
 	ar rcs $@ $(POBJS) $(PLAT_OBJS)
 	@chmod 644 $@
 
 include $(HT_DIR)/ht_lib/Makefile.template
--include $(wildcard $(PWD)/ht/vsim/*.P)
+-include $(wildcard $(PWD)/ht$(HT_PROJ_SFX)/vsim/*.P)

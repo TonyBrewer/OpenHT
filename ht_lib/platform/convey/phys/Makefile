@@ -1,5 +1,6 @@
 XILINX_THREADS = 2
-CNY_PDK_PERS_DIR = --exclude ht.released ../..
+HT_PROJ_SFX ?= 
+CNY_PDK_PERS_DIR = --exclude ht$(HT_PROJ_SFX).released ../..
 
 ####################################################################
 # Include Convey Makefile Template

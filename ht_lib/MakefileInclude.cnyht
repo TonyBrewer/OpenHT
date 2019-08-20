@@ -41,6 +41,7 @@ oht_help_vars: oht_help
 
 HT_LIB = $(HT_DIR)/ht_lib
 SC_DIR = $(HT_DIR)/local_systemc
+HT_PROJ_SFX ?= 
 
 export OHT_PLAT ?= convey
 HT_PLAT_DIR = $(HT_LIB)/platform/$(OHT_PLAT)
@@ -48,31 +49,31 @@ HT_PLAT_DIR = $(HT_LIB)/platform/$(OHT_PLAT)
 
 .PHONY: ht_dir
 ht_dir:
-	@mkdir -p ht
+	@mkdir -p ht$(HT_PROJ_SFX)
 
-ht/model ht/sysc ht/coregen ht/vsim ht/app: | ht_dir
+ht$(HT_PROJ_SFX)/model ht$(HT_PROJ_SFX)/sysc ht$(HT_PROJ_SFX)/coregen ht$(HT_PROJ_SFX)/vsim ht$(HT_PROJ_SFX)/app: | ht_dir
 	@mkdir $@
 
 
 .PHONY: model libmodel
-model libmodel: ht/model
+model libmodel: ht$(HT_PROJ_SFX)/model
 	@if [ ! -d ./src_model ]; then \
 	    echo "Missing model source directory (./src_model)"; \
 	else \
-	    $(MAKE) -s -C ht/model -f $(HT_LIB)/model/Makefile TGT=MODEL genfiles; \
-	    $(MAKE) -C ht/model -f $(HT_LIB)/model/Makefile $@; \
+	    $(MAKE) -s -C ht$(HT_PROJ_SFX)/model -f $(HT_LIB)/model/Makefile TGT=MODEL genfiles; \
+	    $(MAKE) -C ht$(HT_PROJ_SFX)/model -f $(HT_LIB)/model/Makefile $@; \
 	fi
 
 
 .PHONY: sysc libsysc report
-sysc libsysc report: ht/sysc
+sysc libsysc report: ht$(HT_PROJ_SFX)/sysc
 	@if [ ! -d ./src_pers ]; then \
 	    echo "Missing personality source directory (./src_pers)"; \
 	else \
-	    $(MAKE) -s -C ht/sysc -f $(HT_LIB)/sysc/Makefile TGT=SYSC genfiles; \
-	    $(MAKE) -C ht/sysc -f $(HT_LIB)/sysc/Makefile TGT=SYSC genhfiles; \
+	    $(MAKE) -s -C ht$(HT_PROJ_SFX)/sysc -f $(HT_LIB)/sysc/Makefile TGT=SYSC genfiles; \
+	    $(MAKE) -C ht$(HT_PROJ_SFX)/sysc -f $(HT_LIB)/sysc/Makefile TGT=SYSC genhfiles; \
 	    if [ "$@" != "report" ]; then \
-	    	$(MAKE) -C ht/sysc -f $(HT_LIB)/sysc/Makefile $@; \
+	    	$(MAKE) -C ht$(HT_PROJ_SFX)/sysc -f $(HT_LIB)/sysc/Makefile $@; \
 	    fi; \
 	fi
 
@@ -81,33 +82,33 @@ vfiles: VTGT=VERILOG
 VTGT ?= VSIM
 
 .PHONY: vsim libvsim vfiles
-vsim libvsim vfiles: ht/coregen ht/vsim
+vsim libvsim vfiles: ht$(HT_PROJ_SFX)/coregen ht$(HT_PROJ_SFX)/vsim
 	@if [ ! -d ./src_pers ]; then \
 	    echo "Missing personality source directory (./src_pers)"; \
 	else \
-	    $(MAKE) -s -C ht/vsim -f $(HT_LIB)/vsim/Makefile TGT=$(VTGT) genfiles; \
-	    $(MAKE) -C ht/vsim -f $(HT_LIB)/vsim/Makefile TGT=$(VTGT) genhfiles; \
-	    $(MAKE) -C ht/vsim -f $(HT_LIB)/vsim/Makefile TGT=$(VTGT) $@; \
+	    $(MAKE) -s -C ht$(HT_PROJ_SFX)/vsim -f $(HT_LIB)/vsim/Makefile TGT=$(VTGT) genfiles; \
+	    $(MAKE) -C ht$(HT_PROJ_SFX)/vsim -f $(HT_LIB)/vsim/Makefile TGT=$(VTGT) genhfiles; \
+	    $(MAKE) -C ht$(HT_PROJ_SFX)/vsim -f $(HT_LIB)/vsim/Makefile TGT=$(VTGT) $@; \
 	    $(MAKE) -s TGT=$(VTGT) plat_vsim; \
 	fi
 
 
 .PHONY: app libapp
-app libapp: ht/app
-	$(MAKE) -s -C ht/app -f $(HT_LIB)/app/Makefile TGT=APP genfiles
-	$(MAKE) -C ht/app -f $(HT_LIB)/app/Makefile $@
+app libapp: ht$(HT_PROJ_SFX)/app
+	$(MAKE) -s -C ht$(HT_PROJ_SFX)/app -f $(HT_LIB)/app/Makefile TGT=APP genfiles
+	$(MAKE) -C ht$(HT_PROJ_SFX)/app -f $(HT_LIB)/app/Makefile $@
 
 
 .PHONY: pers
 pers: plat_pers
 
 clean:
-	@rm -rf ht/model ht/sysc ht/vsim ht/verilog ht/app
-	@rm -f ht/Ht*.* Ht*.* InstrTrace.txt
-	@rm -f app_model libhtmodel.*
-	@rm -f app_sysc libhtsysc.*
-	@rm -f app_vsim libhtvsim.* app_vsim.*
-	@rm -f app libhtapp.*
+	@rm -rf ht$(HT_PROJ_SFX)/model ht$(HT_PROJ_SFX)/sysc ht$(HT_PROJ_SFX)/vsim ht$(HT_PROJ_SFX)/verilog ht$(HT_PROJ_SFX)/app
+	@rm -f ht$(HT_PROJ_SFX)/Ht*.* HtMonRpt*.* HtDsnRpt$(HT_PROJ_SFX).* InstrTrace.txt
+	@rm -f app_model$(HT_PROJ_SFX) libhtmodel$(HT_PROJ_SFX).*
+	@rm -f app_sysc$(HT_PROJ_SFX) libhtsysc$(HT_PROJ_SFX).*
+	@rm -f app_vsim$(HT_PROJ_SFX) libhtvsim$(HT_PROJ_SFX).* app_vsim$(HT_PROJ_SFX).*
+	@rm -f app$(HT_PROJ_SFX) libhtapp$(HT_PROJ_SFX).*
 ifneq ($(LOCALCLEAN),)
 	@rm -rf $(LOCALCLEAN)
 endif
@@ -120,6 +121,6 @@ cleaner:
 distclean:
 	@$(MAKE) -s cleaner
 	@$(MAKE) -s plat_distclean
-	@rm -rf ht wave.vcd
+	@rm -rf ht$(HT_PROJ_SFX) wave.vcd
 
 -include $(HT_LIB)/platform/$(OHT_PLAT)/MakefileInclude.plat

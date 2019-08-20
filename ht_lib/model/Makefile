@@ -8,13 +8,14 @@
 # See the LICENSE file for the complete license text.
 
 HT_LIB	= $(HT_DIR)/ht_lib
+HT_PROJ_SFX ?= 
 
 SDIR	= $(PWD)/src
 STDIR	= $(PWD)/src_model
 
 SRCS	+= $(wildcard $(SDIR)/*.cpp $(SDIR)/*.cc $(SDIR)/*.c)
 SRCS	+= $(wildcard $(STDIR)/*.cpp $(STDIR)/*.cc $(STDIR)/*.c)
-SRCS	+= $(PWD)/ht/model/UnitIntf.cpp
+SRCS	+= $(PWD)/ht$(HT_PROJ_SFX)/model/UnitIntf.cpp
 SRCS	+= $(wildcard $(HT_LIB)/host/*.cpp)
 
 OBJS	=  $(addsuffix .o, $(basename $(notdir $(SRCS))))
@@ -29,24 +30,24 @@ HT_HTDS =  $(wildcard $(STDIR)/*.htd)
 genfiles: HostIntf.h
 
 .PHONY: model
-model: ../../app_model
+model: ../../app_model$(HT_PROJ_SFX)
 
-../../app_model: $(OBJS)
+../../app_model$(HT_PROJ_SFX): $(OBJS)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(OBJS) $(LDLIBS) -o $@
 
 .PHONY: libmodel
 ifdef HT_LIB_PIC
-libmodel: ../../libhtmodel.pa
+libmodel: ../../libhtmodel$(HT_PROJ_SFX).pa
 else
-libmodel: ../../libhtmodel.a
+libmodel: ../../libhtmodel$(HT_PROJ_SFX).a
 endif
 
-../../libhtmodel.a: $(LOBJS) $(HT_LIB)/libht.a
+../../libhtmodel$(HT_PROJ_SFX).a: $(LOBJS) $(HT_LIB)/libht.a
 	cp $(HT_LIB)/libht.a $@
 	ar rcs $@ $(LOBJS)
 	@chmod 644 $@
 
-../../libhtmodel.pa: $(POBJS) $(HT_LIB)/libht.pa
+../../libhtmodel$(HT_PROJ_SFX).pa: $(POBJS) $(HT_LIB)/libht.pa
 	cp $(HT_LIB)/libht.pa $@
 	ar rcs $@ $(POBJS)
 	@chmod 644 $@

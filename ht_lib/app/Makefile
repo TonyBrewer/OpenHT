@@ -8,12 +8,13 @@
 # See the LICENSE file for the complete license text.
 
 HT_LIB	= $(HT_DIR)/ht_lib
+HT_PROJ_SFX ?= 
 
 SDIR	= $(PWD)/src
 STDIR	= $(PWD)/src_pers
 
 SRCS	+= $(wildcard $(SDIR)/*.cpp $(SDIR)/*.cc $(SDIR)/*.c)
-SRCS	+= $(PWD)/ht/app/UnitIntf.cpp
+SRCS	+= $(PWD)/ht$(HT_PROJ_SFX)/app/UnitIntf.cpp
 SRCS	+= $(wildcard $(HT_LIB)/host/*.cpp)
 
 OBJS	=  $(addsuffix .o, $(basename $(notdir $(SRCS))))
@@ -29,31 +30,31 @@ HT_HTDS =  $(wildcard $(STDIR)/*.htd)
 
 HFILES   = $(filter-out PersAeTop.h, \
            $(addsuffix .h, $(basename $(notdir \
-	       $(wildcard $(PWD)/ht/app/*.sc)))))
+	       $(wildcard $(PWD)/ht$(HT_PROJ_SFX)/app/*.sc)))))
 
-vpath %.sc $(PWD)/ht/app
+vpath %.sc $(PWD)/ht$(HT_PROJ_SFX)/app
 
 genfiles: HostIntf.h
 
 .PHONY: app
-app: ../../app
+app: ../../app$(HT_PROJ_SFX)
 
-../../app: $(OBJS)
+../../app$(HT_PROJ_SFX): $(OBJS)
 	$(CXX) -o $@ $(LDFLAGS) $(OBJS) $(PLAT_OBJS) $(LDLIBS)
 
 .PHONY: libapp
 ifdef HT_LIB_PIC
-libapp: ../../libhtapp.pa
+libapp: ../../libhtapp$(HT_PROJ_SFX).pa
 else
-libapp: ../../libhtapp.a
+libapp: ../../libhtapp$(HT_PROJ_SFX).a
 endif
 
-../../libhtapp.a: $(LOBJS) $(HT_LIB)/libht.a
+../../libhtapp$(HT_PROJ_SFX).a: $(LOBJS) $(HT_LIB)/libht.a
 	cp $(HT_LIB)/libht.a $@
 	ar rcs $@ $(LOBJS) $(PLAT_OBJS) 
 	@chmod 644 $@
 
-../../libhtapp.pa: $(POBJS) $(HT_LIB)/libht.pa
+../../libhtapp$(HT_PROJ_SFX).pa: $(POBJS) $(HT_LIB)/libht.pa
 	cp $(HT_LIB)/libht.pa $@
 	ar rcs $@ $(POBJS) $(PLAT_OBJS)
 	@chmod 644 $@

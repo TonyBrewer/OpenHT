@@ -10,6 +10,7 @@
 HT_LIB = $(HT_DIR)/ht_lib
 PLAT_DIR = $(HT_LIB)/platform
 SC_DIR = $(HT_DIR)/local_systemc
+HT_PROJ_SFX ?= 
 
 ifeq ($(shell uname), Darwin)
  SC_LIB = $(SC_DIR)/lib-macosx64/libsystemc.a
@@ -54,13 +55,13 @@ endif
 model libmodel:	CFLAGS += $(CNY_HT_DEFINES)
 model libmodel:	CFLAGS += $(CNY_HT_CFLAGS_MODEL)
 model libmodel:	CFLAGS += -DHT_MODEL
-model libmodel:	CFLAGS += -I$(PWD)/ht/model
+model libmodel:	CFLAGS += -I$(PWD)/ht$(HT_PROJ_SFX)/model
 
 sysc libsysc:	CFLAGS += $(CNY_HT_DEFINES)
 sysc libsysc:	CFLAGS += $(CNY_HT_CFLAGS_SYSC)
 sysc libsysc:	CFLAGS += -DHT_SYSC
 sysc libsysc:	CFLAGS += -I$(SC_DIR)/include
-sysc libsysc:	CFLAGS += -I$(PWD)/ht/sysc
+sysc libsysc:	CFLAGS += -I$(PWD)/ht$(HT_PROJ_SFX)/sysc
 sysc libsysc:	CFLAGS += -I$(PWD)/src_pers
 sysc libsysc:	LDLIBS += $(SC_LIB)
 
@@ -71,7 +72,7 @@ vsim libvsim vfiles:	CFLAGS += -I$(CNY_PATH)/include
 ifneq (,$(findstring micron,$(CNY_PATH)))
 vsim libvsim vfiles:	CFLAGS += -I$(CNY_PATH)/tests/include
 endif
-vsim libvsim vfiles:	CFLAGS += -I$(PWD)/ht/vsim
+vsim libvsim vfiles:	CFLAGS += -I$(PWD)/ht$(HT_PROJ_SFX)/vsim
 vsim libvsim vfiles:	CFLAGS += -I$(PLAT_DIR)/convey/$(CNY_PDK_PLATFORM)/host
 ifeq (true,$(PLAT_WX_OR_MA))
 vsim libvsim vfiles:	CFLAGS += -DHT_AE_CNT=$(HT_AE_CNT)
@@ -85,7 +86,7 @@ app libapp:	CFLAGS += -I$(CNY_PATH)/include
 ifneq (,$(findstring micron,$(CNY_PATH)))
 app libapp:	CFLAGS += -I$(CNY_PATH)/tests/include
 endif
-app libapp:	CFLAGS += -I$(PWD)/ht/app
+app libapp:	CFLAGS += -I$(PWD)/ht$(HT_PROJ_SFX)/app
 app libapp:	CFLAGS += -DHT_AE_CNT=$(HT_AE_CNT)
 app libapp:	CFLAGS += -I$(PLAT_DIR)/convey/$(CNY_PDK_PLATFORM)/host
 app libapp:	CFLAGS += -DHT_NICK=$(CNY_HT_NICK)
@@ -215,7 +216,7 @@ HostIntf.h: $(HT_HTDS)
 	@if [ -f HtPrivRpt.txt ]; then \
 	    mv HtPrivRpt.txt ..; \
 	fi
-	@for f in `ls Ht*Rpt.*`; do \
+	@for f in `ls Ht*Rpt*.*`; do \
 	    mv $$f ../..; \
 	done
 	@-if [ -x $(DOT) -a -f HtCallGraph.dot ]; then \
