@@ -1,6 +1,9 @@
 XILINX_THREADS = 2
 HT_PROJ_SFX ?= 
-CNY_PDK_PERS_DIR = --exclude ht$(HT_PROJ_SFX).released ../..
+TMP0_HTDIRS = $(sort $(dir $(wildcard ../../ht*released/)))
+TMP1_HTDIRS = $(TMP0_HTDIRS:../../%=%)
+TMP2_HTDIRS = $(TMP1_HTDIRS:%/=%)
+CNY_PDK_PERS_DIR = --exclude $(TMP2_HTDIRS) ../..
 
 ####################################################################
 # Include Convey Makefile Template
