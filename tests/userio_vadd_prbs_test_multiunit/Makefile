@@ -4,6 +4,9 @@ export CNY_HT_AEUCNT = 2
 
 export CNY_NUM_IO_PORTS = 10
 export CNY_IO_PORTS_WIDTH = 128
+export CNY_EN_QSFP0_LANES = 4
+export CNY_EN_QSFP1_LANES = 4
+
 
 export CFLAGS += -std=c++11
 

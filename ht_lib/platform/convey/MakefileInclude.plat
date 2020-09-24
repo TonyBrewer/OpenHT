@@ -36,6 +36,8 @@ plat_help:
 	@echo ""
 	@echo "CNY_NUM_IO_PORTS	Number of HT-External User IO Ports (default 0)"
 	@echo "CNY_IO_PORTS_WIDTH	Width of HT-External User IO Ports (default 0)"
+	@echo "CNY_EN_QSFP0_LANES	Number of lanes to enable on QSFP Port 0 (default 0 - port disabled)"
+	@echo "CNY_EN_QSFP1_LANES	Number of lanes to enable on QSFP Port 1 (default 0 - port disabled)"
 	@echo ""
 
 ##############################################################################
@@ -171,6 +173,18 @@ pdk_config: | cny_ht_dir
 	fi
 	@if [ -n "$(CNY_NUM_IO_PORTS)" ]; then \
 	    echo "CNY_NUM_IO_PORTS = $(CNY_NUM_IO_PORTS)" >> ht$(HT_PROJ_SFX)/config.pdk; \
+	fi
+	@if [ -n "$(CNY_EN_QSFP0)" ]; then \
+	    echo "CNY_EN_QSFP0_LANES = 4" >> ht$(HT_PROJ_SFX)/config.pdk; \
+	fi
+	@if [ -n "$(CNY_EN_QSFP1)" ]; then \
+	    echo "CNY_EN_QSFP1_LANES = 4" >> ht$(HT_PROJ_SFX)/config.pdk; \
+	fi
+	@if [ -n "$(CNY_EN_QSFP0_LANES)" ]; then \
+	    echo "CNY_EN_QSFP0_LANES = $(CNY_EN_QSFP0_LANES)" >> ht$(HT_PROJ_SFX)/config.pdk; \
+	fi
+	@if [ -n "$(CNY_EN_QSFP1_LANES)" ]; then \
+	    echo "CNY_EN_QSFP1_LANES = $(CNY_EN_QSFP1_LANES)" >> ht$(HT_PROJ_SFX)/config.pdk; \
 	fi
 	@if [ -n "$(CNY_IO_PORTS_WIDTH)" ]; then \
 	    echo "CNY_IO_PORTS_WIDTH = $(CNY_IO_PORTS_WIDTH)" >> ht$(HT_PROJ_SFX)/config.pdk; \

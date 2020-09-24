@@ -636,11 +636,16 @@ module user_io_sim_bbox #
 
    sync2 #(.WIDTH(8*4))
    status_rs_p9 (
-		 .clk(clk_per),
-		 //.d({qsfp_fatal_alarm, qsfp_corr_alarm, stat_chan_up, stat_lane_up}),
-		 .d({8'b0, 8'b0, 8'hFF, 8'hFF}),
-		 .q(uio_rs_data[1055:1024])
-		 );
+                 .clk(clk_per),
+                 .d({{UIO_PORTS_WIDTH-32{1'b0}},
+                     4'b0,//(QSFP0_WIDTH == 4) ? qsfp0_fatal_alarm[4:1] : (QSFP0_WIDTH == 0) ? 4'b0 : {{4-QSFP0_WIDTH{1'b0}}, qsfp0_fatal_alarm[QSFP0_WIDTH:1]},
+                     4'b0,//(QSFP1_WIDTH == 4) ? qsfp1_fatal_alarm[4:1] : (QSFP1_WIDTH == 0) ? 4'b0 : {{4-QSFP1_WIDTH{1'b0}}, qsfp1_fatal_alarm[QSFP1_WIDTH:1]},
+                     4'b0,//(QSFP0_WIDTH == 4) ? qsfp0_corr_alarm[4:1] : (QSFP0_WIDTH == 0) ? 4'b0 : {{4-QSFP0_WIDTH{1'b0}}, qsfp0_corr_alarm[QSFP0_WIDTH:1]},
+                     4'b0,//(QSFP1_WIDTH == 4) ? qsfp1_corr_alarm[4:1] : (QSFP1_WIDTH == 0) ? 4'b0 : {{4-QSFP1_WIDTH{1'b0}}, qsfp1_corr_alarm[QSFP1_WIDTH:1]},
+                     8'hFF,//stat_chan_up1, stat_chan_up0,
+                     8'hFF}),//stat_lane_up1, stat_lane_up0}),
+                 .q(uio_rs_data[NUM_UIO_PORTS*UIO_PORTS_WIDTH-1:(NUM_UIO_PORTS-1)*UIO_PORTS_WIDTH])
+                 );
 
    assign uio_rs_vld[8] = ~reset_per;
    
